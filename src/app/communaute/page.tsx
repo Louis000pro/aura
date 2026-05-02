@@ -559,6 +559,7 @@ export default function CommunautePage() {
   const [threadInput, setThreadInput] = useState("");
   const [threadMessages, setThreadMessages] = useState<Message[]>(initialThreadMessages);
   const [toast, setToast] = useState<string | null>(null);
+  const [burstPost, setBurstPost] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string) => {
@@ -573,7 +574,12 @@ export default function CommunautePage() {
   const toggleLike = (id: number) => {
     setLikedIds((p) => {
       const n = new Set(p);
-      n.has(id) ? n.delete(id) : n.add(id);
+      const isNowLiked = !n.has(id);
+      isNowLiked ? n.add(id) : n.delete(id);
+      if (isNowLiked) {
+        setBurstPost(id);
+        setTimeout(() => setBurstPost(null), 700);
+      }
       return n;
     });
   };
@@ -723,14 +729,6 @@ export default function CommunautePage() {
                   onClick={() => setStoryUser(u)}
                 >
                   <div className="relative">
-                    {u.active && (
-                      <motion.div
-                        className="absolute inset-0 rounded-full pointer-events-none"
-                        style={{ outline: "2px solid rgba(249,168,201,0.5)", outlineOffset: 4 }}
-                        animate={{ scale: [1, 1.12, 1], opacity: [0.6, 0, 0.6] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-                    )}
                     <Avatar user={u} size={64} ring={u.active} />
                   </div>
                   <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: u.active ? "#2D3748" : "#A0AEC0" }}>
@@ -757,26 +755,13 @@ export default function CommunautePage() {
               return (
                 <motion.div
                   key={post.id}
-                  layout
-                  initial={{ opacity: 0, y: 24, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -8 }}
-                  transition={{ duration: 0.5, delay: 0.2 + postIdx * 0.12, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4, delay: postIdx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  whileHover={{ y: -2, transition: { duration: 0.18 } }}
                   className="lg-surface lg-highlight relative rounded-3xl overflow-visible"
                 >
-                  {/* Shimmer */}
-                  <div className="absolute inset-0 pointer-events-none z-10 rounded-3xl overflow-hidden" style={{ mixBlendMode: "screen" }}>
-                    <motion.div
-                      className="absolute inset-0"
-                      style={{
-                        background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)",
-                        backgroundSize: "200% 100%",
-                      }}
-                      animate={{ backgroundPosition: ["-100% 0", "300% 0"] }}
-                      transition={{ duration: 3, repeat: Infinity, repeatDelay: postIdx * 0.8 + 1.5 }}
-                    />
-                  </div>
 
                   {/* Header */}
                   <div className="flex items-center gap-3 px-4 pt-4 pb-3 relative">
@@ -833,7 +818,7 @@ export default function CommunautePage() {
                       onClick={() => toggleLike(post.id)}
                       className="relative flex items-center gap-1.5 cursor-pointer"
                     >
-                      {liked && [0, 1, 2, 3, 4].map((i) => (
+                      {burstPost === post.id && [0, 1, 2, 3, 4].map((i) => (
                         <motion.div
                           key={`burst-${post.id}-${i}`}
                           className="absolute pointer-events-none"
@@ -889,15 +874,9 @@ export default function CommunautePage() {
 
                   {/* Stats + caption */}
                   <div className="px-4 pt-2 pb-1">
-                    <motion.p
-                      key={liked ? "liked" : "not-liked"}
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm font-semibold"
-                      style={{ color: "#2D3748" }}
-                    >
+                    <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
                       {post.likes + (liked && !post.liked ? 1 : !liked && post.liked ? -1 : 0)} mentions « j&apos;aime »
-                    </motion.p>
+                    </p>
                     {post.caption && (
                       <p className="text-sm font-light leading-relaxed mt-1" style={{ color: "#2D3748" }}>
                         <span className="font-semibold mr-1.5">{post.user.handle}</span>
