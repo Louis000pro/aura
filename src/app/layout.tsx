@@ -12,7 +12,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Aura — Votre Concierge de Santé",
+  title: "Aura ✦ Votre Concierge de Santé",
   description: "Un accompagnement de santé premium piloté par l'IA multimodale.",
   icons: {
     icon: "/favicon.ico",
