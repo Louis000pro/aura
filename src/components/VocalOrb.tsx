@@ -7,6 +7,8 @@ import { Mic, MicOff } from "lucide-react";
 type OrbState = "idle" | "listening" | "processing";
 
 function pickMimeType(): string {
+  if (typeof MediaRecorder === "undefined") return "";
+  // Firefox prefers ogg/opus, Chrome/Edge prefer webm/opus, Safari uses mp4
   const candidates = [
     "audio/webm;codecs=opus",
     "audio/webm",
@@ -14,10 +16,7 @@ function pickMimeType(): string {
     "audio/ogg",
     "audio/mp4",
   ];
-  for (const t of candidates) {
-    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) return t;
-  }
-  return "";
+  return candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
 }
 
 function extFromMime(mime: string) {
@@ -29,48 +28,51 @@ function extFromMime(mime: string) {
 export default function VocalOrb({ onTranscript }: { onTranscript?: (text: string) => void }) {
   const [state, setState] = useState<OrbState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [levels, setLevels] = useState<number[]>([0, 0, 0, 0, 0]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Stop everything on unmount
   useEffect(() => {
     return () => {
       stopAudioAnalysis();
-      mediaRecorderRef.current?.stop();
+      if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
-  /* ── Audio level analysis for the live vumètre ── */
+  /* ── Vumètre live ── */
   const startAudioAnalysis = (stream: MediaStream) => {
-    const ctx = new AudioContext();
-    audioCtxRef.current = ctx;
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.6;
-    source.connect(analyser);
-    analyserRef.current = analyser;
+    try {
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      // Firefox sometimes needs an explicit resume after user gesture
+      ctx.resume().catch(() => {});
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.5;
+      source.connect(analyser);
+      analyserRef.current = analyser;
 
-    const data = new Uint8Array(analyser.frequencyBinCount);
-
-    const tick = () => {
-      analyser.getByteFrequencyData(data);
-      // Sample 5 bands across the spectrum
-      const bands = [0.05, 0.15, 0.3, 0.5, 0.7].map((ratio) => {
-        const idx = Math.floor(ratio * data.length);
-        return Math.min(1, (data[idx] ?? 0) / 180);
-      });
-      setLevels(bands);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        const bands = [0.05, 0.15, 0.3, 0.5, 0.7].map((r) =>
+          Math.min(1, (data[Math.floor(r * data.length)] ?? 0) / 180),
+        );
+        setLevels(bands);
+        rafRef.current = requestAnimationFrame(tick);
+      };
       rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
+    } catch {
+      // AudioContext failed — vumètre won't animate but recording still works
+    }
   };
 
   const stopAudioAnalysis = () => {
@@ -82,27 +84,32 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
     setLevels([0, 0, 0, 0, 0]);
   };
 
-  /* ── Recording ── */
+  /* ── Enregistrement ── */
   const startListening = useCallback(async () => {
     setError(null);
+    setDebugInfo(null);
     chunksRef.current = [];
 
     try {
+      // ⚠️ No sampleRate constraint — Firefox rejects exact sampleRate values
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 },
+        audio: { echoCancellation: true, noiseSuppression: true },
       });
       streamRef.current = stream;
       startAudioAnalysis(stream);
 
       const mimeType = pickMimeType();
+      setDebugInfo(`Format: ${mimeType || "auto"}`);
+
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
-      // timeslice = 200 ms → ondataavailable fires every 200 ms, ensures no data is lost
       recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
       };
 
       recorder.onstop = async () => {
@@ -110,16 +117,17 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
 
-        setState("processing");
-
         const usedMime = recorder.mimeType || mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type: usedMime });
         chunksRef.current = [];
 
-        if (blob.size < 500) {
-          // Recording too short or mic gave nothing
-          setError("Enregistrement trop court, réessayez.");
-          setTimeout(() => setError(null), 3000);
+        setDebugInfo(`Audio: ${(blob.size / 1024).toFixed(1)} ko — envoi…`);
+        setState("processing");
+
+        if (blob.size < 100) {
+          setError("Aucun audio capté. Vérifiez que votre micro est autorisé dans Firefox.");
+          setDebugInfo(null);
+          setTimeout(() => setError(null), 5000);
           setState("idle");
           return;
         }
@@ -130,37 +138,54 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
           form.append("audio", blob, `rec.${ext}`);
 
           const res = await fetch("/api/transcribe", { method: "POST", body: form });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
 
-          const { text } = await res.json();
-          if (text?.trim()) onTranscript?.(text.trim());
+          if (!res.ok) {
+            throw new Error(data.error ?? `HTTP ${res.status}`);
+          }
+
+          const text: string = data.text?.trim() ?? "";
+          setDebugInfo(null);
+
+          if (text) {
+            onTranscript?.(text);
+          } else {
+            setError("Aucun texte reconnu — parlez plus fort ou plus clairement.");
+            setTimeout(() => setError(null), 4000);
+          }
         } catch (err) {
           console.error("Transcription error:", err);
-          setError("Transcription échouée, réessayez.");
-          setTimeout(() => setError(null), 3500);
+          setError(`Erreur : ${err instanceof Error ? err.message : "transcription échouée"}`);
+          setDebugInfo(null);
+          setTimeout(() => setError(null), 5000);
         } finally {
           setState("idle");
         }
       };
 
-      recorder.start(200); // ← timeslice : collecte les données toutes les 200 ms
+      // timeslice 200 ms → les chunks arrivent régulièrement
+      recorder.start(200);
       setState("listening");
     } catch (err: unknown) {
       stopAudioAnalysis();
       const msg = err instanceof Error ? err.message : String(err);
-      setError(
-        msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission")
-          ? "Accès au micro refusé dans le navigateur."
-          : "Impossible d'accéder au micro.",
-      );
-      setTimeout(() => setError(null), 4000);
+      if (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission")) {
+        setError("Accès au micro refusé. Autorisez-le dans Firefox : 🔒 dans la barre d'adresse.");
+      } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("device")) {
+        setError("Aucun micro détecté sur cet appareil.");
+      } else {
+        setError(`Erreur micro : ${msg}`);
+      }
+      setTimeout(() => setError(null), 6000);
       setState("idle");
     }
   }, [onTranscript]);
 
   const stopListening = useCallback(() => {
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop();
+    const rec = mediaRecorderRef.current;
+    if (rec && rec.state === "recording") {
+      rec.requestData(); // flush le dernier chunk avant stop
+      rec.stop();
     }
   }, []);
 
@@ -170,39 +195,28 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
   };
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex flex-col items-center gap-6">
       {/* ── Orb ── */}
       <div className="relative flex items-center justify-center">
-
-        {/* Listening glow */}
         {state === "listening" && (
           <>
-            <motion.div
-              className="absolute rounded-full pointer-events-none"
+            <motion.div className="absolute rounded-full pointer-events-none"
               style={{ width: 240, height: 240, background: "radial-gradient(circle, rgba(255,214,231,0.18) 0%, transparent 70%)" }}
               animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.2, 0.6] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-              className="absolute rounded-full pointer-events-none"
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} />
+            <motion.div className="absolute rounded-full pointer-events-none"
               style={{ width: 200, height: 200, background: "radial-gradient(circle, rgba(178,240,240,0.2) 0%, transparent 70%)" }}
               animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0.15, 0.5] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-            />
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }} />
           </>
         )}
-
-        {/* Idle pulse */}
         {state === "idle" && (
-          <motion.div
-            className="absolute rounded-full pointer-events-none"
+          <motion.div className="absolute rounded-full pointer-events-none"
             style={{ width: 180, height: 180, background: "radial-gradient(circle, rgba(255,214,231,0.1) 0%, transparent 70%)" }}
             animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.1, 0.4] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          />
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
         )}
 
-        {/* Orb button */}
         <motion.button
           onClick={handleClick}
           className="relative rounded-full flex items-center justify-center cursor-pointer outline-none"
@@ -230,46 +244,34 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
             : { duration: 0.3 }
           }
           whileTap={{ scale: 0.93 }}
-          aria-label={state === "listening" ? "Arrêter" : "Parler à Aura"}
         >
           <AnimatePresence mode="wait">
-            {/* Idle → mic icon */}
             {state === "idle" && (
               <motion.div key="mic"
                 initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-              >
+                transition={{ duration: 0.2 }}>
                 <Mic size={36} strokeWidth={1.5} style={{ color: "#2D3748" }} />
               </motion.div>
             )}
-
-            {/* Listening → live vumètre driven by real audio levels */}
             {state === "listening" && (
               <motion.div key="listening"
                 initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2 }}
-                className="flex items-center gap-[4px]"
-              >
+                className="flex items-center gap-[4px]">
                 {levels.map((lvl, i) => (
-                  <motion.span
-                    key={i}
-                    className="block w-[3px] rounded-full"
+                  <motion.span key={i} className="block w-[3px] rounded-full"
                     style={{ background: "#2D3748" }}
                     animate={{ height: `${Math.max(8, lvl * 36)}px` }}
-                    transition={{ duration: 0.08, ease: "linear" }}
-                  />
+                    transition={{ duration: 0.08, ease: "linear" }} />
                 ))}
               </motion.div>
             )}
-
-            {/* Processing → spinner */}
             {state === "processing" && (
               <motion.div key="processing"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1, rotate: 360 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ rotate: { duration: 1.5, repeat: Infinity, ease: "linear" }, opacity: { duration: 0.2 } }}
-              >
+                transition={{ rotate: { duration: 1.5, repeat: Infinity, ease: "linear" }, opacity: { duration: 0.2 } }}>
                 <div className="w-8 h-8 rounded-full border-[2px]"
                   style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }} />
               </motion.div>
@@ -278,36 +280,40 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
         </motion.button>
       </div>
 
-      {/* Status label */}
+      {/* Status */}
       <AnimatePresence mode="wait">
-        <motion.p
-          key={state}
+        <motion.p key={state}
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.3 }}
           className="text-sm font-light tracking-widest uppercase text-center"
-          style={{ color: "#A0AEC0", letterSpacing: "0.15em" }}
-        >
+          style={{ color: "#A0AEC0", letterSpacing: "0.15em" }}>
           {state === "idle" && "Appuyez pour parler"}
-          {state === "listening" && "Parlez… puis appuyez pour envoyer"}
+          {state === "listening" && "Parlez… appuyez pour envoyer"}
           {state === "processing" && "Transcription en cours…"}
         </motion.p>
       </AnimatePresence>
 
-      {/* Stop button while recording */}
+      {/* Debug info (taille du blob, format) */}
+      <AnimatePresence>
+        {debugInfo && (
+          <motion.p key="debug"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="text-[10px] text-center font-mono"
+            style={{ color: "#C4CACE" }}>
+            {debugInfo}
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {/* Stop button */}
       <AnimatePresence>
         {state === "listening" && (
-          <motion.button
-            key="stop"
+          <motion.button key="stop"
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.25 }}
             onClick={stopListening}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
-            style={{
-              background: "rgba(255,240,245,0.75)",
-              border: "1px solid rgba(255,214,231,0.5)",
-              backdropFilter: "blur(12px)",
-            }}
-          >
+            style={{ background: "rgba(255,240,245,0.75)", border: "1px solid rgba(255,214,231,0.5)", backdropFilter: "blur(12px)" }}>
             <MicOff size={13} strokeWidth={2} style={{ color: "#F9A8C9" }} />
             <span className="text-xs font-medium" style={{ color: "#718096" }}>Terminer</span>
           </motion.button>
@@ -317,13 +323,11 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
       {/* Error */}
       <AnimatePresence>
         {error && (
-          <motion.p
-            key="err"
+          <motion.p key="err"
             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="text-xs text-center px-6"
-            style={{ color: "#F9A8C9" }}
-          >
+            className="text-xs text-center px-6 leading-relaxed"
+            style={{ color: "#F9A8C9", maxWidth: 280 }}>
             {error}
           </motion.p>
         )}
