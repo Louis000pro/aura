@@ -40,7 +40,8 @@ export default function PerformanceCard({
   const cardStyle: React.CSSProperties = {
     background: "linear-gradient(160deg, #0D0D1A 0%, #170D2A 50%, #0B1820 100%)",
     boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 4px 24px rgba(249,168,201,0.08)",
-    aspectRatio: isSmall ? "2 / 3" : "4 / 5",
+    // sm = portrait fixe (profil), md = hauteur auto selon contenu (communauté)
+    ...(isSmall ? { aspectRatio: "2 / 3" } : {}),
   };
 
   const heroFontSize = isSmall ? "1.55rem" : "clamp(2.4rem, 6vw, 3.4rem)";
@@ -96,9 +97,9 @@ export default function PerformanceCard({
           </span>
         </div>
 
-        {/* Hero metric — flex-1 pour centrer verticalement */}
+        {/* Hero metric */}
         {hero && (
-          <div className="flex-1 flex flex-col justify-center">
+          <div className={isSmall ? "flex-1 flex flex-col justify-center" : "py-3"}>
             <p
               className="text-[9px] font-bold tracking-[0.25em] uppercase mb-1"
               style={{ color: "rgba(255,255,255,0.35)" }}
