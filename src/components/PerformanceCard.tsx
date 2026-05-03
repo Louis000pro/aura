@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Dumbbell, Apple, Sun, TrendingUp } from "lucide-react";
+import { Dumbbell, Apple, Sun, Activity } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type PerformanceType = "workout" | "meal" | "day";
@@ -14,28 +14,10 @@ export type PerformanceData = {
   highlight?: string;
 };
 
-const themes: Record<PerformanceType, { icon: LucideIcon; gradient: string; tagBg: string; tagColor: string; label: string }> = {
-  workout: {
-    icon: Dumbbell,
-    gradient: "linear-gradient(135deg, #FFF0F5 0%, #FFD6E7 60%, #B2F0F0 100%)",
-    tagBg: "rgba(255,255,255,0.65)",
-    tagColor: "#F9A8C9",
-    label: "Séance",
-  },
-  meal: {
-    icon: Apple,
-    gradient: "linear-gradient(135deg, #E0FFFF 0%, #B2F0F0 60%, #FFF0F5 100%)",
-    tagBg: "rgba(255,255,255,0.65)",
-    tagColor: "#7ED8D8",
-    label: "Repas",
-  },
-  day: {
-    icon: Sun,
-    gradient: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 50%, #FFD6E7 100%)",
-    tagBg: "rgba(255,255,255,0.65)",
-    tagColor: "#F9A8C9",
-    label: "Journée",
-  },
+const config: Record<PerformanceType, { icon: LucideIcon; accent: string; label: string }> = {
+  workout: { icon: Dumbbell, accent: "#F9A8C9", label: "Séance" },
+  meal:    { icon: Apple,    accent: "#7ED8D8", label: "Repas" },
+  day:     { icon: Sun,      accent: "#FBBF24", label: "Journée" },
 };
 
 export default function PerformanceCard({
@@ -47,123 +29,144 @@ export default function PerformanceCard({
   size?: "sm" | "md" | "lg";
   interactive?: boolean;
 }) {
-  const theme = themes[data.type];
-  const Icon = theme.icon;
-
-  const sizing = {
-    sm: { p: "p-4", title: "text-base", value: "text-xl", label: "text-[9px]" },
-    md: { p: "p-6", title: "text-lg", value: "text-2xl", label: "text-[10px]" },
-    lg: { p: "p-8", title: "text-2xl", value: "text-4xl", label: "text-xs" },
-  }[size];
+  const { icon: Icon, accent, label } = config[data.type];
+  const [hero, ...subs] = data.metrics;
 
   return (
     <motion.div
-      whileHover={interactive ? { y: -3, scale: 1.01 } : undefined}
-      transition={{ duration: 0.3 }}
-      className={`relative rounded-3xl overflow-hidden aspect-square ${sizing.p}`}
+      whileHover={interactive ? { y: -4, scale: 1.015 } : undefined}
+      transition={{ duration: 0.25 }}
+      className="relative rounded-3xl overflow-hidden"
       style={{
-        background: theme.gradient,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 32px -8px rgba(249,168,201,0.25)",
+        background: "linear-gradient(160deg, #0D0D1A 0%, #170D2A 50%, #0B1820 100%)",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 4px 24px rgba(249,168,201,0.08)",
+        aspectRatio: "4 / 5",
       }}
     >
-      {/* Decorative blob */}
+      {/* Ambient glows */}
       <div
-        className="absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-50"
-        style={{ background: "radial-gradient(circle, rgba(255,255,255,0.7) 0%, transparent 70%)", filter: "blur(20px)" }}
+        className="absolute -top-24 -left-24 w-64 h-64 rounded-full pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${accent}22 0%, transparent 65%)` }}
       />
       <div
-        className="absolute -bottom-20 -left-20 w-56 h-56 rounded-full opacity-40"
-        style={{ background: "radial-gradient(circle, rgba(255,214,231,0.6) 0%, transparent 70%)", filter: "blur(30px)" }}
+        className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(126,216,216,0.1) 0%, transparent 65%)" }}
       />
 
-      {/* Top row */}
-      <div className="relative z-10 flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-9 h-9 rounded-2xl flex items-center justify-center"
-            style={{
-              background: "rgba(255,255,255,0.7)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-            }}
-          >
-            <Icon size={16} strokeWidth={1.5} style={{ color: theme.tagColor }} />
+      {/* Top shimmer border */}
+      <div
+        className="absolute top-0 left-8 right-8 h-px pointer-events-none"
+        style={{ background: `linear-gradient(90deg, transparent, ${accent}55, transparent)` }}
+      />
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-full p-6">
+
+        {/* Top row — type badge + date */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: `${accent}18`, border: `1px solid ${accent}38` }}
+            >
+              <Icon size={14} strokeWidth={1.5} style={{ color: accent }} />
+            </div>
+            <span
+              className="text-[10px] font-bold tracking-[0.2em] uppercase"
+              style={{ color: accent }}
+            >
+              {label}
+            </span>
           </div>
-          <span
-            className="text-[10px] font-semibold tracking-widest uppercase px-2.5 py-1 rounded-full"
-            style={{ background: theme.tagBg, color: theme.tagColor }}
-          >
-            {theme.label}
+          <span className="text-[10px] font-light tracking-wider" style={{ color: "rgba(255,255,255,0.3)" }}>
+            {data.date}
           </span>
         </div>
-        <div
-          className="w-7 h-7 rounded-xl flex items-center justify-center"
-          style={{ background: "rgba(255,255,255,0.6)" }}
-        >
-          <span className="text-[9px] font-light tracking-wider" style={{ color: "#2D3748" }}>
-            ✦
-          </span>
-        </div>
-      </div>
 
-      {/* Title */}
-      <div className="relative z-10 mt-4">
-        <p className={`${sizing.label} font-medium tracking-wider uppercase`} style={{ color: "#A0AEC0" }}>
-          {data.date}
-        </p>
-        <h3 className={`${sizing.title} font-semibold mt-0.5 leading-tight`} style={{ color: "#2D3748" }}>
-          {data.title}
-        </h3>
-      </div>
-
-      {/* Metrics */}
-      <div className="relative z-10 mt-4 grid grid-cols-2 gap-3">
-        {data.metrics.slice(0, 4).map((m) => (
-          <div
-            key={m.label}
-            className="rounded-2xl p-3"
-            style={{
-              background: "rgba(255,255,255,0.55)",
-              backdropFilter: "blur(8px)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
-            }}
-          >
-            <p className={`${sizing.label} font-medium`} style={{ color: "#718096" }}>
-              {m.label}
+        {/* Hero metric */}
+        {hero && (
+          <div className="flex-1 flex flex-col justify-center py-2">
+            <p
+              className="text-[9px] font-bold tracking-[0.25em] uppercase mb-1.5"
+              style={{ color: "rgba(255,255,255,0.35)" }}
+            >
+              {hero.label}
             </p>
-            <div className="flex items-baseline gap-0.5 mt-0.5">
-              <span className={`${sizing.value} font-semibold leading-none`} style={{ color: "#2D3748" }}>
-                {m.value}
+            <div className="flex items-end gap-2 mb-3">
+              <span
+                className="font-extralight leading-none"
+                style={{ color: "#FFFFFF", fontSize: "clamp(2.8rem,9vw,4rem)" }}
+              >
+                {hero.value}
               </span>
-              {m.unit && (
-                <span className="text-[10px] font-medium" style={{ color: "#718096" }}>
-                  {m.unit}
+              {hero.unit && (
+                <span className="text-base font-light mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {hero.unit}
                 </span>
               )}
             </div>
+            <p className="text-[13px] font-light leading-snug" style={{ color: "rgba(255,255,255,0.55)" }}>
+              {data.title}
+            </p>
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Highlight */}
-      {data.highlight && (
-        <div
-          className="relative z-10 mt-4 rounded-2xl p-3 flex items-center gap-2"
-          style={{
-            background: "rgba(255,255,255,0.5)",
-            backdropFilter: "blur(8px)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
-          }}
-        >
-          <TrendingUp size={12} strokeWidth={2} style={{ color: theme.tagColor }} />
-          <span className="text-[11px] font-medium" style={{ color: "#2D3748" }}>
-            {data.highlight}
+        {/* Divider */}
+        <div className="h-px my-4" style={{ background: "rgba(255,255,255,0.07)" }} />
+
+        {/* Sub metrics */}
+        {subs.length > 0 && (
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {subs.slice(0, 3).map((m) => (
+              <div key={m.label}>
+                <p
+                  className="text-[9px] font-semibold tracking-widest uppercase mb-0.5"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                >
+                  {m.label}
+                </p>
+                <div className="flex items-baseline gap-0.5">
+                  <span className="text-base font-light" style={{ color: "#FFFFFF" }}>
+                    {m.value}
+                  </span>
+                  {m.unit && (
+                    <span className="text-[8px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                      {m.unit}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Highlight */}
+        {data.highlight && (
+          <div
+            className="rounded-2xl px-3 py-2 flex items-center gap-2 mb-4"
+            style={{ background: `${accent}12`, border: `1px solid ${accent}22` }}
+          >
+            <Activity size={10} strokeWidth={2} style={{ color: accent }} />
+            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+              {data.highlight}
+            </span>
+          </div>
+        )}
+
+        {/* Branding */}
+        <div className="flex items-center">
+          <div className="h-px flex-1 mr-3" style={{ background: "rgba(255,255,255,0.06)" }} />
+          <span
+            className="text-[9px] font-bold tracking-[0.45em] uppercase"
+            style={{
+              background: `linear-gradient(135deg, ${accent}, #7ED8D8)`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            AURA
           </span>
         </div>
-      )}
-
-      {/* Aura watermark */}
-      <div className="absolute bottom-3 right-4 text-[9px] font-semibold tracking-[0.2em] uppercase z-10" style={{ color: "rgba(45,55,72,0.4)" }}>
-        Aura
       </div>
     </motion.div>
   );

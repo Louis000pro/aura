@@ -3,8 +3,46 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink } from "lucide-react";
+import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import SharePerformanceModal from "@/components/SharePerformanceModal";
+
+const samplePerformances: PerformanceData[] = [
+  {
+    type: "workout",
+    title: "Push Day · Poitrine & Épaules",
+    date: "Aujourd'hui",
+    metrics: [
+      { label: "Volume",  value: "12 400", unit: "kg" },
+      { label: "Durée",   value: "58",     unit: "min" },
+      { label: "Séries",  value: "24" },
+    ],
+    highlight: "Record personnel sur développé couché 🎯",
+  },
+  {
+    type: "day",
+    title: "Journée optimale",
+    date: "Hier",
+    metrics: [
+      { label: "Score",    value: "91",   unit: "/100" },
+      { label: "Calories", value: "1 847", unit: "kcal" },
+      { label: "Pas",      value: "8 200" },
+    ],
+    highlight: "Meilleure récupération du mois",
+  },
+  {
+    type: "meal",
+    title: "Nutrition parfaite",
+    date: "Aujourd'hui",
+    metrics: [
+      { label: "Calories",   value: "1 847", unit: "kcal" },
+      { label: "Protéines",  value: "142",   unit: "g" },
+      { label: "Glucides",   value: "210",   unit: "g" },
+    ],
+    highlight: "Objectif protéines atteint ✓",
+  },
+];
 
 const containerVariants = {
   hidden: {},
@@ -237,6 +275,7 @@ export default function ProfilPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [profileName, setProfileName] = useState(user?.name || "Marie Dubois");
   const [profileEmail, setProfileEmail] = useState(user?.email || "marie@example.com");
+  const [shareData, setShareData] = useState<PerformanceData | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -393,6 +432,47 @@ export default function ProfilPage() {
         ))}
       </motion.div>
 
+      {/* Performances à partager */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="mb-8"
+      >
+        <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+          Performances
+        </p>
+        <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {samplePerformances.map((perf, i) => (
+            <motion.div
+              key={i}
+              className="flex-shrink-0 relative"
+              style={{ width: 196 }}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 + i * 0.1, type: "spring", bounce: 0.3 }}
+            >
+              <PerformanceCard data={perf} interactive />
+              {/* Share button overlay */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShareData(perf)}
+                className="absolute bottom-5 right-5 w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
+                style={{
+                  background: "rgba(255,255,255,0.14)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  backdropFilter: "blur(8px)",
+                }}
+                aria-label="Partager"
+              >
+                <Share2 size={14} strokeWidth={1.5} style={{ color: "#FFFFFF" }} />
+              </motion.button>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
       {/* Sections */}
       <motion.div
         variants={containerVariants}
@@ -504,6 +584,15 @@ export default function ProfilPage() {
         {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
+
+      {/* Share Performance Modal */}
+      {shareData && (
+        <SharePerformanceModal
+          open={!!shareData}
+          onClose={() => setShareData(null)}
+          data={shareData}
+        />
+      )}
     </div>
   );
 }
