@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, TrendingUp, Users, User, LogIn, LogOut } from "lucide-react";
+import { Home, TrendingUp, Users, User, LogIn, LogOut, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const tabs = [
   { href: "/", label: "Accueil", icon: Home },
+  { href: "/recherche", label: "Recherche", icon: Search },
   { href: "/progression", label: "Progression", icon: TrendingUp },
   { href: "/communaute", label: "Communauté", icon: Users, badge: 3 },
   { href: "/profil", label: "Profil", icon: User },
@@ -84,22 +85,6 @@ export default function Navigation() {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="lg-strong lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
         >
-          {/* Logo → home */}
-          <div className="flex items-center justify-center mb-5">
-            <Link href="/" aria-label="Accueil">
-              <motion.div
-                className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-                style={{
-                  background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-                  boxShadow: "0 4px 16px 0 rgba(249,168,201,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
-                }}
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: "spring", bounce: 0.5 }}
-              >
-                <span className="text-base font-semibold" style={{ color: "#2D3748" }}>A</span>
-              </motion.div>
-            </Link>
-          </div>
 
           {tabs.map(({ href, label, icon: Icon, badge }) => {
             const isActive = pathname === href;
