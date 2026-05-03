@@ -452,21 +452,21 @@ export default function ProfilPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.35 + i * 0.1, type: "spring", bounce: 0.3 }}
             >
-              <PerformanceCard data={perf} interactive />
-              {/* Share button overlay */}
+              <PerformanceCard data={perf} size="sm" interactive />
+              {/* Share button — coin bas-droit, petit pour ne pas gêner */}
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShareData(perf)}
-                className="absolute bottom-5 right-5 w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
+                className="absolute bottom-3 right-3 w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{
-                  background: "rgba(255,255,255,0.14)",
-                  border: "1px solid rgba(255,255,255,0.22)",
+                  background: "rgba(255,255,255,0.16)",
+                  border: "1px solid rgba(255,255,255,0.28)",
                   backdropFilter: "blur(8px)",
                 }}
                 aria-label="Partager"
               >
-                <Share2 size={14} strokeWidth={1.5} style={{ color: "#FFFFFF" }} />
+                <Share2 size={12} strokeWidth={1.5} style={{ color: "#FFFFFF" }} />
               </motion.button>
             </motion.div>
           ))}

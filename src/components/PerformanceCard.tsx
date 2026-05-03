@@ -32,16 +32,26 @@ export default function PerformanceCard({
   const { icon: Icon, accent, label } = config[data.type];
   const [hero, ...subs] = data.metrics;
 
+  // sm = profil horizontal scroll (narrow card, compact)
+  // md = communauté feed (full-width, auto-height)
+  // lg = share modal (portrait fixed ratio)
+  const heroFontSize =
+    size === "sm" ? "1.6rem" :
+    size === "lg" ? "clamp(2.8rem,9vw,4rem)" :
+    "clamp(2rem,5vw,2.8rem)";
+
+  const cardStyle: React.CSSProperties = {
+    background: "linear-gradient(160deg, #0D0D1A 0%, #170D2A 50%, #0B1820 100%)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 4px 24px rgba(249,168,201,0.08)",
+    ...(size === "lg" ? { aspectRatio: "4 / 5" } : {}),
+  };
+
   return (
     <motion.div
       whileHover={interactive ? { y: -4, scale: 1.015 } : undefined}
       transition={{ duration: 0.25 }}
       className="relative rounded-3xl overflow-hidden"
-      style={{
-        background: "linear-gradient(160deg, #0D0D1A 0%, #170D2A 50%, #0B1820 100%)",
-        boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 4px 24px rgba(249,168,201,0.08)",
-        aspectRatio: "4 / 5",
-      }}
+      style={cardStyle}
     >
       {/* Ambient glows */}
       <div
@@ -85,7 +95,7 @@ export default function PerformanceCard({
 
         {/* Hero metric */}
         {hero && (
-          <div className="flex-1 flex flex-col justify-center py-2">
+          <div className={size === "sm" ? "py-3" : "flex-1 flex flex-col justify-center py-2"}>
             <p
               className="text-[9px] font-bold tracking-[0.25em] uppercase mb-1.5"
               style={{ color: "rgba(255,255,255,0.35)" }}
@@ -94,8 +104,8 @@ export default function PerformanceCard({
             </p>
             <div className="flex items-end gap-2 mb-3">
               <span
-                className="font-extralight leading-none"
-                style={{ color: "#FFFFFF", fontSize: "clamp(2.8rem,9vw,4rem)" }}
+                className="font-extralight leading-none whitespace-nowrap"
+                style={{ color: "#FFFFFF", fontSize: heroFontSize }}
               >
                 {hero.value}
               </span>
