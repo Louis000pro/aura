@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2 } from "lucide-react";
+import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
+import { useProfileSettings } from "@/hooks/useProfileSettings";
 
 const samplePerformances: PerformanceData[] = [
   {
@@ -276,6 +277,7 @@ export default function ProfilPage() {
   const [profileName, setProfileName] = useState(user?.name || "Marie Dubois");
   const [profileEmail, setProfileEmail] = useState(user?.email || "marie@example.com");
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
+  const { settings, updateSettings } = useProfileSettings();
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -470,6 +472,68 @@ export default function ProfilPage() {
               </motion.button>
             </motion.div>
           ))}
+        </div>
+      </motion.div>
+
+      {/* Profil physique — Genre */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.32 }}
+        className="mb-6"
+      >
+        <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+          Profil physique
+        </p>
+        <div
+          className="rounded-2xl px-5 py-4"
+          style={{
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(255,255,255,0.7)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(249,168,201,0.12)",
+            backdropFilter: "blur(32px)",
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Genre</p>
+              <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
+                Utilisé pour personnaliser les illustrations
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {(["homme", "femme"] as const).map((g) => (
+                <motion.button
+                  key={g}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => {
+                    updateSettings({ gender: g });
+                    showToast(g === "homme" ? "Genre : Homme ✓" : "Genre : Femme ✓");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200"
+                  style={
+                    settings.gender === g
+                      ? {
+                          background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+                          color: "#2D3748",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                        }
+                      : {
+                          background: "rgba(0,0,0,0.04)",
+                          color: "#A0AEC0",
+                          border: "1px solid rgba(0,0,0,0.06)",
+                        }
+                  }
+                >
+                  {g === "homme"
+                    ? <Mars size={12} strokeWidth={1.8} />
+                    : <Venus size={12} strokeWidth={1.8} />
+                  }
+                  {g === "homme" ? "Homme" : "Femme"}
+                </motion.button>
+              ))}
+            </div>
+          </div>
         </div>
       </motion.div>
 
