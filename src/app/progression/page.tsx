@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Camera, Video, CheckCircle, Clock, ChevronRight, Upload,
+  Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
   Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
@@ -246,63 +246,55 @@ function WorkoutCard({ session, gender }: { session: WorkoutSession; gender: "ho
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       className="flex-shrink-0 rounded-3xl overflow-hidden flex flex-col"
       style={{
-        width: 200,
-        background: "rgba(255,255,255,0.72)",
+        width: 230,
+        background: "rgba(255,255,255,0.75)",
         backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.85)",
+        border: "1px solid rgba(255,255,255,0.88)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 32px rgba(0,0,0,0.06)",
       }}
     >
-      {/* Header band */}
-      <div
-        className="px-4 pt-4 pb-3"
-        style={{ background: `${session.accent}18`, borderBottom: `1px solid ${session.accent}28` }}
-      >
-        <div className="flex items-start justify-between gap-2">
-          {/* Left: icon + title */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `${session.accent}28`, border: `1px solid ${session.accent}45` }}
-              >
-                <Icon size={14} strokeWidth={1.5} style={{ color: session.accent }} />
-              </div>
-              <span
-                className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full flex-shrink-0"
-                style={{ background: `${difficultyColor[session.difficulty]}20`, color: difficultyColor[session.difficulty] }}
-              >
-                {session.difficulty}
-              </span>
-            </div>
-            <p className="text-sm font-semibold leading-tight mb-0.5" style={{ color: "#2D3748" }}>
-              {session.title}
-            </p>
-            <p className="text-[11px] font-light leading-snug" style={{ color: "#718096" }}>
-              {session.subtitle}
-            </p>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-2" style={{ background: `${session.accent}14` }}>
+        <div className="flex items-center gap-2 mb-1.5">
+          <div
+            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: `${session.accent}28`, border: `1px solid ${session.accent}45` }}
+          >
+            <Icon size={13} strokeWidth={1.5} style={{ color: session.accent }} />
           </div>
-
-          {/* Body avatar */}
-          <BodyAvatar
-            gender={gender}
-            muscles={session.muscles}
-            accent={session.accent}
-            width={46}
-            className="flex-shrink-0 mt-1"
-          />
+          <span
+            className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
+            style={{ background: `${difficultyColor[session.difficulty]}18`, color: difficultyColor[session.difficulty] }}
+          >
+            {session.difficulty}
+          </span>
         </div>
+        <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>{session.title}</p>
+        <p className="text-[11px] font-light mt-0.5" style={{ color: "#718096" }}>{session.subtitle}</p>
       </div>
 
-      {/* Body */}
-      <div className="px-4 py-3 flex flex-col gap-3 flex-1">
-        {/* Stats row */}
+      {/* Body avatar — full width, centered */}
+      <div
+        className="flex items-center justify-center py-3"
+        style={{ background: `${session.accent}08`, borderTop: `1px solid ${session.accent}18`, borderBottom: `1px solid ${session.accent}18` }}
+      >
+        <BodyAvatar
+          gender={gender}
+          muscles={session.muscles}
+          accent={session.accent}
+          width={160}
+        />
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3 flex flex-col gap-2.5">
+        {/* Stats */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             <Clock size={11} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
             <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.duration} min</span>
           </div>
-          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.1)" }} />
+          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
           <div className="flex items-center gap-1">
             <Dumbbell size={11} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
             <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.exercises} exos</span>
@@ -313,36 +305,21 @@ function WorkoutCard({ session, gender }: { session: WorkoutSession; gender: "ho
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => setStarted((s) => !s)}
-          className="mt-auto w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-300"
+          className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
           style={
             started
               ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
-              : {
-                  background: `linear-gradient(135deg, ${session.accent}cc, ${session.accent}99)`,
-                  boxShadow: `0 4px 14px ${session.accent}44`,
-                }
+              : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
           }
         >
           <AnimatePresence mode="wait">
             {started ? (
-              <motion.span
-                key="started"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-1.5"
-              >
+              <motion.span key="on" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
                 <CheckCircle size={12} strokeWidth={2} style={{ color: session.accent }} />
                 <span className="text-[11px] font-semibold" style={{ color: session.accent }}>En cours !</span>
               </motion.span>
             ) : (
-              <motion.span
-                key="idle"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-1.5"
-              >
+              <motion.span key="off" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
                 <Play size={11} strokeWidth={2.5} style={{ color: "#fff" }} />
                 <span className="text-[11px] font-semibold" style={{ color: "#fff" }}>Commencer</span>
               </motion.span>
@@ -369,6 +346,9 @@ export default function ProgressionPage() {
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const { settings } = useProfileSettings();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") =>
+    scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
 
   const filteredSessions = workoutSessions.filter(
     (s) => categoryFilter === "tous" || s.category === categoryFilter
@@ -428,28 +408,62 @@ export default function ProgressionPage() {
           </span>
         </div>
 
-        {/* Category filter */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-          {categoryFilters.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setCategoryFilter(key)}
-              className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-              style={
-                categoryFilter === key
-                  ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                  : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
-              }
-            >
-              {label}
-            </button>
-          ))}
+        {/* Category filter + arrow buttons */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex gap-2 flex-1 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            {categoryFilters.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setCategoryFilter(key)}
+                className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
+                style={
+                  categoryFilter === key
+                    ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                    : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Desktop scroll arrows */}
+          <div className="hidden md:flex gap-1 flex-shrink-0">
+            {[
+              { dir: "left"  as const, Icon: ChevronLeft },
+              { dir: "right" as const, Icon: ChevronRight },
+            ].map(({ dir, Icon }) => (
+              <motion.button
+                key={dir}
+                whileTap={{ scale: 0.88 }}
+                onClick={() => scroll(dir)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.8)" }}
+              >
+                <Icon size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+              </motion.button>
+            ))}
+          </div>
         </div>
 
-        {/* Cards horizontal scroll */}
-        <div className="relative">
+        {/* Cards — break out of parent px-6 so scroll reaches viewport edge */}
+        <div className="relative -mx-6">
+          {/* Left fade */}
+          <div className="absolute left-0 top-0 bottom-4 w-8 z-10 pointer-events-none"
+            style={{ background: "linear-gradient(to right, rgba(248,247,252,0.9) 0%, transparent 100%)" }} />
+          {/* Right fade */}
+          <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
+            style={{ background: "linear-gradient(to left, rgba(248,247,252,0.95) 0%, transparent 100%)" }}>
+            <motion.div
+              animate={{ x: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+            >
+              <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C8B8D8" }} />
+            </motion.div>
+          </div>
+
           <div
-            className="flex gap-3 overflow-x-auto pb-3"
+            ref={scrollRef}
+            className="flex gap-3 overflow-x-auto pb-4 px-6"
             style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
           >
             <AnimatePresence mode="popLayout">
@@ -457,23 +471,7 @@ export default function ProgressionPage() {
                 <WorkoutCard key={session.id} session={session} gender={settings.gender} />
               ))}
             </AnimatePresence>
-            {/* Spacer pour que le dernier item ne soit pas collé au fade */}
-            <div className="flex-shrink-0 w-2" />
-          </div>
-
-          {/* Gradient + flèche animée → indique qu'on peut scroller */}
-          <div
-            className="absolute right-0 top-0 bottom-3 w-16 pointer-events-none flex items-center justify-end pr-2"
-            style={{
-              background: "linear-gradient(to left, rgba(248,247,252,0.97) 0%, transparent 100%)",
-            }}
-          >
-            <motion.div
-              animate={{ x: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-            >
-              <ChevronRight size={18} strokeWidth={2} style={{ color: "#D0C4E0" }} />
-            </motion.div>
+            <div className="flex-shrink-0 w-6" />
           </div>
         </div>
       </motion.div>
