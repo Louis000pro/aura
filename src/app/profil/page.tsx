@@ -442,22 +442,23 @@ export default function ProfilPage() {
         <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
           Performances
         </p>
-        <div className="flex flex-col gap-4">
+        <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
           {samplePerformances.map((perf, i) => (
             <motion.div
               key={i}
-              className="relative"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className="flex-shrink-0 relative"
+              style={{ width: 172 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.35 + i * 0.1, type: "spring", bounce: 0.3 }}
             >
-              <PerformanceCard data={perf} size="md" interactive />
+              <PerformanceCard data={perf} size="sm" interactive />
               {/* Share button */}
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShareData(perf)}
-                className="absolute bottom-4 right-4 w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                className="absolute bottom-3 right-3 w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{
                   background: "rgba(255,255,255,0.16)",
                   border: "1px solid rgba(255,255,255,0.28)",
@@ -465,7 +466,7 @@ export default function ProfilPage() {
                 }}
                 aria-label="Partager"
               >
-                <Share2 size={13} strokeWidth={1.5} style={{ color: "#FFFFFF" }} />
+                <Share2 size={12} strokeWidth={1.5} style={{ color: "#FFFFFF" }} />
               </motion.button>
             </motion.div>
           ))}

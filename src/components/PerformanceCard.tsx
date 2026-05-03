@@ -32,19 +32,22 @@ export default function PerformanceCard({
   const { icon: Icon, accent, label } = config[data.type];
   const [hero, ...subs] = data.metrics;
 
-  // sm = profil horizontal scroll (narrow card, compact)
-  // md = communauté feed (full-width, auto-height)
-  // lg = share modal (portrait fixed ratio)
-  const heroFontSize =
-    size === "sm" ? "1.6rem" :
-    size === "lg" ? "clamp(2.8rem,9vw,4rem)" :
-    "clamp(2rem,5vw,2.8rem)";
+  // sm  = profil scroll horizontal (card étroite ~180px, ratio 2/3)
+  // md  = communauté feed (pleine largeur, ratio 4/5)
+  // lg  = modal de partage (ratio 4/5 large)
+  const isSmall = size === "sm";
 
   const cardStyle: React.CSSProperties = {
     background: "linear-gradient(160deg, #0D0D1A 0%, #170D2A 50%, #0B1820 100%)",
     boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 4px 24px rgba(249,168,201,0.08)",
-    ...(size === "lg" ? { aspectRatio: "4 / 5" } : {}),
+    aspectRatio: isSmall ? "2 / 3" : "4 / 5",
   };
+
+  const heroFontSize = isSmall ? "1.55rem" : "clamp(2.4rem, 6vw, 3.4rem)";
+  const pad = isSmall ? "p-4" : "p-6";
+  const gapY = isSmall ? "my-3" : "my-4";
+  const subMb = isSmall ? "mb-3" : "mb-4";
+  const hlMb  = isSmall ? "mb-2" : "mb-4";
 
   return (
     <motion.div
@@ -70,16 +73,16 @@ export default function PerformanceCard({
       />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col h-full p-6">
+      <div className={`relative z-10 flex flex-col h-full ${pad}`}>
 
         {/* Top row — type badge + date */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              className="w-7 h-7 rounded-xl flex items-center justify-center"
               style={{ background: `${accent}18`, border: `1px solid ${accent}38` }}
             >
-              <Icon size={14} strokeWidth={1.5} style={{ color: accent }} />
+              <Icon size={isSmall ? 12 : 14} strokeWidth={1.5} style={{ color: accent }} />
             </div>
             <span
               className="text-[10px] font-bold tracking-[0.2em] uppercase"
@@ -93,16 +96,16 @@ export default function PerformanceCard({
           </span>
         </div>
 
-        {/* Hero metric */}
+        {/* Hero metric — flex-1 pour centrer verticalement */}
         {hero && (
-          <div className={size === "sm" ? "py-3" : "flex-1 flex flex-col justify-center py-2"}>
+          <div className="flex-1 flex flex-col justify-center">
             <p
-              className="text-[9px] font-bold tracking-[0.25em] uppercase mb-1.5"
+              className="text-[9px] font-bold tracking-[0.25em] uppercase mb-1"
               style={{ color: "rgba(255,255,255,0.35)" }}
             >
               {hero.label}
             </p>
-            <div className="flex items-end gap-2 mb-3">
+            <div className="flex items-end gap-1.5 mb-2">
               <span
                 className="font-extralight leading-none whitespace-nowrap"
                 style={{ color: "#FFFFFF", fontSize: heroFontSize }}
@@ -110,37 +113,46 @@ export default function PerformanceCard({
                 {hero.value}
               </span>
               {hero.unit && (
-                <span className="text-base font-light mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <span
+                  className="font-light mb-1"
+                  style={{ color: "rgba(255,255,255,0.4)", fontSize: isSmall ? "0.75rem" : "1rem" }}
+                >
                   {hero.unit}
                 </span>
               )}
             </div>
-            <p className="text-[13px] font-light leading-snug" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <p
+              className="font-light leading-snug"
+              style={{ color: "rgba(255,255,255,0.55)", fontSize: isSmall ? "0.7rem" : "0.8rem" }}
+            >
               {data.title}
             </p>
           </div>
         )}
 
         {/* Divider */}
-        <div className="h-px my-4" style={{ background: "rgba(255,255,255,0.07)" }} />
+        <div className={`h-px ${gapY}`} style={{ background: "rgba(255,255,255,0.07)" }} />
 
         {/* Sub metrics */}
         {subs.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className={`grid grid-cols-3 gap-2 ${subMb}`}>
             {subs.slice(0, 3).map((m) => (
               <div key={m.label}>
                 <p
-                  className="text-[9px] font-semibold tracking-widest uppercase mb-0.5"
+                  className="text-[8px] font-semibold tracking-widest uppercase mb-0.5"
                   style={{ color: "rgba(255,255,255,0.3)" }}
                 >
                   {m.label}
                 </p>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-base font-light" style={{ color: "#FFFFFF" }}>
+                  <span
+                    className="font-light"
+                    style={{ color: "#FFFFFF", fontSize: isSmall ? "0.85rem" : "1rem" }}
+                  >
                     {m.value}
                   </span>
                   {m.unit && (
-                    <span className="text-[8px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    <span className="text-[7px]" style={{ color: "rgba(255,255,255,0.35)" }}>
                       {m.unit}
                     </span>
                   )}
@@ -153,11 +165,14 @@ export default function PerformanceCard({
         {/* Highlight */}
         {data.highlight && (
           <div
-            className="rounded-2xl px-3 py-2 flex items-center gap-2 mb-4"
+            className={`rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 ${hlMb}`}
             style={{ background: `${accent}12`, border: `1px solid ${accent}22` }}
           >
-            <Activity size={10} strokeWidth={2} style={{ color: accent }} />
-            <span className="text-[10px] font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+            <Activity size={9} strokeWidth={2} style={{ color: accent }} />
+            <span
+              className="font-medium leading-tight"
+              style={{ color: "rgba(255,255,255,0.7)", fontSize: isSmall ? "0.6rem" : "0.625rem" }}
+            >
               {data.highlight}
             </span>
           </div>
