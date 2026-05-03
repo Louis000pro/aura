@@ -2,16 +2,26 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic } from "lucide-react";
+import { Mic, Keyboard, Send, X } from "lucide-react";
 
 type OrbState = "idle" | "listening" | "processing";
 
 export default function VocalOrb({ onTranscript }: { onTranscript?: (text: string) => void }) {
   const [state, setState] = useState<OrbState>("idle");
   const [transcript, setTranscript] = useState("");
+  const [supported, setSupported] = useState<boolean | null>(null);
+  const [showFallback, setShowFallback] = useState(false);
+  const [fallbackText, setFallbackText] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  // Ref to avoid stale closure inside native speech recognition callbacks
   const transcriptRef = useRef("");
+  const fallbackInputRef = useRef<HTMLInputElement>(null);
+
+  // Detect support after mount (client-side only)
+  useEffect(() => {
+    setSupported(
+      "webkitSpeechRecognition" in window || "SpeechRecognition" in window,
+    );
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -19,11 +29,14 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
     };
   }, []);
 
-  const startListening = useCallback(() => {
-    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      alert("La reconnaissance vocale n'est pas supportée sur ce navigateur.");
-      return;
+  // Auto-focus fallback input when it opens
+  useEffect(() => {
+    if (showFallback) {
+      setTimeout(() => fallbackInputRef.current?.focus(), 50);
     }
+  }, [showFallback]);
+
+  const startListening = useCallback(() => {
     const SpeechRecognitionAPI =
       (
         window as typeof window & {
@@ -36,7 +49,6 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
 
     if (!SpeechRecognitionAPI) return;
 
-    // Reset transcript before starting
     setTranscript("");
     transcriptRef.current = "";
 
@@ -52,7 +64,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
         .map((r) => r[0].transcript)
         .join("");
       setTranscript(text);
-      transcriptRef.current = text; // keep ref in sync for onend closure
+      transcriptRef.current = text;
     };
 
     recognition.onend = () => {
@@ -60,7 +72,6 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
       const captured = transcriptRef.current;
       setTimeout(() => {
         setState("idle");
-        // Fire callback with the captured text and reset display
         if (captured.trim()) {
           onTranscript?.(captured.trim());
           setTranscript("");
@@ -84,16 +95,64 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
     setState("idle");
   }, []);
 
-  const handleClick = () => {
+  const handleOrbClick = () => {
+    if (supported === false) {
+      // No speech support → open text fallback
+      setShowFallback(true);
+      return;
+    }
     if (state === "listening") stopListening();
     else if (state === "idle") startListening();
   };
+
+  const submitFallback = () => {
+    const text = fallbackText.trim();
+    if (!text) return;
+    onTranscript?.(text);
+    setFallbackText("");
+    setShowFallback(false);
+  };
+
+  // Which icon to show inside the orb
+  const orbIcon =
+    supported === false ? (
+      <Keyboard size={32} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+    ) : state === "idle" ? (
+      <Mic size={36} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+    ) : state === "listening" ? (
+      <div className="flex items-end gap-[3px]">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <motion.span
+            key={i}
+            className="block w-[3px] rounded-full"
+            style={{ background: "#2D3748" }}
+            animate={{ height: ["8px", "24px", "8px"] }}
+            transition={{ duration: 0.7, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+          />
+        ))}
+      </div>
+    ) : (
+      // processing
+      <div
+        className="w-8 h-8 rounded-full border-[2px]"
+        style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }}
+      />
+    );
+
+  const statusLabel =
+    supported === false
+      ? "Taper un message"
+      : state === "idle"
+      ? "Appuyez pour parler"
+      : state === "listening"
+      ? "À votre écoute…"
+      : "Envoi en cours…";
 
   return (
     <div className="flex flex-col items-center gap-8">
       {/* Orb */}
       <div className="relative flex items-center justify-center">
-        {/* Outer ambient glow rings when listening */}
+        {/* Listening glow rings */}
         {state === "listening" && (
           <>
             <motion.div
@@ -120,7 +179,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
         )}
 
         {/* Idle ambient pulse */}
-        {state === "idle" && (
+        {(state === "idle" || supported === false) && (
           <motion.div
             className="absolute rounded-full"
             style={{
@@ -135,7 +194,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
 
         {/* Main Orb Button */}
         <motion.button
-          onClick={handleClick}
+          onClick={handleOrbClick}
           className="relative rounded-full flex items-center justify-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:ring-aura-rose-deep"
           style={{
             width: 140,
@@ -166,62 +225,35 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
               : { duration: 0.3 }
           }
           whileTap={{ scale: 0.93 }}
-          aria-label={state === "listening" ? "Arrêter l'écoute" : "Parler à Aura"}
+          aria-label={
+            supported === false
+              ? "Ouvrir la saisie clavier"
+              : state === "listening"
+              ? "Arrêter l'écoute"
+              : "Parler à Aura"
+          }
         >
           <AnimatePresence mode="wait">
-            {state === "idle" && (
-              <motion.div
-                key="mic"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Mic size={36} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-              </motion.div>
-            )}
-            {state === "listening" && (
-              <motion.div
-                key="listening"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-end gap-[3px]"
-              >
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="block w-[3px] rounded-full"
-                    style={{ background: "#2D3748" }}
-                    animate={{ height: ["8px", "24px", "8px"] }}
-                    transition={{
-                      duration: 0.7,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: i * 0.1,
-                    }}
-                  />
-                ))}
-              </motion.div>
-            )}
-            {state === "processing" && (
-              <motion.div
-                key="processing"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1, rotate: 360 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{
-                  rotate: { duration: 1.5, repeat: Infinity, ease: "linear" },
-                  opacity: { duration: 0.2 },
-                }}
-              >
-                <div
-                  className="w-8 h-8 rounded-full border-[2px]"
-                  style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }}
-                />
-              </motion.div>
-            )}
+            <motion.div
+              key={`${state}-${String(supported)}`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={
+                state === "processing"
+                  ? { opacity: 1, scale: 1, rotate: 360 }
+                  : { opacity: 1, scale: 1 }
+              }
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={
+                state === "processing"
+                  ? {
+                      rotate: { duration: 1.5, repeat: Infinity, ease: "linear" },
+                      opacity: { duration: 0.2 },
+                    }
+                  : { duration: 0.2 }
+              }
+            >
+              {orbIcon}
+            </motion.div>
           </AnimatePresence>
         </motion.button>
       </div>
@@ -229,7 +261,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
       {/* Status label */}
       <AnimatePresence mode="wait">
         <motion.p
-          key={state}
+          key={statusLabel}
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
@@ -237,13 +269,11 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
           className="text-sm font-light tracking-widest uppercase"
           style={{ color: "#A0AEC0", letterSpacing: "0.15em" }}
         >
-          {state === "idle" && "Appuyez pour parler"}
-          {state === "listening" && "À votre écoute…"}
-          {state === "processing" && "Envoi en cours…"}
+          {statusLabel}
         </motion.p>
       </AnimatePresence>
 
-      {/* Transcript bubble — shown while listening */}
+      {/* Live transcript bubble (while listening) */}
       <AnimatePresence>
         {transcript && state === "listening" && (
           <motion.div
@@ -261,6 +291,68 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
             }}
           >
             "{transcript}"
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Keyboard fallback input (when speech not supported) */}
+      <AnimatePresence>
+        {showFallback && (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={{ type: "spring", damping: 26, stiffness: 300 }}
+            className="w-full max-w-xs"
+          >
+            <div
+              className="flex items-center gap-2 px-3 py-2.5 rounded-2xl"
+              style={{
+                background: "rgba(255,255,255,0.82)",
+                border: "1px solid rgba(255,255,255,0.9)",
+                boxShadow: "0 8px 32px rgba(249,168,201,0.14), inset 0 1px 0 rgba(255,255,255,0.95)",
+                backdropFilter: "blur(24px)",
+              }}
+            >
+              <input
+                ref={fallbackInputRef}
+                type="text"
+                value={fallbackText}
+                onChange={(e) => setFallbackText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitFallback();
+                  if (e.key === "Escape") setShowFallback(false);
+                }}
+                placeholder="Demandez à Aura…"
+                className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#A0AEC0]"
+                style={{ color: "#2D3748" }}
+              />
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={submitFallback}
+                disabled={!fallbackText.trim()}
+                className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 disabled:opacity-40"
+                style={{
+                  background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                }}
+                aria-label="Envoyer"
+              >
+                <Send size={11} strokeWidth={2} style={{ color: "#2D3748" }} />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={() => setShowFallback(false)}
+                className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{ background: "rgba(255,240,245,0.7)" }}
+                aria-label="Fermer"
+              >
+                <X size={11} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+              </motion.button>
+            </div>
+            <p className="text-center text-[10px] mt-2" style={{ color: "#C4CACE" }}>
+              Reconnaissance vocale non disponible sur ce navigateur
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
