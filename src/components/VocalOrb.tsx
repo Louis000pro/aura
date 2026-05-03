@@ -2,14 +2,16 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff } from "lucide-react";
+import { Mic } from "lucide-react";
 
 type OrbState = "idle" | "listening" | "processing";
 
-export default function VocalOrb() {
+export default function VocalOrb({ onTranscript }: { onTranscript?: (text: string) => void }) {
   const [state, setState] = useState<OrbState>("idle");
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // Ref to avoid stale closure inside native speech recognition callbacks
+  const transcriptRef = useRef("");
 
   useEffect(() => {
     return () => {
@@ -23,10 +25,20 @@ export default function VocalOrb() {
       return;
     }
     const SpeechRecognitionAPI =
-      (window as typeof window & { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ||
-      (window as typeof window & { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
+      (
+        window as typeof window & {
+          SpeechRecognition?: typeof SpeechRecognition;
+          webkitSpeechRecognition?: typeof SpeechRecognition;
+        }
+      ).SpeechRecognition ||
+      (window as typeof window & { webkitSpeechRecognition?: typeof SpeechRecognition })
+        .webkitSpeechRecognition;
 
     if (!SpeechRecognitionAPI) return;
+
+    // Reset transcript before starting
+    setTranscript("");
+    transcriptRef.current = "";
 
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = "fr-FR";
@@ -34,23 +46,38 @@ export default function VocalOrb() {
     recognition.interimResults = true;
 
     recognition.onstart = () => setState("listening");
+
     recognition.onresult = (e: SpeechRecognitionEvent) => {
       const text = Array.from(e.results)
         .map((r) => r[0].transcript)
         .join("");
       setTranscript(text);
+      transcriptRef.current = text; // keep ref in sync for onend closure
     };
+
     recognition.onend = () => {
       setState("processing");
+      const captured = transcriptRef.current;
       setTimeout(() => {
         setState("idle");
-      }, 2000);
+        // Fire callback with the captured text and reset display
+        if (captured.trim()) {
+          onTranscript?.(captured.trim());
+          setTranscript("");
+          transcriptRef.current = "";
+        }
+      }, 800);
     };
-    recognition.onerror = () => setState("idle");
+
+    recognition.onerror = () => {
+      setState("idle");
+      setTranscript("");
+      transcriptRef.current = "";
+    };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, []);
+  }, [onTranscript]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
@@ -66,7 +93,7 @@ export default function VocalOrb() {
     <div className="flex flex-col items-center gap-8">
       {/* Orb */}
       <div className="relative flex items-center justify-center">
-        {/* Outer ambient glow rings */}
+        {/* Outer ambient glow rings when listening */}
         {state === "listening" && (
           <>
             <motion.div
@@ -184,7 +211,10 @@ export default function VocalOrb() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1, rotate: 360 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ rotate: { duration: 1.5, repeat: Infinity, ease: "linear" }, opacity: { duration: 0.2 } }}
+                transition={{
+                  rotate: { duration: 1.5, repeat: Infinity, ease: "linear" },
+                  opacity: { duration: 0.2 },
+                }}
               >
                 <div
                   className="w-8 h-8 rounded-full border-[2px]"
@@ -209,13 +239,13 @@ export default function VocalOrb() {
         >
           {state === "idle" && "Appuyez pour parler"}
           {state === "listening" && "À votre écoute…"}
-          {state === "processing" && "Aura réfléchit…"}
+          {state === "processing" && "Envoi en cours…"}
         </motion.p>
       </AnimatePresence>
 
-      {/* Transcript bubble */}
+      {/* Transcript bubble — shown while listening */}
       <AnimatePresence>
-        {transcript && state !== "idle" && (
+        {transcript && state === "listening" && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

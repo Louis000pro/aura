@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
-import AIChatPanel from "@/components/AIChatPanel";
+import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatsPanel from "@/components/StatsPanel";
 import { useAuth } from "@/context/AuthContext";
 
@@ -498,6 +498,42 @@ export default function HomePage() {
   const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  // ── Shared chat state (shared between desktop and mobile AIChatPanel) ──
+  const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
+  const [aiTyping, setAiTyping] = useState(false);
+
+  const sendMessage = useCallback((text: string) => {
+    if (!text.trim()) return;
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    setChatMessages((m) => [...m, { id: Date.now(), from: "me", text, time }]);
+    setAiTyping(true);
+    setTimeout(() => {
+      setAiTyping(false);
+      setChatMessages((m) => [
+        ...m,
+        {
+          id: Date.now() + 1,
+          from: "ai",
+          text: "Compris. Je personnalise votre programme en conséquence ✨",
+          time,
+        },
+      ]);
+    }, 1400);
+  }, []);
+
+  // ── Voice transcript handler ──
+  const handleVoiceTranscript = useCallback(
+    (text: string) => {
+      sendMessage(text);
+      // On mobile: auto-open the chat drawer so the user sees the reply
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        setMobilePanel("chat");
+      }
+    },
+    [sendMessage],
+  );
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
@@ -619,7 +655,7 @@ export default function HomePage() {
           transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
           className="min-h-0" style={{ height: "100%" }}
         >
-          <AIChatPanel />
+          <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
         </motion.div>
 
         <motion.div
@@ -628,7 +664,7 @@ export default function HomePage() {
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
           className="flex flex-col items-center justify-center gap-7 overflow-y-auto py-4"
         >
-          <VocalOrb />
+          <VocalOrb onTranscript={handleVoiceTranscript} />
 
           {/* Score du jour */}
           <motion.div
@@ -709,7 +745,7 @@ export default function HomePage() {
           transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }}
           className="flex-1 flex items-center justify-center px-6 py-6"
         >
-          <VocalOrb />
+          <VocalOrb onTranscript={handleVoiceTranscript} />
         </motion.div>
 
         {/* Quick actions */}
@@ -765,7 +801,11 @@ export default function HomePage() {
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden"
             >
-              {mobilePanel === "chat" ? <AIChatPanel /> : <StatsPanel />}
+              {mobilePanel === "chat" ? (
+                <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
+              ) : (
+                <StatsPanel />
+              )}
             </motion.div>
           </>
         )}

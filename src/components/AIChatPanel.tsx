@@ -4,45 +4,41 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
 
-type Message = { id: number; from: "ai" | "me"; text: string; time: string };
+export type Message = { id: number; from: "ai" | "me"; text: string; time: string };
 
-const initialMessages: Message[] = [
-  { id: 1, from: "ai", text: "Bonjour Marie ✦ Comment vous sentez-vous ce matin ?", time: "08:02" },
+export const initialChatMessages: Message[] = [
+  { id: 1, from: "ai", text: "Bonjour ✦ Comment vous sentez-vous aujourd'hui ?", time: "08:02" },
   { id: 2, from: "me", text: "Un peu fatiguée, mal dormi", time: "08:03" },
-  { id: 3, from: "ai", text: "Je note. Je vous propose une séance douce de mobilité 20 min, et un petit-déjeuner riche en magnésium.", time: "08:03" },
+  {
+    id: 3,
+    from: "ai",
+    text: "Je note. Je vous propose une séance douce de mobilité 20 min, et un petit-déjeuner riche en magnésium.",
+    time: "08:03",
+  },
 ];
 
 const suggestions = ["Plan du jour", "Ma récup'", "Repas idéal"];
 
-export default function AIChatPanel() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+export default function AIChatPanel({
+  messages,
+  aiTyping,
+  onSend,
+}: {
+  messages: Message[];
+  aiTyping: boolean;
+  onSend: (text: string) => void;
+}) {
   const [input, setInput] = useState("");
-  const [aiTyping, setAiTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, aiTyping]);
 
-  const send = (text: string) => {
+  const handleSend = (text: string) => {
     if (!text.trim()) return;
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    setMessages((m) => [...m, { id: Date.now(), from: "me", text, time }]);
+    onSend(text.trim());
     setInput("");
-    setAiTyping(true);
-    setTimeout(() => {
-      setAiTyping(false);
-      setMessages((m) => [
-        ...m,
-        {
-          id: Date.now() + 1,
-          from: "ai",
-          text: "Compris. Je personnalise votre programme en conséquence ✨",
-          time,
-        },
-      ]);
-    }, 1400);
   };
 
   return (
@@ -84,10 +80,12 @@ export default function AIChatPanel() {
                 style={
                   msg.from === "me"
                     ? {
-                        background: "linear-gradient(135deg, rgba(255,214,231,0.95) 0%, rgba(178,240,240,0.95) 100%)",
+                        background:
+                          "linear-gradient(135deg, rgba(255,214,231,0.95) 0%, rgba(178,240,240,0.95) 100%)",
                         color: "#2D3748",
                         borderBottomRightRadius: 6,
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(249,168,201,0.12)",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(249,168,201,0.12)",
                       }
                     : {
                         background: "rgba(255,255,255,0.6)",
@@ -139,7 +137,7 @@ export default function AIChatPanel() {
           {suggestions.map((s) => (
             <button
               key={s}
-              onClick={() => send(s)}
+              onClick={() => handleSend(s)}
               className="text-[11px] font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all hover:scale-105 flex-shrink-0"
               style={{
                 background: "rgba(255,240,245,0.7)",
@@ -154,7 +152,7 @@ export default function AIChatPanel() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            send(input);
+            handleSend(input);
           }}
           className="flex items-center gap-2 px-3 py-2 rounded-2xl"
           style={{
