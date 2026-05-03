@@ -2,34 +2,27 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Video, CheckCircle, Clock, ChevronRight, Upload, Share2, Dumbbell, Apple, Sun } from "lucide-react";
+import {
+  Camera, Video, CheckCircle, Clock, ChevronRight, Upload,
+  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers,
+} from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 
+/* ─── Timeline data ─────────────────────────────────────── */
 type TimelineEvent = {
-  date: string;
-  time: string;
-  type: PerformanceType;
-  title: string;
-  desc: string;
-  cardClass: string;
-  dot: string;
+  date: string; time: string; type: PerformanceType;
+  title: string; desc: string; cardClass: string; dot: string;
   performance: PerformanceData;
 };
 
 const timelineEvents: TimelineEvent[] = [
   {
-    date: "Aujourd'hui",
-    time: "08:30",
-    type: "workout",
-    title: "Séance Force · Haut du corps",
-    desc: "47 min · Volume 3.2 t · 412 kcal",
-    cardClass: "lg-turquoise",
-    dot: "#7ED8D8",
+    date: "Aujourd'hui", time: "08:30", type: "workout",
+    title: "Séance Force · Haut du corps", desc: "47 min · Volume 3.2 t · 412 kcal",
+    cardClass: "lg-turquoise", dot: "#7ED8D8",
     performance: {
-      type: "workout",
-      title: "Force · Haut du corps",
-      date: "Aujourd'hui · 08:30",
+      type: "workout", title: "Force · Haut du corps", date: "Aujourd'hui · 08:30",
       metrics: [
         { label: "Durée", value: "47", unit: "min" },
         { label: "Volume", value: "3.2", unit: "t" },
@@ -40,17 +33,11 @@ const timelineEvents: TimelineEvent[] = [
     },
   },
   {
-    date: "Aujourd'hui",
-    time: "07:15",
-    type: "meal",
-    title: "Petit-déjeuner protéiné",
-    desc: "487 kcal · 32g protéines",
-    cardClass: "lg-rose",
-    dot: "#F9A8C9",
+    date: "Aujourd'hui", time: "07:15", type: "meal",
+    title: "Petit-déjeuner protéiné", desc: "487 kcal · 32g protéines",
+    cardClass: "lg-rose", dot: "#F9A8C9",
     performance: {
-      type: "meal",
-      title: "Petit-déjeuner protéiné",
-      date: "Aujourd'hui · 07:15",
+      type: "meal", title: "Petit-déjeuner protéiné", date: "Aujourd'hui · 07:15",
       metrics: [
         { label: "Calories", value: "487", unit: "kcal" },
         { label: "Protéines", value: "32", unit: "g" },
@@ -61,17 +48,11 @@ const timelineEvents: TimelineEvent[] = [
     },
   },
   {
-    date: "Hier",
-    time: "23:00",
-    type: "day",
-    title: "Bilan de la journée",
-    desc: "Score 91/100 · Récupération optimale",
-    cardClass: "lg-bicolor",
-    dot: "#B2F0F0",
+    date: "Hier", time: "23:00", type: "day",
+    title: "Bilan de la journée", desc: "Score 91/100 · Récupération optimale",
+    cardClass: "lg-bicolor", dot: "#B2F0F0",
     performance: {
-      type: "day",
-      title: "Bilan du mardi",
-      date: "Hier",
+      type: "day", title: "Bilan du mardi", date: "Hier",
       metrics: [
         { label: "Pas", value: "11.2k", unit: "" },
         { label: "Sommeil", value: "7h45", unit: "" },
@@ -82,17 +63,11 @@ const timelineEvents: TimelineEvent[] = [
     },
   },
   {
-    date: "Hier",
-    time: "12:45",
-    type: "meal",
-    title: "Déjeuner équilibré",
-    desc: "612 kcal · 48g protéines",
-    cardClass: "lg-rose",
-    dot: "#F9A8C9",
+    date: "Hier", time: "12:45", type: "meal",
+    title: "Déjeuner équilibré", desc: "612 kcal · 48g protéines",
+    cardClass: "lg-rose", dot: "#F9A8C9",
     performance: {
-      type: "meal",
-      title: "Bowl protéiné",
-      date: "Hier · 12:45",
+      type: "meal", title: "Bowl protéiné", date: "Hier · 12:45",
       metrics: [
         { label: "Calories", value: "612", unit: "kcal" },
         { label: "Protéines", value: "48", unit: "g" },
@@ -105,25 +80,106 @@ const timelineEvents: TimelineEvent[] = [
 ];
 
 const eventIcons: Record<PerformanceType, typeof Dumbbell> = {
-  workout: Dumbbell,
-  meal: Apple,
-  day: Sun,
+  workout: Dumbbell, meal: Apple, day: Sun,
 };
 
+/* ─── Workout sessions data ─────────────────────────────── */
+type WorkoutCategory = "force" | "cardio" | "mobilite" | "fullbody";
+
+type WorkoutSession = {
+  id: string;
+  category: WorkoutCategory;
+  title: string;
+  subtitle: string;
+  duration: number;
+  difficulty: "Débutant" | "Intermédiaire" | "Avancé";
+  exercises: number;
+  muscles: string[];
+  accent: string;
+  icon: typeof Dumbbell;
+};
+
+const workoutSessions: WorkoutSession[] = [
+  {
+    id: "force-haut", category: "force",
+    title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
+    duration: 45, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Dos", "Épaules"],
+    accent: "#F9A8C9", icon: Dumbbell,
+  },
+  {
+    id: "fullbody-deb", category: "fullbody",
+    title: "Full Body Débutant", subtitle: "Corps complet · Sans matériel",
+    duration: 35, difficulty: "Débutant", exercises: 7,
+    muscles: ["Corps entier"],
+    accent: "#7ED8D8", icon: Layers,
+  },
+  {
+    id: "hiit", category: "cardio",
+    title: "HIIT Brûle-Graisses", subtitle: "Cardio intensif · 20 / 10 sec",
+    duration: 25, difficulty: "Avancé", exercises: 8,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#FBBF24", icon: Flame,
+  },
+  {
+    id: "jambes", category: "force",
+    title: "Jambes & Fessiers", subtitle: "Squats · Fentes · Hip Thrust",
+    duration: 50, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Quadriceps", "Fessiers"],
+    accent: "#A78BFA", icon: Dumbbell,
+  },
+  {
+    id: "mobilite", category: "mobilite",
+    title: "Mobilité Matinale", subtitle: "Yoga flow · Étirements actifs",
+    duration: 20, difficulty: "Débutant", exercises: 10,
+    muscles: ["Mobilité", "Souplesse"],
+    accent: "#34D399", icon: Wind,
+  },
+  {
+    id: "dos-biceps", category: "force",
+    title: "Dos & Biceps", subtitle: "Tractions · Rowing · Curls",
+    duration: 40, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Dos", "Biceps"],
+    accent: "#60A5FA", icon: Dumbbell,
+  },
+  {
+    id: "core", category: "fullbody",
+    title: "Core & Gainage", subtitle: "Planche · Crunchs · Relevés",
+    duration: 30, difficulty: "Intermédiaire", exercises: 8,
+    muscles: ["Abdominaux", "Lombaires"],
+    accent: "#FB923C", icon: Sparkles,
+  },
+  {
+    id: "cardio-endurance", category: "cardio",
+    title: "Endurance Cardio", subtitle: "Fractionné modéré · Zone 2",
+    duration: 40, difficulty: "Débutant", exercises: 4,
+    muscles: ["Cardio"],
+    accent: "#38BDF8", icon: Wind,
+  },
+];
+
+const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
+  { key: "tous",     label: "Tous" },
+  { key: "force",    label: "Force" },
+  { key: "cardio",   label: "Cardio" },
+  { key: "mobilite", label: "Mobilité" },
+  { key: "fullbody", label: "Full Body" },
+];
+
+const difficultyColor: Record<string, string> = {
+  "Débutant":      "#34D399",
+  "Intermédiaire": "#FBBF24",
+  "Avancé":        "#F9A8C9",
+};
+
+/* ─── UploadZone ────────────────────────────────────────── */
 type UploadState = "idle" | "uploading" | "done";
 
 function UploadZone({
-  icon: Icon,
-  label,
-  sublabel,
-  accept,
-  cardClass,
+  icon: Icon, label, sublabel, accept, cardClass,
 }: {
-  icon: typeof Camera;
-  label: string;
-  sublabel: string;
-  accept: string;
-  cardClass: string;
+  icon: typeof Camera; label: string; sublabel: string;
+  accept: string; cardClass: string;
 }) {
   const [uploadState, setUploadState] = useState<UploadState>("idle");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,17 +201,8 @@ function UploadZone({
       <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFile} />
       <AnimatePresence mode="wait">
         {uploadState === "idle" && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-3"
-          >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
-            >
+          <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
               <Icon size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
             </div>
             <div className="text-center">
@@ -163,36 +210,18 @@ function UploadZone({
               <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{sublabel}</p>
             </div>
             <div className="flex items-center gap-1 text-[10px] font-medium tracking-wider uppercase" style={{ color: "#A0AEC0" }}>
-              <Upload size={10} />
-              <span>Importer</span>
+              <Upload size={10} /><span>Importer</span>
             </div>
           </motion.div>
         )}
         {uploadState === "uploading" && (
-          <motion.div
-            key="uploading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-3 justify-center h-full"
-          >
-            <motion.div
-              className="w-10 h-10 rounded-full border-[2px]"
-              style={{ borderColor: "rgba(45,55,72,0.15)", borderTopColor: "#2D3748" }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
+          <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 justify-center h-full">
+            <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(45,55,72,0.15)", borderTopColor: "#2D3748" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
             <p className="text-xs font-medium" style={{ color: "#718096" }}>Analyse IA en cours…</p>
           </motion.div>
         )}
         {uploadState === "done" && (
-          <motion.div
-            key="done"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-2 justify-center h-full"
-          >
+          <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
             <CheckCircle size={28} strokeWidth={1.5} style={{ color: "#7ED8D8" }} />
             <p className="text-xs font-medium" style={{ color: "#2D3748" }}>Analyse terminée !</p>
           </motion.div>
@@ -202,6 +231,127 @@ function UploadZone({
   );
 }
 
+/* ─── WorkoutCard ───────────────────────────────────────── */
+function WorkoutCard({ session }: { session: WorkoutSession }) {
+  const [started, setStarted] = useState(false);
+  const Icon = session.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="flex-shrink-0 rounded-3xl overflow-hidden flex flex-col"
+      style={{
+        width: 210,
+        background: "rgba(255,255,255,0.72)",
+        backdropFilter: "blur(24px)",
+        border: "1px solid rgba(255,255,255,0.85)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 32px rgba(0,0,0,0.06)",
+      }}
+    >
+      {/* Header band */}
+      <div
+        className="px-4 pt-4 pb-3"
+        style={{ background: `${session.accent}18`, borderBottom: `1px solid ${session.accent}28` }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center"
+            style={{ background: `${session.accent}28`, border: `1px solid ${session.accent}45` }}
+          >
+            <Icon size={16} strokeWidth={1.5} style={{ color: session.accent }} />
+          </div>
+          <span
+            className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
+            style={{ background: `${difficultyColor[session.difficulty]}20`, color: difficultyColor[session.difficulty] }}
+          >
+            {session.difficulty}
+          </span>
+        </div>
+        <p className="text-sm font-semibold leading-tight mb-0.5" style={{ color: "#2D3748" }}>
+          {session.title}
+        </p>
+        <p className="text-[11px] font-light leading-snug" style={{ color: "#718096" }}>
+          {session.subtitle}
+        </p>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3 flex flex-col gap-3 flex-1">
+        {/* Stats row */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <Clock size={11} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.duration} min</span>
+          </div>
+          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.1)" }} />
+          <div className="flex items-center gap-1">
+            <Dumbbell size={11} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.exercises} exos</span>
+          </div>
+        </div>
+
+        {/* Muscles */}
+        <div className="flex flex-wrap gap-1">
+          {session.muscles.map((m) => (
+            <span
+              key={m}
+              className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+              style={{ background: "rgba(0,0,0,0.05)", color: "#718096" }}
+            >
+              {m}
+            </span>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setStarted((s) => !s)}
+          className="mt-auto w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all duration-300"
+          style={
+            started
+              ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
+              : {
+                  background: `linear-gradient(135deg, ${session.accent}cc, ${session.accent}99)`,
+                  boxShadow: `0 4px 14px ${session.accent}44`,
+                }
+          }
+        >
+          <AnimatePresence mode="wait">
+            {started ? (
+              <motion.span
+                key="started"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-1.5"
+              >
+                <CheckCircle size={12} strokeWidth={2} style={{ color: session.accent }} />
+                <span className="text-[11px] font-semibold" style={{ color: session.accent }}>En cours !</span>
+              </motion.span>
+            ) : (
+              <motion.span
+                key="idle"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-1.5"
+              >
+                <Play size={11} strokeWidth={2.5} style={{ color: "#fff" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "#fff" }}>Commencer</span>
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Animation variants ────────────────────────────────── */
 const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
@@ -211,8 +361,14 @@ const itemVariants = {
   visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
+/* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
+
+  const filteredSessions = workoutSessions.filter(
+    (s) => categoryFilter === "tous" || s.category === categoryFilter
+  );
 
   const groups = timelineEvents.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
     (acc[event.date] = acc[event.date] || []).push(event);
@@ -221,6 +377,7 @@ export default function ProgressionPage() {
 
   return (
     <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 max-w-3xl mx-auto md:mx-0">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -238,31 +395,77 @@ export default function ProgressionPage() {
         className="flex gap-3 mb-10"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <UploadZone
-          icon={Camera}
-          label="Scan Nutrition"
-          sublabel="L'IA reconnaît vos repas"
-          accept="image/*"
-          cardClass="lg-rose"
-        />
-        <UploadZone
-          icon={Video}
-          label="Analyse Posture"
-          sublabel="Feedback en temps réel"
-          accept="video/*"
-          cardClass="lg-turquoise"
-        />
+        <UploadZone icon={Camera} label="Scan Nutrition" sublabel="L'IA reconnaît vos repas" accept="image/*" cardClass="lg-rose" />
+        <UploadZone icon={Video} label="Analyse Posture" sublabel="Feedback en temps réel" accept="video/*" cardClass="lg-turquoise" />
       </motion.div>
 
-      {/* Timeline */}
+      {/* ── Séances prêtes ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mb-10"
+      >
+        {/* Section header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+              Prêt à l&apos;emploi
+            </p>
+            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances du jour</h2>
+          </div>
+          <span
+            className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+            style={{ background: "rgba(249,168,201,0.15)", color: "#F9A8C9" }}
+          >
+            {workoutSessions.length} séances
+          </span>
+        </div>
+
+        {/* Category filter */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          {categoryFilters.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setCategoryFilter(key)}
+              className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
+              style={
+                categoryFilter === key
+                  ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                  : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Cards horizontal scroll */}
+        <div className="flex gap-3 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
+          <AnimatePresence mode="popLayout">
+            {filteredSessions.map((session) => (
+              <WorkoutCard key={session.id} session={session} />
+            ))}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* ── Timeline ── */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
         className="flex flex-col gap-6"
       >
+        <motion.div variants={itemVariants}>
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "#A0AEC0" }}>
+            Historique
+          </p>
+          <h2 className="text-lg font-light mb-4" style={{ color: "#2D3748" }}>Activité récente</h2>
+        </motion.div>
+
         {Object.entries(groups).map(([date, events]) => (
           <div key={date}>
             <motion.p
@@ -282,17 +485,13 @@ export default function ProgressionPage() {
                 return (
                   <motion.div key={i} variants={itemVariants} className="flex items-start gap-4 group">
                     <div className="relative flex-shrink-0 mt-1">
-                      <div
-                        className={`${event.cardClass} lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center`}
-                      >
+                      <div className={`${event.cardClass} lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center`}>
                         <EvIcon size={14} strokeWidth={1.5} style={{ color: event.dot }} />
                       </div>
                     </div>
                     <div className="lg-surface lg-highlight relative flex-1 rounded-2xl p-4">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium" style={{ color: "#2D3748" }}>
-                          {event.title}
-                        </p>
+                        <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{event.title}</p>
                         <motion.button
                           whileTap={{ scale: 0.92 }}
                           onClick={() => setShareData(event.performance)}
