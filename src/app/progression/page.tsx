@@ -453,12 +453,17 @@ export default function ProgressionPage() {
           {/* Right fade */}
           <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
             style={{ background: "linear-gradient(to left, rgba(248,247,252,0.95) 0%, transparent 100%)" }}>
-            <motion.div
+            <motion.button
               animate={{ x: [0, 5, 0] }}
               transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+              onClick={() => scroll("right")}
+              whileTap={{ scale: 0.85 }}
+              className="cursor-pointer"
+              style={{ pointerEvents: "all", background: "none", border: "none", padding: 4 }}
+              aria-label="Défiler à droite"
             >
               <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C8B8D8" }} />
-            </motion.div>
+            </motion.button>
           </div>
 
           <div

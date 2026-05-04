@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { Gender } from "@/hooks/useProfileSettings";
 
-/* ── Muscle keys ──────────────────────────────────────────────── */
+/* ── Types ─────────────────────────────────────────────────── */
 export type MuscleKey =
   | "chest" | "left-shoulder" | "right-shoulder"
   | "left-bicep" | "right-bicep"
@@ -37,206 +37,439 @@ export const MUSCLE_MAP: Record<string, MuscleKey[]> = {
   "Souplesse": ["left-quad","right-quad","left-hamstring","right-hamstring"],
 };
 
-/* ── Path data ────────────────────────────────────────────────────
-   ViewBox: "0 0 160 200"
-   FRONT: centre x=37  (span 0-74)
-   BACK:  centre x=123 (span 86-160)
-   ─────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   SVG BODY — viewBox "0 0 200 290"
+   FRONT: figures centered at x=50  |  BACK: centered at x=150
+   Separator dashed line at x=100
+   ═══════════════════════════════════════════════════════════════ */
 
-type PathEntry = { key: MuscleKey; d: string };
+/* ── FRONT — base silhouette shapes (drawn beneath muscles) ─── */
+const FB = {
+  head: `M50,4 C58,4 64,10 64,20 C64,30 57,37 50,37
+         C43,37 36,30 36,20 C36,10 42,4 50,4 Z`,
 
-const FRONT: PathEntry[] = [
+  neck: `M44,37 C44,41 43,47 43,53
+         L57,53 C57,47 56,41 56,37
+         C54,36 52,35 50,35 C48,35 46,36 44,37 Z`,
+
+  // Main torso + legs (one closed shape — shoulders to feet)
+  torso: `M22,62 C20,78 18,98 20,114 C20,124 24,132 24,140
+          L22,144 C16,160 14,188 14,214 C14,224 16,230 20,232
+          C18,252 18,268 22,278 C24,284 30,286 36,286
+          L44,286 L44,268 L46,260 L54,260 L56,268 L56,286
+          L64,286 C70,286 76,284 78,278
+          C82,268 82,252 80,232
+          C84,230 86,224 86,214 C86,188 84,160 78,144
+          L76,140 C76,132 80,124 80,114
+          C82,98 80,78 78,62
+          C70,56 62,52 57,53 L43,53
+          C38,52 30,56 22,62 Z`,
+
+  // Upper arms (base shape; deltoid + bicep overlaid on top)
+  lArm: `M22,60 C14,64 10,76 12,90
+         C14,100 20,106 26,102
+         C32,98 34,84 32,72
+         C30,62 24,58 22,60 Z`,
+  rArm: `M78,60 C86,64 90,76 88,90
+         C86,100 80,106 74,102
+         C68,98 66,84 68,72
+         C70,62 76,58 78,60 Z`,
+
+  // Forearms — neutral (no muscle key)
+  lForearm: `M12,96 C8,108 8,128 12,140
+             C15,148 21,150 25,144
+             C29,138 30,116 28,104
+             C25,94 17,90 12,96 Z`,
+  rForearm: `M88,96 C92,108 92,128 88,140
+             C85,148 79,150 75,144
+             C71,138 70,116 72,104
+             C75,94 83,90 88,96 Z`,
+};
+
+/* ── BACK — same shapes, all x + 100 ─────────────────────── */
+const BB = {
+  head: `M150,4 C158,4 164,10 164,20 C164,30 157,37 150,37
+         C143,37 136,30 136,20 C136,10 142,4 150,4 Z`,
+
+  neck: `M144,37 C144,41 143,47 143,53
+         L157,53 C157,47 156,41 156,37
+         C154,36 152,35 150,35 C148,35 146,36 144,37 Z`,
+
+  torso: `M122,62 C120,78 118,98 120,114 C120,124 124,132 124,140
+          L122,144 C116,160 114,188 114,214 C114,224 116,230 120,232
+          C118,252 118,268 122,278 C124,284 130,286 136,286
+          L144,286 L144,268 L146,260 L154,260 L156,268 L156,286
+          L164,286 C170,286 176,284 178,278
+          C182,268 182,252 180,232
+          C184,230 186,224 186,214 C186,188 184,160 178,144
+          L176,140 C176,132 180,124 180,114
+          C182,98 180,78 178,62
+          C170,56 162,52 157,53 L143,53
+          C138,52 130,56 122,62 Z`,
+
+  lArm: `M122,60 C114,64 110,76 112,90
+         C114,100 120,106 126,102
+         C132,98 134,84 132,72
+         C130,62 124,58 122,60 Z`,
+  rArm: `M178,60 C186,64 190,76 188,90
+         C186,100 180,106 174,102
+         C168,98 166,84 168,72
+         C170,62 176,58 178,60 Z`,
+
+  lForearm: `M112,96 C108,108 108,128 112,140
+             C115,148 121,150 125,144
+             C129,138 130,116 128,104
+             C125,94 117,90 112,96 Z`,
+  rForearm: `M188,96 C192,108 192,128 188,140
+             C185,148 179,150 175,144
+             C171,138 170,116 172,104
+             C175,94 183,90 188,96 Z`,
+};
+
+/* ── Muscle path definitions ─────────────────────────────── */
+type MEntry = { d: string[]; k: MuscleKey[] };
+
+const FRONT_MUSCLES: MEntry[] = [
   // ── Anterior deltoids ──
-  { key: "left-shoulder",  d: "M16,20 C8,24 4,34 4,50 C4,58 8,62 16,60 C20,58 22,52 22,40 C22,32 18,26 16,20 Z" },
-  { key: "right-shoulder", d: "M58,20 C66,24 70,34 70,50 C70,58 66,62 58,60 C54,58 52,52 52,40 C52,32 54,26 58,20 Z" },
+  { k: ["left-shoulder"],
+    d: [`M22,60 C14,64 10,74 12,84
+         C13,90 17,96 23,96
+         C28,96 32,90 32,78
+         C32,68 28,60 22,60 Z`] },
+  { k: ["right-shoulder"],
+    d: [`M78,60 C86,64 90,74 88,84
+         C87,90 83,96 77,96
+         C72,96 68,90 68,78
+         C68,68 72,60 78,60 Z`] },
 
-  // ── Pectoralis major ──
-  { key: "chest", d: "M37,23 C34,21 25,23 17,33 C11,41 11,55 21,61 Q29,65 37,65 L37,23 Z" },
-  { key: "chest", d: "M37,23 C40,21 49,23 57,33 C63,41 63,55 53,61 Q45,65 37,65 L37,23 Z" },
+  // ── Pectoralis major (left + right halves) ──
+  { k: ["chest"],
+    d: [
+      `M44,60 C38,64 28,72 26,86
+       C24,96 28,108 38,112
+       C43,114 48,112 50,108 L50,64 Z`,
+      `M56,60 C62,64 72,72 74,86
+       C76,96 72,108 62,112
+       C57,114 52,112 50,108 L50,64 Z`,
+    ] },
 
   // ── Biceps brachii ──
-  { key: "left-bicep",  d: "M4,50 C2,54 0,66 2,80 L4,94 C8,98 17,96 19,88 L17,72 C15,61 8,56 4,50 Z" },
-  { key: "right-bicep", d: "M70,50 C72,54 74,66 72,80 L70,94 C66,98 57,96 55,88 L57,72 C59,61 66,56 70,50 Z" },
+  { k: ["left-bicep"],
+    d: [`M12,90 C8,100 8,120 12,132
+         C15,140 21,142 25,138
+         C29,132 30,112 28,100
+         C26,90 18,86 12,90 Z`] },
+  { k: ["right-bicep"],
+    d: [`M88,90 C92,100 92,120 88,132
+         C85,140 79,142 75,138
+         C71,132 70,112 72,100
+         C74,90 82,86 88,90 Z`] },
 
-  // ── External oblique ──
-  { key: "abs", d: "M17,55 C13,63 11,77 13,93 L21,97 C21,83 21,69 23,61 Z" },
-  { key: "abs", d: "M57,55 C61,63 63,77 61,93 L53,97 C53,83 53,69 51,61 Z" },
-
-  // ── Rectus abdominis (6 sections) ──
-  { key: "abs", d: "M25,65 L25,76 C25,78 27,79 31,77 L37,77 L37,65 Z" },
-  { key: "abs", d: "M49,65 L49,76 C49,78 47,79 43,77 L37,77 L37,65 Z" },
-  { key: "abs", d: "M25,79 L25,89 C25,91 27,92 31,90 L37,90 L37,79 Z" },
-  { key: "abs", d: "M49,79 L49,89 C49,91 47,92 43,90 L37,90 L37,79 Z" },
-  { key: "abs", d: "M27,91 L27,101 C27,103 29,104 33,102 L37,102 L37,91 Z" },
-  { key: "abs", d: "M47,91 L47,101 C47,103 45,104 41,102 L37,102 L37,91 Z" },
+  // ── Rectus abdominis (6 packs) + obliques ──
+  { k: ["abs"],
+    d: [
+      // Left column — 3 sections
+      "M36,110 L36,120 C38,122 42,122 46,120 L50,110 Z",
+      "M36,124 L36,134 C38,136 42,136 46,134 L50,124 Z",
+      "M37,138 L37,148 C39,150 43,150 47,148 L50,138 Z",
+      // Right column — 3 sections
+      "M64,110 L64,120 C62,122 58,122 54,120 L50,110 Z",
+      "M64,124 L64,134 C62,136 58,136 54,134 L50,124 Z",
+      "M63,138 L63,148 C61,150 57,150 53,148 L50,138 Z",
+      // Obliques
+      `M26,108 C22,118 20,130 22,142
+       L30,146 C32,134 34,120 36,112 Z`,
+      `M74,108 C78,118 80,130 78,142
+       L70,146 C68,134 66,120 64,112 Z`,
+    ] },
 
   // ── Quadriceps ──
-  { key: "left-quad",  d: "M19,103 C13,111 9,127 11,151 C13,163 23,169 35,167 L37,147 L37,105 C29,103 23,103 19,103 Z" },
-  { key: "right-quad", d: "M55,103 C61,111 65,127 63,151 C61,163 51,169 39,167 L37,147 L37,105 C45,103 51,103 55,103 Z" },
+  { k: ["left-quad"],
+    d: [`M24,142 C18,156 16,180 18,208
+         C20,220 26,226 34,222
+         C40,218 44,204 42,188
+         L40,164 C38,152 30,140 24,142 Z`] },
+  { k: ["right-quad"],
+    d: [`M76,142 C82,156 84,180 82,208
+         C80,220 74,226 66,222
+         C60,218 56,204 58,188
+         L60,164 C62,152 70,140 76,142 Z`] },
 
-  // ── Tibialis anterior ──
-  { key: "left-calf",  d: "M23,165 C19,171 17,181 21,191 L25,197 C29,197 31,195 29,189 L27,179 C25,173 23,167 23,165 Z" },
-  { key: "right-calf", d: "M51,165 C55,171 57,181 53,191 L49,197 C45,197 43,195 45,189 L47,179 C49,173 51,167 51,165 Z" },
-
-  // ── Gastrocnemius (medial head, visible from front) ──
-  { key: "left-calf",  d: "M27,165 C23,173 23,183 27,193 C29,197 33,197 35,193 L33,179 C31,171 29,167 27,165 Z" },
-  { key: "right-calf", d: "M47,165 C51,173 51,183 47,193 C45,197 41,197 39,193 L41,179 C43,171 45,167 47,165 Z" },
+  // ── Calves — tibialis anterior + gastroc medial head ──
+  { k: ["left-calf"],
+    d: [
+      `M20,224 C16,236 16,256 20,268
+       C22,276 28,278 32,274
+       L32,250 C30,238 25,226 20,224 Z`,
+      `M26,224 C22,236 22,256 26,270
+       C29,276 34,276 36,270
+       L34,250 C32,238 29,226 26,224 Z`,
+    ] },
+  { k: ["right-calf"],
+    d: [
+      `M80,224 C84,236 84,256 80,268
+       C78,276 72,278 68,274
+       L68,250 C70,238 75,226 80,224 Z`,
+      `M74,224 C78,236 78,256 74,270
+       C71,276 66,276 64,270
+       L66,250 C68,238 71,226 74,224 Z`,
+    ] },
 ];
 
-const BACK: PathEntry[] = [
-  // ── Trapezius ──
-  { key: "traps", d: "M123,18 C117,18 105,22 97,34 C93,44 97,52 107,50 C113,48 117,40 123,38 C129,40 133,48 139,50 C149,52 153,44 149,34 C141,22 129,18 123,18 Z" },
+const BACK_MUSCLES: MEntry[] = [
+  // ── Trapezius — diamond from neck to shoulder caps ──
+  { k: ["traps"],
+    d: [`M150,49 C146,49 138,53 126,61
+         C118,67 114,75 116,83
+         C118,89 126,89 136,81
+         L150,75 L164,81
+         C174,89 182,89 184,83
+         C186,75 182,67 174,61
+         C162,53 154,49 150,49 Z`] },
 
   // ── Posterior deltoids ──
-  { key: "left-shoulder",  d: "M102,21 C94,25 90,35 90,51 C90,59 94,63 102,61 C106,59 108,53 108,41 C108,33 104,27 102,21 Z" },
-  { key: "right-shoulder", d: "M144,21 C152,25 156,35 156,51 C156,59 152,63 144,61 C140,59 138,53 138,41 C138,33 142,27 144,21 Z" },
+  { k: ["left-shoulder"],
+    d: [`M122,60 C114,64 110,74 112,84
+         C113,90 117,96 123,96
+         C128,96 132,90 132,78
+         C132,68 128,60 122,60 Z`] },
+  { k: ["right-shoulder"],
+    d: [`M178,60 C186,64 190,74 188,84
+         C187,90 183,96 177,96
+         C172,96 168,90 168,78
+         C168,68 172,60 178,60 Z`] },
 
-  // ── Triceps ──
-  { key: "left-tricep",  d: "M90,51 C88,57 86,69 88,83 L90,95 C94,99 102,97 104,89 L102,73 C100,63 94,59 90,51 Z" },
-  { key: "right-tricep", d: "M156,51 C158,57 160,69 158,83 L156,95 C152,99 144,97 142,89 L144,73 C146,63 152,59 156,51 Z" },
-
-  // ── Latissimus dorsi ──
-  { key: "left-lat",  d: "M96,57 C92,67 90,85 94,103 C98,117 110,125 122,127 L123,105 L123,65 C114,61 104,57 96,57 Z" },
-  { key: "right-lat", d: "M150,57 C154,67 156,85 152,103 C148,117 136,125 124,127 L123,105 L123,65 C132,61 142,57 150,57 Z" },
+  // ── Triceps brachii ──
+  { k: ["left-tricep"],
+    d: [`M112,90 C108,100 108,120 112,132
+         C115,140 121,142 125,138
+         C129,132 130,112 128,100
+         C126,90 118,86 112,90 Z`] },
+  { k: ["right-tricep"],
+    d: [`M188,90 C192,100 192,120 188,132
+         C185,140 179,142 175,138
+         C171,132 170,112 172,100
+         C174,90 182,86 188,90 Z`] },
 
   // ── Rhomboids / mid-back ──
-  { key: "rhomboids", d: "M108,37 C106,47 106,61 108,71 L123,75 L138,71 C140,61 140,47 138,37 L123,33 Z" },
+  { k: ["rhomboids"],
+    d: [`M136,63 C132,73 132,89 136,99
+         L150,103 L164,99
+         C168,89 168,73 164,63
+         L150,59 Z`] },
 
-  // ── Erector spinae / lower back ──
-  { key: "lower-back", d: "M109,117 C105,125 103,133 107,139 L113,143 L123,145 L123,117 Z" },
-  { key: "lower-back", d: "M137,117 C141,125 143,133 139,139 L133,143 L123,145 L123,117 Z" },
+  // ── Latissimus dorsi ──
+  { k: ["left-lat"],
+    d: [`M128,75 C122,85 120,109 122,131
+         C124,145 132,153 144,153
+         L150,133 L150,81
+         C144,73 134,71 128,75 Z`] },
+  { k: ["right-lat"],
+    d: [`M172,75 C178,85 180,109 178,131
+         C176,145 168,153 156,153
+         L150,133 L150,81
+         C156,73 166,71 172,75 Z`] },
+
+  // ── Erector spinae / lower back (two columns) ──
+  { k: ["lower-back"],
+    d: [
+      `M144,133 C140,145 140,159 144,169
+       C147,175 150,177 150,173 L150,131 Z`,
+      `M156,133 C160,145 160,159 156,169
+       C153,175 150,177 150,173 L150,131 Z`,
+    ] },
 
   // ── Gluteus maximus ──
-  { key: "left-glute",  d: "M100,101 C94,111 92,129 96,149 C100,163 112,169 122,167 L123,147 L123,103 C116,101 108,101 100,101 Z" },
-  { key: "right-glute", d: "M146,101 C152,111 154,129 150,149 C146,163 134,169 124,167 L123,147 L123,103 C130,101 138,101 146,101 Z" },
+  { k: ["left-glute"],
+    d: [`M118,135 C112,149 110,169 114,187
+         C118,201 128,207 140,203
+         C148,201 152,191 150,179
+         L150,139 C144,133 130,129 118,135 Z`] },
+  { k: ["right-glute"],
+    d: [`M182,135 C188,149 190,169 186,187
+         C182,201 172,207 160,203
+         C152,201 148,191 150,179
+         L150,139 C156,133 170,129 182,135 Z`] },
 
-  // ── Biceps femoris / hamstrings ──
-  { key: "left-hamstring",  d: "M96,161 C90,169 90,183 96,195 L101,199 C109,199 115,195 115,189 L113,171 C109,163 101,161 96,161 Z" },
-  { key: "right-hamstring", d: "M150,161 C156,169 156,183 150,195 L145,199 C137,199 131,195 131,189 L133,171 C137,163 145,161 150,161 Z" },
+  // ── Hamstrings ──
+  { k: ["left-hamstring"],
+    d: [`M118,197 C114,211 114,233 118,251
+         C122,263 130,267 138,263
+         C144,259 146,243 144,225
+         L142,207 C138,197 124,193 118,197 Z`] },
+  { k: ["right-hamstring"],
+    d: [`M182,197 C186,211 186,233 182,251
+         C178,263 170,267 162,263
+         C156,259 154,243 156,225
+         L158,207 C162,197 176,193 182,197 Z`] },
 
-  // ── Gastrocnemius (prominent from back) ──
-  { key: "left-calf",  d: "M104,187 C100,193 100,203 106,207 L112,207 C116,203 114,193 110,189 L104,187 Z" },
-  { key: "right-calf", d: "M142,187 C146,193 146,203 140,207 L134,207 C130,203 132,193 136,189 L142,187 Z" },
+  // ── Gastrocnemius (back — most prominent) ──
+  { k: ["left-calf"],
+    d: [`M120,257 C116,269 118,281 124,285
+         C130,289 136,285 138,275
+         L136,261 Z`] },
+  { k: ["right-calf"],
+    d: [`M180,257 C184,269 182,281 176,285
+         C170,289 164,285 162,275
+         L164,261 Z`] },
 ];
 
-/* ── Neutral background shapes (always gray) ────────────────── */
-// These give the silhouette without being muscles
-const NEUTRAL_FRONT = {
-  head:        "M37,2 C44,2 47,7 47,14 C47,21 44,26 37,26 C30,26 27,21 27,14 C27,7 30,2 37,2 Z",
-  neck:        "M32,26 L30,32 Q37,34 44,32 L42,26 Z",
-  forearmL:    "M4,94 C2,98 0,110 2,124 L4,132 C8,134 14,132 16,128 L14,112 C12,102 6,100 4,94 Z",
-  forearmR:    "M70,94 C72,98 74,110 72,124 L70,132 C66,134 60,132 58,128 L60,112 C62,102 68,100 70,94 Z",
-};
-const NEUTRAL_BACK = {
-  head:     "M123,2 C130,2 133,7 133,14 C133,21 130,26 123,26 C116,26 113,21 113,14 C113,7 116,2 123,2 Z",
-  neck:     "M118,26 L116,32 Q123,34 130,32 L128,26 Z",
-  forearmL: "M90,95 C88,101 86,113 88,127 L90,135 C94,137 100,135 102,131 L100,115 C98,105 92,103 90,95 Z",
-  forearmR: "M156,95 C158,101 160,113 158,127 L156,135 C152,137 146,135 144,131 L146,115 C148,105 154,103 156,95 Z",
-};
-
-/* ── Component ───────────────────────────────────────────────── */
+/* ── Component ──────────────────────────────────────────────── */
 export default function BodyAvatar({
-  gender = "homme",
-  muscles = [],
-  accent = "#F9A8C9",
-  width = 140,
+  gender   = "homme",
+  muscles  = [],
+  accent   = "#F9A8C9",
+  width    = 160,
   className = "",
 }: {
-  gender?: Gender;
-  muscles?: string[];
-  accent?: string;
-  width?: number;
+  gender?:    Gender;
+  muscles?:   string[];
+  accent?:    string;
+  width?:     number;
   className?: string;
 }) {
   const active = useMemo<Set<MuscleKey>>(() => {
     const s = new Set<MuscleKey>();
-    muscles.forEach((m) => MUSCLE_MAP[m]?.forEach((k) => s.add(k)));
+    muscles.forEach(m => MUSCLE_MAP[m]?.forEach(k => s.add(k)));
     return s;
   }, [muscles]);
 
-  const on = (k: MuscleKey) => active.has(k);
-  const fill = (k: MuscleKey) => on(k) ? accent : "rgba(190,202,214,0.55)";
-  const glow = (k: MuscleKey) => on(k) ? `drop-shadow(0 0 3px ${accent}99)` : "none";
+  const uid    = accent.replace(/[^a-zA-Z0-9]/g, "");
+  const height = Math.round(width * 290 / 200);
+  const isOn   = (keys: MuscleKey[]) => keys.some(k => active.has(k));
 
-  const neutralFill  = "rgba(210,218,226,0.5)";
-  const neutralFill2 = "rgba(210,218,226,0.3)";
+  const fillActive   = `url(#ag-${uid})`;
+  const fillInactive = `url(#ig-${uid})`;
+  const fillBase     = "rgba(218,228,236,0.44)";
+  const fillNeutral  = "rgba(206,218,226,0.78)";
+  const glowFilter   = `url(#gw-${uid})`;
 
-  const height = width * (200 / 160);
+  const mStyle = (keys: MuscleKey[]): React.CSSProperties =>
+    isOn(keys) ? { filter: glowFilter } : {};
 
   return (
     <svg
-      viewBox="0 0 160 200"
+      viewBox="0 0 200 290"
       width={width}
       height={height}
       className={className}
       style={{ display: "block", overflow: "visible" }}
     >
-      {/* ── FRONT VIEW ─────────────────────────────────── */}
-      {/* Neutral parts */}
-      <path d={NEUTRAL_FRONT.head}     fill={neutralFill} />
-      <path d={NEUTRAL_FRONT.neck}     fill={neutralFill2} />
-      <path d={NEUTRAL_FRONT.forearmL} fill={neutralFill2} />
-      <path d={NEUTRAL_FRONT.forearmR} fill={neutralFill2} />
+      <defs>
+        {/* Active muscle — top-to-bottom gradient */}
+        <linearGradient id={`ag-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={accent} stopOpacity="0.58" />
+          <stop offset="100%" stopColor={accent} stopOpacity="0.87" />
+        </linearGradient>
 
-      {/* Female breast overlay under pecs */}
+        {/* Inactive muscle — soft blue-gray gradient */}
+        <linearGradient id={`ig-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="rgb(204,216,226)" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="rgb(183,200,214)" stopOpacity="0.70" />
+        </linearGradient>
+
+        {/* Glow / bloom on active muscles */}
+        <filter id={`gw-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* ══════════ FRONT ══════════ */}
+
+      {/* Silhouette base (faintest layer) */}
+      <path d={FB.torso}    fill={fillBase} />
+      <path d={FB.lArm}     fill={fillBase} />
+      <path d={FB.rArm}     fill={fillBase} />
+
+      {/* Neutral parts — always the same light gray */}
+      <path d={FB.head}     fill={fillNeutral} />
+      <path d={FB.neck}     fill={fillNeutral} />
+      <path d={FB.lForearm} fill={fillNeutral} />
+      <path d={FB.rForearm} fill={fillNeutral} />
+
+      {/* Front muscle paths */}
+      {FRONT_MUSCLES.map((e, i) =>
+        e.d.map((d, j) => (
+          <path
+            key={`f${i}-${j}`}
+            d={d}
+            fill={isOn(e.k) ? fillActive : fillInactive}
+            style={mStyle(e.k)}
+          />
+        ))
+      )}
+
+      {/* Female breast overlay on chest area */}
       {gender === "femme" && (
         <>
-          <ellipse cx="30" cy="52" rx="8" ry="7"
-            fill={on("chest") ? accent : "rgba(200,212,220,0.4)"} opacity={0.6} />
-          <ellipse cx="44" cy="52" rx="8" ry="7"
-            fill={on("chest") ? accent : "rgba(200,212,220,0.4)"} opacity={0.6} />
+          <ellipse cx="40" cy="84" rx="9" ry="7"
+            fill={isOn(["chest"]) ? fillActive : fillInactive}
+            style={mStyle(["chest"])} opacity={0.72} />
+          <ellipse cx="60" cy="84" rx="9" ry="7"
+            fill={isOn(["chest"]) ? fillActive : fillInactive}
+            style={mStyle(["chest"])} opacity={0.72} />
         </>
       )}
 
-      {/* Highlighted muscles */}
-      {FRONT.map((p, i) => (
-        <path
-          key={`f${i}`}
-          d={p.d}
-          fill={fill(p.key)}
-          style={{ filter: glow(p.key), transition: "fill 0.3s ease" }}
-        />
-      ))}
-
-      {/* Front label */}
-      <text x="37" y="208" textAnchor="middle"
-        style={{ fontSize: 7, fill: "rgba(160,174,192,0.8)", fontFamily: "sans-serif", letterSpacing: "0.1em" }}>
+      {/* AVANT label */}
+      <text x="50" y="289" textAnchor="middle" style={{
+        fontSize: 6, fill: "rgba(144,160,174,0.85)",
+        fontFamily: "system-ui,sans-serif",
+        letterSpacing: "0.14em", fontWeight: 700,
+      }}>
         AVANT
       </text>
 
-      {/* ── BACK VIEW ──────────────────────────────────── */}
-      {/* Neutral parts */}
-      <path d={NEUTRAL_BACK.head}     fill={neutralFill} />
-      <path d={NEUTRAL_BACK.neck}     fill={neutralFill2} />
-      <path d={NEUTRAL_BACK.forearmL} fill={neutralFill2} />
-      <path d={NEUTRAL_BACK.forearmR} fill={neutralFill2} />
+      {/* Dashed separator */}
+      <line x1="100" y1="8" x2="100" y2="284"
+        stroke="rgba(180,196,210,0.28)"
+        strokeWidth="0.8"
+        strokeDasharray="4,5" />
 
-      {/* Female glute adjustment */}
+      {/* ══════════ BACK ══════════ */}
+
+      <path d={BB.torso}    fill={fillBase} />
+      <path d={BB.lArm}     fill={fillBase} />
+      <path d={BB.rArm}     fill={fillBase} />
+
+      <path d={BB.head}     fill={fillNeutral} />
+      <path d={BB.neck}     fill={fillNeutral} />
+      <path d={BB.lForearm} fill={fillNeutral} />
+      <path d={BB.rForearm} fill={fillNeutral} />
+
+      {BACK_MUSCLES.map((e, i) =>
+        e.d.map((d, j) => (
+          <path
+            key={`b${i}-${j}`}
+            d={d}
+            fill={isOn(e.k) ? fillActive : fillInactive}
+            style={mStyle(e.k)}
+          />
+        ))
+      )}
+
+      {/* Female wider glute cue */}
       {gender === "femme" && (
         <>
-          <ellipse cx="110" cy="138" rx="14" ry="10"
-            fill={on("left-glute") ? accent : "rgba(200,212,220,0.35)"} opacity={0.5} />
-          <ellipse cx="136" cy="138" rx="14" ry="10"
-            fill={on("right-glute") ? accent : "rgba(200,212,220,0.35)"} opacity={0.5} />
+          <ellipse cx="137" cy="168" rx="14" ry="10"
+            fill={isOn(["left-glute"]) ? fillActive : fillInactive}
+            style={mStyle(["left-glute"])} opacity={0.48} />
+          <ellipse cx="163" cy="168" rx="14" ry="10"
+            fill={isOn(["right-glute"]) ? fillActive : fillInactive}
+            style={mStyle(["right-glute"])} opacity={0.48} />
         </>
       )}
 
-      {/* Highlighted muscles */}
-      {BACK.map((p, i) => (
-        <path
-          key={`b${i}`}
-          d={p.d}
-          fill={fill(p.key)}
-          style={{ filter: glow(p.key), transition: "fill 0.3s ease" }}
-        />
-      ))}
-
-      {/* Separator line */}
-      <line x1="80" y1="10" x2="80" y2="196" stroke="rgba(200,210,220,0.4)" strokeWidth="1" strokeDasharray="3,4" />
-
-      {/* Back label */}
-      <text x="123" y="208" textAnchor="middle"
-        style={{ fontSize: 7, fill: "rgba(160,174,192,0.8)", fontFamily: "sans-serif", letterSpacing: "0.1em" }}>
+      {/* ARRIÈRE label */}
+      <text x="150" y="289" textAnchor="middle" style={{
+        fontSize: 6, fill: "rgba(144,160,174,0.85)",
+        fontFamily: "system-ui,sans-serif",
+        letterSpacing: "0.14em", fontWeight: 700,
+      }}>
         ARRIÈRE
       </text>
     </svg>
