@@ -405,6 +405,41 @@ export default function ProfilPage() {
             <Edit2 size={15} strokeWidth={1.5} style={{ color: "#2D3748" }} />
           </motion.button>
         </div>
+
+        {/* ── Abonnés / Abonnements ── */}
+        <div
+          className="flex items-center mt-5 pt-4 relative z-10"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.55)" }}
+        >
+          {[
+            { label: "Publications", value: "48" },
+            { label: "Abonnés",      value: "1 284" },
+            { label: "Abonnements",  value: "342" },
+          ].map(({ label, value }, i) => (
+            <div key={label} className="flex items-center flex-1">
+              {i > 0 && (
+                <div className="w-px self-stretch mx-2" style={{ background: "rgba(255,255,255,0.5)" }} />
+              )}
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.93 }}
+                onClick={() => showToast(`${value} ${label}`)}
+                className="flex-1 flex flex-col items-center py-1 rounded-xl cursor-pointer"
+                style={{ background: "transparent" }}
+              >
+                <span className="text-xl font-light leading-tight" style={{ color: "#2D3748" }}>
+                  {value}
+                </span>
+                <span
+                  className="text-[9px] font-semibold tracking-wider uppercase mt-0.5"
+                  style={{ color: "#A0AEC0" }}
+                >
+                  {label}
+                </span>
+              </motion.button>
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       {/* Stats */}
