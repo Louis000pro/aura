@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars } from "lucide-react";
+import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
@@ -195,6 +195,236 @@ function EditProfileModal({ name, email, onSave, onClose }: {
   );
 }
 
+/* ─────────────── Follow list data ─────────────── */
+type FollowUser = {
+  id: number;
+  name: string;
+  handle: string;
+  initials: string;
+  color: string; // gradient for avatar bg
+  following: boolean; // do WE follow them
+};
+
+const MOCK_FOLLOWERS: FollowUser[] = [
+  { id: 1,  name: "Lucas Martin",    handle: "lucas.fit",     initials: "LM", color: "linear-gradient(135deg,#FFD6E7,#B2F0F0)", following: true  },
+  { id: 2,  name: "Emma Dupont",     handle: "emma_lifting",  initials: "ED", color: "linear-gradient(135deg,#E0FFFF,#B2F0F0)", following: false },
+  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#FFF0F5,#FFD6E7)", following: true  },
+  { id: 4,  name: "Chloé Bernard",   handle: "chloe.b",       initials: "CB", color: "linear-gradient(135deg,#E0FFFF,#FFF0F5)", following: false },
+  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#FFD6E7,#E0FFFF)", following: true  },
+  { id: 6,  name: "Léa Rousseau",    handle: "lea.rousseau",  initials: "LR", color: "linear-gradient(135deg,#B2F0F0,#FFF0F5)", following: false },
+  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#FFF0F5,#B2F0F0)", following: true  },
+  { id: 8,  name: "Inès Laurent",    handle: "ines.fit",      initials: "IL", color: "linear-gradient(135deg,#FFD6E7,#FFF0F5)", following: false },
+  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#E0FFFF,#FFD6E7)", following: true  },
+  { id: 10, name: "Zoé Garcia",      handle: "zoefit",        initials: "ZG", color: "linear-gradient(135deg,#FFF0F5,#E0FFFF)", following: false },
+  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#B2F0F0,#FFD6E7)", following: true  },
+  { id: 12, name: "Manon Thomas",    handle: "manonfit",      initials: "MT", color: "linear-gradient(135deg,#FFD6E7,#B2F0F0)", following: false },
+];
+
+const MOCK_FOLLOWING: FollowUser[] = [
+  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#FFF0F5,#FFD6E7)", following: true  },
+  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#FFD6E7,#E0FFFF)", following: true  },
+  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#FFF0F5,#B2F0F0)", following: true  },
+  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#E0FFFF,#FFD6E7)", following: true  },
+  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#B2F0F0,#FFD6E7)", following: true  },
+  { id: 13, name: "Sophie Michel",   handle: "sophiefit",     initials: "SM", color: "linear-gradient(135deg,#FFD6E7,#FFF0F5)", following: true  },
+  { id: 14, name: "Romain Blanc",    handle: "romain.blanc",  initials: "RB", color: "linear-gradient(135deg,#E0FFFF,#B2F0F0)", following: true  },
+  { id: 15, name: "Alice Fontaine",  handle: "alice.gains",   initials: "AF", color: "linear-gradient(135deg,#FFF0F5,#FFD6E7)", following: true  },
+];
+
+/* ─────────────── Follow List Modal ─────────────── */
+function FollowListModal({
+  type,
+  onClose,
+}: {
+  type: "Abonnés" | "Abonnements";
+  onClose: () => void;
+}) {
+  const rawList = type === "Abonnés" ? MOCK_FOLLOWERS : MOCK_FOLLOWING;
+  const [query, setQuery] = useState("");
+  const [followed, setFollowed] = useState<Set<number>>(
+    () => new Set(rawList.filter((u) => u.following).map((u) => u.id))
+  );
+
+  const list = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    if (!q) return rawList;
+    return rawList.filter(
+      (u) => u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)
+    );
+  }, [rawList, query]);
+
+  const toggle = (id: number) =>
+    setFollowed((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: "rgba(0,0,0,0.18)", backdropFilter: "blur(10px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+        className="w-full max-w-md rounded-t-3xl overflow-hidden flex flex-col"
+        style={{
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(40px)",
+          boxShadow: "0 -12px 48px rgba(249,168,201,0.18)",
+          maxHeight: "82vh",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pb-3 pt-1">
+          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>{type}</h2>
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(0,0,0,0.06)" }}
+          >
+            <X size={14} strokeWidth={2.5} style={{ color: "#718096" }} />
+          </motion.button>
+        </div>
+
+        {/* Search */}
+        <div className="px-4 pb-3">
+          <div
+            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl"
+            style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.06)" }}
+          >
+            <Search size={13} strokeWidth={2.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher…"
+              className="flex-1 text-sm bg-transparent outline-none"
+              style={{ color: "#2D3748" }}
+            />
+            <AnimatePresence>
+              {query && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.7 }}
+                  onClick={() => setQuery("")}
+                  className="cursor-pointer"
+                >
+                  <X size={12} strokeWidth={2.5} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div className="h-px mx-4" style={{ background: "rgba(0,0,0,0.06)" }} />
+
+        {/* List */}
+        <div className="overflow-y-auto flex-1 py-2" style={{ scrollbarWidth: "none" }}>
+          <AnimatePresence mode="popLayout">
+            {list.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center py-16 gap-2"
+              >
+                <Search size={28} strokeWidth={1.2} style={{ color: "#D0D8E0" }} />
+                <p className="text-sm" style={{ color: "#A0AEC0" }}>Aucun résultat</p>
+              </motion.div>
+            ) : (
+              list.map((user, i) => {
+                const isFollowing = followed.has(user.id);
+                return (
+                  <motion.div
+                    key={user.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ delay: i * 0.03, duration: 0.25 }}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                  >
+                    {/* Avatar */}
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                      style={{ background: user.color, color: "#2D3748" }}
+                    >
+                      {user.initials}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold leading-tight truncate" style={{ color: "#2D3748" }}>
+                        {user.name}
+                      </p>
+                      <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>
+                        @{user.handle}
+                      </p>
+                    </div>
+
+                    {/* Follow button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => toggle(user.id)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0 transition-all duration-200"
+                      style={
+                        isFollowing
+                          ? {
+                              background: "rgba(0,0,0,0.05)",
+                              color: "#718096",
+                              border: "1px solid rgba(0,0,0,0.08)",
+                            }
+                          : {
+                              background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+                              color: "#2D3748",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                            }
+                      }
+                    >
+                      {isFollowing ? (
+                        <>
+                          <UserCheck size={11} strokeWidth={2.5} />
+                          Abonné
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={11} strokeWidth={2.5} />
+                          Suivre
+                        </>
+                      )}
+                    </motion.button>
+                  </motion.div>
+                );
+              })
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Safe area bottom */}
+        <div className="pb-safe h-6" />
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function PrivacyModal({ onClose }: { onClose: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
@@ -272,6 +502,7 @@ export default function ProfilPage() {
   const router = useRouter();
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [profileName, setProfileName] = useState(user?.name || "Marie Dubois");
@@ -412,10 +643,10 @@ export default function ProfilPage() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.55)" }}
         >
           {[
-            { label: "Publications", value: "48" },
-            { label: "Abonnés",      value: "1 284" },
-            { label: "Abonnements",  value: "342" },
-          ].map(({ label, value }, i) => (
+            { label: "Publications",  value: "48",     clickable: false },
+            { label: "Abonnés",       value: "1 284",  clickable: true  },
+            { label: "Abonnements",   value: "342",    clickable: true  },
+          ].map(({ label, value, clickable }, i) => (
             <div key={label} className="flex items-center flex-1">
               {i > 0 && (
                 <div className="w-px self-stretch mx-2" style={{ background: "rgba(255,255,255,0.5)" }} />
@@ -423,7 +654,11 @@ export default function ProfilPage() {
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.93 }}
-                onClick={() => showToast(`${value} ${label}`)}
+                onClick={() =>
+                  clickable
+                    ? setShowFollowList(label as "Abonnés" | "Abonnements")
+                    : showToast(`${value} ${label}`)
+                }
                 className="flex-1 flex flex-col items-center py-1 rounded-xl cursor-pointer"
                 style={{ background: "transparent" }}
               >
@@ -432,7 +667,7 @@ export default function ProfilPage() {
                 </span>
                 <span
                   className="text-[9px] font-semibold tracking-wider uppercase mt-0.5"
-                  style={{ color: "#A0AEC0" }}
+                  style={{ color: clickable ? "#F9A8C9" : "#A0AEC0" }}
                 >
                   {label}
                 </span>
@@ -681,6 +916,12 @@ export default function ProfilPage() {
           />
         )}
         {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
+        {showFollowList && (
+          <FollowListModal
+            type={showFollowList}
+            onClose={() => setShowFollowList(null)}
+          />
+        )}
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
 
