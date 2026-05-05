@@ -727,18 +727,20 @@ export default function ProfilPage() {
               <PerformanceCard data={perf} size="sm" interactive />
               {/* Share button */}
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setShareData(perf)}
-                className="absolute bottom-3 right-3 w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                whileHover={{ scale: 1.08, y: -1 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={(e) => { e.stopPropagation(); setShareData(perf); }}
+                className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
                 style={{
-                  background: "rgba(255,255,255,0.16)",
-                  border: "1px solid rgba(255,255,255,0.28)",
-                  backdropFilter: "blur(8px)",
+                  background: "linear-gradient(135deg, rgba(255,214,231,0.92) 0%, rgba(178,240,240,0.92) 100%)",
+                  border: "1px solid rgba(255,255,255,0.7)",
+                  backdropFilter: "blur(12px)",
+                  boxShadow: "0 2px 8px rgba(249,168,201,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
                 }}
                 aria-label="Partager"
               >
-                <Share2 size={12} strokeWidth={1.5} style={{ color: "#FFFFFF" }} />
+                <Share2 size={11} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+                <span className="text-[10px] font-semibold" style={{ color: "#2D3748" }}>Partager</span>
               </motion.button>
             </motion.div>
           ))}
@@ -925,14 +927,12 @@ export default function ProfilPage() {
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
 
-      {/* Share Performance Modal */}
-      {shareData && (
-        <SharePerformanceModal
-          open={!!shareData}
-          onClose={() => setShareData(null)}
-          data={shareData}
-        />
-      )}
+      {/* Share Performance Modal — toujours monté pour que AnimatePresence détecte open false→true */}
+      <SharePerformanceModal
+        open={!!shareData}
+        onClose={() => setShareData(null)}
+        data={shareData ?? samplePerformances[0]}
+      />
     </div>
   );
 }
