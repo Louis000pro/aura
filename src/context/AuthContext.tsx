@@ -2,7 +2,12 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 
-type User = { name: string; email: string };
+export type User = {
+  pseudo: string;
+  name: string;
+  lastName: string;
+  email: string;
+};
 
 type AuthCtx = {
   user: User | null;
