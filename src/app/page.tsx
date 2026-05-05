@@ -279,15 +279,7 @@ const quickActionsConfig = [
 ───────────────────────────────────────────────── */
 type Particle = { id: number; x: number; y: number; size: number; delay: number; duration: number; opacity: number };
 
-const floatingMetrics = [
-  { emoji: "💪", label: "Force", value: "+23%",     color: "#A78BFA", tx: -185, ty: -70,  delay: 0 },
-  { emoji: "🔥", label: "Calories", value: "1 847 kcal", color: "#D4A843", tx: 145, ty: -90,  delay: 0.3 },
-  { emoji: "❤️", label: "FC",    value: "68 bpm",   color: "#A78BFA", tx: -205, ty: 55,   delay: 0.6 },
-  { emoji: "🏆", label: "Score", value: "91 / 100", color: "#D4A843", tx: 155, ty: 65,   delay: 0.9 },
-  { emoji: "😴", label: "Sommeil", value: "7h 24",  color: "#A78BFA", tx: -18,  ty: 148,  delay: 1.2 },
-];
-
-const heroWords = ["Devenez", "inarrêtable."];
+const heroLines = ["Devenez", "inarrêtable."];
 
 const features = [
   { icon: Dumbbell, label: "Musculation",  desc: "Suivi musculaire précis" },
@@ -302,238 +294,196 @@ function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
-    setParticles(Array.from({ length: 55 }, (_, i) => ({
+    setParticles(Array.from({ length: 60 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: i < 15 ? 2 + Math.random() * 3 : i < 35 ? 4 + Math.random() * 6 : 8 + Math.random() * 14,
-      delay: Math.random() * 5,
-      duration: 4 + Math.random() * 6,
-      opacity: i < 15 ? 0.9 : i < 35 ? 0.6 : 0.3,
+      size: i < 20 ? 1.5 + Math.random() * 2 : i < 45 ? 3 + Math.random() * 5 : 7 + Math.random() * 12,
+      delay: Math.random() * 6,
+      duration: 5 + Math.random() * 7,
+      opacity: i < 20 ? 0.85 : i < 45 ? 0.55 : 0.25,
     })));
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}>
+    <div className="relative w-full min-h-screen flex flex-col overflow-hidden" style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}>
 
       {/* ── Grands blobs ambiants ── */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-15%", left: "-10%", width: 700, height: 700, background: "rgba(196,170,255,0.38)", filter: "blur(90px)" }}
-        animate={{ scale: [1,1.18,1], x: [-20,35,-20], y: [-10,22,-10], borderRadius: ["60% 40% 30% 70%/60% 30% 70% 40%","30% 60% 70% 40%/50% 60% 30% 60%","60% 40% 30% 70%/60% 30% 70% 40%"] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} />
+        style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)" }}
+        animate={{ scale: [1,1.15,1], x: [-25,40,-25], y: [-15,25,-15], borderRadius: ["60% 40% 30% 70%/60% 30% 70% 40%","30% 60% 70% 40%/50% 60% 30% 60%","60% 40% 30% 70%/60% 30% 70% 40%"] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-15%", right: "-10%", width: 650, height: 650, background: "rgba(245,220,130,0.35)", filter: "blur(90px)" }}
-        animate={{ scale: [1,1.15,1], x: [20,-30,20], y: [15,-25,15], borderRadius: ["50% 60% 30% 60%/30% 60% 70% 40%","60% 30% 40% 60%/70% 40% 60% 30%","50% 60% 30% 60%/30% 60% 70% 40%"] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} />
+        style={{ bottom: "-20%", right: "-12%", width: 750, height: 750, background: "rgba(245,220,130,0.3)", filter: "blur(100px)" }}
+        animate={{ scale: [1,1.12,1], x: [25,-35,25], y: [20,-30,20], borderRadius: ["50% 60% 30% 60%/30% 60% 70% 40%","60% 30% 40% 60%/70% 40% 60% 30%","50% 60% 30% 60%/30% 60% 70% 40%"] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "30%", left: "55%", width: 380, height: 380, background: "rgba(167,139,250,0.2)", filter: "blur(70px)" }}
-        animate={{ scale: [1,1.35,1], x: [-15,20,-15] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
+        style={{ top: "20%", right: "8%", width: 420, height: 420, background: "rgba(167,139,250,0.18)", filter: "blur(80px)" }}
+        animate={{ scale: [1,1.3,1], y: [0,40,0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 4 }} />
 
-      {/* ── Champ d'étoiles / particules ── */}
+      {/* ── Particules ── */}
       {mounted && particles.map(({ id, x, y, size, delay, duration, opacity }) => (
         <motion.div key={id} className="absolute rounded-full pointer-events-none"
           style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, background: id % 3 === 0 ? `rgba(167,139,250,${opacity})` : id % 3 === 1 ? `rgba(212,168,67,${opacity})` : `rgba(212,192,255,${opacity * 0.8})` }}
-          animate={{ y: ["-18px","18px","-18px"], x: ["-8px","8px","-8px"], opacity: [opacity * 0.2, opacity, opacity * 0.2], scale: [1,1.3,1] }}
+          animate={{ y: ["-20px","20px","-20px"], x: ["-8px","8px","-8px"], opacity: [opacity * 0.15, opacity, opacity * 0.15], scale: [1,1.4,1] }}
           transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }} />
       ))}
 
-      {/* ── Anneaux rotatifs larges ── */}
-      {[600, 480, 360].map((size, i) => (
+      {/* ── Anneaux rotatifs ── */}
+      {[700, 560, 420].map((size, i) => (
         <motion.div key={size} className="absolute pointer-events-none rounded-full"
-          style={{ width: size, height: size, border: `1px solid rgba(${i % 2 === 0 ? "167,139,250" : "212,168,67"},${0.12 - i * 0.03})` }}
+          style={{ width: size, height: size, border: `1px solid rgba(${i % 2 === 0 ? "167,139,250" : "212,168,67"},${0.1 - i * 0.025})`, top: "50%", left: "50%", marginTop: -size/2, marginLeft: -size/2 }}
           animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
-          transition={{ duration: 30 + i * 10, repeat: Infinity, ease: "linear" }} />
+          transition={{ duration: 35 + i * 12, repeat: Infinity, ease: "linear" }} />
       ))}
 
-      {/* ── Contenu principal ── */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 w-full" style={{ maxWidth: 900 }}>
+      {/* ── Nav bar ── */}
+      <motion.nav
+        initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+        className="relative z-20 flex items-center justify-between px-6 md:px-10 py-5"
+      >
+        <motion.span className="text-2xl font-extralight tracking-[0.15em]" style={{ color: "#2D3748" }}
+          animate={{ opacity: [0.8, 1, 0.8] }} transition={{ duration: 4, repeat: Infinity }}>
+          Aura
+        </motion.span>
+        <div className="flex items-center gap-3">
+          <Link href="/auth?mode=login">
+            <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
+              className="px-4 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
+              style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4A5568", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
+              Se connecter
+            </motion.div>
+          </Link>
+          <Link href="/auth?mode=signup">
+            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}
+              className="relative px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
+              style={{ background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
+              <motion.div className="absolute inset-0 pointer-events-none"
+                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.3) 50%,transparent 65%)" }}
+                animate={{ x: ["-120%","120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }} />
+              <span className="relative z-10 flex items-center gap-1.5">
+                Commencer gratuitement
+                <ArrowRight size={14} strokeWidth={2.5} />
+              </span>
+            </motion.div>
+          </Link>
+        </div>
+      </motion.nav>
 
-        {/* Badge animé */}
+      {/* ── Hero principal ── */}
+      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 text-center" style={{ paddingTop: "2vh", paddingBottom: "4vh" }}>
+
+        {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.1, type: "spring" }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8"
-          style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(16px)", border: "1px solid rgba(167,139,250,0.3)", boxShadow: "0 4px 20px rgba(167,139,250,0.15)" }}
+          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 md:mb-10"
+          style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(20px)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 20px rgba(167,139,250,0.12)" }}
         >
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#A78BFA" }} animate={{ opacity: [1,0.3,1] }} transition={{ duration: 1.4, repeat: Infinity }} />
-          <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#2D3748" }}>IA × Musculation × Nutrition</span>
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#D4A843" }} animate={{ opacity: [0.3,1,0.3] }} transition={{ duration: 1.4, repeat: Infinity }} />
+          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#A78BFA" }} animate={{ opacity: [1,0.3,1], scale: [1,1.4,1] }} transition={{ duration: 1.6, repeat: Infinity }} />
+          <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#5A6177" }}>IA · Musculation · Nutrition</span>
+          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#D4A843" }} animate={{ opacity: [0.3,1,0.3], scale: [1.4,1,1.4] }} transition={{ duration: 1.6, repeat: Infinity }} />
         </motion.div>
 
-        {/* Titre principal — mot par mot */}
-        <div className="mb-5 overflow-hidden">
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-            {heroWords.map((word, wi) => (
-              <motion.span key={wi}
-                initial={{ opacity: 0, y: 60, skewX: -8 }}
-                animate={{ opacity: 1, y: 0, skewX: 0 }}
-                transition={{ duration: 0.75, delay: 0.25 + wi * 0.18, ease: [0.22, 1, 0.36, 1] }}
-                className="block text-6xl md:text-8xl font-extralight leading-none"
-                style={{ color: wi === 1 ? "transparent" : "#2D3748", backgroundClip: wi === 1 ? "text" : undefined, WebkitBackgroundClip: wi === 1 ? "text" : undefined, backgroundImage: wi === 1 ? "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)" : undefined }}
+        {/* Titre — ligne par ligne */}
+        <div className="mb-6 md:mb-8">
+          {heroLines.map((line, li) => (
+            <div key={li} className="overflow-hidden">
+              <motion.div
+                initial={{ y: "110%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.9, delay: 0.3 + li * 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="text-[clamp(3.2rem,10vw,7rem)] font-extralight leading-[0.95] tracking-tight"
+                style={li === 1 ? { backgroundImage: "linear-gradient(135deg,#A78BFA 0%,#C4902A 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" } : { color: "#1A202C" }}
               >
-                {word}
-              </motion.span>
-            ))}
-          </div>
+                {line}
+              </motion.div>
+            </div>
+          ))}
         </div>
 
         {/* Sous-titre */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65, duration: 0.6 }}
-          className="text-lg md:text-xl font-light mb-16 max-w-lg leading-relaxed"
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.6 }}
+          className="text-base md:text-lg font-light max-w-md leading-relaxed mb-10 md:mb-12"
           style={{ color: "#718096" }}
         >
-          Coach IA vocal. Suivi musculaire. Nutrition adaptative.<br />
-          <span style={{ color: "#A78BFA", fontWeight: 500 }}>Tout ce qu'il faut pour performer.</span>
+          Ton coach IA vocal, ton suivi musculaire, ta nutrition —<br />
+          <span style={{ color: "#A78BFA", fontWeight: 500 }}>tout au même endroit.</span>
         </motion.p>
 
-        {/* ── ORB CENTRAL + métriques orbitales ── */}
+        {/* ── Orb central ── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex items-center justify-center mb-16"
-          style={{ width: 300, height: 300 }}
+          initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="relative flex items-center justify-center mb-10 md:mb-14"
+          style={{ width: 280, height: 280 }}
         >
-          {/* Pulse rings de l'orbe */}
-          {[0,1,2,3].map((i) => (
+          {/* Pulse rings */}
+          {[0,1,2,3,4].map((i) => (
             <motion.div key={i} className="absolute rounded-full pointer-events-none"
-              style={{ inset: -(20 + i * 22), border: `1px solid rgba(167,139,250,${0.3 - i * 0.06})` }}
-              animate={{ scale: [1, 1.08, 1], opacity: [0.5 - i * 0.1, 0.05, 0.5 - i * 0.1] }}
-              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.55, ease: "easeInOut" }} />
+              style={{ inset: -(18 + i * 20), border: `1px solid rgba(167,139,250,${0.28 - i * 0.05})` }}
+              animate={{ scale: [1, 1.06, 1], opacity: [0.45 - i * 0.08, 0.04, 0.45 - i * 0.08] }}
+              transition={{ duration: 2.8, repeat: Infinity, delay: i * 0.5, ease: "easeInOut" }} />
           ))}
 
-          {/* Halo extérieur */}
+          {/* Halo */}
           <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ inset: -50, background: "radial-gradient(circle, rgba(167,139,250,0.15) 0%, rgba(212,168,67,0.08) 50%, transparent 70%)", filter: "blur(8px)" }}
-            animate={{ scale: [1, 1.12, 1], opacity: [0.7, 0.4, 0.7] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} />
+            style={{ inset: -60, background: "radial-gradient(circle, rgba(167,139,250,0.18) 0%, rgba(212,168,67,0.1) 45%, transparent 70%)", filter: "blur(12px)" }}
+            animate={{ scale: [1, 1.15, 1], opacity: [0.8, 0.45, 0.8] }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
 
-          {/* L'orbe lui-même */}
+          {/* Orbe */}
           <motion.div
-            animate={{ scale: [1, 1.03, 1], boxShadow: [
-              "0 0 80px 20px rgba(167,139,250,0.35), 0 0 160px 40px rgba(212,168,67,0.18), inset 0 1px 0 rgba(255,255,255,0.8)",
-              "0 0 120px 30px rgba(212,168,67,0.35), 0 0 200px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.8)",
-              "0 0 80px 20px rgba(167,139,250,0.35), 0 0 160px 40px rgba(212,168,67,0.18), inset 0 1px 0 rgba(255,255,255,0.8)",
+            animate={{ scale: [1, 1.04, 1], boxShadow: [
+              "0 0 100px 25px rgba(167,139,250,0.38), 0 0 200px 50px rgba(212,168,67,0.18), inset 0 2px 0 rgba(255,255,255,0.8)",
+              "0 0 140px 35px rgba(212,168,67,0.38), 0 0 240px 70px rgba(167,139,250,0.18), inset 0 2px 0 rgba(255,255,255,0.8)",
+              "0 0 100px 25px rgba(167,139,250,0.38), 0 0 200px 50px rgba(212,168,67,0.18), inset 0 2px 0 rgba(255,255,255,0.8)",
             ]}}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
             className="relative rounded-full flex items-center justify-center"
-            style={{ width: 200, height: 200, background: "radial-gradient(circle at 35% 35%, rgba(212,192,255,0.95) 0%, rgba(167,139,250,0.85) 40%, rgba(212,168,67,0.7) 80%, rgba(245,230,163,0.9) 100%)" }}
+            style={{ width: 220, height: 220, background: "radial-gradient(circle at 32% 32%, rgba(220,205,255,0.98) 0%, rgba(167,139,250,0.88) 38%, rgba(212,168,67,0.72) 75%, rgba(245,230,163,0.92) 100%)" }}
           >
-            {/* Anneau intérieur rotatif */}
-            <motion.div className="absolute inset-4 rounded-full pointer-events-none"
-              style={{ border: "1px dashed rgba(255,255,255,0.4)" }}
-              animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }} />
-            <motion.div className="absolute inset-8 rounded-full pointer-events-none"
-              style={{ border: "1px dashed rgba(255,255,255,0.25)" }}
-              animate={{ rotate: -360 }} transition={{ duration: 12, repeat: Infinity, ease: "linear" }} />
-            {/* Lettre */}
-            <motion.span className="text-6xl font-extralight relative z-10" style={{ color: "rgba(45,55,72,0.9)" }}
-              animate={{ opacity: [0.7, 1, 0.7] }} transition={{ duration: 3, repeat: Infinity }}>
+            <motion.div className="absolute inset-5 rounded-full pointer-events-none" style={{ border: "1px dashed rgba(255,255,255,0.45)" }}
+              animate={{ rotate: 360 }} transition={{ duration: 9, repeat: Infinity, ease: "linear" }} />
+            <motion.div className="absolute inset-10 rounded-full pointer-events-none" style={{ border: "1px dashed rgba(255,255,255,0.28)" }}
+              animate={{ rotate: -360 }} transition={{ duration: 14, repeat: Infinity, ease: "linear" }} />
+            <motion.span className="text-7xl font-extralight relative z-10" style={{ color: "rgba(45,55,72,0.88)" }}
+              animate={{ opacity: [0.65, 1, 0.65] }} transition={{ duration: 3.5, repeat: Infinity }}>
               A
             </motion.span>
           </motion.div>
-
-          {/* ── Cartes métriques orbitales ── */}
-          {floatingMetrics.map(({ emoji, label, value, color, tx, ty, delay }) => (
-            <motion.div key={label}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 + delay, duration: 0.5, type: "spring" }}
-              className="absolute flex items-center gap-2 px-3 py-2 rounded-2xl pointer-events-none"
-              style={{
-                background: "rgba(255,255,255,0.82)",
-                backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255,255,255,0.9)",
-                boxShadow: `0 4px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)`,
-                transform: `translate(${tx}px, ${ty}px)`,
-                whiteSpace: "nowrap",
-              }}
-            >
-              <motion.div
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 3 + delay, repeat: Infinity, ease: "easeInOut" }}
-                className="flex items-center gap-2"
-              >
-                <span className="text-base">{emoji}</span>
-                <div>
-                  <p className="text-[8px] font-semibold tracking-wider uppercase leading-none mb-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
-                  <p className="text-xs font-semibold leading-none" style={{ color }}>{value}</p>
-                </div>
-              </motion.div>
-            </motion.div>
-          ))}
         </motion.div>
 
-        {/* ── Features ── */}
+        {/* ── Feature pills ── */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.6 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full max-w-2xl mb-12"
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.6 }}
+          className="flex flex-wrap justify-center gap-3"
         >
           {features.map(({ icon: Icon, label, desc }, i) => (
             <motion.div key={label}
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1 + i * 0.08, type: "spring" }}
-              whileHover={{ y: -4, scale: 1.04 }}
-              className="flex flex-col items-center gap-2 px-4 py-4 rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 4px 20px rgba(167,139,250,0.08)" }}
+              initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.15 + i * 0.09, type: "spring", bounce: 0.35 }}
+              whileHover={{ y: -3, scale: 1.04 }}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.62)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 4px 18px rgba(167,139,250,0.07)", cursor: "default" }}
             >
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: i % 2 === 0 ? "linear-gradient(135deg,rgba(240,235,255,0.9) 0%,rgba(212,192,255,0.7) 100%)" : "linear-gradient(135deg,rgba(255,251,240,0.9) 0%,rgba(245,230,163,0.7) 100%)" }}>
-                <Icon size={18} strokeWidth={1.5} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: i % 2 === 0 ? "linear-gradient(135deg,rgba(240,235,255,0.95) 0%,rgba(212,192,255,0.75) 100%)" : "linear-gradient(135deg,rgba(255,251,240,0.95) 0%,rgba(245,230,163,0.75) 100%)" }}>
+                <Icon size={15} strokeWidth={1.5} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
               </div>
-              <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>{label}</p>
-              <p className="text-[10px] font-light text-center leading-tight" style={{ color: "#A0AEC0" }}>{desc}</p>
+              <div className="text-left">
+                <p className="text-xs font-semibold leading-none mb-0.5" style={{ color: "#2D3748" }}>{label}</p>
+                <p className="text-[10px] font-light leading-none" style={{ color: "#A0AEC0" }}>{desc}</p>
+              </div>
             </motion.div>
-          ))}
-        </motion.div>
-
-        {/* ── CTA Buttons ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3, duration: 0.5 }}
-          className="flex flex-col sm:flex-row gap-4 w-full max-w-sm mb-10"
-        >
-          <Link href="/auth?mode=signup" className="flex-1">
-            <motion.div whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.97 }}
-              className="relative w-full py-4 rounded-2xl text-sm font-semibold text-center cursor-pointer overflow-hidden"
-              style={{ background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", color: "#fff", boxShadow: "0 8px 32px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
-              <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.35) 50%,transparent 65%)", backgroundSize: "200% 100%" }}
-                animate={{ backgroundPosition: ["-100% 0","200% 0"] }} transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.2 }} />
-              <span className="relative z-10 flex items-center justify-center gap-2 text-base">
-                Commencer gratuitement
-                <ArrowRight size={16} strokeWidth={2} />
-              </span>
-            </motion.div>
-          </Link>
-          <Link href="/auth?mode=login" className="flex-1">
-            <motion.div whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.97 }}
-              className="w-full py-4 rounded-2xl text-sm font-semibold text-center cursor-pointer"
-              style={{ background: "rgba(255,255,255,0.75)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", color: "#2D3748", boxShadow: "0 4px 20px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-              <span className="flex items-center justify-center gap-2 text-base">
-                <LogIn size={15} strokeWidth={1.5} />
-                Se connecter
-              </span>
-            </motion.div>
-          </Link>
-        </motion.div>
-
-        {/* ── Stats sociales ── */}
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6 }}
-          className="flex items-center gap-6 flex-wrap justify-center"
-        >
-          {[["10k+","Athlètes"],["98%","Satisfaction"],["IA","Temps réel"],["100%","Gratuit"]].map(([val, lab]) => (
-            <div key={lab} className="flex flex-col items-center">
-              <span className="text-lg font-semibold" style={{ color: "#2D3748" }}>{val}</span>
-              <span className="text-[10px] font-medium tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{lab}</span>
-            </div>
           ))}
         </motion.div>
       </div>
 
-      {/* Dégradé de bas de page */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(250,248,255,0.8), transparent)" }} />
+      {/* Dégradé de bas */}
+      <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(250,248,255,0.85), transparent)" }} />
     </div>
   );
 }
