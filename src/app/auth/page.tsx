@@ -63,13 +63,13 @@ function InputField({
       }}
       animate={{
         boxShadow: focused
-          ? "0 0 0 2px rgba(249,168,201,0.5), 0 8px 24px rgba(249,168,201,0.15)"
-          : "0 4px 16px rgba(249,168,201,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+          ? "0 0 0 2px rgba(167,139,250,0.5), 0 8px 24px rgba(167,139,250,0.15)"
+          : "0 4px 16px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
       }}
       transition={{ duration: 0.2 }}
     >
       <motion.span
-        animate={{ color: focused ? "#F9A8C9" : "#A0AEC0" }}
+        animate={{ color: focused ? "#A78BFA" : "#A0AEC0" }}
         transition={{ duration: 0.2 }}
       >
         {icon}
@@ -104,6 +104,11 @@ export default function AuthPage() {
   const [particles, setParticles] = useState<ParticleData[]>([]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "signup") setMode("signup");
+  }, []);
+
+  useEffect(() => {
     setParticles(
       Array.from({ length: 24 }, (_, i) => ({
         id: i,
@@ -113,10 +118,10 @@ export default function AuthPage() {
         delay: Math.random() * 3,
         duration: 3 + Math.random() * 3,
         color: i % 3 === 0
-          ? "rgba(249,168,201,0.6)"
+          ? "rgba(167,139,250,0.55)"
           : i % 3 === 1
-          ? "rgba(126,216,216,0.5)"
-          : "rgba(255,240,245,0.7)",
+          ? "rgba(212,168,67,0.45)"
+          : "rgba(240,235,255,0.7)",
       }))
     );
   }, []);
@@ -138,58 +143,29 @@ export default function AuthPage() {
       {/* Animated morphing blobs */}
       <motion.div
         className="absolute rounded-full pointer-events-none"
-        style={{
-          top: "-10%",
-          left: "-5%",
-          width: 500,
-          height: 500,
-          background: "rgba(255,214,231,0.55)",
-          filter: "blur(70px)",
-        }}
+        style={{ top: "-10%", left: "-5%", width: 500, height: 500, background: "rgba(212,192,255,0.55)", filter: "blur(70px)" }}
         animate={{
           scale: [1, 1.25, 1],
           x: [-20, 30, -20],
           y: [-15, 20, -15],
-          borderRadius: [
-            "60% 40% 30% 70% / 60% 30% 70% 40%",
-            "30% 60% 70% 40% / 50% 60% 30% 60%",
-            "60% 40% 30% 70% / 60% 30% 70% 40%",
-          ],
+          borderRadius: ["60% 40% 30% 70% / 60% 30% 70% 40%", "30% 60% 70% 40% / 50% 60% 30% 60%", "60% 40% 30% 70% / 60% 30% 70% 40%"],
         }}
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="absolute rounded-full pointer-events-none"
-        style={{
-          bottom: "-10%",
-          right: "-5%",
-          width: 450,
-          height: 450,
-          background: "rgba(178,240,240,0.5)",
-          filter: "blur(70px)",
-        }}
+        style={{ bottom: "-10%", right: "-5%", width: 450, height: 450, background: "rgba(245,230,163,0.5)", filter: "blur(70px)" }}
         animate={{
           scale: [1, 1.2, 1],
           x: [20, -25, 20],
           y: [10, -20, 10],
-          borderRadius: [
-            "50% 60% 30% 60% / 30% 60% 70% 40%",
-            "60% 30% 40% 60% / 70% 40% 60% 30%",
-            "50% 60% 30% 60% / 30% 60% 70% 40%",
-          ],
+          borderRadius: ["50% 60% 30% 60% / 30% 60% 70% 40%", "60% 30% 40% 60% / 70% 40% 60% 30%", "50% 60% 30% 60% / 30% 60% 70% 40%"],
         }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
       />
       <motion.div
         className="absolute rounded-full pointer-events-none"
-        style={{
-          top: "40%",
-          right: "15%",
-          width: 300,
-          height: 300,
-          background: "rgba(255,240,245,0.65)",
-          filter: "blur(60px)",
-        }}
+        style={{ top: "40%", right: "15%", width: 300, height: 300, background: "rgba(167,139,250,0.3)", filter: "blur(60px)" }}
         animate={{ scale: [1, 1.4, 1], x: [-15, 20, -15] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
       />
@@ -199,24 +175,16 @@ export default function AuthPage() {
         <Particle key={id} {...rest} />
       ))}
 
-      {/* Rotating ring around the whole card */}
+      {/* Rotating rings */}
       <motion.div
         className="absolute pointer-events-none rounded-full"
-        style={{
-          width: 520,
-          height: 520,
-          border: "1px solid rgba(249,168,201,0.2)",
-        }}
+        style={{ width: 520, height: 520, border: "1px solid rgba(167,139,250,0.2)" }}
         animate={{ rotate: 360 }}
         transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
       />
       <motion.div
         className="absolute pointer-events-none rounded-full"
-        style={{
-          width: 460,
-          height: 460,
-          border: "1px solid rgba(126,216,216,0.15)",
-        }}
+        style={{ width: 460, height: 460, border: "1px solid rgba(212,168,67,0.15)" }}
         animate={{ rotate: -360 }}
         transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
       />
@@ -234,15 +202,10 @@ export default function AuthPage() {
             background: "linear-gradient(135deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.55) 100%)",
             backdropFilter: "blur(48px) saturate(200%)",
             border: "1px solid rgba(255,255,255,0.8)",
-            boxShadow:
-              "0 1px 0 0 rgba(255,255,255,0.95) inset, 0 -1px 0 0 rgba(255,240,245,0.4) inset, 0 32px 80px -16px rgba(249,168,201,0.22), 0 8px 32px -8px rgba(178,240,240,0.18)",
+            boxShadow: "0 1px 0 0 rgba(255,255,255,0.95) inset, 0 -1px 0 0 rgba(240,235,255,0.4) inset, 0 32px 80px -16px rgba(167,139,250,0.22), 0 8px 32px -8px rgba(245,230,163,0.18)",
           }}
         >
-          {/* Highlight top edge */}
-          <div
-            className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)" }}
-          />
+          <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)" }} />
 
           {/* Success overlay */}
           <AnimatePresence>
@@ -251,39 +214,17 @@ export default function AuthPage() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-3"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(255,214,231,0.96) 0%, rgba(178,240,240,0.96) 100%)",
-                  backdropFilter: "blur(20px)",
-                }}
+                style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.96) 0%, rgba(245,230,163,0.96) 100%)", backdropFilter: "blur(20px)" }}
               >
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", bounce: 0.5, duration: 0.6 }}
-                >
+                <motion.div initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", bounce: 0.5, duration: 0.6 }}>
                   <CheckCircle2 size={56} style={{ color: "#2D3748" }} strokeWidth={1.5} />
                 </motion.div>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-lg font-light"
-                  style={{ color: "#2D3748" }}
-                >
+                <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-lg font-light" style={{ color: "#2D3748" }}>
                   Connexion réussie !
                 </motion.p>
-                <motion.div
-                  className="flex gap-1 mt-1"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
+                <motion.div className="flex gap-1 mt-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
                   {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: "#2D3748" }}
+                    <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "#2D3748" }}
                       animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15 }}
                     />
@@ -297,41 +238,25 @@ export default function AuthPage() {
           <div className="flex flex-col items-center mb-8">
             <motion.div
               className="relative w-20 h-20 rounded-3xl flex items-center justify-center mb-4"
-              style={{
-                background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-              }}
+              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
               animate={{
                 boxShadow: [
-                  "0 8px 32px rgba(249,168,201,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
-                  "0 8px 48px rgba(126,216,216,0.45), inset 0 1px 0 rgba(255,255,255,0.8)",
-                  "0 8px 32px rgba(249,168,201,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  "0 8px 32px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  "0 8px 48px rgba(212,168,67,0.45), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  "0 8px 32px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
                 ],
               }}
               transition={{ duration: 3, repeat: Infinity }}
             >
-              {/* Rotating sparkle rings */}
-              <motion.div
-                className="absolute inset-0 rounded-3xl"
-                style={{ border: "1px solid rgba(249,168,201,0.4)" }}
-                animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              <motion.div
-                className="absolute inset-0 rounded-3xl"
-                style={{ border: "1px solid rgba(126,216,216,0.3)" }}
-                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-              />
-              <span className="text-3xl font-semibold relative z-10" style={{ color: "#2D3748" }}>
-                A
-              </span>
+              <motion.div className="absolute inset-0 rounded-3xl" style={{ border: "1px solid rgba(167,139,250,0.4)" }}
+                animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }} transition={{ duration: 2, repeat: Infinity }} />
+              <motion.div className="absolute inset-0 rounded-3xl" style={{ border: "1px solid rgba(212,168,67,0.3)" }}
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }} />
+              <span className="text-3xl font-semibold relative z-10" style={{ color: "#2D3748" }}>A</span>
             </motion.div>
 
-            <motion.h1
-              className="text-2xl font-extralight tracking-wide"
-              style={{ color: "#2D3748" }}
-              animate={{ opacity: [0.8, 1, 0.8] }}
-              transition={{ duration: 4, repeat: Infinity }}
+            <motion.h1 className="text-2xl font-extralight tracking-wide" style={{ color: "#2D3748" }}
+              animate={{ opacity: [0.8, 1, 0.8] }} transition={{ duration: 4, repeat: Infinity }}
             >
               Aura
             </motion.h1>
@@ -343,10 +268,7 @@ export default function AuthPage() {
           {/* Tab toggle */}
           <div
             className="relative flex rounded-2xl p-1 mb-7 gap-1"
-            style={{
-              background: "rgba(255,255,255,0.5)",
-              border: "1px solid rgba(255,255,255,0.7)",
-            }}
+            style={{ background: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.7)" }}
           >
             {(["login", "signup"] as const).map((m) => (
               <button
@@ -359,10 +281,7 @@ export default function AuthPage() {
                   <motion.div
                     layoutId="auth-tab"
                     className="absolute inset-0 rounded-xl"
-                    style={{
-                      background: "rgba(255,255,255,0.9)",
-                      boxShadow: "0 2px 12px rgba(249,168,201,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
-                    }}
+                    style={{ background: "rgba(255,255,255,0.9)", boxShadow: "0 2px 12px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)" }}
                     transition={{ type: "spring", bounce: 0.25, duration: 0.4 }}
                   />
                 )}
@@ -383,26 +302,12 @@ export default function AuthPage() {
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                   style={{ overflow: "hidden" }}
                 >
-                  <InputField
-                    icon={<User size={15} />}
-                    type="text"
-                    placeholder="Votre prénom"
-                    value={name}
-                    onChange={setName}
-                    autoFocus
-                  />
+                  <InputField icon={<User size={15} />} type="text" placeholder="Votre prénom" value={name} onChange={setName} autoFocus />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <InputField
-              icon={<Mail size={15} />}
-              type="email"
-              placeholder="Adresse email"
-              value={email}
-              onChange={setEmail}
-              required
-            />
+            <InputField icon={<Mail size={15} />} type="email" placeholder="Adresse email" value={email} onChange={setEmail} required />
 
             <InputField
               icon={<Lock size={15} />}
@@ -412,17 +317,8 @@ export default function AuthPage() {
               onChange={setPassword}
               required
               suffix={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="cursor-pointer flex-shrink-0 p-0.5"
-                  aria-label={showPassword ? "Cacher" : "Afficher"}
-                >
-                  {showPassword ? (
-                    <EyeOff size={14} style={{ color: "#A0AEC0" }} />
-                  ) : (
-                    <Eye size={14} style={{ color: "#A0AEC0" }} />
-                  )}
+                <button type="button" onClick={() => setShowPassword((v) => !v)} className="cursor-pointer flex-shrink-0 p-0.5" aria-label={showPassword ? "Cacher" : "Afficher"}>
+                  {showPassword ? <EyeOff size={14} style={{ color: "#A0AEC0" }} /> : <Eye size={14} style={{ color: "#A0AEC0" }} />}
                 </button>
               }
             />
@@ -434,53 +330,27 @@ export default function AuthPage() {
               whileTap={!loading ? { scale: 0.97 } : {}}
               className="relative mt-2 w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
               style={{
-                background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-                color: "#2D3748",
-                boxShadow:
-                  "0 4px 24px rgba(249,168,201,0.35), 0 1px 0 rgba(255,255,255,0.9) inset",
+                background: "linear-gradient(135deg, #A78BFA 0%, #D4A843 100%)",
+                color: "#fff",
+                boxShadow: "0 4px 24px rgba(167,139,250,0.4), 0 1px 0 rgba(255,255,255,0.25) inset",
                 opacity: !email || !password ? 0.6 : 1,
               }}
-              animate={{
-                backgroundPosition: loading ? ["0% 50%", "100% 50%", "0% 50%"] : "0% 50%",
-              }}
-              transition={{ duration: 2, repeat: loading ? Infinity : 0 }}
             >
-              {/* Shimmer sweep on hover */}
               <motion.div
                 className="absolute inset-0 pointer-events-none"
-                style={{
-                  background:
-                    "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%)",
-                  backgroundSize: "200% 100%",
-                }}
+                style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 50%, transparent 60%)", backgroundSize: "200% 100%" }}
                 animate={{ backgroundPosition: ["-100% 0", "200% 0"] }}
                 transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1 }}
               />
               <AnimatePresence mode="wait">
                 {loading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center justify-center gap-2"
-                  >
-                    <motion.div
-                      className="w-4 h-4 rounded-full border-2"
-                      style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }}
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                    />
+                  <motion.div key="loading" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="flex items-center justify-center gap-2">
+                    <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }}
+                      animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
                     <span>Connexion en cours…</span>
                   </motion.div>
                 ) : (
-                  <motion.div
-                    key="idle"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center justify-center gap-2"
-                  >
+                  <motion.div key="idle" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="flex items-center justify-center gap-2">
                     <Sparkles size={14} strokeWidth={1.5} />
                     <span>{mode === "login" ? "Se connecter" : "Créer mon compte"}</span>
                     <ArrowRight size={14} strokeWidth={2} />
@@ -490,20 +360,9 @@ export default function AuthPage() {
             </motion.button>
           </form>
 
-          {/* Footer hint */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-center text-[11px] mt-6 font-light"
-            style={{ color: "#A0AEC0" }}
-          >
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center text-[11px] mt-6 font-light" style={{ color: "#A0AEC0" }}>
             {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
-            <button
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
-              className="font-medium cursor-pointer hover:underline"
-              style={{ color: "#2D3748" }}
-            >
+            <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="font-medium cursor-pointer hover:underline" style={{ color: "#2D3748" }}>
               {mode === "login" ? "Créer un compte" : "Se connecter"}
             </button>
           </motion.p>

@@ -6,6 +6,7 @@ type User = { name: string; email: string };
 
 type AuthCtx = {
   user: User | null;
+  isLoading: boolean;
   justLoggedIn: boolean;
   isNewUser: boolean;
   login: (user: User, isNew?: boolean) => void;
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
 
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const s = localStorage.getItem("aura_user");
       if (s) setUser(JSON.parse(s));
     } catch {}
+    setIsLoading(false);
   }, []);
 
   const login = (u: User, isNew = false) => {
@@ -43,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearWelcome = () => setJustLoggedIn(false);
 
   return (
-    <AuthContext.Provider value={{ user, justLoggedIn, isNewUser, login, logout, clearWelcome }}>
+    <AuthContext.Provider value={{ user, isLoading, justLoggedIn, isNewUser, login, logout, clearWelcome }}>
       {children}
     </AuthContext.Provider>
   );

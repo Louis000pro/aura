@@ -13,8 +13,8 @@ const stats = [
     progress: 0.84,
     trend: "+5%",
     trendUp: true,
-    iconColor: "#F9A8C9",
-    barGradient: "linear-gradient(90deg, #F9A8C9 0%, #FFD6E7 100%)",
+    iconColor: "#A78BFA",
+    barGradient: "linear-gradient(90deg, #A78BFA 0%, #D4C0FF 100%)",
     cardClass: "lg-rose",
   },
   {
@@ -26,8 +26,8 @@ const stats = [
     progress: 0.7,
     trend: "+12%",
     trendUp: true,
-    iconColor: "#7ED8D8",
-    barGradient: "linear-gradient(90deg, #7ED8D8 0%, #B2F0F0 100%)",
+    iconColor: "#D4A843",
+    barGradient: "linear-gradient(90deg, #D4A843 0%, #F5E6A3 100%)",
     cardClass: "lg-turquoise",
   },
   {
@@ -39,8 +39,8 @@ const stats = [
     progress: 0.82,
     trend: "+3%",
     trendUp: true,
-    iconColor: "#F9A8C9",
-    barGradient: "linear-gradient(90deg, #F9A8C9 0%, #B2F0F0 100%)",
+    iconColor: "#A78BFA",
+    barGradient: "linear-gradient(90deg, #A78BFA 0%, #F5E6A3 100%)",
     cardClass: "lg-bicolor",
   },
   {
@@ -52,8 +52,8 @@ const stats = [
     progress: 0.4,
     trend: "-2%",
     trendUp: false,
-    iconColor: "#F9A8C9",
-    barGradient: "linear-gradient(90deg, #FFD6E7 0%, #F9A8C9 100%)",
+    iconColor: "#A78BFA",
+    barGradient: "linear-gradient(90deg, #D4C0FF 0%, #A78BFA 100%)",
     cardClass: "lg-rose",
   },
   {
@@ -65,8 +65,8 @@ const stats = [
     progress: 0.64,
     trend: "-8%",
     trendUp: false,
-    iconColor: "#7ED8D8",
-    barGradient: "linear-gradient(90deg, #B2F0F0 0%, #7ED8D8 100%)",
+    iconColor: "#D4A843",
+    barGradient: "linear-gradient(90deg, #F5E6A3 0%, #D4A843 100%)",
     cardClass: "lg-turquoise",
   },
   {
@@ -78,8 +78,8 @@ const stats = [
     progress: 0.92,
     trend: "+6%",
     trendUp: true,
-    iconColor: "#7ED8D8",
-    barGradient: "linear-gradient(90deg, #FFD6E7 0%, #B2F0F0 100%)",
+    iconColor: "#D4A843",
+    barGradient: "linear-gradient(90deg, #D4C0FF 0%, #F5E6A3 100%)",
     cardClass: "lg-bicolor",
   },
 ];
@@ -103,28 +103,20 @@ export default function StatsPanel() {
       <div className="px-5 pt-5 pb-4 flex-shrink-0 border-b border-white/40">
         <div className="flex items-center justify-between">
           <div>
-            <p
-              className="text-[10px] font-semibold tracking-widest uppercase"
-              style={{ color: "#A0AEC0" }}
-            >
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
               Aujourd&apos;hui
             </p>
-            <p className="text-base font-light mt-0.5" style={{ color: "#2D3748" }}>
-              Votre journée
-            </p>
+            <p className="text-base font-light mt-0.5" style={{ color: "#2D3748" }}>Votre journée</p>
           </div>
-          {/* Mini summary */}
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
             style={{
-              background: "linear-gradient(135deg, rgba(255,240,245,0.9) 0%, rgba(224,255,255,0.9) 100%)",
+              background: "linear-gradient(135deg, rgba(240,235,255,0.9) 0%, rgba(255,251,240,0.9) 100%)",
               border: "1px solid rgba(255,255,255,0.8)",
             }}
           >
-            <TrendingUp size={11} strokeWidth={2} style={{ color: "#7ED8D8" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>
-              {goodStats}/{stats.length}
-            </span>
+            <TrendingUp size={11} strokeWidth={2} style={{ color: "#D4A843" }} />
+            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{goodStats}/{stats.length}</span>
           </div>
         </div>
       </div>
@@ -146,50 +138,26 @@ export default function StatsPanel() {
             <div className="flex items-center gap-2.5">
               <div
                 className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: "rgba(255,255,255,0.6)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                }}
+                style={{ background: "rgba(255,255,255,0.6)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
               >
                 <Icon size={14} strokeWidth={1.5} style={{ color: iconColor }} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-medium" style={{ color: "#718096" }}>
-                  {label}
-                </p>
+                <p className="text-[10px] font-medium" style={{ color: "#718096" }}>{label}</p>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-lg font-semibold leading-tight" style={{ color: "#2D3748" }}>
-                    {value}
-                  </span>
-                  {unit && (
-                    <span className="text-[10px] font-medium" style={{ color: "#718096" }}>
-                      {unit}
-                    </span>
-                  )}
+                  <span className="text-lg font-semibold leading-tight" style={{ color: "#2D3748" }}>{value}</span>
+                  {unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{unit}</span>}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-0.5">
-                <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>
-                  {target}
-                </span>
-                <div
-                  className="flex items-center gap-0.5"
-                  style={{ color: trendUp ? "#7ED8D8" : "#F9A8C9" }}
-                >
-                  {trendUp ? (
-                    <TrendingUp size={9} strokeWidth={2} />
-                  ) : (
-                    <TrendingDown size={9} strokeWidth={2} />
-                  )}
+                <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{target}</span>
+                <div className="flex items-center gap-0.5" style={{ color: trendUp ? "#D4A843" : "#A78BFA" }}>
+                  {trendUp ? <TrendingUp size={9} strokeWidth={2} /> : <TrendingDown size={9} strokeWidth={2} />}
                   <span className="text-[9px] font-semibold">{trend}</span>
                 </div>
               </div>
             </div>
-            {/* Progress bar */}
-            <div
-              className="mt-2.5 h-1 rounded-full overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.5)" }}
-            >
+            <div className="mt-2.5 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.5)" }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress * 100}%` }}

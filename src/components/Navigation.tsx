@@ -20,10 +20,11 @@ export default function Navigation() {
   const { user, logout } = useAuth();
 
   if (pathname === "/auth") return null;
+  if (!user && pathname === "/") return null;
 
   const handleLogout = () => {
     logout();
-    router.push("/auth");
+    router.push("/");
   };
 
   return (
@@ -45,25 +46,18 @@ export default function Navigation() {
                       <motion.div
                         layoutId="mobile-active-pill"
                         className="absolute inset-0 rounded-xl"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(255,240,245,0.9) 0%, rgba(224,255,255,0.9) 100%)",
-                        }}
+                        style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.9) 0%, rgba(255,251,240,0.9) 100%)" }}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
                       />
                     )}
                     <div className="relative z-10">
-                      <Icon
-                        size={22}
-                        strokeWidth={isActive ? 2 : 1.5}
-                        style={{ color: isActive ? "#2D3748" : "#A0AEC0" }}
-                      />
+                      <Icon size={22} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#2D3748" : "#A0AEC0" }} />
                       {badge && !isActive && (
                         <motion.span
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
-                          style={{ background: "#F9A8C9", color: "#fff" }}
+                          style={{ background: "#A78BFA", color: "#fff" }}
                         >
                           {badge}
                         </motion.span>
@@ -85,7 +79,6 @@ export default function Navigation() {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="lg-strong lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
         >
-
           {tabs.map(({ href, label, icon: Icon, badge }) => {
             const isActive = pathname === href;
             return (
@@ -101,27 +94,21 @@ export default function Navigation() {
                       layoutId="desktop-active-pill"
                       className="absolute inset-0 rounded-2xl"
                       style={{
-                        background:
-                          "linear-gradient(135deg, rgba(255,240,245,0.95) 0%, rgba(224,255,255,0.95) 100%)",
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px -2px rgba(249,168,201,0.22)",
+                        background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px -2px rgba(167,139,250,0.22)",
                       }}
                       transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
                     />
                   )}
                   <div className="relative z-10">
-                    <Icon
-                      size={18}
-                      strokeWidth={isActive ? 2 : 1.5}
-                      style={{ color: isActive ? "#2D3748" : "#A0AEC0" }}
-                    />
+                    <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#2D3748" : "#A0AEC0" }} />
                     {badge && !isActive && (
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", bounce: 0.6 }}
                         className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold"
-                        style={{ background: "#F9A8C9", color: "#fff" }}
+                        style={{ background: "#A78BFA", color: "#fff" }}
                       >
                         {badge}
                       </motion.span>
@@ -132,26 +119,14 @@ export default function Navigation() {
             );
           })}
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Auth button */}
           <AnimatePresence mode="wait">
             {user ? (
-              <motion.div
-                key="user"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="flex flex-col items-center gap-2"
-              >
+              <motion.div key="user" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex flex-col items-center gap-2">
                 <div
                   className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-semibold cursor-default"
-                  style={{
-                    background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-                    color: "#2D3748",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
-                  }}
+                  style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
                   title={user.name}
                 >
                   {user.name[0]?.toUpperCase()}
@@ -168,20 +143,13 @@ export default function Navigation() {
                 </motion.button>
               </motion.div>
             ) : (
-              <motion.div
-                key="login"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-              >
+              <motion.div key="login" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}>
                 <Link href="/auth">
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.88 }}
                     className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer mx-auto"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(255,240,245,0.7) 0%, rgba(224,255,255,0.7) 100%)",
-                    }}
+                    style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(255,251,240,0.7) 100%)" }}
                     aria-label="Connexion"
                     title="Connexion"
                   >

@@ -48,19 +48,15 @@ export default function AIChatPanel({
         <div
           className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{
-            background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(249,168,201,0.2)",
+            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(167,139,250,0.2)",
           }}
         >
           <Sparkles size={15} strokeWidth={1.5} style={{ color: "#2D3748" }} />
         </div>
         <div>
-          <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>
-            Aura
-          </p>
-          <p className="text-[10px] font-medium" style={{ color: "#7ED8D8" }}>
-            ● En ligne
-          </p>
+          <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>Aura</p>
+          <p className="text-[10px] font-medium" style={{ color: "#D4A843" }}>● En ligne</p>
         </div>
       </div>
 
@@ -80,12 +76,10 @@ export default function AIChatPanel({
                 style={
                   msg.from === "me"
                     ? {
-                        background:
-                          "linear-gradient(135deg, rgba(255,214,231,0.95) 0%, rgba(178,240,240,0.95) 100%)",
+                        background: "linear-gradient(135deg, rgba(212,192,255,0.95) 0%, rgba(245,230,163,0.95) 100%)",
                         color: "#2D3748",
                         borderBottomRightRadius: 6,
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(249,168,201,0.12)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(167,139,250,0.12)",
                       }
                     : {
                         background: "rgba(255,255,255,0.6)",
@@ -101,26 +95,13 @@ export default function AIChatPanel({
             </motion.div>
           ))}
           {aiTyping && (
-            <motion.div
-              key="typing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex justify-start"
-            >
+            <motion.div key="typing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-start">
               <div
                 className="px-4 py-3 rounded-2xl flex items-center gap-1"
-                style={{
-                  background: "rgba(255,255,255,0.6)",
-                  border: "1px solid rgba(255,255,255,0.7)",
-                  borderBottomLeftRadius: 6,
-                }}
+                style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.7)", borderBottomLeftRadius: 6 }}
               >
                 {[0, 1, 2].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="block w-1.5 h-1.5 rounded-full"
-                    style={{ background: "#A0AEC0" }}
+                  <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "#A0AEC0" }}
                     animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
                     transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }}
                   />
@@ -139,27 +120,16 @@ export default function AIChatPanel({
               key={s}
               onClick={() => handleSend(s)}
               className="text-[11px] font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all hover:scale-105 flex-shrink-0"
-              style={{
-                background: "rgba(255,240,245,0.7)",
-                color: "#F9A8C9",
-                border: "1px solid rgba(255,255,255,0.6)",
-              }}
+              style={{ background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(255,255,255,0.6)" }}
             >
               {s}
             </button>
           ))}
         </div>
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSend(input);
-          }}
+          onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
           className="flex items-center gap-2 px-3 py-2 rounded-2xl"
-          style={{
-            background: "rgba(255,255,255,0.7)",
-            border: "1px solid rgba(255,255,255,0.7)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
-          }}
+          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
         >
           <input
             type="text"
@@ -173,10 +143,7 @@ export default function AIChatPanel({
             whileTap={{ scale: 0.9 }}
             type="submit"
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
-            }}
+            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}
             aria-label="Envoyer"
           >
             <Send size={12} strokeWidth={2} style={{ color: "#2D3748" }} />

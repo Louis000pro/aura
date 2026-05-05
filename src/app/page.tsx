@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon } from "lucide-react";
+import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
@@ -21,8 +21,8 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
         <defs>
           <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#F9A8C9" />
-            <stop offset="100%" stopColor="#7ED8D8" />
+            <stop offset="0%" stopColor="#A78BFA" />
+            <stop offset="100%" stopColor="#D4A843" />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={strokeW} />
@@ -46,108 +46,127 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
   );
 }
 
-/* ─── Welcome Banner ─── */
+/* ─── Welcome Overlay (plein écran, 2 secondes) ─── */
 function WelcomeBanner({ name, isNew, onDismiss }: { name: string; isNew: boolean; onDismiss: () => void }) {
-  const [started, setStarted] = useState(false);
+  const [progress, setProgress] = useState(100);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setStarted(true), 50);
-    const t2 = setTimeout(onDismiss, 4000);
+    const t1 = setTimeout(() => setProgress(0), 50);
+    const t2 = setTimeout(onDismiss, 2000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [onDismiss]);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -80, scale: 0.85 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -60, scale: 0.9 }}
-      transition={{ type: "spring", damping: 22, stiffness: 300 }}
-      className="fixed top-5 left-1/2 z-[100] pointer-events-auto"
-      style={{ transform: "translateX(-50%)", width: "min(400px, calc(100vw - 32px))" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
+      style={{ background: "rgba(240,235,255,0.75)", backdropFilter: "blur(24px)" }}
     >
-      <div
-        className="relative rounded-2xl px-5 py-4 overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.82) 100%)",
-          backdropFilter: "blur(40px) saturate(180%)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 8px 48px rgba(249,168,201,0.28), 0 2px 16px rgba(178,240,240,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
-        }}
-      >
-        {[0, 1].map((i) => (
-          <motion.div
-            key={i}
-            className="absolute pointer-events-none"
-            style={{
-              left: `${20 + i * 40}%`,
-              top: i % 2 === 0 ? "-4px" : "auto",
-              bottom: i % 2 === 1 ? "-4px" : "auto",
-            }}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 1.4, 0], opacity: [0, 1, 0], y: i % 2 === 0 ? [-4, -16, -4] : [4, 16, 4] }}
-            transition={{ duration: 1.2, delay: 0.2 + i * 0.15 }}
-          >
-            <Sparkles size={10} style={{ color: i % 2 === 0 ? "#F9A8C9" : "#7ED8D8" }} />
-          </motion.div>
-        ))}
+      {/* Blobs animés */}
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ top: "-5%", left: "-5%", width: 500, height: 500, background: "rgba(212,192,255,0.45)", filter: "blur(80px)" }}
+        animate={{ scale: [1, 1.15, 1], x: [-10, 20, -10] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ bottom: "-5%", right: "-5%", width: 450, height: 450, background: "rgba(245,230,163,0.45)", filter: "blur(80px)" }}
+        animate={{ scale: [1, 1.2, 1], x: [10, -20, 10] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+      />
 
-        <div className="flex items-center gap-3 relative z-10">
+      {/* Contenu central */}
+      <motion.div
+        initial={{ scale: 0.85, opacity: 0, y: 24 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: -16 }}
+        transition={{ type: "spring", damping: 20, stiffness: 260, delay: 0.05 }}
+        className="relative z-10 flex flex-col items-center text-center px-8"
+      >
+        {/* Avatar avec sparkles */}
+        <div className="relative mb-6">
+          {[0, 1].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                inset: -8 - i * 10,
+                border: `1px solid rgba(167,139,250,${0.3 - i * 0.12})`,
+              }}
+              animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
+            />
+          ))}
           <motion.div
-            initial={{ scale: 0, rotate: -30 }}
+            initial={{ scale: 0, rotate: -20 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", bounce: 0.6, delay: 0.1 }}
-            className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 font-semibold text-sm"
+            transition={{ type: "spring", bounce: 0.55, delay: 0.15 }}
+            className="w-24 h-24 rounded-3xl flex items-center justify-center text-4xl font-semibold"
             style={{
-              background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
               color: "#2D3748",
-              boxShadow: "0 4px 12px rgba(249,168,201,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
+              boxShadow: "0 12px 48px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
             }}
           >
             {name[0]?.toUpperCase()}
           </motion.div>
 
-          <div className="flex-1 min-w-0">
-            <motion.p
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-sm font-semibold"
-              style={{ color: "#2D3748" }}
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute pointer-events-none"
+              style={{ left: `${[10, 75, 45][i]}%`, top: `${[-5, -5, 90][i]}%` }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 1.3, 0], opacity: [0, 1, 0], y: i % 2 === 0 ? [-4, -18, -4] : [4, 18, 4] }}
+              transition={{ duration: 1.4, delay: 0.25 + i * 0.18, repeat: Infinity, repeatDelay: 1.2 }}
             >
-              {isNew ? `Bienvenue sur Aura, ${name} !` : `Bon retour, ${name} !`}
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-[11px] font-light"
-              style={{ color: "#718096" }}
-            >
-              {isNew ? "Votre parcours santé commence maintenant ✦" : "Prêt à battre vos records aujourd'hui ? 🔥"}
-            </motion.p>
-          </div>
-
-          <button
-            onClick={onDismiss}
-            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(255,255,255,0.6)" }}
-          >
-            <X size={12} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-          </button>
+              <Sparkles size={11} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
+            </motion.div>
+          ))}
         </div>
 
-        {/* Progress bar — CSS transition only */}
-        <div className="mt-3 relative z-10 h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="text-3xl font-extralight mb-2"
+          style={{ color: "#2D3748" }}
+        >
+          {isNew ? `Bienvenue sur Aura !` : `Bon retour !`}
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="text-base font-light mb-1"
+          style={{ color: "#718096" }}
+        >
+          {isNew ? `Votre parcours santé commence maintenant ✦` : `Prêt à battre vos records, ${name.split(" ")[0]} ? 🔥`}
+        </motion.p>
+
+        {/* Barre de progression 2s */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mt-8 w-48 h-0.5 rounded-full overflow-hidden"
+          style={{ background: "rgba(167,139,250,0.15)" }}
+        >
           <div
             className="h-full rounded-full"
             style={{
-              background: "linear-gradient(90deg, #F9A8C9, #7ED8D8)",
-              width: started ? "0%" : "100%",
-              transition: started ? "width 4s linear" : "none",
+              background: "linear-gradient(90deg, #A78BFA, #D4A843)",
+              width: `${progress}%`,
+              transition: progress === 0 ? "width 2s linear" : "none",
             }}
           />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -165,11 +184,11 @@ function HomeToast({ message }: { message: string }) {
         background: "rgba(255,255,255,0.9)",
         backdropFilter: "blur(24px)",
         border: "1px solid rgba(255,255,255,0.9)",
-        boxShadow: "0 8px 32px rgba(249,168,201,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+        boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
         whiteSpace: "nowrap",
       }}
     >
-      <Check size={14} strokeWidth={2.5} style={{ color: "#7ED8D8" }} />
+      <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
       <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{message}</span>
     </motion.div>
   );
@@ -195,7 +214,7 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(255,240,245,0.4)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(12px)" }}
       onClick={onClose}
     >
       <motion.div
@@ -208,11 +227,10 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
           background: "rgba(255,255,255,0.88)",
           backdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(249,168,201,0.15), inset 0 1px 0 rgba(255,255,255,0.95)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.95)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Nutrition</p>
@@ -220,13 +238,12 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(255,240,245,0.8)" }}
+            style={{ background: "rgba(240,235,255,0.8)" }}
           >
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
 
-        {/* Meal type selector */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           {mealTypesList.map(({ id, label, emoji }) => (
             <motion.button
@@ -236,8 +253,8 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
               className="flex flex-col items-center gap-1 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
               style={
                 type === id
-                  ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                  : { background: "rgba(255,240,245,0.5)" }
+                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
+                  : { background: "rgba(240,235,255,0.5)" }
               }
             >
               <span className="text-base leading-none">{emoji}</span>
@@ -248,7 +265,6 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
           ))}
         </div>
 
-        {/* Name */}
         <div className="mb-3">
           <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
             Aliment / Plat
@@ -261,14 +277,13 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
             autoFocus
             className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
             style={{
-              background: "rgba(255,240,245,0.5)",
-              border: "1px solid rgba(255,214,231,0.6)",
+              background: "rgba(240,235,255,0.5)",
+              border: "1px solid rgba(212,192,255,0.6)",
               color: "#2D3748",
             }}
           />
         </div>
 
-        {/* Calories */}
         <div className="mb-5">
           <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
             Calories (kcal)
@@ -280,14 +295,13 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
             placeholder="Ex : 450"
             className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
             style={{
-              background: "rgba(255,240,245,0.5)",
-              border: "1px solid rgba(255,214,231,0.6)",
+              background: "rgba(240,235,255,0.5)",
+              border: "1px solid rgba(212,192,255,0.6)",
               color: "#2D3748",
             }}
           />
         </div>
 
-        {/* Save */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
@@ -295,10 +309,10 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer transition-all duration-200"
           style={{
             background: name.trim()
-              ? "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)"
+              ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)"
               : "rgba(220,220,220,0.45)",
             color: name.trim() ? "#2D3748" : "#A0AEC0",
-            boxShadow: name.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(249,168,201,0.2)" : "none",
+            boxShadow: name.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(167,139,250,0.2)" : "none",
           }}
         >
           Enregistrer le repas
@@ -311,10 +325,10 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
 /* ─── Objectif Modal ─── */
 type GoalType = "workouts" | "calories" | "steps" | "sleep";
 const goalTypesList: { id: GoalType; label: string; desc: string; unit: string; defaultVal: string; icon: React.ElementType; color: string }[] = [
-  { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,    color: "#F9A8C9" },
-  { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,      color: "#F9A8C9" },
-  { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "#7ED8D8" },
-  { id: "sleep",    label: "Sommeil",  desc: "/ nuit",    unit: "h/nuit",      defaultVal: "8",     icon: Moon,     color: "#7ED8D8" },
+  { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,    color: "#A78BFA" },
+  { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,      color: "#A78BFA" },
+  { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "#D4A843" },
+  { id: "sleep",    label: "Sommeil",  desc: "/ nuit",    unit: "h/nuit",      defaultVal: "8",     icon: Moon,     color: "#D4A843" },
 ];
 
 function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (label: string) => void }) {
@@ -333,7 +347,7 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(224,255,255,0.4)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(255,251,240,0.4)", backdropFilter: "blur(12px)" }}
       onClick={onClose}
     >
       <motion.div
@@ -346,11 +360,10 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
           background: "rgba(255,255,255,0.88)",
           backdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(178,240,240,0.15), inset 0 1px 0 rgba(255,255,255,0.95)",
+          boxShadow: "0 20px 60px rgba(212,168,67,0.12), inset 0 1px 0 rgba(255,255,255,0.95)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Performance</p>
@@ -358,13 +371,12 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(224,255,255,0.8)" }}
+            style={{ background: "rgba(255,251,240,0.8)" }}
           >
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
 
-        {/* Goal type grid */}
         <div className="grid grid-cols-2 gap-2 mb-5">
           {goalTypesList.map(({ id, label, desc, icon: Icon, color }) => (
             <motion.button
@@ -375,11 +387,11 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
               style={
                 type === id
                   ? {
-                      background: "linear-gradient(135deg, rgba(255,240,245,0.95) 0%, rgba(224,255,255,0.95) 100%)",
+                      background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)",
                       border: "1px solid rgba(255,255,255,0.8)",
                       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
                     }
-                  : { background: "rgba(255,240,245,0.45)", border: "1px solid transparent" }
+                  : { background: "rgba(240,235,255,0.45)", border: "1px solid transparent" }
               }
             >
               <div
@@ -396,7 +408,6 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
           ))}
         </div>
 
-        {/* Value input */}
         <div className="mb-5">
           <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
             Cible
@@ -408,8 +419,8 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
               onChange={(e) => setValue(e.target.value)}
               className="w-full px-4 py-3 pr-28 rounded-2xl text-sm outline-none"
               style={{
-                background: "rgba(224,255,255,0.35)",
-                border: "1px solid rgba(178,240,240,0.55)",
+                background: "rgba(255,251,240,0.35)",
+                border: "1px solid rgba(245,230,163,0.55)",
                 color: "#2D3748",
               }}
             />
@@ -419,16 +430,15 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
           </div>
         </div>
 
-        {/* Save */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => onSave(`${value} ${selected.unit}`)}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
             color: "#2D3748",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(249,168,201,0.2)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(167,139,250,0.2)",
           }}
         >
           Définir l'objectif
@@ -480,17 +490,240 @@ function QuickActionCard({
 }
 
 const quickActionsConfig = [
-  { icon: Flame,    label: "Séance",  color: "#F9A8C9", bg: "lg-rose" },
-  { icon: Utensils, label: "Repas",   color: "#7ED8D8", bg: "lg-turquoise" },
-  { icon: Zap,      label: "Objectif",color: "#F9A8C9", bg: "lg-bicolor" },
+  { icon: Flame,    label: "Séance",   color: "#A78BFA", bg: "lg-rose" },
+  { icon: Utensils, label: "Repas",    color: "#D4A843", bg: "lg-turquoise" },
+  { icon: Zap,      label: "Objectif", color: "#A78BFA", bg: "lg-bicolor" },
 ];
 
-export default function HomePage() {
+/* ─── Landing Page (quand non connecté) ─── */
+type Particle = { id: number; x: number; y: number; size: number; delay: number; duration: number; color: string };
+
+function LandingPage() {
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  useEffect(() => {
+    setParticles(
+      Array.from({ length: 22 }, (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: 3 + Math.random() * 8,
+        delay: Math.random() * 4,
+        duration: 4 + Math.random() * 4,
+        color: i % 3 === 0
+          ? "rgba(167,139,250,0.55)"
+          : i % 3 === 1
+          ? "rgba(212,168,67,0.45)"
+          : "rgba(212,192,255,0.5)",
+      }))
+    );
+  }, []);
+
+  return (
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6">
+      {/* Blobs morphing */}
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ top: "-8%", left: "-8%", width: 560, height: 560, background: "rgba(212,192,255,0.5)", filter: "blur(80px)" }}
+        animate={{
+          scale: [1, 1.2, 1],
+          x: [-15, 25, -15],
+          y: [-10, 18, -10],
+          borderRadius: ["60% 40% 30% 70% / 60% 30% 70% 40%", "30% 60% 70% 40% / 50% 60% 30% 60%", "60% 40% 30% 70% / 60% 30% 70% 40%"],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ bottom: "-8%", right: "-8%", width: 500, height: 500, background: "rgba(245,230,163,0.5)", filter: "blur(80px)" }}
+        animate={{
+          scale: [1, 1.18, 1],
+          x: [15, -22, 15],
+          y: [10, -18, 10],
+          borderRadius: ["50% 60% 30% 60% / 30% 60% 70% 40%", "60% 30% 40% 60% / 70% 40% 60% 30%", "50% 60% 30% 60% / 30% 60% 70% 40%"],
+        }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      />
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ top: "35%", right: "10%", width: 280, height: 280, background: "rgba(167,139,250,0.3)", filter: "blur(60px)" }}
+        animate={{ scale: [1, 1.3, 1], x: [-10, 15, -10] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+      />
+
+      {/* Particules flottantes */}
+      {particles.map(({ id, x, y, size, delay, duration, color }) => (
+        <motion.div
+          key={id}
+          className="absolute rounded-full pointer-events-none"
+          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, background: color, filter: "blur(0.5px)" }}
+          animate={{ y: ["-15px", "15px", "-15px"], x: ["-8px", "8px", "-8px"], opacity: [0.2, 0.8, 0.2], scale: [1, 1.2, 1] }}
+          transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }}
+        />
+      ))}
+
+      {/* Anneaux rotatifs */}
+      <motion.div
+        className="absolute pointer-events-none rounded-full"
+        style={{ width: 540, height: 540, border: "1px solid rgba(167,139,250,0.18)" }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div
+        className="absolute pointer-events-none rounded-full"
+        style={{ width: 440, height: 440, border: "1px solid rgba(212,168,67,0.12)" }}
+        animate={{ rotate: -360 }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* Contenu central */}
+      <motion.div
+        initial={{ opacity: 0, y: 32, scale: 0.92 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.75, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="relative z-10 flex flex-col items-center text-center"
+        style={{ maxWidth: 420 }}
+      >
+        {/* Logo animé */}
+        <div className="relative mb-8">
+          <motion.div
+            className="absolute inset-0 rounded-3xl"
+            style={{ border: "1px solid rgba(167,139,250,0.45)" }}
+            animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
+            transition={{ duration: 2.2, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-3xl"
+            style={{ border: "1px solid rgba(212,168,67,0.3)" }}
+            animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0, 0.4] }}
+            transition={{ duration: 2.2, repeat: Infinity, delay: 0.55 }}
+          />
+          <motion.div
+            className="relative w-24 h-24 rounded-3xl flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+              boxShadow: "0 12px 48px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
+            }}
+            animate={{
+              boxShadow: [
+                "0 12px 48px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
+                "0 12px 64px rgba(212,168,67,0.45), inset 0 1px 0 rgba(255,255,255,0.8)",
+                "0 12px 48px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)",
+              ],
+            }}
+            transition={{ duration: 3.5, repeat: Infinity }}
+          >
+            <span className="text-4xl font-semibold" style={{ color: "#2D3748" }}>A</span>
+          </motion.div>
+        </div>
+
+        {/* Titre */}
+        <motion.h1
+          className="text-6xl font-extralight tracking-wide mb-3"
+          style={{ color: "#2D3748" }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          Aura
+        </motion.h1>
+
+        {/* Tagline */}
+        <motion.p
+          className="text-base font-light mb-3 tracking-wide"
+          style={{ color: "#718096" }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          Votre concierge de santé IA
+        </motion.p>
+
+        {/* Feature pills */}
+        <motion.div
+          className="flex flex-wrap gap-2 justify-center mb-10"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          {["✦ Suivi intelligent", "✦ Coach vocal IA", "✦ Progression en temps réel"].map((f) => (
+            <span
+              key={f}
+              className="text-[11px] font-medium px-3 py-1.5 rounded-full"
+              style={{
+                background: "rgba(255,255,255,0.55)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.7)",
+                color: "#718096",
+              }}
+            >
+              {f}
+            </span>
+          ))}
+        </motion.div>
+
+        {/* Boutons CTA */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-3 w-full"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Link href="/auth?mode=signup" className="flex-1">
+            <motion.div
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="relative w-full py-4 rounded-2xl text-sm font-semibold text-center cursor-pointer overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, #A78BFA 0%, #D4A843 100%)",
+                color: "#fff",
+                boxShadow: "0 6px 28px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
+              }}
+            >
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%)", backgroundSize: "200% 100%" }}
+                animate={{ backgroundPosition: ["-100% 0", "200% 0"] }}
+                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5 }}
+              />
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                Créer un compte
+                <ArrowRight size={14} strokeWidth={2} />
+              </span>
+            </motion.div>
+          </Link>
+
+          <Link href="/auth?mode=login" className="flex-1">
+            <motion.div
+              whileHover={{ scale: 1.03, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-4 rounded-2xl text-sm font-semibold text-center cursor-pointer"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.8)",
+                color: "#2D3748",
+                boxShadow: "0 4px 20px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
+              }}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <LogIn size={14} strokeWidth={1.5} />
+                Se connecter
+              </span>
+            </motion.div>
+          </Link>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── Dashboard (quand connecté) ─── */
+function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
-  const { user, justLoggedIn, isNewUser, clearWelcome } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
-
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   const [mobilePanel, setMobilePanel] = useState<"chat" | "stats" | null>(null);
@@ -498,38 +731,25 @@ export default function HomePage() {
   const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // ── Shared chat state (shared between desktop and mobile AIChatPanel) ──
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
 
   const sendMessage = useCallback((text: string) => {
     if (!text.trim()) return;
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const n = new Date();
+    const time = `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
     setChatMessages((m) => [...m, { id: Date.now(), from: "me", text, time }]);
     setAiTyping(true);
     setTimeout(() => {
       setAiTyping(false);
-      setChatMessages((m) => [
-        ...m,
-        {
-          id: Date.now() + 1,
-          from: "ai",
-          text: "Compris. Je personnalise votre programme en conséquence ✨",
-          time,
-        },
-      ]);
+      setChatMessages((m) => [...m, { id: Date.now() + 1, from: "ai", text: "Compris. Je personnalise votre programme en conséquence ✨", time }]);
     }, 1400);
   }, []);
 
-  // ── Voice transcript handler ──
   const handleVoiceTranscript = useCallback(
     (text: string) => {
       sendMessage(text);
-      // On mobile: auto-open the chat drawer so the user sees the reply
-      if (typeof window !== "undefined" && window.innerWidth < 768) {
-        setMobilePanel("chat");
-      }
+      if (typeof window !== "undefined" && window.innerWidth < 768) setMobilePanel("chat");
     },
     [sendMessage],
   );
@@ -547,26 +767,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Welcome banner */}
-      <AnimatePresence>
-        {justLoggedIn && user && (
-          <WelcomeBanner name={user.name} isNew={isNewUser} onDismiss={clearWelcome} />
-        )}
-      </AnimatePresence>
-
-      {/* Ambient blobs — static */}
-      <div
-        className="lg-blob absolute pointer-events-none"
-        style={{ top: "3%", left: "6%", width: 320, height: 320, background: "rgba(255, 214, 231, 0.6)" }}
-      />
-      <div
-        className="lg-blob absolute pointer-events-none"
-        style={{ bottom: "8%", right: "5%", width: 360, height: 360, background: "rgba(178, 240, 240, 0.55)" }}
-      />
-      <div
-        className="lg-blob absolute pointer-events-none"
-        style={{ top: "42%", left: "48%", width: 240, height: 240, background: "rgba(255, 240, 245, 0.65)" }}
-      />
+      {/* Blobs ambiants */}
+      <div className="lg-blob absolute pointer-events-none" style={{ top: "3%", left: "6%", width: 320, height: 320, background: "rgba(212, 192, 255, 0.55)" }} />
+      <div className="lg-blob absolute pointer-events-none" style={{ bottom: "8%", right: "5%", width: 360, height: 360, background: "rgba(245, 230, 163, 0.5)" }} />
+      <div className="lg-blob absolute pointer-events-none" style={{ top: "42%", left: "48%", width: 240, height: 240, background: "rgba(240, 235, 255, 0.6)" }} />
 
       {/* Header */}
       <motion.header
@@ -576,63 +780,44 @@ export default function HomePage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div>
-          <motion.p
-            className="text-[10px] font-semibold tracking-[0.2em] uppercase"
-            style={{ color: "#A0AEC0" }}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15 }}
+          <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
           >
             {greeting}
           </motion.p>
-          <motion.h1
-            className="text-2xl md:text-3xl font-extralight mt-1"
-            style={{ color: "#2D3748" }}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25 }}
+          <motion.h1 className="text-2xl md:text-3xl font-extralight mt-1" style={{ color: "#2D3748" }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
           >
             {user ? `${user.name.split(" ")[0]}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
           </motion.h1>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Streak badge */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
+            initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
             className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default"
           >
-            <Flame size={11} strokeWidth={2} style={{ color: "#F9A8C9" }} />
+            <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
             <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>7 jours</span>
           </motion.div>
 
-          {/* Avatar / Login */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}>
             {user ? (
               <motion.div
                 whileHover={{ scale: 1.08, rotate: 5 }}
                 whileTap={{ scale: 0.92 }}
                 className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px 0 rgba(249,168,201,0.3)",
+                  background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px 0 rgba(167,139,250,0.3)",
                 }}
               >
-                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                  {user.name[0]?.toUpperCase()}
-                </span>
+                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{user.name[0]?.toUpperCase()}</span>
               </motion.div>
             ) : (
               <Link href="/auth">
                 <motion.div
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.92 }}
+                  whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
                   className="lg-bicolor lg-highlight relative flex items-center gap-1.5 px-3 py-2 rounded-full cursor-pointer"
                 >
                   <LogIn size={12} strokeWidth={1.5} style={{ color: "#2D3748" }} />
@@ -645,32 +830,16 @@ export default function HomePage() {
       </motion.header>
 
       {/* DESKTOP 3-column layout */}
-      <div
-        className="hidden md:grid relative z-10 grid-cols-[320px_1fr_320px] gap-5 px-6 pb-6 pt-4"
-        style={{ height: "calc(100vh - 96px)" }}
-      >
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-          className="min-h-0" style={{ height: "100%" }}
-        >
+      <div className="hidden md:grid relative z-10 grid-cols-[320px_1fr_320px] gap-5 px-6 pb-6 pt-4" style={{ height: "calc(100vh - 96px)" }}>
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }} className="min-h-0" style={{ height: "100%" }}>
           <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-          className="flex flex-col items-center justify-center gap-7 overflow-y-auto py-4"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} className="flex flex-col items-center justify-center gap-7 overflow-y-auto py-4">
           <VocalOrb onTranscript={handleVoiceTranscript} />
 
-          {/* Score du jour */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
             whileHover={{ y: -3, transition: { duration: 0.2 } }}
             className="lg-surface lg-highlight relative rounded-3xl px-6 py-5 flex items-center gap-5 w-full max-w-sm"
           >
@@ -682,37 +851,21 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* Quick actions */}
           <div className="flex gap-3 w-full max-w-sm">
             {quickActionsConfig.map(({ icon, label, color, bg }, i) => (
-              <QuickActionCard
-                key={label}
-                icon={icon} label={label} color={color} bg={bg} index={i}
-                onClick={quickActionHandlers[i]}
-              />
+              <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
             ))}
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-          className="min-h-0" style={{ height: "100%" }}
-        >
+        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }} className="min-h-0" style={{ height: "100%" }}>
           <StatsPanel />
         </motion.div>
       </div>
 
       {/* MOBILE layout */}
       <div className="md:hidden flex flex-col relative z-10">
-        {/* Stats strip */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          className="px-6 pb-2"
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
           <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
             {[
               { label: "Score", value: "91", unit: "/100", bg: "lg-bicolor" },
@@ -722,9 +875,7 @@ export default function HomePage() {
             ].map((s, i) => (
               <motion.div
                 key={s.label}
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
+                initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
                 whileHover={{ scale: 1.04, y: -2 }}
                 className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] cursor-default`}
               >
@@ -738,41 +889,26 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* Mobile Orb */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }}
-          className="flex-1 flex items-center justify-center px-6 py-6"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }} className="flex-1 flex items-center justify-center px-6 py-6">
           <VocalOrb onTranscript={handleVoiceTranscript} />
         </motion.div>
 
-        {/* Quick actions */}
         <div className="px-6 pb-3 flex gap-2">
           {quickActionsConfig.map(({ icon, label, color, bg }, i) => (
-            <QuickActionCard
-              key={label}
-              icon={icon} label={label} color={color} bg={bg} index={i}
-              onClick={quickActionHandlers[i]}
-            />
+            <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
           ))}
         </div>
 
-        {/* Chat & Stats triggers */}
         <div className="px-6 pb-6 grid grid-cols-2 gap-3">
           {[
-            { key: "chat" as const, icon: MessageCircle, label: "Chat IA", color: "#F9A8C9", bg: "lg-rose" },
-            { key: "stats" as const, icon: BarChart3, label: "Détails", color: "#7ED8D8", bg: "lg-turquoise" },
+            { key: "chat" as const, icon: MessageCircle, label: "Chat IA", color: "#A78BFA", bg: "lg-rose" },
+            { key: "stats" as const, icon: BarChart3, label: "Détails", color: "#D4A843", bg: "lg-turquoise" },
           ].map(({ key, icon: Icon, label, color, bg }, i) => (
             <motion.button
               key={key}
               onClick={() => setMobilePanel(key)}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55 + i * 0.07, type: "spring", bounce: 0.35 }}
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.96 }}
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 + i * 0.07, type: "spring", bounce: 0.35 }}
+              whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.96 }}
               className={`${bg} lg-highlight relative rounded-2xl py-3 px-4 flex items-center justify-center gap-2 cursor-pointer`}
             >
               <Icon size={15} strokeWidth={1.5} style={{ color }} />
@@ -787,17 +923,13 @@ export default function HomePage() {
         {mobilePanel && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setMobilePanel(null)}
               className="fixed inset-0 z-40 md:hidden"
-              style={{ background: "rgba(255,240,245,0.4)", backdropFilter: "blur(8px)" }}
+              style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }}
             />
             <motion.div
-              initial={{ y: "100%", scale: 0.95 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: "100%", scale: 0.95 }}
+              initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden"
             >
@@ -814,27 +946,32 @@ export default function HomePage() {
       {/* Modals & Toast */}
       <AnimatePresence>
         {showRepas && (
-          <RepasModal
-            key="repas-modal"
-            onClose={() => setShowRepas(false)}
-            onSave={(name) => {
-              setShowRepas(false);
-              showToast(`${name} enregistré ✓`);
-            }}
-          />
+          <RepasModal key="repas-modal" onClose={() => setShowRepas(false)} onSave={(name) => { setShowRepas(false); showToast(`${name} enregistré ✓`); }} />
         )}
         {showObjectif && (
-          <ObjectifModal
-            key="objectif-modal"
-            onClose={() => setShowObjectif(false)}
-            onSave={(label) => {
-              setShowObjectif(false);
-              showToast(`Objectif défini : ${label} ✓`);
-            }}
-          />
+          <ObjectifModal key="objectif-modal" onClose={() => setShowObjectif(false)} onSave={(label) => { setShowObjectif(false); showToast(`Objectif défini : ${label} ✓`); }} />
         )}
         {toast && <HomeToast key="home-toast" message={toast} />}
       </AnimatePresence>
     </div>
+  );
+}
+
+/* ─── Page principale ─── */
+export default function HomePage() {
+  const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
+
+  if (isLoading) return null;
+
+  return (
+    <>
+      <AnimatePresence>
+        {justLoggedIn && user && (
+          <WelcomeBanner key="welcome" name={user.name} isNew={isNewUser} onDismiss={clearWelcome} />
+        )}
+      </AnimatePresence>
+
+      {user ? <Dashboard /> : <LandingPage />}
+    </>
   );
 }
