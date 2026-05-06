@@ -127,9 +127,9 @@ export default function Navigation() {
                 <div
                   className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-semibold cursor-default"
                   style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
-                  title={user.name}
+                  title={`@${user.pseudo}`}
                 >
-                  {user.name[0]?.toUpperCase()}
+                  {user.pseudo[0]?.toUpperCase()}
                 </div>
                 <motion.button
                   onClick={handleLogout}

@@ -413,46 +413,65 @@ function LandingPage() {
           <span style={{ color: "#A78BFA", fontWeight: 500 }}>tout au même endroit.</span>
         </motion.p>
 
-        {/* ── Orb central ── */}
+        {/* ── Visuel central : mesh lumineux animé ── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.2, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="relative flex items-center justify-center mb-10 md:mb-14"
-          style={{ width: 280, height: 280 }}
+          style={{ width: 340, height: 200 }}
         >
-          {/* Pulse rings */}
-          {[0,1,2,3,4].map((i) => (
-            <motion.div key={i} className="absolute rounded-full pointer-events-none"
-              style={{ inset: -(18 + i * 20), border: `1px solid rgba(167,139,250,${0.28 - i * 0.05})` }}
-              animate={{ scale: [1, 1.06, 1], opacity: [0.45 - i * 0.08, 0.04, 0.45 - i * 0.08] }}
-              transition={{ duration: 2.8, repeat: Infinity, delay: i * 0.5, ease: "easeInOut" }} />
+          {/* Halos gradient animés en couches */}
+          <motion.div className="absolute rounded-full pointer-events-none"
+            style={{ width: 320, height: 180, background: "radial-gradient(ellipse at 40% 50%, rgba(167,139,250,0.55) 0%, rgba(212,168,67,0.32) 50%, transparent 75%)", filter: "blur(28px)" }}
+            animate={{ scale: [1,1.12,1], x: [-12,12,-12], rotate: [0,8,0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
+          <motion.div className="absolute rounded-full pointer-events-none"
+            style={{ width: 260, height: 140, background: "radial-gradient(ellipse at 60% 40%, rgba(212,168,67,0.5) 0%, rgba(167,139,250,0.3) 55%, transparent 75%)", filter: "blur(22px)" }}
+            animate={{ scale: [1,1.18,1], x: [10,-10,10], rotate: [0,-6,0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }} />
+
+          {/* Lignes decoratives */}
+          {[0,1,2].map((i) => (
+            <motion.div key={i} className="absolute pointer-events-none rounded-full"
+              style={{ width: 180 + i * 60, height: 100 + i * 35, border: `1px solid rgba(167,139,250,${0.2 - i * 0.05})` }}
+              animate={{ rotate: i % 2 === 0 ? [0, 360] : [0, -360], scale: [1, 1.04, 1] }}
+              transition={{ rotate: { duration: 18 + i * 8, repeat: Infinity, ease: "linear" }, scale: { duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.6 } }} />
           ))}
 
-          {/* Halo */}
-          <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ inset: -60, background: "radial-gradient(circle, rgba(167,139,250,0.18) 0%, rgba(212,168,67,0.1) 45%, transparent 70%)", filter: "blur(12px)" }}
-            animate={{ scale: [1, 1.15, 1], opacity: [0.8, 0.45, 0.8] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} />
-
-          {/* Orbe */}
-          <motion.div
-            animate={{ scale: [1, 1.04, 1], boxShadow: [
-              "0 0 100px 25px rgba(167,139,250,0.38), 0 0 200px 50px rgba(212,168,67,0.18), inset 0 2px 0 rgba(255,255,255,0.8)",
-              "0 0 140px 35px rgba(212,168,67,0.38), 0 0 240px 70px rgba(167,139,250,0.18), inset 0 2px 0 rgba(255,255,255,0.8)",
-              "0 0 100px 25px rgba(167,139,250,0.38), 0 0 200px 50px rgba(212,168,67,0.18), inset 0 2px 0 rgba(255,255,255,0.8)",
-            ]}}
-            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-            className="relative rounded-full flex items-center justify-center"
-            style={{ width: 220, height: 220, background: "radial-gradient(circle at 32% 32%, rgba(220,205,255,0.98) 0%, rgba(167,139,250,0.88) 38%, rgba(212,168,67,0.72) 75%, rgba(245,230,163,0.92) 100%)" }}
+          {/* Glass card centrale — aperçu app */}
+          <motion.div className="relative z-10 px-7 py-5 rounded-3xl"
+            style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 16px 56px rgba(167,139,250,0.2), 0 4px 16px rgba(212,168,67,0.1), inset 0 1px 0 rgba(255,255,255,0.95)" }}
+            animate={{ y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
-            <motion.div className="absolute inset-5 rounded-full pointer-events-none" style={{ border: "1px dashed rgba(255,255,255,0.45)" }}
-              animate={{ rotate: 360 }} transition={{ duration: 9, repeat: Infinity, ease: "linear" }} />
-            <motion.div className="absolute inset-10 rounded-full pointer-events-none" style={{ border: "1px dashed rgba(255,255,255,0.28)" }}
-              animate={{ rotate: -360 }} transition={{ duration: 14, repeat: Infinity, ease: "linear" }} />
-            <motion.span className="text-7xl font-extralight relative z-10" style={{ color: "rgba(45,55,72,0.88)" }}
-              animate={{ opacity: [0.65, 1, 0.65] }} transition={{ duration: 3.5, repeat: Infinity }}>
-              A
-            </motion.span>
+            <div className="flex items-center gap-4">
+              {/* Score ring mini */}
+              <div className="relative flex-shrink-0" style={{ width: 52, height: 52 }}>
+                <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: "rotate(-90deg)" }}>
+                  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(167,139,250,0.15)" strokeWidth="3.5" />
+                  <motion.circle cx="26" cy="26" r="22" fill="none" stroke="url(#sg2)" strokeWidth="3.5" strokeLinecap="round"
+                    strokeDasharray={138.2} initial={{ strokeDashoffset: 138.2 }}
+                    animate={{ strokeDashoffset: 138.2 * 0.09 }} transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }} />
+                  <defs><linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#A78BFA" /><stop offset="100%" stopColor="#D4A843" /></linearGradient></defs>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base font-light leading-none" style={{ color: "#2D3748" }}>91</span>
+                  <span className="text-[7px] font-semibold" style={{ color: "#A0AEC0" }}>/100</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Score du jour</p>
+                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Récupération top 🔥</p>
+                <p className="text-[10px] font-light" style={{ color: "#A78BFA" }}>+12% cette semaine</p>
+              </div>
+              <div className="ml-2 flex flex-col gap-1.5">
+                {[["💪", "+23%"], ["🔥", "1 847"], ["😴", "7h24"]].map(([emoji, val]) => (
+                  <div key={val} className="flex items-center gap-1.5">
+                    <span className="text-[11px]">{emoji}</span>
+                    <span className="text-[10px] font-semibold" style={{ color: "#4A5568" }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         </motion.div>
 
