@@ -4,6 +4,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +32,12 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full bg-white">
-        <AuthProvider>
-          <Navigation />
-          <MainWrapper>{children}</MainWrapper>
-        </AuthProvider>
+        <SessionProviderWrapper>
+          <AuthProvider>
+            <Navigation />
+            <MainWrapper>{children}</MainWrapper>
+          </AuthProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );
