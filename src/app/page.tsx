@@ -91,7 +91,7 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
             className="w-28 h-28 rounded-[2rem] flex items-center justify-center text-5xl font-bold"
             style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "0 16px 56px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)" }}
           >
-            {pseudo[0]?.toUpperCase()}
+            {(pseudo || "?")[0]?.toUpperCase()}
           </motion.div>
           {[0,1,2,3].map((i) => (
             <motion.div key={i} className="absolute pointer-events-none"
@@ -111,7 +111,7 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
         </motion.h2>
         <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
           className="text-xl font-light mb-2" style={{ color: "#A78BFA" }}>
-          @{pseudo}
+          @{pseudo || "toi"}
         </motion.p>
         <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.46 }}
           className="text-sm font-light" style={{ color: "#718096" }}>
@@ -553,7 +553,7 @@ function Dashboard() {
         <div>
           <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
           <motion.h1 className="text-2xl md:text-3xl font-extralight mt-1" style={{ color: "#2D3748" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
-            {user ? `@${user.pseudo}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
+            {user ? `@${user.pseudo ?? user.name}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
           </motion.h1>
         </div>
         <div className="flex items-center gap-3">
@@ -567,7 +567,7 @@ function Dashboard() {
               <motion.div whileHover={{ scale: 1.08, rotate: 5 }} whileTap={{ scale: 0.92 }}
                 className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)" }}>
-                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{user.pseudo[0]?.toUpperCase()}</span>
+                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
               </motion.div>
             ) : (
               <Link href="/auth">
