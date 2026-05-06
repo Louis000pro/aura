@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff, ArrowRight, Sparkles,
-  User, Mail, Lock, CheckCircle2, AtSign, UserCheck,
+  User, Mail, Lock, CheckCircle2, AtSign, UserCheck, X as XIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -124,7 +124,11 @@ export default function AuthPage() {
   const [password, setPassword]   = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]     = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<"google"|"apple"|null>(null);
+  const [oauthLoading, setOauthLoading] = useState<"google"|null>(null);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const [success, setSuccess]     = useState(false);
   const [particles, setParticles] = useState<ParticleData[]>([]);
 
@@ -171,10 +175,20 @@ export default function AuthPage() {
     router.push("/");
   };
 
-  /* ── OAuth Google / Apple (vrai redirect) ── */
-  const handleOAuth = async (provider: "google" | "apple") => {
+  /* ── OAuth Google (vrai redirect) ── */
+  const handleOAuth = async (provider: "google") => {
     setOauthLoading(provider);
     await signIn(provider, { callbackUrl: "/auth/oauth-callback" });
+  };
+
+  /* ── Mot de passe oublié (simulé) ── */
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setForgotLoading(true);
+    await new Promise(r => setTimeout(r, 1400));
+    setForgotLoading(false);
+    setForgotSent(true);
   };
 
   return (
@@ -262,17 +276,12 @@ export default function AuthPage() {
             <p className="text-[11px] font-light mt-0.5 tracking-wider" style={{ color: "#A0AEC0" }}>Coach IA · Musculation · Nutrition</p>
           </div>
 
-          {/* ── Boutons OAuth ── */}
-          <div className="flex gap-2.5 mb-5">
+          {/* ── Bouton OAuth Google ── */}
+          <div className="mb-5">
             <OAuthButton
-              provider="google" label="Google" icon={GoogleIcon}
+              provider="google" label="Continuer avec Google" icon={GoogleIcon}
               onClick={() => handleOAuth("google")}
               loading={oauthLoading === "google"}
-            />
-            <OAuthButton
-              provider="apple" label="Apple" icon={AppleIcon}
-              onClick={() => handleOAuth("apple")}
-              loading={oauthLoading === "apple"}
             />
           </div>
 
@@ -372,12 +381,71 @@ export default function AuthPage() {
             </motion.button>
           </form>
 
+          {/* Mot de passe oublié */}
+          <AnimatePresence>
+            {forgotMode && (
+              <motion.div key="forgot"
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }} style={{ overflow: "hidden" }}
+                className="mt-4"
+              >
+                <div className="rounded-2xl p-4" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)" }}>
+                  {forgotSent ? (
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center gap-2 py-2">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                        <CheckCircle2 size={20} style={{ color: "#2D3748" }} strokeWidth={1.5} />
+                      </div>
+                      <p className="text-xs text-center font-light" style={{ color: "#2D3748" }}>
+                        Email envoyé à <strong>{forgotEmail}</strong>.<br />
+                        <span style={{ color: "#A0AEC0" }}>Vérifie ta boîte mail.</span>
+                      </p>
+                      <button onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(""); }}
+                        className="text-[11px] cursor-pointer hover:underline" style={{ color: "#A78BFA" }}>
+                        Fermer
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <form onSubmit={handleForgot} className="flex flex-col gap-3">
+                      <p className="text-xs font-light" style={{ color: "#718096" }}>Saisis ton email pour recevoir un lien de réinitialisation.</p>
+                      <InputField icon={<Mail size={15} />} type="email" placeholder="ton@email.com"
+                        value={forgotEmail} onChange={setForgotEmail} required />
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => setForgotMode(false)}
+                          className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
+                          style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)", color: "#718096" }}>
+                          Annuler
+                        </button>
+                        <motion.button type="submit" disabled={forgotLoading || !forgotEmail.trim()}
+                          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                          className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-2"
+                          style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", opacity: !forgotEmail.trim() ? 0.6 : 1 }}>
+                          {forgotLoading
+                            ? <motion.div className="w-3.5 h-3.5 rounded-full border-2" style={{ borderColor: "rgba(255,255,255,0.3)", borderTopColor: "#fff" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                            : "Envoyer"}
+                        </motion.button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <p className="text-center text-[11px] mt-5 font-light" style={{ color: "#A0AEC0" }}>
             {mode === "login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
             <button onClick={() => setMode(mode === "login" ? "signup" : "login")}
               className="font-medium cursor-pointer hover:underline" style={{ color: "#2D3748" }}>
               {mode === "login" ? "Créer un compte" : "Se connecter"}
             </button>
+            {mode === "login" && (
+              <>
+                {" · "}
+                <button onClick={() => setForgotMode(v => !v)}
+                  className="font-medium cursor-pointer hover:underline" style={{ color: "#A78BFA" }}>
+                  Mot de passe oublié ?
+                </button>
+              </>
+            )}
           </p>
         </div>
       </motion.div>

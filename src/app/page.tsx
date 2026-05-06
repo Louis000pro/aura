@@ -9,6 +9,7 @@ import VocalOrb from "@/components/VocalOrb";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatsPanel from "@/components/StatsPanel";
 import { useAuth } from "@/context/AuthContext";
+import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 
 /* ─── Score Ring ─── */
 function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
@@ -521,6 +522,32 @@ function Dashboard() {
   const [toast, setToast] = useState<string|null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Affiche l'onboarding si pas encore rempli
+  useEffect(() => {
+    if (!user) return;
+    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
+    if (!localStorage.getItem(key)) {
+      // Petit délai pour laisser le welcome banner se fermer d'abord
+      const t = setTimeout(() => setShowOnboarding(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [user]);
+
+  const handleOnboardingComplete = (data: OnboardingData) => {
+    if (!user) return;
+    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
+    localStorage.setItem(key, JSON.stringify(data));
+    setShowOnboarding(false);
+  };
+
+  const handleOnboardingSkip = () => {
+    if (!user) return;
+    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
+    localStorage.setItem(key, JSON.stringify({ skipped: true }));
+    setShowOnboarding(false);
+  };
 
   const sendMessage = useCallback((text: string) => {
     if (!text.trim()) return;
@@ -553,7 +580,7 @@ function Dashboard() {
         <div>
           <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
           <motion.h1 className="text-2xl md:text-3xl font-extralight mt-1" style={{ color: "#2D3748" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
-            {user ? `@${user.pseudo ?? user.name}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
+            {user ? `${user.pseudo ?? user.name}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
           </motion.h1>
         </div>
         <div className="flex items-center gap-3">
@@ -663,6 +690,14 @@ function Dashboard() {
         {showRepas && <RepasModal key="repas" onClose={() => setShowRepas(false)} onSave={(n) => { setShowRepas(false); showToast(`${n} enregistré ✓`); }} />}
         {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
         {toast && <HomeToast key="toast" message={toast} />}
+        {showOnboarding && user && (
+          <OnboardingModal
+            key="onboarding"
+            pseudo={user.pseudo ?? user.name ?? ""}
+            onComplete={handleOnboardingComplete}
+            onSkip={handleOnboardingSkip}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
