@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, User, Dumbbell, X, ChevronRight } from "lucide-react";
@@ -19,6 +19,18 @@ const fakeResults: { type: ResultType; name: string; sub: string; href: string }
 export default function RecherchePage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"tous" | ResultType>("tous");
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1.5 + Math.random() * 2.5,
+      delay: Math.random() * 6,
+      duration: 6 + Math.random() * 8,
+      opacity: 0.35 + Math.random() * 0.45,
+    })));
+  }, []);
 
   const filtered = fakeResults.filter((r) => {
     const matchQuery = query.trim() === "" || r.name.toLowerCase().includes(query.toLowerCase());
@@ -28,9 +40,42 @@ export default function RecherchePage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden px-6 pt-10 pb-32 md:pl-28 md:pr-10 md:pt-10 md:pb-10">
-      {/* Ambient blobs */}
-      <div className="lg-blob absolute pointer-events-none" style={{ top: "5%", left: "8%", width: 280, height: 280, background: "rgba(255,214,231,0.55)" }} />
-      <div className="lg-blob absolute pointer-events-none" style={{ bottom: "10%", right: "6%", width: 320, height: 320, background: "rgba(178,240,240,0.5)" }} />
+      {/* ── Calque déco : blobs · anneaux · particules ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        <motion.div className="absolute rounded-full"
+          style={{ top: "2%", left: "3%", width: 380, height: 380, background: "rgba(212,192,255,0.4)", filter: "blur(80px)" }}
+          animate={{ scale: [1,1.2,1], x: [-15,25,-15], y: [-10,18,-10] }}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="absolute rounded-full"
+          style={{ bottom: "5%", right: "3%", width: 360, height: 360, background: "rgba(245,230,163,0.35)", filter: "blur(80px)" }}
+          animate={{ scale: [1,1.18,1], x: [15,-25,15], y: [10,-18,10] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.8 }} />
+        <motion.div className="absolute rounded-full"
+          style={{ top: "50%", left: "50%", width: 220, height: 220, background: "rgba(167,139,250,0.15)", filter: "blur(60px)" }}
+          animate={{ scale: [1,1.4,1] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
+        {[520, 380, 260].map((size, i) => (
+          <motion.div key={size} className="absolute rounded-full"
+            style={{
+              width: size, height: size,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.18 : i === 1 ? 0.26 : 0.18})`,
+              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+            }}
+            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+            transition={{ duration: 38 + i * 14, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+        {particles.map((p) => (
+          <motion.div key={p.id} className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size + 1, height: p.size + 1,
+              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+            }}
+            animate={{ y: ["-20px", "20px", "-20px"], opacity: [p.opacity * 0.4, p.opacity, p.opacity * 0.4] }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
 
       <motion.div
         className="relative z-10 max-w-lg mx-auto"
@@ -80,7 +125,7 @@ export default function RecherchePage() {
               className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 capitalize"
               style={
                 filter === f
-                  ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                   : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
               }
             >
@@ -128,8 +173,8 @@ export default function RecherchePage() {
                       className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{
                         background: r.type === "compte"
-                          ? "linear-gradient(135deg, #FFD6E7 0%, #F9A8C9 100%)"
-                          : "linear-gradient(135deg, #B2F0F0 0%, #7ED8D8 100%)",
+                          ? "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)"
+                          : "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
                       }}
                     >
@@ -151,8 +196,8 @@ export default function RecherchePage() {
                         className="text-[9px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full"
                         style={
                           r.type === "compte"
-                            ? { background: "rgba(255,214,231,0.5)", color: "#F9A8C9" }
-                            : { background: "rgba(178,240,240,0.5)", color: "#7ED8D8" }
+                            ? { background: "rgba(255,214,231,0.5)", color: "#A78BFA" }
+                            : { background: "rgba(178,240,240,0.5)", color: "#D4A843" }
                         }
                       >
                         {r.type}

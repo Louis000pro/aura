@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus } from "lucide-react";
@@ -66,13 +66,13 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
       style={{
         background: "rgba(255,255,255,0.85)",
         backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,240,245,0.9)",
-        boxShadow: "0 8px 32px rgba(249,168,201,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+        border: "1px solid rgba(240,235,255,0.9)",
+        boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
         color: "#2D3748",
         whiteSpace: "nowrap",
       }}
     >
-      <Check size={14} strokeWidth={2.5} style={{ color: "#7ED8D8" }} />
+      <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
       <span className="text-sm font-medium">{message}</span>
     </motion.div>
   );
@@ -105,7 +105,7 @@ function EditProfileModal({ name, email, onSave, onClose }: {
           background: "rgba(255,255,255,0.85)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(249,168,201,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -115,7 +115,7 @@ function EditProfileModal({ name, email, onSave, onClose }: {
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(255,240,245,0.8)" }}
+            style={{ background: "rgba(240,235,255,0.8)" }}
           >
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
@@ -128,15 +128,15 @@ function EditProfileModal({ name, email, onSave, onClose }: {
             whileTap={{ scale: 0.95 }}
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-light cursor-pointer relative"
             style={{
-              background: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 100%)",
-              boxShadow: "0 4px 16px rgba(249,168,201,0.2)",
+              background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)",
+              boxShadow: "0 4px 16px rgba(167,139,250,0.2)",
               color: "#2D3748",
             }}
           >
             {editName.charAt(0).toUpperCase() || "?"}
             <div
               className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)" }}
+              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
             >
               <Edit2 size={10} strokeWidth={2.5} style={{ color: "#2D3748" }} />
             </div>
@@ -153,8 +153,8 @@ function EditProfileModal({ name, email, onSave, onClose }: {
               onChange={(e) => setEditName(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none transition-all duration-200"
               style={{
-                background: "rgba(255,240,245,0.5)",
-                border: "1px solid rgba(255,214,231,0.6)",
+                background: "rgba(240,235,255,0.5)",
+                border: "1px solid rgba(212,192,255,0.6)",
                 color: "#2D3748",
               }}
               placeholder="Votre nom"
@@ -168,8 +168,8 @@ function EditProfileModal({ name, email, onSave, onClose }: {
               onChange={(e) => setEditEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none transition-all duration-200"
               style={{
-                background: "rgba(255,240,245,0.5)",
-                border: "1px solid rgba(255,214,231,0.6)",
+                background: "rgba(240,235,255,0.5)",
+                border: "1px solid rgba(212,192,255,0.6)",
                 color: "#2D3748",
               }}
               placeholder="votre@email.com"
@@ -183,9 +183,9 @@ function EditProfileModal({ name, email, onSave, onClose }: {
           onClick={() => onSave(editName, editEmail)}
           className="w-full mt-5 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
             color: "#2D3748",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(249,168,201,0.2)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
           }}
         >
           Sauvegarder
@@ -206,29 +206,29 @@ type FollowUser = {
 };
 
 const MOCK_FOLLOWERS: FollowUser[] = [
-  { id: 1,  name: "Lucas Martin",    handle: "lucas.fit",     initials: "LM", color: "linear-gradient(135deg,#FFD6E7,#B2F0F0)", following: true  },
-  { id: 2,  name: "Emma Dupont",     handle: "emma_lifting",  initials: "ED", color: "linear-gradient(135deg,#E0FFFF,#B2F0F0)", following: false },
-  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#FFF0F5,#FFD6E7)", following: true  },
-  { id: 4,  name: "Chloé Bernard",   handle: "chloe.b",       initials: "CB", color: "linear-gradient(135deg,#E0FFFF,#FFF0F5)", following: false },
-  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#FFD6E7,#E0FFFF)", following: true  },
-  { id: 6,  name: "Léa Rousseau",    handle: "lea.rousseau",  initials: "LR", color: "linear-gradient(135deg,#B2F0F0,#FFF0F5)", following: false },
-  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#FFF0F5,#B2F0F0)", following: true  },
-  { id: 8,  name: "Inès Laurent",    handle: "ines.fit",      initials: "IL", color: "linear-gradient(135deg,#FFD6E7,#FFF0F5)", following: false },
-  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#E0FFFF,#FFD6E7)", following: true  },
-  { id: 10, name: "Zoé Garcia",      handle: "zoefit",        initials: "ZG", color: "linear-gradient(135deg,#FFF0F5,#E0FFFF)", following: false },
-  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#B2F0F0,#FFD6E7)", following: true  },
-  { id: 12, name: "Manon Thomas",    handle: "manonfit",      initials: "MT", color: "linear-gradient(135deg,#FFD6E7,#B2F0F0)", following: false },
+  { id: 1,  name: "Lucas Martin",    handle: "lucas.fit",     initials: "LM", color: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", following: true  },
+  { id: 2,  name: "Emma Dupont",     handle: "emma_lifting",  initials: "ED", color: "linear-gradient(135deg,#FFFBF0,#F5E6A3)", following: false },
+  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true  },
+  { id: 4,  name: "Chloé Bernard",   handle: "chloe.b",       initials: "CB", color: "linear-gradient(135deg,#FFFBF0,#F0EBFF)", following: false },
+  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#D4C0FF,#FFFBF0)", following: true  },
+  { id: 6,  name: "Léa Rousseau",    handle: "lea.rousseau",  initials: "LR", color: "linear-gradient(135deg,#F5E6A3,#F0EBFF)", following: false },
+  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#F0EBFF,#F5E6A3)", following: true  },
+  { id: 8,  name: "Inès Laurent",    handle: "ines.fit",      initials: "IL", color: "linear-gradient(135deg,#D4C0FF,#F0EBFF)", following: false },
+  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#FFFBF0,#D4C0FF)", following: true  },
+  { id: 10, name: "Zoé Garcia",      handle: "zoefit",        initials: "ZG", color: "linear-gradient(135deg,#F0EBFF,#FFFBF0)", following: false },
+  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#F5E6A3,#D4C0FF)", following: true  },
+  { id: 12, name: "Manon Thomas",    handle: "manonfit",      initials: "MT", color: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", following: false },
 ];
 
 const MOCK_FOLLOWING: FollowUser[] = [
-  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#FFF0F5,#FFD6E7)", following: true  },
-  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#FFD6E7,#E0FFFF)", following: true  },
-  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#FFF0F5,#B2F0F0)", following: true  },
-  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#E0FFFF,#FFD6E7)", following: true  },
-  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#B2F0F0,#FFD6E7)", following: true  },
-  { id: 13, name: "Sophie Michel",   handle: "sophiefit",     initials: "SM", color: "linear-gradient(135deg,#FFD6E7,#FFF0F5)", following: true  },
-  { id: 14, name: "Romain Blanc",    handle: "romain.blanc",  initials: "RB", color: "linear-gradient(135deg,#E0FFFF,#B2F0F0)", following: true  },
-  { id: 15, name: "Alice Fontaine",  handle: "alice.gains",   initials: "AF", color: "linear-gradient(135deg,#FFF0F5,#FFD6E7)", following: true  },
+  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true  },
+  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#D4C0FF,#FFFBF0)", following: true  },
+  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#F0EBFF,#F5E6A3)", following: true  },
+  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#FFFBF0,#D4C0FF)", following: true  },
+  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#F5E6A3,#D4C0FF)", following: true  },
+  { id: 13, name: "Sophie Michel",   handle: "sophiefit",     initials: "SM", color: "linear-gradient(135deg,#D4C0FF,#F0EBFF)", following: true  },
+  { id: 14, name: "Romain Blanc",    handle: "romain.blanc",  initials: "RB", color: "linear-gradient(135deg,#FFFBF0,#F5E6A3)", following: true  },
+  { id: 15, name: "Alice Fontaine",  handle: "alice.gains",   initials: "AF", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true  },
 ];
 
 /* ─────────────── Follow List Modal ─────────────── */
@@ -278,7 +278,7 @@ function FollowListModal({
         style={{
           background: "rgba(255,255,255,0.92)",
           backdropFilter: "blur(40px)",
-          boxShadow: "0 -12px 48px rgba(249,168,201,0.18)",
+          boxShadow: "0 -12px 48px rgba(167,139,250,0.18)",
           maxHeight: "82vh",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -393,7 +393,7 @@ function FollowListModal({
                               border: "1px solid rgba(0,0,0,0.08)",
                             }
                           : {
-                              background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+                              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
                               color: "#2D3748",
                               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
                             }
@@ -448,16 +448,16 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
           background: "rgba(255,255,255,0.85)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(249,168,201,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Lock size={16} strokeWidth={1.5} style={{ color: "#7ED8D8" }} />
+            <Lock size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
             <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Confidentialité</h2>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(255,240,245,0.8)" }}>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
@@ -467,7 +467,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
             { label: "Partage de données", desc: "Partager vos stats avec la communauté", state: dataSharing, toggle: () => setDataSharing(v => !v) },
             { label: "Analytiques", desc: "Améliorer l'app avec vos données anonymisées", state: analytics, toggle: () => setAnalytics(v => !v) },
           ].map(({ label, desc, state, toggle }) => (
-            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(255,240,245,0.4)" }}>
+            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(240,235,255,0.4)" }}>
               <div className="flex-1">
                 <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
                 <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{desc}</p>
@@ -475,7 +475,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
               <motion.button
                 onClick={toggle}
                 className="relative w-11 h-6 rounded-full cursor-pointer flex-shrink-0"
-                style={{ background: state ? "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)" : "rgba(220,220,220,0.6)" }}
+                style={{ background: state ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(220,220,220,0.6)" }}
                 whileTap={{ scale: 0.95 }}
               >
                 <motion.div
@@ -509,6 +509,18 @@ export default function ProfilPage() {
   const [profileEmail, setProfileEmail] = useState(user?.email || "marie@example.com");
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const { settings, updateSettings } = useProfileSettings();
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1.5 + Math.random() * 2.5,
+      delay: Math.random() * 6,
+      duration: 6 + Math.random() * 8,
+      opacity: 0.35 + Math.random() * 0.45,
+    })));
+  }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -572,7 +584,46 @@ export default function ProfilPage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4">
+    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 relative overflow-x-hidden">
+      {/* ── Calque déco : blobs · anneaux · particules ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        <motion.div className="absolute rounded-full"
+          style={{ top: "-8%", left: "-10%", width: 480, height: 480, background: "rgba(212,192,255,0.38)", filter: "blur(90px)" }}
+          animate={{ scale: [1,1.18,1], x: [-20,35,-20], y: [-10,20,-10] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} />
+        <motion.div className="absolute rounded-full"
+          style={{ bottom: "-8%", right: "-10%", width: 440, height: 440, background: "rgba(245,230,163,0.32)", filter: "blur(90px)" }}
+          animate={{ scale: [1,1.15,1], x: [20,-30,20], y: [15,-25,15] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} />
+        <motion.div className="absolute rounded-full"
+          style={{ top: "40%", right: "5%", width: 260, height: 260, background: "rgba(167,139,250,0.18)", filter: "blur(70px)" }}
+          animate={{ scale: [1,1.3,1], y: [0,40,0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
+        {[580, 440, 310].map((size, i) => (
+          <motion.div key={size} className="absolute rounded-full"
+            style={{
+              width: size, height: size,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.18 : i === 1 ? 0.26 : 0.18})`,
+              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+            }}
+            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+            transition={{ duration: 40 + i * 15, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+        {particles.map((p) => (
+          <motion.div key={p.id} className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size + 1, height: p.size + 1,
+              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+            }}
+            animate={{ y: ["-20px", "20px", "-20px"], opacity: [p.opacity * 0.4, p.opacity, p.opacity * 0.4] }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+      {/* ── Contenu ── */}
+      <div className="relative flex flex-col flex-1" style={{ zIndex: 1 }}>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
@@ -593,13 +644,13 @@ export default function ProfilPage() {
         transition={{ duration: 0.5, delay: 0.1 }}
         className="rounded-3xl p-6 mb-6 relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 50%, #FFF0F5 100%)",
-          boxShadow: "0 4px 32px 0 rgba(249,168,201,0.15)",
+          background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 50%, #F0EBFF 100%)",
+          boxShadow: "0 4px 32px 0 rgba(167,139,250,0.15)",
         }}
       >
         <div
           className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-30"
-          style={{ background: "radial-gradient(circle, #FFD6E7 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, #D4C0FF 0%, transparent 70%)" }}
         />
         <div className="flex items-center gap-4 relative z-10">
           <motion.div
@@ -608,7 +659,7 @@ export default function ProfilPage() {
             className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-light flex-shrink-0"
             style={{
               background: "rgba(255,255,255,0.7)",
-              boxShadow: "0 4px 16px 0 rgba(249,168,201,0.2)",
+              boxShadow: "0 4px 16px 0 rgba(167,139,250,0.2)",
               color: "#2D3748",
             }}
           >
@@ -619,9 +670,9 @@ export default function ProfilPage() {
             <p className="text-xs font-light" style={{ color: "#718096" }}>{profileEmail}</p>
             <div
               className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-[10px] font-semibold"
-              style={{ background: "rgba(255,255,255,0.7)", color: "#F9A8C9" }}
+              style={{ background: "rgba(255,255,255,0.7)", color: "#A78BFA" }}
             >
-              <Star size={9} fill="#F9A8C9" strokeWidth={0} />
+              <Star size={9} fill="#A78BFA" strokeWidth={0} />
               Premium
             </div>
           </div>
@@ -667,7 +718,7 @@ export default function ProfilPage() {
                 </span>
                 <span
                   className="text-[9px] font-semibold tracking-wider uppercase mt-0.5"
-                  style={{ color: clickable ? "#F9A8C9" : "#A0AEC0" }}
+                  style={{ color: clickable ? "#A78BFA" : "#A0AEC0" }}
                 >
                   {label}
                 </span>
@@ -685,9 +736,9 @@ export default function ProfilPage() {
         animate="visible"
       >
         {[
-          { label: "Séances", value: "48", gradient: "linear-gradient(135deg, #E0FFFF 0%, #B2F0F0 100%)" },
-          { label: "Jours actifs", value: "31", gradient: "linear-gradient(135deg, #FFF0F5 0%, #FFD6E7 100%)" },
-          { label: "Score moyen", value: "91", gradient: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 100%)" },
+          { label: "Séances", value: "48", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
+          { label: "Jours actifs", value: "31", gradient: "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)" },
+          { label: "Score moyen", value: "91", gradient: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" },
         ].map(({ label, value, gradient }) => (
           <motion.div
             key={label}
@@ -695,7 +746,7 @@ export default function ProfilPage() {
             whileHover={{ y: -2, scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             className="rounded-2xl p-4 text-center cursor-pointer"
-            style={{ background: gradient, boxShadow: "0 2px 12px 0 rgba(249,168,201,0.08)" }}
+            style={{ background: gradient, boxShadow: "0 2px 12px 0 rgba(167,139,250,0.08)" }}
             onClick={() => showToast(`${value} ${label} au total`)}
           >
             <p className="text-2xl font-light" style={{ color: "#2D3748" }}>{value}</p>
@@ -732,10 +783,10 @@ export default function ProfilPage() {
                 onClick={(e) => { e.stopPropagation(); setShareData(perf); }}
                 className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, rgba(255,214,231,0.92) 0%, rgba(178,240,240,0.92) 100%)",
+                  background: "linear-gradient(135deg, rgba(212,192,255,0.92) 0%, rgba(245,230,163,0.92) 100%)",
                   border: "1px solid rgba(255,255,255,0.7)",
                   backdropFilter: "blur(12px)",
-                  boxShadow: "0 2px 8px rgba(249,168,201,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  boxShadow: "0 2px 8px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
                 }}
                 aria-label="Partager"
               >
@@ -762,7 +813,7 @@ export default function ProfilPage() {
           style={{
             background: "rgba(255,255,255,0.7)",
             border: "1px solid rgba(255,255,255,0.7)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(249,168,201,0.12)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.12)",
             backdropFilter: "blur(32px)",
           }}
         >
@@ -786,7 +837,7 @@ export default function ProfilPage() {
                   style={
                     settings.gender === g
                       ? {
-                          background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+                          background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
                           color: "#2D3748",
                           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
                         }
@@ -826,7 +877,7 @@ export default function ProfilPage() {
               style={{
                 background: "rgba(255,255,255,0.7)",
                 border: "1px solid rgba(255,255,255,0.7)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(249,168,201,0.12)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.12)",
                 backdropFilter: "blur(32px) saturate(180%)",
                 WebkitBackdropFilter: "blur(32px) saturate(180%)",
               }}
@@ -843,7 +894,7 @@ export default function ProfilPage() {
                   >
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 100%)" }}
+                      style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" }}
                     >
                       <Icon size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
                     </div>
@@ -852,14 +903,14 @@ export default function ProfilPage() {
                       <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{desc}</p>
                     </div>
                     {action ? (
-                      <span className="text-xs font-medium flex items-center gap-0.5" style={{ color: "#F9A8C9" }}>
+                      <span className="text-xs font-medium flex items-center gap-0.5" style={{ color: "#A78BFA" }}>
                         {action}
                         <ExternalLink size={10} strokeWidth={2} />
                       </span>
                     ) : (
                       label === "Notifications" ? (
                         <motion.div
-                          animate={{ background: notifEnabled ? "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)" : "rgba(220,220,220,0.6)" }}
+                          animate={{ background: notifEnabled ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(220,220,220,0.6)" }}
                           className="relative w-10 h-5 rounded-full flex-shrink-0"
                         >
                           <motion.div
@@ -875,7 +926,7 @@ export default function ProfilPage() {
                     )}
                   </motion.button>
                   {i < items.length - 1 && (
-                    <div className="h-px mx-5" style={{ background: "rgba(255,240,245,0.9)" }} />
+                    <div className="h-px mx-5" style={{ background: "rgba(240,235,255,0.9)" }} />
                   )}
                 </div>
               ))}
@@ -886,12 +937,12 @@ export default function ProfilPage() {
         {/* Logout */}
         <motion.div variants={itemVariants}>
           <motion.button
-            whileHover={{ scale: 1.01, background: "rgba(255,240,245,0.5)" }}
+            whileHover={{ scale: 1.01, background: "rgba(240,235,255,0.5)" }}
             whileTap={{ scale: 0.97 }}
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl cursor-pointer transition-all duration-200"
             style={{
-              border: "1px solid rgba(255,214,231,0.6)",
+              border: "1px solid rgba(212,192,255,0.6)",
               color: "#A0AEC0",
               background: "transparent",
             }}
@@ -933,6 +984,7 @@ export default function ProfilPage() {
         onClose={() => setShareData(null)}
         data={shareData ?? samplePerformances[0]}
       />
+      </div>
     </div>
   );
 }
