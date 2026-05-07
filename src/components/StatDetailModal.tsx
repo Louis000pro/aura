@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, TrendingDown } from "lucide-react";
+import { X, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StatData } from "@/data/statsData";
 
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -29,9 +30,25 @@ export default function StatDetailModal({
     weekData,
     weekMax,
     breakdown,
-    tip,
+    tips,
     todayIndex,
   } = stat;
+
+  // Tip aléatoire à l'ouverture, navigable ensuite
+  const [tipIndex, setTipIndex] = useState(() =>
+    Math.floor(Math.random() * tips.length)
+  );
+  const [tipDir, setTipDir] = useState<1 | -1>(1);
+
+  const prevTip = useCallback(() => {
+    setTipDir(-1);
+    setTipIndex((i) => (i - 1 + tips.length) % tips.length);
+  }, [tips.length]);
+
+  const nextTip = useCallback(() => {
+    setTipDir(1);
+    setTipIndex((i) => (i + 1) % tips.length);
+  }, [tips.length]);
 
   return (
     <motion.div
@@ -231,17 +248,69 @@ export default function StatDetailModal({
         {/* ── Conseil ── */}
         <div className="px-6 py-4">
           <div
-            className="flex gap-3 p-3.5 rounded-2xl"
+            className="rounded-2xl overflow-hidden"
             style={{
               background:
                 "linear-gradient(135deg, rgba(240,235,255,0.65) 0%, rgba(255,251,240,0.65) 100%)",
               border: "1px solid rgba(255,255,255,0.75)",
             }}
           >
-            <span className="text-base flex-shrink-0 leading-none mt-0.5">💡</span>
-            <p className="text-xs font-light leading-relaxed" style={{ color: "#4A5568" }}>
-              {tip}
-            </p>
+            {/* Tip text — animé au changement */}
+            <div className="px-4 pt-4 pb-3 min-h-[72px] flex gap-3 items-start overflow-hidden">
+              <span className="text-base flex-shrink-0 leading-none mt-0.5">💡</span>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.p
+                  key={tipIndex}
+                  initial={{ opacity: 0, x: tipDir * 18 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: tipDir * -18 }}
+                  transition={{ duration: 0.22, ease: "easeOut" }}
+                  className="text-xs font-light leading-relaxed"
+                  style={{ color: "#4A5568" }}
+                >
+                  {tips[tipIndex]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
+
+            {/* Navigation */}
+            <div
+              className="flex items-center justify-between px-3 pb-3"
+            >
+              {/* Dots */}
+              <div className="flex items-center gap-1">
+                {tips.map((_, i) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => { setTipDir(i > tipIndex ? 1 : -1); setTipIndex(i); }}
+                    animate={{ width: i === tipIndex ? 14 : 5, opacity: i === tipIndex ? 1 : 0.35 }}
+                    transition={{ duration: 0.2 }}
+                    className="h-1.5 rounded-full cursor-pointer"
+                    style={{ background: iconColor }}
+                  />
+                ))}
+              </div>
+
+              {/* Arrows */}
+              <div className="flex items-center gap-1">
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={prevTip}
+                  className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.7)" }}
+                >
+                  <ChevronLeft size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={nextTip}
+                  className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.7)" }}
+                >
+                  <ChevronRight size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>

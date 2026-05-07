@@ -20,7 +20,7 @@ export type StatData = {
   weekData: (number | null)[];
   weekMax: number;
   breakdown: SubItem[];
-  tip: string;
+  tips: string[];
   todayIndex: number;
 };
 
@@ -47,7 +47,15 @@ export const stats: StatData[] = [
       { title: "Collation", amount: "180 kcal" },
       { title: "Dîner (estimé)", amount: "467 kcal" },
     ],
-    tip: "Visez 30 % protéines · 40 % glucides · 30 % lipides pour optimiser énergie et récupération.",
+    tips: [
+      "Visez 30 % protéines · 40 % glucides · 30 % lipides pour optimiser énergie et récupération.",
+      "Répartissez vos calories en 4-5 prises par jour pour stabiliser la glycémie et limiter les fringales.",
+      "Les protéines rassasient 2× plus que les glucides : viser 1.6-2 g/kg de poids corporel aide à rester en déficit sans faim.",
+      "Peser vos aliments crus au moins 2 semaines vous calibre mieux que n'importe quelle appli sur le long terme.",
+      "Un repas de fin de journée plus riche en glucides favorise la récupération musculaire et améliore la qualité du sommeil.",
+      "Ne sautez pas le petit-déjeuner si vous vous entraînez le matin — 20-30 g de protéines à jeun limitent le catabolisme.",
+      "Un journal alimentaire de 3 jours révèle souvent des calories « oubliées » (sauces, huiles, boissons) qui représentent +300-500 kcal.",
+    ],
     todayIndex: 3,
   },
   {
@@ -71,7 +79,14 @@ export const stats: StatData[] = [
       { title: "Marche 30 min", amount: "145 kcal" },
       { title: "Étirements 15 min", amount: "87 kcal" },
     ],
-    tip: "2 à 4 séances de force + 7 000 pas/jour = dépense active optimale pour la majorité des objectifs.",
+    tips: [
+      "2 à 4 séances de force + 7 000 pas/jour = dépense active optimale pour la majorité des objectifs.",
+      "Le HIIT de 20 min brûle autant de calories totales qu'un cardio de 40 min, avec un effet afterburn de 12-24 h.",
+      "La dépense calorique d'une séance de musculation varie peu selon les exercices ; c'est le volume (séries × reps) qui compte.",
+      "Le non-exercise activity thermogenesis (NEAT) — gesticuler, faire les courses, cuisiner — peut représenter 300-500 kcal de plus par jour.",
+      "Plus vous êtes en forme, plus votre corps devient efficace : la même séance brûlera moins de calories au fil du temps, d'où l'importance de progresser.",
+      "Marcher 10 min après chaque repas réduit la glycémie postprandiale de 30 % et augmente la dépense journalière sans effort perçu.",
+    ],
     todayIndex: 3,
   },
   {
@@ -95,7 +110,15 @@ export const stats: StatData[] = [
       { title: "Midi (12h – 14h)", amount: "3 400 pas" },
       { title: "Après-midi (14h – 20h)", amount: "2 734 pas" },
     ],
-    tip: "Préférez les escaliers et garez-vous plus loin — 1 000 pas supplémentaires par habitude s'accumulent très vite !",
+    tips: [
+      "Préférez les escaliers et garez-vous plus loin — 1 000 pas supplémentaires par habitude s'accumulent très vite !",
+      "Une marche de 30 min à jeun le matin oxyde davantage de graisses qu'un cardio intense après repas.",
+      "Dépasser 10 000 pas/jour réduit de façon notable le risque de diabète de type 2, même sans autre activité sportive.",
+      "Fractionner ses pas (3 × 10 min) donne les mêmes bénéfices cardiovasculaires qu'une seule marche de 30 min.",
+      "Écouter un podcast ou un audiobook pendant votre marche rend l'activité plus durable sur le long terme.",
+      "Après une longue période assis, 5 min de marche toutes les heures suffisent à relancer la circulation et baisser la glycémie.",
+      "Les zones montagneuses ou la marche sur sable brûlent 20-30 % de calories de plus que la marche sur terrain plat.",
+    ],
     todayIndex: 3,
   },
   {
@@ -119,7 +142,14 @@ export const stats: StatData[] = [
       { title: "Après-midi", amount: "66 bpm" },
       { title: "Soirée", amount: "67 bpm" },
     ],
-    tip: "5 min de cohérence cardiaque (inspiration 5 s / expiration 5 s) chaque matin peut abaisser votre FC repos sur le long terme.",
+    tips: [
+      "5 min de cohérence cardiaque (inspiration 5 s / expiration 5 s) chaque matin peut abaisser votre FC repos sur le long terme.",
+      "Une FC repos qui diminue de semaine en semaine est le signe le plus fiable d'une progression cardiovasculaire.",
+      "Le café augmente temporairement la FC de 5-10 bpm — mesurez toujours votre FC repos avant votre première tasse.",
+      "La déshydratation fait monter la FC de 5 à 10 bpm au repos ; hydrater correctement c'est aussi préserver son cœur.",
+      "La variabilité de la fréquence cardiaque (VFC), mesurable avec certaines montres, est un meilleur indicateur de récupération que la FC seule.",
+      "Plus votre FC repos est basse, plus votre cœur pompe de sang à chaque battement — signe d'un muscle cardiaque fort et efficace.",
+    ],
     todayIndex: 3,
   },
   {
@@ -144,7 +174,15 @@ export const stats: StatData[] = [
       { title: "Après séance", amount: "0.5 L" },
       { title: "Après-midi", amount: "0.3 L" },
     ],
-    tip: "Buvez 500 mL dès le réveil et 250 mL avant chaque repas — vous atteindrez facilement 2.5 L sans y penser.",
+    tips: [
+      "Buvez 500 mL dès le réveil et 250 mL avant chaque repas — vous atteindrez facilement 2.5 L sans y penser.",
+      "La soif est un signal tardif de déshydratation : si vous avez soif, vous avez déjà perdu ~1 % de votre masse hydrique.",
+      "Ajouter une pincée de sel rose himalaya et un filet de citron à votre eau du matin améliore son absorption cellulaire.",
+      "Les fruits et légumes représentent 20-30 % de l'apport hydrique total — ne comptez pas que les boissons.",
+      "Une urine jaune pâle (paille) indique une bonne hydratation ; jaune foncé signale un manque d'eau.",
+      "Pendant l'effort, buvez 150-250 mL toutes les 15-20 min plutôt qu'une grande quantité d'un coup.",
+      "Le café et le thé comptent dans l'hydratation : leur léger effet diurétique est largement compensé par leur contenu en eau.",
+    ],
     todayIndex: 3,
   },
   {
@@ -169,7 +207,15 @@ export const stats: StatData[] = [
       { title: "Sommeil paradoxal", amount: "1h45" },
       { title: "Réveil", amount: "06h36" },
     ],
-    tip: "Évitez les écrans 45 min avant de dormir pour gagner jusqu'à 30 min de sommeil profond par nuit.",
+    tips: [
+      "Évitez les écrans 45 min avant de dormir pour gagner jusqu'à 30 min de sommeil profond par nuit.",
+      "Une température de chambre entre 16 et 19 °C accélère l'endormissement et augmente les phases de sommeil profond.",
+      "Le magnésium (bisglycinate, 200-400 mg le soir) réduit le temps d'endormissement et améliore la qualité du sommeil profond.",
+      "Se lever à heure fixe 7 j/7 — même le week-end — est le levier n°1 pour réguler votre horloge biologique.",
+      "Une alimentation riche en tryptophane (dinde, banane, œufs) le soir favorise la production de mélatonine naturelle.",
+      "Évitez l'alcool : il peut vous endormir plus vite mais fragmente les cycles et réduit le sommeil paradoxal de 20-40 %.",
+      "20 min d'exposition à la lumière naturelle le matin synchronise votre rythme circadien et améliore l'endormissement le soir.",
+    ],
     todayIndex: 3,
   },
 ];
