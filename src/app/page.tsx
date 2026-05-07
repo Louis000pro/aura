@@ -8,8 +8,11 @@ import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatsPanel from "@/components/StatsPanel";
+import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import { stats } from "@/data/statsData";
+import type { StatData } from "@/data/statsData";
 
 /* ─── Score Ring ─── */
 function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
@@ -520,6 +523,7 @@ function Dashboard() {
   const [showRepas, setShowRepas] = useState(false);
   const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string|null>(null);
+  const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -639,16 +643,24 @@ function Dashboard() {
       <div className="md:hidden flex flex-col relative z-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
           <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-            {[{ label:"Score",value:"91",unit:"/100",bg:"lg-bicolor" },{label:"Calories",value:"1847",unit:"kcal",bg:"lg-rose"},{label:"Pas",value:"8.2k",unit:"",bg:"lg-turquoise"},{label:"Sommeil",value:"7h24",unit:"",bg:"lg-bicolor"}].map((s,i) => (
-              <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
-                whileHover={{ scale: 1.04, y: -2 }} className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] cursor-default`}>
-                <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
-                <div className="flex items-baseline gap-0.5 mt-0.5">
-                  <span className="text-xl font-semibold" style={{ color: "#2D3748" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{s.unit}</span>}
-                </div>
-              </motion.div>
-            ))}
+            {[{ label:"Score",value:"91",unit:"/100",bg:"lg-bicolor" },{label:"Calories",value:"1 847",unit:"kcal",bg:"lg-rose"},{label:"Pas",value:"8 234",unit:"",bg:"lg-turquoise"},{label:"Sommeil",value:"7h24",unit:"",bg:"lg-bicolor"}].map((s,i) => {
+              const matchStat = stats.find((st) => st.label === s.label);
+              return (
+                <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
+                  whileHover={{ scale: 1.04, y: -2 }} whileTap={matchStat ? { scale: 0.97 } : {}}
+                  onClick={() => matchStat && setSelectedStat(matchStat)}
+                  className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] ${matchStat ? "cursor-pointer" : "cursor-default"}`}>
+                  <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                  <div className="flex items-baseline gap-0.5 mt-0.5">
+                    <span className="text-xl font-semibold" style={{ color: "#2D3748" }}>{s.value}</span>
+                    {s.unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{s.unit}</span>}
+                  </div>
+                  {matchStat && (
+                    <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full" style={{ background: matchStat.iconColor, opacity: 0.6 }} />
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }} className="flex-1 flex items-center justify-center px-6 py-6">
@@ -689,6 +701,7 @@ function Dashboard() {
       <AnimatePresence>
         {showRepas && <RepasModal key="repas" onClose={() => setShowRepas(false)} onSave={(n) => { setShowRepas(false); showToast(`${n} enregistré ✓`); }} />}
         {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
+        {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}
         {showOnboarding && user && (
           <OnboardingModal
