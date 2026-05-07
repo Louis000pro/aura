@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import type { StatData } from "@/data/statsData";
 
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -38,15 +38,8 @@ export default function StatDetailModal({
   const [tipIndex, setTipIndex] = useState(() =>
     Math.floor(Math.random() * tips.length)
   );
-  const [tipDir, setTipDir] = useState<1 | -1>(1);
-
-  const prevTip = useCallback(() => {
-    setTipDir(-1);
-    setTipIndex((i) => (i - 1 + tips.length) % tips.length);
-  }, [tips.length]);
 
   const nextTip = useCallback(() => {
-    setTipDir(1);
     setTipIndex((i) => (i + 1) % tips.length);
   }, [tips.length]);
 
@@ -261,9 +254,9 @@ export default function StatDetailModal({
               <AnimatePresence mode="wait" initial={false}>
                 <motion.p
                   key={tipIndex}
-                  initial={{ opacity: 0, x: tipDir * 18 }}
+                  initial={{ opacity: 0, x: 18 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: tipDir * -18 }}
+                  exit={{ opacity: 0, x: -18 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
                   className="text-xs font-light leading-relaxed"
                   style={{ color: "#4A5568" }}
@@ -274,42 +267,15 @@ export default function StatDetailModal({
             </div>
 
             {/* Navigation */}
-            <div
-              className="flex items-center justify-between px-3 pb-3"
-            >
-              {/* Dots */}
-              <div className="flex items-center gap-1">
-                {tips.map((_, i) => (
-                  <motion.button
-                    key={i}
-                    onClick={() => { setTipDir(i > tipIndex ? 1 : -1); setTipIndex(i); }}
-                    animate={{ width: i === tipIndex ? 14 : 5, opacity: i === tipIndex ? 1 : 0.35 }}
-                    transition={{ duration: 0.2 }}
-                    className="h-1.5 rounded-full cursor-pointer"
-                    style={{ background: iconColor }}
-                  />
-                ))}
-              </div>
-
-              {/* Arrows */}
-              <div className="flex items-center gap-1">
-                <motion.button
-                  whileTap={{ scale: 0.88 }}
-                  onClick={prevTip}
-                  className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ background: "rgba(255,255,255,0.7)" }}
-                >
-                  <ChevronLeft size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.88 }}
-                  onClick={nextTip}
-                  className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ background: "rgba(255,255,255,0.7)" }}
-                >
-                  <ChevronRight size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                </motion.button>
-              </div>
+            <div className="flex justify-end px-3 pb-3">
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={nextTip}
+                className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.7)" }}
+              >
+                <ChevronRight size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+              </motion.button>
             </div>
           </div>
         </div>
