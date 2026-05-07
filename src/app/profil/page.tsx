@@ -103,7 +103,7 @@ function EditProfileModal({ name, email, onSave, onClose }: {
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
           background: "rgba(255,255,255,0.85)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(10px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -446,7 +446,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
           background: "rgba(255,255,255,0.85)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(10px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -511,14 +511,14 @@ export default function ProfilPage() {
   const { settings, updateSettings } = useProfileSettings();
   const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
   useEffect(() => {
-    setParticles(Array.from({ length: 18 }, (_, i) => ({
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: i < 4 ? 10 + Math.random() * 12 : i < 9 ? 4 + Math.random() * 5 : 2 + Math.random() * 3,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
       delay: Math.random() * 6,
-      duration: 6 + Math.random() * 8,
-      opacity: 0.7 + Math.random() * 0.25,
+      duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
     })));
   }, []);
 
@@ -587,36 +587,34 @@ export default function ProfilPage() {
     <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 relative overflow-x-hidden" style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}>
       {/* ── Calque déco : blobs · anneaux · particules ── */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <motion.div className="absolute rounded-full"
-          style={{ top: "-8%", left: "-10%", width: 620, height: 620, background: "rgba(147,112,219,0.72)", filter: "blur(65px)" }}
-          animate={{ scale: [1,1.18,1], x: [-20,35,-20], y: [-10,20,-10] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} />
-        <motion.div className="absolute rounded-full"
-          style={{ bottom: "-8%", right: "-10%", width: 580, height: 580, background: "rgba(200,155,50,0.62)", filter: "blur(65px)" }}
-          animate={{ scale: [1,1.15,1], x: [20,-30,20], y: [15,-25,15] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} />
-        <motion.div className="absolute rounded-full"
-          style={{ top: "40%", right: "5%", width: 380, height: 380, background: "rgba(147,112,219,0.5)", filter: "blur(50px)" }}
-          animate={{ scale: [1,1.3,1], y: [0,40,0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
-        {[580, 440, 310].map((size, i) => (
+        {/* Blobs statiques — filter:blur animé = recalcul GPU chaque frame */}
+        <div className="absolute rounded-full"
+          style={{ top: "-8%", left: "-10%", width: 580, height: 580, background: "rgba(147,112,219,0.65)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ bottom: "-8%", right: "-10%", width: 540, height: 540, background: "rgba(200,155,50,0.55)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ top: "40%", right: "5%", width: 340, height: 340, background: "rgba(147,112,219,0.42)", filter: "blur(60px)" }} />
+        {/* Rings — rotation pure = GPU composited, léger */}
+        {[500, 370, 260].map((size, i) => (
           <motion.div key={size} className="absolute rounded-full"
             style={{
               width: size, height: size,
-              border: `1px solid rgba(167,139,250,${i === 0 ? 0.32 : i === 1 ? 0.45 : 0.32})`,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.30 : i === 1 ? 0.42 : 0.30})`,
               top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+              willChange: "transform",
             }}
             animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
-            transition={{ duration: 40 + i * 15, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 60 + i * 20, repeat: Infinity, ease: "linear" }}
           />
         ))}
         {particles.map((p) => (
           <motion.div key={p.id} className="absolute rounded-full"
             style={{
-              left: `${p.x}%`, top: `${p.y}%`, width: p.size + 1, height: p.size + 1,
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
               background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+              willChange: "transform",
             }}
-            animate={{ y: ["-20px", "20px", "-20px"], opacity: [p.opacity * 0.4, p.opacity, p.opacity * 0.4] }}
+            animate={{ y: ["-15px", "15px", "-15px"] }}
             transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
           />
         ))}
@@ -814,7 +812,7 @@ export default function ProfilPage() {
             background: "rgba(255,255,255,0.7)",
             border: "1px solid rgba(255,255,255,0.7)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.12)",
-            backdropFilter: "blur(32px)",
+            backdropFilter: "blur(10px)",
           }}
         >
           <div className="flex items-center justify-between">
@@ -878,8 +876,8 @@ export default function ProfilPage() {
                 background: "rgba(255,255,255,0.7)",
                 border: "1px solid rgba(255,255,255,0.7)",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.12)",
-                backdropFilter: "blur(32px) saturate(180%)",
-                WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
               }}
             >
               {items.map(({ icon: Icon, label, desc, action, onClick }, i) => (
