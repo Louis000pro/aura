@@ -25,10 +25,10 @@ export default function RecherchePage() {
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: 1.5 + Math.random() * 2.5,
+      size: i < 4 ? 10 + Math.random() * 12 : i < 9 ? 4 + Math.random() * 5 : 2 + Math.random() * 3,
       delay: Math.random() * 6,
       duration: 6 + Math.random() * 8,
-      opacity: 0.35 + Math.random() * 0.45,
+      opacity: i < 4 ? 0.18 + Math.random() * 0.12 : i < 9 ? 0.4 + Math.random() * 0.25 : 0.6 + Math.random() * 0.35,
     })));
   }, []);
 
@@ -39,26 +39,26 @@ export default function RecherchePage() {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden px-6 pt-10 pb-32 md:pl-28 md:pr-10 md:pt-10 md:pb-10">
+    <div className="min-h-screen relative overflow-hidden px-6 pt-10 pb-32 md:pl-28 md:pr-10 md:pt-10 md:pb-10" style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}>
       {/* ── Calque déco : blobs · anneaux · particules ── */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <motion.div className="absolute rounded-full"
-          style={{ top: "2%", left: "3%", width: 380, height: 380, background: "rgba(212,192,255,0.4)", filter: "blur(80px)" }}
+          style={{ top: "2%", left: "3%", width: 580, height: 580, background: "rgba(167,139,250,0.55)", filter: "blur(80px)" }}
           animate={{ scale: [1,1.2,1], x: [-15,25,-15], y: [-10,18,-10] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }} />
         <motion.div className="absolute rounded-full"
-          style={{ bottom: "5%", right: "3%", width: 360, height: 360, background: "rgba(245,230,163,0.35)", filter: "blur(80px)" }}
+          style={{ bottom: "5%", right: "3%", width: 560, height: 560, background: "rgba(212,168,67,0.45)", filter: "blur(80px)" }}
           animate={{ scale: [1,1.18,1], x: [15,-25,15], y: [10,-18,10] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.8 }} />
         <motion.div className="absolute rounded-full"
-          style={{ top: "50%", left: "50%", width: 220, height: 220, background: "rgba(167,139,250,0.15)", filter: "blur(60px)" }}
+          style={{ top: "50%", left: "50%", width: 360, height: 360, background: "rgba(167,139,250,0.35)", filter: "blur(55px)" }}
           animate={{ scale: [1,1.4,1] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
         {[520, 380, 260].map((size, i) => (
           <motion.div key={size} className="absolute rounded-full"
             style={{
               width: size, height: size,
-              border: `1px solid rgba(167,139,250,${i === 0 ? 0.18 : i === 1 ? 0.26 : 0.18})`,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.32 : i === 1 ? 0.45 : 0.32})`,
               top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
             }}
             animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
