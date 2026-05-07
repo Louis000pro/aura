@@ -570,7 +570,7 @@ export default function CommunautePage() {
       size: i < 4 ? 10 + Math.random() * 12 : i < 9 ? 4 + Math.random() * 5 : 2 + Math.random() * 3,
       delay: Math.random() * 6,
       duration: 6 + Math.random() * 8,
-      opacity: i < 4 ? 0.18 + Math.random() * 0.12 : i < 9 ? 0.4 + Math.random() * 0.25 : 0.6 + Math.random() * 0.35,
+      opacity: 0.7 + Math.random() * 0.25,
     })));
   }, []);
 
@@ -655,11 +655,11 @@ export default function CommunautePage() {
       {/* ── Calque déco : blobs · anneaux · particules ── */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <motion.div className="absolute rounded-full"
-          style={{ top: "-5%", left: "-8%", width: 620, height: 620, background: "rgba(167,139,250,0.55)", filter: "blur(80px)" }}
+          style={{ top: "-5%", left: "-8%", width: 620, height: 620, background: "rgba(147,112,219,0.72)", filter: "blur(65px)" }}
           animate={{ scale: [1,1.2,1], x: [-20,30,-20] }}
           transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }} />
         <motion.div className="absolute rounded-full"
-          style={{ bottom: "-5%", right: "-8%", width: 580, height: 580, background: "rgba(212,168,67,0.45)", filter: "blur(80px)" }}
+          style={{ bottom: "-5%", right: "-8%", width: 580, height: 580, background: "rgba(200,155,50,0.62)", filter: "blur(65px)" }}
           animate={{ scale: [1,1.15,1], x: [20,-30,20] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
         {[580, 440, 310].map((size, i) => (

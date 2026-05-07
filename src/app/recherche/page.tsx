@@ -28,7 +28,7 @@ export default function RecherchePage() {
       size: i < 4 ? 10 + Math.random() * 12 : i < 9 ? 4 + Math.random() * 5 : 2 + Math.random() * 3,
       delay: Math.random() * 6,
       duration: 6 + Math.random() * 8,
-      opacity: i < 4 ? 0.18 + Math.random() * 0.12 : i < 9 ? 0.4 + Math.random() * 0.25 : 0.6 + Math.random() * 0.35,
+      opacity: 0.7 + Math.random() * 0.25,
     })));
   }, []);
 
@@ -43,15 +43,15 @@ export default function RecherchePage() {
       {/* ── Calque déco : blobs · anneaux · particules ── */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <motion.div className="absolute rounded-full"
-          style={{ top: "2%", left: "3%", width: 580, height: 580, background: "rgba(167,139,250,0.55)", filter: "blur(80px)" }}
+          style={{ top: "2%", left: "3%", width: 580, height: 580, background: "rgba(147,112,219,0.72)", filter: "blur(65px)" }}
           animate={{ scale: [1,1.2,1], x: [-15,25,-15], y: [-10,18,-10] }}
           transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }} />
         <motion.div className="absolute rounded-full"
-          style={{ bottom: "5%", right: "3%", width: 560, height: 560, background: "rgba(212,168,67,0.45)", filter: "blur(80px)" }}
+          style={{ bottom: "5%", right: "3%", width: 560, height: 560, background: "rgba(200,155,50,0.62)", filter: "blur(65px)" }}
           animate={{ scale: [1,1.18,1], x: [15,-25,15], y: [10,-18,10] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.8 }} />
         <motion.div className="absolute rounded-full"
-          style={{ top: "50%", left: "50%", width: 360, height: 360, background: "rgba(167,139,250,0.35)", filter: "blur(55px)" }}
+          style={{ top: "50%", left: "50%", width: 360, height: 360, background: "rgba(147,112,219,0.5)", filter: "blur(50px)" }}
           animate={{ scale: [1,1.4,1] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
         {[520, 380, 260].map((size, i) => (

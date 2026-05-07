@@ -518,7 +518,7 @@ export default function ProfilPage() {
       size: i < 4 ? 10 + Math.random() * 12 : i < 9 ? 4 + Math.random() * 5 : 2 + Math.random() * 3,
       delay: Math.random() * 6,
       duration: 6 + Math.random() * 8,
-      opacity: i < 4 ? 0.18 + Math.random() * 0.12 : i < 9 ? 0.4 + Math.random() * 0.25 : 0.6 + Math.random() * 0.35,
+      opacity: 0.7 + Math.random() * 0.25,
     })));
   }, []);
 
@@ -588,15 +588,15 @@ export default function ProfilPage() {
       {/* ── Calque déco : blobs · anneaux · particules ── */}
       <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
         <motion.div className="absolute rounded-full"
-          style={{ top: "-8%", left: "-10%", width: 620, height: 620, background: "rgba(167,139,250,0.55)", filter: "blur(80px)" }}
+          style={{ top: "-8%", left: "-10%", width: 620, height: 620, background: "rgba(147,112,219,0.72)", filter: "blur(65px)" }}
           animate={{ scale: [1,1.18,1], x: [-20,35,-20], y: [-10,20,-10] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }} />
         <motion.div className="absolute rounded-full"
-          style={{ bottom: "-8%", right: "-10%", width: 580, height: 580, background: "rgba(212,168,67,0.45)", filter: "blur(80px)" }}
+          style={{ bottom: "-8%", right: "-10%", width: 580, height: 580, background: "rgba(200,155,50,0.62)", filter: "blur(65px)" }}
           animate={{ scale: [1,1.15,1], x: [20,-30,20], y: [15,-25,15] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1.5 }} />
         <motion.div className="absolute rounded-full"
-          style={{ top: "40%", right: "5%", width: 380, height: 380, background: "rgba(167,139,250,0.35)", filter: "blur(55px)" }}
+          style={{ top: "40%", right: "5%", width: 380, height: 380, background: "rgba(147,112,219,0.5)", filter: "blur(50px)" }}
           animate={{ scale: [1,1.3,1], y: [0,40,0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 3 }} />
         {[580, 440, 310].map((size, i) => (
