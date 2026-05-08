@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity, User2, Settings, LogOut, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -533,12 +534,15 @@ function Dashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [liveStats, setLiveStats] = useState({ score: 91, calories: 1847, steps: 8234, sleepHours: 7.4, streak: 7 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Ferme le menu au clic extérieur
+  // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
     if (!showMenu) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+      const inTrigger = menuRef.current?.contains(e.target as Node);
+      const inDropdown = dropdownRef.current?.contains(e.target as Node);
+      if (!inTrigger && !inDropdown) setShowMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -702,25 +706,25 @@ function Dashboard() {
                   <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
                 </motion.div>
 
+                {/* PORTAL — rendu direct dans <body>, hors de tout stacking context */}
                 <AnimatePresence>
-                  {showMenu && (
-                    /* motion.div = animation seulement, pas de fond */
+                  {showMenu && typeof window !== "undefined" && createPortal(
                     <motion.div
+                      ref={dropdownRef}
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
-                      style={{ position: "fixed", right: 16, top: 70, zIndex: 9999, minWidth: 210 }}>
-                      {/* div statique = fond blanc garanti, sans layer GPU */}
+                      style={{ position: "fixed", right: 16, top: 70, zIndex: 99999, minWidth: 210, pointerEvents: "auto" }}>
                       <div style={{
-                        backgroundColor: "#ffffff",
+                        backgroundColor: "#fff",
                         borderRadius: 16,
                         overflow: "hidden",
                         border: "1px solid rgba(167,139,250,0.2)",
                         boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)",
                       }}>
                         {/* Infos utilisateur */}
-                        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(167,139,250,0.1)", backgroundColor: "#ffffff" }}>
+                        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(167,139,250,0.1)" }}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                               style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
@@ -739,7 +743,7 @@ function Dashboard() {
                         ].map(({ icon: Icon, label, action }) => (
                           <button key={label} onClick={action}
                             className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors hover:bg-purple-50"
-                            style={{ backgroundColor: "#ffffff", border: "none", outline: "none" }}>
+                            style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
                             <div className="flex items-center gap-2.5">
                               <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.1)" }}>
                                 <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
@@ -755,14 +759,15 @@ function Dashboard() {
                         <button
                           onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer transition-colors hover:bg-red-50"
-                          style={{ backgroundColor: "#ffffff", border: "none", outline: "none" }}>
+                          style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
                           <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
                             <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
                           </div>
                           <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
                         </button>
                       </div>
-                    </motion.div>
+                    </motion.div>,
+                    document.body
                   )}
                 </AnimatePresence>
               </>
