@@ -132,6 +132,36 @@ function MacroBar({ label, consumed, goal, color }: { label: string; consumed: n
   );
 }
 
+/* ─── HydrationWidget — icônes SVG ─────────────────────────────────── */
+const PetitVerreIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    {/* Verre court, large — forme trapèze */}
+    <path d="M2.5 4h10L11 12.5H4L2.5 4Z" />
+    {/* Niveau d'eau ~60% */}
+    <path d="M4.6 9.5h5.8" />
+  </svg>
+);
+
+const GrandVerreIcon = () => (
+  <svg width="15" height="17" viewBox="0 0 15 17" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    {/* Verre haut, effilé */}
+    <path d="M2.5 2h10L10.5 15H4.5L2.5 2Z" />
+    {/* Niveau d'eau ~60% */}
+    <path d="M4.4 10.5h6.2" />
+  </svg>
+);
+
+const BouteilleIcon = () => (
+  <svg width="13" height="18" viewBox="0 0 13 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+    {/* Bouchon */}
+    <rect x="4.2" y="1" width="4.6" height="1.8" rx="0.6" />
+    {/* Col + épaules + corps */}
+    <path d="M4.2 2.8V5L2.5 6.8V15.2a1 1 0 001 1h6a1 1 0 001-1V6.8L8.8 5V2.8" />
+    {/* Niveau d'eau ~55% */}
+    <path d="M2.5 11.5h8" />
+  </svg>
+);
+
 /* ─── HydrationWidget ───────────────────────────────────────────────── */
 function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
   waterMl: number; goalMl?: number;
@@ -139,6 +169,12 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
   onRemove: (ml: number) => void;
 }) {
   const pct = Math.min(Math.round((waterMl / goalMl) * 100), 100);
+
+  const presets = [
+    { ml: 150, label: "150 ml", Icon: PetitVerreIcon },
+    { ml: 250, label: "250 ml", Icon: GrandVerreIcon },
+    { ml: 500, label: "500 ml", Icon: BouteilleIcon },
+  ] as const;
 
   return (
     <div className="flex flex-col gap-3">
@@ -189,6 +225,27 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         />
+      </div>
+
+      {/* Raccourcis rapides */}
+      <div className="grid grid-cols-3 gap-2">
+        {presets.map(({ ml, label, Icon }) => (
+          <motion.button
+            key={ml}
+            whileTap={{ scale: 0.91 }}
+            whileHover={{ scale: 1.04 }}
+            onClick={() => onAdd(ml)}
+            className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl cursor-pointer"
+            style={{
+              background: "rgba(167,139,250,0.07)",
+              border: "1px solid rgba(167,139,250,0.15)",
+              color: "#A78BFA",
+            }}
+          >
+            <Icon />
+            <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{label}</span>
+          </motion.button>
+        ))}
       </div>
     </div>
   );
