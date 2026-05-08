@@ -260,8 +260,9 @@ function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { ico
   const [tapped, setTapped] = useState(false);
   return (
     <motion.button type="button" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 + index * 0.07, type: "spring", bounce: 0.35 }}
-      whileHover={{ y: -3, scale: 1.03 }} whileTap={{ scale: 0.93 }}
+      transition={{ delay: 0.1 + index * 0.05, type: "spring", bounce: 0.35 }}
+      whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.15 } }}
+      whileTap={{ scale: 0.93, transition: { duration: 0.08 } }}
       onClick={() => { setTapped(true); setTimeout(() => setTapped(false), 500); onClick?.(); }}
       className={`${bg} lg-highlight relative flex-1 rounded-2xl py-4 flex flex-col items-center gap-2 cursor-pointer overflow-hidden`}>
       <AnimatePresence>
@@ -673,8 +674,8 @@ function Dashboard() {
         </div>
         <div className="px-6 pb-6 grid grid-cols-2 gap-3">
           {[{key:"chat" as const,icon:MessageCircle,label:"Chat IA",color:"#A78BFA",bg:"lg-rose"},{key:"stats" as const,icon:BarChart3,label:"Détails",color:"#D4A843",bg:"lg-turquoise"}].map(({key,icon:Icon,label,color,bg},i) => (
-            <motion.button key={key} onClick={() => setMobilePanel(key)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 + i * 0.07, type: "spring", bounce: 0.35 }}
-              whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.96 }}
+            <motion.button key={key} onClick={() => setMobilePanel(key)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
+              whileHover={{ scale: 1.03, y: -2, transition: { duration: 0.15 } }} whileTap={{ scale: 0.96, transition: { duration: 0.08 } }}
               className={`${bg} lg-highlight relative rounded-2xl py-3 px-4 flex items-center justify-center gap-2 cursor-pointer`}>
               <Icon size={15} strokeWidth={1.5} style={{ color }} />
               <span className="text-xs font-medium" style={{ color: "#2D3748" }}>{label}</span>

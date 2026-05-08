@@ -47,7 +47,7 @@ export default function Navigation() {
                         layoutId="mobile-active-pill"
                         className="absolute inset-0 rounded-xl"
                         style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.9) 0%, rgba(255,251,240,0.9) 100%)" }}
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 35 }}
                       />
                     )}
                     <div className="relative z-10">
@@ -97,7 +97,7 @@ export default function Navigation() {
                         background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px -2px rgba(167,139,250,0.22)",
                       }}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
                   <div className="relative z-10">
