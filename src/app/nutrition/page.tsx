@@ -132,35 +132,118 @@ function MacroBar({ label, consumed, goal, color }: { label: string; consumed: n
   );
 }
 
-/* ─── HydrationTracker ──────────────────────────────────────────────── */
-function HydrationTracker({ cups, goal = 8, onAdd, onRemove }: {
-  cups: number; goal?: number; onAdd: () => void; onRemove: () => void;
+/* ─── HydrationWidget ───────────────────────────────────────────────── */
+const HYDRATION_PRESETS = [
+  { ml: 150, label: "Petit verre",   emoji: "🥛" },
+  { ml: 250, label: "Grand verre",   emoji: "🥤" },
+  { ml: 500, label: "Bouteille",     emoji: "💧" },
+];
+
+function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
+  waterMl: number; goalMl?: number;
+  onAdd: (ml: number) => void;
+  onRemove: (ml: number) => void;
 }) {
+  const [customVal, setCustomVal] = useState("");
+  const pct = Math.min(Math.round((waterMl / goalMl) * 100), 100);
+
+  const handleCustomAdd = () => {
+    const v = parseInt(customVal, 10);
+    if (!isNaN(v) && v > 0) { onAdd(v); setCustomVal(""); }
+  };
+
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Droplets size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-        <span className="text-sm font-medium" style={{ color: "#4A5568" }}>Hydratation</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="flex gap-1">
-          {Array.from({ length: goal }).map((_, i) => (
-            <motion.button key={i}
-              onClick={i < cups ? onRemove : onAdd}
-              whileTap={{ scale: 0.88 }}
-              style={{
-                width: 18, height: 22, borderRadius: 4,
-                background: i < cups
-                  ? "linear-gradient(180deg,rgba(167,139,250,0.65) 0%,rgba(167,139,250,0.35) 100%)"
-                  : "rgba(167,139,250,0.10)",
-                border: "1px solid rgba(167,139,250,0.18)",
-                cursor: "pointer",
-              }} />
-          ))}
+    <div className="flex flex-col gap-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Droplets size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          <span className="text-sm font-medium" style={{ color: "#4A5568" }}>Hydratation</span>
         </div>
-        <span className="text-xs font-semibold ml-0.5" style={{ color: "#718096" }}>
-          {cups} / {goal} verres
-        </span>
+        <div className="flex items-center gap-2">
+          {/* − 250 ml */}
+          <motion.button
+            whileTap={{ scale: 0.86 }}
+            onClick={() => onRemove(250)}
+            disabled={waterMl === 0}
+            className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
+            style={{
+              background: "rgba(167,139,250,0.10)",
+              border: "1px solid rgba(167,139,250,0.20)",
+              opacity: waterMl === 0 ? 0.35 : 1,
+            }}
+          >
+            <span className="text-xs font-bold leading-none" style={{ color: "#A78BFA" }}>−</span>
+          </motion.button>
+          <span className="text-sm font-semibold tabular-nums" style={{ color: "#2D3748" }}>
+            {waterMl.toLocaleString("fr-FR")}{" "}
+            <span className="text-xs font-normal" style={{ color: "#A0AEC0" }}>
+              / {goalMl.toLocaleString("fr-FR")} ml
+            </span>
+          </span>
+        </div>
+      </div>
+
+      {/* Barre de progression */}
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.10)" }}>
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: "linear-gradient(90deg,#A78BFA 0%,#7B5CC4 100%)" }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+
+      {/* Presets + champ libre */}
+      <div className="flex gap-2">
+        {HYDRATION_PRESETS.map(({ ml, label, emoji }) => (
+          <motion.button
+            key={ml}
+            whileTap={{ scale: 0.91 }}
+            onClick={() => onAdd(ml)}
+            className="flex-1 flex flex-col items-center py-2 rounded-xl cursor-pointer"
+            style={{ background: "rgba(167,139,250,0.07)", border: "1px solid rgba(167,139,250,0.16)" }}
+          >
+            <span className="text-base leading-none mb-0.5">{emoji}</span>
+            <span className="text-[11px] font-semibold" style={{ color: "#7B5CC4" }}>+{ml} ml</span>
+            <span className="text-[9px]" style={{ color: "#A0AEC0" }}>{label}</span>
+          </motion.button>
+        ))}
+
+        {/* Saisie libre */}
+        <div
+          className="flex-1 flex flex-col items-center justify-center rounded-xl overflow-hidden gap-0.5"
+          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.20)" }}
+        >
+          <div className="flex items-center w-full px-2">
+            <input
+              type="number"
+              min="1"
+              max="5000"
+              value={customVal}
+              onChange={e => setCustomVal(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleCustomAdd()}
+              placeholder="ml"
+              className="flex-1 w-0 text-[11px] text-center outline-none bg-transparent font-semibold"
+              style={{ color: "#2D3748" }}
+            />
+            <motion.button
+              whileTap={{ scale: 0.86 }}
+              onClick={handleCustomAdd}
+              disabled={!customVal || isNaN(parseInt(customVal))}
+              className="w-5 h-5 rounded-md flex items-center justify-center cursor-pointer flex-shrink-0"
+              style={{
+                background: customVal && !isNaN(parseInt(customVal))
+                  ? "rgba(167,139,250,0.25)"
+                  : "rgba(167,139,250,0.07)",
+                transition: "background 0.15s",
+              }}
+            >
+              <span className="text-xs font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
+            </motion.button>
+          </div>
+          <span className="text-[9px]" style={{ color: "#A0AEC0" }}>Précis</span>
+        </div>
       </div>
     </div>
   );
@@ -641,7 +724,7 @@ export default function NutritionPage() {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekDays, setWeekDays] = useState<Date[]>([]);
-  const [cups, setCups] = useState(5);
+  const [waterMl, setWaterMl] = useState(0);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [meals, setMeals] = useState<MealEntry[]>([
@@ -820,9 +903,12 @@ export default function NutritionPage() {
               <MacroBar label="Glucides"  consumed={totalCarbs} goal={GOALS.carbs}    color="#7B5CC4" />
               <MacroBar label="Lipides"   consumed={totalFats}  goal={GOALS.fats}     color="#D4A843" />
               <div style={{ height: 1, background: "rgba(167,139,250,0.08)" }} />
-              <HydrationTracker cups={cups} goal={8}
-                onAdd={() => setCups(c => Math.min(c + 1, 8))}
-                onRemove={() => setCups(c => Math.max(c - 1, 0))} />
+              <HydrationWidget
+                waterMl={waterMl}
+                goalMl={2000}
+                onAdd={(ml) => setWaterMl(w => Math.min(w + ml, 5000))}
+                onRemove={(ml) => setWaterMl(w => Math.max(w - ml, 0))}
+              />
             </div>
           </motion.div>
         </div>
