@@ -34,16 +34,25 @@ type AuthCtx = {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-function mapUser(sbUser: SBUser): User {
+function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: string } | null): User {
   const m = sbUser.user_metadata ?? {};
   return {
     id: sbUser.id,
-    pseudo: m.pseudo ?? sbUser.email?.split("@")[0] ?? "utilisateur",
+    pseudo: profile?.pseudo ?? m.pseudo ?? sbUser.email?.split("@")[0] ?? "utilisateur",
     name: m.name ?? (m.full_name as string | undefined)?.split(" ")[0] ?? "",
     lastName: m.last_name ?? (m.full_name as string | undefined)?.split(" ").slice(1).join(" ") ?? "",
     email: sbUser.email ?? "",
-    avatar: m.avatar_url ?? m.picture,
+    avatar: profile?.avatar_url ?? m.avatar_url ?? m.picture,
   };
+}
+
+async function fetchProfile(supabase: ReturnType<typeof import("@/lib/supabase").createClient>, userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("pseudo, avatar_url")
+    .eq("id", userId)
+    .maybeSingle();
+  return data;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -56,19 +65,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
         setSession(data.session);
-        setUser(mapUser(data.session.user));
+        const profile = await fetchProfile(supabase, data.session.user.id);
+        setUser(mapUser(data.session.user, profile));
       }
       setIsLoading(false);
       initialized.current = true;
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
       if (sess) {
         setSession(sess);
-        setUser(mapUser(sess.user));
+        const profile = await fetchProfile(supabase, sess.user.id);
+        setUser(mapUser(sess.user, profile));
         if (event === "SIGNED_IN" && initialized.current) {
           setJustLoggedIn(true);
           const createdAt = new Date(sess.user.created_at).getTime();

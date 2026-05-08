@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus } from "lucide-react";
+import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
+import { createClient } from "@/lib/supabase";
 
 const samplePerformances: PerformanceData[] = [
   {
@@ -78,13 +79,46 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   );
 }
 
-function EditProfileModal({ name, email, onSave, onClose }: {
-  name: string; email: string;
-  onSave: (name: string, email: string) => void;
+function EditProfileModal({ pseudo, avatarUrl, userId, onSave, onClose }: {
+  pseudo: string; avatarUrl?: string; userId: string;
+  onSave: (pseudo: string, avatarUrl: string) => void;
   onClose: () => void;
 }) {
-  const [editName, setEditName] = useState(name);
-  const [editEmail, setEditEmail] = useState(email);
+  const [editPseudo, setEditPseudo] = useState(pseudo);
+  const [previewUrl, setPreviewUrl] = useState(avatarUrl ?? "");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/avatar.${ext}`;
+      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        setPreviewUrl(urlData.publicUrl + "?t=" + Date.now());
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!editPseudo.trim()) return;
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      await supabase.from("profiles").update({ pseudo: editPseudo.trim(), avatar_url: previewUrl || null }).eq("id", userId);
+      onSave(editPseudo.trim(), previewUrl);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <motion.div
@@ -102,7 +136,7 @@ function EditProfileModal({ name, email, onSave, onClose }: {
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: "rgba(255,255,255,0.85)",
+          background: "rgba(255,255,255,0.95)",
           backdropFilter: "blur(10px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -111,84 +145,59 @@ function EditProfileModal({ name, email, onSave, onClose }: {
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Modifier le profil</h2>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={onClose}
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}
-          >
+            style={{ background: "rgba(240,235,255,0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
 
-        {/* Avatar */}
+        {/* Avatar upload */}
         <div className="flex flex-col items-center mb-6">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-light cursor-pointer relative"
-            style={{
-              background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)",
-              boxShadow: "0 4px 16px rgba(167,139,250,0.2)",
-              color: "#2D3748",
-            }}
-          >
-            {editName.charAt(0).toUpperCase() || "?"}
-            <div
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
-            >
-              <Edit2 size={10} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            onClick={() => fileRef.current?.click()}
+            className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-light cursor-pointer relative overflow-hidden"
+            style={{ background: "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", boxShadow: "0 4px 16px rgba(167,139,250,0.2)", color: "#2D3748" }}>
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span>{editPseudo.charAt(0).toUpperCase() || "?"}</span>
+            )}
+            {uploading && (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(255,255,255,0.8)" }}>
+                <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                  animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              </div>
+            )}
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+              <Camera size={10} strokeWidth={2.5} style={{ color: "#2D3748" }} />
             </div>
           </motion.div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>Appuyer pour changer la photo</p>
         </div>
 
         <div className="flex flex-col gap-3">
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Nom</label>
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none transition-all duration-200"
-              style={{
-                background: "rgba(240,235,255,0.5)",
-                border: "1px solid rgba(212,192,255,0.6)",
-                color: "#2D3748",
-              }}
-              placeholder="Votre nom"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Email</label>
-            <input
-              type="email"
-              value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none transition-all duration-200"
-              style={{
-                background: "rgba(240,235,255,0.5)",
-                border: "1px solid rgba(212,192,255,0.6)",
-                color: "#2D3748",
-              }}
-              placeholder="votre@email.com"
-            />
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Pseudo</label>
+            <input type="text" value={editPseudo}
+              onChange={(e) => setEditPseudo(e.target.value.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""))}
+              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+              style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+              placeholder="ton_pseudo" />
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => onSave(editName, editEmail)}
-          className="w-full mt-5 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-          style={{
-            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-            color: "#2D3748",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
-          }}
-        >
-          Sauvegarder
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+          onClick={handleSave} disabled={saving || uploading || !editPseudo.trim()}
+          className="w-full mt-5 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+          style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8),0 4px 16px rgba(167,139,250,0.2)",
+            opacity: saving || uploading ? 0.7 : 1 }}>
+          {saving ? <><motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(45,55,72,0.3)", borderTopColor: "#2D3748" }}
+            animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />Sauvegarde…</> : "Sauvegarder"}
         </motion.button>
       </motion.div>
     </motion.div>
@@ -505,22 +514,37 @@ export default function ProfilPage() {
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState(user?.name || "Marie Dubois");
-  const [profileEmail, setProfileEmail] = useState(user?.email || "marie@example.com");
+  const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
+  const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
+  const [followerCount, setFollowerCount] = useState<number | null>(null);
+  const [followingCount, setFollowingCount] = useState<number | null>(null);
+  const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const { settings, updateSettings } = useProfileSettings();
   const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+
   useEffect(() => {
     setParticles(Array.from({ length: 10 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
+      id: i, x: Math.random() * 100, y: Math.random() * 100,
       size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
-      delay: Math.random() * 6,
-      duration: 9 + Math.random() * 8,
-      opacity: 0.72 + Math.random() * 0.22,
+      delay: Math.random() * 6, duration: 9 + Math.random() * 8, opacity: 0.72 + Math.random() * 0.22,
     })));
   }, []);
+
+  // Fetch real stats from Supabase
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    Promise.all([
+      supabase.from("followers").select("*", { count: "exact", head: true }).eq("following_id", user.id),
+      supabase.from("followers").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
+      supabase.from("workout_sessions").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+    ]).then(([f1, f2, f3]) => {
+      setFollowerCount(f1.count ?? 0);
+      setFollowingCount(f2.count ?? 0);
+      setSessionCount(f3.count ?? 0);
+    });
+  }, [user?.id]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -532,9 +556,9 @@ export default function ProfilPage() {
     router.push("/auth");
   };
 
-  const handleSaveProfile = (name: string, email: string) => {
-    setProfileName(name);
-    setProfileEmail(email);
+  const handleSaveProfile = (newPseudo: string, newAvatar: string) => {
+    setProfilePseudo(newPseudo);
+    setProfileAvatar(newAvatar);
     setShowEdit(false);
     showToast("Profil mis à jour ✓");
   };
@@ -654,18 +678,17 @@ export default function ProfilPage() {
           <motion.div
             whileHover={{ scale: 1.05, rotate: 3 }}
             transition={{ type: "spring", bounce: 0.4 }}
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-light flex-shrink-0"
-            style={{
-              background: "rgba(255,255,255,0.7)",
-              boxShadow: "0 4px 16px 0 rgba(167,139,250,0.2)",
-              color: "#2D3748",
-            }}
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-light flex-shrink-0 overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.7)", boxShadow: "0 4px 16px 0 rgba(167,139,250,0.2)", color: "#2D3748" }}
           >
-            {profileName.charAt(0).toUpperCase()}
+            {profileAvatar
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover" />
+              : <span>{(profilePseudo || user?.pseudo || "?").charAt(0).toUpperCase()}</span>}
           </motion.div>
           <div className="flex-1">
-            <p className="text-lg font-medium" style={{ color: "#2D3748" }}>{profileName}</p>
-            <p className="text-xs font-light" style={{ color: "#718096" }}>{profileEmail}</p>
+            <p className="text-lg font-medium" style={{ color: "#2D3748" }}>@{profilePseudo || user?.pseudo}</p>
+            <p className="text-xs font-light" style={{ color: "#718096" }}>{user?.email}</p>
             <div
               className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-[10px] font-semibold"
               style={{ background: "rgba(255,255,255,0.7)", color: "#A78BFA" }}
@@ -692,9 +715,9 @@ export default function ProfilPage() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.55)" }}
         >
           {[
-            { label: "Publications",  value: "48",     clickable: false },
-            { label: "Abonnés",       value: "1 284",  clickable: true  },
-            { label: "Abonnements",   value: "342",    clickable: true  },
+            { label: "Séances",       value: sessionCount !== null ? String(sessionCount) : "—", clickable: false },
+            { label: "Abonnés",       value: followerCount !== null ? String(followerCount) : "—", clickable: true  },
+            { label: "Abonnements",   value: followingCount !== null ? String(followingCount) : "—", clickable: true  },
           ].map(({ label, value, clickable }, i) => (
             <div key={label} className="flex items-center flex-1">
               {i > 0 && (
@@ -734,9 +757,9 @@ export default function ProfilPage() {
         animate="visible"
       >
         {[
-          { label: "Séances", value: "48", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
-          { label: "Jours actifs", value: "31", gradient: "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)" },
-          { label: "Score moyen", value: "91", gradient: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" },
+          { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "—", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
+          { label: "Jours actifs", value: "—", gradient: "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)" },
+          { label: "Score moyen", value: "—", gradient: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" },
         ].map(({ label, value, gradient }) => (
           <motion.div
             key={label}
@@ -958,10 +981,11 @@ export default function ProfilPage() {
 
       {/* Modals */}
       <AnimatePresence>
-        {showEdit && (
+        {showEdit && user && (
           <EditProfileModal
-            name={profileName}
-            email={profileEmail}
+            pseudo={profilePseudo || user.pseudo}
+            avatarUrl={profileAvatar || user.avatar}
+            userId={user.id}
             onSave={handleSaveProfile}
             onClose={() => setShowEdit(false)}
           />

@@ -532,7 +532,7 @@ function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userContext, setUserContext] = useState<OnboardingData | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [liveStats, setLiveStats] = useState({ score: 91, calories: 1847, steps: 8234, sleepHours: 7.4, streak: 7 });
+  const [liveStats, setLiveStats] = useState({ score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false });
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -562,12 +562,15 @@ function Dashboard() {
       .then(({ data, error }) => {
         if (!error && data) {
           setLiveStats({
-            score:      data.score       ?? 91,
-            calories:   data.calories    ?? 1847,
-            steps:      data.steps       ?? 8234,
-            sleepHours: data.sleep_hours ?? 7.4,
-            streak:     data.streak      ?? 7,
+            score:      data.score       ?? 0,
+            calories:   data.calories    ?? 0,
+            steps:      data.steps       ?? 0,
+            sleepHours: data.sleep_hours ?? 0,
+            streak:     data.streak      ?? 0,
+            loaded:     true,
           });
+        } else {
+          setLiveStats(prev => ({ ...prev, loaded: true }));
         }
       });
   }, [user]);
@@ -693,7 +696,7 @@ function Dashboard() {
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
             className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default">
             <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.streak} jours</span>
+            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.streak > 0 ? `${liveStats.streak} jours` : "—"}</span>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
             ref={menuRef} style={{ position: "relative" }}>
@@ -817,10 +820,10 @@ function Dashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
           <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
             {[
-              { label:"Score",    value:`${liveStats.score}`,   unit:"/100",  bg:"lg-bicolor" },
-              { label:"Calories", value: liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`, unit:"kcal", bg:"lg-rose" },
-              { label:"Pas",      value: liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`, unit:"", bg:"lg-turquoise" },
-              { label:"Sommeil",  value:`${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}`, unit:"", bg:"lg-bicolor" },
+              { label:"Score",    value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—",   unit: liveStats.loaded && liveStats.score > 0 ? "/100" : "",  bg:"lg-bicolor" },
+              { label:"Calories", value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.loaded && liveStats.calories > 0 ? "kcal" : "", bg:"lg-rose" },
+              { label:"Pas",      value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit:"", bg:"lg-turquoise" },
+              { label:"Sommeil",  value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit:"", bg:"lg-bicolor" },
             ].map((s,i) => {
               const matchStat = stats.find((st) => st.label === s.label);
               return (
