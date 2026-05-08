@@ -709,8 +709,8 @@ function Dashboard() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.88, y: -8 }}
                       transition={{ type: "spring", damping: 22, stiffness: 380 }}
-                      className="absolute right-0 z-[300] min-w-[200px] rounded-2xl overflow-hidden"
-                      style={{ background: "#fff", border: "1px solid rgba(240,235,255,0.6)", boxShadow: "0 16px 56px rgba(167,139,250,0.2),0 4px 16px rgba(0,0,0,0.06)", marginTop: "8px", top: "100%" }}>
+                      className="fixed right-4 z-[9999] min-w-[210px] rounded-2xl overflow-hidden"
+                      style={{ background: "#ffffff", border: "1px solid rgba(240,235,255,0.8)", boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.1)", top: "70px" }}>
 
                       {/* Infos utilisateur */}
                       <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(167,139,250,0.1)" }}>
