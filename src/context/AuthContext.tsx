@@ -78,7 +78,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setIsLoading(false);
       initialized.current = true;
+    }).catch(() => {
+      // Sécurité : si getSession() lève une exception (réseau, etc.)
+      setIsLoading(false);
+      initialized.current = true;
     });
+
+    // Sécurité timeout : si rien ne répond en 3s, on force isLoading = false
+    const timeout = setTimeout(() => {
+      if (!initialized.current) {
+        setIsLoading(false);
+        initialized.current = true;
+      }
+    }, 3000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
       if (sess) {
@@ -100,7 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

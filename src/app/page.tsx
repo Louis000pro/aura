@@ -897,10 +897,25 @@ function Dashboard() {
   );
 }
 
+/* ─── Spinner de chargement ─── */
+function LoadingSpinner() {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)" }}>
+      <motion.div
+        className="w-10 h-10 rounded-full border-2"
+        style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
 /* ─── Page principale ─── */
 export default function HomePage() {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
-  if (isLoading) return null;
+  // Affiche un spinner pendant le chargement de la session (évite la page blanche)
+  if (isLoading) return <LoadingSpinner />;
   return (
     <>
       <AnimatePresence>
