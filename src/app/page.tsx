@@ -696,7 +696,7 @@ function Dashboard() {
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
             className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default">
             <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.streak > 0 ? `${liveStats.streak} jours` : "—"}</span>
+            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.loaded ? `${liveStats.streak} j` : "—"}</span>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
             ref={menuRef} style={{ position: "relative" }}>
