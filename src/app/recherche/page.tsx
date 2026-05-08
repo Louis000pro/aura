@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, User, Dumbbell, X, ChevronRight } from "lucide-react";
@@ -19,6 +19,18 @@ const fakeResults: { type: ResultType; name: string; sub: string; href: string }
 export default function RecherchePage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"tous" | ResultType>("tous");
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
+      delay: Math.random() * 6,
+      duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
+    })));
+  }, []);
 
   const filtered = fakeResults.filter((r) => {
     const matchQuery = query.trim() === "" || r.name.toLowerCase().includes(query.toLowerCase());
@@ -27,10 +39,41 @@ export default function RecherchePage() {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden px-6 pt-10 pb-32 md:pl-28 md:pr-10 md:pt-10 md:pb-10">
-      {/* Ambient blobs */}
-      <div className="lg-blob absolute pointer-events-none" style={{ top: "5%", left: "8%", width: 280, height: 280, background: "rgba(255,214,231,0.55)" }} />
-      <div className="lg-blob absolute pointer-events-none" style={{ bottom: "10%", right: "6%", width: 320, height: 320, background: "rgba(178,240,240,0.5)" }} />
+    <div className="min-h-screen relative overflow-hidden px-6 pt-10 pb-32 md:pl-28 md:pr-10 md:pt-10 md:pb-10" style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}>
+      {/* ── Calque déco : blobs · anneaux · particules ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {/* Blobs statiques */}
+        <div className="absolute rounded-full"
+          style={{ top: "2%", left: "3%", width: 540, height: 540, background: "rgba(147,112,219,0.65)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ bottom: "5%", right: "3%", width: 520, height: 520, background: "rgba(200,155,50,0.55)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ top: "50%", left: "50%", width: 320, height: 320, marginLeft: -160, marginTop: -160, background: "rgba(147,112,219,0.42)", filter: "blur(60px)" }} />
+        {/* Rings — GPU composited */}
+        {[500, 370, 260].map((size, i) => (
+          <motion.div key={size} className="absolute rounded-full"
+            style={{
+              width: size, height: size,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.30 : i === 1 ? 0.42 : 0.30})`,
+              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+              willChange: "transform",
+            }}
+            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+            transition={{ duration: 60 + i * 20, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+        {particles.map((p) => (
+          <motion.div key={p.id} className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
+              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+              willChange: "transform",
+            }}
+            animate={{ y: ["-15px", "15px", "-15px"] }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
 
       <motion.div
         className="relative z-10 max-w-lg mx-auto"
@@ -80,7 +123,7 @@ export default function RecherchePage() {
               className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 capitalize"
               style={
                 filter === f
-                  ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                   : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
               }
             >
@@ -128,8 +171,8 @@ export default function RecherchePage() {
                       className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
                       style={{
                         background: r.type === "compte"
-                          ? "linear-gradient(135deg, #FFD6E7 0%, #F9A8C9 100%)"
-                          : "linear-gradient(135deg, #B2F0F0 0%, #7ED8D8 100%)",
+                          ? "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)"
+                          : "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
                       }}
                     >
@@ -151,8 +194,8 @@ export default function RecherchePage() {
                         className="text-[9px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full"
                         style={
                           r.type === "compte"
-                            ? { background: "rgba(255,214,231,0.5)", color: "#F9A8C9" }
-                            : { background: "rgba(178,240,240,0.5)", color: "#7ED8D8" }
+                            ? { background: "rgba(255,214,231,0.5)", color: "#A78BFA" }
+                            : { background: "rgba(178,240,240,0.5)", color: "#D4A843" }
                         }
                       >
                         {r.type}

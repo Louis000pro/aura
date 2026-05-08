@@ -18,18 +18,18 @@ type User = {
 };
 
 const users: User[] = [
-  { handle: "sofia.m", name: "Sofia Martinez", initial: "S", gradient: "linear-gradient(135deg, #FFD6E7 0%, #F9A8C9 100%)", verified: false },
-  { handle: "leo.fit", name: "Léo Bertrand", initial: "L", gradient: "linear-gradient(135deg, #B2F0F0 0%, #7ED8D8 100%)", verified: false },
-  { handle: "mia.rose", name: "Mia Rose", initial: "M", gradient: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", verified: false },
-  { handle: "antoine.b", name: "Antoine Blanc", initial: "A", gradient: "linear-gradient(135deg, #FFF0F5 0%, #FFD6E7 100%)" },
-  { handle: "chloe.zen", name: "Chloé Zen", initial: "C", gradient: "linear-gradient(135deg, #E0FFFF 0%, #B2F0F0 100%)" },
+  { handle: "sofia.m", name: "Sofia Martinez", initial: "S", gradient: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", verified: false },
+  { handle: "leo.fit", name: "Léo Bertrand", initial: "L", gradient: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", verified: false },
+  { handle: "mia.rose", name: "Mia Rose", initial: "M", gradient: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", verified: false },
+  { handle: "antoine.b", name: "Antoine Blanc", initial: "A", gradient: "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)" },
+  { handle: "chloe.zen", name: "Chloé Zen", initial: "C", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
 ];
 
 const influencers: User[] = [
-  { handle: "@coach.aura", name: "Coach Aura Officiel", initial: "✦", gradient: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", verified: true, followers: "284k", bio: "Coach IA · Programmes premium" },
-  { handle: "@sarah.wellness", name: "Sarah Wellness", initial: "S", gradient: "linear-gradient(135deg, #FFF0F5 0%, #F9A8C9 100%)", verified: true, followers: "127k", bio: "Yoga · Nutrition · Mindfulness" },
-  { handle: "@nico.strength", name: "Nico Strength", initial: "N", gradient: "linear-gradient(135deg, #E0FFFF 0%, #7ED8D8 100%)", verified: true, followers: "98k", bio: "Powerlifting · Mobilité" },
-  { handle: "@elea.run", name: "Eléa Runner", initial: "E", gradient: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", verified: true, followers: "61k", bio: "Marathon · Trail · Récupération" },
+  { handle: "@coach.aura", name: "Coach Aura Officiel", initial: "✦", gradient: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", verified: true, followers: "284k", bio: "Coach IA · Programmes premium" },
+  { handle: "@sarah.wellness", name: "Sarah Wellness", initial: "S", gradient: "linear-gradient(135deg, #F0EBFF 0%, #A78BFA 100%)", verified: true, followers: "127k", bio: "Yoga · Nutrition · Mindfulness" },
+  { handle: "@nico.strength", name: "Nico Strength", initial: "N", gradient: "linear-gradient(135deg, #FFFBF0 0%, #D4A843 100%)", verified: true, followers: "98k", bio: "Powerlifting · Mobilité" },
+  { handle: "@elea.run", name: "Eléa Runner", initial: "E", gradient: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", verified: true, followers: "61k", bio: "Marathon · Trail · Récupération" },
 ];
 
 type FeedItem = {
@@ -138,7 +138,7 @@ function Avatar({ user, size = 40, ring = false }: { user: User; size?: number; 
         height: size,
         background: user.gradient,
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-        outline: ring ? "2px solid #FFD6E7" : undefined,
+        outline: ring ? "2px solid #D4C0FF" : undefined,
         outlineOffset: ring ? 2 : undefined,
         color: "#2D3748",
         fontSize: size * 0.4,
@@ -148,9 +148,9 @@ function Avatar({ user, size = 40, ring = false }: { user: User; size?: number; 
       {user.verified && (
         <div
           className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", boxShadow: "0 2px 6px rgba(249,168,201,0.4)" }}
+          style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 2px 6px rgba(167,139,250,0.4)" }}
         >
-          <BadgeCheck size={9} strokeWidth={3} style={{ color: "#FFFFFF" }} fill="#7ED8D8" />
+          <BadgeCheck size={9} strokeWidth={3} style={{ color: "#FFFFFF" }} fill="#D4A843" />
         </div>
       )}
     </div>
@@ -162,13 +162,13 @@ function StoryViewer({ user, onClose }: { user: User; onClose: () => void }) {
   const [progress, setProgress] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) { onClose(); return 100; }
-        return p + 2;
-      });
+      setProgress((p) => (p >= 100 ? 100 : p + 2));
     }, 60);
     return () => clearInterval(interval);
-  }, [onClose]);
+  }, []);
+  useEffect(() => {
+    if (progress >= 100) onClose();
+  }, [progress, onClose]);
 
   return (
     <motion.div
@@ -183,7 +183,7 @@ function StoryViewer({ user, onClose }: { user: User; onClose: () => void }) {
       <div className="absolute top-0 left-0 right-0 h-0.5 z-10" style={{ background: "rgba(255,255,255,0.2)" }}>
         <motion.div
           className="h-full"
-          style={{ background: "linear-gradient(90deg, #FFD6E7, #B2F0F0)", width: `${progress}%` }}
+          style={{ background: "linear-gradient(90deg, #D4C0FF, #F5E6A3)", width: `${progress}%` }}
         />
       </div>
 
@@ -262,7 +262,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
           background: "rgba(255,255,255,0.9)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(249,168,201,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -271,7 +271,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Ajouter une story</h2>
-                <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(255,240,245,0.8)" }}>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
                   <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
               </div>
@@ -288,7 +288,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
                     onClick={() => setShared(true)}
                     className="flex flex-col items-center gap-2 p-4 rounded-2xl cursor-pointer"
                     style={{
-                      background: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 100%)",
+                      background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)",
                       border: "1px solid rgba(255,255,255,0.8)",
                     }}
                   >
@@ -316,7 +316,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", bounce: 0.6, delay: 0.1 }}
                 className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)" }}
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
               >
                 <Check size={28} strokeWidth={2.5} style={{ color: "#2D3748" }} />
               </motion.div>
@@ -326,7 +326,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
                 whileTap={{ scale: 0.97 }}
                 onClick={onClose}
                 className="mt-2 px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748" }}
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
               >
                 Fermer
               </motion.button>
@@ -352,20 +352,20 @@ function OptionsMenu({ postId, saved, onSave, onHide, onReport, onClose }: {
       className="absolute right-4 top-14 z-30 rounded-2xl overflow-hidden min-w-[180px]"
       style={{
         background: "rgba(255,255,255,0.9)",
-        backdropFilter: "blur(24px)",
+        backdropFilter: "blur(10px)",
         border: "1px solid rgba(255,255,255,0.9)",
-        boxShadow: "0 8px 32px rgba(249,168,201,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+        boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
       }}
       onClick={(e) => e.stopPropagation()}
     >
       {[
-        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#7ED8D8" : "#2D3748" },
+        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
         { icon: EyeOff, label: "Masquer ce post", action: onHide, color: "#2D3748" },
-        { icon: Flag, label: "Signaler", action: onReport, color: "#F9A8C9" },
+        { icon: Flag, label: "Signaler", action: onReport, color: "#A78BFA" },
       ].map(({ icon: Icon, label, action, color }, i) => (
         <div key={label}>
           <motion.button
-            whileHover={{ background: "rgba(255,240,245,0.5)" }}
+            whileHover={{ background: "rgba(240,235,255,0.5)" }}
             whileTap={{ scale: 0.98 }}
             onClick={() => { action(); onClose(); }}
             className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer text-left"
@@ -373,7 +373,7 @@ function OptionsMenu({ postId, saved, onSave, onHide, onReport, onClose }: {
             <Icon size={14} strokeWidth={1.5} style={{ color }} />
             <span className="text-sm font-medium" style={{ color }}>{label}</span>
           </motion.button>
-          {i < 2 && <div className="h-px mx-3" style={{ background: "rgba(255,240,245,0.9)" }} />}
+          {i < 2 && <div className="h-px mx-3" style={{ background: "rgba(240,235,255,0.9)" }} />}
         </div>
       ))}
     </motion.div>
@@ -408,23 +408,23 @@ function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: (
           background: "rgba(255,255,255,0.9)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(249,168,201,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Partager</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(255,240,245,0.8)" }}>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
 
         <div className="grid grid-cols-4 gap-3 mb-5">
           {[
-            { label: "DM", emoji: "💬", color: "linear-gradient(135deg, #FFD6E7 0%, #F9A8C9 100%)" },
-            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #B2F0F0 0%, #7ED8D8 100%)" },
-            { label: "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #FFF0F5 0%, #E0FFFF 100%)" },
-            { label: "Aura", emoji: "✦", color: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)" },
+            { label: "DM", emoji: "💬", color: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)" },
+            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)" },
+            { label: "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" },
+            { label: "Aura", emoji: "✦", color: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" },
           ].map(({ label, emoji, color }) => (
             <motion.button
               key={label}
@@ -448,7 +448,7 @@ function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: (
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               className="text-center text-sm font-medium"
-              style={{ color: "#7ED8D8" }}
+              style={{ color: "#D4A843" }}
             >
               Lien copié ! ✓
             </motion.div>
@@ -487,7 +487,7 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: number; in
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="overflow-hidden"
     >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(255,240,245,0.8)" }}>
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
         <div className="flex flex-col gap-2.5 mb-3">
           {comments.map((c) => (
             <motion.div
@@ -498,7 +498,7 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: number; in
             >
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #FFD6E7, #B2F0F0)", color: "#2D3748" }}
+                style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", color: "#2D3748" }}
               >
                 {c.user.charAt(0).toUpperCase()}
               </div>
@@ -521,8 +521,8 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: number; in
             placeholder="Ajouter un commentaire…"
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
             style={{
-              background: "rgba(255,240,245,0.5)",
-              border: "1px solid rgba(255,214,231,0.5)",
+              background: "rgba(240,235,255,0.5)",
+              border: "1px solid rgba(212,192,255,0.5)",
               color: "#2D3748",
             }}
           />
@@ -531,7 +531,7 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: number; in
             onClick={handleSend}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{
-              background: input.trim() ? "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)" : "rgba(255,240,245,0.5)",
+              background: input.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
               transition: "background 0.2s",
             }}
           >
@@ -561,6 +561,18 @@ export default function CommunautePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [burstPost, setBurstPost] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
+      delay: Math.random() * 6,
+      duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
+    })));
+  }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -636,9 +648,44 @@ export default function CommunautePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 max-w-2xl mx-auto md:mx-0 md:max-w-4xl relative"
+      className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 max-w-2xl mx-auto md:mx-0 md:max-w-4xl relative overflow-x-hidden"
+      style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}
       onClick={() => openMenu !== null && setOpenMenu(null)}
     >
+      {/* ── Calque déco : blobs · anneaux · particules ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {/* Blobs statiques */}
+        <div className="absolute rounded-full"
+          style={{ top: "-5%", left: "-8%", width: 580, height: 580, background: "rgba(147,112,219,0.65)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ bottom: "-5%", right: "-8%", width: 540, height: 540, background: "rgba(200,155,50,0.55)", filter: "blur(80px)" }} />
+        {/* Rings — GPU composited */}
+        {[500, 370, 260].map((size, i) => (
+          <motion.div key={size} className="absolute rounded-full"
+            style={{
+              width: size, height: size,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.30 : i === 1 ? 0.42 : 0.30})`,
+              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+              willChange: "transform",
+            }}
+            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+            transition={{ duration: 60 + i * 20, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+        {particles.map((p) => (
+          <motion.div key={p.id} className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
+              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+              willChange: "transform",
+            }}
+            animate={{ y: ["-15px", "15px", "-15px"] }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+      {/* ── Contenu ── */}
+      <div className="relative flex flex-col flex-1" style={{ zIndex: 1 }}>
       {/* Top Bar */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -667,7 +714,7 @@ export default function CommunautePage() {
                 className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
                 aria-label="Rechercher"
               >
-                <Search size={16} strokeWidth={1.5} style={{ color: view === "search" ? "#F9A8C9" : "#2D3748" }} />
+                <Search size={16} strokeWidth={1.5} style={{ color: view === "search" ? "#A78BFA" : "#2D3748" }} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -675,7 +722,7 @@ export default function CommunautePage() {
                 className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
                 aria-label="Messages"
               >
-                <Send size={15} strokeWidth={1.5} style={{ color: view === "dms" ? "#F9A8C9" : "#2D3748" }} />
+                <Send size={15} strokeWidth={1.5} style={{ color: view === "dms" ? "#A78BFA" : "#2D3748" }} />
               </motion.button>
             </>
           )}
@@ -707,8 +754,8 @@ export default function CommunautePage() {
                   whileTap={{ scale: 0.92 }}
                   className="w-16 h-16 rounded-full flex items-center justify-center"
                   style={{
-                    background: "linear-gradient(135deg, rgba(255,240,245,0.7) 0%, rgba(224,255,255,0.7) 100%)",
-                    border: "2px dashed rgba(249,168,201,0.5)",
+                    background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)",
+                    border: "2px dashed rgba(167,139,250,0.5)",
                   }}
                 >
                   <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
@@ -781,7 +828,7 @@ export default function CommunautePage() {
                         className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
                         aria-label="Plus"
                       >
-                        <MoreHorizontal size={16} strokeWidth={1.5} style={{ color: isMenuOpen ? "#F9A8C9" : "#A0AEC0" }} />
+                        <MoreHorizontal size={16} strokeWidth={1.5} style={{ color: isMenuOpen ? "#A78BFA" : "#A0AEC0" }} />
                       </motion.button>
 
                       <AnimatePresence>
@@ -822,14 +869,14 @@ export default function CommunautePage() {
                         <motion.div
                           key={`burst-${post.id}-${i}`}
                           className="absolute pointer-events-none"
-                          style={{ width: 6, height: 6, borderRadius: "50%", background: i % 2 === 0 ? "#F9A8C9" : "#7ED8D8" }}
+                          style={{ width: 6, height: 6, borderRadius: "50%", background: i % 2 === 0 ? "#A78BFA" : "#D4A843" }}
                           initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
                           animate={{ scale: [0, 1.2, 0], x: [0, (i - 2) * 20], y: [0, -22 - i * 4], opacity: [1, 1, 0] }}
                           transition={{ duration: 0.55, delay: i * 0.04 }}
                         />
                       ))}
                       <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F9A8C9" : "none"} style={{ color: liked ? "#F9A8C9" : "#2D3748" }} />
+                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#A78BFA" : "none"} style={{ color: liked ? "#A78BFA" : "#2D3748" }} />
                       </motion.div>
                     </motion.button>
 
@@ -844,8 +891,8 @@ export default function CommunautePage() {
                       <MessageCircle
                         size={20}
                         strokeWidth={1.5}
-                        fill={isCommentsOpen ? "rgba(249,168,201,0.2)" : "none"}
-                        style={{ color: isCommentsOpen ? "#F9A8C9" : "#2D3748" }}
+                        fill={isCommentsOpen ? "rgba(167,139,250,0.2)" : "none"}
+                        style={{ color: isCommentsOpen ? "#A78BFA" : "#2D3748" }}
                       />
                     </motion.button>
 
@@ -867,7 +914,7 @@ export default function CommunautePage() {
                         animate={{ scale: 1 }}
                         className="ml-auto"
                       >
-                        <Bookmark size={16} strokeWidth={1.5} fill="#B2F0F0" style={{ color: "#7ED8D8" }} />
+                        <Bookmark size={16} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
                       </motion.div>
                     )}
                   </div>
@@ -957,8 +1004,8 @@ export default function CommunautePage() {
                           onClick={() => toggleFollow(u.handle)}
                           className="text-[11px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer transition-all"
                           style={isFollowing
-                            ? { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(255,240,245,0.9)" }
-                            : { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                            ? { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                            : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                           }
                         >
                           {isFollowing ? "Suivi ✓" : "Suivre"}
@@ -990,7 +1037,7 @@ export default function CommunautePage() {
                           onClick={() => toggleFollow(u.handle)}
                           className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{
-                            background: isFollowing ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
+                            background: isFollowing ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
                             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
                           }}
                           aria-label={isFollowing ? "Ne plus suivre" : "Suivre"}
@@ -1042,7 +1089,7 @@ export default function CommunautePage() {
                 {dm.unread > 0 && (
                   <div
                     className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #FFD6E7 0%, #F9A8C9 100%)", color: "#FFFFFF", boxShadow: "0 2px 8px rgba(249,168,201,0.4)" }}
+                    style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", color: "#FFFFFF", boxShadow: "0 2px 8px rgba(167,139,250,0.4)" }}
                   >
                     {dm.unread}
                   </div>
@@ -1076,7 +1123,7 @@ export default function CommunautePage() {
                     <div
                       className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
                       style={msg.from === "me"
-                        ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                         : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
                       }
                     >
@@ -1106,8 +1153,8 @@ export default function CommunautePage() {
                 className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200"
                 style={{
                   background: threadInput.trim()
-                    ? "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)"
-                    : "rgba(255,240,245,0.5)",
+                    ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)"
+                    : "rgba(240,235,255,0.5)",
                   boxShadow: threadInput.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
                 }}
                 aria-label="Envoyer"
@@ -1133,18 +1180,19 @@ export default function CommunautePage() {
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
               background: "rgba(255,255,255,0.9)",
-              backdropFilter: "blur(24px)",
-              border: "1px solid rgba(255,240,245,0.9)",
-              boxShadow: "0 8px 32px rgba(249,168,201,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(240,235,255,0.9)",
+              boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
               color: "#2D3748",
               whiteSpace: "nowrap",
             }}
           >
-            <Check size={14} strokeWidth={2.5} style={{ color: "#7ED8D8" }} />
+            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
             <span className="text-sm font-medium">{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

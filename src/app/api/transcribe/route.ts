@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.Groq_api_key_vocal;
+  const apiKey = process.env.COACH_AURA_KEY ?? process.env.Groq_api_key_vocal;
   if (!apiKey) {
-    return NextResponse.json({ error: "Groq_api_key_vocal not configured" }, { status: 500 });
+    return NextResponse.json({ error: "GROQ_API_KEY not configured" }, { status: 500 });
   }
 
   try {

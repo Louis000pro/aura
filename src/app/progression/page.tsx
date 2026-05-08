@@ -382,6 +382,18 @@ export default function ProgressionPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: "left" | "right") =>
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
+      delay: Math.random() * 6,
+      duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
+    })));
+  }, []);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
