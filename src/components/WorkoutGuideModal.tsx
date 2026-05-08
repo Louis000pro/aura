@@ -255,6 +255,23 @@ export default function WorkoutGuideModal({
     return () => clearInterval(t);
   }, [phase, startMs]);
 
+  /* ── Skip the entire current exercise ── */
+  const skipExercise = useCallback(() => {
+    const nextEx = exerciseIdx + 1;
+    if (nextEx < exercises.length) {
+      setExerciseIdx(nextEx);
+      setSetIdx(0);
+      setAutoCountdown(0);
+      setHiitSub("work");
+      setPhase("exercising");
+      const e = exercises[nextEx];
+      if (e?.auto)       setAutoCountdown(e.auto);
+      else if (e?.hiit)  { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+    } else {
+      setPhase("done");
+    }
+  }, [exercises, exerciseIdx]);
+
   /* ── Advance to next set / exercise ── */
   const advance = useCallback(() => {
     const nextSet = setIdx + 1;
@@ -595,15 +612,28 @@ export default function WorkoutGuideModal({
                   ) : null;
                 })()}
 
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setRestCountdown(0)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium cursor-pointer"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#718096" }}
-                >
-                  <SkipForward size={12} strokeWidth={2} />
-                  Passer le repos
-                </motion.button>
+                <div className="flex gap-2">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setRestCountdown(0)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.06)", color: "#718096" }}
+                  >
+                    <SkipForward size={12} strokeWidth={2} />
+                    Passer le repos
+                  </motion.button>
+                  {exerciseIdx < exercises.length - 1 && (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={skipExercise}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium cursor-pointer"
+                      style={{ background: "rgba(255,255,255,0.05)", color: "#4A5568" }}
+                    >
+                      <SkipForward size={12} strokeWidth={2} />
+                      Passer l&apos;exercice
+                    </motion.button>
+                  )}
+                </div>
               </motion.div>
             )}
 
@@ -664,29 +694,55 @@ export default function WorkoutGuideModal({
             )}
 
             {phase === "exercising" && !cur?.auto && !isHiit && (
-              <motion.button key="set-done"
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={completeSet}
-                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                style={{ background: `linear-gradient(135deg,${accent}ee,${accent}bb)`, boxShadow: `0 6px 18px ${accent}44`, color: "#fff" }}
-              >
-                <CheckCircle size={16} strokeWidth={2} />
-                Série terminée ✓
-              </motion.button>
+              <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={completeSet}
+                  className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
+                  style={{ background: `linear-gradient(135deg,${accent}ee,${accent}bb)`, boxShadow: `0 6px 18px ${accent}44`, color: "#fff" }}
+                >
+                  <CheckCircle size={16} strokeWidth={2} />
+                  Série terminée ✓
+                </motion.button>
+                {exerciseIdx < exercises.length - 1 && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={skipExercise}
+                    className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.05)", color: "#4A5568" }}
+                  >
+                    <SkipForward size={12} strokeWidth={2} />
+                    Passer l&apos;exercice
+                  </motion.button>
+                )}
+              </motion.div>
             )}
 
             {phase === "exercising" && (cur?.auto || isHiit) && (
-              <motion.button key="skip"
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setAutoCountdown(0)}
-                className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-medium cursor-pointer"
-                style={{ background: "rgba(255,255,255,0.06)", color: "#718096" }}
-              >
-                <SkipForward size={13} strokeWidth={2} />
-                {isHiit && hiitSub === "work" ? "Passer l'effort" : "Passer"}
-              </motion.button>
+              <motion.div key="skip" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setAutoCountdown(0)}
+                  className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-medium cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#718096" }}
+                >
+                  <SkipForward size={13} strokeWidth={2} />
+                  {isHiit && hiitSub === "work" ? "Passer l'effort" : "Passer"}
+                </motion.button>
+                {exerciseIdx < exercises.length - 1 && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={skipExercise}
+                    className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.05)", color: "#4A5568" }}
+                  >
+                    <SkipForward size={12} strokeWidth={2} />
+                    Passer l&apos;exercice
+                  </motion.button>
+                )}
+              </motion.div>
             )}
 
             {phase === "done" && (
