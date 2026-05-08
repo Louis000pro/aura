@@ -704,58 +704,64 @@ function Dashboard() {
 
                 <AnimatePresence>
                   {showMenu && (
+                    /* motion.div = animation seulement, pas de fond */
                     <motion.div
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="fixed right-4 z-[9999] min-w-[210px] rounded-2xl overflow-hidden"
-                      style={{ backgroundColor: "#ffffff", background: "#ffffff", border: "1px solid rgba(167,139,250,0.2)", boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)", top: "70px", isolation: "isolate" }}>
-
-                      {/* Infos utilisateur */}
-                      <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(167,139,250,0.1)" }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
-                            <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{user.pseudo ?? user.name}</p>
-                            <p className="text-[11px] truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {[
-                        { icon: User2, label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
-                        { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
-                      ].map(({ icon: Icon, label, action }) => (
-                        <motion.button key={label} onClick={action}
-                          whileHover={{ x: 2, backgroundColor: "rgba(167,139,250,0.06)" }} whileTap={{ scale: 0.97 }}
-                          className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer"
-                          style={{ backgroundColor: "#ffffff" }}>
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.08)" }}>
-                              <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                      style={{ position: "fixed", right: 16, top: 70, zIndex: 9999, minWidth: 210 }}>
+                      {/* div statique = fond blanc garanti, sans layer GPU */}
+                      <div style={{
+                        backgroundColor: "#ffffff",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                        border: "1px solid rgba(167,139,250,0.2)",
+                        boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)",
+                      }}>
+                        {/* Infos utilisateur */}
+                        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(167,139,250,0.1)", backgroundColor: "#ffffff" }}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                              <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
                             </div>
-                            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{user.pseudo ?? user.name}</p>
+                              <p className="text-[11px] truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
+                            </div>
                           </div>
-                          <ChevronRight size={12} strokeWidth={2} style={{ color: "#D1D5DB" }} />
-                        </motion.button>
-                      ))}
-
-                      <div className="mx-3 my-1" style={{ height: 1, background: "rgba(167,139,250,0.1)" }} />
-
-                      <motion.button
-                        onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
-                        whileHover={{ x: 2, backgroundColor: "rgba(252,129,129,0.06)" }} whileTap={{ scale: 0.97 }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer"
-                        style={{ backgroundColor: "#ffffff" }}>
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
-                          <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
                         </div>
-                        <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
-                      </motion.button>
+
+                        {[
+                          { icon: User2, label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
+                          { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
+                        ].map(({ icon: Icon, label, action }) => (
+                          <button key={label} onClick={action}
+                            className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors hover:bg-purple-50"
+                            style={{ backgroundColor: "#ffffff", border: "none", outline: "none" }}>
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.1)" }}>
+                                <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                              </div>
+                              <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</span>
+                            </div>
+                            <ChevronRight size={12} strokeWidth={2} style={{ color: "#D1D5DB" }} />
+                          </button>
+                        ))}
+
+                        <div style={{ height: 1, margin: "4px 12px", backgroundColor: "rgba(167,139,250,0.1)" }} />
+
+                        <button
+                          onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer transition-colors hover:bg-red-50"
+                          style={{ backgroundColor: "#ffffff", border: "none", outline: "none" }}>
+                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
+                            <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
+                          </div>
+                          <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
