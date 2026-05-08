@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity } from "lucide-react";
+import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity, User2, Settings, LogOut, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
@@ -10,6 +10,7 @@ import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIC
 import StatsPanel from "@/components/StatsPanel";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import { createClient } from "@/lib/supabase";
 
 /* ─── Score Ring ─── */
 function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
@@ -512,7 +513,7 @@ function LandingPage() {
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
@@ -523,29 +524,90 @@ function Dashboard() {
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [stats, setStats] = useState({ score: 91, calories: 1847, steps: 8200, sleepHours: 7.4, streak: 7 });
+  const menuRef = useRef<HTMLDivElement>(null);
+  const onboardingChecked = useRef(false);
 
-  // Affiche l'onboarding si pas encore rempli
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
+
+  // Charge les stats du jour depuis Supabase
   useEffect(() => {
     if (!user) return;
-    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    if (!localStorage.getItem(key)) {
-      // Petit délai pour laisser le welcome banner se fermer d'abord
-      const t = setTimeout(() => setShowOnboarding(true), 500);
-      return () => clearTimeout(t);
-    }
+    const supabase = createClient();
+    const today = new Date().toISOString().slice(0, 10);
+    supabase
+      .from("daily_stats")
+      .select("score, calories, steps, sleep_hours, streak")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setStats({
+            score:      data.score       ?? 91,
+            calories:   data.calories    ?? 1847,
+            steps:      data.steps       ?? 8200,
+            sleepHours: data.sleep_hours ?? 7.4,
+            streak:     data.streak      ?? 7,
+          });
+        }
+      });
   }, [user]);
 
-  const handleOnboardingComplete = (data: OnboardingData) => {
+  // Affiche l'onboarding une seule fois par session (évite les re-checks liés aux refresh de token)
+  useEffect(() => {
+    if (!user || onboardingChecked.current) return;
+    onboardingChecked.current = true;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (!data?.onboarding_completed) {
+          setTimeout(() => setShowOnboarding(true), 500);
+        }
+      });
+  }, [user]);
+
+  const handleOnboardingComplete = async (data: OnboardingData) => {
     if (!user) return;
-    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    localStorage.setItem(key, JSON.stringify(data));
+    const supabase = createClient();
+    await supabase.from("profiles").upsert({
+      id: user.id,
+      onboarding_completed: true,
+      age: parseInt(data.age) || null,
+      height_cm: parseInt(data.height) || null,
+      weight_kg: parseFloat(data.weight) || null,
+      gender: data.gender || null,
+      goals: data.goals,
+      level: data.level || null,
+      sessions_per_week: parseInt(data.sessionsPerWeek) || null,
+      meals_per_day: data.mealsPerDay || null,
+      diet: data.diet || null,
+      updated_at: new Date().toISOString(),
+    });
     setShowOnboarding(false);
   };
 
-  const handleOnboardingSkip = () => {
+  const handleOnboardingSkip = async () => {
     if (!user) return;
-    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    localStorage.setItem(key, JSON.stringify({ skipped: true }));
+    // Marque comme vu pour ne plus redemander
+    const supabase = createClient();
+    await supabase.from("profiles").upsert({
+      id: user.id,
+      onboarding_completed: true,
+      updated_at: new Date().toISOString(),
+    });
     setShowOnboarding(false);
   };
 
@@ -576,7 +638,7 @@ function Dashboard() {
       <div className="lg-blob absolute pointer-events-none" style={{ top: "42%", left: "48%", width: 240, height: 240, background: "rgba(240,235,255,0.6)" }} />
 
       <motion.header className="relative z-10 flex items-center justify-between px-6 pt-8 pb-2 md:px-10 md:pt-10 flex-shrink-0"
-        initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+        initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22,1,0.36,1] }}>
         <div>
           <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
           <motion.h1 className="text-2xl md:text-3xl font-extralight mt-1" style={{ color: "#2D3748" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
@@ -587,15 +649,79 @@ function Dashboard() {
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
             className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default">
             <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>7 jours</span>
+            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{stats.streak} jours</span>
           </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}>
+          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
+            ref={menuRef} style={{ position: "relative" }}>
             {user ? (
-              <motion.div whileHover={{ scale: 1.08, rotate: 5 }} whileTap={{ scale: 0.92 }}
-                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)" }}>
-                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
-              </motion.div>
+              <>
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                  onClick={() => setShowMenu(v => !v)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer select-none"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: showMenu ? "0 0 0 2.5px rgba(167,139,250,0.5),0 4px 16px rgba(167,139,250,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)", transition: "box-shadow 0.2s" }}>
+                  <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
+                </motion.div>
+
+                <AnimatePresence>
+                  {showMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.88, y: -8 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.88, y: -8 }}
+                      transition={{ type: "spring", damping: 22, stiffness: 380 }}
+                      className="absolute right-0 top-13 z-[300] min-w-[200px] rounded-2xl overflow-hidden"
+                      style={{ background: "#fff", border: "1px solid rgba(240,235,255,0.6)", boxShadow: "0 16px 56px rgba(167,139,250,0.2),0 4px 16px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.95)", marginTop: "8px" }}>
+
+                      {/* Infos utilisateur */}
+                      <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(167,139,250,0.1)" }}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                            <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{user.pseudo ?? user.name}</p>
+                            <p className="text-[11px] truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      {[
+                        { icon: User2, label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
+                        { icon: Settings, label: "Réglages", action: () => { router.push("/profil"); setShowMenu(false); } },
+                      ].map(({ icon: Icon, label, action }) => (
+                        <motion.button key={label} onClick={action}
+                          whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }}
+                          className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer group"
+                          style={{ background: "transparent" }}>
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+                              style={{ background: "rgba(167,139,250,0.08)" }}>
+                              <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                            </div>
+                            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</span>
+                          </div>
+                          <ChevronRight size={12} strokeWidth={2} style={{ color: "#D1D5DB" }} />
+                        </motion.button>
+                      ))}
+
+                      <div className="mx-3 my-1" style={{ height: 1, background: "rgba(167,139,250,0.1)" }} />
+
+                      <motion.button
+                        onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
+                        whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer">
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+                          style={{ background: "rgba(252,129,129,0.1)" }}>
+                          <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
+                        </div>
+                        <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
             ) : (
               <Link href="/auth">
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} className="lg-bicolor lg-highlight relative flex items-center gap-1.5 px-3 py-2 rounded-full cursor-pointer">
@@ -617,11 +743,11 @@ function Dashboard() {
           <VocalOrb onTranscript={handleVoiceTranscript} />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} whileHover={{ y: -3, transition: { duration: 0.2 } }}
             className="lg-surface lg-highlight relative rounded-3xl px-6 py-5 flex items-center gap-5 w-full max-w-sm">
-            <ScoreRing score={91} />
+            <ScoreRing score={stats.score} />
             <div>
               <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Score du jour</p>
-              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>Récupération excellente</p>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>Idéal pour intensité modérée</p>
+              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{stats.score >= 85 ? "Récupération excellente" : stats.score >= 65 ? "Forme correcte" : "Récupération en cours"}</p>
+              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>{stats.score >= 85 ? "Idéal pour séance intensive" : "Intensité modérée conseillée"}</p>
             </div>
           </motion.div>
           <div className="flex gap-3 w-full max-w-sm">
@@ -639,7 +765,12 @@ function Dashboard() {
       <div className="md:hidden flex flex-col relative z-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
           <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-            {[{ label:"Score",value:"91",unit:"/100",bg:"lg-bicolor" },{label:"Calories",value:"1847",unit:"kcal",bg:"lg-rose"},{label:"Pas",value:"8.2k",unit:"",bg:"lg-turquoise"},{label:"Sommeil",value:"7h24",unit:"",bg:"lg-bicolor"}].map((s,i) => (
+            {[
+              { label: "Score",    value: `${stats.score}`,  unit: "/100",  bg: "lg-bicolor" },
+              { label: "Calories", value: stats.calories >= 1000 ? `${(stats.calories / 1000).toFixed(1)}k` : `${stats.calories}`, unit: "kcal", bg: "lg-rose" },
+              { label: "Pas",      value: stats.steps >= 1000 ? `${(stats.steps / 1000).toFixed(1)}k` : `${stats.steps}`, unit: "", bg: "lg-turquoise" },
+              { label: "Sommeil",  value: `${Math.floor(stats.sleepHours)}h${String(Math.round((stats.sleepHours % 1) * 60)).padStart(2, "0")}`, unit: "", bg: "lg-bicolor" },
+            ].map((s,i) => (
               <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
                 whileHover={{ scale: 1.04, y: -2 }} className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] cursor-default`}>
                 <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
@@ -677,8 +808,8 @@ function Dashboard() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobilePanel(null)}
               className="fixed inset-0 z-40 md:hidden" style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }} />
-            <motion.div initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 32, stiffness: 340 }}
               className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden">
               {mobilePanel === "chat" ? <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} /> : <StatsPanel />}
             </motion.div>

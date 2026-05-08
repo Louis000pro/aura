@@ -1,57 +1,156 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase";
+import type { Session, User as SBUser } from "@supabase/supabase-js";
 
 export type User = {
+  id: string;
   pseudo: string;
   name: string;
   lastName: string;
   email: string;
+  avatar?: string;
 };
+
+type AuthError = { message: string } | null;
 
 type AuthCtx = {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
   justLoggedIn: boolean;
   isNewUser: boolean;
-  login: (user: User, isNew?: boolean) => void;
-  logout: () => void;
+  signUp: (d: { pseudo: string; name: string; lastName: string; email: string; password: string }) => Promise<AuthError>;
+  signIn: (d: { email: string; password: string }) => Promise<AuthError>;
+  signInWithGoogle: () => Promise<AuthError>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<AuthError>;
+  verifySignupOtp: (email: string, token: string) => Promise<AuthError>;
+  resendSignupOtp: (email: string) => Promise<AuthError>;
   clearWelcome: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
+function mapUser(sbUser: SBUser): User {
+  const m = sbUser.user_metadata ?? {};
+  return {
+    id: sbUser.id,
+    pseudo: m.pseudo ?? sbUser.email?.split("@")[0] ?? "utilisateur",
+    name: m.name ?? (m.full_name as string | undefined)?.split(" ")[0] ?? "",
+    lastName: m.last_name ?? (m.full_name as string | undefined)?.split(" ").slice(1).join(" ") ?? "",
+    email: sbUser.email ?? "",
+    avatar: m.avatar_url ?? m.picture,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
+  const [user, setUser]               = useState<User | null>(null);
+  const [session, setSession]         = useState<Session | null>(null);
+  const [isLoading, setIsLoading]     = useState(true);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [isNewUser, setIsNewUser]     = useState(false);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    try {
-      const s = localStorage.getItem("aura_user");
-      if (s) setUser(JSON.parse(s));
-    } catch {}
-    setIsLoading(false);
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setSession(data.session);
+        setUser(mapUser(data.session.user));
+      }
+      setIsLoading(false);
+      initialized.current = true;
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+      if (sess) {
+        setSession(sess);
+        setUser(mapUser(sess.user));
+        if (event === "SIGNED_IN" && initialized.current) {
+          setJustLoggedIn(true);
+          const createdAt = new Date(sess.user.created_at).getTime();
+          setIsNewUser(Date.now() - createdAt < 15_000);
+        }
+      } else {
+        setSession(null);
+        setUser(null);
+        setJustLoggedIn(false);
+      }
+      if (!initialized.current) {
+        setIsLoading(false);
+        initialized.current = true;
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = (u: User, isNew = false) => {
-    setUser(u);
-    setJustLoggedIn(true);
-    setIsNewUser(isNew);
-    localStorage.setItem("aura_user", JSON.stringify(u));
+  const signUp: AuthCtx["signUp"] = async ({ pseudo, name, lastName, email, password }) => {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: {
+        data: { pseudo, name, last_name: lastName },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) return { message: error.message };
+    // Supabase ne retourne pas d'erreur pour un email déjà utilisé,
+    // mais l'utilisateur retourné aura un tableau "identities" vide.
+    if (data.user?.identities?.length === 0) {
+      return { message: "Un compte existe déjà avec cet email. Connecte-toi !" };
+    }
+    return null;
   };
 
-  const logout = () => {
-    setUser(null);
-    setJustLoggedIn(false);
-    localStorage.removeItem("aura_user");
+  const signIn: AuthCtx["signIn"] = async ({ email, password }) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error ? { message: error.message } : null;
+  };
+
+  const signInWithGoogle: AuthCtx["signInWithGoogle"] = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    return error ? { message: error.message } : null;
+  };
+
+  const signOut = async () => { await supabase.auth.signOut(); };
+
+  const resetPassword: AuthCtx["resetPassword"] = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    return error ? { message: error.message } : null;
+  };
+
+  const verifySignupOtp: AuthCtx["verifySignupOtp"] = async (email, token) => {
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
+    return error ? { message: error.message } : null;
+  };
+
+  const resendSignupOtp: AuthCtx["resendSignupOtp"] = async (email) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    return error ? { message: error.message } : null;
   };
 
   const clearWelcome = () => setJustLoggedIn(false);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, justLoggedIn, isNewUser, login, logout, clearWelcome }}>
+    <AuthContext.Provider value={{
+      user, session, isLoading, justLoggedIn, isNewUser,
+      signUp, signIn, signInWithGoogle, signOut, resetPassword,
+      verifySignupOtp, resendSignupOtp,
+      clearWelcome, logout: signOut,
+    }}>
       {children}
     </AuthContext.Provider>
   );

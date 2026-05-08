@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
-  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers,
+  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase";
+
+/* ─── DB types ───────────────────────────────────────────── */
+type DbWorkoutSession = {
+  id: string;
+  user_id: string;
+  title: string;
+  category: string;
+  duration_minutes: number;
+  calories_burned: number;
+  started_at: string;
+};
 
 /* ─── Timeline data ─────────────────────────────────────── */
 type TimelineEvent = {
@@ -22,7 +35,7 @@ const timelineEvents: TimelineEvent[] = [
   {
     date: "Aujourd'hui", time: "08:30", type: "workout",
     title: "Séance Force · Haut du corps", desc: "47 min · Volume 3.2 t · 412 kcal",
-    cardClass: "lg-turquoise", dot: "#7ED8D8",
+    cardClass: "lg-turquoise", dot: "#D4A843",
     performance: {
       type: "workout", title: "Force · Haut du corps", date: "Aujourd'hui · 08:30",
       metrics: [
@@ -37,7 +50,7 @@ const timelineEvents: TimelineEvent[] = [
   {
     date: "Aujourd'hui", time: "07:15", type: "meal",
     title: "Petit-déjeuner protéiné", desc: "487 kcal · 32g protéines",
-    cardClass: "lg-rose", dot: "#F9A8C9",
+    cardClass: "lg-rose", dot: "#A78BFA",
     performance: {
       type: "meal", title: "Petit-déjeuner protéiné", date: "Aujourd'hui · 07:15",
       metrics: [
@@ -52,7 +65,7 @@ const timelineEvents: TimelineEvent[] = [
   {
     date: "Hier", time: "23:00", type: "day",
     title: "Bilan de la journée", desc: "Score 91/100 · Récupération optimale",
-    cardClass: "lg-bicolor", dot: "#B2F0F0",
+    cardClass: "lg-bicolor", dot: "rgba(245,230,163,0.55)",
     performance: {
       type: "day", title: "Bilan du mardi", date: "Hier",
       metrics: [
@@ -67,7 +80,7 @@ const timelineEvents: TimelineEvent[] = [
   {
     date: "Hier", time: "12:45", type: "meal",
     title: "Déjeuner équilibré", desc: "612 kcal · 48g protéines",
-    cardClass: "lg-rose", dot: "#F9A8C9",
+    cardClass: "lg-rose", dot: "#A78BFA",
     performance: {
       type: "meal", title: "Bowl protéiné", date: "Hier · 12:45",
       metrics: [
@@ -107,14 +120,14 @@ const workoutSessions: WorkoutSession[] = [
     title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
-    accent: "#F9A8C9", icon: Dumbbell,
+    accent: "#A78BFA", icon: Dumbbell,
   },
   {
     id: "fullbody-deb", category: "fullbody",
     title: "Full Body Débutant", subtitle: "Corps complet · Sans matériel",
     duration: 35, difficulty: "Débutant", exercises: 7,
     muscles: ["Corps entier"],
-    accent: "#7ED8D8", icon: Layers,
+    accent: "#D4A843", icon: Layers,
   },
   {
     id: "hiit", category: "cardio",
@@ -171,7 +184,7 @@ const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
 const difficultyColor: Record<string, string> = {
   "Débutant":      "#34D399",
   "Intermédiaire": "#FBBF24",
-  "Avancé":        "#F9A8C9",
+  "Avancé":        "#A78BFA",
 };
 
 /* ─── UploadZone ────────────────────────────────────────── */
@@ -224,7 +237,7 @@ function UploadZone({
         )}
         {uploadState === "done" && (
           <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
-            <CheckCircle size={28} strokeWidth={1.5} style={{ color: "#7ED8D8" }} />
+            <CheckCircle size={28} strokeWidth={1.5} style={{ color: "#D4A843" }} />
             <p className="text-xs font-medium" style={{ color: "#2D3748" }}>Analyse terminée !</p>
           </motion.div>
         )}
@@ -234,7 +247,7 @@ function UploadZone({
 }
 
 /* ─── WorkoutCard ───────────────────────────────────────── */
-function WorkoutCard({ session, gender }: { session: WorkoutSession; gender: "homme" | "femme" }) {
+function WorkoutCard({ session, gender, onStart }: { session: WorkoutSession; gender: "homme" | "femme"; onStart?: (s: WorkoutSession) => void }) {
   const [started, setStarted] = useState(false);
   const Icon = session.icon;
 
@@ -304,7 +317,7 @@ function WorkoutCard({ session, gender }: { session: WorkoutSession; gender: "ho
         {/* CTA */}
         <motion.button
           whileTap={{ scale: 0.95 }}
-          onClick={() => setStarted((s) => !s)}
+          onClick={() => { if (!started && onStart) onStart(session); setStarted((s) => !s); }}
           className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
           style={
             started
@@ -341,20 +354,94 @@ const itemVariants = {
   visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
+/* ─── Helpers ──────────────────────────────────────────── */
+function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
+  const d = new Date(s.started_at);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
+  const date = isToday
+    ? "Aujourd'hui"
+    : isYesterday
+    ? "Hier"
+    : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return {
+    date,
+    time,
+    type: "workout",
+    title: s.title,
+    desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
+    cardClass: "lg-turquoise",
+    dot: "#D4A843",
+    performance: {
+      type: "workout",
+      title: s.title,
+      date: `${date} · ${time}`,
+      metrics: [
+        { label: "Durée", value: String(s.duration_minutes), unit: "min" },
+        ...(s.calories_burned ? [{ label: "Calories", value: String(s.calories_burned), unit: "kcal" }] : []),
+      ],
+    },
+  };
+}
+
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
+  const [toast, setToast] = useState<string | null>(null);
+  const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
   const { settings } = useProfileSettings();
+  const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: "left" | "right") =>
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  // Fetch real workout sessions from Supabase
+  const fetchSessions = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("workout_sessions")
+      .select("id, user_id, title, category, duration_minutes, calories_burned, started_at")
+      .eq("user_id", user.id)
+      .order("started_at", { ascending: false })
+      .limit(15);
+    if (!error && data && data.length > 0) {
+      setRealTimeline(data.map(dbSessionToEvent));
+    }
+  }, [user]);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  // Save a started workout to DB
+  const handleStartWorkout = async (session: WorkoutSession) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("workout_sessions").insert({
+      user_id: user.id,
+      title: session.title,
+      category: session.category,
+      duration_minutes: session.duration,
+      calories_burned: Math.round(session.duration * 6.5),
+      started_at: new Date().toISOString(),
+    });
+    if (!error) {
+      showToast(`${session.title} démarrée ✓`);
+      setTimeout(fetchSessions, 500);
+    }
+  };
+
+  const displayTimeline = realTimeline.length > 0 ? realTimeline : timelineEvents;
 
   const filteredSessions = workoutSessions.filter(
     (s) => categoryFilter === "tous" || s.category === categoryFilter
   );
 
-  const groups = timelineEvents.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
+  const groups = displayTimeline.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
     (acc[event.date] = acc[event.date] || []).push(event);
     return acc;
   }, {});
@@ -402,7 +489,7 @@ export default function ProgressionPage() {
           </div>
           <span
             className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-            style={{ background: "rgba(249,168,201,0.15)", color: "#F9A8C9" }}
+            style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}
           >
             {workoutSessions.length} séances
           </span>
@@ -418,7 +505,7 @@ export default function ProgressionPage() {
                 className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
                 style={
                   categoryFilter === key
-                    ? { background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                    ? { background: "linear-gradient(135deg, rgba(212,192,255,0.7) 0%, rgba(245,230,163,0.55) 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                     : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
                 }
               >
@@ -473,7 +560,7 @@ export default function ProgressionPage() {
           >
             <AnimatePresence mode="popLayout">
               {filteredSessions.map((session) => (
-                <WorkoutCard key={session.id} session={session} gender={settings.gender} />
+                <WorkoutCard key={session.id} session={session} gender={settings.gender} onStart={handleStartWorkout} />
               ))}
             </AnimatePresence>
             <div className="flex-shrink-0 w-6" />
@@ -507,7 +594,7 @@ export default function ProgressionPage() {
             <div className="relative flex flex-col gap-3">
               <div
                 className="absolute left-[19px] top-6 bottom-0 w-px"
-                style={{ background: "linear-gradient(to bottom, rgba(255,214,231,0.6), rgba(178,240,240,0.6), transparent)" }}
+                style={{ background: "linear-gradient(to bottom, rgba(212,192,255,0.6), rgba(178,240,240,0.6), transparent)" }}
               />
               {events.map((event, i) => {
                 const EvIcon = eventIcons[event.type];
@@ -526,7 +613,7 @@ export default function ProgressionPage() {
                           onClick={() => setShareData(event.performance)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg cursor-pointer flex-shrink-0"
                           style={{
-                            background: "linear-gradient(135deg, rgba(255,240,245,0.95) 0%, rgba(224,255,255,0.95) 100%)",
+                            background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(224,255,255,0.95) 100%)",
                             border: "1px solid rgba(255,255,255,0.8)",
                             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
                           }}
@@ -556,8 +643,30 @@ export default function ProgressionPage() {
       <SharePerformanceModal
         open={shareData !== null}
         onClose={() => setShareData(null)}
-        data={shareData ?? timelineEvents[0].performance}
+        data={shareData ?? displayTimeline[0]?.performance ?? timelineEvents[0].performance}
       />
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
+            className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
+            style={{
+              background: "rgba(255,255,255,0.9)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid rgba(255,255,255,0.9)",
+              boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
+            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
