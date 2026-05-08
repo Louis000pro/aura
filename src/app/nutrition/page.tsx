@@ -159,7 +159,7 @@ function HydrationTracker({ cups, goal = 8, onAdd, onRemove }: {
           ))}
         </div>
         <span className="text-xs font-semibold ml-0.5" style={{ color: "#718096" }}>
-          {(cups * 0.25).toFixed(2)} L
+          {cups} / {goal} verres
         </span>
       </div>
     </div>

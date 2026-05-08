@@ -30,20 +30,28 @@ export async function POST(req: Request) {
             },
             {
               type: "text",
-              text: `Tu es un nutritionniste expert. Analyse cette photo de repas.
+              text: `Tu es un expert en nutrition et en reconnaissance d'aliments. Analyse très attentivement cette photo de repas.
 
-Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après:
+INSTRUCTIONS IMPORTANTES :
+- Regarde TOUS les détails visuels : la forme, la texture, la couleur, la sauce des aliments
+- Ne confonds pas les aliments similaires : gnocchis ≠ riz, pâtes ≠ riz, quinoa ≠ semoule
+- Les gnocchis sont des petites boulettes ovales/rondes de pommes de terre, souvent dans une sauce
+- Identifie précisément le plat (ex: "Gnocchis à la sauce tomate" et non "riz")
+- Sois précis sur les aliments européens/italiens/français
+- Tiens compte de tous les éléments visibles dans l'assiette (viande, légumes, sauce, garniture)
+
+Retourne UNIQUEMENT un objet JSON valide, sans texte avant ou après :
 {
-  "foodName": "nom du plat en français (concis)",
+  "foodName": "nom précis du plat en français",
   "description": "description courte en français (max 12 mots)",
-  "mealType": "petit-dejeuner" ou "dejeuner" ou "gouter" ou "diner" (selon le type de plat visible),
+  "mealType": "petit-dejeuner" ou "dejeuner" ou "gouter" ou "diner",
   "calories": estimation calories totales (nombre entier),
   "proteins": protéines en grammes (nombre entier),
   "carbs": glucides en grammes (nombre entier),
   "fats": lipides en grammes (nombre entier)
 }
 
-Soit réaliste sur les portions. Si l'image n'est pas un repas, retourne quand même un JSON avec des valeurs à 0.`,
+Sois réaliste sur les portions visibles. Retourne UNIQUEMENT le JSON.`,
             },
           ],
         },
