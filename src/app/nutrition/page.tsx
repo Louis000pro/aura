@@ -169,12 +169,22 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
   onRemove: (ml: number) => void;
 }) {
   const pct = Math.min(Math.round((waterMl / goalMl) * 100), 100);
+  const holdRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const presets = [
     { ml: 150, label: "150 ml", Icon: PetitVerreIcon },
     { ml: 250, label: "250 ml", Icon: GrandVerreIcon },
     { ml: 500, label: "500 ml", Icon: BouteilleIcon },
   ] as const;
+
+  const startHold = (action: () => void) => {
+    action();
+    holdRef.current = setInterval(action, 110);
+  };
+
+  const stopHold = () => {
+    if (holdRef.current) { clearInterval(holdRef.current); holdRef.current = null; }
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -187,8 +197,13 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
         <div className="flex items-center gap-2">
           <motion.button
             whileTap={{ scale: 0.86 }}
-            onClick={() => onRemove(10)}
             disabled={waterMl === 0}
+            onMouseDown={() => waterMl > 0 && startHold(() => onRemove(10))}
+            onMouseUp={stopHold}
+            onMouseLeave={stopHold}
+            onTouchStart={() => waterMl > 0 && startHold(() => onRemove(10))}
+            onTouchEnd={stopHold}
+            onTouchCancel={stopHold}
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{
               background: "rgba(167,139,250,0.10)",
@@ -208,7 +223,12 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
 
           <motion.button
             whileTap={{ scale: 0.86 }}
-            onClick={() => onAdd(10)}
+            onMouseDown={() => startHold(() => onAdd(10))}
+            onMouseUp={stopHold}
+            onMouseLeave={stopHold}
+            onTouchStart={() => startHold(() => onAdd(10))}
+            onTouchEnd={stopHold}
+            onTouchCancel={stopHold}
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{ background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.20)" }}
           >
