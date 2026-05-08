@@ -169,7 +169,21 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
   onRemove: (ml: number) => void;
 }) {
   const pct = Math.min(Math.round((waterMl / goalMl) * 100), 100);
-  const holdRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const barRef   = useRef<HTMLDivElement>(null);
+  // Ref pour avoir la valeur courante dans les handlers sans re-registrer les events
+  const mlRef    = useRef(waterMl);
+  useEffect(() => { mlRef.current = waterMl; }, [waterMl]);
+
+  const applyFromX = (clientX: number) => {
+    if (!barRef.current) return;
+    const { left, width } = barRef.current.getBoundingClientRect();
+    const ratio  = Math.max(0, Math.min(1, (clientX - left) / width));
+    const target = Math.round((ratio * goalMl) / 10) * 10;
+    const delta  = target - mlRef.current;
+    if (delta > 0) onAdd(delta);
+    else if (delta < 0) onRemove(-delta);
+  };
 
   const presets = [
     { ml: 150, label: "150 ml", Icon: PetitVerreIcon },
@@ -237,14 +251,39 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
         </div>
       </div>
 
-      {/* Barre de progression */}
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.10)" }}>
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: "linear-gradient(90deg,#A78BFA 0%,#7B5CC4 100%)" }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-        />
+      {/* Barre interactive — clic ou glissement */}
+      <div
+        ref={barRef}
+        className="relative select-none cursor-ew-resize"
+        style={{ paddingBlock: 8 }}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          applyFromX(e.clientX);
+        }}
+        onPointerMove={(e) => { if (e.buttons) applyFromX(e.clientX); }}
+      >
+        {/* Track */}
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.10)" }}>
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: "linear-gradient(90deg,#A78BFA 0%,#7B5CC4 100%)" }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+          />
+        </div>
+        {/* Thumb */}
+        {pct > 0 && (
+          <motion.div
+            className="absolute top-1/2 w-3.5 h-3.5 rounded-full pointer-events-none"
+            style={{
+              background: "linear-gradient(135deg,#A78BFA,#7B5CC4)",
+              boxShadow: "0 0 0 3px rgba(167,139,250,0.25), 0 1px 4px rgba(80,40,150,0.2)",
+              translateY: "-50%",
+            }}
+            animate={{ left: `calc(${pct}% - 7px)` }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+          />
+        )}
       </div>
 
       {/* Raccourcis rapides */}
