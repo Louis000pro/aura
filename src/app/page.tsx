@@ -8,8 +8,11 @@ import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatsPanel from "@/components/StatsPanel";
+import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import { stats } from "@/data/statsData";
+import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 
 /* ─── Score Ring ─── */
@@ -258,8 +261,9 @@ function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { ico
   const [tapped, setTapped] = useState(false);
   return (
     <motion.button type="button" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 + index * 0.07, type: "spring", bounce: 0.35 }}
-      whileHover={{ y: -3, scale: 1.03 }} whileTap={{ scale: 0.93 }}
+      transition={{ delay: 0.1 + index * 0.05, type: "spring", bounce: 0.35 }}
+      whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.15 } }}
+      whileTap={{ scale: 0.93, transition: { duration: 0.08 } }}
       onClick={() => { setTapped(true); setTimeout(() => setTapped(false), 500); onClick?.(); }}
       className={`${bg} lg-highlight relative flex-1 rounded-2xl py-4 flex flex-col items-center gap-2 cursor-pointer overflow-hidden`}>
       <AnimatePresence>
@@ -521,14 +525,16 @@ function Dashboard() {
   const [showRepas, setShowRepas] = useState(false);
   const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string|null>(null);
+  const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [userContext, setUserContext] = useState<OnboardingData | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [stats, setStats] = useState({ score: 91, calories: 1847, steps: 8200, sleepHours: 7.4, streak: 7 });
+  const [liveStats, setLiveStats] = useState({ score: 91, calories: 1847, steps: 8234, sleepHours: 7.4, streak: 7 });
   const menuRef = useRef<HTMLDivElement>(null);
-  const onboardingChecked = useRef(false);
 
+  // Ferme le menu au clic extérieur
   useEffect(() => {
     if (!showMenu) return;
     const handler = (e: MouseEvent) => {
@@ -538,7 +544,7 @@ function Dashboard() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showMenu]);
 
-  // Charge les stats du jour depuis Supabase
+  // Fetch stats du jour depuis Supabase
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
@@ -551,10 +557,10 @@ function Dashboard() {
       .maybeSingle()
       .then(({ data, error }) => {
         if (!error && data) {
-          setStats({
+          setLiveStats({
             score:      data.score       ?? 91,
             calories:   data.calories    ?? 1847,
-            steps:      data.steps       ?? 8200,
+            steps:      data.steps       ?? 8234,
             sleepHours: data.sleep_hours ?? 7.4,
             streak:     data.streak      ?? 7,
           });
@@ -562,66 +568,95 @@ function Dashboard() {
       });
   }, [user]);
 
-  // Affiche l'onboarding une seule fois par session (évite les re-checks liés aux refresh de token)
+  // Charge le contexte onboarding depuis localStorage
   useEffect(() => {
-    if (!user || onboardingChecked.current) return;
-    onboardingChecked.current = true;
-    const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (!data?.onboarding_completed) {
-          setTimeout(() => setShowOnboarding(true), 500);
-        }
-      });
+    if (!user) return;
+    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ }
+    } else {
+      const t = setTimeout(() => setShowOnboarding(true), 500);
+      return () => clearTimeout(t);
+    }
   }, [user]);
 
-  const handleOnboardingComplete = async (data: OnboardingData) => {
+  const handleOnboardingComplete = (data: OnboardingData) => {
     if (!user) return;
-    const supabase = createClient();
-    await supabase.from("profiles").upsert({
-      id: user.id,
-      onboarding_completed: true,
-      age: parseInt(data.age) || null,
-      height_cm: parseInt(data.height) || null,
-      weight_kg: parseFloat(data.weight) || null,
-      gender: data.gender || null,
-      goals: data.goals,
-      level: data.level || null,
-      sessions_per_week: parseInt(data.sessionsPerWeek) || null,
-      meals_per_day: data.mealsPerDay || null,
-      diet: data.diet || null,
-      updated_at: new Date().toISOString(),
-    });
+    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
+    localStorage.setItem(key, JSON.stringify(data));
+    setUserContext(data);
     setShowOnboarding(false);
   };
 
-  const handleOnboardingSkip = async () => {
+  const handleOnboardingSkip = () => {
     if (!user) return;
-    // Marque comme vu pour ne plus redemander
-    const supabase = createClient();
-    await supabase.from("profiles").upsert({
-      id: user.id,
-      onboarding_completed: true,
-      updated_at: new Date().toISOString(),
-    });
+    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
+    const skipped = { skipped: true };
+    localStorage.setItem(key, JSON.stringify(skipped));
+    setUserContext(skipped as unknown as OnboardingData);
     setShowOnboarding(false);
   };
 
-  const sendMessage = useCallback((text: string) => {
+  const chatMessagesRef = useRef<Message[]>(initialChatMessages);
+
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     const n = new Date();
     const time = `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
-    setChatMessages((m) => [...m, { id: Date.now(), from: "me", text, time }]);
+
+    // Ajoute le message utilisateur
+    const userMsg: Message = { id: Date.now(), from: "me", text, time };
+    const newMessages = [...chatMessagesRef.current, userMsg];
+    chatMessagesRef.current = newMessages;
+    setChatMessages(newMessages);
     setAiTyping(true);
-    setTimeout(() => {
+
+    // Historique pour l'API : exclut les 3 messages initiaux hardcodés
+    const apiMessages = newMessages.slice(initialChatMessages.length).map((m) => ({
+      role: m.from === "me" ? "user" as const : "assistant" as const,
+      content: m.text,
+    }));
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: apiMessages,
+          userContext,
+          pseudo: user?.pseudo ?? user?.name ?? "",
+        }),
+      });
+
+      if (!response.ok || !response.body) throw new Error("API error");
+
       setAiTyping(false);
-      setChatMessages((m) => [...m, { id: Date.now() + 1, from: "ai", text: "Compris. Je personnalise votre programme en conséquence ✨", time }]);
-    }, 1400);
-  }, []);
+      const aiMsgId = Date.now() + 1;
+      const withAi = [...chatMessagesRef.current, { id: aiMsgId, from: "ai" as const, text: "", time }];
+      chatMessagesRef.current = withAi;
+      setChatMessages(withAi);
+
+      // Stream les tokens au fur et à mesure
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setChatMessages((m) => {
+          const updated = m.map((msg) => msg.id === aiMsgId ? { ...msg, text: msg.text + chunk } : msg);
+          chatMessagesRef.current = updated;
+          return updated;
+        });
+      }
+    } catch {
+      setAiTyping(false);
+      const errMsg: Message = { id: Date.now() + 1, from: "ai", text: "Désolé, une erreur est survenue. Réessaie dans quelques secondes ✨", time };
+      chatMessagesRef.current = [...chatMessagesRef.current, errMsg];
+      setChatMessages(chatMessagesRef.current);
+    }
+  }, [user, userContext]);
 
   const handleVoiceTranscript = useCallback((text: string) => {
     sendMessage(text);
@@ -629,7 +664,12 @@ function Dashboard() {
   }, [sendMessage]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
-  const quickActionHandlers = [() => router.push("/progression"), () => setShowRepas(true), () => setShowObjectif(true)];
+
+  const quickActionHandlers = [
+    () => { setMobilePanel("chat"); sendMessage("Génère-moi une séance d'entraînement pour aujourd'hui selon mon profil et mes objectifs"); },
+    () => { setMobilePanel("chat"); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
+    () => { setMobilePanel("chat"); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
@@ -638,7 +678,7 @@ function Dashboard() {
       <div className="lg-blob absolute pointer-events-none" style={{ top: "42%", left: "48%", width: 240, height: 240, background: "rgba(240,235,255,0.6)" }} />
 
       <motion.header className="relative z-10 flex items-center justify-between px-6 pt-8 pb-2 md:px-10 md:pt-10 flex-shrink-0"
-        initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22,1,0.36,1] }}>
+        initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div>
           <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
           <motion.h1 className="text-2xl md:text-3xl font-extralight mt-1" style={{ color: "#2D3748" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
@@ -649,7 +689,7 @@ function Dashboard() {
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
             className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default">
             <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{stats.streak} jours</span>
+            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.streak} jours</span>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
             ref={menuRef} style={{ position: "relative" }}>
@@ -669,8 +709,8 @@ function Dashboard() {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.88, y: -8 }}
                       transition={{ type: "spring", damping: 22, stiffness: 380 }}
-                      className="absolute right-0 top-13 z-[300] min-w-[200px] rounded-2xl overflow-hidden"
-                      style={{ background: "#fff", border: "1px solid rgba(240,235,255,0.6)", boxShadow: "0 16px 56px rgba(167,139,250,0.2),0 4px 16px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.95)", marginTop: "8px" }}>
+                      className="absolute right-0 z-[300] min-w-[200px] rounded-2xl overflow-hidden"
+                      style={{ background: "#fff", border: "1px solid rgba(240,235,255,0.6)", boxShadow: "0 16px 56px rgba(167,139,250,0.2),0 4px 16px rgba(0,0,0,0.06)", marginTop: "8px", top: "100%" }}>
 
                       {/* Infos utilisateur */}
                       <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(167,139,250,0.1)" }}>
@@ -686,18 +726,16 @@ function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Actions */}
                       {[
                         { icon: User2, label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
-                        { icon: Settings, label: "Réglages", action: () => { router.push("/profil"); setShowMenu(false); } },
+                        { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
                       ].map(({ icon: Icon, label, action }) => (
                         <motion.button key={label} onClick={action}
                           whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }}
-                          className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer group"
+                          className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer"
                           style={{ background: "transparent" }}>
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                              style={{ background: "rgba(167,139,250,0.08)" }}>
+                            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.08)" }}>
                               <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
                             </div>
                             <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</span>
@@ -712,8 +750,7 @@ function Dashboard() {
                         onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
                         whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer">
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                          style={{ background: "rgba(252,129,129,0.1)" }}>
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
                           <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
                         </div>
                         <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
@@ -743,11 +780,11 @@ function Dashboard() {
           <VocalOrb onTranscript={handleVoiceTranscript} />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} whileHover={{ y: -3, transition: { duration: 0.2 } }}
             className="lg-surface lg-highlight relative rounded-3xl px-6 py-5 flex items-center gap-5 w-full max-w-sm">
-            <ScoreRing score={stats.score} />
+            <ScoreRing score={liveStats.score} />
             <div>
               <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Score du jour</p>
-              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{stats.score >= 85 ? "Récupération excellente" : stats.score >= 65 ? "Forme correcte" : "Récupération en cours"}</p>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>{stats.score >= 85 ? "Idéal pour séance intensive" : "Intensité modérée conseillée"}</p>
+              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{liveStats.score >= 85 ? "Récupération excellente" : liveStats.score >= 65 ? "Forme correcte" : "Récupération en cours"}</p>
+              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>{liveStats.score >= 85 ? "Idéal pour séance intensive" : "Intensité modérée conseillée"}</p>
             </div>
           </motion.div>
           <div className="flex gap-3 w-full max-w-sm">
@@ -766,20 +803,28 @@ function Dashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
           <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
             {[
-              { label: "Score",    value: `${stats.score}`,  unit: "/100",  bg: "lg-bicolor" },
-              { label: "Calories", value: stats.calories >= 1000 ? `${(stats.calories / 1000).toFixed(1)}k` : `${stats.calories}`, unit: "kcal", bg: "lg-rose" },
-              { label: "Pas",      value: stats.steps >= 1000 ? `${(stats.steps / 1000).toFixed(1)}k` : `${stats.steps}`, unit: "", bg: "lg-turquoise" },
-              { label: "Sommeil",  value: `${Math.floor(stats.sleepHours)}h${String(Math.round((stats.sleepHours % 1) * 60)).padStart(2, "0")}`, unit: "", bg: "lg-bicolor" },
-            ].map((s,i) => (
-              <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
-                whileHover={{ scale: 1.04, y: -2 }} className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] cursor-default`}>
-                <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
-                <div className="flex items-baseline gap-0.5 mt-0.5">
-                  <span className="text-xl font-semibold" style={{ color: "#2D3748" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{s.unit}</span>}
-                </div>
-              </motion.div>
-            ))}
+              { label:"Score",    value:`${liveStats.score}`,   unit:"/100",  bg:"lg-bicolor" },
+              { label:"Calories", value: liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`, unit:"kcal", bg:"lg-rose" },
+              { label:"Pas",      value: liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`, unit:"", bg:"lg-turquoise" },
+              { label:"Sommeil",  value:`${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}`, unit:"", bg:"lg-bicolor" },
+            ].map((s,i) => {
+              const matchStat = stats.find((st) => st.label === s.label);
+              return (
+                <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
+                  whileHover={{ scale: 1.04, y: -2 }} whileTap={matchStat ? { scale: 0.97 } : {}}
+                  onClick={() => matchStat && setSelectedStat(matchStat)}
+                  className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] ${matchStat ? "cursor-pointer" : "cursor-default"}`}>
+                  <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                  <div className="flex items-baseline gap-0.5 mt-0.5">
+                    <span className="text-xl font-semibold" style={{ color: "#2D3748" }}>{s.value}</span>
+                    {s.unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{s.unit}</span>}
+                  </div>
+                  {matchStat && (
+                    <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full" style={{ background: matchStat.iconColor, opacity: 0.6 }} />
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }} className="flex-1 flex items-center justify-center px-6 py-6">
@@ -792,8 +837,8 @@ function Dashboard() {
         </div>
         <div className="px-6 pb-6 grid grid-cols-2 gap-3">
           {[{key:"chat" as const,icon:MessageCircle,label:"Chat IA",color:"#A78BFA",bg:"lg-rose"},{key:"stats" as const,icon:BarChart3,label:"Détails",color:"#D4A843",bg:"lg-turquoise"}].map(({key,icon:Icon,label,color,bg},i) => (
-            <motion.button key={key} onClick={() => setMobilePanel(key)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 + i * 0.07, type: "spring", bounce: 0.35 }}
-              whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.96 }}
+            <motion.button key={key} onClick={() => setMobilePanel(key)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
+              whileHover={{ scale: 1.03, y: -2, transition: { duration: 0.15 } }} whileTap={{ scale: 0.96, transition: { duration: 0.08 } }}
               className={`${bg} lg-highlight relative rounded-2xl py-3 px-4 flex items-center justify-center gap-2 cursor-pointer`}>
               <Icon size={15} strokeWidth={1.5} style={{ color }} />
               <span className="text-xs font-medium" style={{ color: "#2D3748" }}>{label}</span>
@@ -808,8 +853,8 @@ function Dashboard() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobilePanel(null)}
               className="fixed inset-0 z-40 md:hidden" style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 32, stiffness: 340 }}
+            <motion.div initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden">
               {mobilePanel === "chat" ? <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} /> : <StatsPanel />}
             </motion.div>
@@ -820,6 +865,7 @@ function Dashboard() {
       <AnimatePresence>
         {showRepas && <RepasModal key="repas" onClose={() => setShowRepas(false)} onSave={(n) => { setShowRepas(false); showToast(`${n} enregistré ✓`); }} />}
         {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
+        {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}
         {showOnboarding && user && (
           <OnboardingModal

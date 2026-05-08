@@ -15,13 +15,8 @@ import { createClient } from "@/lib/supabase";
 
 /* ─── DB types ───────────────────────────────────────────── */
 type DbWorkoutSession = {
-  id: string;
-  user_id: string;
-  title: string;
-  category: string;
-  duration_minutes: number;
-  calories_burned: number;
-  started_at: string;
+  id: string; user_id: string; title: string; category: string;
+  duration_minutes: number; calories_burned: number; started_at: string;
 };
 
 /* ─── Timeline data ─────────────────────────────────────── */
@@ -65,7 +60,7 @@ const timelineEvents: TimelineEvent[] = [
   {
     date: "Hier", time: "23:00", type: "day",
     title: "Bilan de la journée", desc: "Score 91/100 · Récupération optimale",
-    cardClass: "lg-bicolor", dot: "rgba(245,230,163,0.55)",
+    cardClass: "lg-bicolor", dot: "#F5E6A3",
     performance: {
       type: "day", title: "Bilan du mardi", date: "Hier",
       metrics: [
@@ -261,7 +256,7 @@ function WorkoutCard({ session, gender, onStart }: { session: WorkoutSession; ge
       style={{
         width: 230,
         background: "rgba(255,255,255,0.75)",
-        backdropFilter: "blur(24px)",
+        backdropFilter: "blur(10px)",
         border: "1px solid rgba(255,255,255,0.88)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 32px rgba(0,0,0,0.06)",
       }}
@@ -360,24 +355,14 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
   const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
-  const date = isToday
-    ? "Aujourd'hui"
-    : isYesterday
-    ? "Hier"
-    : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const date = isToday ? "Aujourd'hui" : isYesterday ? "Hier" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   return {
-    date,
-    time,
-    type: "workout",
-    title: s.title,
+    date, time, type: "workout", title: s.title,
     desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
-    cardClass: "lg-turquoise",
-    dot: "#D4A843",
+    cardClass: "lg-turquoise", dot: "#D4A843",
     performance: {
-      type: "workout",
-      title: s.title,
-      date: `${date} · ${time}`,
+      type: "workout", title: s.title, date: `${date} · ${time}`,
       metrics: [
         { label: "Durée", value: String(s.duration_minutes), unit: "min" },
         ...(s.calories_burned ? [{ label: "Calories", value: String(s.calories_burned), unit: "kcal" }] : []),
@@ -400,7 +385,6 @@ export default function ProgressionPage() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
-  // Fetch real workout sessions from Supabase
   const fetchSessions = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
@@ -410,32 +394,35 @@ export default function ProgressionPage() {
       .eq("user_id", user.id)
       .order("started_at", { ascending: false })
       .limit(15);
-    if (!error && data && data.length > 0) {
-      setRealTimeline(data.map(dbSessionToEvent));
-    }
+    if (!error && data && data.length > 0) setRealTimeline(data.map(dbSessionToEvent));
   }, [user]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
-  // Save a started workout to DB
   const handleStartWorkout = async (session: WorkoutSession) => {
     if (!user) return;
     const supabase = createClient();
     const { error } = await supabase.from("workout_sessions").insert({
-      user_id: user.id,
-      title: session.title,
-      category: session.category,
-      duration_minutes: session.duration,
-      calories_burned: Math.round(session.duration * 6.5),
+      user_id: user.id, title: session.title, category: session.category,
+      duration_minutes: session.duration, calories_burned: Math.round(session.duration * 6.5),
       started_at: new Date().toISOString(),
     });
-    if (!error) {
-      showToast(`${session.title} démarrée ✓`);
-      setTimeout(fetchSessions, 500);
-    }
+    if (!error) { showToast(`${session.title} démarrée ✓`); setTimeout(fetchSessions, 500); }
   };
 
   const displayTimeline = realTimeline.length > 0 ? realTimeline : timelineEvents;
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
+      delay: Math.random() * 6,
+      duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
+    })));
+  }, []);
 
   const filteredSessions = workoutSessions.filter(
     (s) => categoryFilter === "tous" || s.category === categoryFilter
@@ -447,7 +434,42 @@ export default function ProgressionPage() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 max-w-3xl mx-auto md:mx-0">
+    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 max-w-3xl mx-auto md:mx-0 relative overflow-x-hidden" style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}>
+      {/* ── Calque déco : blobs · anneaux · particules ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {/* Blobs statiques */}
+        <div className="absolute rounded-full"
+          style={{ top: "-5%", right: "-8%", width: 560, height: 560, background: "rgba(147,112,219,0.65)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ bottom: "-5%", left: "-8%", width: 520, height: 520, background: "rgba(200,155,50,0.55)", filter: "blur(80px)" }} />
+        {/* Rings — GPU composited */}
+        {[500, 370, 260].map((size, i) => (
+          <motion.div key={size} className="absolute rounded-full"
+            style={{
+              width: size, height: size,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.30 : i === 1 ? 0.42 : 0.30})`,
+              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+              willChange: "transform",
+            }}
+            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+            transition={{ duration: 60 + i * 20, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+        {particles.map((p) => (
+          <motion.div key={p.id} className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
+              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+              willChange: "transform",
+            }}
+            animate={{ y: ["-15px", "15px", "-15px"] }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+      {/* ── Contenu ── */}
+      <div className="relative flex flex-col flex-1" style={{ zIndex: 1 }}>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -12 }}
@@ -489,7 +511,7 @@ export default function ProgressionPage() {
           </div>
           <span
             className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-            style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}
+            style={{ background: "rgba(249,168,201,0.15)", color: "#A78BFA" }}
           >
             {workoutSessions.length} séances
           </span>
@@ -505,7 +527,7 @@ export default function ProgressionPage() {
                 className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
                 style={
                   categoryFilter === key
-                    ? { background: "linear-gradient(135deg, rgba(212,192,255,0.7) 0%, rgba(245,230,163,0.55) 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                    ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                     : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
                 }
               >
@@ -594,7 +616,7 @@ export default function ProgressionPage() {
             <div className="relative flex flex-col gap-3">
               <div
                 className="absolute left-[19px] top-6 bottom-0 w-px"
-                style={{ background: "linear-gradient(to bottom, rgba(212,192,255,0.6), rgba(178,240,240,0.6), transparent)" }}
+                style={{ background: "linear-gradient(to bottom, rgba(212,192,255,0.6), rgba(245,230,163,0.6), transparent)" }}
               />
               {events.map((event, i) => {
                 const EvIcon = eventIcons[event.type];
@@ -613,7 +635,7 @@ export default function ProgressionPage() {
                           onClick={() => setShareData(event.performance)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg cursor-pointer flex-shrink-0"
                           style={{
-                            background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(224,255,255,0.95) 100%)",
+                            background: "linear-gradient(135deg, rgba(255,240,245,0.95) 0%, rgba(224,255,255,0.95) 100%)",
                             border: "1px solid rgba(255,255,255,0.8)",
                             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
                           }}
@@ -643,30 +665,22 @@ export default function ProgressionPage() {
       <SharePerformanceModal
         open={shareData !== null}
         onClose={() => setShareData(null)}
-        data={shareData ?? displayTimeline[0]?.performance ?? timelineEvents[0].performance}
+        data={shareData ?? (displayTimeline[0]?.performance ?? timelineEvents[0].performance)}
       />
 
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-            style={{
-              background: "rgba(255,255,255,0.9)",
-              backdropFilter: "blur(24px)",
-              border: "1px solid rgba(255,255,255,0.9)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
-              whiteSpace: "nowrap",
-            }}
-          >
+            style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2)", whiteSpace: "nowrap" }}>
             <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
             <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

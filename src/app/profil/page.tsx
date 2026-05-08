@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditCard, Bell, Shield, ChevronRight, Star, LogOut, Edit2, X, Check, BellOff, Lock, ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus } from "lucide-react";
@@ -8,13 +8,6 @@ import { useAuth } from "@/context/AuthContext";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
-
-/* ── Couleurs de marque ──────────────────────────────────
-   Violet  : #A78BFA  /  rgba(167,139,250,…)
-   Or      : #D4A843  /  rgba(212,168,67,…)
-   Fond clair violet : rgba(240,235,255,…)
-   Fond clair or     : rgba(255,251,240,…)
-──────────────────────────────────────────────────────── */
 
 const samplePerformances: PerformanceData[] = [
   {
@@ -33,7 +26,7 @@ const samplePerformances: PerformanceData[] = [
     title: "Journée optimale",
     date: "Hier",
     metrics: [
-      { label: "Score",    value: "91",    unit: "/100" },
+      { label: "Score",    value: "91",   unit: "/100" },
       { label: "Calories", value: "1 847", unit: "kcal" },
       { label: "Pas",      value: "8 200" },
     ],
@@ -44,9 +37,9 @@ const samplePerformances: PerformanceData[] = [
     title: "Nutrition parfaite",
     date: "Aujourd'hui",
     metrics: [
-      { label: "Calories",  value: "1 847", unit: "kcal" },
-      { label: "Protéines", value: "142",   unit: "g" },
-      { label: "Glucides",  value: "210",   unit: "g" },
+      { label: "Calories",   value: "1 847", unit: "kcal" },
+      { label: "Protéines",  value: "142",   unit: "g" },
+      { label: "Glucides",   value: "210",   unit: "g" },
     ],
     highlight: "Objectif protéines atteint ✓",
   },
@@ -56,13 +49,13 @@ const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1 } },
 };
+
 const itemVariants = {
-  hidden:   { opacity: 0, y: 16 },
-  visible:  { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
-/* ── Toast ── */
-function Toast({ message }: { message: string }) {
+function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 40, scale: 0.9 }}
@@ -71,33 +64,35 @@ function Toast({ message }: { message: string }) {
       transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
       className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
       style={{
-        background: "rgba(255,255,255,0.9)",
+        background: "rgba(255,255,255,0.85)",
         backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.9)",
-        boxShadow: "0 8px 32px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+        border: "1px solid rgba(240,235,255,0.9)",
+        boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+        color: "#2D3748",
         whiteSpace: "nowrap",
       }}
     >
       <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
-      <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{message}</span>
+      <span className="text-sm font-medium">{message}</span>
     </motion.div>
   );
 }
 
-/* ── Edit Profile Modal ── */
 function EditProfileModal({ name, email, onSave, onClose }: {
   name: string; email: string;
   onSave: (name: string, email: string) => void;
   onClose: () => void;
 }) {
-  const [editName, setEditName]   = useState(name);
+  const [editName, setEditName] = useState(name);
   const [editEmail, setEditEmail] = useState(email);
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }}
+      style={{ background: "rgba(0,0,0,0.15)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
       <motion.div
@@ -107,8 +102,8 @@ function EditProfileModal({ name, email, onSave, onClose }: {
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: "rgba(255,255,255,0.88)",
-          backdropFilter: "blur(40px)",
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(10px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -116,51 +111,83 @@ function EditProfileModal({ name, email, onSave, onClose }: {
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Modifier le profil</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
+            style={{ background: "rgba(240,235,255,0.8)" }}
+          >
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
 
+        {/* Avatar */}
         <div className="flex flex-col items-center mb-6">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-light cursor-pointer relative"
             style={{
-              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-              boxShadow: "0 4px 16px rgba(167,139,250,0.25)",
+              background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)",
+              boxShadow: "0 4px 16px rgba(167,139,250,0.2)",
               color: "#2D3748",
-            }}>
+            }}
+          >
             {editName.charAt(0).toUpperCase() || "?"}
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #A78BFA 0%, #D4A843 100%)" }}>
-              <Edit2 size={10} strokeWidth={2.5} style={{ color: "#fff" }} />
+            <div
+              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
+            >
+              <Edit2 size={10} strokeWidth={2.5} style={{ color: "#2D3748" }} />
             </div>
           </motion.div>
           <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>Appuyer pour changer la photo</p>
         </div>
 
         <div className="flex flex-col gap-3">
-          {[{ label: "Nom", val: editName, set: setEditName, type: "text", ph: "Votre nom" },
-            { label: "Email", val: editEmail, set: setEditEmail, type: "email", ph: "votre@email.com" }]
-            .map(({ label, val, set, type, ph }) => (
-            <div key={label}>
-              <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>{label}</label>
-              <input type={type} value={val} onChange={(e) => set(e.target.value)} placeholder={ph}
-                className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }} />
-            </div>
-          ))}
+          <div>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Nom</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl text-sm outline-none transition-all duration-200"
+              style={{
+                background: "rgba(240,235,255,0.5)",
+                border: "1px solid rgba(212,192,255,0.6)",
+                color: "#2D3748",
+              }}
+              placeholder="Votre nom"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Email</label>
+            <input
+              type="email"
+              value={editEmail}
+              onChange={(e) => setEditEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl text-sm outline-none transition-all duration-200"
+              style={{
+                background: "rgba(240,235,255,0.5)",
+                border: "1px solid rgba(212,192,255,0.6)",
+                color: "#2D3748",
+              }}
+              placeholder="votre@email.com"
+            />
+          </div>
         </div>
 
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => onSave(editName, editEmail)}
           className="w-full mt-5 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, #A78BFA 0%, #D4A843 100%)",
-            color: "#fff",
-            boxShadow: "0 4px 20px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.25)",
-          }}>
+            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+            color: "#2D3748",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
+          }}
+        >
           Sauvegarder
         </motion.button>
       </motion.div>
@@ -168,270 +195,531 @@ function EditProfileModal({ name, email, onSave, onClose }: {
   );
 }
 
-/* ── Follow data ── */
-type FollowUser = { id: number; name: string; handle: string; initials: string; following: boolean };
+/* ─────────────── Follow list data ─────────────── */
+type FollowUser = {
+  id: number;
+  name: string;
+  handle: string;
+  initials: string;
+  color: string; // gradient for avatar bg
+  following: boolean; // do WE follow them
+};
 
 const MOCK_FOLLOWERS: FollowUser[] = [
-  { id: 1,  name: "Lucas Martin",   handle: "lucas.fit",    initials: "LM", following: true  },
-  { id: 2,  name: "Emma Dupont",    handle: "emma_lifting", initials: "ED", following: false },
-  { id: 3,  name: "Noah Moreau",    handle: "noahgains",    initials: "NM", following: true  },
-  { id: 4,  name: "Chloé Bernard",  handle: "chloe.b",      initials: "CB", following: false },
-  { id: 5,  name: "Hugo Petit",     handle: "hugopetit77",  initials: "HP", following: true  },
-  { id: 6,  name: "Léa Rousseau",   handle: "lea.rousseau", initials: "LR", following: false },
-  { id: 7,  name: "Nathan Simon",   handle: "nath_sport",   initials: "NS", following: true  },
-  { id: 8,  name: "Inès Laurent",   handle: "ines.fit",     initials: "IL", following: false },
-  { id: 9,  name: "Tom Lefevre",    handle: "tom_lefevre",  initials: "TL", following: true  },
-  { id: 10, name: "Zoé Garcia",     handle: "zoefit",       initials: "ZG", following: false },
-];
-const MOCK_FOLLOWING: FollowUser[] = [
-  { id: 3,  name: "Noah Moreau",    handle: "noahgains",    initials: "NM", following: true },
-  { id: 5,  name: "Hugo Petit",     handle: "hugopetit77",  initials: "HP", following: true },
-  { id: 7,  name: "Nathan Simon",   handle: "nath_sport",   initials: "NS", following: true },
-  { id: 9,  name: "Tom Lefevre",    handle: "tom_lefevre",  initials: "TL", following: true },
-  { id: 13, name: "Sophie Michel",  handle: "sophiefit",    initials: "SM", following: true },
-  { id: 14, name: "Romain Blanc",   handle: "romain.blanc", initials: "RB", following: true },
+  { id: 1,  name: "Lucas Martin",    handle: "lucas.fit",     initials: "LM", color: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", following: true  },
+  { id: 2,  name: "Emma Dupont",     handle: "emma_lifting",  initials: "ED", color: "linear-gradient(135deg,#FFFBF0,#F5E6A3)", following: false },
+  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true  },
+  { id: 4,  name: "Chloé Bernard",   handle: "chloe.b",       initials: "CB", color: "linear-gradient(135deg,#FFFBF0,#F0EBFF)", following: false },
+  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#D4C0FF,#FFFBF0)", following: true  },
+  { id: 6,  name: "Léa Rousseau",    handle: "lea.rousseau",  initials: "LR", color: "linear-gradient(135deg,#F5E6A3,#F0EBFF)", following: false },
+  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#F0EBFF,#F5E6A3)", following: true  },
+  { id: 8,  name: "Inès Laurent",    handle: "ines.fit",      initials: "IL", color: "linear-gradient(135deg,#D4C0FF,#F0EBFF)", following: false },
+  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#FFFBF0,#D4C0FF)", following: true  },
+  { id: 10, name: "Zoé Garcia",      handle: "zoefit",        initials: "ZG", color: "linear-gradient(135deg,#F0EBFF,#FFFBF0)", following: false },
+  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#F5E6A3,#D4C0FF)", following: true  },
+  { id: 12, name: "Manon Thomas",    handle: "manonfit",      initials: "MT", color: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", following: false },
 ];
 
-/* ── Follow List Modal ── */
-function FollowListModal({ type, onClose }: { type: "Abonnés" | "Abonnements"; onClose: () => void }) {
+const MOCK_FOLLOWING: FollowUser[] = [
+  { id: 3,  name: "Noah Moreau",     handle: "noahgains",     initials: "NM", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true  },
+  { id: 5,  name: "Hugo Petit",      handle: "hugopetit77",   initials: "HP", color: "linear-gradient(135deg,#D4C0FF,#FFFBF0)", following: true  },
+  { id: 7,  name: "Nathan Simon",    handle: "nath_sport",    initials: "NS", color: "linear-gradient(135deg,#F0EBFF,#F5E6A3)", following: true  },
+  { id: 9,  name: "Tom Lefevre",     handle: "tom_lefevre",   initials: "TL", color: "linear-gradient(135deg,#FFFBF0,#D4C0FF)", following: true  },
+  { id: 11, name: "Axel Durand",     handle: "axeldurand",    initials: "AD", color: "linear-gradient(135deg,#F5E6A3,#D4C0FF)", following: true  },
+  { id: 13, name: "Sophie Michel",   handle: "sophiefit",     initials: "SM", color: "linear-gradient(135deg,#D4C0FF,#F0EBFF)", following: true  },
+  { id: 14, name: "Romain Blanc",    handle: "romain.blanc",  initials: "RB", color: "linear-gradient(135deg,#FFFBF0,#F5E6A3)", following: true  },
+  { id: 15, name: "Alice Fontaine",  handle: "alice.gains",   initials: "AF", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true  },
+];
+
+/* ─────────────── Follow List Modal ─────────────── */
+function FollowListModal({
+  type,
+  onClose,
+}: {
+  type: "Abonnés" | "Abonnements";
+  onClose: () => void;
+}) {
   const rawList = type === "Abonnés" ? MOCK_FOLLOWERS : MOCK_FOLLOWING;
-  const [query, setQuery]       = useState("");
+  const [query, setQuery] = useState("");
   const [followed, setFollowed] = useState<Set<number>>(
     () => new Set(rawList.filter((u) => u.following).map((u) => u.id))
   );
+
   const list = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return q ? rawList.filter((u) => u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)) : rawList;
+    if (!q) return rawList;
+    return rawList.filter(
+      (u) => u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)
+    );
   }, [rawList, query]);
-  const toggle = (id: number) => setFollowed((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const toggle = (id: number) =>
+    setFollowed((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(10px)" }}
-      onClick={onClose}>
-      <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      style={{ background: "rgba(0,0,0,0.18)", backdropFilter: "blur(10px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.94)", backdropFilter: "blur(40px)", boxShadow: "0 -12px 48px rgba(167,139,250,0.15)", maxHeight: "82vh" }}
-        onClick={(e) => e.stopPropagation()}>
+        style={{
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(40px)",
+          boxShadow: "0 -12px 48px rgba(167,139,250,0.18)",
+          maxHeight: "82vh",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.25)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
         </div>
+
+        {/* Header */}
         <div className="flex items-center justify-between px-5 pb-3 pt-1">
           <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>{type}</h2>
-          <motion.button whileTap={{ scale: 0.88 }} onClick={onClose}
+          <motion.button
+            whileTap={{ scale: 0.88 }}
+            onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.6)" }}>
+            style={{ background: "rgba(0,0,0,0.06)" }}
+          >
             <X size={14} strokeWidth={2.5} style={{ color: "#718096" }} />
           </motion.button>
         </div>
+
+        {/* Search */}
         <div className="px-4 pb-3">
-          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl"
-            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.12)" }}>
+          <div
+            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl"
+            style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.06)" }}
+          >
             <Search size={13} strokeWidth={2.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…"
-              className="flex-1 text-sm bg-transparent outline-none" style={{ color: "#2D3748" }} />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher…"
+              className="flex-1 text-sm bg-transparent outline-none"
+              style={{ color: "#2D3748" }}
+            />
             <AnimatePresence>
               {query && (
-                <motion.button initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}
-                  onClick={() => setQuery("")} className="cursor-pointer">
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.7 }}
+                  onClick={() => setQuery("")}
+                  className="cursor-pointer"
+                >
                   <X size={12} strokeWidth={2.5} style={{ color: "#A0AEC0" }} />
                 </motion.button>
               )}
             </AnimatePresence>
           </div>
         </div>
-        <div className="h-px mx-4" style={{ background: "rgba(167,139,250,0.1)" }} />
+
+        {/* Separator */}
+        <div className="h-px mx-4" style={{ background: "rgba(0,0,0,0.06)" }} />
+
+        {/* List */}
         <div className="overflow-y-auto flex-1 py-2" style={{ scrollbarWidth: "none" }}>
           <AnimatePresence mode="popLayout">
             {list.length === 0 ? (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-16 gap-2">
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center py-16 gap-2"
+              >
                 <Search size={28} strokeWidth={1.2} style={{ color: "#D0D8E0" }} />
                 <p className="text-sm" style={{ color: "#A0AEC0" }}>Aucun résultat</p>
               </motion.div>
-            ) : list.map((user, i) => {
-              const isFollowing = followed.has(user.id);
-              return (
-                <motion.div key={user.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
-                  transition={{ delay: i * 0.03, duration: 0.25 }}
-                  className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                    style={{ background: i % 2 === 0 ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "linear-gradient(135deg,#F5E6A3,#D4C0FF)", color: "#2D3748" }}>
-                    {user.initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold leading-tight truncate" style={{ color: "#2D3748" }}>{user.name}</p>
-                    <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>@{user.handle}</p>
-                  </div>
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.92 }} onClick={() => toggle(user.id)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
-                    style={isFollowing
-                      ? { background: "rgba(240,235,255,0.5)", color: "#718096", border: "1px solid rgba(167,139,250,0.15)" }
-                      : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}>
-                    {isFollowing ? <><UserCheck size={11} strokeWidth={2.5} />Abonné</> : <><UserPlus size={11} strokeWidth={2.5} />Suivre</>}
-                  </motion.button>
-                </motion.div>
-              );
-            })}
+            ) : (
+              list.map((user, i) => {
+                const isFollowing = followed.has(user.id);
+                return (
+                  <motion.div
+                    key={user.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ delay: i * 0.03, duration: 0.25 }}
+                    className="flex items-center gap-3 px-4 py-2.5"
+                  >
+                    {/* Avatar */}
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                      style={{ background: user.color, color: "#2D3748" }}
+                    >
+                      {user.initials}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold leading-tight truncate" style={{ color: "#2D3748" }}>
+                        {user.name}
+                      </p>
+                      <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>
+                        @{user.handle}
+                      </p>
+                    </div>
+
+                    {/* Follow button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => toggle(user.id)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0 transition-all duration-200"
+                      style={
+                        isFollowing
+                          ? {
+                              background: "rgba(0,0,0,0.05)",
+                              color: "#718096",
+                              border: "1px solid rgba(0,0,0,0.08)",
+                            }
+                          : {
+                              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                              color: "#2D3748",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                            }
+                      }
+                    >
+                      {isFollowing ? (
+                        <>
+                          <UserCheck size={11} strokeWidth={2.5} />
+                          Abonné
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={11} strokeWidth={2.5} />
+                          Suivre
+                        </>
+                      )}
+                    </motion.button>
+                  </motion.div>
+                );
+              })
+            )}
           </AnimatePresence>
         </div>
+
+        {/* Safe area bottom */}
         <div className="pb-safe h-6" />
       </motion.div>
     </motion.div>
   );
 }
 
-/* ── Privacy Modal ── */
 function PrivacyModal({ onClose }: { onClose: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
-  const [analytics, setAnalytics]     = useState(true);
+  const [analytics, setAnalytics] = useState(true);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}>
-      <motion.div initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
+      style={{ background: "rgba(0,0,0,0.15)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
-        onClick={(e) => e.stopPropagation()}>
+        style={{
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Lock size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            <Lock size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
             <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Confidentialité</h2>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
+
         <div className="flex flex-col gap-3">
           {[
             { label: "Partage de données", desc: "Partager vos stats avec la communauté", state: dataSharing, toggle: () => setDataSharing(v => !v) },
             { label: "Analytiques", desc: "Améliorer l'app avec vos données anonymisées", state: analytics, toggle: () => setAnalytics(v => !v) },
           ].map(({ label, desc, state, toggle }) => (
-            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(240,235,255,0.35)" }}>
+            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(240,235,255,0.4)" }}>
               <div className="flex-1">
                 <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
                 <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{desc}</p>
               </div>
-              <motion.button onClick={toggle}
+              <motion.button
+                onClick={toggle}
                 className="relative w-11 h-6 rounded-full cursor-pointer flex-shrink-0"
-                style={{ background: state ? "linear-gradient(135deg, #A78BFA 0%, #D4A843 100%)" : "rgba(220,220,220,0.6)" }}
-                whileTap={{ scale: 0.95 }}>
-                <motion.div animate={{ x: state ? 20 : 2 }} transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
+                style={{ background: state ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(220,220,220,0.6)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <motion.div
+                  animate={{ x: state ? 20 : 2 }}
+                  transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
                   className="absolute top-1 w-4 h-4 rounded-full"
-                  style={{ background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }} />
+                  style={{ background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
+                />
               </motion.button>
             </div>
           ))}
         </div>
-        <p className="text-[10px] mt-4 text-center" style={{ color: "#A0AEC0" }}>Conforme au RGPD · Données hébergées en France</p>
+
+        <p className="text-[10px] mt-4 text-center" style={{ color: "#A0AEC0" }}>
+          Conforme au RGPD · Données hébergées en France
+        </p>
       </motion.div>
     </motion.div>
   );
 }
 
-/* ── Page principale ── */
 export default function ProfilPage() {
-  const { user, logout }   = useAuth();
-  const router             = useRouter();
-  const [showEdit, setShowEdit]             = useState(false);
-  const [showPrivacy, setShowPrivacy]       = useState(false);
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [showEdit, setShowEdit] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
-  const [notifEnabled, setNotifEnabled]     = useState(true);
-  const [toast, setToast]                   = useState<string | null>(null);
-  const [profileName, setProfileName]       = useState(user?.name || "Teyroox");
-  const [profileEmail, setProfileEmail]     = useState(user?.email || "");
-  const [shareData, setShareData]           = useState<PerformanceData | null>(null);
-  const { settings, updateSettings }        = useProfileSettings();
+  const [notifEnabled, setNotifEnabled] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState(user?.name || "Marie Dubois");
+  const [profileEmail, setProfileEmail] = useState(user?.email || "marie@example.com");
+  const [shareData, setShareData] = useState<PerformanceData | null>(null);
+  const { settings, updateSettings } = useProfileSettings();
+  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
+  useEffect(() => {
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
+      delay: Math.random() * 6,
+      duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
+    })));
+  }, []);
 
-  const showToast  = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
-  const handleLogout = () => { logout(); router.push("/auth"); };
-  const handleSaveProfile = (name: string, email: string) => {
-    setProfileName(name); setProfileEmail(email); setShowEdit(false); showToast("Profil mis à jour ✓");
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
   };
 
-  const displayName = user?.pseudo ?? user?.name ?? profileName;
+  const handleLogout = () => {
+    logout();
+    router.push("/auth");
+  };
+
+  const handleSaveProfile = (name: string, email: string) => {
+    setProfileName(name);
+    setProfileEmail(email);
+    setShowEdit(false);
+    showToast("Profil mis à jour ✓");
+  };
 
   const sections = [
     {
       title: "Abonnement",
       items: [
-        { icon: Star,       label: "Plan Premium", desc: "Actif jusqu'au 15 juin 2025", action: "Gérer",   onClick: () => showToast("Redirection…") },
-        { icon: CreditCard, label: "Paiement",     desc: "•••• 4242 · Stripe",          action: "Modifier", onClick: () => showToast("Ouverture Stripe…") },
+        {
+          icon: Star,
+          label: "Plan Premium",
+          desc: "Actif jusqu'au 15 juin 2025",
+          action: "Gérer",
+          onClick: () => showToast("Redirection vers la gestion de l'abonnement…"),
+        },
+        {
+          icon: CreditCard,
+          label: "Paiement",
+          desc: "•••• 4242 · Stripe",
+          action: "Modifier",
+          onClick: () => showToast("Ouverture du portail de paiement Stripe…"),
+        },
       ],
     },
     {
       title: "Préférences",
       items: [
-        { icon: notifEnabled ? Bell : BellOff, label: "Notifications", desc: notifEnabled ? "Rappels & insights activés" : "Désactivées", action: null, onClick: () => { setNotifEnabled(v => !v); showToast(notifEnabled ? "Notifications désactivées" : "Notifications activées ✓"); } },
-        { icon: Shield, label: "Confidentialité", desc: "Données sécurisées · RGPD", action: null, onClick: () => setShowPrivacy(true) },
+        {
+          icon: notifEnabled ? Bell : BellOff,
+          label: "Notifications",
+          desc: notifEnabled ? "Rappels & insights activés" : "Notifications désactivées",
+          action: null,
+          onClick: () => {
+            setNotifEnabled((v) => !v);
+            showToast(notifEnabled ? "Notifications désactivées" : "Notifications activées ✓");
+          },
+        },
+        {
+          icon: Shield,
+          label: "Confidentialité",
+          desc: "Données sécurisées · RGPD",
+          action: null,
+          onClick: () => setShowPrivacy(true),
+        },
       ],
     },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4">
+    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 relative overflow-x-hidden" style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}>
+      {/* ── Calque déco : blobs · anneaux · particules ── */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+        {/* Blobs statiques — filter:blur animé = recalcul GPU chaque frame */}
+        <div className="absolute rounded-full"
+          style={{ top: "-8%", left: "-10%", width: 580, height: 580, background: "rgba(147,112,219,0.65)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ bottom: "-8%", right: "-10%", width: 540, height: 540, background: "rgba(200,155,50,0.55)", filter: "blur(80px)" }} />
+        <div className="absolute rounded-full"
+          style={{ top: "40%", right: "5%", width: 340, height: 340, background: "rgba(147,112,219,0.42)", filter: "blur(60px)" }} />
+        {/* Rings — rotation pure = GPU composited, léger */}
+        {[500, 370, 260].map((size, i) => (
+          <motion.div key={size} className="absolute rounded-full"
+            style={{
+              width: size, height: size,
+              border: `1px solid rgba(167,139,250,${i === 0 ? 0.30 : i === 1 ? 0.42 : 0.30})`,
+              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
+              willChange: "transform",
+            }}
+            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+            transition={{ duration: 60 + i * 20, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+        {particles.map((p) => (
+          <motion.div key={p.id} className="absolute rounded-full"
+            style={{
+              left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
+              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
+              willChange: "transform",
+            }}
+            animate={{ y: ["-15px", "15px", "-15px"] }}
+            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
+          />
+        ))}
+      </div>
+      {/* ── Contenu ── */}
+      <div className="relative flex flex-col flex-1" style={{ zIndex: 1 }}>
+
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-8">
-        <p className="text-xs font-medium tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Mon Compte</p>
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <p className="text-xs font-medium tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
+          Mon Compte
+        </p>
         <h1 className="text-2xl font-light" style={{ color: "#2D3748" }}>Profil</h1>
       </motion.div>
 
       {/* Profile Card */}
-      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.1 }}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
         className="rounded-3xl p-6 mb-6 relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 32px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
-        <motion.div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(212,192,255,0.4) 0%, transparent 70%)" }}
-          animate={{ scale: [1,1.15,1] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
-        <motion.div className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(245,230,163,0.35) 0%, transparent 70%)" }}
-          animate={{ scale: [1,1.2,1] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
-
+        style={{
+          background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 50%, #F0EBFF 100%)",
+          boxShadow: "0 4px 32px 0 rgba(167,139,250,0.15)",
+        }}
+      >
+        <div
+          className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-30"
+          style={{ background: "radial-gradient(circle, #D4C0FF 0%, transparent 70%)" }}
+        />
         <div className="flex items-center gap-4 relative z-10">
-          <motion.div whileHover={{ scale: 1.05, rotate: 3 }} transition={{ type: "spring", bounce: 0.4 }}
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-semibold flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.8)", color: "#2D3748" }}>
-            {displayName.charAt(0).toUpperCase()}
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 3 }}
+            transition={{ type: "spring", bounce: 0.4 }}
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-light flex-shrink-0"
+            style={{
+              background: "rgba(255,255,255,0.7)",
+              boxShadow: "0 4px 16px 0 rgba(167,139,250,0.2)",
+              color: "#2D3748",
+            }}
+          >
+            {profileName.charAt(0).toUpperCase()}
           </motion.div>
           <div className="flex-1">
-            <p className="text-lg font-medium" style={{ color: "#2D3748" }}>{displayName}</p>
-            <p className="text-xs font-light" style={{ color: "#718096" }}>{user?.email ?? profileEmail}</p>
-            <div className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-[10px] font-semibold"
-              style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.6), rgba(245,230,163,0.6))", color: "#5A4A2A" }}>
-              <Star size={9} fill="#D4A843" strokeWidth={0} />
+            <p className="text-lg font-medium" style={{ color: "#2D3748" }}>{profileName}</p>
+            <p className="text-xs font-light" style={{ color: "#718096" }}>{profileEmail}</p>
+            <div
+              className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full text-[10px] font-semibold"
+              style={{ background: "rgba(255,255,255,0.7)", color: "#A78BFA" }}
+            >
+              <Star size={9} fill="#A78BFA" strokeWidth={0} />
               Premium
             </div>
           </div>
-          <motion.button whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.9 }}
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setShowEdit(true)}
             className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(255,255,255,0.75)", boxShadow: "0 2px 8px rgba(167,139,250,0.1)" }}>
-            <Edit2 size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            style={{ background: "rgba(255,255,255,0.7)" }}
+            aria-label="Modifier le profil"
+          >
+            <Edit2 size={15} strokeWidth={1.5} style={{ color: "#2D3748" }} />
           </motion.button>
         </div>
 
-        {/* Stats abonnés */}
-        <div className="flex items-center mt-5 pt-4 relative z-10" style={{ borderTop: "1px solid rgba(167,139,250,0.12)" }}>
+        {/* ── Abonnés / Abonnements ── */}
+        <div
+          className="flex items-center mt-5 pt-4 relative z-10"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.55)" }}
+        >
           {[
-            { label: "Publications", value: "48",    clickable: false },
-            { label: "Abonnés",      value: "1 284", clickable: true  },
-            { label: "Abonnements",  value: "342",   clickable: true  },
+            { label: "Publications",  value: "48",     clickable: false },
+            { label: "Abonnés",       value: "1 284",  clickable: true  },
+            { label: "Abonnements",   value: "342",    clickable: true  },
           ].map(({ label, value, clickable }, i) => (
             <div key={label} className="flex items-center flex-1">
-              {i > 0 && <div className="w-px self-stretch mx-2" style={{ background: "rgba(167,139,250,0.15)" }} />}
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.93 }}
-                onClick={() => clickable ? setShowFollowList(label as "Abonnés" | "Abonnements") : showToast(`${value} ${label}`)}
-                className="flex-1 flex flex-col items-center py-1 rounded-xl cursor-pointer">
-                <span className="text-xl font-light leading-tight" style={{ color: "#2D3748" }}>{value}</span>
-                <span className="text-[9px] font-semibold tracking-wider uppercase mt-0.5"
-                  style={{ color: clickable ? "#A78BFA" : "#A0AEC0" }}>{label}</span>
+              {i > 0 && (
+                <div className="w-px self-stretch mx-2" style={{ background: "rgba(255,255,255,0.5)" }} />
+              )}
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.93 }}
+                onClick={() =>
+                  clickable
+                    ? setShowFollowList(label as "Abonnés" | "Abonnements")
+                    : showToast(`${value} ${label}`)
+                }
+                className="flex-1 flex flex-col items-center py-1 rounded-xl cursor-pointer"
+                style={{ background: "transparent" }}
+              >
+                <span className="text-xl font-light leading-tight" style={{ color: "#2D3748" }}>
+                  {value}
+                </span>
+                <span
+                  className="text-[9px] font-semibold tracking-wider uppercase mt-0.5"
+                  style={{ color: clickable ? "#A78BFA" : "#A0AEC0" }}
+                >
+                  {label}
+                </span>
               </motion.button>
             </div>
           ))}
@@ -439,35 +727,67 @@ export default function ProfilPage() {
       </motion.div>
 
       {/* Stats */}
-      <motion.div className="grid grid-cols-3 gap-3 mb-8" variants={containerVariants} initial="hidden" animate="visible">
+      <motion.div
+        className="grid grid-cols-3 gap-3 mb-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {[
-          { label: "Séances",      value: "48", grad: "linear-gradient(135deg, rgba(212,192,255,0.45) 0%, rgba(167,139,250,0.2) 100%)" },
-          { label: "Jours actifs", value: "31", grad: "linear-gradient(135deg, rgba(245,230,163,0.45) 0%, rgba(212,168,67,0.2) 100%)"  },
-          { label: "Score moyen",  value: "91", grad: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.35) 100%)" },
-        ].map(({ label, value, grad }) => (
-          <motion.div key={label} variants={itemVariants} whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.97 }}
+          { label: "Séances", value: "48", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
+          { label: "Jours actifs", value: "31", gradient: "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)" },
+          { label: "Score moyen", value: "91", gradient: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" },
+        ].map(({ label, value, gradient }) => (
+          <motion.div
+            key={label}
+            variants={itemVariants}
+            whileHover={{ y: -2, scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
             className="rounded-2xl p-4 text-center cursor-pointer"
-            style={{ background: grad, border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
-            onClick={() => showToast(`${value} ${label} au total`)}>
+            style={{ background: gradient, boxShadow: "0 2px 12px 0 rgba(167,139,250,0.08)" }}
+            onClick={() => showToast(`${value} ${label} au total`)}
+          >
             <p className="text-2xl font-light" style={{ color: "#2D3748" }}>{value}</p>
             <p className="text-[10px] font-medium mt-0.5" style={{ color: "#718096" }}>{label}</p>
           </motion.div>
         ))}
       </motion.div>
 
-      {/* Performances */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="mb-8">
-        <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>Performances</p>
+      {/* Performances à partager */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="mb-8"
+      >
+        <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+          Performances
+        </p>
         <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
           {samplePerformances.map((perf, i) => (
-            <motion.div key={i} className="flex-shrink-0 relative" style={{ width: 172 }}
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.35 + i * 0.1, type: "spring", bounce: 0.3 }}>
+            <motion.div
+              key={i}
+              className="flex-shrink-0 relative"
+              style={{ width: 172 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35 + i * 0.1, type: "spring", bounce: 0.3 }}
+            >
               <PerformanceCard data={perf} size="sm" interactive />
-              <motion.button whileHover={{ scale: 1.08, y: -1 }} whileTap={{ scale: 0.92 }}
+              {/* Share button */}
+              <motion.button
+                whileHover={{ scale: 1.08, y: -1 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={(e) => { e.stopPropagation(); setShareData(perf); }}
                 className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
-                style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.9), rgba(245,230,163,0.9))", border: "1px solid rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", boxShadow: "0 2px 8px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.8)" }}>
+                style={{
+                  background: "linear-gradient(135deg, rgba(212,192,255,0.92) 0%, rgba(245,230,163,0.92) 100%)",
+                  border: "1px solid rgba(255,255,255,0.7)",
+                  backdropFilter: "blur(12px)",
+                  boxShadow: "0 2px 8px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+                aria-label="Partager"
+              >
                 <Share2 size={11} strokeWidth={2.5} style={{ color: "#2D3748" }} />
                 <span className="text-[10px] font-semibold" style={{ color: "#2D3748" }}>Partager</span>
               </motion.button>
@@ -476,25 +796,60 @@ export default function ProfilPage() {
         </div>
       </motion.div>
 
-      {/* Profil physique */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.32 }} className="mb-6">
-        <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>Profil physique</p>
-        <div className="rounded-2xl px-5 py-4"
-          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.1)", backdropFilter: "blur(32px)" }}>
+      {/* Profil physique — Genre */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.32 }}
+        className="mb-6"
+      >
+        <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+          Profil physique
+        </p>
+        <div
+          className="rounded-2xl px-5 py-4"
+          style={{
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(255,255,255,0.7)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.12)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Genre</p>
-              <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>Utilisé pour personnaliser les illustrations</p>
+              <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
+                Utilisé pour personnaliser les illustrations
+              </p>
             </div>
             <div className="flex gap-2">
               {(["homme", "femme"] as const).map((g) => (
-                <motion.button key={g} whileTap={{ scale: 0.93 }}
-                  onClick={() => { updateSettings({ gender: g }); showToast(g === "homme" ? "Genre : Homme ✓" : "Genre : Femme ✓"); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
-                  style={settings.gender === g
-                    ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                    : { background: "rgba(240,235,255,0.4)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }}>
-                  {g === "homme" ? <Mars size={12} strokeWidth={1.8} /> : <Venus size={12} strokeWidth={1.8} />}
+                <motion.button
+                  key={g}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => {
+                    updateSettings({ gender: g });
+                    showToast(g === "homme" ? "Genre : Homme ✓" : "Genre : Femme ✓");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200"
+                  style={
+                    settings.gender === g
+                      ? {
+                          background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                          color: "#2D3748",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                        }
+                      : {
+                          background: "rgba(0,0,0,0.04)",
+                          color: "#A0AEC0",
+                          border: "1px solid rgba(0,0,0,0.06)",
+                        }
+                  }
+                >
+                  {g === "homme"
+                    ? <Mars size={12} strokeWidth={1.8} />
+                    : <Venus size={12} strokeWidth={1.8} />
+                  }
                   {g === "homme" ? "Homme" : "Femme"}
                 </motion.button>
               ))}
@@ -504,19 +859,42 @@ export default function ProfilPage() {
       </motion.div>
 
       {/* Sections */}
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-6">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col gap-6"
+      >
         {sections.map(({ title, items }) => (
           <motion.div key={title} variants={itemVariants}>
-            <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>{title}</p>
-            <div className="rounded-2xl overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.1)", backdropFilter: "blur(32px)" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+              {title}
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                border: "1px solid rgba(255,255,255,0.7)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px -4px rgba(167,139,250,0.12)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+              }}
+            >
               {items.map(({ icon: Icon, label, desc, action, onClick }, i) => (
                 <div key={label}>
-                  <motion.button type="button" whileHover={{ backgroundColor: "rgba(240,235,255,0.3)" }} whileTap={{ scale: 0.99 }}
-                    onClick={onClick} className="w-full flex items-center gap-4 px-5 py-4 cursor-pointer" style={{ background: "transparent" }}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.5) 0%, rgba(245,230,163,0.4) 100%)" }}>
-                      <Icon size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  <motion.button
+                    type="button"
+                    whileHover={{ backgroundColor: "rgba(255,255,255,0.4)" }}
+                    whileTap={{ scale: 0.99 }}
+                    onClick={onClick}
+                    className="w-full flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors duration-150"
+                    style={{ background: "transparent" }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" }}
+                    >
+                      <Icon size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
                     </div>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
@@ -524,19 +902,30 @@ export default function ProfilPage() {
                     </div>
                     {action ? (
                       <span className="text-xs font-medium flex items-center gap-0.5" style={{ color: "#A78BFA" }}>
-                        {action}<ExternalLink size={10} strokeWidth={2} />
+                        {action}
+                        <ExternalLink size={10} strokeWidth={2} />
                       </span>
-                    ) : label === "Notifications" ? (
-                      <motion.div animate={{ background: notifEnabled ? "linear-gradient(135deg, #A78BFA 0%, #D4A843 100%)" : "rgba(220,220,220,0.6)" }}
-                        className="relative w-10 h-5 rounded-full flex-shrink-0">
-                        <motion.div animate={{ x: notifEnabled ? 18 : 2 }} transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
-                          className="absolute top-0.5 w-4 h-4 rounded-full" style={{ background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }} />
-                      </motion.div>
                     ) : (
-                      <ChevronRight size={16} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                      label === "Notifications" ? (
+                        <motion.div
+                          animate={{ background: notifEnabled ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(220,220,220,0.6)" }}
+                          className="relative w-10 h-5 rounded-full flex-shrink-0"
+                        >
+                          <motion.div
+                            animate={{ x: notifEnabled ? 18 : 2 }}
+                            transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
+                            className="absolute top-0.5 w-4 h-4 rounded-full"
+                            style={{ background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
+                          />
+                        </motion.div>
+                      ) : (
+                        <ChevronRight size={16} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                      )
                     )}
                   </motion.button>
-                  {i < items.length - 1 && <div className="h-px mx-5" style={{ background: "rgba(167,139,250,0.08)" }} />}
+                  {i < items.length - 1 && (
+                    <div className="h-px mx-5" style={{ background: "rgba(240,235,255,0.9)" }} />
+                  )}
                 </div>
               ))}
             </div>
@@ -545,10 +934,21 @@ export default function ProfilPage() {
 
         {/* Logout */}
         <motion.div variants={itemVariants}>
-          <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl cursor-pointer"
-            style={{ border: "1px solid rgba(167,139,250,0.2)", color: "#A0AEC0", background: "transparent" }}>
-            <motion.div whileHover={{ rotate: -10, x: -2 }} transition={{ type: "spring", bounce: 0.5 }}>
+          <motion.button
+            whileHover={{ scale: 1.01, background: "rgba(240,235,255,0.5)" }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl cursor-pointer transition-all duration-200"
+            style={{
+              border: "1px solid rgba(212,192,255,0.6)",
+              color: "#A0AEC0",
+              background: "transparent",
+            }}
+          >
+            <motion.div
+              whileHover={{ rotate: -10, x: -2 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+            >
               <LogOut size={15} strokeWidth={1.5} />
             </motion.div>
             <span className="text-sm font-medium">Se déconnecter</span>
@@ -556,14 +956,33 @@ export default function ProfilPage() {
         </motion.div>
       </motion.div>
 
+      {/* Modals */}
       <AnimatePresence>
-        {showEdit && <EditProfileModal name={profileName} email={profileEmail} onSave={handleSaveProfile} onClose={() => setShowEdit(false)} />}
+        {showEdit && (
+          <EditProfileModal
+            name={profileName}
+            email={profileEmail}
+            onSave={handleSaveProfile}
+            onClose={() => setShowEdit(false)}
+          />
+        )}
         {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
-        {showFollowList && <FollowListModal type={showFollowList} onClose={() => setShowFollowList(null)} />}
-        {toast && <Toast key="toast" message={toast} />}
+        {showFollowList && (
+          <FollowListModal
+            type={showFollowList}
+            onClose={() => setShowFollowList(null)}
+          />
+        )}
+        {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
 
-      <SharePerformanceModal open={!!shareData} onClose={() => setShareData(null)} data={shareData ?? samplePerformances[0]} />
+      {/* Share Performance Modal — toujours monté pour que AnimatePresence détecte open false→true */}
+      <SharePerformanceModal
+        open={!!shareData}
+        onClose={() => setShareData(null)}
+        data={shareData ?? samplePerformances[0]}
+      />
+      </div>
     </div>
   );
 }
