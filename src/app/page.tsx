@@ -705,12 +705,12 @@ function Dashboard() {
                 <AnimatePresence>
                   {showMenu && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.88, y: -8 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.88, y: -8 }}
-                      transition={{ type: "spring", damping: 22, stiffness: 380 }}
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
                       className="fixed right-4 z-[9999] min-w-[210px] rounded-2xl overflow-hidden"
-                      style={{ background: "#ffffff", border: "1px solid rgba(240,235,255,0.8)", boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.1)", top: "70px" }}>
+                      style={{ backgroundColor: "#ffffff", background: "#ffffff", border: "1px solid rgba(167,139,250,0.2)", boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)", top: "70px", isolation: "isolate" }}>
 
                       {/* Infos utilisateur */}
                       <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(167,139,250,0.1)" }}>
@@ -731,9 +731,9 @@ function Dashboard() {
                         { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
                       ].map(({ icon: Icon, label, action }) => (
                         <motion.button key={label} onClick={action}
-                          whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }}
+                          whileHover={{ x: 2, backgroundColor: "rgba(167,139,250,0.06)" }} whileTap={{ scale: 0.97 }}
                           className="w-full flex items-center justify-between px-4 py-2.5 cursor-pointer"
-                          style={{ background: "transparent" }}>
+                          style={{ backgroundColor: "#ffffff" }}>
                           <div className="flex items-center gap-2.5">
                             <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.08)" }}>
                               <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
@@ -748,8 +748,9 @@ function Dashboard() {
 
                       <motion.button
                         onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
-                        whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer">
+                        whileHover={{ x: 2, backgroundColor: "rgba(252,129,129,0.06)" }} whileTap={{ scale: 0.97 }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 cursor-pointer"
+                        style={{ backgroundColor: "#ffffff" }}>
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
                           <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
                         </div>
