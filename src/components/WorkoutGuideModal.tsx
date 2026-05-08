@@ -27,6 +27,7 @@ export interface WorkoutGuideModalProps {
   duration: number;
   difficulty: string;
   onClose: () => void;
+  onComplete?: () => void;
 }
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
@@ -287,7 +288,7 @@ const fmt = (s: number) =>
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
-  sessionId, title, accent, duration, difficulty, onClose,
+  sessionId, title, accent, duration, difficulty, onClose, onComplete,
 }: WorkoutGuideModalProps) {
   const exercises = exerciseData[sessionId] ?? [];
 
@@ -305,6 +306,12 @@ export default function WorkoutGuideModal({
   const [showInfo,      setShowInfo]      = useState(false);
 
   const pausedAtRef = useRef<number>(0);
+
+  /* ── Notify parent when workout is done ── */
+  useEffect(() => {
+    if (phase === "done") onComplete?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const cur      = exercises[exerciseIdx];
   const isHiit   = !!cur?.hiit;

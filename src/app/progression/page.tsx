@@ -572,11 +572,12 @@ function UploadZone({
 
 /* ─── WorkoutCard ───────────────────────────────────────── */
 function WorkoutCard({
-  session, gender, isActive, onStart,
+  session, gender, isActive, isDone, onStart,
 }: {
   session: WorkoutSession;
   gender: "homme" | "femme";
   isActive: boolean;
+  isDone?: boolean;
   onStart?: (s: WorkoutSession) => void;
 }) {
   const Icon = session.icon;
@@ -584,18 +585,37 @@ function WorkoutCard({
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: isDone ? 0.48 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="flex-shrink-0 rounded-3xl overflow-hidden flex flex-col"
+      whileHover={{ y: isDone ? 0 : -3, transition: { duration: 0.2 } }}
+      layout
+      className="flex-shrink-0 rounded-3xl overflow-hidden flex flex-col relative"
       style={{
-        width: 230,
-        background: "rgba(255,255,255,0.75)",
+        width: isDone ? 190 : 230,
+        background: isDone
+          ? "rgba(255,255,255,0.45)"
+          : "rgba(255,255,255,0.75)",
         backdropFilter: "blur(10px)",
-        border: "1px solid rgba(255,255,255,0.88)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 32px rgba(0,0,0,0.06)",
+        border: isDone
+          ? "1px solid rgba(255,255,255,0.55)"
+          : "1px solid rgba(255,255,255,0.88)",
+        boxShadow: isDone
+          ? "0 4px 16px rgba(0,0,0,0.04)"
+          : "inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 32px rgba(0,0,0,0.06)",
+        filter: isDone ? "grayscale(0.35)" : "none",
+        transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}
     >
+      {/* Done ribbon */}
+      {isDone && (
+        <div
+          className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full"
+          style={{ background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.35)" }}
+        >
+          <CheckCircle size={9} strokeWidth={2.5} style={{ color: "#34D399" }} />
+          <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: "#34D399" }}>Faite</span>
+        </div>
+      )}
       {/* Header */}
       <div className="px-4 pt-4 pb-2" style={{ background: `${session.accent}14` }}>
         <div className="flex items-center gap-2 mb-1.5">
@@ -652,6 +672,8 @@ function WorkoutCard({
           style={
             isActive
               ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
+              : isDone
+              ? { background: "rgba(255,255,255,0.55)", border: "1px solid rgba(0,0,0,0.07)" }
               : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
           }
         >
@@ -660,6 +682,11 @@ function WorkoutCard({
               <motion.span key="on" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
                 <CheckCircle size={12} strokeWidth={2} style={{ color: session.accent }} />
                 <span className="text-[11px] font-semibold" style={{ color: session.accent }}>En cours !</span>
+              </motion.span>
+            ) : isDone ? (
+              <motion.span key="redo" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
+                <RefreshCw size={10} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "#A0AEC0" }}>Refaire</span>
               </motion.span>
             ) : (
               <motion.span key="off" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
@@ -710,6 +737,7 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
 export default function ProgressionPage() {
   const [shareData, setShareData]           = useState<PerformanceData | null>(null);
   const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
+  const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const [toast, setToast] = useState<string | null>(null);
   const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
@@ -772,9 +800,13 @@ export default function ProgressionPage() {
 
   const displayTimeline = realTimeline.length > 0 ? realTimeline : timelineEvents;
 
-  const filteredSessions = workoutSessions.filter(
-    (s) => categoryFilter === "tous" || s.category === categoryFilter
-  );
+  const filteredSessions = workoutSessions
+    .filter((s) => categoryFilter === "tous" || s.category === categoryFilter)
+    .sort((a, b) => {
+      const aD = completedWorkouts.has(a.id) ? 1 : 0;
+      const bD = completedWorkouts.has(b.id) ? 1 : 0;
+      return aD - bD;
+    });
 
   const groups = displayTimeline.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
     (acc[event.date] = acc[event.date] || []).push(event);
@@ -943,6 +975,7 @@ export default function ProgressionPage() {
                   session={session}
                   gender={settings.gender}
                   isActive={activeWorkout?.id === session.id}
+                  isDone={completedWorkouts.has(session.id)}
                   onStart={handleStartWorkout}
                 />
               ))}
@@ -1040,6 +1073,9 @@ export default function ProgressionPage() {
             duration={activeWorkout.duration}
             difficulty={activeWorkout.difficulty}
             onClose={() => setActiveWorkout(null)}
+            onComplete={() =>
+              setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]))
+            }
           />
         )}
       </AnimatePresence>
