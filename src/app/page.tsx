@@ -528,13 +528,16 @@ function Dashboard() {
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [userContext, setUserContext] = useState<OnboardingData | null>(null);
 
-  // Affiche l'onboarding si pas encore rempli
+  // Charge le contexte onboarding depuis localStorage
   useEffect(() => {
     if (!user) return;
     const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    if (!localStorage.getItem(key)) {
-      // Petit délai pour laisser le welcome banner se fermer d'abord
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ }
+    } else {
       const t = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(t);
     }
@@ -544,27 +547,78 @@ function Dashboard() {
     if (!user) return;
     const key = `aura_onboarding_${user.pseudo ?? user.name}`;
     localStorage.setItem(key, JSON.stringify(data));
+    setUserContext(data);
     setShowOnboarding(false);
   };
 
   const handleOnboardingSkip = () => {
     if (!user) return;
     const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    localStorage.setItem(key, JSON.stringify({ skipped: true }));
+    const skipped = { skipped: true };
+    localStorage.setItem(key, JSON.stringify(skipped));
+    setUserContext(skipped as unknown as OnboardingData);
     setShowOnboarding(false);
   };
 
-  const sendMessage = useCallback((text: string) => {
+  const chatMessagesRef = useRef<Message[]>(initialChatMessages);
+
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     const n = new Date();
     const time = `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
-    setChatMessages((m) => [...m, { id: Date.now(), from: "me", text, time }]);
+
+    // Ajoute le message utilisateur
+    const userMsg: Message = { id: Date.now(), from: "me", text, time };
+    const newMessages = [...chatMessagesRef.current, userMsg];
+    chatMessagesRef.current = newMessages;
+    setChatMessages(newMessages);
     setAiTyping(true);
-    setTimeout(() => {
+
+    // Historique pour l'API : exclut les 3 messages initiaux hardcodés
+    const apiMessages = newMessages.slice(initialChatMessages.length).map((m) => ({
+      role: m.from === "me" ? "user" as const : "assistant" as const,
+      content: m.text,
+    }));
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: apiMessages,
+          userContext,
+          pseudo: user?.pseudo ?? user?.name ?? "",
+        }),
+      });
+
+      if (!response.ok || !response.body) throw new Error("API error");
+
       setAiTyping(false);
-      setChatMessages((m) => [...m, { id: Date.now() + 1, from: "ai", text: "Compris. Je personnalise votre programme en conséquence ✨", time }]);
-    }, 1400);
-  }, []);
+      const aiMsgId = Date.now() + 1;
+      const withAi = [...chatMessagesRef.current, { id: aiMsgId, from: "ai" as const, text: "", time }];
+      chatMessagesRef.current = withAi;
+      setChatMessages(withAi);
+
+      // Stream les tokens au fur et à mesure
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setChatMessages((m) => {
+          const updated = m.map((msg) => msg.id === aiMsgId ? { ...msg, text: msg.text + chunk } : msg);
+          chatMessagesRef.current = updated;
+          return updated;
+        });
+      }
+    } catch {
+      setAiTyping(false);
+      const errMsg: Message = { id: Date.now() + 1, from: "ai", text: "Désolé, une erreur est survenue. Réessaie dans quelques secondes ✨", time };
+      chatMessagesRef.current = [...chatMessagesRef.current, errMsg];
+      setChatMessages(chatMessagesRef.current);
+    }
+  }, [user, userContext]);
 
   const handleVoiceTranscript = useCallback((text: string) => {
     sendMessage(text);
@@ -572,7 +626,12 @@ function Dashboard() {
   }, [sendMessage]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
-  const quickActionHandlers = [() => router.push("/progression"), () => setShowRepas(true), () => setShowObjectif(true)];
+
+  const quickActionHandlers = [
+    () => { setMobilePanel("chat"); sendMessage("Génère-moi une séance d'entraînement pour aujourd'hui selon mon profil et mes objectifs"); },
+    () => { setMobilePanel("chat"); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
+    () => { setMobilePanel("chat"); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
