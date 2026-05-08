@@ -31,7 +31,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full bg-white">
+      <body className="min-h-full">
         <SessionProviderWrapper>
           <AuthProvider>
             <Navigation />

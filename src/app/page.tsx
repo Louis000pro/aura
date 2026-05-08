@@ -680,10 +680,6 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <div className="lg-blob absolute pointer-events-none" style={{ top: "3%", left: "6%", width: 320, height: 320, background: "rgba(212,192,255,0.55)" }} />
-      <div className="lg-blob absolute pointer-events-none" style={{ bottom: "8%", right: "5%", width: 360, height: 360, background: "rgba(245,230,163,0.5)" }} />
-      <div className="lg-blob absolute pointer-events-none" style={{ top: "42%", left: "48%", width: 240, height: 240, background: "rgba(240,235,255,0.6)" }} />
-
       <motion.header className="relative z-10 flex items-center justify-between px-6 pt-8 pb-2 md:px-10 md:pt-10 flex-shrink-0"
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div>

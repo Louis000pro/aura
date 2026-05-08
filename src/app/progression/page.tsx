@@ -746,19 +746,6 @@ export default function ProgressionPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: "left" | "right") =>
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
-  const [particles, setParticles] = useState<{id:number,x:number,y:number,size:number,delay:number,duration:number,opacity:number}[]>([]);
-  useEffect(() => {
-    setParticles(Array.from({ length: 10 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
-      delay: Math.random() * 6,
-      duration: 9 + Math.random() * 8,
-      opacity: 0.72 + Math.random() * 0.22,
-    })));
-  }, []);
-
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const fetchSessions = useCallback(async () => {
@@ -775,14 +762,6 @@ export default function ProgressionPage() {
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
-  useEffect(() => {
-    setParticles(Array.from({ length: 10 }, (_, i) => ({
-      id: i, x: Math.random() * 100, y: Math.random() * 100,
-      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
-      delay: Math.random() * 6, duration: 9 + Math.random() * 8,
-      opacity: 0.72 + Math.random() * 0.22,
-    })));
-  }, []);
 
   const handleStartWorkout = async (session: WorkoutSession) => {
     /* Always open the guided workout modal */
@@ -814,41 +793,9 @@ export default function ProgressionPage() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 max-w-3xl mx-auto md:mx-0 relative overflow-x-hidden" style={{ background: "linear-gradient(135deg, #f2eeff 0%, #fffef5 50%, #f2eeff 100%)" }}>
-      {/* ── Calque déco : blobs · anneaux · particules ── */}
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        {/* Blobs statiques */}
-        <div className="absolute rounded-full"
-          style={{ top: "-5%", right: "-8%", width: 560, height: 560, background: "rgba(147,112,219,0.65)", filter: "blur(80px)" }} />
-        <div className="absolute rounded-full"
-          style={{ bottom: "-5%", left: "-8%", width: 520, height: 520, background: "rgba(200,155,50,0.55)", filter: "blur(80px)" }} />
-        {/* Rings — GPU composited */}
-        {[500, 370, 260].map((size, i) => (
-          <motion.div key={size} className="absolute rounded-full"
-            style={{
-              width: size, height: size,
-              border: `1px solid rgba(167,139,250,${i === 0 ? 0.30 : i === 1 ? 0.42 : 0.30})`,
-              top: "50%", left: "50%", marginLeft: -size / 2, marginTop: -size / 2,
-              willChange: "transform",
-            }}
-            animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
-            transition={{ duration: 60 + i * 20, repeat: Infinity, ease: "linear" }}
-          />
-        ))}
-        {particles.map((p) => (
-          <motion.div key={p.id} className="absolute rounded-full"
-            style={{
-              left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size,
-              background: p.id % 3 === 0 ? `rgba(167,139,250,${p.opacity})` : p.id % 3 === 1 ? `rgba(212,192,255,${p.opacity})` : `rgba(212,168,67,${p.opacity * 0.85})`,
-              willChange: "transform",
-            }}
-            animate={{ y: ["-15px", "15px", "-15px"] }}
-            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
-          />
-        ))}
-      </div>
+    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 max-w-3xl mx-auto md:mx-0 relative overflow-x-hidden">
       {/* ── Contenu ── */}
-      <div className="relative flex flex-col flex-1" style={{ zIndex: 1 }}>
+      <div className="relative flex flex-col flex-1">
 
       {/* Header */}
       <motion.div
