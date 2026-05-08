@@ -46,15 +46,6 @@ function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: strin
   };
 }
 
-async function fetchProfile(supabase: ReturnType<typeof import("@/lib/supabase").createClient>, userId: string) {
-  const { data } = await supabase
-    .from("profiles")
-    .select("pseudo, avatar_url")
-    .eq("id", userId)
-    .maybeSingle();
-  return data;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
   const [user, setUser]               = useState<User | null>(null);
@@ -64,22 +55,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isNewUser, setIsNewUser]     = useState(false);
   const initialized = useRef(false);
 
+  // Enrichit l'utilisateur avec le pseudo/avatar depuis la table profiles (non-bloquant)
+  const enrichUser = (sbUser: SBUser) => {
+    // D'abord on set avec les metadata (immédiat, sans attendre la DB)
+    setUser(mapUser(sbUser));
+    // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
+    supabase
+      .from("profiles")
+      .select("pseudo, avatar_url")
+      .eq("id", sbUser.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setUser(mapUser(sbUser, data));
+      });
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         setSession(data.session);
-        const profile = await fetchProfile(supabase, data.session.user.id);
-        setUser(mapUser(data.session.user, profile));
+        enrichUser(data.session.user);
       }
       setIsLoading(false);
       initialized.current = true;
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, sess) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
       if (sess) {
         setSession(sess);
-        const profile = await fetchProfile(supabase, sess.user.id);
-        setUser(mapUser(sess.user, profile));
+        enrichUser(sess.user);
         if (event === "SIGNED_IN" && initialized.current) {
           setJustLoggedIn(true);
           const createdAt = new Date(sess.user.created_at).getTime();
