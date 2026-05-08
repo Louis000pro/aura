@@ -8,6 +8,7 @@ import {
   X, CameraOff, Square, RefreshCw,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
+import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
@@ -570,8 +571,14 @@ function UploadZone({
 }
 
 /* ─── WorkoutCard ───────────────────────────────────────── */
-function WorkoutCard({ session, gender, onStart }: { session: WorkoutSession; gender: "homme" | "femme"; onStart?: (s: WorkoutSession) => void }) {
-  const [started, setStarted] = useState(false);
+function WorkoutCard({
+  session, gender, isActive, onStart,
+}: {
+  session: WorkoutSession;
+  gender: "homme" | "femme";
+  isActive: boolean;
+  onStart?: (s: WorkoutSession) => void;
+}) {
   const Icon = session.icon;
 
   return (
@@ -640,16 +647,16 @@ function WorkoutCard({ session, gender, onStart }: { session: WorkoutSession; ge
         {/* CTA */}
         <motion.button
           whileTap={{ scale: 0.95 }}
-          onClick={() => { if (!started && onStart) onStart(session); setStarted((s) => !s); }}
+          onClick={() => onStart?.(session)}
           className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
           style={
-            started
+            isActive
               ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
               : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
           }
         >
           <AnimatePresence mode="wait">
-            {started ? (
+            {isActive ? (
               <motion.span key="on" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
                 <CheckCircle size={12} strokeWidth={2} style={{ color: session.accent }} />
                 <span className="text-[11px] font-semibold" style={{ color: session.accent }}>En cours !</span>
@@ -701,7 +708,8 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
 
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
-  const [shareData, setShareData] = useState<PerformanceData | null>(null);
+  const [shareData, setShareData]           = useState<PerformanceData | null>(null);
+  const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const [toast, setToast] = useState<string | null>(null);
   const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
@@ -749,6 +757,9 @@ export default function ProgressionPage() {
   }, []);
 
   const handleStartWorkout = async (session: WorkoutSession) => {
+    /* Always open the guided workout modal */
+    setActiveWorkout(session);
+    /* Log to Supabase if authenticated */
     if (!user) return;
     const supabase = createClient();
     const { error } = await supabase.from("workout_sessions").insert({
@@ -927,7 +938,13 @@ export default function ProgressionPage() {
           >
             <AnimatePresence mode="popLayout">
               {filteredSessions.map((session) => (
-                <WorkoutCard key={session.id} session={session} gender={settings.gender} onStart={handleStartWorkout} />
+                <WorkoutCard
+                  key={session.id}
+                  session={session}
+                  gender={settings.gender}
+                  isActive={activeWorkout?.id === session.id}
+                  onStart={handleStartWorkout}
+                />
               ))}
             </AnimatePresence>
             <div className="flex-shrink-0 w-6" />
@@ -1012,6 +1029,20 @@ export default function ProgressionPage() {
         onClose={() => setShareData(null)}
         data={shareData ?? (displayTimeline[0]?.performance ?? timelineEvents[0].performance)}
       />
+
+      {/* ── Guided workout modal ── */}
+      <AnimatePresence>
+        {activeWorkout && (
+          <WorkoutGuideModal
+            sessionId={activeWorkout.id}
+            title={activeWorkout.title}
+            accent={activeWorkout.accent}
+            duration={activeWorkout.duration}
+            difficulty={activeWorkout.difficulty}
+            onClose={() => setActiveWorkout(null)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {toast && (
