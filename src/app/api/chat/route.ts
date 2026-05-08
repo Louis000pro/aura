@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import Groq from "groq-sdk";
 
-const groq = new Groq({ apiKey: process.env.COACH_AURA_KEY });
+const groq = new Groq({ apiKey: process.env.COACH_AURA_KEY ?? "placeholder" });
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
