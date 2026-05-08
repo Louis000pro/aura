@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
   Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers,
+  X, CameraOff, Square, RefreshCw,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
@@ -174,62 +175,389 @@ const difficultyColor: Record<string, string> = {
   "Avancé":        "#A78BFA",
 };
 
+/* ─── CameraCapture Modal ───────────────────────────────── */
+type CaptureMode = "photo" | "video";
+type CapturePhase = "loading" | "preview" | "recording" | "captured" | "error";
+
+function CameraCapture({
+  mode, label, onCapture, onClose,
+}: {
+  mode: CaptureMode;
+  label: string;
+  onCapture: (blob: Blob, objectUrl: string) => void;
+  onClose: () => void;
+}) {
+  const videoRef    = useRef<HTMLVideoElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const streamRef   = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef   = useRef<Blob[]>([]);
+  const capturedBlobRef = useRef<Blob | null>(null);
+  const capturedUrlRef  = useRef<string | null>(null);
+  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [phase, setPhase]               = useState<CapturePhase>("loading");
+  const [capturedUrl, setCapturedUrl]   = useState<string | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+
+  /* Start camera on mount */
+  useEffect(() => {
+    let cancelled = false;
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: mode === "video",
+        });
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setPhase("preview");
+      } catch {
+        if (!cancelled) setPhase("error");
+      }
+    }
+    startCamera();
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (capturedUrlRef.current) URL.revokeObjectURL(capturedUrlRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const takePhoto = () => {
+    const video  = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      capturedBlobRef.current = blob;
+      const url = URL.createObjectURL(blob);
+      capturedUrlRef.current = url;
+      setCapturedUrl(url);
+      setPhase("captured");
+      /* Freeze live feed */
+      streamRef.current?.getVideoTracks().forEach(t => { t.enabled = false; });
+    }, "image/jpeg", 0.92);
+  };
+
+  const startRecording = () => {
+    if (!streamRef.current) return;
+    chunksRef.current = [];
+    const recorder = new MediaRecorder(streamRef.current);
+    recorderRef.current = recorder;
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      capturedBlobRef.current = blob;
+      const url = URL.createObjectURL(blob);
+      capturedUrlRef.current = url;
+      setCapturedUrl(url);
+      setPhase("captured");
+    };
+    recorder.start();
+    setPhase("recording");
+    setRecordingTime(0);
+    timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+
+  const retake = () => {
+    if (capturedUrlRef.current) { URL.revokeObjectURL(capturedUrlRef.current); capturedUrlRef.current = null; }
+    capturedBlobRef.current = null;
+    setCapturedUrl(null);
+    streamRef.current?.getVideoTracks().forEach(t => { t.enabled = true; });
+    setPhase("preview");
+  };
+
+  const useCapture = () => {
+    if (!capturedBlobRef.current || !capturedUrlRef.current) return;
+    onCapture(capturedBlobRef.current, capturedUrlRef.current);
+  };
+
+  const fmt = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 48, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 48, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 36 }}
+        className="relative w-full max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
+        style={{ background: "#1a1625", maxHeight: "92vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(255,255,255,0.12)" }}
+        >
+          <X size={16} strokeWidth={2} style={{ color: "#fff" }} />
+        </button>
+
+        {/* Title */}
+        <div className="px-5 pt-5 pb-3">
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+            {mode === "photo" ? "Scan Nutrition" : "Analyse Posture"}
+          </p>
+          <h3 className="text-base font-light mt-0.5" style={{ color: "#fff" }}>{label}</h3>
+        </div>
+
+        {/* Viewfinder */}
+        <div
+          className="relative mx-4 rounded-2xl overflow-hidden"
+          style={{ aspectRatio: "4/3", background: "#0d0d1a" }}
+        >
+          {/* Live feed */}
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            style={{ display: phase === "captured" ? "none" : "block" }}
+          />
+          {/* Captured photo preview */}
+          {phase === "captured" && capturedUrl && mode === "photo" && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={capturedUrl} alt="Capture" className="w-full h-full object-cover" />
+          )}
+          {/* Captured video preview */}
+          {phase === "captured" && capturedUrl && mode === "video" && (
+            <video src={capturedUrl} controls className="w-full h-full object-cover" />
+          )}
+          {/* Loading spinner */}
+          {phase === "loading" && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                className="w-8 h-8 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+          )}
+          {/* Error */}
+          {phase === "error" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <CameraOff size={32} strokeWidth={1.5} style={{ color: "#718096" }} />
+              <p className="text-xs text-center px-6" style={{ color: "#718096" }}>
+                Accès à la caméra refusé.<br/>Vérifiez les permissions du navigateur.
+              </p>
+            </div>
+          )}
+          {/* Recording badge */}
+          {phase === "recording" && (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.55)" }}>
+              <motion.div
+                className="w-2 h-2 rounded-full"
+                style={{ background: "#ef4444" }}
+                animate={{ opacity: [1, 0.2] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+              />
+              <span className="text-xs font-mono font-medium" style={{ color: "#fff" }}>{fmt(recordingTime)}</span>
+            </div>
+          )}
+          {/* Subtle grid overlay for photo mode */}
+          {(phase === "preview") && mode === "photo" && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: "linear-gradient(rgba(167,139,250,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(167,139,250,0.12) 1px, transparent 1px)",
+                backgroundSize: "33.33% 33.33%",
+              }}
+            />
+          )}
+        </div>
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Controls */}
+        <div className="px-5 py-5 flex items-center justify-center gap-3">
+          {phase === "preview" && mode === "photo" && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={takePhoto}
+              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
+              style={{
+                background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                boxShadow: "0 0 0 4px rgba(167,139,250,0.22), 0 6px 20px rgba(167,139,250,0.35)",
+              }}
+              aria-label="Prendre une photo"
+            >
+              <Camera size={22} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+            </motion.button>
+          )}
+
+          {phase === "preview" && mode === "video" && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={startRecording}
+              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
+              style={{
+                background: "linear-gradient(135deg, #FBBF24dd, #F59E0Bdd)",
+                boxShadow: "0 0 0 4px rgba(251,191,36,0.22), 0 6px 20px rgba(251,191,36,0.30)",
+              }}
+              aria-label="Démarrer l'enregistrement"
+            >
+              <Video size={22} strokeWidth={1.5} style={{ color: "#fff" }} />
+            </motion.button>
+          )}
+
+          {phase === "recording" && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={stopRecording}
+              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
+              style={{
+                background: "rgba(239,68,68,0.9)",
+                boxShadow: "0 0 0 4px rgba(239,68,68,0.22), 0 6px 20px rgba(239,68,68,0.35)",
+              }}
+              aria-label="Arrêter l'enregistrement"
+            >
+              <Square size={20} strokeWidth={2} fill="white" style={{ color: "#fff" }} />
+            </motion.button>
+          )}
+
+          {phase === "captured" && (
+            <>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={retake}
+                className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.11)" }}
+              >
+                <RefreshCw size={13} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                <span className="text-sm font-medium" style={{ color: "#A0AEC0" }}>Reprendre</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={useCapture}
+                className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
+              >
+                <CheckCircle size={13} strokeWidth={2} style={{ color: "#2D3748" }} />
+                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Utiliser</span>
+              </motion.button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── UploadZone ────────────────────────────────────────── */
 type UploadState = "idle" | "uploading" | "done";
 
 function UploadZone({
-  icon: Icon, label, sublabel, accept, cardClass,
+  icon: Icon, label, sublabel, accept, cardClass, captureMode, captureLabel,
 }: {
   icon: typeof Camera; label: string; sublabel: string;
   accept: string; cardClass: string;
+  captureMode: CaptureMode; captureLabel: string;
 }) {
   const [uploadState, setUploadState] = useState<UploadState>("idle");
+  const [showCamera, setShowCamera]   = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = () => {
+  const triggerUpload = () => {
     setUploadState("uploading");
-    setTimeout(() => setUploadState("done"), 1800);
-    setTimeout(() => setUploadState("idle"), 4000);
+    setTimeout(() => setUploadState("done"),  1800);
+    setTimeout(() => setUploadState("idle"),  4000);
+  };
+
+  const handleCapture = () => {
+    setShowCamera(false);
+    triggerUpload();
   };
 
   return (
-    <motion.div
-      className={`${cardClass} lg-highlight relative flex-1 rounded-3xl p-5 flex flex-col items-center gap-3 cursor-pointer overflow-hidden`}
-      style={{ minHeight: 150 }}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.97 }}
-      onClick={() => inputRef.current?.click()}
-    >
-      <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFile} />
-      <AnimatePresence mode="wait">
-        {uploadState === "idle" && (
-          <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-              <Icon size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
-              <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{sublabel}</p>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-medium tracking-wider uppercase" style={{ color: "#A0AEC0" }}>
-              <Upload size={10} /><span>Importer</span>
-            </div>
-          </motion.div>
-        )}
-        {uploadState === "uploading" && (
-          <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 justify-center h-full">
-            <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(45,55,72,0.15)", borderTopColor: "#2D3748" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-            <p className="text-xs font-medium" style={{ color: "#718096" }}>Analyse IA en cours…</p>
-          </motion.div>
-        )}
-        {uploadState === "done" && (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
-            <CheckCircle size={28} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-            <p className="text-xs font-medium" style={{ color: "#2D3748" }}>Analyse terminée !</p>
-          </motion.div>
+    <>
+      <motion.div
+        className={`${cardClass} lg-highlight relative flex-1 rounded-3xl p-5 flex flex-col items-center gap-3 overflow-hidden`}
+        style={{ minHeight: 160 }}
+        whileHover={{ y: -2 }}
+      >
+        <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={triggerUpload} />
+        <AnimatePresence mode="wait">
+          {uploadState === "idle" && (
+            <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 w-full">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
+                <Icon size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
+                <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{sublabel}</p>
+              </div>
+              {/* Two action buttons */}
+              <div className="flex gap-2 w-full mt-1">
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => inputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }}
+                >
+                  <Upload size={10} /><span>Importer</span>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => setShowCamera(true)}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
+                  style={{ background: "rgba(167,139,250,0.14)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.28)" }}
+                >
+                  <Icon size={10} /><span>Capturer</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+          {uploadState === "uploading" && (
+            <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 justify-center h-full">
+              <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(45,55,72,0.15)", borderTopColor: "#2D3748" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+              <p className="text-xs font-medium" style={{ color: "#718096" }}>Analyse IA en cours…</p>
+            </motion.div>
+          )}
+          {uploadState === "done" && (
+            <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
+              <CheckCircle size={28} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+              <p className="text-xs font-medium" style={{ color: "#2D3748" }}>Analyse terminée !</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Camera modal — rendered in portal-like position */}
+      <AnimatePresence>
+        {showCamera && (
+          <CameraCapture
+            mode={captureMode}
+            label={captureLabel}
+            onCapture={handleCapture}
+            onClose={() => setShowCamera(false)}
+          />
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 }
 
@@ -428,8 +756,16 @@ export default function ProgressionPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <UploadZone icon={Camera} label="Scan Nutrition" sublabel="L'IA reconnaît vos repas" accept="image/*" cardClass="lg-rose" />
-        <UploadZone icon={Video} label="Analyse Posture" sublabel="Feedback en temps réel" accept="video/*" cardClass="lg-turquoise" />
+        <UploadZone
+          icon={Camera} label="Scan Nutrition" sublabel="L'IA reconnaît vos repas"
+          accept="image/*" cardClass="lg-rose"
+          captureMode="photo" captureLabel="Photographier votre repas"
+        />
+        <UploadZone
+          icon={Video} label="Analyse Posture" sublabel="Feedback en temps réel"
+          accept="video/*" cardClass="lg-turquoise"
+          captureMode="video" captureLabel="Enregistrer votre mouvement"
+        />
       </motion.div>
 
       {/* ── Séances prêtes ── */}
