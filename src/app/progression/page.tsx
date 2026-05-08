@@ -1,16 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
-  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers,
+  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
   X, CameraOff, Square, RefreshCw,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase";
+
+/* ─── DB types ───────────────────────────────────────────── */
+type DbWorkoutSession = {
+  id: string; user_id: string; title: string; category: string;
+  duration_minutes: number; calories_burned: number; started_at: string;
+};
 
 /* ─── Timeline data ─────────────────────────────────────── */
 type TimelineEvent = {
@@ -562,7 +570,7 @@ function UploadZone({
 }
 
 /* ─── WorkoutCard ───────────────────────────────────────── */
-function WorkoutCard({ session, gender }: { session: WorkoutSession; gender: "homme" | "femme" }) {
+function WorkoutCard({ session, gender, onStart }: { session: WorkoutSession; gender: "homme" | "femme"; onStart?: (s: WorkoutSession) => void }) {
   const [started, setStarted] = useState(false);
   const Icon = session.icon;
 
@@ -632,7 +640,7 @@ function WorkoutCard({ session, gender }: { session: WorkoutSession; gender: "ho
         {/* CTA */}
         <motion.button
           whileTap={{ scale: 0.95 }}
-          onClick={() => setStarted((s) => !s)}
+          onClick={() => { if (!started && onStart) onStart(session); setStarted((s) => !s); }}
           className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
           style={
             started
@@ -669,11 +677,36 @@ const itemVariants = {
   visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
+/* ─── Helpers ──────────────────────────────────────────── */
+function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
+  const d = new Date(s.started_at);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
+  const date = isToday ? "Aujourd'hui" : isYesterday ? "Hier" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  return {
+    date, time, type: "workout", title: s.title,
+    desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
+    cardClass: "lg-turquoise", dot: "#D4A843",
+    performance: {
+      type: "workout", title: s.title, date: `${date} · ${time}`,
+      metrics: [
+        { label: "Durée", value: String(s.duration_minutes), unit: "min" },
+        ...(s.calories_burned ? [{ label: "Calories", value: String(s.calories_burned), unit: "kcal" }] : []),
+      ],
+    },
+  };
+}
+
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
+  const [toast, setToast] = useState<string | null>(null);
+  const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
   const { settings } = useProfileSettings();
+  const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: "left" | "right") =>
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
@@ -690,11 +723,49 @@ export default function ProgressionPage() {
     })));
   }, []);
 
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  const fetchSessions = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("workout_sessions")
+      .select("id, user_id, title, category, duration_minutes, calories_burned, started_at")
+      .eq("user_id", user.id)
+      .order("started_at", { ascending: false })
+      .limit(15);
+    if (!error && data && data.length > 0) setRealTimeline(data.map(dbSessionToEvent));
+  }, [user]);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  useEffect(() => {
+    setParticles(Array.from({ length: 10 }, (_, i) => ({
+      id: i, x: Math.random() * 100, y: Math.random() * 100,
+      size: i < 3 ? 12 + Math.random() * 10 : i < 6 ? 5 + Math.random() * 4 : 3 + Math.random() * 2,
+      delay: Math.random() * 6, duration: 9 + Math.random() * 8,
+      opacity: 0.72 + Math.random() * 0.22,
+    })));
+  }, []);
+
+  const handleStartWorkout = async (session: WorkoutSession) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("workout_sessions").insert({
+      user_id: user.id, title: session.title, category: session.category,
+      duration_minutes: session.duration, calories_burned: Math.round(session.duration * 6.5),
+      started_at: new Date().toISOString(),
+    });
+    if (!error) { showToast(`${session.title} démarrée ✓`); setTimeout(fetchSessions, 500); }
+  };
+
+  const displayTimeline = realTimeline.length > 0 ? realTimeline : timelineEvents;
+
   const filteredSessions = workoutSessions.filter(
     (s) => categoryFilter === "tous" || s.category === categoryFilter
   );
 
-  const groups = timelineEvents.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
+  const groups = displayTimeline.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
     (acc[event.date] = acc[event.date] || []).push(event);
     return acc;
   }, {});
@@ -856,7 +927,7 @@ export default function ProgressionPage() {
           >
             <AnimatePresence mode="popLayout">
               {filteredSessions.map((session) => (
-                <WorkoutCard key={session.id} session={session} gender={settings.gender} />
+                <WorkoutCard key={session.id} session={session} gender={settings.gender} onStart={handleStartWorkout} />
               ))}
             </AnimatePresence>
             <div className="flex-shrink-0 w-6" />
@@ -939,8 +1010,21 @@ export default function ProgressionPage() {
       <SharePerformanceModal
         open={shareData !== null}
         onClose={() => setShareData(null)}
-        data={shareData ?? timelineEvents[0].performance}
+        data={shareData ?? (displayTimeline[0]?.performance ?? timelineEvents[0].performance)}
       />
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
+            className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
+            style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2)", whiteSpace: "nowrap" }}>
+            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
+            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       </div>
     </div>
   );

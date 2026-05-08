@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity } from "lucide-react";
+import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity, User2, Settings, LogOut, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
@@ -13,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import { stats } from "@/data/statsData";
 import type { StatData } from "@/data/statsData";
+import { createClient } from "@/lib/supabase";
 
 /* ─── Score Ring ─── */
 function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
@@ -516,7 +518,7 @@ function LandingPage() {
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
@@ -529,6 +531,49 @@ function Dashboard() {
   const [aiTyping, setAiTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userContext, setUserContext] = useState<OnboardingData | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [liveStats, setLiveStats] = useState({ score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false });
+  const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      const inTrigger = menuRef.current?.contains(e.target as Node);
+      const inDropdown = dropdownRef.current?.contains(e.target as Node);
+      if (!inTrigger && !inDropdown) setShowMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
+
+  // Fetch stats du jour depuis Supabase
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    const today = new Date().toISOString().slice(0, 10);
+    supabase
+      .from("daily_stats")
+      .select("score, calories, steps, sleep_hours, streak")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setLiveStats({
+            score:      data.score       ?? 0,
+            calories:   data.calories    ?? 0,
+            steps:      data.steps       ?? 0,
+            sleepHours: data.sleep_hours ?? 0,
+            streak:     data.streak      ?? 0,
+            loaded:     true,
+          });
+        } else {
+          setLiveStats(prev => ({ ...prev, loaded: true }));
+        }
+      });
+  }, [user]);
 
   // Charge le contexte onboarding depuis localStorage
   useEffect(() => {
@@ -651,15 +696,86 @@ function Dashboard() {
           <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
             className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default">
             <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>7 jours</span>
+            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.streak > 0 ? `${liveStats.streak} jours` : "—"}</span>
           </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}>
+          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
+            ref={menuRef} style={{ position: "relative" }}>
             {user ? (
-              <motion.div whileHover={{ scale: 1.08, rotate: 5 }} whileTap={{ scale: 0.92 }}
-                className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)" }}>
-                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
-              </motion.div>
+              <>
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                  onClick={() => setShowMenu(v => !v)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer select-none"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: showMenu ? "0 0 0 2.5px rgba(167,139,250,0.5),0 4px 16px rgba(167,139,250,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)", transition: "box-shadow 0.2s" }}>
+                  <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
+                </motion.div>
+
+                {/* PORTAL — AnimatePresence à l'intérieur du portal, pas à l'extérieur */}
+                {typeof window !== "undefined" && createPortal(
+                  <AnimatePresence>
+                    {showMenu && (
+                      <motion.div
+                        ref={dropdownRef}
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        style={{ position: "fixed", right: 16, top: 70, zIndex: 99999, minWidth: 210 }}>
+                        <div style={{
+                          backgroundColor: "#fff",
+                          borderRadius: 16,
+                          overflow: "hidden",
+                          border: "1px solid rgba(167,139,250,0.2)",
+                          boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)",
+                        }}>
+                          {/* Infos utilisateur */}
+                          <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(167,139,250,0.1)" }}>
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                                <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{user.pseudo ?? user.name}</p>
+                                <p className="text-[11px] truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {[
+                            { icon: User2, label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
+                            { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
+                          ].map(({ icon: Icon, label, action }) => (
+                            <button key={label} onClick={action}
+                              className="w-full flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-purple-50"
+                              style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.1)" }}>
+                                  <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                                </div>
+                                <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</span>
+                              </div>
+                              <ChevronRight size={12} strokeWidth={2} style={{ color: "#D1D5DB" }} />
+                            </button>
+                          ))}
+
+                          <div style={{ height: 1, margin: "4px 12px", backgroundColor: "rgba(167,139,250,0.1)" }} />
+
+                          <button
+                            onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 transition-colors hover:bg-red-50"
+                            style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
+                            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
+                              <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
+                            </div>
+                            <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>,
+                  document.body
+                )}
+              </>
             ) : (
               <Link href="/auth">
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} className="lg-bicolor lg-highlight relative flex items-center gap-1.5 px-3 py-2 rounded-full cursor-pointer">
@@ -681,11 +797,11 @@ function Dashboard() {
           <VocalOrb onTranscript={handleVoiceTranscript} />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} whileHover={{ y: -3, transition: { duration: 0.2 } }}
             className="lg-surface lg-highlight relative rounded-3xl px-6 py-5 flex items-center gap-5 w-full max-w-sm">
-            <ScoreRing score={91} />
+            <ScoreRing score={liveStats.score} />
             <div>
               <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Score du jour</p>
-              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>Récupération excellente</p>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>Idéal pour intensité modérée</p>
+              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{liveStats.score >= 85 ? "Récupération excellente" : liveStats.score >= 65 ? "Forme correcte" : "Récupération en cours"}</p>
+              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>{liveStats.score >= 85 ? "Idéal pour séance intensive" : "Intensité modérée conseillée"}</p>
             </div>
           </motion.div>
           <div className="flex gap-3 w-full max-w-sm">
@@ -703,7 +819,12 @@ function Dashboard() {
       <div className="md:hidden flex flex-col relative z-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
           <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-            {[{ label:"Score",value:"91",unit:"/100",bg:"lg-bicolor" },{label:"Calories",value:"1 847",unit:"kcal",bg:"lg-rose"},{label:"Pas",value:"8 234",unit:"",bg:"lg-turquoise"},{label:"Sommeil",value:"7h24",unit:"",bg:"lg-bicolor"}].map((s,i) => {
+            {[
+              { label:"Score",    value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—",   unit: liveStats.loaded && liveStats.score > 0 ? "/100" : "",  bg:"lg-bicolor" },
+              { label:"Calories", value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.loaded && liveStats.calories > 0 ? "kcal" : "", bg:"lg-rose" },
+              { label:"Pas",      value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit:"", bg:"lg-turquoise" },
+              { label:"Sommeil",  value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit:"", bg:"lg-bicolor" },
+            ].map((s,i) => {
               const matchStat = stats.find((st) => st.label === s.label);
               return (
                 <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
