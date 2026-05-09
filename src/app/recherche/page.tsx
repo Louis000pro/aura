@@ -67,23 +67,6 @@ export default function RecherchePage() {
           )}
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-2 mb-6">
-          {(["tous", "compte", "contenu"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 capitalize"
-              style={
-                filter === f
-                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                  : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
-              }
-            >
-              {f === "tous" ? "Tous" : f === "compte" ? "Comptes" : "Contenus"}
-            </button>
-          ))}
-        </div>
 
         {/* Results */}
         <AnimatePresence mode="popLayout">
