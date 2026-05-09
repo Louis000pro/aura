@@ -5,10 +5,10 @@ import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
   Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
-  X, CameraOff, Square, RefreshCw, Plus, Trash2,
+  X, CameraOff, Square, RefreshCw, Plus, Trash2, Pencil,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
-import WorkoutGuideModal from "@/components/WorkoutGuideModal";
+import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
@@ -109,6 +109,7 @@ type WorkoutSession = {
   muscles: string[];
   accent: string;
   icon: typeof Dumbbell;
+  exerciseList?: Exercise[];
 };
 
 const workoutSessions: WorkoutSession[] = [
@@ -995,36 +996,70 @@ const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
   force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
 };
 
-function CreateSessionModal({ onClose, onCreate }: {
+const ALL_MUSCLES = [
+  "Pectoraux", "Dos", "Épaules", "Biceps", "Triceps",
+  "Abdominaux", "Obliques", "Core", "Lombaires",
+  "Quadriceps", "Fessiers", "Mollets", "Hanches", "Cardio",
+];
+
+type ExerciseForm = { name: string; sets: number; reps: string; rest: number };
+const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: "10 reps", rest: 60 };
+
+function CreateSessionModal({ onClose, onCreate, editSession }: {
   onClose: () => void;
   onCreate: (s: WorkoutSession) => void;
+  editSession?: WorkoutSession | null;
 }) {
-  const [title, setTitle]       = useState("");
-  const [category, setCategory] = useState<WorkoutCategory>("force");
-  const [duration, setDuration] = useState(30);
-  const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>("Intermédiaire");
-  const [exercises, setExercises] = useState<string[]>([""]);
+  const isEdit = !!editSession;
 
-  const addExercise = () => setExercises(p => [...p, ""]);
-  const removeExercise = (i: number) => setExercises(p => p.filter((_, idx) => idx !== i));
-  const updateExercise = (i: number, val: string) =>
-    setExercises(p => p.map((e, idx) => idx === i ? val : e));
+  const [title, setTitle]       = useState(editSession?.title ?? "");
+  const [category, setCategory] = useState<WorkoutCategory>(editSession?.category ?? "force");
+  const [duration, setDuration] = useState(editSession?.duration ?? 30);
+  const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>(editSession?.difficulty ?? "Intermédiaire");
+  const [selectedMuscles, setSelectedMuscles] = useState<string[]>(editSession?.muscles ?? []);
+  const [exForms, setExForms] = useState<ExerciseForm[]>(
+    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: e.reps, rest: e.rest }))
+    ?? [{ ...DEFAULT_EX }]
+  );
+
+  const toggleMuscle = (m: string) =>
+    setSelectedMuscles(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
+
+  const addEx = () => setExForms(p => [...p, { ...DEFAULT_EX }]);
+  const removeEx = (i: number) => setExForms(p => p.filter((_, idx) => idx !== i));
+  const updateEx = <K extends keyof ExerciseForm>(i: number, key: K, val: ExerciseForm[K]) =>
+    setExForms(p => p.map((e, idx) => idx === i ? { ...e, [key]: val } : e));
 
   const handleCreate = () => {
     if (!title.trim()) return;
-    const exos = exercises.filter(e => e.trim());
-    const exoList = exos.length > 0 ? exos : ["Exercice libre"];
+    const validExs = exForms.filter(e => e.name.trim());
+    const exerciseList: Exercise[] = validExs.map(e => ({
+      name: e.name.trim(),
+      sets: e.sets,
+      reps: e.reps,
+      rest: e.rest,
+      tip: "Concentre-toi sur la forme et la respiration.",
+      benefit: "Renforce et améliore les performances.",
+      muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
+    }));
     onCreate({
-      id: `custom-${Date.now()}`,
+      id: editSession?.id ?? `custom-${Date.now()}`,
       title: title.trim(),
       subtitle: `${category.charAt(0).toUpperCase() + category.slice(1)} · Ma séance`,
       category,
       duration,
       difficulty,
-      exercises: exoList.length,
-      muscles: exoList.slice(0, 3),
+      exercises: validExs.length || 1,
+      muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
       accent: ACCENT_BY_CATEGORY[category],
       icon: ICON_BY_CATEGORY[category],
+      exerciseList: exerciseList.length > 0 ? exerciseList : [{
+        name: "Exercice libre",
+        sets: 3, reps: "10 reps", rest: 60,
+        tip: "Concentre-toi sur la forme.",
+        benefit: "Renforce et améliore les performances.",
+        muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
+      }],
     });
     onClose();
   };
@@ -1034,7 +1069,7 @@ function CreateSessionModal({ onClose, onCreate }: {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-0 md:pb-0"
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-0"
       style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -1043,21 +1078,25 @@ function CreateSessionModal({ onClose, onCreate }: {
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 40, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
         style={{
           background: "rgba(255,255,255,0.96)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-          maxHeight: "90vh",
+          maxHeight: "92vh",
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(240,235,255,0.8)" }}>
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Nouvelle séance</p>
-            <h2 className="text-lg font-light mt-0.5" style={{ color: "#2D3748" }}>Créer ma séance</h2>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+              {isEdit ? "Modifier la séance" : "Nouvelle séance"}
+            </p>
+            <h2 className="text-lg font-light mt-0.5" style={{ color: "#2D3748" }}>
+              {isEdit ? "Éditer ma séance" : "Créer ma séance"}
+            </h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
@@ -1067,120 +1106,201 @@ function CreateSessionModal({ onClose, onCreate }: {
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-5" style={{ scrollbarWidth: "none" }}>
+        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-6" style={{ scrollbarWidth: "none" }}>
 
-          {/* Nom */}
-          <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Nom de la séance</label>
+          {/* ── 1. Infos générales ── */}
+          <div className="flex flex-col gap-4">
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Informations</p>
+
+            {/* Nom */}
             <input
               type="text"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Ex : Push Day, Cardio matin…"
+              placeholder="Nom de la séance (ex : Push Day, Cardio matin…)"
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
               style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
-              autoFocus
+              autoFocus={!isEdit}
             />
-          </div>
 
-          {/* Catégorie */}
-          <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Catégorie</label>
+            {/* Catégorie */}
             <div className="grid grid-cols-4 gap-2">
               {(["force", "cardio", "mobilite", "fullbody"] as WorkoutCategory[]).map(cat => (
-                <motion.button
-                  key={cat}
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => setCategory(cat)}
+                <motion.button key={cat} whileTap={{ scale: 0.93 }} onClick={() => setCategory(cat)}
                   className="py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider cursor-pointer"
                   style={category === cat
                     ? { background: `${ACCENT_BY_CATEGORY[cat]}22`, color: ACCENT_BY_CATEGORY[cat], border: `1px solid ${ACCENT_BY_CATEGORY[cat]}55` }
                     : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
-                  }
-                >
+                  }>
                   {cat === "mobilite" ? "Mobilité" : cat === "fullbody" ? "Full" : cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </motion.button>
               ))}
             </div>
-          </div>
 
-          {/* Durée + Difficulté */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Durée (min)</label>
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl" style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)" }}>
-                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.max(10, d - 5))}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.8)" }}>
-                  <span className="text-sm font-bold" style={{ color: "#A78BFA" }}>−</span>
-                </motion.button>
-                <span className="flex-1 text-center text-sm font-semibold" style={{ color: "#2D3748" }}>{duration}</span>
-                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.min(180, d + 5))}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                  style={{ background: "rgba(255,255,255,0.8)" }}>
-                  <span className="text-sm font-bold" style={{ color: "#A78BFA" }}>+</span>
-                </motion.button>
+            {/* Durée + Difficulté */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Durée estimée</label>
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl" style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)" }}>
+                  <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.max(10, d - 5))}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                    style={{ background: "rgba(255,255,255,0.8)" }}>
+                    <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>−</span>
+                  </motion.button>
+                  <span className="flex-1 text-center text-sm font-semibold" style={{ color: "#2D3748" }}>{duration} min</span>
+                  <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.min(180, d + 5))}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                    style={{ background: "rgba(255,255,255,0.8)" }}>
+                    <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
+                  </motion.button>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Niveau</label>
+                <div className="flex flex-col gap-1">
+                  {(["Débutant", "Intermédiaire", "Avancé"] as const).map(d => (
+                    <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
+                      className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
+                      style={difficulty === d
+                        ? { background: `${difficultyColor[d]}22`, color: difficultyColor[d], border: `1px solid ${difficultyColor[d]}44` }
+                        : { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                      }>
+                      {d}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </div>
-            <div>
-              <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Niveau</label>
-              <div className="flex flex-col gap-1">
-                {(["Débutant", "Intermédiaire", "Avancé"] as const).map(d => (
+          </div>
+
+          {/* ── 2. Groupes musculaires ── */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+                Muscles ciblés
+              </p>
+              {selectedMuscles.length > 0 && (
+                <button onClick={() => setSelectedMuscles([])} className="text-[10px] cursor-pointer" style={{ color: "#A0AEC0" }}>
+                  Tout décocher
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {ALL_MUSCLES.map(m => {
+                const selected = selectedMuscles.includes(m);
+                return (
                   <motion.button
-                    key={d}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setDifficulty(d)}
-                    className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
-                    style={difficulty === d
-                      ? { background: `${difficultyColor[d]}22`, color: difficultyColor[d], border: `1px solid ${difficultyColor[d]}44` }
-                      : { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                    key={m}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => toggleMuscle(m)}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
+                    style={selected
+                      ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55` }
+                      : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.8)" }
                     }
                   >
-                    {d}
+                    {selected ? "✓ " : ""}{m}
                   </motion.button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Exercices */}
+          {/* ── 3. Exercices ── */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Exercices</label>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={addExercise}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-xl cursor-pointer text-[10px] font-semibold"
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+                Exercices ({exForms.length})
+              </p>
+              <motion.button whileTap={{ scale: 0.9 }} onClick={addEx}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl cursor-pointer text-[10px] font-semibold"
                 style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
-                <Plus size={9} /> Ajouter
+                <Plus size={10} strokeWidth={2.5} /> Ajouter
               </motion.button>
             </div>
-            <div className="flex flex-col gap-2">
-              {exercises.map((ex, i) => (
+
+            <div className="flex flex-col gap-3">
+              {exForms.map((ex, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-2"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl p-4"
+                  style={{ background: "rgba(240,235,255,0.3)", border: "1px solid rgba(212,192,255,0.4)" }}
                 >
-                  <span className="text-[10px] font-bold w-5 text-right flex-shrink-0" style={{ color: "#A0AEC0" }}>{i + 1}.</span>
-                  <input
-                    type="text"
-                    value={ex}
-                    onChange={e => updateExercise(i, e.target.value)}
-                    placeholder={`Exercice ${i + 1}`}
-                    className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.4)", color: "#2D3748" }}
-                  />
-                  {exercises.length > 1 && (
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeExercise(i)}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                      style={{ background: "rgba(252,129,129,0.12)" }}>
-                      <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-                    </motion.button>
-                  )}
+                  {/* Name row */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[11px] font-bold w-6 text-center flex-shrink-0 rounded-lg py-0.5"
+                      style={{ background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category] }}>
+                      {i + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={ex.name}
+                      onChange={e => updateEx(i, "name", e.target.value)}
+                      placeholder={`Exercice ${i + 1} (ex : Squat, Pompes…)`}
+                      className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                      style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.3)", color: "#2D3748" }}
+                    />
+                    {exForms.length > 1 && (
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeEx(i)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                        style={{ background: "rgba(252,129,129,0.12)" }}>
+                        <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+                      </motion.button>
+                    )}
+                  </div>
+
+                  {/* Controls row */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Séries */}
+                    <div>
+                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Séries</p>
+                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.max(1, ex.sets - 1))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>−</motion.button>
+                        <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.sets}</span>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.min(10, ex.sets + 1))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>+</motion.button>
+                      </div>
+                    </div>
+
+                    {/* Reps */}
+                    <div>
+                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Reps / Durée</p>
+                      <input
+                        type="text"
+                        value={ex.reps}
+                        onChange={e => updateEx(i, "reps", e.target.value)}
+                        placeholder="10 reps"
+                        className="w-full px-2 py-1.5 rounded-xl text-xs text-center outline-none"
+                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)", color: "#2D3748" }}
+                      />
+                    </div>
+
+                    {/* Repos */}
+                    <div>
+                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Repos (sec)</p>
+                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>−</motion.button>
+                        <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.rest}s</span>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>+</motion.button>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               ))}
             </div>
           </div>
+
         </div>
 
         {/* Footer */}
@@ -1189,7 +1309,7 @@ function CreateSessionModal({ onClose, onCreate }: {
             whileTap={{ scale: 0.97 }}
             onClick={handleCreate}
             disabled={!title.trim()}
-            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
+            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
             style={{
               background: title.trim()
                 ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)"
@@ -1198,7 +1318,7 @@ function CreateSessionModal({ onClose, onCreate }: {
               boxShadow: title.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
             }}
           >
-            Créer la séance
+            {isEdit ? "Enregistrer les modifications" : "Créer la séance"}
           </motion.button>
         </div>
       </motion.div>
@@ -1215,6 +1335,7 @@ export default function ProgressionPage() {
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
   const { settings } = useProfileSettings();
@@ -1704,6 +1825,17 @@ export default function ProgressionPage() {
                         </motion.button>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
+                          onClick={() => {
+                            setEditSession(s);
+                            setShowCreateModal(true);
+                          }}
+                          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                          style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}
+                        >
+                          <Pencil size={13} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => setCustomSessions(p => p.filter(cs => cs.id !== s.id))}
                           className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{ background: "rgba(252,129,129,0.1)" }}
@@ -1738,6 +1870,7 @@ export default function ProgressionPage() {
             accent={activeWorkout.accent}
             duration={activeWorkout.duration}
             difficulty={activeWorkout.difficulty}
+            exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
             onComplete={() =>
               setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]))
@@ -1750,10 +1883,17 @@ export default function ProgressionPage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreateSessionModal
-            onClose={() => setShowCreateModal(false)}
+            onClose={() => { setShowCreateModal(false); setEditSession(null); }}
+            editSession={editSession}
             onCreate={(s) => {
-              setCustomSessions(p => [s, ...p]);
-              showToast(`"${s.title}" créée ✓`);
+              if (editSession) {
+                setCustomSessions(p => p.map(cs => cs.id === s.id ? s : cs));
+                showToast(`"${s.title}" modifiée ✓`);
+              } else {
+                setCustomSessions(p => [s, ...p]);
+                showToast(`"${s.title}" créée ✓`);
+              }
+              setEditSession(null);
             }}
           />
         )}

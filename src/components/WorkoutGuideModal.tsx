@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 /* ─── Types ──────────────────────────────────────────────── */
-interface Exercise {
+export interface Exercise {
   name: string;
   sets: number;
   reps: string;
@@ -28,6 +28,7 @@ export interface WorkoutGuideModalProps {
   difficulty: string;
   onClose: () => void;
   onComplete?: () => void;
+  exerciseList?: Exercise[];
 }
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
@@ -288,9 +289,9 @@ const fmt = (s: number) =>
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
-  sessionId, title, accent, duration, difficulty, onClose, onComplete,
+  sessionId, title, accent, duration, difficulty, onClose, onComplete, exerciseList,
 }: WorkoutGuideModalProps) {
-  const exercises = exerciseData[sessionId] ?? [];
+  const exercises = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
 
   const [phase,         setPhase]         = useState<GuidePhase>("intro");
   const [exerciseIdx,   setExerciseIdx]   = useState(0);
