@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import { createClient } from "@/lib/supabase";
 
 type View = "feed" | "search" | "dms" | "thread";
 type SearchFilter = "tous" | "compte" | "contenu";
@@ -566,6 +567,9 @@ export default function CommunautePage() {
   const [activeThread, setActiveThread] = useState<User | null>(null);
   const [search, setSearch] = useState("");
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
+  const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string }[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set([2]));
   const [following, setFollowing] = useState<Set<string>>(new Set());
   const [openComments, setOpenComments] = useState<Set<number>>(new Set());
@@ -642,16 +646,36 @@ export default function CommunautePage() {
     }, 1200);
   };
 
+  // Fetch real profiles from Supabase on search
+  useEffect(() => {
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+    const q = search.trim();
+    if (!q) { setRealProfiles([]); return; }
+    searchDebounce.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, pseudo, full_name, bio, avatar_url")
+          .or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`)
+          .limit(15);
+        setRealProfiles(data ?? []);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  }, [search]);
+
   const filteredResults = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matchPeople = (u: User) => !q || u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q);
     const matchContent = (c: ContentResult) => !q || c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q);
     return {
-      friends:     searchFilter !== "contenu" ? users.filter(matchPeople)       : [],
-      influencers: searchFilter !== "contenu" ? influencers.filter(matchPeople) : [],
-      contents:    searchFilter !== "compte"  ? contentResults.filter(matchContent) : [],
+      realProfiles: searchFilter !== "contenu" ? realProfiles : [],
+      influencers:  searchFilter !== "contenu" ? influencers.filter(u => !q || u.name.toLowerCase().includes(q)) : [],
+      contents:     searchFilter !== "compte"  ? contentResults.filter(matchContent) : [],
     };
-  }, [search, searchFilter]);
+  }, [search, searchFilter, realProfiles]);
 
   const visibleFeed = feedData.filter((p) => !hiddenPosts.has(p.id));
 
@@ -1013,25 +1037,40 @@ export default function CommunautePage() {
               </div>
             )}
 
-            {/* Friends */}
-            {filteredResults.friends.length > 0 && (
+            {/* Real users from Supabase */}
+            {searchLoading && (
+              <div className="flex justify-center py-6">
+                <motion.div className="w-5 h-5 rounded-full border-2"
+                  style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                  animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              </div>
+            )}
+            {!searchLoading && filteredResults.realProfiles.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
-                  Amis & Suggestions
+                  Comptes
                 </p>
                 <div className="flex flex-col gap-2">
-                  {filteredResults.friends.map((u) => {
-                    const isFollowing = following.has(u.handle);
+                  {filteredResults.realProfiles.map((profile) => {
+                    const isFollowing = following.has(profile.pseudo);
                     return (
-                      <div key={u.handle} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
-                        <Avatar user={u} size={40} />
+                      <div key={profile.id} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
+                        {/* Avatar */}
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-semibold flex-shrink-0 overflow-hidden"
+                          style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                          {profile.avatar_url
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                            : (profile.pseudo?.[0] ?? "?").toUpperCase()}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{u.name}</p>
-                          <p className="text-[11px]" style={{ color: "#A0AEC0" }}>@{u.handle}</p>
+                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
+                          <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
+                          {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
                         </div>
                         <motion.button
                           whileTap={{ scale: 0.94 }}
-                          onClick={() => toggleFollow(u.handle)}
+                          onClick={() => toggleFollow(profile.pseudo)}
                           className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{
                             background: isFollowing ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
@@ -1083,7 +1122,7 @@ export default function CommunautePage() {
               </div>
             )}
 
-            {filteredResults.friends.length === 0 && filteredResults.influencers.length === 0 && filteredResults.contents.length === 0 && (
+            {!searchLoading && filteredResults.realProfiles.length === 0 && filteredResults.influencers.length === 0 && filteredResults.contents.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
                   {search ? `Aucun résultat pour « ${search} »` : "Tape quelque chose pour rechercher"}
