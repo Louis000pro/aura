@@ -39,28 +39,42 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
+    // Fetch initial — silencieux si la table n'existe pas encore
     supabase
       .from("notifications")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(30)
-      .then(({ data }) => { if (data) setNotifs(data as Notif[]); });
+      .then(({ data, error }) => {
+        if (error) return; // table absente ou autre erreur → on ignore
+        if (data) setNotifs(data as Notif[]);
 
-    // Temps réel
-    const channel = supabase
-      .channel(`notifs-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          setNotifs((prev) => [payload.new as Notif, ...prev]);
+        // Temps réel seulement si le fetch a réussi
+        try {
+          channel = supabase
+            .channel(`notifs-${user.id}`)
+            .on(
+              "postgres_changes",
+              { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+              (payload) => {
+                setNotifs((prev) => [payload.new as Notif, ...prev]);
+              }
+            )
+            .subscribe();
+        } catch {
+          // realtime non disponible → dégradation silencieuse
         }
-      )
-      .subscribe();
+      })
+      .catch(() => {
+        // réseau ou table absente → on ignore
+      });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (channel) supabase.removeChannel(channel).catch(() => {});
+    };
   }, [user]);
 
   // Fermer si clic extérieur
