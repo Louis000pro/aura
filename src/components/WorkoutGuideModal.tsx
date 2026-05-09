@@ -640,8 +640,9 @@ export default function WorkoutGuideModal({
                   </motion.div>
                 ) : (
                   /* ── Normal exercise view ── */
-                  <motion.div key={`ex-${exerciseIdx}-${setIdx}`}
-                    initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}
+                  <motion.div key={`ex-${exerciseIdx}`}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    transition={{ duration: 0.18 }}
                     className="flex flex-col gap-4 pb-2"
                   >
                     {/* Name + ? + set dots */}
@@ -697,7 +698,12 @@ export default function WorkoutGuideModal({
                             {hiitSub === "work" ? "⚡ Effort !" : "✓ Repos"}
                           </motion.div>
                         )}
-                        <div className="relative w-28 h-28">
+                        <motion.button
+                          onClick={togglePause}
+                          whileTap={{ scale: 0.94 }}
+                          className="relative w-28 h-28 cursor-pointer"
+                          aria-label={paused ? "Reprendre" : "Pause"}
+                        >
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
                             <motion.circle cx="50" cy="50" r={CR} fill="none"
@@ -711,14 +717,14 @@ export default function WorkoutGuideModal({
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             {paused ? (
-                              <Pause size={28} strokeWidth={1.5} style={{ color: "#718096" }} />
+                              <Play size={28} strokeWidth={1.5} style={{ color: "#fff" }} />
                             ) : (
                               <span className="text-4xl font-extralight tabular-nums" style={{ color: "#fff" }}>
                                 {autoCountdown}
                               </span>
                             )}
                           </div>
-                        </div>
+                        </motion.button>
                       </div>
                     )}
 
@@ -770,7 +776,12 @@ export default function WorkoutGuideModal({
                 <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#4A5568" }}>
                   {paused ? "En pause" : restMode === "exercise" ? "Transition" : "Récupération"}
                 </p>
-                <div className="relative w-32 h-32">
+                <motion.button
+                  onClick={togglePause}
+                  whileTap={{ scale: 0.94 }}
+                  className="relative w-32 h-32 cursor-pointer"
+                  aria-label={paused ? "Reprendre" : "Pause"}
+                >
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
                     <motion.circle cx="50" cy="50" r={CR} fill="none"
@@ -782,7 +793,7 @@ export default function WorkoutGuideModal({
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     {paused
-                      ? <Pause size={30} strokeWidth={1.5} style={{ color: "#718096" }} />
+                      ? <Play size={30} strokeWidth={1.5} style={{ color: "#fff" }} />
                       : <>
                           <span className="text-4xl font-extralight tabular-nums" style={{ color: "#fff" }}>
                             {restCountdown}
@@ -791,7 +802,7 @@ export default function WorkoutGuideModal({
                         </>
                     }
                   </div>
-                </div>
+                </motion.button>
 
                 {(() => {
                   const isLastSet  = setIdx === (cur?.sets ?? 1) - 1;
@@ -807,11 +818,11 @@ export default function WorkoutGuideModal({
                   ) : null;
                 })()}
 
-                <div className="flex gap-2">
+                <div className="flex flex-col items-center gap-2">
                   <motion.button whileTap={{ scale: 0.95 }}
                     onClick={() => setRestCountdown(0)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium cursor-pointer"
-                    style={{ background: "rgba(255,255,255,0.06)", color: "#718096" }}
+                    className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.09)", color: "#CBD5E0", border: "1px solid rgba(255,255,255,0.1)" }}
                   >
                     <SkipForward size={12} strokeWidth={2} />
                     Passer le repos
@@ -819,10 +830,10 @@ export default function WorkoutGuideModal({
                   {exerciseIdx < exercises.length - 1 && (
                     <motion.button whileTap={{ scale: 0.95 }}
                       onClick={skipExercise}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium cursor-pointer"
-                      style={{ background: "rgba(255,255,255,0.05)", color: "#4A5568" }}
+                      className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1"
+                      style={{ color: "#4A5568" }}
                     >
-                      <SkipForward size={12} strokeWidth={2} />
+                      <SkipForward size={10} strokeWidth={2} />
                       Passer l&apos;exercice
                     </motion.button>
                   )}
@@ -888,7 +899,7 @@ export default function WorkoutGuideModal({
 
             {phase === "exercising" && !showInfo && !isTimered && (
               <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-2">
+                className="flex flex-col items-center gap-1.5">
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={completeSet}
@@ -899,11 +910,11 @@ export default function WorkoutGuideModal({
                   Série terminée ✓
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={skipExercise}
-                    className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
-                    style={{ background: "rgba(255,255,255,0.05)", color: "#4A5568" }}
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={skipExercise}
+                    className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1.5"
+                    style={{ color: "#4A5568" }}
                   >
-                    <SkipForward size={12} strokeWidth={2} />
+                    <SkipForward size={10} strokeWidth={2} />
                     Passer l&apos;exercice
                   </motion.button>
                 )}
@@ -912,21 +923,21 @@ export default function WorkoutGuideModal({
 
             {phase === "exercising" && !showInfo && isTimered && (
               <motion.div key="skip-timed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-2">
+                className="flex flex-col items-center gap-1.5">
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setAutoCountdown(0)}
-                  className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-medium cursor-pointer"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#718096" }}
+                  className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.09)", color: "#CBD5E0", border: "1px solid rgba(255,255,255,0.1)" }}
                 >
                   <SkipForward size={13} strokeWidth={2} />
                   {isHiit && hiitSub === "work" ? "Passer l'effort" : "Passer"}
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={skipExercise}
-                    className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
-                    style={{ background: "rgba(255,255,255,0.05)", color: "#4A5568" }}
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={skipExercise}
+                    className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1.5"
+                    style={{ color: "#4A5568" }}
                   >
-                    <SkipForward size={12} strokeWidth={2} />
+                    <SkipForward size={10} strokeWidth={2} />
                     Passer l&apos;exercice
                   </motion.button>
                 )}
