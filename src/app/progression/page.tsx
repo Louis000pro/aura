@@ -1002,8 +1002,8 @@ const ALL_MUSCLES = [
   "Quadriceps", "Fessiers", "Mollets", "Hanches", "Cardio",
 ];
 
-type ExerciseForm = { name: string; sets: number; reps: string; rest: number };
-const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: "10 reps", rest: 60 };
+type ExerciseForm = { name: string; sets: number; reps: number; rest: number };
+const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: 10, rest: 60 };
 
 function CreateSessionModal({ onClose, onCreate, editSession }: {
   onClose: () => void;
@@ -1018,7 +1018,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
   const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>(editSession?.difficulty ?? "Intermédiaire");
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(editSession?.muscles ?? []);
   const [exForms, setExForms] = useState<ExerciseForm[]>(
-    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: e.reps, rest: e.rest }))
+    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest }))
     ?? [{ ...DEFAULT_EX }]
   );
 
@@ -1036,7 +1036,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
     const exerciseList: Exercise[] = validExs.map(e => ({
       name: e.name.trim(),
       sets: e.sets,
-      reps: e.reps,
+      reps: String(e.reps),
       rest: e.rest,
       tip: "Concentre-toi sur la forme et la respiration.",
       benefit: "Renforce et améliore les performances.",
@@ -1055,7 +1055,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
       icon: ICON_BY_CATEGORY[category],
       exerciseList: exerciseList.length > 0 ? exerciseList : [{
         name: "Exercice libre",
-        sets: 3, reps: "10 reps", rest: 60,
+        sets: 3, reps: "10", rest: 60,
         tip: "Concentre-toi sur la forme.",
         benefit: "Renforce et améliore les performances.",
         muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
@@ -1270,15 +1270,17 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
                     {/* Reps */}
                     <div>
-                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Reps / Durée</p>
-                      <input
-                        type="text"
-                        value={ex.reps}
-                        onChange={e => updateEx(i, "reps", e.target.value)}
-                        placeholder="10 reps"
-                        className="w-full px-2 py-1.5 rounded-xl text-xs text-center outline-none"
-                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)", color: "#2D3748" }}
-                      />
+                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Répétitions</p>
+                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.max(1, ex.reps - 1))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>−</motion.button>
+                        <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.reps}</span>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.min(100, ex.reps + 1))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>+</motion.button>
+                      </div>
                     </div>
 
                     {/* Repos */}
@@ -1883,6 +1885,7 @@ export default function ProgressionPage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreateSessionModal
+            key={editSession?.id ?? "new"}
             onClose={() => { setShowCreateModal(false); setEditSession(null); }}
             editSession={editSession}
             onCreate={(s) => {
