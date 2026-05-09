@@ -1299,101 +1299,116 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
             </div>
 
             <div className="flex flex-col gap-3">
-              {exForms.map((ex, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl p-4"
-                  style={{ background: "rgba(240,235,255,0.3)", border: "1px solid rgba(212,192,255,0.4)" }}
-                >
-                  {/* Name row */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[11px] font-bold w-6 text-center flex-shrink-0 rounded-lg py-0.5"
-                      style={{ background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category] }}>
-                      {i + 1}
+              {exForms.flatMap((ex, i) => {
+                const card = (
+                  <motion.div
+                    key={`ex-${i}`}
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-4"
+                    style={{ background: "rgba(240,235,255,0.3)", border: "1px solid rgba(212,192,255,0.4)" }}
+                  >
+                    {/* Name row */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[11px] font-bold w-6 text-center flex-shrink-0 rounded-lg py-0.5"
+                        style={{ background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category] }}>
+                        {i + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={ex.name}
+                        onChange={e => updateEx(i, "name", e.target.value)}
+                        placeholder={`Exercice ${i + 1} (ex : Squat, Pompes…)`}
+                        className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                        style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.3)", color: "#2D3748" }}
+                      />
+                      {exForms.length > 1 && (
+                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeEx(i)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                          style={{ background: "rgba(252,129,129,0.12)" }}>
+                          <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+                        </motion.button>
+                      )}
+                    </div>
+
+                    {/* Controls — 3 cols */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* Séries */}
+                      <div>
+                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Séries</p>
+                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.max(1, ex.sets - 1))}
+                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                            style={{ color: "#A78BFA" }}>−</motion.button>
+                          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.sets}</span>
+                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.min(10, ex.sets + 1))}
+                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                            style={{ color: "#A78BFA" }}>+</motion.button>
+                        </div>
+                      </div>
+
+                      {/* Reps */}
+                      <div>
+                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Répétitions</p>
+                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.max(1, ex.reps - 1))}
+                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                            style={{ color: "#A78BFA" }}>−</motion.button>
+                          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.reps}</span>
+                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.min(100, ex.reps + 1))}
+                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                            style={{ color: "#A78BFA" }}>+</motion.button>
+                        </div>
+                      </div>
+
+                      {/* Repos entre séries */}
+                      <div>
+                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Repos (s)</p>
+                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
+                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                            style={{ color: "#A78BFA" }}>−</motion.button>
+                          <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.rest}s</span>
+                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
+                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                            style={{ color: "#A78BFA" }}>+</motion.button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+
+                /* Séparateur de récupération — uniquement entre deux exercices */
+                const separator = (i < exForms.length - 1) ? (
+                  <div key={`sep-${i}`}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl"
+                    style={{ background: "rgba(167,139,250,0.07)", border: "1px dashed rgba(167,139,250,0.28)" }}
+                  >
+                    <Clock size={11} strokeWidth={1.8} style={{ color: "#A78BFA", flexShrink: 0 }} />
+                    <span className="text-[10px] font-medium flex-1" style={{ color: "#A78BFA" }}>
+                      Récupération entre exercices
                     </span>
-                    <input
-                      type="text"
-                      value={ex.name}
-                      onChange={e => updateEx(i, "name", e.target.value)}
-                      placeholder={`Exercice ${i + 1} (ex : Squat, Pompes…)`}
-                      className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                      style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.3)", color: "#2D3748" }}
-                    />
-                    {exForms.length > 1 && (
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeEx(i)}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                        style={{ background: "rgba(252,129,129,0.12)" }}>
-                        <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-                      </motion.button>
-                    )}
-                  </div>
-
-                  {/* Controls — 2×2 grid */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Séries */}
-                    <div>
-                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Séries</p>
-                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.max(1, ex.sets - 1))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>−</motion.button>
-                        <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.sets}</span>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.min(10, ex.sets + 1))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>+</motion.button>
-                      </div>
-                    </div>
-
-                    {/* Reps */}
-                    <div>
-                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Répétitions</p>
-                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.max(1, ex.reps - 1))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>−</motion.button>
-                        <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.reps}</span>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.min(100, ex.reps + 1))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>+</motion.button>
-                      </div>
-                    </div>
-
-                    {/* Repos entre séries */}
-                    <div>
-                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Repos séries</p>
-                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>−</motion.button>
-                        <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.rest}s</span>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>+</motion.button>
-                      </div>
-                    </div>
-
-                    {/* Récupération entre exercices */}
-                    <div>
-                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Récup. inter</p>
-                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.25)" }}>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "restAfter", Math.max(0, ex.restAfter - 15))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>−</motion.button>
-                        <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.restAfter}s</span>
-                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "restAfter", Math.min(300, ex.restAfter + 15))}
-                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                          style={{ color: "#A78BFA" }}>+</motion.button>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      <motion.button whileTap={{ scale: 0.85 }}
+                        onClick={() => updateEx(i, "restAfter", Math.max(0, ex.restAfter - 15))}
+                        className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                        style={{ color: "#A78BFA" }}>−</motion.button>
+                      <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "#2D3748" }}>
+                        {ex.restAfter}s
+                      </span>
+                      <motion.button whileTap={{ scale: 0.85 }}
+                        onClick={() => updateEx(i, "restAfter", Math.min(300, ex.restAfter + 15))}
+                        className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                        style={{ color: "#A78BFA" }}>+</motion.button>
                     </div>
                   </div>
-                </motion.div>
-              ))}
+                ) : null;
+
+                return separator ? [card, separator] : [card];
+              })}
             </div>
           </div>
 
