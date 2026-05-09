@@ -184,6 +184,259 @@ const difficultyColor: Record<string, string> = {
   "Avancé":        "#A78BFA",
 };
 
+/* ─── Chart helpers ─────────────────────────────────────── */
+type WeightEntry = { date: string; weight: number };
+type CalorieDay  = { date: string; total: number; label: string };
+
+function toDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+const CHART_CARD = {
+  background: "rgba(255,255,255,0.78)",
+  backdropFilter: "blur(20px)",
+  border: "1px solid rgba(255,255,255,0.9)",
+  boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+};
+
+/* ─── WeightChart ────────────────────────────────────────── */
+function WeightChart({
+  data, range, onRangeChange, onAdd,
+}: {
+  data: WeightEntry[];
+  range: "week" | "month";
+  onRangeChange: (r: "week" | "month") => void;
+  onAdd: (kg: number) => void;
+}) {
+  const [inputVal, setInputVal] = useState("");
+  const [adding, setAdding]     = useState(false);
+
+  const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
+  const current = pts.at(-1)?.weight ?? null;
+  const prev    = pts.at(-2)?.weight ?? null;
+  const trend   = current !== null && prev !== null ? +(current - prev).toFixed(1) : null;
+
+  const W = 280, H = 110, PX = 16, PY = 14;
+  const ws   = pts.map(p => p.weight);
+  const minW = ws.length > 0 ? Math.min(...ws) - 1.5 : 60;
+  const maxW = ws.length > 0 ? Math.max(...ws) + 1.5 : 90;
+
+  const tx = (i: number) =>
+    pts.length < 2 ? W / 2 : PX + (i / (pts.length - 1)) * (W - 2 * PX);
+  const ty = (w: number) =>
+    PY + ((maxW - w) / (maxW - minW)) * (H - 2 * PY);
+
+  let linePath = "", areaPath = "";
+  if (pts.length >= 2) {
+    const sp = pts.map((p, i) => ({ x: tx(i), y: ty(p.weight) }));
+    linePath = `M ${sp[0].x} ${sp[0].y}`;
+    areaPath = `M ${sp[0].x} ${H} L ${sp[0].x} ${sp[0].y}`;
+    for (let i = 1; i < sp.length; i++) {
+      const cx = (sp[i-1].x + sp[i].x) / 2;
+      linePath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
+      areaPath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
+    }
+    areaPath += ` L ${sp.at(-1)!.x} ${H} Z`;
+  }
+
+  const handleAdd = () => {
+    const kg = parseFloat(inputVal.replace(",", "."));
+    if (isNaN(kg) || kg < 20 || kg > 300) return;
+    onAdd(kg); setInputVal(""); setAdding(false);
+  };
+
+  return (
+    <div className="rounded-3xl p-5" style={CHART_CARD}>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>POIDS</p>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            {current !== null ? (
+              <>
+                <span className="text-2xl font-light" style={{ color: "#2D3748" }}>{current.toFixed(1)}</span>
+                <span className="text-sm" style={{ color: "#A0AEC0" }}>kg</span>
+                {trend !== null && (
+                  <span className="text-xs font-semibold"
+                    style={{ color: trend < 0 ? "#34D399" : trend > 0 ? "#FC8181" : "#A0AEC0" }}>
+                    {trend > 0 ? "+" : ""}{trend} kg
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune mesure</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
+            {(["week", "month"] as const).map(r => (
+              <button key={r} onClick={() => onRangeChange(r)}
+                className="px-2.5 py-1 text-[10px] font-semibold cursor-pointer"
+                style={{
+                  background: range === r ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "transparent",
+                  color: range === r ? "#2D3748" : "#A0AEC0",
+                }}>
+                {r === "week" ? "7j" : "30j"}
+              </button>
+            ))}
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
+            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
+            <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Input */}
+      <AnimatePresence>
+        {adding && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }} className="mb-3 overflow-hidden">
+            <div className="flex gap-2">
+              <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
+                value={inputVal} onChange={e => setInputVal(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
+                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+              <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
+                className="px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                OK
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SVG chart */}
+      {pts.length === 0 ? (
+        <div className="flex items-center justify-center py-8">
+          <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
+            Appuie sur + pour enregistrer<br />ton premier poids
+          </p>
+        </div>
+      ) : (
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+          <defs>
+            <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#A78BFA" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+          {areaPath && <path d={areaPath} fill="url(#wGrad)" />}
+          {linePath && <path d={linePath} fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
+          {pts.map((p, i) => (
+            <circle key={i} cx={tx(i)} cy={ty(p.weight)}
+              r={i === pts.length - 1 ? 4 : 2.5}
+              fill={i === pts.length - 1 ? "#A78BFA" : "white"}
+              stroke="#A78BFA" strokeWidth={i === pts.length - 1 ? 0 : 1.5} />
+          ))}
+          {pts.length > 0 && (
+            <text x={tx(pts.length - 1)} y={ty(pts.at(-1)!.weight) - 8}
+              textAnchor="middle" fontSize="9" fontWeight="600" fill="#A78BFA">
+              {pts.at(-1)!.weight.toFixed(1)}
+            </text>
+          )}
+        </svg>
+      )}
+    </div>
+  );
+}
+
+/* ─── CalorieChart ───────────────────────────────────────── */
+function CalorieChart({ data, goal }: { data: CalorieDay[]; goal: number }) {
+  const today      = toDateStr(new Date());
+  const todayTotal = data.find(d => d.date === today)?.total ?? 0;
+  const activeDays = data.filter(d => d.total > 0);
+  const avgCals    = activeDays.length > 0
+    ? Math.round(activeDays.reduce((s, d) => s + d.total, 0) / activeDays.length) : 0;
+  const maxCals  = Math.max(...data.map(d => d.total), goal, 1);
+  const goalPct  = (goal / maxCals) * 85;
+
+  return (
+    <div className="rounded-3xl p-5" style={CHART_CARD}>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>CALORIES · 7J</p>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-2xl font-light" style={{ color: "#2D3748" }}>
+              {todayTotal > 0 ? todayTotal.toLocaleString("fr-FR") : "—"}
+            </span>
+            <span className="text-sm" style={{ color: "#A0AEC0" }}>aujourd&apos;hui</span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>MOY.</p>
+          <p className="text-sm font-semibold mt-0.5"
+            style={{ color: avgCals > 0 ? (avgCals > goal ? "#FC8181" : "#34D399") : "#A0AEC0" }}>
+            {avgCals > 0 ? avgCals.toLocaleString("fr-FR") : "—"}
+          </p>
+        </div>
+      </div>
+
+      {/* Bars */}
+      <div className="relative" style={{ height: 100 }}>
+        <div className="absolute left-0 right-0 pointer-events-none"
+          style={{ bottom: `${goalPct}%`, borderTop: "1px dashed rgba(167,139,250,0.35)" }} />
+        <div className="flex items-end gap-1.5 h-full">
+          {data.map((d, i) => {
+            const isToday  = d.date === today;
+            const barPct   = d.total > 0 ? (d.total / maxCals) * 85 : 1;
+            const overGoal = d.total > goal;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                <motion.div className="w-full rounded-t-lg"
+                  initial={{ height: 0 }}
+                  animate={{ height: `${barPct}%` }}
+                  transition={{ duration: 0.55, delay: i * 0.06, ease: "easeOut" }}
+                  style={{
+                    background: d.total === 0
+                      ? "rgba(167,139,250,0.08)"
+                      : overGoal  ? "linear-gradient(to top, #FC8181, #FCA5A5)"
+                      : isToday   ? "linear-gradient(to top, #A78BFA, #C4B5FD)"
+                      :             "linear-gradient(to top, #7B5CC4, #A78BFA)",
+                    minHeight: "3px",
+                  }} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Day labels */}
+      <div className="flex gap-1.5 mt-2">
+        {data.map((d, i) => (
+          <div key={i} className="flex-1 text-center">
+            <span className="text-[9px] font-semibold"
+              style={{ color: d.date === today ? "#A78BFA" : "#A0AEC0" }}>
+              {d.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-3">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full" style={{ background: "#A78BFA" }} />
+          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>Consommé</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 border-t" style={{ borderColor: "rgba(167,139,250,0.5)", borderStyle: "dashed" }} />
+          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>Objectif {goal.toLocaleString("fr-FR")}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full" style={{ background: "#FC8181" }} />
+          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>Dépassé</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── CameraCapture Modal ───────────────────────────────── */
 type CaptureMode = "photo" | "video";
 type CapturePhase = "loading" | "preview" | "recording" | "captured" | "error";
@@ -748,6 +1001,11 @@ export default function ProgressionPage() {
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
+  // Charts state
+  const [weights, setWeights]         = useState<WeightEntry[]>([]);
+  const [weightRange, setWeightRange] = useState<"week" | "month">("week");
+  const [calorieWeek, setCalorieWeek] = useState<CalorieDay[]>([]);
+
   const fetchSessions = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
@@ -762,6 +1020,49 @@ export default function ProgressionPage() {
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
+  const fetchProgressData = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 29);
+    const sevenAgo  = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6);
+    const [{ data: wData }, { data: cData }] = await Promise.all([
+      supabase.from("weight_logs").select("date, weight_kg")
+        .eq("user_id", user.id).gte("date", toDateStr(thirtyAgo))
+        .order("date", { ascending: true }),
+      supabase.from("nutrition_logs").select("date, calories")
+        .eq("user_id", user.id).gte("date", toDateStr(sevenAgo)),
+    ]);
+    if (wData) setWeights(wData.map(r => ({ date: r.date, weight: r.weight_kg })));
+    const dayNames = ["D", "L", "M", "M", "J", "V", "S"];
+    const calMap: Record<string, number> = {};
+    (cData ?? []).forEach((r: { date: string; calories: number }) => {
+      calMap[r.date] = (calMap[r.date] ?? 0) + r.calories;
+    });
+    setCalorieWeek(Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      const ds = toDateStr(d);
+      return { date: ds, total: calMap[ds] ?? 0, label: dayNames[d.getDay()] };
+    }));
+  }, [user]); // eslint-disable-line
+
+  useEffect(() => { fetchProgressData(); }, [fetchProgressData]);
+
+  const addWeight = async (kg: number) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    const supabase = createClient();
+    const today = toDateStr(new Date());
+    const { error } = await supabase.from("weight_logs").upsert(
+      { user_id: user.id, date: today, weight_kg: kg },
+      { onConflict: "user_id,date" }
+    );
+    if (!error) {
+      setWeights(prev => {
+        const filtered = prev.filter(w => w.date !== today);
+        return [...filtered, { date: today, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
+      });
+      showToast(`Poids enregistré : ${kg} kg ✓`);
+    }
+  };
 
   const handleStartWorkout = async (session: WorkoutSession) => {
     /* Always open the guided workout modal */
@@ -808,6 +1109,30 @@ export default function ProgressionPage() {
           Votre Journey
         </p>
         <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Ma Progression</h1>
+      </motion.div>
+
+      {/* ── Graphiques ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.05 }}
+        className="mb-8"
+      >
+        <div className="mb-4">
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+            Analyse
+          </p>
+          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Statistiques</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <WeightChart
+            data={weights}
+            range={weightRange}
+            onRangeChange={setWeightRange}
+            onAdd={addWeight}
+          />
+          <CalorieChart data={calorieWeek} goal={2200} />
+        </div>
       </motion.div>
 
       {/* Upload Zones */}
