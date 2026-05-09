@@ -1002,8 +1002,8 @@ const ALL_MUSCLES = [
   "Quadriceps", "Fessiers", "Mollets", "Hanches", "Cardio",
 ];
 
-type ExerciseForm = { name: string; sets: number; reps: number; rest: number };
-const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: 10, rest: 60 };
+type ExerciseForm = { name: string; sets: number; reps: number; rest: number; restAfter: number };
+const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: 10, rest: 60, restAfter: 90 };
 
 function CreateSessionModal({ onClose, onCreate, editSession }: {
   onClose: () => void;
@@ -1023,7 +1023,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(editSession?.muscles ?? []);
   const [newMuscleInput, setNewMuscleInput] = useState("");
   const [exForms, setExForms] = useState<ExerciseForm[]>(
-    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest }))
+    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest, restAfter: e.restAfter ?? 90 }))
     ?? [{ ...DEFAULT_EX }]
   );
 
@@ -1058,6 +1058,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
       sets: e.sets,
       reps: String(e.reps),
       rest: e.rest,
+      restAfter: e.restAfter,
       tip: "Concentre-toi sur la forme et la respiration.",
       benefit: "Renforce et améliore les performances.",
       muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
@@ -1329,8 +1330,8 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                     )}
                   </div>
 
-                  {/* Controls row */}
-                  <div className="grid grid-cols-3 gap-2">
+                  {/* Controls — 2×2 grid */}
+                  <div className="grid grid-cols-2 gap-2">
                     {/* Séries */}
                     <div>
                       <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Séries</p>
@@ -1361,9 +1362,9 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                       </div>
                     </div>
 
-                    {/* Repos */}
+                    {/* Repos entre séries */}
                     <div>
-                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Repos (sec)</p>
+                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Repos séries</p>
                       <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
                         style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
                         <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
@@ -1371,6 +1372,21 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                           style={{ color: "#A78BFA" }}>−</motion.button>
                         <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.rest}s</span>
                         <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>+</motion.button>
+                      </div>
+                    </div>
+
+                    {/* Récupération entre exercices */}
+                    <div>
+                      <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Récup. inter</p>
+                      <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
+                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.25)" }}>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "restAfter", Math.max(0, ex.restAfter - 15))}
+                          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
+                          style={{ color: "#A78BFA" }}>−</motion.button>
+                        <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.restAfter}s</span>
+                        <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "restAfter", Math.min(300, ex.restAfter + 15))}
                           className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
                           style={{ color: "#A78BFA" }}>+</motion.button>
                       </div>

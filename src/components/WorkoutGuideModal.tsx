@@ -13,6 +13,7 @@ export interface Exercise {
   sets: number;
   reps: string;
   rest: number;
+  restAfter?: number;
   auto?: number;
   hiit?: boolean;
   tip: string;
@@ -298,6 +299,7 @@ export default function WorkoutGuideModal({
   const [setIdx,        setSetIdx]        = useState(0);
   const [restCountdown, setRestCountdown] = useState(0);
   const [restTotal,     setRestTotal]     = useState(0);
+  const [restMode,      setRestMode]      = useState<"set" | "exercise">("set");
   const [autoCountdown, setAutoCountdown] = useState(0);
   const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
   const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>({});
@@ -353,11 +355,19 @@ export default function WorkoutGuideModal({
       if (e?.auto)      setAutoCountdown(e.auto);
       else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
     } else if (nextEx < exercises.length) {
-      setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
-      const e = exercises[nextEx];
-      if (e?.auto)      setAutoCountdown(e.auto);
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
-      else              setAutoCountdown(0);
+      const restAfter = exercises[exerciseIdx]?.restAfter ?? 0;
+      if (restAfter > 0) {
+        setRestMode("exercise");
+        setRestTotal(restAfter);
+        setRestCountdown(restAfter);
+        setPhase("resting");
+      } else {
+        setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
+        const e = exercises[nextEx];
+        if (e?.auto)      setAutoCountdown(e.auto);
+        else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+        else              setAutoCountdown(0);
+      }
     } else {
       setPhase("done");
     }
@@ -389,11 +399,15 @@ export default function WorkoutGuideModal({
   /* ── Rest countdown ── */
   useEffect(() => {
     if (phase !== "resting" || paused) return;
-    if (restCountdown <= 0) { advance(); return; }
+    if (restCountdown <= 0) {
+      if (restMode === "exercise") { setRestMode("set"); skipExercise(); }
+      else advance();
+      return;
+    }
     const t = setTimeout(() => setRestCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, restCountdown, paused]);
+  }, [phase, restCountdown, paused, restMode]);
 
   /* ── Auto / HIIT countdown ── */
   useEffect(() => {
@@ -754,7 +768,7 @@ export default function WorkoutGuideModal({
                 className="flex flex-col items-center gap-5 py-6"
               >
                 <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#4A5568" }}>
-                  {paused ? "En pause" : "Récupération"}
+                  {paused ? "En pause" : restMode === "exercise" ? "Transition" : "Récupération"}
                 </p>
                 <div className="relative w-32 h-32">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
