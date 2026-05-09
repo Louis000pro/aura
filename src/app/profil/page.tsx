@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
+  Target, Pencil,
 } from "lucide-react";
+import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
@@ -412,6 +414,258 @@ function FollowListModal({ type, onClose }: { type: "Abonnés" | "Abonnements"; 
   );
 }
 
+/* ─────────────── Goals Edit Modal ─────────────── */
+const GOALS_LIST = [
+  { id: "masse",     label: "Prise de masse",  emoji: "💪" },
+  { id: "poids",     label: "Perte de poids",  emoji: "🔥" },
+  { id: "force",     label: "Force",            emoji: "🏋️" },
+  { id: "endurance", label: "Endurance",        emoji: "⚡" },
+  { id: "sante",     label: "Santé générale",   emoji: "🌿" },
+  { id: "souplesse", label: "Souplesse",        emoji: "🧘" },
+];
+const LEVELS_LIST = [
+  { id: "debutant",      label: "Débutant",      sub: "< 6 mois" },
+  { id: "intermediaire", label: "Intermédiaire", sub: "6 mois – 2 ans" },
+  { id: "avance",        label: "Avancé",        sub: "> 2 ans" },
+];
+const DIETS_LIST = [
+  { id: "omnivore",   label: "Omnivore",    emoji: "🥩" },
+  { id: "vegetarien", label: "Végétarien",  emoji: "🥗" },
+  { id: "vegan",      label: "Vegan",       emoji: "🌱" },
+  { id: "sansgluten", label: "Sans gluten", emoji: "🌾" },
+];
+
+function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: () => void; onSave: () => void }) {
+  const storageKey = `aura_onboarding_${pseudo}`;
+  const [data, setData] = useState<OnboardingData>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) return { ...{ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" }, ...JSON.parse(raw) };
+    } catch {}
+    return { age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" };
+  });
+
+  const set = (key: keyof OnboardingData, val: string) => setData(d => ({ ...d, [key]: val }));
+  const toggleGoal = (id: string) =>
+    setData(d => ({
+      ...d,
+      goals: d.goals.includes(id) ? d.goals.filter(g => g !== id) : [...d.goals, id],
+    }));
+
+  const handleSave = () => {
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    onSave();
+    onClose();
+  };
+
+  const inputStyle = {
+    background: "rgba(240,235,255,0.5)",
+    border: "1px solid rgba(212,192,255,0.6)",
+    color: "#2D3748",
+  };
+
+  const sectionLabel = (text: string) => (
+    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>{text}</p>
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-0 md:px-4"
+      style={{ background: "rgba(0,0,0,0.22)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+        className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
+        style={{
+          background: "rgba(255,255,255,0.98)",
+          backdropFilter: "blur(40px)",
+          boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
+          maxHeight: "90vh",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0 md:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-4 pb-3 flex-shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold" style={{ color: "#2D3748" }}>Mes objectifs</h2>
+            <p className="text-xs mt-0.5" style={{ color: "#A0AEC0" }}>Mise à jour de ton profil sportif</p>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        <div className="h-px mx-6" style={{ background: "rgba(212,192,255,0.3)" }} />
+
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-5" style={{ scrollbarWidth: "none" }}>
+
+          {/* Corps */}
+          <div>
+            {sectionLabel("Corps")}
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { label: "Âge", unit: "ans", key: "age" as const, placeholder: "25" },
+                { label: "Taille", unit: "cm", key: "height" as const, placeholder: "175" },
+                { label: "Poids", unit: "kg", key: "weight" as const, placeholder: "70" },
+              ].map(({ label, unit, key, placeholder }) => (
+                <div key={key} className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{label}</label>
+                  <div className="flex items-center gap-1 px-3 py-2.5 rounded-2xl" style={inputStyle}>
+                    <input
+                      type="number"
+                      value={data[key]}
+                      onChange={e => set(key, e.target.value)}
+                      placeholder={placeholder}
+                      className="flex-1 bg-transparent text-sm outline-none min-w-0 placeholder:text-[#C4CAD4]"
+                      style={{ color: "#2D3748" }}
+                    />
+                    <span className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Objectifs */}
+          <div>
+            {sectionLabel("Objectifs")}
+            <div className="flex flex-wrap gap-2">
+              {GOALS_LIST.map(({ id, label, emoji }) => {
+                const active = data.goals.includes(id);
+                return (
+                  <motion.button key={id} whileTap={{ scale: 0.93 }} onClick={() => toggleGoal(id)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-medium cursor-pointer border"
+                    style={active
+                      ? { background: "linear-gradient(135deg,rgba(212,192,255,0.9) 0%,rgba(245,230,163,0.9) 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
+                      : { background: "rgba(240,235,255,0.45)", borderColor: "rgba(212,192,255,0.3)", color: "#718096" }
+                    }>
+                    <span className="text-sm">{emoji}</span>
+                    <span className="text-xs font-semibold">{label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Niveau */}
+          <div>
+            {sectionLabel("Niveau")}
+            <div className="flex flex-col gap-2">
+              {LEVELS_LIST.map(({ id, label, sub }) => {
+                const active = data.level === id;
+                return (
+                  <motion.button key={id} whileTap={{ scale: 0.97 }} onClick={() => set("level", active ? "" : id)}
+                    className="flex items-center justify-between px-4 py-3 rounded-2xl cursor-pointer border"
+                    style={active
+                      ? { background: "linear-gradient(135deg,rgba(212,192,255,0.7) 0%,rgba(245,230,163,0.7) 100%)", borderColor: "rgba(167,139,250,0.5)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)" }
+                    }>
+                    <span className="text-sm font-semibold" style={{ color: active ? "#2D3748" : "#718096" }}>{label}</span>
+                    <span className="text-[10px] font-medium" style={{ color: active ? "#A78BFA" : "#A0AEC0" }}>{sub}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Séances / semaine */}
+          <div>
+            {sectionLabel("Séances par semaine")}
+            <div className="flex gap-2 flex-wrap">
+              {["1","2","3","4","5","6","7"].map(n => {
+                const active = data.sessionsPerWeek === n;
+                return (
+                  <motion.button key={n} whileTap={{ scale: 0.9 }} onClick={() => set("sessionsPerWeek", active ? "" : n)}
+                    className="w-11 h-11 rounded-2xl text-sm font-semibold cursor-pointer border flex items-center justify-center"
+                    style={active
+                      ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)", color: "#718096" }
+                    }>
+                    {n}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Repas / jour */}
+          <div>
+            {sectionLabel("Repas par jour")}
+            <div className="flex gap-2 flex-wrap">
+              {["2","3","4","5","6+"].map(n => {
+                const active = data.mealsPerDay === n;
+                return (
+                  <motion.button key={n} whileTap={{ scale: 0.9 }} onClick={() => set("mealsPerDay", active ? "" : n)}
+                    className="px-4 h-10 rounded-2xl text-sm font-semibold cursor-pointer border flex items-center justify-center"
+                    style={active
+                      ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)", color: "#718096" }
+                    }>
+                    {n}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Régime */}
+          <div>
+            {sectionLabel("Régime alimentaire")}
+            <div className="grid grid-cols-2 gap-2">
+              {DIETS_LIST.map(({ id, label, emoji }) => {
+                const active = data.diet === id;
+                return (
+                  <motion.button key={id} whileTap={{ scale: 0.95 }} onClick={() => set("diet", active ? "" : id)}
+                    className="flex items-center gap-2 px-3.5 py-3 rounded-2xl text-sm font-medium cursor-pointer border"
+                    style={active
+                      ? { background: "linear-gradient(135deg,rgba(212,192,255,0.8) 0%,rgba(245,230,163,0.8) 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)", color: "#718096" }
+                    }>
+                    <span className="text-base">{emoji}</span>
+                    <span className="text-xs font-semibold">{label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 pb-8 pt-3 flex-shrink-0">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleSave}
+            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
+            style={{
+              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+              color: "#2D3748",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
+            }}
+          >
+            Sauvegarder
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─────────────── Privacy Modal ─────────────── */
 function PrivacyModal({ onClose }: { onClose: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
@@ -494,6 +748,7 @@ export default function ProfilPage() {
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
+  const [showGoals, setShowGoals] = useState(false);
   const { settings, updateSettings } = useProfileSettings();
 
   /* Fetch profile + stats */
@@ -799,6 +1054,34 @@ export default function ProfilPage() {
             transition={{ duration: 0.28 }}
             className="px-5 md:px-8 flex flex-col gap-4"
           >
+            {/* Objectifs & morphologie */}
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowGoals(true)}
+              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl cursor-pointer text-left"
+              style={{
+                background: "rgba(255,255,255,0.75)",
+                border: "1px solid rgba(255,255,255,0.85)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px rgba(167,139,250,0.08)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" }}
+              >
+                <Target size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Objectifs & morphologie</p>
+                <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>Poids, taille, goals, niveau…</p>
+              </div>
+              <Pencil size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            </motion.button>
+
             {/* Genre selector */}
             <div
               className="rounded-2xl px-5 py-4"
@@ -956,6 +1239,13 @@ export default function ProfilPage() {
           />
         )}
         {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
+        {showGoals && (
+          <GoalsEditModal
+            pseudo={displayPseudo}
+            onClose={() => setShowGoals(false)}
+            onSave={() => showToast("Objectifs mis à jour ✓")}
+          />
+        )}
         {showFollowList && (
           <FollowListModal type={showFollowList} onClose={() => setShowFollowList(null)} />
         )}
