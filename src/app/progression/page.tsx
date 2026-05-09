@@ -185,6 +185,16 @@ const difficultyColor: Record<string, string> = {
   "Avancé":        "#A78BFA",
 };
 
+/* ─── Icon resolver (Supabase stores icon name as string) ── */
+const ICON_MAP: Record<string, typeof Dumbbell> = {
+  Dumbbell, Flame, Wind, Layers, Sparkles,
+};
+function resolveIcon(icon: unknown): typeof Dumbbell {
+  if (typeof icon === "string") return ICON_MAP[icon] ?? Dumbbell;
+  if (typeof icon === "function") return icon as typeof Dumbbell;
+  return Dumbbell;
+}
+
 /* ─── Chart helpers ─────────────────────────────────────── */
 type WeightEntry = { date: string; weight: number };
 type CalorieDay  = { date: string; total: number; label: string };
@@ -955,6 +965,134 @@ function WorkoutCard({
   );
 }
 
+/* ─── LibraryCard ───────────────────────────────────────── */
+function LibraryCard({
+  session, isActive, onStart, onEdit, onDelete,
+}: {
+  session: WorkoutSession;
+  isActive: boolean;
+  onStart: (s: WorkoutSession) => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+}) {
+  const Icon = resolveIcon(session.icon);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      layout
+      className="rounded-3xl overflow-hidden flex flex-col"
+      style={{
+        background: "rgba(255,255,255,0.82)",
+        border: "1px solid rgba(255,255,255,0.92)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 24px rgba(0,0,0,0.05)",
+      }}
+    >
+      {/* Colored header */}
+      <div className="px-4 pt-4 pb-3" style={{ background: `${session.accent}10`, borderBottom: `1px solid ${session.accent}18` }}>
+        <div className="flex items-start justify-between gap-2 mb-2.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `${session.accent}24`, border: `1px solid ${session.accent}44` }}
+            >
+              <Icon size={14} strokeWidth={1.5} style={{ color: session.accent }} />
+            </div>
+            <span
+              className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
+              style={{ background: `${difficultyColor[session.difficulty]}18`, color: difficultyColor[session.difficulty] }}
+            >
+              {session.difficulty}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              onClick={() => onEdit(session)}
+              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+              style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.2)" }}
+              aria-label="Modifier"
+            >
+              <Pencil size={11} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.88 }}
+              onClick={() => onDelete(session.id)}
+              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+              style={{ background: "rgba(252,129,129,0.1)", border: "1px solid rgba(252,129,129,0.2)" }}
+              aria-label="Supprimer"
+            >
+              <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+            </motion.button>
+          </div>
+        </div>
+        <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "#2D3748" }}>{session.title}</h3>
+        {/* Muscle tags */}
+        <div className="flex flex-wrap gap-1">
+          {session.muscles.slice(0, 3).map(m => (
+            <span
+              key={m}
+              className="text-[9px] px-2 py-0.5 rounded-full font-medium"
+              style={{ background: `${session.accent}16`, color: session.accent }}
+            >
+              {m}
+            </span>
+          ))}
+          {session.muscles.length > 3 && (
+            <span
+              className="text-[9px] px-2 py-0.5 rounded-full font-medium"
+              style={{ background: "rgba(160,174,192,0.12)", color: "#A0AEC0" }}
+            >
+              +{session.muscles.length - 3}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="flex items-center gap-3 px-4 py-2.5 flex-1" style={{ borderBottom: "1px solid rgba(240,235,255,0.5)" }}>
+        <div className="flex items-center gap-1.5">
+          <Clock size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+          <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.duration} min</span>
+        </div>
+        <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
+        <div className="flex items-center gap-1.5">
+          <Dumbbell size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+          <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.exercises} exos</span>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="px-4 py-3">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onStart(session)}
+          className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
+          style={
+            isActive
+              ? { background: `${session.accent}22`, border: `1px solid ${session.accent}44` }
+              : { background: `linear-gradient(135deg, ${session.accent}ee, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
+          }
+        >
+          {isActive ? (
+            <>
+              <CheckCircle size={13} strokeWidth={2} style={{ color: session.accent }} />
+              <span className="text-xs font-semibold" style={{ color: session.accent }}>En cours !</span>
+            </>
+          ) : (
+            <>
+              <Play size={12} strokeWidth={2.5} style={{ color: "#fff" }} />
+              <span className="text-xs font-semibold" style={{ color: "#fff" }}>Commencer</span>
+            </>
+          )}
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── Animation variants ────────────────────────────────── */
 const containerVariants: Variants = {
   hidden: {},
@@ -1450,6 +1588,7 @@ export default function ProgressionPage() {
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
+  const [libraryFilter, setLibraryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const { settings } = useProfileSettings();
   const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1776,27 +1915,16 @@ export default function ProgressionPage() {
           >
             <div>
               <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
-                Bibliothèque
+                Catalogue
               </p>
-              <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances disponibles</h2>
+              <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances Aura</h2>
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
-              >
-                {workoutSessions.length + customSessions.length} séances
-              </span>
-              <motion.button
-                whileTap={{ scale: 0.93 }}
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
-              >
-                <Plus size={13} strokeWidth={2} />
-                Créer
-              </motion.button>
-            </div>
+            <span
+              className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+            >
+              {workoutSessions.length} séances
+            </span>
           </motion.div>
 
           {/* Category filter + arrow buttons */}
@@ -1877,20 +2005,6 @@ export default function ProgressionPage() {
                     onStart={handleStartWorkout}
                   />
                 ))}
-                {/* Custom sessions */}
-                {customSessions
-                  .filter(s => categoryFilter === "tous" || s.category === categoryFilter)
-                  .map((session) => (
-                    <WorkoutCard
-                      key={session.id}
-                      session={session}
-                      gender={settings.gender}
-                      isActive={activeWorkout?.id === session.id}
-                      isDone={completedWorkouts.has(session.id)}
-                      onStart={handleStartWorkout}
-                    />
-                  ))
-                }
               </AnimatePresence>
               {/* "Créer" placeholder card */}
               <motion.div
@@ -1923,93 +2037,193 @@ export default function ProgressionPage() {
             </div>
           </motion.div>
 
-          {/* Loading indicator */}
-          {loadingCustom && (
-            <div className="flex items-center gap-2 mb-4">
-              <motion.div
-                className="w-4 h-4 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-              />
-              <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Chargement de vos séances…</span>
-            </div>
-          )}
+          {/* ── Ma Bibliothèque ── */}
+          {(() => {
+            const filteredCustom = customSessions.filter(
+              s => libraryFilter === "tous" || s.category === libraryFilter
+            );
+            const totalMin = customSessions.reduce((acc, s) => acc + s.duration, 0);
 
-          {/* Custom sessions list (if any) */}
-          {customSessions.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-5xl mb-8"
-            >
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3" style={{ color: "#A0AEC0" }}>
-                Mes créations
-              </p>
-              <div className="flex flex-col gap-2">
-                {customSessions.map((s) => {
-                  const Icon = s.icon;
-                  return (
-                    <motion.div
-                      key={s.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+                className="max-w-5xl mb-8"
+              >
+                {/* Section header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+                      Mes créations
+                    </p>
+                    <h2 className="text-lg font-light flex items-center gap-2" style={{ color: "#2D3748" }}>
+                      Ma Bibliothèque
+                      {customSessions.length > 0 && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+                        >
+                          {customSessions.length}
+                        </span>
+                      )}
+                    </h2>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.93 }}
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                    style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+                  >
+                    <Plus size={13} strokeWidth={2} />
+                    Créer
+                  </motion.button>
+                </div>
+
+                {/* Summary banner */}
+                {customSessions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(212,192,255,0.16) 0%, rgba(245,230,163,0.13) 100%)",
+                      border: "1px solid rgba(167,139,250,0.16)",
+                    }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.45) 0%, rgba(245,230,163,0.4) 100%)" }}
                     >
-                      <div
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${s.accent}22`, border: `1px solid ${s.accent}44` }}
+                      <Sparkles size={15} strokeWidth={1.4} style={{ color: "#A78BFA" }} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>
+                        {customSessions.length} séance{customSessions.length > 1 ? "s" : ""} personnalisée{customSessions.length > 1 ? "s" : ""}
+                      </p>
+                      <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                        {totalMin} min de contenu créé sur mesure
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Category filter chips */}
+                {customSessions.length > 0 && (
+                  <div className="flex gap-2 mb-5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                    {categoryFilters.map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setLibraryFilter(key)}
+                        className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
+                        style={libraryFilter === key
+                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                          : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                        }
                       >
-                        <Icon size={15} strokeWidth={1.5} style={{ color: s.accent }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{s.title}</p>
-                        <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
-                          {s.duration} min · {s.difficulty} · {s.exercises} exos
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileTap={{ scale: 0.93 }}
-                          onClick={() => handleStartWorkout(s)}
-                          className="px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer"
-                          style={{ background: `${s.accent}22`, color: s.accent, border: `1px solid ${s.accent}44` }}
-                        >
-                          Démarrer
-                        </motion.button>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => {
-                            setEditSession(s);
-                            setShowCreateModal(true);
-                          }}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                          style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}
-                        >
-                          <Pencil size={13} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
-                        </motion.button>
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={async () => {
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Grid content */}
+                {loadingCustom ? (
+                  <div className="flex items-center gap-2 py-4">
+                    <motion.div
+                      className="w-4 h-4 rounded-full border-2"
+                      style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+                    />
+                    <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Chargement de ta bibliothèque…</span>
+                  </div>
+                ) : filteredCustom.length > 0 ? (
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                  >
+                    <AnimatePresence mode="popLayout">
+                      {filteredCustom.map(s => (
+                        <LibraryCard
+                          key={s.id}
+                          session={s}
+                          isActive={activeWorkout?.id === s.id}
+                          onStart={handleStartWorkout}
+                          onEdit={(session) => { setEditSession(session); setShowCreateModal(true); }}
+                          onDelete={async (id) => {
                             if (user) {
                               const supabase = createClient();
-                              await supabase.from("custom_sessions").delete().eq("id", s.id);
+                              await supabase.from("custom_sessions").delete().eq("id", id);
                             }
-                            setCustomSessions(p => p.filter(cs => cs.id !== s.id));
+                            setCustomSessions(p => p.filter(cs => cs.id !== id));
                           }}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                          style={{ background: "rgba(252,129,129,0.1)" }}
-                        >
-                          <Trash2 size={13} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                ) : customSessions.length === 0 ? (
+                  /* Empty state */
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center justify-center py-14 gap-5 rounded-3xl"
+                    style={{ background: "rgba(255,255,255,0.55)", border: "1px dashed rgba(167,139,250,0.3)" }}
+                  >
+                    <div
+                      className="w-16 h-16 rounded-3xl flex items-center justify-center"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(212,192,255,0.35) 0%, rgba(245,230,163,0.3) 100%)",
+                        border: "1px solid rgba(167,139,250,0.15)",
+                      }}
+                    >
+                      <Sparkles size={24} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                    </div>
+                    <div className="text-center px-6">
+                      <p className="text-base font-light" style={{ color: "#2D3748" }}>Ta bibliothèque est vide</p>
+                      <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                        Crée ta première séance sur mesure et retrouve-la ici à tout moment.
+                      </p>
+                    </div>
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setShowCreateModal(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
+                      style={{
+                        background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                        color: "#2D3748",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                      }}
+                    >
+                      <Plus size={14} strokeWidth={2} />
+                      Créer ma première séance
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  /* No sessions match filter */
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center py-10 gap-2 rounded-2xl"
+                    style={{ background: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.6)" }}
+                  >
+                    <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                      Aucune séance dans cette catégorie
+                    </p>
+                    <button
+                      onClick={() => setLibraryFilter("tous")}
+                      className="text-xs font-medium cursor-pointer mt-1"
+                      style={{ color: "#A78BFA" }}
+                    >
+                      Voir toutes les séances
+                    </button>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })()}
 
         </motion.div>
       )}
