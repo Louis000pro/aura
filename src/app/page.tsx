@@ -575,14 +575,27 @@ function Dashboard() {
       });
   }, [user]);
 
-  // Charge le contexte onboarding depuis localStorage
+  // Charge le contexte onboarding depuis localStorage (essaie plusieurs clés)
   useEffect(() => {
     if (!user) return;
-    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ }
-    } else {
+    const keys = [
+      `aura_onboarding_${user.pseudo}`,
+      `aura_onboarding_${user.name}`,
+      `aura_onboarding_${user.email?.split("@")[0]}`,
+    ].filter(Boolean);
+    let found = false;
+    for (const key of keys) {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setUserContext(parsed);
+          found = true;
+          break;
+        } catch { /* ignore */ }
+      }
+    }
+    if (!found) {
       const t = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(t);
     }
@@ -633,6 +646,13 @@ function Dashboard() {
           messages: apiMessages,
           userContext,
           pseudo: user?.pseudo ?? user?.name ?? "",
+          liveStats: liveStats.loaded ? {
+            calories: liveStats.calories || undefined,
+            steps: liveStats.steps || undefined,
+            sleepHours: liveStats.sleepHours || undefined,
+            score: liveStats.score || undefined,
+            streak: liveStats.streak || undefined,
+          } : null,
         }),
       });
 

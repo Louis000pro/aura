@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, Maximize2, Minimize2, X } from "lucide-react";
 
 export type Message = { id: number; from: "ai" | "me"; text: string; time: string };
 
@@ -17,16 +18,21 @@ export const initialChatMessages: Message[] = [
   },
 ];
 
-const suggestions = ["Plan du jour", "Ma récup'", "Repas idéal"];
+const suggestions = ["Plan du jour", "Ma récup'", "Repas idéal", "Séance du jour", "Objectif calorique"];
 
-export default function AIChatPanel({
+/* ─── Shared chat UI ─── */
+function ChatUI({
   messages,
   aiTyping,
   onSend,
+  isFullscreen,
+  onToggleFullscreen,
 }: {
   messages: Message[];
   aiTyping: boolean;
   onSend: (text: string) => void;
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
 }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,26 +48,44 @@ export default function AIChatPanel({
   };
 
   return (
-    <div className="lg-surface lg-highlight relative rounded-3xl flex flex-col h-full overflow-hidden">
+    <div className={`relative flex flex-col overflow-hidden ${isFullscreen ? "h-full" : "h-full"}`}
+      style={isFullscreen ? {} : { borderRadius: "1.5rem" }}>
+
+      {/* Glassmorphism background (only for inline) */}
+      {!isFullscreen && (
+        <div className="absolute inset-0 rounded-3xl pointer-events-none"
+          style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 32px rgba(167,139,250,0.1)" }} />
+      )}
+
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center gap-3 border-b border-white/40">
-        <div
-          className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{
-            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(167,139,250,0.2)",
-          }}
-        >
+      <div className="relative px-5 pt-5 pb-3 flex items-center gap-3 flex-shrink-0"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.45)" }}>
+        <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(167,139,250,0.2)" }}>
           <Sparkles size={15} strokeWidth={1.5} style={{ color: "#2D3748" }} />
         </div>
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>Aura</p>
           <p className="text-[10px] font-medium" style={{ color: "#D4A843" }}>● En ligne</p>
         </div>
+        {/* Fullscreen toggle */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={onToggleFullscreen}
+          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+          style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}
+          aria-label={isFullscreen ? "Réduire" : "Agrandir"}
+        >
+          {isFullscreen
+            ? <Minimize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+            : <Maximize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+          }
+        </motion.button>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0">
+      <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0" style={{ scrollbarWidth: "none" }}>
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div
@@ -72,9 +96,10 @@ export default function AIChatPanel({
               className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className="px-3.5 py-2 rounded-2xl text-[13px] font-light max-w-[85%] leading-snug"
-                style={
-                  msg.from === "me"
+                className="px-3.5 py-2 rounded-2xl text-[13px] font-light leading-relaxed"
+                style={{
+                  maxWidth: isFullscreen ? "70%" : "85%",
+                  ...(msg.from === "me"
                     ? {
                         background: "linear-gradient(135deg, rgba(212,192,255,0.95) 0%, rgba(245,230,163,0.95) 100%)",
                         color: "#2D3748",
@@ -82,13 +107,14 @@ export default function AIChatPanel({
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(167,139,250,0.12)",
                       }
                     : {
-                        background: "rgba(255,255,255,0.6)",
+                        background: "rgba(255,255,255,0.65)",
                         backdropFilter: "blur(8px)",
-                        border: "1px solid rgba(255,255,255,0.7)",
+                        border: "1px solid rgba(255,255,255,0.75)",
                         color: "#2D3748",
                         borderBottomLeftRadius: 6,
-                      }
-                }
+                        boxShadow: "0 2px 8px rgba(167,139,250,0.06)",
+                      })
+                }}
               >
                 {msg.text}
               </div>
@@ -96,15 +122,12 @@ export default function AIChatPanel({
           ))}
           {aiTyping && (
             <motion.div key="typing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-start">
-              <div
-                className="px-4 py-3 rounded-2xl flex items-center gap-1"
-                style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.7)", borderBottomLeftRadius: 6 }}
-              >
+              <div className="px-4 py-3 rounded-2xl flex items-center gap-1"
+                style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(255,255,255,0.75)", borderBottomLeftRadius: 6 }}>
                 {[0, 1, 2].map((i) => (
                   <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "#A0AEC0" }}
                     animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }}
-                  />
+                    transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
                 ))}
               </div>
             </motion.div>
@@ -113,24 +136,19 @@ export default function AIChatPanel({
       </div>
 
       {/* Suggestions + Input */}
-      <div className="px-4 pb-4 pt-2 border-t border-white/40">
+      <div className="relative px-4 pb-4 pt-2 flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.45)" }}>
         <div className="flex gap-1.5 mb-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => handleSend(s)}
+            <button key={s} onClick={() => handleSend(s)}
               className="text-[11px] font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all hover:scale-105 flex-shrink-0"
-              style={{ background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(255,255,255,0.6)" }}
-            >
+              style={{ background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(255,255,255,0.6)" }}>
               {s}
             </button>
           ))}
         </div>
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
+        <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
           className="flex items-center gap-2 px-3 py-2 rounded-2xl"
-          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
-        >
+          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}>
           <input
             type="text"
             value={input}
@@ -139,17 +157,93 @@ export default function AIChatPanel({
             className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#A0AEC0]"
             style={{ color: "#2D3748" }}
           />
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            type="submit"
+          <motion.button whileTap={{ scale: 0.9 }} type="submit"
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}
-            aria-label="Envoyer"
-          >
+            aria-label="Envoyer">
             <Send size={12} strokeWidth={2} style={{ color: "#2D3748" }} />
           </motion.button>
         </form>
       </div>
     </div>
+  );
+}
+
+/* ─── Main export ─── */
+export default function AIChatPanel({
+  messages,
+  aiTyping,
+  onSend,
+}: {
+  messages: Message[];
+  aiTyping: boolean;
+  onSend: (text: string) => void;
+}) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  return (
+    <>
+      {/* Inline panel */}
+      <div className="lg-surface lg-highlight relative rounded-3xl flex flex-col h-full overflow-hidden">
+        <ChatUI
+          messages={messages}
+          aiTyping={aiTyping}
+          onSend={onSend}
+          isFullscreen={false}
+          onToggleFullscreen={() => setIsFullscreen(true)}
+        />
+      </div>
+
+      {/* Fullscreen portal */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isFullscreen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[9999] flex flex-col"
+              style={{ background: "rgba(240,235,255,0.6)", backdropFilter: "blur(32px)" }}
+            >
+              {/* Blobs décoratifs */}
+              <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(212,192,255,0.4) 0%, transparent 70%)", filter: "blur(60px)" }} />
+              <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(245,230,163,0.35) 0%, transparent 70%)", filter: "blur(60px)" }} />
+
+              <motion.div
+                initial={{ scale: 0.96, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.96, y: 20 }}
+                transition={{ type: "spring", bounce: 0.18, duration: 0.4 }}
+                className="relative flex-1 flex flex-col mx-auto w-full overflow-hidden"
+                style={{
+                  maxWidth: 760,
+                  margin: "16px auto",
+                  background: "rgba(255,255,255,0.88)",
+                  backdropFilter: "blur(40px)",
+                  borderRadius: 28,
+                  border: "1px solid rgba(255,255,255,0.9)",
+                  boxShadow: "0 24px 80px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.95)",
+                }}
+              >
+                <ChatUI
+                  messages={messages}
+                  aiTyping={aiTyping}
+                  onSend={onSend}
+                  isFullscreen={true}
+                  onToggleFullscreen={() => setIsFullscreen(false)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   );
 }
