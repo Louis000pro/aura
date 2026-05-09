@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
 
 type MealEntry = {
-  id: number;
+  id: string;
   name: string;
   calories: number;
   proteins: number;
@@ -372,7 +373,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
     });
   };
 
-  const reset = () => { setPhase("select"); setPhotoUrl(null); setResult(null); setError(null); };
+  const reset = () => { setPhase("select"); setPhotoUrl(null); setEditData(null); setError(null); };
 
   const CARD_STYLE = {
     background: "rgba(255,255,255,0.96)",
@@ -779,21 +780,36 @@ function ManualModal({ onClose, onAdd }: {
   );
 }
 
+/* ─── Helpers Supabase ──────────────────────────────────────────────── */
+function toDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToMeal(r: any): MealEntry {
+  return {
+    id: String(r.id), name: r.food_name, calories: r.calories,
+    proteins: r.proteins, carbs: r.carbs, fats: r.fats,
+    time: r.time, mealType: r.meal_type as MealType,
+    description: r.description ?? undefined, hasPhoto: r.has_photo ?? false,
+  };
+}
+
 /* ─── Page principale ────────────────────────────────────────────────── */
 export default function NutritionPage() {
-  useAuth();
+  const { user } = useAuth();
+  const supabase = createClient();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [waterMl, setWaterMl] = useState(0);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
-  const [meals, setMeals] = useState<MealEntry[]>([
-    { id: 1, name: "Petit-déjeuner protéiné", calories: 487, proteins: 32, carbs: 45, fats: 12, time: "07:30", mealType: "petit-dejeuner" },
-    { id: 2, name: "Bowl poulet riz", calories: 612, proteins: 42, carbs: 68, fats: 18, time: "12:45", mealType: "dejeuner" },
-    { id: 3, name: "Yaourt + fruits rouges", calories: 225, proteins: 8, carbs: 35, fats: 6, time: "16:00", mealType: "gouter" },
-  ]);
+  const [meals, setMeals] = useState<MealEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const waterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waterInitialized = useRef(false);
 
   /* Derived stats */
   const totalCals  = meals.reduce((s, m) => s + m.calories, 0);
@@ -804,24 +820,69 @@ export default function NutritionPage() {
 
   useEffect(() => { setWeekDays(getMondayWeek(today)); }, []); // eslint-disable-line
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2800);
-  };
+  /* ── Chargement Supabase ─── */
+  const loadData = useCallback(async (date: Date) => {
+    if (!user) return;
+    setIsLoading(true);
+    waterInitialized.current = false;
+    const dateStr = toDateStr(date);
+    const [{ data: md }, { data: hd }] = await Promise.all([
+      supabase.from("nutrition_logs").select("*").eq("user_id", user.id).eq("date", dateStr).order("time", { ascending: true }),
+      supabase.from("hydration_logs").select("water_ml").eq("user_id", user.id).eq("date", dateStr).maybeSingle(),
+    ]);
+    setMeals(md ? md.map(rowToMeal) : []);
+    setWaterMl(hd?.water_ml ?? 0);
+    waterInitialized.current = true;
+    setIsLoading(false);
+  }, [user]); // eslint-disable-line
 
-  const handleAddPhoto = (meal: Omit<MealEntry, "id">) => {
-    setMeals(prev => [...prev, { id: Date.now(), ...meal }]);
+  useEffect(() => { loadData(selectedDate); }, [selectedDate, user]); // eslint-disable-line
+
+  /* ── Sauvegarde hydratation debounce 800ms ─── */
+  useEffect(() => {
+    if (!user || !waterInitialized.current) return;
+    if (waterTimer.current) clearTimeout(waterTimer.current);
+    waterTimer.current = setTimeout(async () => {
+      await supabase.from("hydration_logs").upsert(
+        { user_id: user.id, date: toDateStr(selectedDate), water_ml: waterMl },
+        { onConflict: "user_id,date" }
+      );
+    }, 800);
+    return () => { if (waterTimer.current) clearTimeout(waterTimer.current); };
+  }, [waterMl]); // eslint-disable-line
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2800); };
+
+  /* ── Ajout repas photo IA ─── */
+  const handleAddPhoto = async (meal: Omit<MealEntry, "id">) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
+      food_name: meal.name, description: meal.description ?? null,
+      calories: meal.calories, proteins: meal.proteins, carbs: meal.carbs,
+      fats: meal.fats, has_photo: meal.hasPhoto ?? false, time: meal.time,
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`); }
+    else showToast("Erreur lors de l'ajout");
     setShowPhoto(false);
-    showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`);
   };
 
-  const handleAddManual = (meal: Omit<MealEntry, "id">) => {
-    setMeals(prev => [...prev, { id: Date.now(), ...meal }]);
+  /* ── Ajout repas manuel ─── */
+  const handleAddManual = async (meal: Omit<MealEntry, "id">) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
+      food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
+      carbs: meal.carbs, fats: meal.fats, has_photo: false, time: meal.time,
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
+    else showToast("Erreur lors de l'ajout");
     setShowManual(false);
-    showToast(`${meal.name} ajouté ✓`);
   };
 
-  const deleteMeal = (id: number) => {
+  /* ── Suppression repas ─── */
+  const deleteMeal = async (id: string) => {
+    await supabase.from("nutrition_logs").delete().eq("id", id);
     setMeals(prev => prev.filter(m => m.id !== id));
     showToast("Repas supprimé");
   };
@@ -915,6 +976,25 @@ export default function NutritionPage() {
           );
         })}
       </motion.div>
+
+      {/* ── Statut ──────────────────────────────────────────────── */}
+      {isLoading && (
+        <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "#A0AEC0" }}>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+            <Loader2 size={14} strokeWidth={1.5} />
+          </motion.div>
+          <span className="text-xs font-light">Chargement…</span>
+        </div>
+      )}
+      {!user && !isLoading && (
+        <div className="max-w-5xl mb-4 px-4 py-3 rounded-2xl flex items-center gap-3"
+          style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
+          <span style={{ fontSize: 16 }}>🔒</span>
+          <p className="text-xs font-medium" style={{ color: "#D4A843" }}>
+            Connecte-toi pour synchroniser tes repas sur tous tes appareils
+          </p>
+        </div>
+      )}
 
       {/* ── 2-column grid ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 max-w-5xl">
