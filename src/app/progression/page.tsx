@@ -1414,6 +1414,7 @@ export default function ProgressionPage() {
   const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
+  const [loadingCustom, setLoadingCustom]   = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -1443,6 +1444,36 @@ export default function ProgressionPage() {
   }, [user]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  // ── Charger les séances personnalisées depuis Supabase ──
+  const fetchCustomSessions = useCallback(async () => {
+    if (!user) return;
+    setLoadingCustom(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("custom_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true });
+    setLoadingCustom(false);
+    if (error) { console.error("custom_sessions fetch:", error); return; }
+    if (!data) return;
+    setCustomSessions(data.map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      title: r.title as string,
+      subtitle: r.subtitle as string,
+      category: r.category as WorkoutCategory,
+      duration: r.duration as number,
+      difficulty: r.difficulty as WorkoutSession["difficulty"],
+      exercises: r.exercises as number,
+      muscles: (r.muscles as string[]) ?? [],
+      accent: r.accent as string,
+      icon: r.icon as string,
+      exerciseList: (r.exercise_list as Exercise[]) ?? [],
+    })));
+  }, [user]);
+
+  useEffect(() => { fetchCustomSessions(); }, [fetchCustomSessions]);
 
   const fetchProgressData = useCallback(async () => {
     if (!user) return;
@@ -1861,6 +1892,19 @@ export default function ProgressionPage() {
             </div>
           </motion.div>
 
+          {/* Loading indicator */}
+          {loadingCustom && (
+            <div className="flex items-center gap-2 mb-4">
+              <motion.div
+                className="w-4 h-4 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+              />
+              <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Chargement de vos séances…</span>
+            </div>
+          )}
+
           {/* Custom sessions list (if any) */}
           {customSessions.length > 0 && (
             <motion.div
@@ -1916,7 +1960,13 @@ export default function ProgressionPage() {
                         </motion.button>
                         <motion.button
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => setCustomSessions(p => p.filter(cs => cs.id !== s.id))}
+                          onClick={async () => {
+                            if (user) {
+                              const supabase = createClient();
+                              await supabase.from("custom_sessions").delete().eq("id", s.id);
+                            }
+                            setCustomSessions(p => p.filter(cs => cs.id !== s.id));
+                          }}
                           className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
                           style={{ background: "rgba(252,129,129,0.1)" }}
                         >
@@ -1966,11 +2016,35 @@ export default function ProgressionPage() {
             key={editSession?.id ?? "new"}
             onClose={() => { setShowCreateModal(false); setEditSession(null); }}
             editSession={editSession}
-            onCreate={(s) => {
+            onCreate={async (s) => {
+              const supabase = createClient();
+              const row = {
+                id: s.id,
+                user_id: user?.id,
+                title: s.title,
+                subtitle: s.subtitle,
+                category: s.category,
+                duration: s.duration,
+                difficulty: s.difficulty,
+                exercises: s.exercises,
+                muscles: s.muscles,
+                accent: s.accent,
+                icon: s.icon,
+                exercise_list: s.exerciseList ?? [],
+                updated_at: new Date().toISOString(),
+              };
               if (editSession) {
+                if (user) {
+                  const { error } = await supabase.from("custom_sessions").update(row).eq("id", s.id);
+                  if (error) { console.error(error); showToast("Erreur lors de la modification"); return; }
+                }
                 setCustomSessions(p => p.map(cs => cs.id === s.id ? s : cs));
                 showToast(`"${s.title}" modifiée ✓`);
               } else {
+                if (user) {
+                  const { error } = await supabase.from("custom_sessions").insert(row);
+                  if (error) { console.error(error); showToast("Erreur lors de la création"); return; }
+                }
                 setCustomSessions(p => [s, ...p]);
                 showToast(`"${s.title}" créée ✓`);
               }
