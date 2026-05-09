@@ -2,9 +2,11 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
+import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import { createClient } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 type View = "feed" | "search" | "dms" | "thread";
 type SearchFilter = "tous" | "compte" | "contenu";
@@ -563,6 +565,7 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: number; in
 }
 
 export default function CommunautePage() {
+  const { user } = useAuth();
   const [view, setView] = useState<View>("feed");
   const [activeThread, setActiveThread] = useState<User | null>(null);
   const [search, setSearch] = useState("");
@@ -571,7 +574,9 @@ export default function CommunautePage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set([2]));
-  const [following, setFollowing] = useState<Set<string>>(new Set());
+  // followingIds = ensemble des IDs Supabase que l'utilisateur suit réellement
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [following, setFollowing] = useState<Set<string>>(new Set()); // pour influenceurs fictifs uniquement
   const [openComments, setOpenComments] = useState<Set<number>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
   const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
@@ -588,6 +593,49 @@ export default function CommunautePage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
+  };
+
+  // Charger les abonnements réels depuis Supabase
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from("followers")
+      .select("following_id")
+      .eq("follower_id", user.id)
+      .then(({ data }) => {
+        if (data) setFollowingIds(new Set(data.map((r) => r.following_id as string)));
+      });
+  }, [user]);
+
+  // Suivre / ne plus suivre un vrai profil Supabase
+  const handleFollowReal = async (profile: { id: string; pseudo: string; avatar_url?: string }) => {
+    if (!user) return;
+    const supabase = createClient();
+    const isNowFollowing = !followingIds.has(profile.id);
+
+    // Mise à jour optimiste immédiate
+    setFollowingIds((prev) => {
+      const next = new Set(prev);
+      isNowFollowing ? next.add(profile.id) : next.delete(profile.id);
+      return next;
+    });
+
+    if (isNowFollowing) {
+      await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id });
+      // Notification
+      supabase.from("notifications").insert({
+        user_id: profile.id,
+        from_user_id: user.id,
+        from_pseudo: user.pseudo,
+        from_avatar_url: user.avatar ?? null,
+        type: "follow",
+      }).then(() => {}).catch(() => {});
+      showToast(`Vous suivez @${profile.pseudo} 🎉`);
+    } else {
+      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", profile.id);
+      showToast(`Abonnement annulé`);
+    }
   };
 
   useEffect(() => {
@@ -1052,34 +1100,43 @@ export default function CommunautePage() {
                 </p>
                 <div className="flex flex-col gap-2">
                   {filteredResults.realProfiles.map((profile) => {
-                    const isFollowing = following.has(profile.pseudo);
+                    const isF = followingIds.has(profile.id);
                     return (
                       <div key={profile.id} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
-                        {/* Avatar */}
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-semibold flex-shrink-0 overflow-hidden"
-                          style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                          {profile.avatar_url
-                            // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
-                            : (profile.pseudo?.[0] ?? "?").toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
+                        {/* Avatar cliquable → profil */}
+                        <Link href={`/profil/${profile.pseudo}`} className="flex-shrink-0">
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold overflow-hidden"
+                            style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                            {profile.avatar_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                              : (profile.pseudo?.[0] ?? "?").toUpperCase()}
+                          </div>
+                        </Link>
+                        {/* Infos cliquables */}
+                        <Link href={`/profil/${profile.pseudo}`} className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
                           <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
                           {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.94 }}
-                          onClick={() => toggleFollow(profile.pseudo)}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: isFollowing ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
-                          }}
-                          aria-label={isFollowing ? "Ne plus suivre" : "Suivre"}
-                        >
-                          <UserPlus size={14} strokeWidth={1.5} style={{ color: isFollowing ? "#A0AEC0" : "#2D3748" }} />
-                        </motion.button>
+                        </Link>
+                        {/* Bouton suivre connecté à Supabase */}
+                        {user && user.id !== profile.id && (
+                          <motion.button
+                            whileTap={{ scale: 0.92 }}
+                            onClick={() => handleFollowReal(profile)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
+                            style={isF
+                              ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
+                              : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                            }
+                            aria-label={isF ? "Ne plus suivre" : "Suivre"}
+                          >
+                            {isF
+                              ? <><UserCheck size={13} strokeWidth={2} />Suivi</>
+                              : <><UserPlus size={13} strokeWidth={2} />Suivre</>
+                            }
+                          </motion.button>
+                        )}
                       </div>
                     );
                   })}
