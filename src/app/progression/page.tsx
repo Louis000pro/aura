@@ -216,7 +216,7 @@ function WeightChart({
   const prev    = pts.at(-2)?.weight ?? null;
   const trend   = current !== null && prev !== null ? +(current - prev).toFixed(1) : null;
 
-  const W = 280, H = 110, PX = 16, PY = 14;
+  const W = 300, H = 90, PX = 14, PY = 10;
   const ws   = pts.map(p => p.weight);
   const minW = ws.length > 0 ? Math.min(...ws) - 1.5 : 60;
   const maxW = ws.length > 0 ? Math.max(...ws) + 1.5 : 90;
@@ -378,7 +378,7 @@ function CalorieChart({ data, goal }: { data: CalorieDay[]; goal: number }) {
       </div>
 
       {/* Bars */}
-      <div className="relative" style={{ height: 100 }}>
+      <div className="relative" style={{ height: 80 }}>
         <div className="absolute left-0 right-0 pointer-events-none"
           style={{ bottom: `${goalPct}%`, borderTop: "1px dashed rgba(167,139,250,0.35)" }} />
         <div className="flex items-end gap-1.5 h-full">
@@ -1094,7 +1094,7 @@ export default function ProgressionPage() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col px-6 pt-10 pb-4 max-w-3xl mx-auto md:mx-0 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col px-4 pt-10 pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10 relative overflow-x-hidden">
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
 
@@ -1116,15 +1116,17 @@ export default function ProgressionPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.05 }}
-        className="mb-8"
+        className="mb-8 max-w-5xl"
       >
-        <div className="mb-4">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
-            Analyse
-          </p>
-          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Statistiques</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+              Analyse
+            </p>
+            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Statistiques</h2>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <WeightChart
             data={weights}
             range={weightRange}
@@ -1137,7 +1139,7 @@ export default function ProgressionPage() {
 
       {/* Upload Zones */}
       <motion.div
-        className="flex gap-3 mb-10"
+        className="flex gap-3 mb-10 max-w-5xl"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
@@ -1159,7 +1161,7 @@ export default function ProgressionPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="mb-10"
+        className="mb-10 max-w-5xl"
       >
         {/* Section header */}
         <div className="flex items-center justify-between mb-4">
