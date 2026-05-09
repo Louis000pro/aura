@@ -962,7 +962,7 @@ const containerVariants: Variants = {
 };
 const itemVariants: Variants = {
   hidden: { opacity: 0, x: -16 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] } },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
 /* ─── Helpers ──────────────────────────────────────────── */
@@ -1016,7 +1016,12 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
   const [category, setCategory] = useState<WorkoutCategory>(editSession?.category ?? "force");
   const [duration, setDuration] = useState(editSession?.duration ?? 30);
   const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>(editSession?.difficulty ?? "Intermédiaire");
+  // Custom muscles = muscles from editSession that are not in the predefined list
+  const [customMuscles, setCustomMuscles] = useState<string[]>(
+    editSession?.muscles?.filter(m => !ALL_MUSCLES.includes(m)) ?? []
+  );
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>(editSession?.muscles ?? []);
+  const [newMuscleInput, setNewMuscleInput] = useState("");
   const [exForms, setExForms] = useState<ExerciseForm[]>(
     editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest }))
     ?? [{ ...DEFAULT_EX }]
@@ -1024,6 +1029,21 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
   const toggleMuscle = (m: string) =>
     setSelectedMuscles(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
+
+  const addCustomMuscle = () => {
+    const trimmed = newMuscleInput.trim();
+    if (!trimmed) return;
+    const allKnown = [...ALL_MUSCLES, ...customMuscles];
+    if (allKnown.some(m => m.toLowerCase() === trimmed.toLowerCase())) return;
+    setCustomMuscles(p => [...p, trimmed]);
+    setSelectedMuscles(p => [...p, trimmed]);
+    setNewMuscleInput("");
+  };
+
+  const removeCustomMuscle = (m: string) => {
+    setCustomMuscles(p => p.filter(x => x !== m));
+    setSelectedMuscles(p => p.filter(x => x !== m));
+  };
 
   const addEx = () => setExForms(p => [...p, { ...DEFAULT_EX }]);
   const removeEx = (i: number) => setExForms(p => p.filter((_, idx) => idx !== i));
@@ -1185,6 +1205,8 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                 </button>
               )}
             </div>
+
+            {/* Predefined muscles */}
             <div className="flex flex-wrap gap-2">
               {ALL_MUSCLES.map(m => {
                 const selected = selectedMuscles.includes(m);
@@ -1203,6 +1225,62 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                   </motion.button>
                 );
               })}
+
+              {/* Custom muscles — with × to remove */}
+              {customMuscles.map(m => {
+                const selected = selectedMuscles.includes(m);
+                return (
+                  <div key={m} className="flex items-center gap-0.5">
+                    <motion.button
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => toggleMuscle(m)}
+                      className="pl-3 pr-1.5 py-1.5 rounded-l-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
+                      style={selected
+                        ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderRight: "none" }
+                        : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.8)", borderRight: "none" }
+                      }
+                    >
+                      {selected ? "✓ " : ""}{m}
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      onClick={() => removeCustomMuscle(m)}
+                      className="pr-2 py-1.5 rounded-r-full text-[10px] flex items-center cursor-pointer transition-all duration-150"
+                      style={selected
+                        ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderLeft: "none" }
+                        : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.8)", borderLeft: "none" }
+                      }
+                    >
+                      <X size={9} strokeWidth={2.5} />
+                    </motion.button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add custom muscle */}
+            <div className="flex gap-2 mt-3">
+              <input
+                type="text"
+                value={newMuscleInput}
+                onChange={e => setNewMuscleInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomMuscle(); } }}
+                placeholder="Ajouter un muscle personnalisé…"
+                className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
+                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.35)", color: "#2D3748" }}
+              />
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={addCustomMuscle}
+                disabled={!newMuscleInput.trim()}
+                className="px-3 py-2 rounded-xl flex items-center justify-center cursor-pointer"
+                style={newMuscleInput.trim()
+                  ? { background: "rgba(167,139,250,0.15)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.35)" }
+                  : { background: "rgba(240,235,255,0.4)", color: "#C4B5FD", border: "1px solid rgba(212,192,255,0.2)" }
+                }
+              >
+                <Plus size={13} strokeWidth={2.5} />
+              </motion.button>
             </div>
           </div>
 
