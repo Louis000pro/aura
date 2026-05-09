@@ -61,8 +61,8 @@ export default function PublicProfilePage() {
         setProfile(data);
 
         const [followersRes, followingRes, sessionsRes, recentRes] = await Promise.all([
-          supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", data.id),
-          supabase.from("followers").select("id", { count: "exact", head: true }).eq("follower_id", data.id),
+          supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", data.id),
+          supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", data.id),
           supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", data.id),
           supabase.from("workout_sessions").select("id, title, started_at").eq("user_id", data.id).order("started_at", { ascending: false }).limit(3),
         ]);

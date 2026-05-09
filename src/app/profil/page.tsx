@@ -812,9 +812,9 @@ export default function ProfilPage() {
       });
 
     Promise.all([
-      supabase.from("followers").select("*", { count: "exact", head: true }).eq("following_id", user.id),
-      supabase.from("followers").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
-      supabase.from("workout_sessions").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", user.id),
+      supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", user.id),
+      supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     ]).then(([f1, f2, f3]) => {
       setFollowerCount(f1.count ?? 0);
       setFollowingCount(f2.count ?? 0);
