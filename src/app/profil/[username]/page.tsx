@@ -92,19 +92,23 @@ export default function PublicProfilePage() {
     setFollowLoading(true);
 
     if (isFollowing) {
-      await supabase
+      const { error } = await supabase
         .from("followers")
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", profile.id);
+      if (error) { showToast(`Erreur : ${error.message}`); setFollowLoading(false); return; }
       setIsFollowing(false);
       setFollowerCount((c) => Math.max(0, c - 1));
       showToast("Abonnement annulé");
     } else {
-      await supabase
+      const { error } = await supabase
         .from("followers")
-        .insert({ follower_id: user.id, following_id: profile.id });
-      // Envoyer une notification à l'utilisateur suivi (silencieux si table absente)
+        .upsert(
+          { follower_id: user.id, following_id: profile.id },
+          { onConflict: "follower_id,following_id", ignoreDuplicates: true }
+        );
+      if (error) { showToast(`Erreur : ${error.message}`); setFollowLoading(false); return; }
       supabase.from("notifications").insert({
         user_id: profile.id,
         from_user_id: user.id,

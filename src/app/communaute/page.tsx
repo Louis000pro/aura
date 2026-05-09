@@ -610,7 +610,7 @@ export default function CommunautePage() {
 
   // Suivre / ne plus suivre un vrai profil Supabase
   const handleFollowReal = async (profile: { id: string; pseudo: string; avatar_url?: string }) => {
-    if (!user) return;
+    if (!user) { showToast("Connecte-toi pour suivre"); return; }
     const supabase = createClient();
     const isNowFollowing = !followingIds.has(profile.id);
 
@@ -622,8 +622,19 @@ export default function CommunautePage() {
     });
 
     if (isNowFollowing) {
-      await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id });
-      // Notification
+      const { error } = await supabase
+        .from("followers")
+        .upsert(
+          { follower_id: user.id, following_id: profile.id },
+          { onConflict: "follower_id,following_id", ignoreDuplicates: true }
+        );
+      if (error) {
+        // Rollback optimiste
+        setFollowingIds((prev) => { const n = new Set(prev); n.delete(profile.id); return n; });
+        showToast(`Erreur : ${error.message}`);
+        return;
+      }
+      // Notification (silencieuse)
       supabase.from("notifications").insert({
         user_id: profile.id,
         from_user_id: user.id,
@@ -633,8 +644,18 @@ export default function CommunautePage() {
       }).then(() => {}).catch(() => {});
       showToast(`Vous suivez @${profile.pseudo} 🎉`);
     } else {
-      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", profile.id);
-      showToast(`Abonnement annulé`);
+      const { error } = await supabase
+        .from("followers")
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", profile.id);
+      if (error) {
+        // Rollback optimiste
+        setFollowingIds((prev) => { const n = new Set(prev); n.add(profile.id); return n; });
+        showToast(`Erreur : ${error.message}`);
+        return;
+      }
+      showToast("Abonnement annulé");
     }
   };
 
