@@ -9,24 +9,22 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
 type View = "feed" | "search" | "dms" | "thread";
-type SearchFilter = "tous" | "compte" | "contenu";
+type SearchFilter = "tous" | "compte" | "seances";
 
-type ContentResult = {
-  id: number;
+type SessionResult = {
+  id: string;
   title: string;
-  sub: string;
-  tag: string;
-  color: string;
+  category: string;
+  duration: number;
+  difficulty: string;
+  muscles: string[];
+  accent: string;
+  icon: string;
+  user_id: string;
+  author_pseudo?: string;
+  author_avatar?: string;
+  exercise_list?: unknown[];
 };
-
-const contentResults: ContentResult[] = [
-  { id: 1, title: "Programme Full Body 4j/sem", sub: "Partagé par Léo Bertrand", tag: "Programme", color: "#A78BFA" },
-  { id: 2, title: "Recette : Bowl Protéiné", sub: "Partagé par Sofia Martinez", tag: "Nutrition", color: "#D4A843" },
-  { id: 3, title: "Routine Mobilité Matinale", sub: "Partagé par Coach Aura Officiel", tag: "Mobilité", color: "#34D399" },
-  { id: 4, title: "Plan Sèche 8 semaines", sub: "Partagé par Nico Strength", tag: "Programme", color: "#A78BFA" },
-  { id: 5, title: "Recette : Overnight Oats", sub: "Partagé par Sarah Wellness", tag: "Nutrition", color: "#D4A843" },
-  { id: 6, title: "Guide récupération active", sub: "Partagé par Eléa Runner", tag: "Récupération", color: "#60A5FA" },
-];
 
 type User = {
   handle: string;
@@ -571,6 +569,7 @@ export default function CommunautePage() {
   const [search, setSearch] = useState("");
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
   const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string }[]>([]);
+  const [realSessions, setRealSessions] = useState<SessionResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set([2]));
@@ -719,32 +718,35 @@ export default function CommunautePage() {
   useEffect(() => {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     const q = search.trim();
-    if (!q) { setRealProfiles([]); return; }
+    if (!q) { setRealProfiles([]); setRealSessions([]); return; }
     searchDebounce.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
         const supabase = createClient();
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, pseudo, full_name, bio, avatar_url")
-          .or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`)
-          .limit(15);
-        setRealProfiles(data ?? []);
+        const [profileRes, sessionRes] = await Promise.all([
+          searchFilter !== "seances"
+            ? supabase.from("profiles").select("id, pseudo, full_name, bio, avatar_url").or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`).limit(15)
+            : { data: [] },
+          searchFilter !== "compte"
+            ? supabase.from("custom_sessions").select("id, title, category, duration, difficulty, muscles, accent, icon, user_id").eq("visibility", "public").ilike("title", `%${q}%`).limit(12)
+            : { data: [] },
+        ]);
+        setRealProfiles((profileRes.data as typeof realProfiles) ?? []);
+        setRealSessions((sessionRes.data as SessionResult[]) ?? []);
       } finally {
         setSearchLoading(false);
       }
     }, 300);
-  }, [search]);
+  }, [search, searchFilter]); // eslint-disable-line
 
   const filteredResults = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matchContent = (c: ContentResult) => !q || c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q);
     return {
-      realProfiles: searchFilter !== "contenu" ? realProfiles : [],
-      influencers:  searchFilter !== "contenu" ? influencers.filter(u => !q || u.name.toLowerCase().includes(q)) : [],
-      contents:     searchFilter !== "compte"  ? contentResults.filter(matchContent) : [],
+      realProfiles: searchFilter !== "seances" ? realProfiles : [],
+      influencers:  searchFilter !== "seances" ? influencers.filter(u => !q || u.name.toLowerCase().includes(q)) : [],
+      sessions:     searchFilter !== "compte"  ? realSessions : [],
     };
-  }, [search, searchFilter, realProfiles]);
+  }, [search, searchFilter, realProfiles, realSessions]);
 
   const visibleFeed = feedData.filter((p) => !hiddenPosts.has(p.id));
 
@@ -1055,18 +1057,18 @@ export default function CommunautePage() {
 
             {/* Filters */}
             <div className="flex gap-2">
-              {(["tous", "compte", "contenu"] as const).map((f) => (
+              {(["tous", "compte", "seances"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setSearchFilter(f)}
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 capitalize"
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150"
                   style={
                     searchFilter === f
                       ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                       : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
                   }
                 >
-                  {f === "tous" ? "Tous" : f === "compte" ? "Comptes" : "Contenus"}
+                  {f === "tous" ? "Tous" : f === "compte" ? "Personnes" : "Séances"}
                 </button>
               ))}
             </div>
@@ -1165,42 +1167,73 @@ export default function CommunautePage() {
               </div>
             )}
 
-            {/* Contents */}
-            {filteredResults.contents.length > 0 && (
+            {/* Sessions publiques */}
+            {filteredResults.sessions.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
-                  Contenus
+                  Séances · {filteredResults.sessions.length} résultat{filteredResults.sessions.length > 1 ? "s" : ""}
                 </p>
                 <div className="flex flex-col gap-2">
-                  {filteredResults.contents.map((c) => (
-                    <motion.div
-                      key={c.id}
-                      whileHover={{ y: -1 }}
-                      className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer"
-                    >
-                      <div
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${c.color}22`, border: `1px solid ${c.color}44` }}
+                  {filteredResults.sessions.map((s) => {
+                    const catColors: Record<string, string> = { force: "#A78BFA", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C" };
+                    const accent = s.accent || catColors[s.category] || "#A78BFA";
+                    const diffColor: Record<string, string> = { "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "#A78BFA" };
+                    return (
+                      <motion.div
+                        key={s.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -1 }}
+                        className="lg-surface lg-highlight relative rounded-2xl overflow-hidden"
                       >
-                        <Dumbbell size={15} strokeWidth={1.5} style={{ color: c.color }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{c.title}</p>
-                        <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>{c.sub}</p>
-                      </div>
-                      <span
-                        className="text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded-full flex-shrink-0"
-                        style={{ background: `${c.color}18`, color: c.color }}
-                      >
-                        {c.tag}
-                      </span>
-                    </motion.div>
-                  ))}
+                        {/* Accent bar */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ background: accent }} />
+                        <div className="flex items-center gap-3 px-4 py-3 pl-5">
+                          <div
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}
+                          >
+                            <Dumbbell size={15} strokeWidth={1.5} style={{ color: accent }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{s.title}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{s.duration} min</span>
+                              <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
+                              <span className="text-[10px] font-medium" style={{ color: diffColor[s.difficulty] ?? "#A0AEC0" }}>{s.difficulty}</span>
+                              {s.muscles?.[0] && <>
+                                <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
+                                <span className="text-[10px] font-light truncate" style={{ color: "#A0AEC0" }}>{s.muscles.slice(0, 2).join(" · ")}</span>
+                              </>}
+                            </div>
+                          </div>
+                          <span
+                            className="text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded-full flex-shrink-0"
+                            style={{ background: `${accent}18`, color: accent }}
+                          >
+                            {s.category === "force" ? "Force" : s.category === "cardio" ? "Cardio" : s.category === "mobilite" ? "Mobilité" : "Full Body"}
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {!searchLoading && filteredResults.realProfiles.length === 0 && filteredResults.influencers.length === 0 && filteredResults.contents.length === 0 && (
+            {/* Sessions empty state when filter = séances */}
+            {!searchLoading && searchFilter === "seances" && search.trim() && filteredResults.sessions.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                  Aucune séance publique pour « {search} »
+                </p>
+                <p className="text-[11px] mt-1" style={{ color: "#A0AEC0" }}>
+                  Les créateurs peuvent publier leurs séances depuis leur bibliothèque
+                </p>
+              </div>
+            )}
+
+            {!searchLoading && filteredResults.realProfiles.length === 0 && filteredResults.influencers.length === 0 && filteredResults.sessions.length === 0 && !(searchFilter === "seances" && search.trim()) && (
               <div className="text-center py-12">
                 <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
                   {search ? `Aucun résultat pour « ${search} »` : "Tape quelque chose pour rechercher"}

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
-  Target, Pencil,
+  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles,
 } from "lucide-react";
+import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
@@ -771,11 +772,39 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/* ─────────────── Published session types ─────────────── */
+type PublishedSession = {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  duration: number;
+  difficulty: string;
+  exercises: number;
+  muscles: string[];
+  accent: string;
+  icon: string;
+  exercise_list: Exercise[];
+  visibility: "friends" | "public";
+};
+
+const PROF_ICON_MAP: Record<string, typeof Dumbbell> = { Dumbbell, Flame, Wind, Layers, Sparkles };
+const resolveProfileIcon = (name: string): typeof Dumbbell => PROF_ICON_MAP[name] ?? Dumbbell;
+
+const PROF_DIFF_COLOR: Record<string, string> = {
+  "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "#A78BFA",
+};
+
+const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: string }> = {
+  friends: { label: "Amis",   icon: Users,  color: "#60A5FA" },
+  public:  { label: "Public", icon: Globe,  color: "#34D399" },
+};
+
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"performances" | "reglages">("performances");
+  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages">("performances");
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
@@ -790,6 +819,8 @@ export default function ProfilPage() {
   const [sessionCount, setSessionCount] = useState<number | null>(null);
   const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const [showGoals, setShowGoals] = useState(false);
+  const [publishedSessions, setPublishedSessions] = useState<PublishedSession[]>([]);
+  const [profilActiveWorkout, setProfilActiveWorkout] = useState<PublishedSession | null>(null);
   const { settings, updateSettings } = useProfileSettings();
 
   /* Fetch profile + stats */
@@ -821,6 +852,20 @@ export default function ProfilPage() {
       setSessionCount(f3.count ?? 0);
     });
   }, [user?.id]);
+
+  const fetchPublishedSessions = useCallback(async () => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("custom_sessions")
+      .select("*")
+      .eq("user_id", user.id)
+      .in("visibility", ["friends", "public"])
+      .order("created_at", { ascending: false });
+    if (data) setPublishedSessions(data as PublishedSession[]);
+  }, [user?.id]);
+
+  useEffect(() => { fetchPublishedSessions(); }, [fetchPublishedSessions]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -992,11 +1037,11 @@ export default function ProfilPage() {
           className="flex gap-1 mb-5 p-1 rounded-2xl"
           style={{ background: "rgba(240,235,255,0.55)" }}
         >
-          {(["performances", "reglages"] as const).map((tab) => (
+          {(["performances", "seances", "reglages"] as const).map((tab) => (
             <motion.button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200"
+              className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 relative"
               animate={{
                 background: activeTab === tab
                   ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)"
@@ -1009,7 +1054,15 @@ export default function ProfilPage() {
                   : "none",
               }}
             >
-              {tab === "performances" ? "🏆 Performances" : "⚙️ Réglages"}
+              {tab === "performances" ? "🏆 Performances" : tab === "seances" ? "📚 Séances" : "⚙️ Réglages"}
+              {tab === "seances" && publishedSessions.length > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[8px] font-bold flex items-center justify-center"
+                  style={{ background: "#A78BFA", color: "#fff" }}
+                >
+                  {publishedSessions.length}
+                </span>
+              )}
             </motion.button>
           ))}
         </motion.div>
@@ -1085,6 +1138,156 @@ export default function ProfilPage() {
                 </motion.div>
               ))}
             </div>
+          </motion.div>
+        ) : activeTab === "seances" ? (
+          /* ── Séances publiées ── */
+          <motion.div
+            key="seances"
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.28 }}
+            className="px-5 md:px-8"
+          >
+            {publishedSessions.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-14 gap-5 rounded-3xl"
+                style={{ background: "rgba(255,255,255,0.55)", border: "1px dashed rgba(167,139,250,0.3)" }}
+              >
+                <div
+                  className="w-16 h-16 rounded-3xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.35) 0%,rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(167,139,250,0.15)" }}
+                >
+                  <Sparkles size={24} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                </div>
+                <div className="text-center px-6">
+                  <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucune séance publiée</p>
+                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                    Publie des séances depuis ta bibliothèque pour les retrouver ici.
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <>
+                {/* Summary */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-5"
+                  style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.16) 0%,rgba(245,230,163,0.13) 100%)", border: "1px solid rgba(167,139,250,0.16)" }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.45) 0%,rgba(245,230,163,0.4) 100%)" }}
+                  >
+                    <Sparkles size={15} strokeWidth={1.4} style={{ color: "#A78BFA" }} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>
+                      {publishedSessions.length} séance{publishedSessions.length > 1 ? "s" : ""} partagée{publishedSessions.length > 1 ? "s" : ""}
+                    </p>
+                    <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                      {publishedSessions.reduce((a, s) => a + s.duration, 0)} min de contenu
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cards grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {publishedSessions.map((s, i) => {
+                    const Icon = resolveProfileIcon(s.icon);
+                    const visInfo = VIS_LABELS[s.visibility];
+                    const VisIcon = visInfo.icon;
+                    return (
+                      <motion.div
+                        key={s.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.06 }}
+                        className="rounded-3xl overflow-hidden flex flex-col"
+                        style={{
+                          background: "rgba(255,255,255,0.82)",
+                          border: "1px solid rgba(255,255,255,0.92)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 24px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        {/* Header */}
+                        <div className="px-4 pt-4 pb-3" style={{ background: `${s.accent}10`, borderBottom: `1px solid ${s.accent}18` }}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div
+                              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ background: `${s.accent}24`, border: `1px solid ${s.accent}44` }}
+                            >
+                              <Icon size={14} strokeWidth={1.5} style={{ color: s.accent }} />
+                            </div>
+                            <span
+                              className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
+                              style={{ background: `${PROF_DIFF_COLOR[s.difficulty] ?? "#A0AEC0"}18`, color: PROF_DIFF_COLOR[s.difficulty] ?? "#A0AEC0" }}
+                            >
+                              {s.difficulty}
+                            </span>
+                            <span
+                              className="ml-auto flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                              style={{ background: `${visInfo.color}14`, color: visInfo.color }}
+                            >
+                              <VisIcon size={9} strokeWidth={2} />
+                              {visInfo.label}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "#2D3748" }}>{s.title}</h3>
+                          <div className="flex flex-wrap gap-1">
+                            {s.muscles.slice(0, 3).map(m => (
+                              <span key={m} className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ background: `${s.accent}16`, color: s.accent }}>{m}</span>
+                            ))}
+                            {s.muscles.length > 3 && <span className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(160,174,192,0.12)", color: "#A0AEC0" }}>+{s.muscles.length - 3}</span>}
+                          </div>
+                        </div>
+                        {/* Stats */}
+                        <div className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: "1px solid rgba(240,235,255,0.5)" }}>
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{s.duration} min</span>
+                          </div>
+                          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
+                          <div className="flex items-center gap-1.5">
+                            <Dumbbell size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{s.exercises} exos</span>
+                          </div>
+                        </div>
+                        {/* CTA */}
+                        <div className="px-4 py-3">
+                          <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setProfilActiveWorkout(s)}
+                            className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
+                            style={{ background: `linear-gradient(135deg, ${s.accent}ee, ${s.accent}aa)`, boxShadow: `0 4px 14px ${s.accent}44` }}
+                          >
+                            <Play size={12} strokeWidth={2.5} style={{ color: "#fff" }} />
+                            <span className="text-xs font-semibold" style={{ color: "#fff" }}>Commencer</span>
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Workout modal */}
+            <AnimatePresence>
+              {profilActiveWorkout && (
+                <WorkoutGuideModal
+                  sessionId={profilActiveWorkout.id}
+                  title={profilActiveWorkout.title}
+                  accent={profilActiveWorkout.accent}
+                  duration={profilActiveWorkout.duration}
+                  difficulty={profilActiveWorkout.difficulty}
+                  exerciseList={profilActiveWorkout.exercise_list}
+                  onClose={() => setProfilActiveWorkout(null)}
+                  onComplete={() => setProfilActiveWorkout(null)}
+                />
+              )}
+            </AnimatePresence>
           </motion.div>
         ) : (
           <motion.div

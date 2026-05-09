@@ -6,6 +6,7 @@ import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
   Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
   X, CameraOff, Square, RefreshCw, Plus, Trash2, Pencil,
+  Globe, Lock, Users,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
@@ -110,6 +111,7 @@ type WorkoutSession = {
   accent: string;
   icon: typeof Dumbbell;
   exerciseList?: Exercise[];
+  visibility?: "private" | "friends" | "public";
 };
 
 const workoutSessions: WorkoutSession[] = [
@@ -966,16 +968,27 @@ function WorkoutCard({
 }
 
 /* ─── LibraryCard ───────────────────────────────────────── */
+const VIS_CONFIG = {
+  private: { label: "Privée",  desc: "Visible par toi uniquement",    icon: Lock,  color: "#A0AEC0", bg: "rgba(160,174,192,0.08)", border: "rgba(160,174,192,0.2)" },
+  friends: { label: "Amis",    desc: "Visible par tes abonnés",       icon: Users, color: "#60A5FA", bg: "rgba(96,165,250,0.10)",  border: "rgba(96,165,250,0.25)" },
+  public:  { label: "Public",  desc: "Trouvable par tout le monde",   icon: Globe, color: "#34D399", bg: "rgba(52,211,153,0.10)",  border: "rgba(52,211,153,0.25)" },
+} as const;
+
 function LibraryCard({
-  session, isActive, onStart, onEdit, onDelete,
+  session, isActive, onStart, onEdit, onDelete, onVisibilityChange,
 }: {
   session: WorkoutSession;
   isActive: boolean;
   onStart: (s: WorkoutSession) => void;
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: "private" | "friends" | "public") => void;
 }) {
+  const [visOpen, setVisOpen] = useState(false);
   const Icon = resolveIcon(session.icon);
+  const visKey = (session.visibility ?? "private") as keyof typeof VIS_CONFIG;
+  const vis = VIS_CONFIG[visKey];
+  const VisIcon = vis.icon;
 
   return (
     <motion.div
@@ -1065,7 +1078,7 @@ function LibraryCard({
       </div>
 
       {/* CTA */}
-      <div className="px-4 py-3">
+      <div className="px-4 pt-3 pb-2">
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => onStart(session)}
@@ -1088,6 +1101,74 @@ function LibraryCard({
             </>
           )}
         </motion.button>
+      </div>
+
+      {/* Visibility picker */}
+      <div className="px-4 pb-3 relative">
+        <motion.button
+          whileTap={{ scale: 0.94 }}
+          onClick={() => setVisOpen(v => !v)}
+          className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer"
+          style={{ background: vis.bg, color: vis.color, border: `1px solid ${vis.border}` }}
+        >
+          <VisIcon size={10} strokeWidth={2} />
+          <span>{vis.label}</span>
+          <motion.span
+            className="ml-auto opacity-50 text-[9px]"
+            animate={{ rotate: visOpen ? 180 : 0 }}
+            transition={{ duration: 0.15 }}
+          >▾</motion.span>
+        </motion.button>
+
+        <AnimatePresence>
+          {visOpen && (
+            <>
+              {/* Backdrop */}
+              <div className="fixed inset-0 z-40" onClick={() => setVisOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                transition={{ duration: 0.15 }}
+                className="absolute bottom-full mb-1 left-0 right-0 rounded-2xl overflow-hidden z-50"
+                style={{
+                  background: "rgba(255,255,255,0.97)",
+                  backdropFilter: "blur(20px)",
+                  border: "1px solid rgba(240,235,255,0.9)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                {(["private", "friends", "public"] as const).map(key => {
+                  const cfg = VIS_CONFIG[key];
+                  const CfgIcon = cfg.icon;
+                  const isCurrent = visKey === key;
+                  return (
+                    <motion.button
+                      key={key}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => { onVisibilityChange(session.id, key); setVisOpen(false); }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-left cursor-pointer"
+                      style={isCurrent ? { background: `${cfg.color}12` } : { background: "transparent" }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${cfg.color}18` }}
+                      >
+                        <CfgIcon size={12} strokeWidth={2} style={{ color: cfg.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold" style={{ color: isCurrent ? cfg.color : "#2D3748" }}>{cfg.label}</p>
+                        <p className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>{cfg.desc}</p>
+                      </div>
+                      {isCurrent && <Check size={11} strokeWidth={2.5} style={{ color: cfg.color }} />}
+                    </motion.button>
+                  );
+                })}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
@@ -1596,6 +1677,16 @@ export default function ProgressionPage() {
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
+  const handleVisibilityChange = useCallback(async (sessionId: string, vis: "private" | "friends" | "public") => {
+    if (user) {
+      const supabase = createClient();
+      await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+    }
+    setCustomSessions(prev => prev.map(s => s.id === sessionId ? { ...s, visibility: vis } : s));
+    const labels = { private: "Séance privée ✓", friends: "Visible par tes amis ✓", public: "Séance publiée 🌐" };
+    showToast(labels[vis]);
+  }, [user]); // eslint-disable-line
+
   // Charts state
   const [weights, setWeights]         = useState<WeightEntry[]>([]);
   const [weightRange, setWeightRange] = useState<"week" | "month">("week");
@@ -1640,6 +1731,7 @@ export default function ProgressionPage() {
       accent: r.accent as string,
       icon: r.icon as string,
       exerciseList: (r.exercise_list as Exercise[]) ?? [],
+      visibility: (r.visibility as "private" | "friends" | "public") ?? "private",
     })));
   }, [user]);
 
@@ -2160,6 +2252,7 @@ export default function ProgressionPage() {
                             }
                             setCustomSessions(p => p.filter(cs => cs.id !== id));
                           }}
+                          onVisibilityChange={handleVisibilityChange}
                         />
                       ))}
                     </AnimatePresence>
@@ -2263,6 +2356,7 @@ export default function ProgressionPage() {
             editSession={editSession}
             onCreate={async (s) => {
               const supabase = createClient();
+              const existingSession = customSessions.find(cs => cs.id === s.id);
               const row = {
                 id: s.id,
                 user_id: user?.id,
@@ -2276,6 +2370,7 @@ export default function ProgressionPage() {
                 accent: s.accent,
                 icon: s.icon,
                 exercise_list: s.exerciseList ?? [],
+                visibility: existingSession?.visibility ?? "private",
                 updated_at: new Date().toISOString(),
               };
               if (editSession) {
