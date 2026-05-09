@@ -670,6 +670,36 @@ function ManualModal({ onClose, onAdd }: {
   const [carbs, setCarbs] = useState("");
   const [fats, setFats] = useState("");
   const [mealType, setMealType] = useState<MealType>(getMealTypeFromTime());
+  const [estimating, setEstimating] = useState(false);
+  const [estimated, setEstimated] = useState(false);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
+
+  const estimate = async () => {
+    if (!name.trim()) return;
+    setEstimating(true);
+    setEstimateError(null);
+    setEstimated(false);
+    try {
+      const res = await fetch("/api/nutrition/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: name.trim() }),
+      });
+      if (!res.ok) throw new Error("Estimation échouée");
+      const data = await res.json();
+      if (data.foodName) setName(data.foodName);
+      if (data.calories) setKcal(String(data.calories));
+      if (data.proteins !== undefined) setProteins(String(data.proteins));
+      if (data.carbs !== undefined) setCarbs(String(data.carbs));
+      if (data.fats !== undefined) setFats(String(data.fats));
+      if (data.mealType) setMealType(data.mealType as MealType);
+      setEstimated(true);
+    } catch {
+      setEstimateError("Impossible d'estimer, remplis manuellement.");
+    } finally {
+      setEstimating(false);
+    }
+  };
 
   const submit = () => {
     if (!name.trim() || !kcal) return;
@@ -707,7 +737,10 @@ function ManualModal({ onClose, onAdd }: {
         onClick={e => e.stopPropagation()}>
 
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Ajouter manuellement</h2>
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>IA Nutrition</p>
+            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Décrire un repas</h2>
+          </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
             style={{ background: "rgba(240,235,255,0.8)" }}>
@@ -715,34 +748,99 @@ function ManualModal({ onClose, onAdd }: {
           </motion.button>
         </div>
 
-        <div className="flex flex-col gap-2.5 mb-4">
+        <div className="flex flex-col gap-3 mb-4">
+
+          {/* Champ description + bouton estimer */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1 block" style={{ color: "#A0AEC0" }}>
-              Aliment / Plat
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+              Ce que tu as mangé
             </label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ex : Poulet riz, yaourt…" autoFocus
-              className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+            <div className="flex gap-2">
+              <input
+                type="text" value={name}
+                onChange={e => { setName(e.target.value); setEstimated(false); setEstimateError(null); }}
+                onKeyDown={e => { if (e.key === "Enter" && name.trim()) estimate(); }}
+                placeholder="Ex : 5 madeleines et un bol de lait…"
+                autoFocus
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+              />
+              <motion.button
+                whileTap={{ scale: 0.93 }}
+                onClick={estimate}
+                disabled={!name.trim() || estimating}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
+                style={{
+                  background: name.trim() && !estimating
+                    ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
+                    : "rgba(220,220,220,0.4)",
+                  color: name.trim() && !estimating ? "#2D3748" : "#A0AEC0",
+                  boxShadow: name.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                  minWidth: 80,
+                  justifyContent: "center",
+                }}>
+                {estimating ? (
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}>
+                    <Loader2 size={13} strokeWidth={2} />
+                  </motion.div>
+                ) : (
+                  <>✨ Estimer</>
+                )}
+              </motion.button>
+            </div>
+            <p className="text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+              L&apos;IA calcule automatiquement les calories & macros — ou appuie sur Entrée
+            </p>
           </div>
 
+          {/* Erreur estimation */}
+          {estimateError && (
+            <div className="px-3 py-2 rounded-xl text-xs" style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E" }}>
+              ⚠️ {estimateError}
+            </div>
+          )}
+
+          {/* Résultat estimation */}
+          <AnimatePresence>
+            {estimated && kcal && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}>
+                <Check size={12} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+                <span className="text-xs font-medium" style={{ color: "#A78BFA" }}>
+                  Estimation IA — vérifie et modifie si besoin
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Champs nutritionnels */}
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: "Calories (kcal)", val: kcal, set: setKcal, ph: "420" },
-              { label: "Protéines (g)",   val: proteins, set: setProteins, ph: "30" },
-              { label: "Glucides (g)",    val: carbs, set: setCarbs, ph: "50" },
-              { label: "Lipides (g)",     val: fats, set: setFats, ph: "15" },
+              { label: "Calories (kcal)", val: kcal,     set: setKcal,     ph: "420" },
+              { label: "Protéines (g)",   val: proteins,  set: setProteins, ph: "30"  },
+              { label: "Glucides (g)",    val: carbs,     set: setCarbs,    ph: "50"  },
+              { label: "Lipides (g)",     val: fats,      set: setFats,     ph: "15"  },
             ].map(({ label, val, set, ph }) => (
               <div key={label}>
                 <label className="text-[10px] font-semibold tracking-widest uppercase mb-1 block"
                   style={{ color: "#A0AEC0" }}>{label}</label>
-                <input type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                <motion.input
+                  type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                  animate={estimated && val ? { borderColor: "rgba(167,139,250,0.5)" } : {}}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                  style={{
+                    background: estimated && val ? "rgba(240,235,255,0.6)" : "rgba(240,235,255,0.5)",
+                    border: "1px solid rgba(212,192,255,0.5)",
+                    color: "#2D3748",
+                  }}
+                />
               </div>
             ))}
           </div>
 
+          {/* Type de repas */}
           <div>
             <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
               Type de repas
