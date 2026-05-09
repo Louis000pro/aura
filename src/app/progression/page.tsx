@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
   Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
-  X, CameraOff, Square, RefreshCw,
+  X, CameraOff, Square, RefreshCw, Plus, Trash2,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
@@ -955,13 +955,13 @@ function WorkoutCard({
 }
 
 /* ─── Animation variants ────────────────────────────────── */
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08 } },
 };
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, x: -16 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] } },
 };
 
 /* ─── Helpers ──────────────────────────────────────────── */
@@ -986,12 +986,235 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
   };
 }
 
+/* ─── Custom session type & creation modal ────────────────── */
+
+const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
+  force: "#A78BFA", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
+};
+const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
+  force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
+};
+
+function CreateSessionModal({ onClose, onCreate }: {
+  onClose: () => void;
+  onCreate: (s: WorkoutSession) => void;
+}) {
+  const [title, setTitle]       = useState("");
+  const [category, setCategory] = useState<WorkoutCategory>("force");
+  const [duration, setDuration] = useState(30);
+  const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>("Intermédiaire");
+  const [exercises, setExercises] = useState<string[]>([""]);
+
+  const addExercise = () => setExercises(p => [...p, ""]);
+  const removeExercise = (i: number) => setExercises(p => p.filter((_, idx) => idx !== i));
+  const updateExercise = (i: number, val: string) =>
+    setExercises(p => p.map((e, idx) => idx === i ? val : e));
+
+  const handleCreate = () => {
+    if (!title.trim()) return;
+    const exos = exercises.filter(e => e.trim());
+    const exoList = exos.length > 0 ? exos : ["Exercice libre"];
+    onCreate({
+      id: `custom-${Date.now()}`,
+      title: title.trim(),
+      subtitle: `${category.charAt(0).toUpperCase() + category.slice(1)} · Ma séance`,
+      category,
+      duration,
+      difficulty,
+      exercises: exoList.length,
+      muscles: exoList.slice(0, 3),
+      accent: ACCENT_BY_CATEGORY[category],
+      icon: ICON_BY_CATEGORY[category],
+    });
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-0 md:pb-0"
+      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 60, opacity: 0, scale: 0.97 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        style={{
+          background: "rgba(255,255,255,0.96)",
+          backdropFilter: "blur(32px)",
+          border: "1px solid rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+          maxHeight: "90vh",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(240,235,255,0.8)" }}>
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Nouvelle séance</p>
+            <h2 className="text-lg font-light mt-0.5" style={{ color: "#2D3748" }}>Créer ma séance</h2>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={15} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-5" style={{ scrollbarWidth: "none" }}>
+
+          {/* Nom */}
+          <div>
+            <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Nom de la séance</label>
+            <input
+              type="text"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Ex : Push Day, Cardio matin…"
+              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+              style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+              autoFocus
+            />
+          </div>
+
+          {/* Catégorie */}
+          <div>
+            <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Catégorie</label>
+            <div className="grid grid-cols-4 gap-2">
+              {(["force", "cardio", "mobilite", "fullbody"] as WorkoutCategory[]).map(cat => (
+                <motion.button
+                  key={cat}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => setCategory(cat)}
+                  className="py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                  style={category === cat
+                    ? { background: `${ACCENT_BY_CATEGORY[cat]}22`, color: ACCENT_BY_CATEGORY[cat], border: `1px solid ${ACCENT_BY_CATEGORY[cat]}55` }
+                    : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                  }
+                >
+                  {cat === "mobilite" ? "Mobilité" : cat === "fullbody" ? "Full" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Durée + Difficulté */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Durée (min)</label>
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl" style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)" }}>
+                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.max(10, d - 5))}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.8)" }}>
+                  <span className="text-sm font-bold" style={{ color: "#A78BFA" }}>−</span>
+                </motion.button>
+                <span className="flex-1 text-center text-sm font-semibold" style={{ color: "#2D3748" }}>{duration}</span>
+                <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.min(180, d + 5))}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                  style={{ background: "rgba(255,255,255,0.8)" }}>
+                  <span className="text-sm font-bold" style={{ color: "#A78BFA" }}>+</span>
+                </motion.button>
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Niveau</label>
+              <div className="flex flex-col gap-1">
+                {(["Débutant", "Intermédiaire", "Avancé"] as const).map(d => (
+                  <motion.button
+                    key={d}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setDifficulty(d)}
+                    className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
+                    style={difficulty === d
+                      ? { background: `${difficultyColor[d]}22`, color: difficultyColor[d], border: `1px solid ${difficultyColor[d]}44` }
+                      : { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                    }
+                  >
+                    {d}
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Exercices */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Exercices</label>
+              <motion.button whileTap={{ scale: 0.9 }} onClick={addExercise}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-xl cursor-pointer text-[10px] font-semibold"
+                style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
+                <Plus size={9} /> Ajouter
+              </motion.button>
+            </div>
+            <div className="flex flex-col gap-2">
+              {exercises.map((ex, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center gap-2"
+                >
+                  <span className="text-[10px] font-bold w-5 text-right flex-shrink-0" style={{ color: "#A0AEC0" }}>{i + 1}.</span>
+                  <input
+                    type="text"
+                    value={ex}
+                    onChange={e => updateExercise(i, e.target.value)}
+                    placeholder={`Exercice ${i + 1}`}
+                    className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.4)", color: "#2D3748" }}
+                  />
+                  {exercises.length > 1 && (
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeExercise(i)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                      style={{ background: "rgba(252,129,129,0.12)" }}>
+                      <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+                    </motion.button>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4" style={{ borderTop: "1px solid rgba(240,235,255,0.8)" }}>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleCreate}
+            disabled={!title.trim()}
+            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
+            style={{
+              background: title.trim()
+                ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)"
+                : "rgba(240,235,255,0.5)",
+              color: title.trim() ? "#2D3748" : "#A0AEC0",
+              boxShadow: title.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+            }}
+          >
+            Créer la séance
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
+  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances">("progression");
   const [shareData, setShareData]           = useState<PerformanceData | null>(null);
   const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
   const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
+  const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
   const { settings } = useProfileSettings();
@@ -1032,7 +1255,7 @@ export default function ProgressionPage() {
       supabase.from("nutrition_logs").select("date, calories")
         .eq("user_id", user.id).gte("date", toDateStr(sevenAgo)),
     ]);
-    if (wData) setWeights(wData.map(r => ({ date: r.date, weight: r.weight_kg })));
+    if (wData) setWeights(wData.map((r: { date: string; weight_kg: number }) => ({ date: r.date, weight: r.weight_kg })));
     const dayNames = ["D", "L", "M", "M", "J", "V", "S"];
     const calMap: Record<string, number> = {};
     (cData ?? []).forEach((r: { date: string; calories: number }) => {
@@ -1103,13 +1326,52 @@ export default function ProgressionPage() {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-8"
+        className="mb-6"
       >
         <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "#A0AEC0" }}>
           Votre Journey
         </p>
         <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Ma Progression</h1>
       </motion.div>
+
+      {/* ── Tab switcher ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+        className="flex gap-2 mb-8"
+      >
+        {([
+          { key: "progression", label: "Progression" },
+          { key: "mes-seances", label: "Mes Séances" },
+        ] as const).map(({ key, label }) => (
+          <motion.button
+            key={key}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setActiveTab(key)}
+            className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200"
+            style={activeTab === key
+              ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 12px rgba(167,139,250,0.2)" }
+              : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.7)" }
+            }
+          >
+            {label}
+          </motion.button>
+        ))}
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+
+      {/* ══════════ TAB PROGRESSION ══════════ */}
+      {activeTab === "progression" && (
+        <motion.div
+          key="progression-tab"
+          initial={{ opacity: 0, x: -16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col gap-0"
+        >
 
       {/* ── Graphiques ── */}
       <motion.div
@@ -1154,109 +1416,6 @@ export default function ProgressionPage() {
           accept="video/*" cardClass="lg-turquoise"
           captureMode="video" captureLabel="Enregistrer votre mouvement"
         />
-      </motion.div>
-
-      {/* ── Séances prêtes ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mb-10 max-w-5xl"
-      >
-        {/* Section header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
-              Prêt à l&apos;emploi
-            </p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances du jour</h2>
-          </div>
-          <span
-            className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-            style={{ background: "rgba(249,168,201,0.15)", color: "#A78BFA" }}
-          >
-            {workoutSessions.length} séances
-          </span>
-        </div>
-
-        {/* Category filter + arrow buttons */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex gap-2 flex-1 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-            {categoryFilters.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setCategoryFilter(key)}
-                className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                style={
-                  categoryFilter === key
-                    ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                    : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
-                }
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* Desktop scroll arrows */}
-          <div className="hidden md:flex gap-1 flex-shrink-0">
-            {[
-              { dir: "left"  as const, Icon: ChevronLeft },
-              { dir: "right" as const, Icon: ChevronRight },
-            ].map(({ dir, Icon }) => (
-              <motion.button
-                key={dir}
-                whileTap={{ scale: 0.88 }}
-                onClick={() => scroll(dir)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.8)" }}
-              >
-                <Icon size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-              </motion.button>
-            ))}
-          </div>
-        </div>
-
-        {/* Cards — break out of parent px-6 so scroll reaches viewport edge */}
-        <div className="relative -mx-6">
-          {/* Left fade */}
-          <div className="absolute left-0 top-0 bottom-4 w-8 z-10 pointer-events-none"
-            style={{ background: "linear-gradient(to right, rgba(248,247,252,0.9) 0%, transparent 100%)" }} />
-          {/* Right fade */}
-          <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
-            style={{ background: "linear-gradient(to left, rgba(248,247,252,0.95) 0%, transparent 100%)" }}>
-            <motion.button
-              animate={{ x: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-              onClick={() => scroll("right")}
-              whileTap={{ scale: 0.85 }}
-              className="cursor-pointer"
-              style={{ pointerEvents: "all", background: "none", border: "none", padding: 4 }}
-              aria-label="Défiler à droite"
-            >
-              <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C8B8D8" }} />
-            </motion.button>
-          </div>
-
-          <div
-            ref={scrollRef}
-            className="flex gap-3 overflow-x-auto pb-4 px-6"
-            style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredSessions.map((session) => (
-                <WorkoutCard
-                  key={session.id}
-                  session={session}
-                  gender={settings.gender}
-                  isActive={activeWorkout?.id === session.id}
-                  isDone={completedWorkouts.has(session.id)}
-                  onStart={handleStartWorkout}
-                />
-              ))}
-            </AnimatePresence>
-            <div className="flex-shrink-0 w-6" />
-          </div>
-        </div>
       </motion.div>
 
       {/* ── Timeline ── */}
@@ -1331,6 +1490,239 @@ export default function ProgressionPage() {
         ))}
       </motion.div>
 
+        </motion.div>
+      )}
+
+      {/* ══════════ TAB MES SÉANCES ══════════ */}
+      {activeTab === "mes-seances" && (
+        <motion.div
+          key="mes-seances-tab"
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 16 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col gap-0"
+        >
+
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="flex items-center justify-between mb-6 max-w-5xl"
+          >
+            <div>
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+                Bibliothèque
+              </p>
+              <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances disponibles</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+                style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+              >
+                {workoutSessions.length + customSessions.length} séances
+              </span>
+              <motion.button
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+              >
+                <Plus size={13} strokeWidth={2} />
+                Créer
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* Category filter + arrow buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="flex items-center gap-2 mb-4 max-w-5xl"
+          >
+            <div className="flex gap-2 flex-1 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              {categoryFilters.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setCategoryFilter(key)}
+                  className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
+                  style={
+                    categoryFilter === key
+                      ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                      : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="hidden md:flex gap-1 flex-shrink-0">
+              {([{ dir: "left" as const, Icon: ChevronLeft }, { dir: "right" as const, Icon: ChevronRight }]).map(({ dir, Icon }) => (
+                <motion.button
+                  key={dir}
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => scroll(dir)}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.8)" }}
+                >
+                  <Icon size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Cards carousel */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="relative -mx-6 mb-10"
+          >
+            <div className="absolute left-0 top-0 bottom-4 w-8 z-10 pointer-events-none"
+              style={{ background: "linear-gradient(to right, rgba(248,247,252,0.9) 0%, transparent 100%)" }} />
+            <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
+              style={{ background: "linear-gradient(to left, rgba(248,247,252,0.95) 0%, transparent 100%)" }}>
+              <motion.button
+                animate={{ x: [0, 5, 0] }}
+                transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+                onClick={() => scroll("right")}
+                whileTap={{ scale: 0.85 }}
+                className="cursor-pointer"
+                style={{ pointerEvents: "all", background: "none", border: "none", padding: 4 }}
+                aria-label="Défiler à droite"
+              >
+                <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C8B8D8" }} />
+              </motion.button>
+            </div>
+
+            <div
+              ref={scrollRef}
+              className="flex gap-3 overflow-x-auto pb-4 px-6"
+              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredSessions.map((session) => (
+                  <WorkoutCard
+                    key={session.id}
+                    session={session}
+                    gender={settings.gender}
+                    isActive={activeWorkout?.id === session.id}
+                    isDone={completedWorkouts.has(session.id)}
+                    onStart={handleStartWorkout}
+                  />
+                ))}
+                {/* Custom sessions */}
+                {customSessions
+                  .filter(s => categoryFilter === "tous" || s.category === categoryFilter)
+                  .map((session) => (
+                    <WorkoutCard
+                      key={session.id}
+                      session={session}
+                      gender={settings.gender}
+                      isActive={activeWorkout?.id === session.id}
+                      isDone={completedWorkouts.has(session.id)}
+                      onStart={handleStartWorkout}
+                    />
+                  ))
+                }
+              </AnimatePresence>
+              {/* "Créer" placeholder card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setShowCreateModal(true)}
+                className="flex-shrink-0 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer"
+                style={{
+                  width: 180,
+                  minHeight: 280,
+                  background: "rgba(255,255,255,0.5)",
+                  backdropFilter: "blur(10px)",
+                  border: "2px dashed rgba(167,139,250,0.35)",
+                }}
+              >
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}
+                >
+                  <Plus size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                </div>
+                <div className="text-center px-4">
+                  <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Créer</p>
+                  <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>Ma propre séance</p>
+                </div>
+              </motion.div>
+              <div className="flex-shrink-0 w-6" />
+            </div>
+          </motion.div>
+
+          {/* Custom sessions list (if any) */}
+          {customSessions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-5xl mb-8"
+            >
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3" style={{ color: "#A0AEC0" }}>
+                Mes créations
+              </p>
+              <div className="flex flex-col gap-2">
+                {customSessions.map((s) => {
+                  const Icon = s.icon;
+                  return (
+                    <motion.div
+                      key={s.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${s.accent}22`, border: `1px solid ${s.accent}44` }}
+                      >
+                        <Icon size={15} strokeWidth={1.5} style={{ color: s.accent }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{s.title}</p>
+                        <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
+                          {s.duration} min · {s.difficulty} · {s.exercises} exos
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.93 }}
+                          onClick={() => handleStartWorkout(s)}
+                          className="px-3 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer"
+                          style={{ background: `${s.accent}22`, color: s.accent, border: `1px solid ${s.accent}44` }}
+                        >
+                          Démarrer
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setCustomSessions(p => p.filter(cs => cs.id !== s.id))}
+                          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                          style={{ background: "rgba(252,129,129,0.1)" }}
+                        >
+                          <Trash2 size={13} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+        </motion.div>
+      )}
+
+      </AnimatePresence>
+
       <SharePerformanceModal
         open={shareData !== null}
         onClose={() => setShareData(null)}
@@ -1350,6 +1742,19 @@ export default function ProgressionPage() {
             onComplete={() =>
               setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]))
             }
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Create session modal ── */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateSessionModal
+            onClose={() => setShowCreateModal(false)}
+            onCreate={(s) => {
+              setCustomSessions(p => [s, ...p]);
+              showToast(`"${s.title}" créée ✓`);
+            }}
           />
         )}
       </AnimatePresence>

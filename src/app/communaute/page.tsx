@@ -2,10 +2,28 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 
 type View = "feed" | "search" | "dms" | "thread";
+type SearchFilter = "tous" | "compte" | "contenu";
+
+type ContentResult = {
+  id: number;
+  title: string;
+  sub: string;
+  tag: string;
+  color: string;
+};
+
+const contentResults: ContentResult[] = [
+  { id: 1, title: "Programme Full Body 4j/sem", sub: "Partagé par Léo Bertrand", tag: "Programme", color: "#A78BFA" },
+  { id: 2, title: "Recette : Bowl Protéiné", sub: "Partagé par Sofia Martinez", tag: "Nutrition", color: "#D4A843" },
+  { id: 3, title: "Routine Mobilité Matinale", sub: "Partagé par Coach Aura Officiel", tag: "Mobilité", color: "#34D399" },
+  { id: 4, title: "Plan Sèche 8 semaines", sub: "Partagé par Nico Strength", tag: "Programme", color: "#A78BFA" },
+  { id: 5, title: "Recette : Overnight Oats", sub: "Partagé par Sarah Wellness", tag: "Nutrition", color: "#D4A843" },
+  { id: 6, title: "Guide récupération active", sub: "Partagé par Eléa Runner", tag: "Récupération", color: "#60A5FA" },
+];
 
 type User = {
   handle: string;
@@ -547,6 +565,7 @@ export default function CommunautePage() {
   const [view, setView] = useState<View>("feed");
   const [activeThread, setActiveThread] = useState<User | null>(null);
   const [search, setSearch] = useState("");
+  const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set([2]));
   const [following, setFollowing] = useState<Set<string>>(new Set());
   const [openComments, setOpenComments] = useState<Set<number>>(new Set());
@@ -624,13 +643,15 @@ export default function CommunautePage() {
   };
 
   const filteredResults = useMemo(() => {
-    if (!search.trim()) return { friends: users, influencers };
-    const q = search.toLowerCase();
+    const q = search.trim().toLowerCase();
+    const matchPeople = (u: User) => !q || u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q);
+    const matchContent = (c: ContentResult) => !q || c.title.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q);
     return {
-      friends: users.filter((u) => u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)),
-      influencers: influencers.filter((u) => u.name.toLowerCase().includes(q) || u.handle.toLowerCase().includes(q)),
+      friends:     searchFilter !== "contenu" ? users.filter(matchPeople)       : [],
+      influencers: searchFilter !== "contenu" ? influencers.filter(matchPeople) : [],
+      contents:    searchFilter !== "compte"  ? contentResults.filter(matchContent) : [],
     };
-  }, [search]);
+  }, [search, searchFilter]);
 
   const visibleFeed = feedData.filter((p) => !hiddenPosts.has(p.id));
 
@@ -920,6 +941,7 @@ export default function CommunautePage() {
             exit={{ opacity: 0 }}
             className="flex flex-col gap-5"
           >
+            {/* Search bar */}
             <div className="lg-strong lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
               <Search size={16} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
               <input
@@ -927,17 +949,36 @@ export default function CommunautePage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
-                placeholder="Rechercher amis ou influenceurs…"
+                placeholder="Rechercher comptes, programmes, recettes…"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0]"
                 style={{ color: "#2D3748" }}
               />
               {search && (
                 <button onClick={() => setSearch("")} className="cursor-pointer" aria-label="Effacer">
-                  <span className="text-xs" style={{ color: "#A0AEC0" }}>Effacer</span>
+                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </button>
               )}
             </div>
 
+            {/* Filters */}
+            <div className="flex gap-2">
+              {(["tous", "compte", "contenu"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setSearchFilter(f)}
+                  className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150 capitalize"
+                  style={
+                    searchFilter === f
+                      ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                      : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                  }
+                >
+                  {f === "tous" ? "Tous" : f === "compte" ? "Comptes" : "Contenus"}
+                </button>
+              ))}
+            </div>
+
+            {/* Influencers */}
             {filteredResults.influencers.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
@@ -972,6 +1013,7 @@ export default function CommunautePage() {
               </div>
             )}
 
+            {/* Friends */}
             {filteredResults.friends.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
@@ -1006,9 +1048,46 @@ export default function CommunautePage() {
               </div>
             )}
 
-            {filteredResults.friends.length === 0 && filteredResults.influencers.length === 0 && (
+            {/* Contents */}
+            {filteredResults.contents.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
+                  Contenus
+                </p>
+                <div className="flex flex-col gap-2">
+                  {filteredResults.contents.map((c) => (
+                    <motion.div
+                      key={c.id}
+                      whileHover={{ y: -1 }}
+                      className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${c.color}22`, border: `1px solid ${c.color}44` }}
+                      >
+                        <Dumbbell size={15} strokeWidth={1.5} style={{ color: c.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{c.title}</p>
+                        <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>{c.sub}</p>
+                      </div>
+                      <span
+                        className="text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded-full flex-shrink-0"
+                        style={{ background: `${c.color}18`, color: c.color }}
+                      >
+                        {c.tag}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {filteredResults.friends.length === 0 && filteredResults.influencers.length === 0 && filteredResults.contents.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucun résultat pour « {search} »</p>
+                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                  {search ? `Aucun résultat pour « ${search} »` : "Tape quelque chose pour rechercher"}
+                </p>
               </div>
             )}
           </motion.div>

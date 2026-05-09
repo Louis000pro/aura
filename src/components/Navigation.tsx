@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, TrendingUp, Users, User, LogIn, LogOut, Search, Utensils } from "lucide-react";
+import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const tabs = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/nutrition", label: "Nutrition", icon: Utensils },
-  { href: "/recherche", label: "Recherche", icon: Search },
-  { href: "/progression", label: "Progression", icon: TrendingUp },
+{ href: "/progression", label: "Progression", icon: TrendingUp },
   { href: "/communaute", label: "Communauté", icon: Users, badge: 3 },
   { href: "/profil", label: "Profil", icon: User },
 ];
