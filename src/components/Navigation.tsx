@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 
 const tabs = [
   { href: "/", label: "Accueil", icon: Home },
@@ -67,6 +68,12 @@ export default function Navigation() {
                 </Link>
               );
             })}
+            {/* Cloche notifications mobile */}
+            {user && (
+              <div className="flex-1 flex items-center justify-center py-2">
+                <NotificationBell side="bottom" />
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -124,6 +131,9 @@ export default function Navigation() {
           <AnimatePresence mode="wait">
             {user ? (
               <motion.div key="user" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex flex-col items-center gap-2">
+                {/* Cloche notifications */}
+                <NotificationBell side="right" />
+
                 <Link href="/profil" aria-label="Mon profil" title={`@${user.pseudo ?? user.name ?? ""}`}>
                   <motion.div
                     whileHover={{ scale: 1.1 }}

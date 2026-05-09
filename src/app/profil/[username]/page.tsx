@@ -104,6 +104,14 @@ export default function PublicProfilePage() {
       await supabase
         .from("followers")
         .insert({ follower_id: user.id, following_id: profile.id });
+      // Envoyer une notification à l'utilisateur suivi
+      await supabase.from("notifications").insert({
+        user_id: profile.id,
+        from_user_id: user.id,
+        from_pseudo: user.pseudo,
+        from_avatar_url: user.avatar ?? null,
+        type: "follow",
+      });
       setIsFollowing(true);
       setFollowerCount((c) => c + 1);
       showToast("Abonné ! 🎉");
