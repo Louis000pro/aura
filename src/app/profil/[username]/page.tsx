@@ -11,6 +11,9 @@ type Profile = {
   id: string;
   pseudo: string;
   name?: string;
+  full_name?: string;
+  bio?: string;
+  avatar_url?: string;
   level?: string;
   goals?: string[];
 };
@@ -46,7 +49,7 @@ export default function PublicProfilePage() {
 
     supabase
       .from("profiles")
-      .select("id, pseudo, name, level, goals")
+      .select("id, pseudo, name, full_name, bio, avatar_url, level, goals")
       .eq("pseudo", username)
       .maybeSingle()
       .then(async ({ data, error }) => {
@@ -167,7 +170,9 @@ export default function PublicProfilePage() {
     );
   }
 
-  const displayName = profile?.pseudo ?? profile?.name ?? username;
+  const displayName = profile?.full_name || profile?.pseudo || profile?.name || username;
+  const displayPseudo = profile?.pseudo ?? username;
+  const displayAvatar = profile?.avatar_url ?? "";
   const initial = displayName[0]?.toUpperCase() ?? "?";
 
   return (
@@ -224,36 +229,59 @@ export default function PublicProfilePage() {
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        <div className="flex items-center gap-4 relative z-10">
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: 3 }}
-            transition={{ type: "spring", bounce: 0.4 }}
-            className="w-20 h-20 rounded-3xl flex items-center justify-center text-3xl font-semibold flex-shrink-0"
+        <div className="flex flex-col items-center text-center relative z-10 mb-4">
+          {/* Avatar */}
+          <div
+            className="relative mb-3"
             style={{
-              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-              color: "#2D3748",
-              boxShadow: "0 6px 24px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
+              width: 88,
+              height: 88,
+              borderRadius: "50%",
+              padding: 3,
+              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+              boxShadow: "0 6px 24px rgba(167,139,250,0.28)",
             }}
           >
-            {initial}
-          </motion.div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-medium truncate" style={{ color: "#2D3748" }}>
-              {displayName}
-            </p>
-            <p className="text-sm font-light" style={{ color: "#A78BFA" }}>
-              @{profile?.pseudo ?? username}
-            </p>
-            {profile?.level && (
-              <span
-                className="inline-block mt-1.5 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
-              >
-                {profile.level}
-              </span>
-            )}
+            <div
+              className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
+              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "#2D3748" }}
+            >
+              {displayAvatar
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                : <span>{initial}</span>}
+            </div>
           </div>
+
+          {/* Name */}
+          <p className="text-xl font-semibold leading-tight" style={{ color: "#2D3748" }}>
+            {displayName}
+          </p>
+          <p className="text-sm font-light mt-0.5" style={{ color: "#A78BFA" }}>
+            @{displayPseudo}
+          </p>
+
+          {/* Bio */}
+          {profile?.bio && (
+            <p className="text-sm mt-2 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
+              {profile.bio}
+            </p>
+          )}
+
+          {/* Level badge */}
+          {profile?.level && (
+            <span
+              className="inline-block mt-2 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+            >
+              {profile.level}
+            </span>
+          )}
+        </div>
+
+        {/* Follow button row */}
+        <div className="flex justify-center relative z-10">
+          <div className="flex gap-2">
 
           {!isOwnProfile && user && (
             <motion.button
@@ -305,6 +333,7 @@ export default function PublicProfilePage() {
               Modifier
             </motion.button>
           )}
+          </div>
         </div>
 
         {/* Stats */}
