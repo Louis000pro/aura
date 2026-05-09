@@ -8,6 +8,7 @@ import {
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
   Target, Pencil,
 } from "lucide-react";
+import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
@@ -291,53 +292,76 @@ function EditProfileModal({
   );
 }
 
-/* ─────────────── Follow list types ─────────────── */
-type FollowUser = {
-  id: number;
-  name: string;
-  handle: string;
-  initials: string;
-  color: string;
-  following: boolean;
+/* ─────────────── Follow List Modal (vraies données Supabase) ─────────────── */
+type RealFollowUser = {
+  id: string;
+  pseudo: string;
+  full_name?: string;
+  avatar_url?: string;
 };
 
-const MOCK_FOLLOWERS: FollowUser[] = [
-  { id: 1, name: "Lucas Martin", handle: "lucas.fit", initials: "LM", color: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", following: true },
-  { id: 2, name: "Emma Dupont", handle: "emma_lifting", initials: "ED", color: "linear-gradient(135deg,#FFFBF0,#F5E6A3)", following: false },
-  { id: 3, name: "Noah Moreau", handle: "noahgains", initials: "NM", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true },
-  { id: 4, name: "Chloé Bernard", handle: "chloe.b", initials: "CB", color: "linear-gradient(135deg,#FFFBF0,#F0EBFF)", following: false },
-  { id: 5, name: "Hugo Petit", handle: "hugopetit77", initials: "HP", color: "linear-gradient(135deg,#D4C0FF,#FFFBF0)", following: true },
-  { id: 6, name: "Léa Rousseau", handle: "lea.rousseau", initials: "LR", color: "linear-gradient(135deg,#F5E6A3,#F0EBFF)", following: false },
-  { id: 7, name: "Nathan Simon", handle: "nath_sport", initials: "NS", color: "linear-gradient(135deg,#F0EBFF,#F5E6A3)", following: true },
-  { id: 8, name: "Inès Laurent", handle: "ines.fit", initials: "IL", color: "linear-gradient(135deg,#D4C0FF,#F0EBFF)", following: false },
-];
-
-const MOCK_FOLLOWING: FollowUser[] = [
-  { id: 3, name: "Noah Moreau", handle: "noahgains", initials: "NM", color: "linear-gradient(135deg,#F0EBFF,#D4C0FF)", following: true },
-  { id: 5, name: "Hugo Petit", handle: "hugopetit77", initials: "HP", color: "linear-gradient(135deg,#D4C0FF,#FFFBF0)", following: true },
-  { id: 7, name: "Nathan Simon", handle: "nath_sport", initials: "NS", color: "linear-gradient(135deg,#F0EBFF,#F5E6A3)", following: true },
-  { id: 9, name: "Tom Lefevre", handle: "tom_lefevre", initials: "TL", color: "linear-gradient(135deg,#FFFBF0,#D4C0FF)", following: true },
-  { id: 13, name: "Sophie Michel", handle: "sophiefit", initials: "SM", color: "linear-gradient(135deg,#D4C0FF,#F0EBFF)", following: true },
-];
-
-/* ─────────────── Follow List Modal ─────────────── */
-function FollowListModal({ type, onClose }: { type: "Abonnés" | "Abonnements"; onClose: () => void }) {
-  const rawList = type === "Abonnés" ? MOCK_FOLLOWERS : MOCK_FOLLOWING;
+function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonnements"; userId: string; onClose: () => void }) {
   const [query, setQuery] = useState("");
-  const [followed, setFollowed] = useState<Set<number>>(
-    () => new Set(rawList.filter((u) => u.following).map((u) => u.id))
-  );
+  const [list, setList] = useState<RealFollowUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
-  const list = query.trim()
-    ? rawList.filter((u) => u.name.toLowerCase().includes(query.toLowerCase()) || u.handle.toLowerCase().includes(query.toLowerCase()))
-    : rawList;
+  useEffect(() => {
+    const supabase = createClient();
+    setLoading(true);
 
-  const toggle = (id: number) =>
-    setFollowed((prev) => {
+    const fetchList = async () => {
+      // Récupérer les IDs
+      const col = type === "Abonnés" ? "follower_id" : "following_id";
+      const filter = type === "Abonnés" ? "following_id" : "follower_id";
+
+      const { data: rows } = await supabase
+        .from("followers")
+        .select(col)
+        .eq(filter, userId);
+
+      if (!rows || rows.length === 0) { setList([]); setLoading(false); return; }
+
+      const ids = rows.map((r) => r[col] as string);
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, pseudo, full_name, avatar_url")
+        .in("id", ids);
+
+      setList(profiles ?? []);
+
+      // Charger aussi les abonnements actuels pour afficher le bon état du bouton
+      const { data: myFollows } = await supabase
+        .from("followers")
+        .select("following_id")
+        .eq("follower_id", userId);
+      setFollowingIds(new Set((myFollows ?? []).map((r) => r.following_id as string)));
+      setLoading(false);
+    };
+
+    fetchList();
+  }, [type, userId]);
+
+  const handleFollow = async (profile: RealFollowUser) => {
+    const supabase = createClient();
+    const isF = followingIds.has(profile.id);
+    setFollowingIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      isF ? next.delete(profile.id) : next.add(profile.id);
       return next;
     });
+    if (isF) {
+      await supabase.from("followers").delete().eq("follower_id", userId).eq("following_id", profile.id);
+    } else {
+      await supabase.from("followers").insert({ follower_id: userId, following_id: profile.id });
+      supabase.from("notifications").insert({ user_id: profile.id, from_user_id: userId, from_pseudo: profile.pseudo, type: "follow" }).then(() => {}).catch(() => {});
+    }
+  };
+
+  const filtered = query.trim()
+    ? list.filter((u) => (u.pseudo + (u.full_name ?? "")).toLowerCase().includes(query.toLowerCase()))
+    : list;
 
   return (
     <motion.div
@@ -374,35 +398,52 @@ function FollowListModal({ type, onClose }: { type: "Abonnés" | "Abonnements"; 
         </div>
         <div className="h-px mx-4" style={{ background: "rgba(0,0,0,0.06)" }} />
         <div className="overflow-y-auto flex-1 py-2" style={{ scrollbarWidth: "none" }}>
-          {list.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <motion.div className="w-6 h-6 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
-              <Search size={28} strokeWidth={1.2} style={{ color: "#D0D8E0" }} />
-              <p className="text-sm" style={{ color: "#A0AEC0" }}>Aucun résultat</p>
+              <span className="text-3xl">👤</span>
+              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                {query ? "Aucun résultat" : type === "Abonnés" ? "Pas encore d'abonnés" : "Vous ne suivez personne"}
+              </p>
             </div>
           ) : (
-            list.map((user, i) => {
-              const isFollowing = followed.has(user.id);
+            filtered.map((u, i) => {
+              const isF = followingIds.has(u.id);
+              const isOwn = u.id === userId;
               return (
-                <motion.div key={user.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0" style={{ background: user.color, color: "#2D3748" }}>
-                    {user.initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{user.name}</p>
-                    <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>@{user.handle}</p>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.92 }}
-                    onClick={() => toggle(user.id)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
-                    style={isFollowing
-                      ? { background: "rgba(0,0,0,0.05)", color: "#718096", border: "1px solid rgba(0,0,0,0.08)" }
-                      : { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }
-                    }
-                  >
-                    {isFollowing ? <><UserCheck size={11} strokeWidth={2.5} />Abonné</> : <><UserPlus size={11} strokeWidth={2.5} />Suivre</>}
-                  </motion.button>
+                <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-4 py-2.5">
+                  <Link href={`/profil/${u.pseudo}`} onClick={onClose} className="flex-shrink-0">
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
+                      style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                      {u.avatar_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={u.avatar_url} alt={u.pseudo} className="w-full h-full object-cover" />
+                        : (u.pseudo[0] ?? "?").toUpperCase()}
+                    </div>
+                  </Link>
+                  <Link href={`/profil/${u.pseudo}`} onClick={onClose} className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{u.full_name || u.pseudo}</p>
+                    <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>@{u.pseudo}</p>
+                  </Link>
+                  {!isOwn && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => handleFollow(u)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
+                      style={isF
+                        ? { background: "rgba(0,0,0,0.05)", color: "#718096", border: "1px solid rgba(0,0,0,0.08)" }
+                        : { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }
+                      }
+                    >
+                      {isF ? <><UserCheck size={11} strokeWidth={2.5} />Abonné</> : <><UserPlus size={11} strokeWidth={2.5} />Suivre</>}
+                    </motion.button>
+                  )}
                 </motion.div>
               );
             })
@@ -1246,8 +1287,8 @@ export default function ProfilPage() {
             onSave={() => showToast("Objectifs mis à jour ✓")}
           />
         )}
-        {showFollowList && (
-          <FollowListModal type={showFollowList} onClose={() => setShowFollowList(null)} />
+        {showFollowList && user && (
+          <FollowListModal type={showFollowList} userId={user.id} onClose={() => setShowFollowList(null)} />
         )}
         {toast && <Toast message={toast} />}
       </AnimatePresence>
