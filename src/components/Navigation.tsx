@@ -125,13 +125,17 @@ export default function Navigation() {
           <AnimatePresence mode="wait">
             {user ? (
               <motion.div key="user" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-semibold cursor-default"
-                  style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
-                  title={`@${user.pseudo ?? user.name ?? ""}`}
-                >
-                  {(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}
-                </div>
+                <Link href="/profil" aria-label="Mon profil" title={`@${user.pseudo ?? user.name ?? ""}`}>
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.88 }}
+                    transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-semibold cursor-pointer"
+                    style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+                  >
+                    {(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}
+                  </motion.div>
+                </Link>
                 <motion.button
                   onClick={handleLogout}
                   whileHover={{ scale: 1.1 }}
