@@ -437,46 +437,53 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
 }
 
 // Add Story Modal — enregistre vraiment dans Supabase
-type AddStep = "pick" | "workout-preview" | "text-input" | "saving" | "success" | "no-session";
-type WorkoutPreview = { session_title: string; duration_minutes: number; calories_burned: number; category: string };
+type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "saving" | "success" | "no-session";
+type WorkoutPreview = { session_title: string; duration_minutes: number; calories_burned: number; category: string; started_at?: string };
 
 function AddStoryModal({ onClose, userId, onPublished }: {
   onClose: () => void;
   userId: string | null;
   onPublished: () => void;
 }) {
-  const [step, setStep] = useState<AddStep>("pick");
+  const [step, setStep]               = useState<AddStep>("pick");
+  const [sessions, setSessions]       = useState<WorkoutPreview[]>([]);
   const [workoutData, setWorkoutData] = useState<WorkoutPreview | null>(null);
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption]         = useState("");
   const [textContent, setTextContent] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("✨");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]             = useState<string | null>(null);
 
   const EMOJIS = ["💪", "🥗", "🧘", "🔥", "🏃", "✨", "🏆", "😴"];
 
+  // Catégorie → couleur de fond
+  const catColors: Record<string, string> = {
+    force:    "linear-gradient(135deg, #F0EBFF 0%, #E9D8FD 100%)",
+    cardio:   "linear-gradient(135deg, #FFFBF0 0%, #FDE68A 100%)",
+    mobilite: "linear-gradient(135deg, #ECFDF5 0%, #A7F3D0 100%)",
+    fullbody: "linear-gradient(135deg, #FFF5F5 0%, #FED7D7 100%)",
+  };
+
+  // Charger toutes les séances passées (sans limite de temps)
   const handleWorkout = async () => {
     if (!userId) { setError("Connecte-toi pour publier"); return; }
     setStep("saving");
     const supabase = createClient();
-    // Chercher la dernière séance des 48h
-    const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
-    const { data } = await supabase
+    const { data, error: e } = await supabase
       .from("workout_sessions")
-      .select("title, duration_minutes, calories_burned, category")
+      .select("title, duration_minutes, calories_burned, category, started_at")
       .eq("user_id", userId)
-      .gte("started_at", since)
       .order("started_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(15);
 
-    if (!data) { setStep("no-session"); return; }
-    setWorkoutData({
-      session_title: data.title ?? "Séance",
-      duration_minutes: data.duration_minutes ?? 0,
-      calories_burned: data.calories_burned ?? 0,
-      category: data.category ?? "force",
-    });
-    setStep("workout-preview");
+    if (e || !data || data.length === 0) { setStep("no-session"); return; }
+    setSessions(data.map((d) => ({
+      session_title:    d.title           ?? "Séance",
+      duration_minutes: d.duration_minutes ?? 0,
+      calories_burned:  d.calories_burned  ?? 0,
+      category:         d.category         ?? "force",
+      started_at:       d.started_at,
+    })));
+    setStep("workout-list");
   };
 
   const publishWorkout = async () => {
@@ -484,9 +491,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
     setStep("saving");
     const supabase = createClient();
     const { error: e } = await supabase.from("stories").insert({
-      user_id: userId,
+      user_id:      userId,
       content_type: "workout",
-      content_data: workoutData,
+      content_data: {
+        session_title:    workoutData.session_title,
+        duration_minutes: workoutData.duration_minutes,
+        calories_burned:  workoutData.calories_burned,
+        category:         workoutData.category,
+      },
       caption: caption.trim() || null,
     });
     if (e) { setError(e.message); setStep("workout-preview"); return; }
@@ -499,14 +511,26 @@ function AddStoryModal({ onClose, userId, onPublished }: {
     setStep("saving");
     const supabase = createClient();
     const { error: e } = await supabase.from("stories").insert({
-      user_id: userId,
+      user_id:      userId,
       content_type: "text",
       content_data: { text: textContent.trim(), emoji: selectedEmoji },
-      caption: null,
+      caption:      null,
     });
     if (e) { setError(e.message); setStep("text-input"); return; }
     setStep("success");
     onPublished();
+  };
+
+  // Formate la date relative d'une séance
+  const fmtDate = (iso?: string) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Hier";
+    if (diffDays < 7)  return `Il y a ${diffDays} j`;
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   };
 
   return (
@@ -545,8 +569,8 @@ function AddStoryModal({ onClose, userId, onPublished }: {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: Share2, label: "Ma séance", desc: "Dernière perf du jour", action: handleWorkout },
-                  { icon: Camera,  label: "Texte",     desc: "Un message + emoji",   action: () => setStep("text-input") },
+                  { icon: Share2, label: "Ma séance", desc: "Choisir une perf",   action: handleWorkout },
+                  { icon: Camera, label: "Texte",     desc: "Un message + emoji", action: () => setStep("text-input") },
                 ].map(({ icon: Icon, label, desc, action }) => (
                   <motion.button
                     key={label}
@@ -570,17 +594,59 @@ function AddStoryModal({ onClose, userId, onPublished }: {
             </motion.div>
           )}
 
+          {/* ── Liste des séances ── */}
+          {step === "workout-list" && (
+            <motion.div key="workout-list" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(240,235,255,0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+                <h2 className="text-base font-light" style={{ color: "#2D3748" }}>Quelle séance partager ?</h2>
+              </div>
+
+              <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-0.5" style={{ scrollbarWidth: "thin" }}>
+                {sessions.map((s, i) => (
+                  <motion.button
+                    key={i}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { setWorkoutData(s); setCaption(""); setStep("workout-preview"); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left cursor-pointer"
+                    style={{ background: catColors[s.category] ?? catColors.force, border: "1px solid rgba(255,255,255,0.8)" }}
+                  >
+                    <span className="text-2xl flex-shrink-0">🏋️</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{s.session_title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {s.duration_minutes > 0 && (
+                          <span className="text-[10px]" style={{ color: "#718096" }}>{s.duration_minutes} min</span>
+                        )}
+                        {s.calories_burned > 0 && (
+                          <span className="text-[10px]" style={{ color: "#718096" }}>· {s.calories_burned} kcal</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{fmtDate(s.started_at)}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* ── Aperçu séance ── */}
           {step === "workout-preview" && workoutData && (
             <motion.div key="workout-preview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-4">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("workout-list")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
                   <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
                 <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Aperçu de ta story</h2>
               </div>
 
-              <div className="rounded-2xl p-5 mb-4 text-center" style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #E9D8FD 100%)" }}>
+              <div className="rounded-2xl p-5 mb-4 text-center" style={{ background: catColors[workoutData.category] ?? catColors.force }}>
                 <div className="text-4xl mb-2">🏋️</div>
                 <p className="text-base font-semibold" style={{ color: "#2D3748" }}>{workoutData.session_title}</p>
                 <div className="flex justify-center gap-6 mt-3">
@@ -675,8 +741,8 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "no-session" && (
             <motion.div key="no-session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-4">
               <div className="text-4xl mb-3">🏋️</div>
-              <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Aucune séance récente</p>
-              <p className="text-sm font-light mb-5" style={{ color: "#A0AEC0" }}>Enregistre une séance pour la partager ici.</p>
+              <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
+              <p className="text-sm font-light mb-5" style={{ color: "#A0AEC0" }}>Lance une séance depuis Progression pour la partager.</p>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setStep("text-input")}
