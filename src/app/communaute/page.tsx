@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Pause } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import { createClient } from "@/lib/supabase";
@@ -423,23 +423,6 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
           <X size={20} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.8)" }} />
         </motion.button>
       </div>
-
-      {/* Indicateur de pause */}
-      <AnimatePresence>
-        {paused && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
-          >
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}>
-              <Pause size={28} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.9)" }} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Contenu */}
       <div className="flex-1 flex items-center justify-center px-6 pointer-events-none">
