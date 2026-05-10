@@ -935,21 +935,48 @@ export default function CommunautePage() {
   }, [user]);
 
   // Charger les stories actives (les miennes + celles des personnes que je suis)
+  // Join manuel des profils car la FK stories.user_id → auth.users (pas public.profiles)
   const loadStories = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
+
+    // 1. IDs à charger : moi + abonnements
     const { data: followedData } = await supabase
       .from("followers")
       .select("following_id")
       .eq("follower_id", user.id);
     const ids = [user.id, ...(followedData?.map((r) => r.following_id as string) ?? [])];
-    const { data } = await supabase
+
+    // 2. Stories actives (sans join automatique)
+    const { data: storiesData } = await supabase
       .from("stories")
-      .select("*, profiles(pseudo, full_name, avatar_url)")
+      .select("id, user_id, content_type, content_data, caption, created_at, expires_at")
       .in("user_id", ids)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
-    if (data) setRealStories(data as RealStory[]);
+
+    if (!storiesData || storiesData.length === 0) {
+      setRealStories([]);
+      return;
+    }
+
+    // 3. Profils correspondants (requête séparée)
+    const uniqueIds = [...new Set(storiesData.map((s) => s.user_id as string))];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, pseudo, full_name, avatar_url")
+      .in("id", uniqueIds);
+
+    const profileMap: Record<string, { pseudo: string; full_name: string | null; avatar_url: string | null }> =
+      Object.fromEntries((profilesData ?? []).map((p) => [p.id, p]));
+
+    // 4. Merge
+    setRealStories(
+      storiesData.map((s) => ({
+        ...s,
+        profiles: profileMap[s.user_id as string] ?? null,
+      })) as RealStory[]
+    );
   }, [user]);
 
   useEffect(() => { loadStories(); }, [loadStories]);
@@ -1772,7 +1799,7 @@ export default function CommunautePage() {
           <AddStoryModal
             onClose={() => setShowAddStory(false)}
             userId={user?.id ?? null}
-            onPublished={() => { loadStories(); setShowAddStory(false); }}
+            onPublished={() => { loadStories(); }}
           />
         )}
         {currentStory && <StoryViewer story={currentStory} onClose={() => setCurrentStory(null)} />}
