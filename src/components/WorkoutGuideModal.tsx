@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
-  Pause, Play, HelpCircle, ArrowLeft,
+  Pause, Play, HelpCircle, ArrowLeft, Share2,
 } from "lucide-react";
 import ExerciseAvatar from "@/components/ExerciseAvatar";
+import { createClient } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 /* ─── Types ──────────────────────────────────────────────── */
 export interface Exercise {
@@ -308,6 +310,9 @@ export default function WorkoutGuideModal({
   const [elapsed,       setElapsed]       = useState(0);
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
+  const [storyStatus,   setStoryStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
+
+  const { user } = useAuth();
 
   const pausedAtRef = useRef<number>(0);
 
@@ -316,6 +321,26 @@ export default function WorkoutGuideModal({
     if (phase === "done") onComplete?.();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  /* ── Partager la séance comme story ── */
+  const shareAsStory = useCallback(async () => {
+    if (!user) return;
+    setStoryStatus("saving");
+    const category = sessionId.split("-")[0] ?? "force";
+    const supabase = createClient();
+    const { error } = await supabase.from("stories").insert({
+      user_id: user.id,
+      content_type: "workout",
+      content_data: {
+        session_title: title,
+        duration_minutes: Math.round(elapsed / 60),
+        calories_burned: 0,
+        category,
+      },
+      caption: null,
+    });
+    setStoryStatus(error ? "error" : "done");
+  }, [user, sessionId, title, elapsed]);
 
   const cur      = exercises[exerciseIdx];
   const isHiit   = !!cur?.hiit;
@@ -964,15 +989,45 @@ export default function WorkoutGuideModal({
             )}
 
             {phase === "done" && (
-              <motion.button key="close"
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onClose}
-                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                style={{ background: "rgba(255,255,255,0.08)", color: "#E2E8F0" }}
-              >
-                Retour à la progression
-              </motion.button>
+              <motion.div key="done-actions" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-2">
+                {/* Partager en story */}
+                {user && storyStatus !== "done" && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={shareAsStory}
+                    disabled={storyStatus === "saving"}
+                    className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
+                    style={{ background: `linear-gradient(135deg,${accent}ee,${accent}88)`, color: "#fff", boxShadow: `0 6px 20px ${accent}44`, opacity: storyStatus === "saving" ? 0.7 : 1 }}
+                  >
+                    {storyStatus === "saving"
+                      ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block" }}>⏳</motion.span> Publication…</>
+                      : <><Share2 size={15} strokeWidth={2} /> Partager en story</>
+                    }
+                  </motion.button>
+                )}
+                {storyStatus === "done" && (
+                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                    className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
+                    style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}44` }}
+                  >
+                    ✓ Story publiée — visible 24h
+                  </motion.div>
+                )}
+                {storyStatus === "error" && (
+                  <p className="text-xs text-center" style={{ color: "#FC8181" }}>
+                    Erreur de publication. La table stories doit être créée dans Supabase.
+                  </p>
+                )}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={onClose}
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "#E2E8F0" }}
+                >
+                  Retour à la progression
+                </motion.button>
+              </motion.div>
             )}
 
           </AnimatePresence>
