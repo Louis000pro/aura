@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2 } from "lucide-react";
+import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 
@@ -659,6 +659,390 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
   );
 }
 
+/* ─── BarcodeScannerModal ────────────────────────────────────────────── */
+type BarcodePhase = "scan" | "loading" | "result" | "notfound";
+
+interface BarcodeProduct {
+  name: string;
+  brand: string | null;
+  image: string | null;
+  quantity: string | null;
+  per100: { calories: number; proteins: number; carbs: number; fats: number; fiber: number };
+}
+
+function BarcodeScannerModal({ onClose, onAdd }: {
+  onClose: () => void;
+  onAdd: (meal: Omit<MealEntry, "id">) => void;
+}) {
+  const [phase, setPhase] = useState<BarcodePhase>("scan");
+  const [product, setProduct] = useState<BarcodeProduct | null>(null);
+  const [grams, setGrams] = useState("100");
+  const [mealType, setMealType] = useState<MealType>(getMealTypeFromTime());
+  const [error, setError] = useState<string | null>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const html5QrRef = useRef<any>(null);
+  const didStop = useRef(false);
+
+  const stopScanner = async () => {
+    if (html5QrRef.current && !didStop.current) {
+      didStop.current = true;
+      try { await html5QrRef.current.stop(); } catch { /* already stopped */ }
+    }
+  };
+
+  const lookupBarcode = async (code: string) => {
+    await stopScanner();
+    setPhase("loading");
+    setError(null);
+    try {
+      const res = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(code)}`);
+      if (res.status === 404) { setPhase("notfound"); return; }
+      if (!res.ok) throw new Error("Erreur réseau");
+      const data: BarcodeProduct = await res.json();
+      setProduct(data);
+      setPhase("result");
+    } catch {
+      setError("Impossible de récupérer le produit, réessaie.");
+      setPhase("scan");
+      didStop.current = false;
+      startScanner();
+    }
+  };
+
+  const startScanner = () => {
+    if (!scannerRef.current) return;
+    import("html5-qrcode").then(({ Html5Qrcode }) => {
+      const scannerId = "aura-barcode-reader";
+      // Ensure container exists
+      if (!document.getElementById(scannerId)) return;
+      const scanner = new Html5Qrcode(scannerId, { verbose: false });
+      html5QrRef.current = scanner;
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 260, height: 130 }, aspectRatio: 1.7 },
+        (decodedText: string) => { lookupBarcode(decodedText); },
+        () => { /* scan attempt, ignore errors */ }
+      ).catch((err: unknown) => {
+        console.error("Camera error:", err);
+        setError("Caméra inaccessible — autorise l'accès à l'appareil photo.");
+      });
+    });
+  };
+
+  useEffect(() => {
+    const t = setTimeout(startScanner, 120);
+    return () => {
+      clearTimeout(t);
+      stopScanner();
+    };
+  }, []); // eslint-disable-line
+
+  const computedMacros = product ? {
+    calories: Math.round(product.per100.calories * Number(grams) / 100),
+    proteins: Math.round(product.per100.proteins * Number(grams) / 100 * 10) / 10,
+    carbs:    Math.round(product.per100.carbs    * Number(grams) / 100 * 10) / 10,
+    fats:     Math.round(product.per100.fats     * Number(grams) / 100 * 10) / 10,
+  } : null;
+
+  const handleConfirm = () => {
+    if (!product || !computedMacros) return;
+    const label = product.brand ? `${product.name} (${product.brand})` : product.name;
+    onAdd({
+      name: label,
+      calories: computedMacros.calories,
+      proteins: computedMacros.proteins,
+      carbs: computedMacros.carbs,
+      fats: computedMacros.fats,
+      time: nowHHMM(),
+      mealType,
+    });
+  };
+
+  const restart = () => {
+    setPhase("scan");
+    setProduct(null);
+    setGrams("100");
+    setError(null);
+    didStop.current = false;
+    setTimeout(startScanner, 80);
+  };
+
+  const CARD_STYLE = {
+    background: "rgba(255,255,255,0.96)",
+    backdropFilter: "blur(40px)",
+    border: "1px solid rgba(255,255,255,0.9)",
+    boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+  };
+
+  const adjustGrams = (delta: number) => {
+    setGrams(g => String(Math.max(1, (parseInt(g) || 100) + delta)));
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+      style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(16px)" }}
+      onClick={onClose}>
+
+      <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30 }}
+        transition={{ type: "spring", damping: 26, stiffness: 280 }}
+        className="w-full max-w-sm rounded-3xl overflow-hidden"
+        style={CARD_STYLE}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 pb-4">
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+              Scanner
+            </p>
+            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
+              {phase === "scan"     ? "Scanner un code-barres"
+               : phase === "loading" ? "Recherche du produit…"
+               : phase === "notfound"? "Produit non trouvé"
+               : "Produit identifié ✓"}
+            </h2>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        <div className="px-5 pb-6">
+          <AnimatePresence mode="wait">
+
+            {/* SCAN */}
+            {phase === "scan" && (
+              <motion.div key="scan"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex flex-col gap-3">
+
+                {error && (
+                  <div className="px-3 py-2.5 rounded-2xl text-xs font-medium"
+                    style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E", border: "1px solid rgba(252,129,129,0.2)" }}>
+                    ⚠️ {error}
+                  </div>
+                )}
+
+                {/* Camera viewport */}
+                <div className="relative rounded-2xl overflow-hidden"
+                  style={{ background: "#1A202C", minHeight: 200 }}>
+                  <div id="aura-barcode-reader" ref={scannerRef} style={{ width: "100%" }} />
+                  {/* Viewfinder overlay */}
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <div className="relative" style={{ width: 260, height: 100 }}>
+                      {/* Corner brackets */}
+                      {[["top-0 left-0","border-t-2 border-l-2 rounded-tl-lg"],
+                        ["top-0 right-0","border-t-2 border-r-2 rounded-tr-lg"],
+                        ["bottom-0 left-0","border-b-2 border-l-2 rounded-bl-lg"],
+                        ["bottom-0 right-0","border-b-2 border-r-2 rounded-br-lg"]
+                      ].map(([pos, cls], i) => (
+                        <div key={i} className={`absolute w-6 h-6 ${pos} ${cls}`}
+                          style={{ borderColor: "#A78BFA" }} />
+                      ))}
+                      {/* Animated scan line */}
+                      <motion.div
+                        className="absolute left-1 right-1 h-px"
+                        style={{ background: "linear-gradient(90deg,transparent,#A78BFA,transparent)" }}
+                        animate={{ top: ["10%", "90%", "10%"] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
+                  Centre le code-barres entre les repères — détection automatique
+                </p>
+              </motion.div>
+            )}
+
+            {/* LOADING */}
+            {phase === "loading" && (
+              <motion.div key="loading"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-4 py-8">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
+                  <Loader2 size={36} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                </motion.div>
+                <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.6, repeat: Infinity }}
+                  className="text-xs font-medium" style={{ color: "#4A5568" }}>
+                  Recherche dans Open Food Facts…
+                </motion.p>
+              </motion.div>
+            )}
+
+            {/* NOT FOUND */}
+            {phase === "notfound" && (
+              <motion.div key="notfound"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="flex flex-col items-center gap-4 py-6">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(167,139,250,0.08)" }}>
+                  <Barcode size={24} strokeWidth={1.5} style={{ color: "#C4B5FD" }} />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Produit non référencé</p>
+                  <p className="text-xs mt-1 font-light" style={{ color: "#A0AEC0" }}>
+                    Ce code-barres n&apos;existe pas encore dans Open Food Facts
+                  </p>
+                </div>
+                <div className="flex gap-2 w-full">
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
+                    className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                    style={{
+                      background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                      color: "#2D3748",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                    }}>
+                    Rescanner
+                  </motion.button>
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={onClose}
+                    className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
+                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    Annuler
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* RESULT */}
+            {phase === "result" && product && computedMacros && (
+              <motion.div key="result"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="flex flex-col gap-3">
+
+                {/* Product card */}
+                <div className="flex items-center gap-3 p-3 rounded-2xl"
+                  style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  {product.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.image} alt={product.name}
+                      className="w-14 h-14 rounded-xl object-contain flex-shrink-0"
+                      style={{ background: "#fff" }} />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(167,139,250,0.1)" }}>
+                      <Barcode size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm leading-tight" style={{ color: "#2D3748" }}>
+                      {product.name}
+                    </p>
+                    {product.brand && (
+                      <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{product.brand}</p>
+                    )}
+                    {product.quantity && (
+                      <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{product.quantity}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quantity stepper */}
+                <div>
+                  <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block"
+                    style={{ color: "#A0AEC0" }}>QUANTITÉ</label>
+                  <div className="flex items-center gap-2">
+                    <motion.button whileTap={{ scale: 0.86 }}
+                      onClick={() => adjustGrams(-10)}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
+                      <Minus size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                    </motion.button>
+                    <div className="flex-1 flex items-center gap-1">
+                      <input
+                        type="number" value={grams} min="1" max="2000"
+                        onChange={e => setGrams(e.target.value)}
+                        className="flex-1 text-center py-2 rounded-xl text-sm font-semibold outline-none"
+                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                      />
+                      <span className="text-sm font-light" style={{ color: "#A0AEC0" }}>g</span>
+                    </div>
+                    <motion.button whileTap={{ scale: 0.86 }}
+                      onClick={() => adjustGrams(10)}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
+                      <Plus size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Computed macros */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { label: "Calories", val: `${computedMacros.calories}`, unit: "kcal", color: "#A78BFA" },
+                    { label: "Protéines", val: `${computedMacros.proteins}`, unit: "g", color: "#A78BFA" },
+                    { label: "Glucides", val: `${computedMacros.carbs}`, unit: "g", color: "#7B5CC4" },
+                    { label: "Lipides", val: `${computedMacros.fats}`, unit: "g", color: "#D4A843" },
+                  ].map(({ label, val, unit, color }) => (
+                    <div key={label} className="text-center rounded-xl py-2.5"
+                      style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(212,192,255,0.15)" }}>
+                      <p className="text-sm font-semibold" style={{ color }}>{val}</p>
+                      <p className="text-[9px] mt-0.5" style={{ color: "#A0AEC0" }}>{unit}</p>
+                      <p className="text-[8px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Meal type */}
+                <div>
+                  <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
+                    style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(Object.keys(MEAL_META) as MealType[]).map(mt => (
+                      <motion.button key={mt} whileTap={{ scale: 0.95 }}
+                        onClick={() => setMealType(mt)}
+                        className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
+                        style={{
+                          background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
+                          border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
+                          color: mealType === mt ? "#2D3748" : "#718096",
+                        }}>
+                        <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
+                        <span>{MEAL_META[mt].label}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
+                    className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
+                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    Rescanner
+                  </motion.button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                    onClick={handleConfirm}
+                    className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                    style={{
+                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                      color: "#2D3748",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                    }}>
+                    Ajouter à mes repas ✓
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── ManualModal ────────────────────────────────────────────────────── */
 function ManualModal({ onClose, onAdd }: {
   onClose: () => void;
@@ -903,6 +1287,7 @@ export default function NutritionPage() {
   const [waterMl, setWaterMl] = useState(0);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [showBarcode, setShowBarcode] = useState(false);
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -963,6 +1348,19 @@ export default function NutritionPage() {
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`); }
     else showToast("Erreur lors de l'ajout");
     setShowPhoto(false);
+  };
+
+  /* ── Ajout repas code-barres ─── */
+  const handleAddBarcode = async (meal: Omit<MealEntry, "id">) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
+      food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
+      carbs: meal.carbs, fats: meal.fats, has_photo: false, time: meal.time,
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
+    else showToast("Erreur lors de l'ajout");
+    setShowBarcode(false);
   };
 
   /* ── Ajout repas manuel ─── */
@@ -1027,6 +1425,21 @@ export default function NutritionPage() {
             <span style={{ color: "#D4A843", fontSize: 11 }}>★</span>
             <span className="text-xs font-semibold" style={{ color: "#D4A843" }}>14 j</span>
           </motion.div>
+          {/* Barcode CTA */}
+          <motion.button
+            whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
+            onClick={() => setShowBarcode(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
+            style={{
+              background: "rgba(240,235,255,0.85)",
+              border: "1px solid rgba(167,139,250,0.3)",
+              boxShadow: "0 2px 10px rgba(167,139,250,0.15)",
+            }}>
+            <Barcode size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#A78BFA" }}>
+              Code-barres
+            </span>
+          </motion.button>
           {/* Photo CTA */}
           <motion.button
             whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
@@ -1168,6 +1581,18 @@ export default function NutritionPage() {
               </p>
             </div>
             <div className="flex gap-2">
+              <motion.button
+                whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
+                onClick={() => setShowBarcode(true)}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                style={{
+                  background: "rgba(240,235,255,0.7)",
+                  color: "#A78BFA",
+                  border: "1px solid rgba(167,139,250,0.25)",
+                }}>
+                <Barcode size={12} strokeWidth={2} />
+                Scanner
+              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
                 onClick={() => setShowPhoto(true)}
@@ -1313,6 +1738,9 @@ export default function NutritionPage() {
 
       {/* ── Modals + Toast ──────────────────────────────────────── */}
       <AnimatePresence>
+        {showBarcode && (
+          <BarcodeScannerModal key="barcode" onClose={() => setShowBarcode(false)} onAdd={handleAddBarcode} />
+        )}
         {showPhoto && (
           <PhotoAnalysisModal key="photo" onClose={() => setShowPhoto(false)} onAdd={handleAddPhoto} />
         )}
