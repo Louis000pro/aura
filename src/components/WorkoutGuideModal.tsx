@@ -6,6 +6,7 @@ import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
   Pause, Play, HelpCircle, ArrowLeft,
 } from "lucide-react";
+import ExerciseAvatar from "@/components/ExerciseAvatar";
 
 /* ─── Types ──────────────────────────────────────────────── */
 export interface Exercise {
@@ -595,6 +596,15 @@ export default function WorkoutGuideModal({
                       </div>
                     </div>
 
+                    {/* Avatar — forme parfaite */}
+                    <div className="flex justify-center py-1">
+                      <ExerciseAvatar
+                        exerciseName={cur.name}
+                        accent={accent}
+                        size={148}
+                      />
+                    </div>
+
                     {/* Benefit */}
                     <div className="rounded-2xl p-4"
                       style={{ background: `${accent}10`, border: `1px solid ${accent}25` }}>
@@ -741,6 +751,15 @@ export default function WorkoutGuideModal({
                         </motion.div>
                       )}
                     </AnimatePresence>
+
+                    {/* Avatar animé */}
+                    <div className="flex justify-center py-1">
+                      <ExerciseAvatar
+                        exerciseName={cur.name}
+                        accent={accent}
+                        size={128}
+                      />
+                    </div>
 
                     {/* Muscles */}
                     <div className="flex flex-wrap gap-1.5">
