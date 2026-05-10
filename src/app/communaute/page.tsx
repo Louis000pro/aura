@@ -437,7 +437,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
 }
 
 // Add Story Modal — enregistre vraiment dans Supabase
-type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "saving" | "success" | "no-session";
+type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "loading" | "saving" | "success" | "no-session" | "db-error";
 type WorkoutPreview = { session_title: string; duration_minutes: number; calories_burned: number; category: string; started_at?: string };
 
 function AddStoryModal({ onClose, userId, onPublished }: {
@@ -466,7 +466,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
   // Charger toutes les séances passées (sans limite de temps)
   const handleWorkout = async () => {
     if (!userId) { setError("Connecte-toi pour publier"); return; }
-    setStep("saving");
+    setStep("loading");
     const supabase = createClient();
     const { data, error: e } = await supabase
       .from("workout_sessions")
@@ -475,7 +475,8 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       .order("started_at", { ascending: false })
       .limit(15);
 
-    if (e || !data || data.length === 0) { setStep("no-session"); return; }
+    if (e) { setStep("db-error"); return; }
+    if (!data || data.length === 0) { setStep("no-session"); return; }
     setSessions(data.map((d) => ({
       session_title:    d.title           ?? "Séance",
       duration_minutes: d.duration_minutes ?? 0,
@@ -743,18 +744,60 @@ function AddStoryModal({ onClose, userId, onPublished }: {
               <div className="text-4xl mb-3">🏋️</div>
               <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
               <p className="text-sm font-light mb-5" style={{ color: "#A0AEC0" }}>Lance une séance depuis Progression pour la partager.</p>
+              <div className="flex flex-col gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setStep("pick")}
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
+                  style={{ background: "rgba(240,235,255,0.8)", color: "#A0AEC0" }}
+                >
+                  Retour
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setStep("text-input")}
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
+                  style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+                >
+                  Publier un texte à la place
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Erreur base de données ── */}
+          {step === "db-error" && (
+            <motion.div key="db-error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-4">
+              <div className="text-4xl mb-3">⚙️</div>
+              <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Table manquante</p>
+              <p className="text-sm font-light mb-4" style={{ color: "#A0AEC0" }}>
+                Exécute le SQL de migration <code className="text-xs px-1 rounded" style={{ background: "rgba(167,139,250,0.15)", color: "#7C3AED" }}>20260512_workout_sessions.sql</code> dans ton dashboard Supabase.
+              </p>
               <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setStep("text-input")}
+                onClick={() => setStep("pick")}
                 className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+                style={{ background: "rgba(240,235,255,0.8)", color: "#A0AEC0" }}
               >
-                Publier un texte à la place
+                Retour
               </motion.button>
             </motion.div>
           )}
 
-          {/* ── Chargement ── */}
+          {/* ── Chargement séances ── */}
+          {step === "loading" && (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-4">
+              <motion.div
+                className="w-10 h-10 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Chargement…</p>
+            </motion.div>
+          )}
+
+          {/* ── Publication en cours ── */}
           {step === "saving" && (
             <motion.div key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-4">
               <motion.div

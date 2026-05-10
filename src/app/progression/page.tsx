@@ -2338,6 +2338,7 @@ export default function ProgressionPage() {
             accent={activeWorkout.accent}
             duration={activeWorkout.duration}
             difficulty={activeWorkout.difficulty}
+            category={activeWorkout.category}
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
             onComplete={() =>

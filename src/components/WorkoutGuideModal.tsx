@@ -30,6 +30,7 @@ export interface WorkoutGuideModalProps {
   accent: string;
   duration: number;
   difficulty: string;
+  category?: string;
   onClose: () => void;
   onComplete?: () => void;
   exerciseList?: Exercise[];
@@ -293,7 +294,7 @@ const fmt = (s: number) =>
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
-  sessionId, title, accent, duration, difficulty, onClose, onComplete, exerciseList,
+  sessionId, title, accent, duration, difficulty, category, onClose, onComplete, exerciseList,
 }: WorkoutGuideModalProps) {
   const exercises = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
 
@@ -326,7 +327,8 @@ export default function WorkoutGuideModal({
   const shareAsStory = useCallback(async () => {
     if (!user) return;
     setStoryStatus("saving");
-    const category = sessionId.split("-")[0] ?? "force";
+    // category prop prioritaire, sinon on tente de le déduire du sessionId (ex: "force-haut" → "force")
+    const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
     const supabase = createClient();
     const { error } = await supabase.from("stories").insert({
       user_id: user.id,
@@ -335,12 +337,12 @@ export default function WorkoutGuideModal({
         session_title: title,
         duration_minutes: Math.round(elapsed / 60),
         calories_burned: 0,
-        category,
+        category: resolvedCategory,
       },
       caption: null,
     });
     setStoryStatus(error ? "error" : "done");
-  }, [user, sessionId, title, elapsed]);
+  }, [user, category, sessionId, title, elapsed]);
 
   const cur      = exercises[exerciseIdx];
   const isHiit   = !!cur?.hiit;
@@ -1015,9 +1017,22 @@ export default function WorkoutGuideModal({
                   </motion.div>
                 )}
                 {storyStatus === "error" && (
-                  <p className="text-xs text-center" style={{ color: "#FC8181" }}>
-                    Erreur de publication. La table stories doit être créée dans Supabase.
-                  </p>
+                  <div className="text-center">
+                    <p className="text-xs mb-1" style={{ color: "#FC8181" }}>
+                      Erreur de publication.
+                    </p>
+                    <p className="text-[10px]" style={{ color: "rgba(252,129,129,0.7)" }}>
+                      Exécute le SQL <code>20260511_stories.sql</code> dans Supabase, puis réessaie.
+                    </p>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setStoryStatus("idle")}
+                      className="mt-2 px-4 py-1.5 rounded-lg text-xs cursor-pointer"
+                      style={{ background: "rgba(252,129,129,0.15)", color: "#FC8181" }}
+                    >
+                      Réessayer
+                    </motion.button>
+                  </div>
                 )}
                 <motion.button
                   whileTap={{ scale: 0.97 }}
