@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
 import Link from "next/link";
@@ -34,6 +34,17 @@ type User = {
   verified?: boolean;
   followers?: string;
   bio?: string;
+};
+
+type RealStory = {
+  id: string;
+  user_id: string;
+  content_type: "workout" | "meal" | "text";
+  content_data: Record<string, unknown> | null;
+  caption: string | null;
+  created_at: string;
+  expires_at: string;
+  profiles: { pseudo: string; full_name: string | null; avatar_url: string | null } | null;
 };
 
 const users: User[] = [
@@ -128,7 +139,7 @@ const feedData: FeedItem[] = [
   },
 ];
 
-const stories = users.slice(0, 5).map((u, i) => ({ ...u, active: i % 2 === 0 }));
+// stories array supprimé — remplacé par realStories depuis Supabase
 
 type DM = { id: number; user: User; preview: string; time: string; unread: number };
 const dms: DM[] = [
@@ -176,18 +187,133 @@ function Avatar({ user, size = 40, ring = false }: { user: User; size?: number; 
   );
 }
 
-// Story Viewer Overlay
-function StoryViewer({ user, onClose }: { user: User; onClose: () => void }) {
+// Story Viewer Overlay — affiche le vrai contenu Supabase
+function StoryViewer({ story, onClose }: { story: RealStory; onClose: () => void }) {
   const [progress, setProgress] = useState(0);
+  const [reply, setReply] = useState("");
+  const profile = story.profiles;
+  const displayName = profile?.full_name || profile?.pseudo || "Utilisateur";
+  const initial = (profile?.pseudo?.[0] ?? "?").toUpperCase();
+
+  // Relative time
+  const relTime = (() => {
+    const diff = Date.now() - new Date(story.created_at).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "À l'instant";
+    if (min < 60) return `Il y a ${min} min`;
+    const h = Math.floor(min / 60);
+    return `Il y a ${h}h`;
+  })();
+
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((p) => (p >= 100 ? 100 : p + 2));
-    }, 60);
+    }, 80);
     return () => clearInterval(interval);
   }, []);
+
   useEffect(() => {
     if (progress >= 100) onClose();
   }, [progress, onClose]);
+
+  // Contenu selon le type
+  const renderContent = () => {
+    const d = story.content_data ?? {};
+
+    if (story.content_type === "workout") {
+      const catGrad: Record<string, string> = {
+        force:    "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
+        cardio:   "linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)",
+        mobilite: "linear-gradient(135deg, #A7F3D0 0%, #34D399 100%)",
+        fullbody: "linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)",
+      };
+      const grad = catGrad[(d.category as string) ?? "force"] ?? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)";
+      return (
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", bounce: 0.3 }}
+          className="w-full max-w-sm rounded-3xl p-8 text-center"
+          style={{ background: grad, boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+        >
+          <div className="text-6xl mb-4">🏋️</div>
+          <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>
+            {(d.session_title as string) ?? "Séance"}
+          </p>
+          {story.caption && (
+            <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>
+          )}
+          <div className="flex justify-center gap-6 mt-4">
+            {(d.duration_minutes as number) > 0 && (
+              <div className="text-center">
+                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.duration_minutes as number}</p>
+                <p className="text-xs" style={{ color: "#718096" }}>min</p>
+              </div>
+            )}
+            {(d.calories_burned as number) > 0 && (
+              <div className="text-center">
+                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories_burned as number}</p>
+                <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      );
+    }
+
+    if (story.content_type === "meal") {
+      return (
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", bounce: 0.3 }}
+          className="w-full max-w-sm rounded-3xl p-8 text-center"
+          style={{ background: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+        >
+          <div className="text-6xl mb-4">🥗</div>
+          <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>
+            {(d.meal_title as string) ?? "Repas"}
+          </p>
+          {story.caption && (
+            <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>
+          )}
+          <div className="flex justify-center gap-6 mt-4">
+            {(d.calories as number) > 0 && (
+              <div className="text-center">
+                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories as number}</p>
+                <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
+              </div>
+            )}
+            {(d.proteins as number) > 0 && (
+              <div className="text-center">
+                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.proteins as number}g</p>
+                <p className="text-xs" style={{ color: "#718096" }}>protéines</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      );
+    }
+
+    // Text
+    return (
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", bounce: 0.3 }}
+        className="w-full max-w-sm rounded-3xl p-8 text-center"
+        style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+      >
+        <div className="text-6xl mb-4">{(d.emoji as string) ?? "✨"}</div>
+        <p className="text-lg font-medium leading-snug" style={{ color: "#2D3748" }}>
+          {(d.text as string) ?? ""}
+        </p>
+        {story.caption && story.caption !== (d.text as string) && (
+          <p className="text-sm font-light mt-3" style={{ color: "#718096" }}>{story.caption}</p>
+        )}
+      </motion.div>
+    );
+  };
 
   return (
     <motion.div
@@ -208,10 +334,24 @@ function StoryViewer({ user, onClose }: { user: User; onClose: () => void }) {
 
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-8 pb-3 z-10" onClick={(e) => e.stopPropagation()}>
-        <Avatar user={user} size={36} ring />
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden font-semibold text-sm"
+          style={{
+            background: profile?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+            outline: "2px solid #D4C0FF",
+            outlineOffset: 2,
+            color: "#2D3748",
+          }}
+        >
+          {profile?.avatar_url
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+            : initial
+          }
+        </div>
         <div className="flex-1">
-          <p className="text-white text-sm font-semibold">{user.name}</p>
-          <p className="text-white/50 text-[11px]">Il y a 12 min</p>
+          <p className="text-white text-sm font-semibold">{displayName}</p>
+          <p className="text-white/50 text-[11px]">{relTime}</p>
         </div>
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="cursor-pointer">
           <X size={20} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.8)" }} />
@@ -220,26 +360,7 @@ function StoryViewer({ user, onClose }: { user: User; onClose: () => void }) {
 
       {/* Story content */}
       <div className="flex-1 flex items-center justify-center px-6" onClick={(e) => e.stopPropagation()}>
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", bounce: 0.3 }}
-          className="w-full max-w-sm rounded-3xl p-8 text-center"
-          style={{
-            background: user.gradient,
-            boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
-          }}
-        >
-          <div className="text-6xl mb-4" style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.1))" }}>
-            {user.initial === "S" ? "💪" : user.initial === "L" ? "🥗" : user.initial === "M" ? "🧘" : "✦"}
-          </div>
-          <p className="text-lg font-semibold" style={{ color: "#2D3748" }}>{user.name}</p>
-          <p className="text-sm font-light mt-2" style={{ color: "#718096" }}>
-            {user.initial === "S" ? "Séance du matin terminée ! 🔥" :
-             user.initial === "L" ? "Bowl protéiné du midi 🥗" :
-             "Récupération active · Yoga 30min"}
-          </p>
-        </motion.div>
+        {renderContent()}
       </div>
 
       {/* Reply bar */}
@@ -247,20 +368,91 @@ function StoryViewer({ user, onClose }: { user: User; onClose: () => void }) {
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
           <input
             type="text"
-            placeholder={`Répondre à ${user.name.split(" ")[0]}…`}
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            placeholder={`Répondre à ${displayName.split(" ")[0]}…`}
             className="flex-1 bg-transparent text-sm outline-none"
             style={{ color: "white" }}
           />
-          <Send size={16} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.5)" }} />
+          <Send size={16} strokeWidth={1.5} style={{ color: reply ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)" }} />
         </div>
       </div>
     </motion.div>
   );
 }
 
-// Add Story Modal
-function AddStoryModal({ onClose }: { onClose: () => void }) {
-  const [shared, setShared] = useState(false);
+// Add Story Modal — enregistre vraiment dans Supabase
+type AddStep = "pick" | "workout-preview" | "text-input" | "saving" | "success" | "no-session";
+type WorkoutPreview = { session_title: string; duration_minutes: number; calories_burned: number; category: string };
+
+function AddStoryModal({ onClose, userId, onPublished }: {
+  onClose: () => void;
+  userId: string | null;
+  onPublished: () => void;
+}) {
+  const [step, setStep] = useState<AddStep>("pick");
+  const [workoutData, setWorkoutData] = useState<WorkoutPreview | null>(null);
+  const [caption, setCaption] = useState("");
+  const [textContent, setTextContent] = useState("");
+  const [selectedEmoji, setSelectedEmoji] = useState("✨");
+  const [error, setError] = useState<string | null>(null);
+
+  const EMOJIS = ["💪", "🥗", "🧘", "🔥", "🏃", "✨", "🏆", "😴"];
+
+  const handleWorkout = async () => {
+    if (!userId) { setError("Connecte-toi pour publier"); return; }
+    setStep("saving");
+    const supabase = createClient();
+    // Chercher la dernière séance des 48h
+    const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+    const { data } = await supabase
+      .from("workout_sessions")
+      .select("title, duration_minutes, calories_burned, category")
+      .eq("user_id", userId)
+      .gte("started_at", since)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!data) { setStep("no-session"); return; }
+    setWorkoutData({
+      session_title: data.title ?? "Séance",
+      duration_minutes: data.duration_minutes ?? 0,
+      calories_burned: data.calories_burned ?? 0,
+      category: data.category ?? "force",
+    });
+    setStep("workout-preview");
+  };
+
+  const publishWorkout = async () => {
+    if (!userId || !workoutData) return;
+    setStep("saving");
+    const supabase = createClient();
+    const { error: e } = await supabase.from("stories").insert({
+      user_id: userId,
+      content_type: "workout",
+      content_data: workoutData,
+      caption: caption.trim() || null,
+    });
+    if (e) { setError(e.message); setStep("workout-preview"); return; }
+    setStep("success");
+    onPublished();
+  };
+
+  const publishText = async () => {
+    if (!userId || !textContent.trim()) return;
+    setStep("saving");
+    const supabase = createClient();
+    const { error: e } = await supabase.from("stories").insert({
+      user_id: userId,
+      content_type: "text",
+      content_data: { text: textContent.trim(), emoji: selectedEmoji },
+      caption: null,
+    });
+    if (e) { setError(e.message); setStep("text-input"); return; }
+    setStep("success");
+    onPublished();
+  };
 
   return (
     <motion.div
@@ -278,7 +470,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: "rgba(255,255,255,0.9)",
+          background: "rgba(255,255,255,0.95)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -286,30 +478,28 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">
-          {!shared ? (
-            <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+
+          {/* ── Choix du type ── */}
+          {step === "pick" && (
+            <motion.div key="pick" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Ajouter une story</h2>
                 <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
                   <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { icon: Camera, label: "Photo", desc: "Capturer un moment" },
-                  { icon: Share2, label: "Ma séance", desc: "Partager ma perf du jour" },
-                ].map(({ icon: Icon, label, desc }) => (
+                  { icon: Share2, label: "Ma séance", desc: "Dernière perf du jour", action: handleWorkout },
+                  { icon: Camera,  label: "Texte",     desc: "Un message + emoji",   action: () => setStep("text-input") },
+                ].map(({ icon: Icon, label, desc, action }) => (
                   <motion.button
                     key={label}
                     whileHover={{ scale: 1.03, y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => setShared(true)}
+                    onClick={action}
                     className="flex flex-col items-center gap-2 p-4 rounded-2xl cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)",
-                      border: "1px solid rgba(255,255,255,0.8)",
-                    }}
+                    style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", border: "1px solid rgba(255,255,255,0.8)" }}
                   >
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)" }}>
                       <Icon size={18} strokeWidth={1.5} style={{ color: "#2D3748" }} />
@@ -321,8 +511,143 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
                   </motion.button>
                 ))}
               </div>
+              {error && <p className="text-xs text-center mt-3" style={{ color: "#FC8181" }}>{error}</p>}
             </motion.div>
-          ) : (
+          )}
+
+          {/* ── Aperçu séance ── */}
+          {step === "workout-preview" && workoutData && (
+            <motion.div key="workout-preview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Aperçu de ta story</h2>
+              </div>
+
+              <div className="rounded-2xl p-5 mb-4 text-center" style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #E9D8FD 100%)" }}>
+                <div className="text-4xl mb-2">🏋️</div>
+                <p className="text-base font-semibold" style={{ color: "#2D3748" }}>{workoutData.session_title}</p>
+                <div className="flex justify-center gap-6 mt-3">
+                  {workoutData.duration_minutes > 0 && (
+                    <div>
+                      <p className="text-xl font-bold" style={{ color: "#2D3748" }}>{workoutData.duration_minutes}</p>
+                      <p className="text-[10px]" style={{ color: "#718096" }}>min</p>
+                    </div>
+                  )}
+                  {workoutData.calories_burned > 0 && (
+                    <div>
+                      <p className="text-xl font-bold" style={{ color: "#2D3748" }}>{workoutData.calories_burned}</p>
+                      <p className="text-[10px]" style={{ color: "#718096" }}>kcal</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <input
+                type="text"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Ajouter une légende (optionnel)…"
+                className="w-full text-sm outline-none px-4 py-3 rounded-xl mb-4"
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+              />
+              {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={publishWorkout}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+              >
+                Publier la story
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* ── Saisie texte ── */}
+          {step === "text-input" && (
+            <motion.div key="text-input" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Créer une story</h2>
+              </div>
+
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {EMOJIS.map((e) => (
+                  <motion.button
+                    key={e}
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => setSelectedEmoji(e)}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl cursor-pointer"
+                    style={{
+                      background: selectedEmoji === e ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.6)",
+                      border: selectedEmoji === e ? "1px solid rgba(212,192,255,0.8)" : "1px solid transparent",
+                    }}
+                  >
+                    {e}
+                  </motion.button>
+                ))}
+              </div>
+
+              <textarea
+                value={textContent}
+                onChange={(e) => setTextContent(e.target.value)}
+                placeholder="Ton message…"
+                rows={3}
+                className="w-full text-sm outline-none px-4 py-3 rounded-xl resize-none mb-4"
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+              />
+              {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={publishText}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
+                style={{
+                  background: textContent.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.6)",
+                  color: textContent.trim() ? "#2D3748" : "#A0AEC0",
+                  boxShadow: textContent.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                  cursor: textContent.trim() ? "pointer" : "not-allowed",
+                }}
+              >
+                Publier
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* ── Aucune séance ── */}
+          {step === "no-session" && (
+            <motion.div key="no-session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-4">
+              <div className="text-4xl mb-3">🏋️</div>
+              <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Aucune séance récente</p>
+              <p className="text-sm font-light mb-5" style={{ color: "#A0AEC0" }}>Enregistre une séance pour la partager ici.</p>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setStep("text-input")}
+                className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+              >
+                Publier un texte à la place
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* ── Chargement ── */}
+          {step === "saving" && (
+            <motion.div key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-4">
+              <motion.div
+                className="w-10 h-10 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Publication…</p>
+            </motion.div>
+          )}
+
+          {/* ── Succès ── */}
+          {step === "success" && (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -340,7 +665,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
                 <Check size={28} strokeWidth={2.5} style={{ color: "#2D3748" }} />
               </motion.div>
               <p className="text-lg font-light" style={{ color: "#2D3748" }}>Story publiée !</p>
-              <p className="text-sm text-center font-light" style={{ color: "#A0AEC0" }}>Visible pendant 24h par vos amis</p>
+              <p className="text-sm text-center font-light" style={{ color: "#A0AEC0" }}>Visible pendant 24h par tes abonnés</p>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={onClose}
@@ -351,6 +676,7 @@ function AddStoryModal({ onClose }: { onClose: () => void }) {
               </motion.button>
             </motion.div>
           )}
+
         </AnimatePresence>
       </motion.div>
     </motion.div>
@@ -581,8 +907,9 @@ export default function CommunautePage() {
   const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [sharePost, setSharePost] = useState<FeedItem | null>(null);
-  const [storyUser, setStoryUser] = useState<User | null>(null);
+  const [currentStory, setCurrentStory] = useState<RealStory | null>(null);
   const [showAddStory, setShowAddStory] = useState(false);
+  const [realStories, setRealStories] = useState<RealStory[]>([]);
   const [threadInput, setThreadInput] = useState("");
   const [threadMessages, setThreadMessages] = useState<Message[]>(initialThreadMessages);
   const [toast, setToast] = useState<string | null>(null);
@@ -606,6 +933,26 @@ export default function CommunautePage() {
         if (data) setFollowingIds(new Set(data.map((r) => r.following_id as string)));
       });
   }, [user]);
+
+  // Charger les stories actives (les miennes + celles des personnes que je suis)
+  const loadStories = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data: followedData } = await supabase
+      .from("followers")
+      .select("following_id")
+      .eq("follower_id", user.id);
+    const ids = [user.id, ...(followedData?.map((r) => r.following_id as string) ?? [])];
+    const { data } = await supabase
+      .from("stories")
+      .select("*, profiles(pseudo, full_name, avatar_url)")
+      .in("user_id", ids)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false });
+    if (data) setRealStories(data as RealStory[]);
+  }, [user]);
+
+  useEffect(() => { loadStories(); }, [loadStories]);
 
   // Suivre / ne plus suivre un vrai profil Supabase
   const handleFollowReal = async (profile: { id: string; pseudo: string; avatar_url?: string }) => {
@@ -811,50 +1158,118 @@ export default function CommunautePage() {
             className="flex flex-col gap-5 pb-4"
           >
             {/* Stories */}
-            <div className="flex gap-3 overflow-x-auto pb-2 pt-2" style={{ scrollbarWidth: "none" }}>
-              {/* Add Story */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1, type: "spring", bounce: 0.4 }}
-                className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                onClick={() => setShowAddStory(true)}
-              >
-                <motion.div
-                  whileHover={{ scale: 1.08, rotate: 5 }}
-                  whileTap={{ scale: 0.92 }}
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)",
-                    border: "2px dashed rgba(167,139,250,0.5)",
-                  }}
-                >
-                  <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                </motion.div>
-                <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>Vous</span>
-              </motion.div>
+            {(() => {
+              // Dédupliquer par user_id → une bulle par personne (story la plus récente)
+              const byUser: Record<string, RealStory> = {};
+              for (const s of realStories) {
+                if (!byUser[s.user_id] || s.created_at > byUser[s.user_id].created_at) byUser[s.user_id] = s;
+              }
+              const storyAvatars = Object.values(byUser);
+              // Story de l'utilisateur courant (pour changer l'icône + en avatar)
+              const myStory = user ? byUser[user.id] : null;
 
-              {/* Story avatars */}
-              {stories.map((u, i) => (
-                <motion.div
-                  key={u.handle}
-                  initial={{ opacity: 0, scale: 0.7, x: -10 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  transition={{ delay: 0.12 + i * 0.07, type: "spring", bounce: 0.45 }}
-                  whileHover={{ scale: 1.08, y: -2 }}
-                  whileTap={{ scale: 0.92 }}
-                  className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                  onClick={() => setStoryUser(u)}
-                >
-                  <div className="relative">
-                    <Avatar user={u} size={64} ring={u.active} />
-                  </div>
-                  <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: u.active ? "#2D3748" : "#A0AEC0" }}>
-                    {u.name.split(" ")[0]}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
+              return (
+                <div className="flex gap-3 overflow-x-auto pb-2 pt-2" style={{ scrollbarWidth: "none" }}>
+                  {/* Add Story / Ma story */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1, type: "spring", bounce: 0.4 }}
+                    className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                    onClick={() => myStory ? setCurrentStory(myStory) : setShowAddStory(true)}
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.08, rotate: myStory ? 0 : 5 }}
+                      whileTap={{ scale: 0.92 }}
+                      className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden relative"
+                      style={myStory
+                        ? { outline: "2px solid #D4C0FF", outlineOffset: 2, background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }
+                        : { background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(167,139,250,0.5)" }
+                      }
+                    >
+                      {user?.avatar
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={user.avatar} alt="moi" className="w-full h-full object-cover" />
+                        : myStory
+                          ? <span className="text-2xl font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
+                          : <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                      }
+                      {!myStory && (
+                        <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white" }}>
+                          <Plus size={10} strokeWidth={3} style={{ color: "#2D3748" }} />
+                        </div>
+                      )}
+                    </motion.div>
+                    <span className="text-[10px] font-medium" style={{ color: myStory ? "#2D3748" : "#A0AEC0" }}>
+                      {myStory ? "Ma story" : "Vous"}
+                    </span>
+                  </motion.div>
+
+                  {/* Stories des autres */}
+                  {storyAvatars
+                    .filter((s) => s.user_id !== user?.id)
+                    .map((story, i) => {
+                      const p = story.profiles;
+                      const name = p?.full_name?.split(" ")[0] ?? p?.pseudo ?? "…";
+                      const initial = (p?.pseudo?.[0] ?? "?").toUpperCase();
+                      return (
+                        <motion.div
+                          key={story.user_id}
+                          initial={{ opacity: 0, scale: 0.7, x: -10 }}
+                          animate={{ opacity: 1, scale: 1, x: 0 }}
+                          transition={{ delay: 0.12 + i * 0.07, type: "spring", bounce: 0.45 }}
+                          whileHover={{ scale: 1.08, y: -2 }}
+                          whileTap={{ scale: 0.92 }}
+                          className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                          onClick={() => setCurrentStory(story)}
+                        >
+                          <div
+                            className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden font-semibold text-lg"
+                            style={{
+                              background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                              outline: "2px solid #D4C0FF",
+                              outlineOffset: 2,
+                              color: "#2D3748",
+                            }}
+                          >
+                            {p?.avatar_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" />
+                              : initial
+                            }
+                          </div>
+                          <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: "#2D3748" }}>
+                            {name}
+                          </span>
+                        </motion.div>
+                      );
+                    })
+                  }
+
+                  {/* Bouton ajouter une story si l'utilisateur a déjà une story (pour en ajouter une autre) */}
+                  {myStory && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.05, type: "spring", bounce: 0.4 }}
+                      className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                      onClick={() => setShowAddStory(true)}
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.92 }}
+                        className="w-16 h-16 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(240,235,255,0.6)", border: "2px dashed rgba(167,139,250,0.4)" }}
+                      >
+                        <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                      </motion.div>
+                      <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>Nouvelle</span>
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Posts */}
             {visibleFeed.length === 0 && (
@@ -1353,8 +1768,14 @@ export default function CommunautePage() {
       {/* Global Modals */}
       <AnimatePresence>
         {sharePost && <ShareModal postCaption={sharePost.caption} onClose={() => setSharePost(null)} />}
-        {showAddStory && <AddStoryModal onClose={() => setShowAddStory(false)} />}
-        {storyUser && <StoryViewer user={storyUser} onClose={() => setStoryUser(null)} />}
+        {showAddStory && (
+          <AddStoryModal
+            onClose={() => setShowAddStory(false)}
+            userId={user?.id ?? null}
+            onPublished={() => { loadStories(); setShowAddStory(false); }}
+          />
+        )}
+        {currentStory && <StoryViewer story={currentStory} onClose={() => setCurrentStory(null)} />}
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.9 }}
