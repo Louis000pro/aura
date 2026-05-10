@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Pause, Play } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import { createClient } from "@/lib/supabase";
@@ -187,158 +187,180 @@ function Avatar({ user, size = 40, ring = false }: { user: User; size?: number; 
   );
 }
 
-// Story Viewer Overlay — affiche le vrai contenu Supabase
-function StoryViewer({ story, onClose }: { story: RealStory; onClose: () => void }) {
+// ── helpers pour le contenu d'une story ──────────────────────
+function StoryCard({ story }: { story: RealStory }) {
+  const d = story.content_data ?? {};
+
+  if (story.content_type === "workout") {
+    const catGrad: Record<string, string> = {
+      force:    "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
+      cardio:   "linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)",
+      mobilite: "linear-gradient(135deg, #A7F3D0 0%, #34D399 100%)",
+      fullbody: "linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)",
+    };
+    const grad = catGrad[(d.category as string) ?? "force"] ?? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)";
+    return (
+      <motion.div
+        key={story.id}
+        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", bounce: 0.3 }}
+        className="w-full max-w-sm rounded-3xl p-8 text-center"
+        style={{ background: grad, boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+      >
+        <div className="text-6xl mb-4">🏋️</div>
+        <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>{(d.session_title as string) ?? "Séance"}</p>
+        {story.caption && <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>}
+        <div className="flex justify-center gap-6 mt-4">
+          {(d.duration_minutes as number) > 0 && (
+            <div className="text-center">
+              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.duration_minutes as number}</p>
+              <p className="text-xs" style={{ color: "#718096" }}>min</p>
+            </div>
+          )}
+          {(d.calories_burned as number) > 0 && (
+            <div className="text-center">
+              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories_burned as number}</p>
+              <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (story.content_type === "meal") {
+    return (
+      <motion.div
+        key={story.id}
+        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", bounce: 0.3 }}
+        className="w-full max-w-sm rounded-3xl p-8 text-center"
+        style={{ background: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+      >
+        <div className="text-6xl mb-4">🥗</div>
+        <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>{(d.meal_title as string) ?? "Repas"}</p>
+        {story.caption && <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>}
+        <div className="flex justify-center gap-6 mt-4">
+          {(d.calories as number) > 0 && (
+            <div className="text-center">
+              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories as number}</p>
+              <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
+            </div>
+          )}
+          {(d.proteins as number) > 0 && (
+            <div className="text-center">
+              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.proteins as number}g</p>
+              <p className="text-xs" style={{ color: "#718096" }}>protéines</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      key={story.id}
+      initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", bounce: 0.3 }}
+      className="w-full max-w-sm rounded-3xl p-8 text-center"
+      style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+    >
+      <div className="text-6xl mb-4">{(d.emoji as string) ?? "✨"}</div>
+      <p className="text-lg font-medium leading-snug" style={{ color: "#2D3748" }}>{(d.text as string) ?? ""}</p>
+      {story.caption && story.caption !== (d.text as string) && (
+        <p className="text-sm font-light mt-3" style={{ color: "#718096" }}>{story.caption}</p>
+      )}
+    </motion.div>
+  );
+}
+
+// Story Viewer — plusieurs stories d'un même utilisateur, navigation gauche/droite
+function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () => void }) {
+  const [idx, setIdx]       = useState(0);
   const [progress, setProgress] = useState(0);
-  const [reply, setReply] = useState("");
-  const profile = story.profiles;
+  const [paused, setPaused] = useState(false);
+  const [reply, setReply]   = useState("");
+
+  const story  = stories[idx];
+  const profile = story?.profiles;
   const displayName = profile?.full_name || profile?.pseudo || "Utilisateur";
   const initial = (profile?.pseudo?.[0] ?? "?").toUpperCase();
 
-  // Relative time
   const relTime = (() => {
+    if (!story) return "";
     const diff = Date.now() - new Date(story.created_at).getTime();
-    const min = Math.floor(diff / 60000);
+    const min  = Math.floor(diff / 60000);
     if (min < 1) return "À l'instant";
     if (min < 60) return `Il y a ${min} min`;
-    const h = Math.floor(min / 60);
-    return `Il y a ${h}h`;
+    return `Il y a ${Math.floor(min / 60)}h`;
   })();
 
+  const goNext = useCallback(() => {
+    if (idx < stories.length - 1) { setIdx(idx + 1); setProgress(0); }
+    else onClose();
+  }, [idx, stories.length, onClose]);
+
+  const goPrev = useCallback(() => {
+    if (idx > 0) { setIdx(idx - 1); setProgress(0); }
+  }, [idx]);
+
+  // Barre de progression auto (80 ms × 50 = 4 s par story)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((p) => (p >= 100 ? 100 : p + 2));
+    if (paused) return;
+    const iv = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 100) { goNext(); return 0; }
+        return p + 2;
+      });
     }, 80);
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(iv);
+  }, [paused, goNext]);
 
-  useEffect(() => {
-    if (progress >= 100) onClose();
-  }, [progress, onClose]);
+  // Reset de la progression quand on change de story
+  useEffect(() => { setProgress(0); }, [idx]);
 
-  // Contenu selon le type
-  const renderContent = () => {
-    const d = story.content_data ?? {};
-
-    if (story.content_type === "workout") {
-      const catGrad: Record<string, string> = {
-        force:    "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
-        cardio:   "linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)",
-        mobilite: "linear-gradient(135deg, #A7F3D0 0%, #34D399 100%)",
-        fullbody: "linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)",
-      };
-      const grad = catGrad[(d.category as string) ?? "force"] ?? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)";
-      return (
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", bounce: 0.3 }}
-          className="w-full max-w-sm rounded-3xl p-8 text-center"
-          style={{ background: grad, boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
-        >
-          <div className="text-6xl mb-4">🏋️</div>
-          <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>
-            {(d.session_title as string) ?? "Séance"}
-          </p>
-          {story.caption && (
-            <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>
-          )}
-          <div className="flex justify-center gap-6 mt-4">
-            {(d.duration_minutes as number) > 0 && (
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.duration_minutes as number}</p>
-                <p className="text-xs" style={{ color: "#718096" }}>min</p>
-              </div>
-            )}
-            {(d.calories_burned as number) > 0 && (
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories_burned as number}</p>
-                <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      );
-    }
-
-    if (story.content_type === "meal") {
-      return (
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", bounce: 0.3 }}
-          className="w-full max-w-sm rounded-3xl p-8 text-center"
-          style={{ background: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
-        >
-          <div className="text-6xl mb-4">🥗</div>
-          <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>
-            {(d.meal_title as string) ?? "Repas"}
-          </p>
-          {story.caption && (
-            <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>
-          )}
-          <div className="flex justify-center gap-6 mt-4">
-            {(d.calories as number) > 0 && (
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories as number}</p>
-                <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
-              </div>
-            )}
-            {(d.proteins as number) > 0 && (
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.proteins as number}g</p>
-                <p className="text-xs" style={{ color: "#718096" }}>protéines</p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      );
-    }
-
-    // Text
-    return (
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", bounce: 0.3 }}
-        className="w-full max-w-sm rounded-3xl p-8 text-center"
-        style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
-      >
-        <div className="text-6xl mb-4">{(d.emoji as string) ?? "✨"}</div>
-        <p className="text-lg font-medium leading-snug" style={{ color: "#2D3748" }}>
-          {(d.text as string) ?? ""}
-        </p>
-        {story.caption && story.caption !== (d.text as string) && (
-          <p className="text-sm font-light mt-3" style={{ color: "#718096" }}>{story.caption}</p>
-        )}
-      </motion.div>
-    );
+  // Tap gauche → précédent, tap droit → suivant
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX - rect.left < rect.width / 2) goPrev();
+    else goNext();
   };
+
+  if (!story) return null;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col"
+      className="fixed inset-0 z-50 flex flex-col select-none"
       style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(20px)" }}
-      onClick={onClose}
+      onClick={handleTap}
     >
-      {/* Progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 z-10" style={{ background: "rgba(255,255,255,0.2)" }}>
-        <motion.div
-          className="h-full"
-          style={{ background: "linear-gradient(90deg, #D4C0FF, #F5E6A3)", width: `${progress}%` }}
-        />
+      {/* Barres de progression — une par story */}
+      <div className="flex gap-1 px-3 pt-5 pb-1 z-10">
+        {stories.map((_, i) => (
+          <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 2, background: "rgba(255,255,255,0.25)" }}>
+            <div
+              className="h-full rounded-full"
+              style={{
+                background: "linear-gradient(90deg, #D4C0FF, #F5E6A3)",
+                width: i < idx ? "100%" : i === idx ? `${progress}%` : "0%",
+                transition: i === idx ? "none" : "width 0s",
+              }}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 pt-8 pb-3 z-10" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-3 px-4 pt-3 pb-2 z-10" onClick={(e) => e.stopPropagation()}>
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden font-semibold text-sm"
           style={{
             background: profile?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-            outline: "2px solid #D4C0FF",
+            outline: "2px solid rgba(255,255,255,0.6)",
             outlineOffset: 2,
             color: "#2D3748",
           }}
@@ -346,22 +368,53 @@ function StoryViewer({ story, onClose }: { story: RealStory; onClose: () => void
           {profile?.avatar_url
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-            : initial
-          }
+            : initial}
         </div>
-        <div className="flex-1">
-          <p className="text-white text-sm font-semibold">{displayName}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-semibold truncate">{displayName}</p>
           <p className="text-white/50 text-[11px]">{relTime}</p>
         </div>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="cursor-pointer">
+        {/* Pause / reprendre au press long */}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onPointerDown={(e) => { e.stopPropagation(); setPaused(true); }}
+          onPointerUp={(e) => { e.stopPropagation(); setPaused(false); }}
+          onPointerLeave={() => setPaused(false)}
+          className="w-8 h-8 flex items-center justify-center cursor-pointer"
+          aria-label="Pause"
+        >
+          {paused
+            ? <Play  size={16} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.7)" }} />
+            : <Pause size={16} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.4)" }} />}
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onClose(); }} className="cursor-pointer">
           <X size={20} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.8)" }} />
         </motion.button>
       </div>
 
-      {/* Story content */}
-      <div className="flex-1 flex items-center justify-center px-6" onClick={(e) => e.stopPropagation()}>
-        {renderContent()}
+      {/* Contenu */}
+      <div className="flex-1 flex items-center justify-center px-6 pointer-events-none">
+        <AnimatePresence mode="wait">
+          <StoryCard key={story.id} story={story} />
+        </AnimatePresence>
       </div>
+
+      {/* Indicateur de navigation (si plusieurs stories) */}
+      {stories.length > 1 && (
+        <div className="flex justify-center gap-1.5 pb-3 z-10" onClick={(e) => e.stopPropagation()}>
+          {stories.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-200"
+              style={{
+                width: i === idx ? 16 : 6,
+                height: 6,
+                background: i === idx ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Reply bar */}
       <div className="px-5 pb-10 z-10" onClick={(e) => e.stopPropagation()}>
@@ -369,7 +422,9 @@ function StoryViewer({ story, onClose }: { story: RealStory; onClose: () => void
           <input
             type="text"
             value={reply}
-            onChange={(e) => setReply(e.target.value)}
+            onChange={(e) => { setReply(e.target.value); }}
+            onFocus={() => setPaused(true)}
+            onBlur={() => setPaused(false)}
             placeholder={`Répondre à ${displayName.split(" ")[0]}…`}
             className="flex-1 bg-transparent text-sm outline-none"
             style={{ color: "white" }}
@@ -907,7 +962,7 @@ export default function CommunautePage() {
   const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [sharePost, setSharePost] = useState<FeedItem | null>(null);
-  const [currentStory, setCurrentStory] = useState<RealStory | null>(null);
+  const [storyGroup, setStoryGroup] = useState<RealStory[] | null>(null);
   const [showAddStory, setShowAddStory] = useState(false);
   const [realStories, setRealStories] = useState<RealStory[]>([]);
   const [threadInput, setThreadInput] = useState("");
@@ -1186,71 +1241,85 @@ export default function CommunautePage() {
           >
             {/* Stories */}
             {(() => {
-              // Dédupliquer par user_id → une bulle par personne (story la plus récente)
-              const byUser: Record<string, RealStory> = {};
+              // Grouper TOUTES les stories par user (pas de déduplication)
+              // Tri : oldest first pour la lecture dans l'ordre
+              const byUser: Record<string, RealStory[]> = {};
               for (const s of realStories) {
-                if (!byUser[s.user_id] || s.created_at > byUser[s.user_id].created_at) byUser[s.user_id] = s;
+                (byUser[s.user_id] ??= []).push(s);
               }
-              const storyAvatars = Object.values(byUser);
-              // Story de l'utilisateur courant (pour changer l'icône + en avatar)
-              const myStory = user ? byUser[user.id] : null;
+              Object.values(byUser).forEach((arr) =>
+                arr.sort((a, b) => a.created_at.localeCompare(b.created_at))
+              );
+
+              const myGroup = user ? (byUser[user.id] ?? null) : null;
+              // Groupes des autres utilisateurs
+              const otherGroups = Object.entries(byUser)
+                .filter(([uid]) => uid !== user?.id)
+                .map(([, arr]) => arr);
 
               return (
                 <div className="flex gap-3 overflow-x-auto pb-2 pt-2" style={{ scrollbarWidth: "none" }}>
-                  {/* Add Story / Ma story */}
+
+                  {/* Bulle « Moi » — ouvre mes stories ou le modal ajout */}
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1, type: "spring", bounce: 0.4 }}
                     className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                    onClick={() => myStory ? setCurrentStory(myStory) : setShowAddStory(true)}
+                    onClick={() => myGroup ? setStoryGroup(myGroup) : setShowAddStory(true)}
                   >
                     <motion.div
-                      whileHover={{ scale: 1.08, rotate: myStory ? 0 : 5 }}
+                      whileHover={{ scale: 1.08, rotate: myGroup ? 0 : 5 }}
                       whileTap={{ scale: 0.92 }}
                       className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden relative"
-                      style={myStory
+                      style={myGroup
                         ? { outline: "2px solid #D4C0FF", outlineOffset: 2, background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }
                         : { background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(167,139,250,0.5)" }
                       }
                     >
                       {user?.avatar
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={user.avatar} alt="moi" className="w-full h-full object-cover" />
-                        : myStory
+                        ? <img src={user.avatar} alt="moi" className="w-full h-full object-cover rounded-full" />
+                        : myGroup
                           ? <span className="text-2xl font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
                           : <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
                       }
-                      {!myStory && (
+                      {!myGroup && (
                         <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center"
                           style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white" }}>
                           <Plus size={10} strokeWidth={3} style={{ color: "#2D3748" }} />
                         </div>
                       )}
+                      {/* Badge count si plusieurs stories */}
+                      {myGroup && myGroup.length > 1 && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+                          style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white", color: "#2D3748" }}>
+                          {myGroup.length}
+                        </div>
+                      )}
                     </motion.div>
-                    <span className="text-[10px] font-medium" style={{ color: myStory ? "#2D3748" : "#A0AEC0" }}>
-                      {myStory ? "Ma story" : "Vous"}
+                    <span className="text-[10px] font-medium" style={{ color: myGroup ? "#2D3748" : "#A0AEC0" }}>
+                      {myGroup ? "Ma story" : "Vous"}
                     </span>
                   </motion.div>
 
-                  {/* Stories des autres */}
-                  {storyAvatars
-                    .filter((s) => s.user_id !== user?.id)
-                    .map((story, i) => {
-                      const p = story.profiles;
-                      const name = p?.full_name?.split(" ")[0] ?? p?.pseudo ?? "…";
-                      const initial = (p?.pseudo?.[0] ?? "?").toUpperCase();
-                      return (
-                        <motion.div
-                          key={story.user_id}
-                          initial={{ opacity: 0, scale: 0.7, x: -10 }}
-                          animate={{ opacity: 1, scale: 1, x: 0 }}
-                          transition={{ delay: 0.12 + i * 0.07, type: "spring", bounce: 0.45 }}
-                          whileHover={{ scale: 1.08, y: -2 }}
-                          whileTap={{ scale: 0.92 }}
-                          className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                          onClick={() => setCurrentStory(story)}
-                        >
+                  {/* Stories des autres utilisateurs */}
+                  {otherGroups.map((group, i) => {
+                    const p = group[0]?.profiles;
+                    const name = p?.full_name?.split(" ")[0] ?? p?.pseudo ?? "…";
+                    const initial = (p?.pseudo?.[0] ?? "?").toUpperCase();
+                    return (
+                      <motion.div
+                        key={group[0].user_id}
+                        initial={{ opacity: 0, scale: 0.7, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{ delay: 0.12 + i * 0.07, type: "spring", bounce: 0.45 }}
+                        whileHover={{ scale: 1.08, y: -2 }}
+                        whileTap={{ scale: 0.92 }}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                        onClick={() => setStoryGroup(group)}
+                      >
+                        <div className="relative">
                           <div
                             className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden font-semibold text-lg"
                             style={{
@@ -1266,16 +1335,23 @@ export default function CommunautePage() {
                               : initial
                             }
                           </div>
-                          <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: "#2D3748" }}>
-                            {name}
-                          </span>
-                        </motion.div>
-                      );
-                    })
-                  }
+                          {/* Badge count si plusieurs stories */}
+                          {group.length > 1 && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+                              style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white", color: "#2D3748" }}>
+                              {group.length}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: "#2D3748" }}>
+                          {name}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
 
-                  {/* Bouton ajouter une story si l'utilisateur a déjà une story (pour en ajouter une autre) */}
-                  {myStory && (
+                  {/* Bouton ajouter une nouvelle story quand j'en ai déjà une */}
+                  {myGroup && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -1802,7 +1878,7 @@ export default function CommunautePage() {
             onPublished={() => { loadStories(); }}
           />
         )}
-        {currentStory && <StoryViewer story={currentStory} onClose={() => setCurrentStory(null)} />}
+        {storyGroup && <StoryViewer stories={storyGroup} onClose={() => setStoryGroup(null)} />}
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.9 }}
