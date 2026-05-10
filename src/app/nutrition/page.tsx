@@ -660,7 +660,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 }
 
 /* ─── BarcodeScannerModal ────────────────────────────────────────────── */
-type BarcodePhase = "scan" | "loading" | "result" | "notfound";
+type BarcodePhase = "scan" | "loading" | "result" | "fallback";
 
 interface BarcodeProduct {
   name: string;
@@ -668,6 +668,15 @@ interface BarcodeProduct {
   image: string | null;
   quantity: string | null;
   per100: { calories: number; proteins: number; carbs: number; fats: number; fiber: number };
+}
+
+interface BarcodeEstimated {
+  foodName: string;
+  calories: number;
+  proteins: number;
+  carbs: number;
+  fats: number;
+  mealType: MealType;
 }
 
 function BarcodeScannerModal({ onClose, onAdd }: {
@@ -679,6 +688,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   const [grams, setGrams] = useState("100");
   const [mealType, setMealType] = useState<MealType>(getMealTypeFromTime());
   const [error, setError] = useState<string | null>(null);
+  // Fallback IA
+  const [fallbackName, setFallbackName] = useState("");
+  const [estimating, setEstimating] = useState(false);
+  const [estimated, setEstimated] = useState<BarcodeEstimated | null>(null);
+  const [estimateMealType, setEstimateMealType] = useState<MealType>(getMealTypeFromTime());
+
   const scannerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const html5QrRef = useRef<any>(null);
@@ -697,10 +712,24 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     setError(null);
     try {
       const res = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(code)}`);
-      if (res.status === 404) { setPhase("notfound"); return; }
+      const data = await res.json();
+      if (res.status === 404) {
+        // Produit totalement inconnu
+        setFallbackName("");
+        setEstimated(null);
+        setPhase("fallback");
+        return;
+      }
       if (!res.ok) throw new Error("Erreur réseau");
-      const data: BarcodeProduct = await res.json();
-      setProduct(data);
+      if (data.partial) {
+        // Produit trouvé mais sans nutrition → fallback IA pré-rempli
+        const pre = data.brand ? `${data.name} ${data.brand}` : data.name;
+        setFallbackName(pre);
+        setEstimated(null);
+        setPhase("fallback");
+        return;
+      }
+      setProduct(data as BarcodeProduct);
       setPhase("result");
     } catch {
       setError("Impossible de récupérer le produit, réessaie.");
@@ -708,6 +737,47 @@ function BarcodeScannerModal({ onClose, onAdd }: {
       didStop.current = false;
       startScanner();
     }
+  };
+
+  const estimateByAI = async () => {
+    if (!fallbackName.trim()) return;
+    setEstimating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/nutrition/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: fallbackName.trim() }),
+      });
+      if (!res.ok) throw new Error("Estimation échouée");
+      const data = await res.json();
+      setEstimated({
+        foodName: data.foodName || fallbackName,
+        calories: data.calories || 0,
+        proteins: data.proteins || 0,
+        carbs: data.carbs || 0,
+        fats: data.fats || 0,
+        mealType: data.mealType || getMealTypeFromTime(),
+      });
+      setEstimateMealType(data.mealType || getMealTypeFromTime());
+    } catch {
+      setError("L'IA n'a pas pu estimer ce produit.");
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  const handleConfirmEstimate = () => {
+    if (!estimated) return;
+    onAdd({
+      name: estimated.foodName,
+      calories: estimated.calories,
+      proteins: estimated.proteins,
+      carbs: estimated.carbs,
+      fats: estimated.fats,
+      time: nowHHMM(),
+      mealType: estimateMealType,
+    });
   };
 
   const startScanner = () => {
@@ -804,7 +874,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
             <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
               {phase === "scan"     ? "Scanner un code-barres"
                : phase === "loading" ? "Recherche du produit…"
-               : phase === "notfound"? "Produit non trouvé"
+               : phase === "fallback"
+                 ? (estimated ? "Estimation IA ✓" : "Non référencé — estimer")
                : "Produit identifié ✓"}
             </h2>
           </div>
@@ -881,37 +952,168 @@ function BarcodeScannerModal({ onClose, onAdd }: {
               </motion.div>
             )}
 
-            {/* NOT FOUND */}
-            {phase === "notfound" && (
-              <motion.div key="notfound"
+            {/* FALLBACK IA — produit non référencé ou sans nutrition */}
+            {phase === "fallback" && (
+              <motion.div key="fallback"
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-4 py-6">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(167,139,250,0.08)" }}>
-                  <Barcode size={24} strokeWidth={1.5} style={{ color: "#C4B5FD" }} />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Produit non référencé</p>
-                  <p className="text-xs mt-1 font-light" style={{ color: "#A0AEC0" }}>
-                    Ce code-barres n&apos;existe pas encore dans Open Food Facts
-                  </p>
-                </div>
-                <div className="flex gap-2 w-full">
-                  <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
-                    className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                      color: "#2D3748",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                    }}>
-                    Rescanner
-                  </motion.button>
-                  <motion.button whileTap={{ scale: 0.95 }} onClick={onClose}
-                    className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
-                    Annuler
-                  </motion.button>
-                </div>
+                className="flex flex-col gap-3">
+
+                {/* Bandeau d'info */}
+                {!estimated && (
+                  <div className="flex items-start gap-2.5 px-3 py-3 rounded-2xl"
+                    style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
+                    <span className="text-sm mt-0.5">⚠️</span>
+                    <p className="text-xs font-light leading-relaxed" style={{ color: "#92400E" }}>
+                      {fallbackName
+                        ? "Produit trouvé, mais sans données nutritionnelles. L'IA peut les estimer."
+                        : "Ce code-barres n'est pas dans notre base. Décris le produit pour que l'IA estime les macros."}
+                    </p>
+                  </div>
+                )}
+
+                {/* Champ nom + bouton estimer */}
+                {!estimated && (
+                  <>
+                    <div>
+                      <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
+                        style={{ color: "#A0AEC0" }}>NOM DU PRODUIT</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={fallbackName}
+                          onChange={e => setFallbackName(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter" && fallbackName.trim()) estimateByAI(); }}
+                          placeholder="Ex : Yaourt grec Fage 0%, 150g…"
+                          autoFocus
+                          className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
+                          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                        />
+                        <motion.button
+                          whileTap={{ scale: 0.93 }}
+                          onClick={estimateByAI}
+                          disabled={!fallbackName.trim() || estimating}
+                          className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
+                          style={{
+                            background: fallbackName.trim() && !estimating
+                              ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
+                              : "rgba(220,220,220,0.4)",
+                            color: fallbackName.trim() && !estimating ? "#2D3748" : "#A0AEC0",
+                            boxShadow: fallbackName.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                            minWidth: 80, justifyContent: "center",
+                          }}>
+                          {estimating
+                            ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}>
+                                <Loader2 size={13} strokeWidth={2} />
+                              </motion.div>
+                            : <>✨ Estimer</>}
+                        </motion.button>
+                      </div>
+                      <p className="text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+                        Précise la marque et la quantité pour une meilleure estimation
+                      </p>
+                    </div>
+
+                    {error && (
+                      <div className="px-3 py-2 rounded-xl text-xs"
+                        style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E" }}>
+                        ⚠️ {error}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 mt-1">
+                      <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
+                        className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer"
+                        style={{ background: "rgba(240,235,255,0.6)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
+                        ↩ Rescanner
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.95 }} onClick={onClose}
+                        className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
+                        style={{ background: "rgba(240,235,255,0.4)", color: "#718096", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        Annuler
+                      </motion.button>
+                    </div>
+                  </>
+                )}
+
+                {/* Résultat IA */}
+                {estimated && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col gap-3">
+
+                    {/* Macros estimées */}
+                    <div className="rounded-2xl p-4"
+                      style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}>✨ IA</span>
+                          </div>
+                          <p className="font-semibold text-sm leading-tight" style={{ color: "#2D3748" }}>
+                            {estimated.foodName}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{estimated.calories}</p>
+                          <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: "Protéines", val: estimated.proteins, color: "#A78BFA" },
+                          { label: "Glucides",  val: estimated.carbs,    color: "#7B5CC4" },
+                          { label: "Lipides",   val: estimated.fats,     color: "#D4A843" },
+                        ].map(({ label, val, color }) => (
+                          <div key={label} className="text-center rounded-xl py-2.5"
+                            style={{ background: "rgba(255,255,255,0.75)" }}>
+                            <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Type de repas */}
+                    <div>
+                      <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
+                        style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(Object.keys(MEAL_META) as MealType[]).map(mt => (
+                          <motion.button key={mt} whileTap={{ scale: 0.95 }}
+                            onClick={() => setEstimateMealType(mt)}
+                            className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
+                            style={{
+                              background: estimateMealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
+                              border: estimateMealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
+                              color: estimateMealType === mt ? "#2D3748" : "#718096",
+                            }}>
+                            <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
+                            <span>{MEAL_META[mt].label}</span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <motion.button whileTap={{ scale: 0.95 }}
+                        onClick={() => { setEstimated(null); setError(null); }}
+                        className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
+                        style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                        Modifier
+                      </motion.button>
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                        onClick={handleConfirmEstimate}
+                        className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                        style={{
+                          background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                          color: "#2D3748",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                        }}>
+                        Ajouter à mes repas ✓
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             )}
 
