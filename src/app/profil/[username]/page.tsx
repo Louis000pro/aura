@@ -75,7 +75,7 @@ export default function PublicProfilePage() {
         if (user && user.id !== data.id) {
           const { data: followData } = await supabase
             .from("followers")
-            .select("id")
+            .select("follower_id")
             .eq("follower_id", user.id)
             .eq("following_id", data.id)
             .maybeSingle();
