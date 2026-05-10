@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Pause, Play } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Pause } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import { createClient } from "@/lib/supabase";
@@ -282,6 +282,11 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
   const [paused, setPaused] = useState(false);
   const [reply, setReply]   = useState("");
 
+  // Refs pour distinguer tap court (navigation) vs hold (pause)
+  const holdTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHoldingRef    = useRef(false);
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null);
+
   const story  = stories[idx];
   const profile = story?.profiles;
   const displayName = profile?.full_name || profile?.pseudo || "Utilisateur";
@@ -320,11 +325,43 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
   // Reset de la progression quand on change de story
   useEffect(() => { setProgress(0); }, [idx]);
 
-  // Tap gauche → précédent, tap droit → suivant
-  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (e.clientX - rect.left < rect.width / 2) goPrev();
-    else goNext();
+  // ── Gestion hold (pause) + tap (navigation) ──────────────────
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Ignorer les clics sur les zones interactives (header, reply bar)
+    if ((e.target as HTMLElement).closest("[data-no-hold]")) return;
+    isHoldingRef.current = false;
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
+    holdTimerRef.current = setTimeout(() => {
+      isHoldingRef.current = true;
+      setPaused(true);
+    }, 180); // 180ms → pause
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("[data-no-hold]")) return;
+    if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
+    if (isHoldingRef.current) {
+      // C'était un hold → juste dépause, pas de navigation
+      isHoldingRef.current = false;
+      setPaused(false);
+    } else {
+      // C'était un tap court → navigation
+      const start = pointerDownPosRef.current;
+      if (!start) return;
+      const dx = Math.abs(e.clientX - start.x);
+      const dy = Math.abs(e.clientY - start.y);
+      if (dx < 10 && dy < 10) { // petit mouvement = tap
+        const rect = e.currentTarget.getBoundingClientRect();
+        if (e.clientX - rect.left < rect.width / 2) goPrev();
+        else goNext();
+      }
+    }
+    pointerDownPosRef.current = null;
+  };
+
+  const handlePointerLeave = () => {
+    if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
+    if (isHoldingRef.current) { isHoldingRef.current = false; setPaused(false); }
   };
 
   if (!story) return null;
@@ -335,11 +372,13 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex flex-col select-none"
-      style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(20px)" }}
-      onClick={handleTap}
+      style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(20px)", cursor: paused ? "default" : "pointer" }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
     >
       {/* Barres de progression — une par story */}
-      <div className="flex gap-1 px-3 pt-5 pb-1 z-10">
+      <div className="flex gap-1 px-3 pt-5 pb-1 z-10" data-no-hold>
         {stories.map((_, i) => (
           <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 2, background: "rgba(255,255,255,0.25)" }}>
             <div
@@ -355,7 +394,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       </div>
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-3 pb-2 z-10" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-3 px-4 pt-3 pb-2 z-10" data-no-hold>
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden font-semibold text-sm"
           style={{
@@ -374,23 +413,33 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
           <p className="text-white text-sm font-semibold truncate">{displayName}</p>
           <p className="text-white/50 text-[11px]">{relTime}</p>
         </div>
-        {/* Pause / reprendre au press long */}
         <motion.button
+          data-no-hold
           whileTap={{ scale: 0.9 }}
-          onPointerDown={(e) => { e.stopPropagation(); setPaused(true); }}
-          onPointerUp={(e) => { e.stopPropagation(); setPaused(false); }}
-          onPointerLeave={() => setPaused(false)}
-          className="w-8 h-8 flex items-center justify-center cursor-pointer"
-          aria-label="Pause"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="cursor-pointer"
         >
-          {paused
-            ? <Play  size={16} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.7)" }} />
-            : <Pause size={16} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.4)" }} />}
-        </motion.button>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); onClose(); }} className="cursor-pointer">
           <X size={20} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.8)" }} />
         </motion.button>
       </div>
+
+      {/* Indicateur de pause */}
+      <AnimatePresence>
+        {paused && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none"
+          >
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}>
+              <Pause size={28} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.9)" }} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Contenu */}
       <div className="flex-1 flex items-center justify-center px-6 pointer-events-none">
@@ -401,7 +450,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
 
       {/* Indicateur de navigation (si plusieurs stories) */}
       {stories.length > 1 && (
-        <div className="flex justify-center gap-1.5 pb-3 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="flex justify-center gap-1.5 pb-3 z-10" data-no-hold>
           {stories.map((_, i) => (
             <div
               key={i}
@@ -417,7 +466,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       )}
 
       {/* Reply bar */}
-      <div className="px-5 pb-10 z-10" onClick={(e) => e.stopPropagation()}>
+      <div className="px-5 pb-10 z-10" data-no-hold>
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
           <input
             type="text"
