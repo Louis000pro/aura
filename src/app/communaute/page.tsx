@@ -60,6 +60,29 @@ type RealPost = {
   post_comments: { id: string }[];
 };
 
+type DirectMessage = {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+};
+
+type DMPartner = {
+  id: string;
+  pseudo: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+};
+
+type DMConversation = {
+  partner: DMPartner;
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+};
+
 const users: User[] = [
   { handle: "sofia.m", name: "Sofia Martinez", initial: "S", gradient: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", verified: false },
   { handle: "leo.fit", name: "Léo Bertrand", initial: "L", gradient: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", verified: false },
@@ -154,21 +177,7 @@ const feedData: FeedItem[] = [
 
 // stories array supprimé — remplacé par realStories depuis Supabase
 
-type DM = { id: number; user: User; preview: string; time: string; unread: number };
-const dms: DM[] = [
-  { id: 1, user: users[0], preview: "Super séance ce matin ! 💪", time: "09:14", unread: 2 },
-  { id: 2, user: users[1], preview: "Tu as essayé le scan posture ?", time: "Hier", unread: 0 },
-  { id: 3, user: users[2], preview: "Merci pour tes conseils 🙏", time: "Lun", unread: 0 },
-  { id: 4, user: influencers[0], preview: "Bienvenue sur Aura Marie !", time: "Dim", unread: 0 },
-];
-
-type Message = { from: "me" | "other"; text: string; time: string };
-const initialThreadMessages: Message[] = [
-  { from: "other", text: "Super séance ce matin !", time: "09:12" },
-  { from: "me", text: "Merci ! Toi aussi tu t'en sors bien", time: "09:14" },
-  { from: "other", text: "Le scan posture est vraiment bluffant 😊", time: "09:15" },
-  { from: "me", text: "Oui ! Le retour IA est super précis", time: "09:16" },
-];
+// DMs — replaced by real Supabase data
 
 type Comment = { id: number; user: string; text: string; time: string };
 
@@ -196,6 +205,29 @@ function Avatar({ user, size = 40, ring = false }: { user: User; size?: number; 
           <BadgeCheck size={9} strokeWidth={3} style={{ color: "#FFFFFF" }} fill="#D4A843" />
         </div>
       )}
+    </div>
+  );
+}
+
+function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: number }) {
+  const initial = (partner.pseudo ?? "?")[0]?.toUpperCase() ?? "?";
+  const gradients = [
+    "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
+    "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
+    "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+    "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)",
+    "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)",
+  ];
+  const gradient = gradients[partner.id.charCodeAt(0) % gradients.length];
+  return (
+    <div
+      className="rounded-full flex items-center justify-center flex-shrink-0 font-semibold overflow-hidden"
+      style={{ width: size, height: size, background: gradient, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)", color: "#2D3748", fontSize: size * 0.4 }}
+    >
+      {partner.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={partner.avatar_url} alt={partner.pseudo} style={{ width: size, height: size, objectFit: "cover" }} />
+      ) : initial}
     </div>
   );
 }
@@ -1110,7 +1142,6 @@ function postTimeAgo(iso: string) {
 export default function CommunautePage() {
   const { user } = useAuth();
   const [view, setView] = useState<View>("feed");
-  const [activeThread, setActiveThread] = useState<User | null>(null);
   const [search, setSearch] = useState("");
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
   const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string }[]>([]);
@@ -1137,8 +1168,12 @@ export default function CommunautePage() {
   const [savedRealIds, setSavedRealIds] = useState<Set<string>>(new Set());
   const [openRealMenu, setOpenRealMenu] = useState<string | null>(null);
   const [burstRealId, setBurstRealId] = useState<string | null>(null);
-  const [threadInput, setThreadInput] = useState("");
-  const [threadMessages, setThreadMessages] = useState<Message[]>(initialThreadMessages);
+  const [dmConversations, setDmConversations] = useState<DMConversation[]>([]);
+  const [dmsLoading, setDmsLoading] = useState(false);
+  const [activeDMPartner, setActiveDMPartner] = useState<DMPartner | null>(null);
+  const [dmMessages, setDmMessages] = useState<DirectMessage[]>([]);
+  const [dmInput, setDmInput] = useState("");
+  const [dmSending, setDmSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [burstPost, setBurstPost] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1312,7 +1347,7 @@ export default function CommunautePage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [threadMessages]);
+  }, [dmMessages]);
 
   const toggleLike = (id: number) => {
     setLikedIds((p) => {
@@ -1369,25 +1404,137 @@ export default function CommunautePage() {
     });
   };
 
-  const handleSendMessage = () => {
-    if (!threadInput.trim()) return;
-    const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-    setThreadMessages((prev) => [...prev, { from: "me", text: threadInput.trim(), time }]);
-    setThreadInput("");
+  // ── Charger les conversations DM ──────────────────────────
+  const loadDMConversations = useCallback(async () => {
+    if (!user) return;
+    setDmsLoading(true);
+    const supabase = createClient();
 
-    // Simulate reply after 1.2s
-    setTimeout(() => {
-      const replies = [
-        "Super ! 💪",
-        "Haha oui exactement !",
-        "Tu verras, ça marche vraiment bien",
-        "On s'entraîne ensemble bientôt ?",
-      ];
-      const reply = replies[Math.floor(Math.random() * replies.length)];
-      const replyTime = `${now.getHours().toString().padStart(2, "0")}:${(now.getMinutes() + 1).toString().padStart(2, "0")}`;
-      setThreadMessages((prev) => [...prev, { from: "other", text: reply, time: replyTime }]);
-    }, 1200);
+    const { data: messages } = await supabase
+      .from("direct_messages")
+      .select("id, sender_id, receiver_id, content, created_at, read_at")
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (!messages) { setDmsLoading(false); return; }
+
+    const byPartner = new Map<string, { msgs: DirectMessage[]; unread: number }>();
+    (messages as DirectMessage[]).forEach((msg) => {
+      const partnerId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      if (!byPartner.has(partnerId)) byPartner.set(partnerId, { msgs: [], unread: 0 });
+      const entry = byPartner.get(partnerId)!;
+      entry.msgs.push(msg);
+      if (msg.receiver_id === user.id && !msg.read_at) entry.unread++;
+    });
+
+    const partnerIds = [...byPartner.keys()];
+    if (partnerIds.length === 0) { setDmConversations([]); setDmsLoading(false); return; }
+
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, pseudo, full_name, avatar_url")
+      .in("id", partnerIds);
+
+    const profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id as string, p]));
+
+    const convs: DMConversation[] = partnerIds
+      .map((partnerId) => {
+        const entry = byPartner.get(partnerId)!;
+        const latest = entry.msgs[0];
+        const profile = profileMap[partnerId];
+        return {
+          partner: { id: partnerId, pseudo: profile?.pseudo ?? "inconnu", full_name: profile?.full_name, avatar_url: profile?.avatar_url },
+          lastMessage: latest.content,
+          lastMessageTime: postTimeAgo(latest.created_at),
+          unreadCount: entry.unread,
+        };
+      })
+      .sort((a, b) => {
+        const at = byPartner.get(a.partner.id)!.msgs[0].created_at;
+        const bt = byPartner.get(b.partner.id)!.msgs[0].created_at;
+        return bt.localeCompare(at);
+      });
+
+    setDmConversations(convs);
+    setDmsLoading(false);
+  }, [user]);
+
+  // ── Charger les messages d'un thread ──────────────────────
+  const loadDMThread = useCallback(async (partnerId: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("direct_messages")
+      .select("id, sender_id, receiver_id, content, created_at, read_at")
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    if (data) {
+      setDmMessages(data as DirectMessage[]);
+      // Marquer comme lus
+      supabase.from("direct_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("receiver_id", user.id)
+        .eq("sender_id", partnerId)
+        .is("read_at", null)
+        .then(() => {});
+    }
+  }, [user]);
+
+  // Charger les DMs quand on ouvre la vue
+  useEffect(() => {
+    if (view === "dms") loadDMConversations();
+  }, [view, loadDMConversations]);
+
+  // Charger le thread + realtime quand on ouvre une conversation
+  useEffect(() => {
+    if (!activeDMPartner || view !== "thread") return;
+    loadDMThread(activeDMPartner.id);
+    const supabase = createClient();
+    const channel = supabase.channel(`dm-${activeDMPartner.id}`)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "direct_messages",
+        filter: `receiver_id=eq.${user?.id}`,
+      }, (payload) => {
+        const msg = payload.new as DirectMessage;
+        if (msg.sender_id === activeDMPartner.id) {
+          setDmMessages((prev) => [...prev, msg]);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel).catch(() => {}); };
+  }, [activeDMPartner, view]); // eslint-disable-line
+
+  // ── Envoyer un DM ─────────────────────────────────────────
+  const handleSendDM = async () => {
+    if (!user || !activeDMPartner || !dmInput.trim() || dmSending) return;
+    const content = dmInput.trim();
+    setDmInput("");
+    setDmSending(true);
+    const supabase = createClient();
+    const optimistic: DirectMessage = {
+      id: `temp-${Date.now()}`,
+      sender_id: user.id,
+      receiver_id: activeDMPartner.id,
+      content,
+      created_at: new Date().toISOString(),
+      read_at: null,
+    };
+    setDmMessages((prev) => [...prev, optimistic]);
+    const { data, error } = await supabase
+      .from("direct_messages")
+      .insert({ sender_id: user.id, receiver_id: activeDMPartner.id, content })
+      .select()
+      .single();
+    setDmSending(false);
+    if (error) {
+      setDmMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      showToast("Erreur d'envoi");
+    } else if (data) {
+      setDmMessages((prev) => prev.map((m) => m.id === optimistic.id ? (data as DirectMessage) : m));
+    }
   };
 
   // Fetch real profiles from Supabase on search
@@ -1439,7 +1586,7 @@ export default function CommunautePage() {
         className="flex items-center justify-between mb-5"
       >
         <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
-          {view === "thread" && activeThread ? activeThread.name : "Communauté"}
+          {view === "thread" && activeDMPartner ? `@${activeDMPartner.pseudo}` : "Communauté"}
         </h1>
         <div className="flex items-center gap-2">
           {view === "thread" ? (
@@ -2040,39 +2187,65 @@ export default function CommunautePage() {
             exit={{ opacity: 0 }}
             className="flex flex-col gap-2"
           >
-            {dms.map((dm) => (
-              <motion.button
-                key={dm.id}
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => { setActiveThread(dm.user); setView("thread"); setThreadMessages(initialThreadMessages); }}
-                className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer text-left"
-              >
-                <Avatar user={dm.user} size={48} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{dm.user.name}</p>
-                    <span className="text-[10px] flex-shrink-0" style={{ color: "#A0AEC0" }}>{dm.time}</span>
-                  </div>
-                  <p className="text-xs font-light truncate mt-0.5" style={{ color: dm.unread ? "#2D3748" : "#A0AEC0" }}>
-                    {dm.preview}
-                  </p>
+            {dmsLoading ? (
+              <div className="flex justify-center py-12">
+                <motion.div
+                  className="w-5 h-5 rounded-full border-2"
+                  style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                />
+              </div>
+            ) : dmConversations.length === 0 ? (
+              <div className="text-center py-16 flex flex-col items-center gap-3">
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)" }}
+                >
+                  <Send size={20} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
                 </div>
-                {dm.unread > 0 && (
-                  <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", color: "#FFFFFF", boxShadow: "0 2px 8px rgba(167,139,250,0.4)" }}
-                  >
-                    {dm.unread}
+                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune conversation</p>
+                <p className="text-xs font-light" style={{ color: "#C4C9D4" }}>
+                  Envoie un message à quelqu'un depuis son profil
+                </p>
+              </div>
+            ) : (
+              dmConversations.map((conv) => (
+                <motion.button
+                  key={conv.partner.id}
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => { setActiveDMPartner(conv.partner); setDmMessages([]); setView("thread"); }}
+                  className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer text-left"
+                >
+                  <ProfileAvatar partner={conv.partner} size={48} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
+                        {conv.partner.full_name ?? conv.partner.pseudo}
+                      </p>
+                      <span className="text-[10px] flex-shrink-0" style={{ color: "#A0AEC0" }}>{conv.lastMessageTime}</span>
+                    </div>
+                    <p className="text-xs font-light truncate mt-0.5" style={{ color: conv.unreadCount > 0 ? "#2D3748" : "#A0AEC0" }}>
+                      {conv.lastMessage}
+                    </p>
                   </div>
-                )}
-              </motion.button>
-            ))}
+                  {conv.unreadCount > 0 && (
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", color: "#FFFFFF", boxShadow: "0 2px 8px rgba(167,139,250,0.4)" }}
+                    >
+                      {conv.unreadCount}
+                    </div>
+                  )}
+                </motion.button>
+              ))
+            )}
           </motion.div>
         )}
 
         {/* ────── THREAD ────── */}
-        {view === "thread" && activeThread && (
+        {view === "thread" && activeDMPartner && (
           <motion.div
             key="thread"
             initial={{ opacity: 0, x: 16 }}
@@ -2082,56 +2255,67 @@ export default function CommunautePage() {
             style={{ minHeight: "calc(100vh - 200px)" }}
           >
             <div className="flex flex-col gap-3 flex-1 pb-4 overflow-y-auto">
-              {threadMessages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: i < 4 ? i * 0.06 : 0, type: "spring", bounce: 0.3 }}
-                  className={`flex ${msg.from === "me" ? "justify-end" : "justify-start"} items-end gap-2`}
-                >
-                  {msg.from === "other" && <Avatar user={activeThread} size={28} />}
-                  <div>
-                    <div
-                      className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
-                      style={msg.from === "me"
-                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                        : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
-                      }
-                    >
-                      {msg.text}
+              {dmMessages.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                  <ProfileAvatar partner={activeDMPartner} size={48} />
+                  <p className="text-sm font-light mt-1" style={{ color: "#A0AEC0" }}>
+                    Début de la conversation avec @{activeDMPartner.pseudo}
+                  </p>
+                </div>
+              )}
+              {dmMessages.map((msg, i) => {
+                const isMe = msg.sender_id === user?.id;
+                const timeStr = new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: i < 6 ? i * 0.04 : 0, type: "spring", bounce: 0.3 }}
+                    className={`flex ${isMe ? "justify-end" : "justify-start"} items-end gap-2`}
+                  >
+                    {!isMe && <ProfileAvatar partner={activeDMPartner} size={28} />}
+                    <div>
+                      <div
+                        className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
+                        style={isMe
+                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                          : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
+                        }
+                      >
+                        {msg.content}
+                      </div>
+                      <p className={`text-[9px] mt-1 ${isMe ? "text-right" : ""}`} style={{ color: "#A0AEC0" }}>{timeStr}</p>
                     </div>
-                    <p className={`text-[9px] mt-1 ${msg.from === "me" ? "text-right" : ""}`} style={{ color: "#A0AEC0" }}>{msg.time}</p>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
             <div className="lg-strong lg-highlight relative flex items-center gap-2 p-2.5 rounded-2xl mt-auto">
               <input
                 type="text"
-                value={threadInput}
-                onChange={(e) => setThreadInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSendMessage(); }}
+                value={dmInput}
+                onChange={(e) => setDmInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSendDM(); }}
                 placeholder="Message…"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0] px-2"
                 style={{ color: "#2D3748" }}
               />
               <motion.button
-                whileHover={{ scale: threadInput.trim() ? 1.08 : 1 }}
+                whileHover={{ scale: dmInput.trim() ? 1.08 : 1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={handleSendMessage}
+                onClick={handleSendDM}
+                disabled={dmSending}
                 className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200"
                 style={{
-                  background: threadInput.trim()
-                    ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)"
-                    : "rgba(240,235,255,0.5)",
-                  boxShadow: threadInput.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                  background: dmInput.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
+                  boxShadow: dmInput.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
                 }}
                 aria-label="Envoyer"
               >
-                <Send size={13} strokeWidth={2} style={{ color: threadInput.trim() ? "#2D3748" : "#A0AEC0" }} />
+                <Send size={13} strokeWidth={2} style={{ color: dmInput.trim() ? "#2D3748" : "#A0AEC0" }} />
               </motion.button>
             </div>
           </motion.div>
