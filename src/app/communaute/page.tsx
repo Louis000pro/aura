@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import { createClient } from "@/lib/supabase";
@@ -1606,6 +1606,14 @@ export default function CommunautePage() {
             </motion.button>
           ) : (
             <>
+              <Link href="/decouverte" aria-label="Découvrir des comptes">
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
+                >
+                  <Compass size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                </motion.div>
+              </Link>
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setView(view === "search" ? "feed" : "search")}
