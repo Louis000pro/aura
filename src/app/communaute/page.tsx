@@ -1042,23 +1042,67 @@ function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: (
 }
 
 // Comments Section (inline)
+type RealComment = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  author: { pseudo: string; avatar_url?: string | null } | null;
+};
+
 function CommentsSection({ postId, initialCount, onClose }: { postId: string | number; initialCount: number; onClose: () => void }) {
-  const [comments, setComments] = useState<Comment[]>([
-    { id: 1, user: "leo.fit", text: "Incroyable ! Continue comme ça 💪", time: "Il y a 5 min" },
-    { id: 2, user: "mia.rose", text: "Wow quel score 🔥", time: "Il y a 12 min" },
-  ]);
-  const [input, setInput] = useState("");
+  const { user } = useAuth();
+  const [comments, setComments]   = useState<RealComment[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [input, setInput]         = useState("");
+  const [sending, setSending]     = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  // Charger les vrais commentaires
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("post_comments")
+      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .eq("post_id", String(postId))
+      .order("created_at", { ascending: true })
+      .limit(50)
+      .then(({ data }) => {
+        setComments((data as unknown as RealComment[]) ?? []);
+        setLoading(false);
+        setTimeout(() => inputRef.current?.focus(), 100);
+      });
+  }, [postId]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    setComments((prev) => [
-      { id: Date.now(), user: "moi", text: input.trim(), time: "À l'instant" },
-      ...prev,
-    ]);
+  const handleSend = async () => {
+    if (!input.trim() || !user || sending) return;
+    const content = input.trim();
     setInput("");
+    setSending(true);
+
+    // Optimiste
+    const optimistic: RealComment = {
+      id: `tmp-${Date.now()}`,
+      content,
+      created_at: new Date().toISOString(),
+      user_id: user.id,
+      author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
+    };
+    setComments((prev) => [...prev, optimistic]);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("post_comments")
+      .insert({ post_id: String(postId), user_id: user.id, content })
+      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .single();
+
+    setSending(false);
+    if (error) {
+      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
+    } else if (data) {
+      setComments((prev) => prev.map((c) => c.id === optimistic.id ? (data as unknown as RealComment) : c));
+    }
   };
 
   return (
@@ -1070,29 +1114,62 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: string | n
       className="overflow-hidden"
     >
       <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
-        <div className="flex flex-col gap-2.5 mb-3">
-          {comments.map((c) => (
-            <motion.div
-              key={c.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-start gap-2"
-            >
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", color: "#2D3748" }}
-              >
-                {c.user.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <span className="text-xs font-semibold mr-1.5" style={{ color: "#2D3748" }}>{c.user}</span>
-                <span className="text-xs font-light" style={{ color: "#2D3748" }}>{c.text}</span>
-                <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{c.time}</p>
-              </div>
-            </motion.div>
-          ))}
+
+        {/* Liste */}
+        <div className="flex flex-col gap-2.5 mb-3 max-h-52 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-3">
+              <motion.div
+                className="w-4 h-4 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>
+              Sois le premier à commenter
+            </p>
+          ) : (
+            comments.map((c, i) => {
+              const pseudo  = c.author?.pseudo ?? "inconnu";
+              const avatar  = c.author?.avatar_url;
+              const timeStr = postTimeAgo(c.created_at);
+              return (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i < 5 ? i * 0.04 : 0 }}
+                  className="flex items-start gap-2"
+                >
+                  <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden"
+                      style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                    >
+                      {avatar
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                        : pseudo[0]?.toUpperCase()}
+                    </div>
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs leading-relaxed" style={{ color: "#2D3748" }}>
+                      <Link href={`/profil/${pseudo}`}>
+                        <span className="font-semibold mr-1.5 hover:underline">{pseudo}</span>
+                      </Link>
+                      <span className="font-light">{c.content}</span>
+                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{timeStr}</p>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
         </div>
 
+        {/* Saisie */}
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -1100,7 +1177,8 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: string | n
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-            placeholder="Ajouter un commentaire…"
+            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"}
+            disabled={!user}
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
             style={{
               background: "rgba(240,235,255,0.5)",
@@ -1111,13 +1189,14 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: string | n
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={handleSend}
+            disabled={!input.trim() || !user || sending}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{
-              background: input.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
+              background: input.trim() && user ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
               transition: "background 0.2s",
             }}
           >
-            <Send size={12} strokeWidth={2} style={{ color: input.trim() ? "#2D3748" : "#A0AEC0" }} />
+            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
           </motion.button>
         </div>
       </div>
