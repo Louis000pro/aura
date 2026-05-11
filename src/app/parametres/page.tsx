@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Palette } from "lucide-react";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Palette, User, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
@@ -59,6 +59,237 @@ function Row({
       </div>
       {chevron && <ChevronRight size={14} strokeWidth={1.5} style={{ color: "#C4C9D4", flexShrink: 0 }} />}
     </motion.button>
+  );
+}
+
+/* ── Profile Data Modal ──────────────────────────────────── */
+const GOALS_OPTIONS = [
+  { key: "perte_de_poids", label: "Perte de poids" },
+  { key: "prise_de_masse", label: "Prise de masse" },
+  { key: "force", label: "Force" },
+  { key: "endurance", label: "Endurance" },
+  { key: "sante_generale", label: "Santé générale" },
+  { key: "souplesse", label: "Souplesse & mobilité" },
+];
+
+const LEVELS = ["Débutant", "Intermédiaire", "Avancé"];
+const DIETS = ["Aucun régime particulier", "Végétarien", "Végétalien", "Sans gluten", "Cétogène", "Paléo"];
+
+function FieldInput({ label, value, onChange, type = "text", placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="px-4 py-3 rounded-2xl text-sm outline-none"
+        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748" }}
+      />
+    </div>
+  );
+}
+
+function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  const [age, setAge] = useState("");
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [gender, setGender] = useState("homme");
+  const [goals, setGoals] = useState<string[]>([]);
+  const [level, setLevel] = useState("Débutant");
+  const [sessions, setSessions] = useState("3");
+  const [meals, setMeals] = useState("3");
+  const [diet, setDiet] = useState("Aucun régime particulier");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles")
+      .select("onboarding_age,onboarding_height,onboarding_weight,onboarding_gender,onboarding_goals,onboarding_level,onboarding_sessions_week,onboarding_meals_day,onboarding_diet")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          if (data.onboarding_age) setAge(String(data.onboarding_age));
+          if (data.onboarding_height) setHeight(String(data.onboarding_height));
+          if (data.onboarding_weight) setWeight(String(data.onboarding_weight));
+          if (data.onboarding_gender) setGender(data.onboarding_gender);
+          if (data.onboarding_goals?.length) setGoals(data.onboarding_goals);
+          if (data.onboarding_level) setLevel(data.onboarding_level);
+          if (data.onboarding_sessions_week) setSessions(String(data.onboarding_sessions_week));
+          if (data.onboarding_meals_day) setMeals(String(data.onboarding_meals_day));
+          if (data.onboarding_diet) setDiet(data.onboarding_diet);
+        }
+        setLoading(false);
+      });
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleGoal = (key: string) =>
+    setGoals((prev) => prev.includes(key) ? prev.filter((g) => g !== key) : [...prev, key]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    await supabase.from("profiles").update({
+      onboarding_age: age ? parseInt(age) : null,
+      onboarding_height: height ? parseInt(height) : null,
+      onboarding_weight: weight ? parseFloat(weight) : null,
+      onboarding_gender: gender,
+      onboarding_goals: goals,
+      onboarding_level: level,
+      onboarding_sessions_week: sessions ? parseInt(sessions) : null,
+      onboarding_meals_day: meals ? parseInt(meals) : null,
+      onboarding_diet: diet,
+      onboarding_completed: true,
+    }).eq("id", user.id);
+    setSaving(false);
+    setSuccess(true);
+    setTimeout(() => { onSaved(); onClose(); }, 1200);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-0 md:pb-0"
+      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
+        transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
+        className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)", maxHeight: "90vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Profil & Objectifs</h2>
+            <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>Ces données personnalisent ton Coach IA</p>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1 px-6 pb-6" style={{ scrollbarWidth: "none" }}>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <motion.div className="w-8 h-8 rounded-full border-2" style={{ borderColor: "#D4C0FF", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
+            </div>
+          ) : success ? (
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-3 py-10">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
+                <Check size={24} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+              </div>
+              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>Profil mis à jour !</p>
+              <p className="text-xs font-light text-center" style={{ color: "#A0AEC0" }}>Ton Coach IA peut maintenant te créer des plans personnalisés</p>
+            </motion.div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {/* Physique */}
+              <p className="text-[10px] font-semibold tracking-widest uppercase mt-1" style={{ color: "#A0AEC0" }}>Informations physiques</p>
+              <div className="grid grid-cols-3 gap-3">
+                <FieldInput label="Âge" value={age} onChange={setAge} type="number" placeholder="25" />
+                <FieldInput label="Taille (cm)" value={height} onChange={setHeight} type="number" placeholder="175" />
+                <FieldInput label="Poids (kg)" value={weight} onChange={setWeight} type="number" placeholder="70" />
+              </div>
+
+              {/* Genre */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Genre</label>
+                <div className="flex gap-2">
+                  {["homme", "femme", "autre"].map((g) => (
+                    <motion.button key={g} whileTap={{ scale: 0.95 }} onClick={() => setGender(g)}
+                      className="flex-1 py-2.5 rounded-2xl text-xs font-semibold capitalize cursor-pointer transition-all"
+                      style={gender === g
+                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" }
+                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }
+                      }>
+                      {g}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Objectifs */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Objectifs</label>
+                <div className="flex flex-wrap gap-2">
+                  {GOALS_OPTIONS.map(({ key, label }) => (
+                    <motion.button key={key} whileTap={{ scale: 0.93 }} onClick={() => toggleGoal(key)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition-all"
+                      style={goals.includes(key)
+                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", color: "#fff", boxShadow: "0 2px 8px rgba(167,139,250,0.3)" }
+                        : { background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(167,139,250,0.15)" }
+                      }>
+                      {label}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Niveau */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Niveau sportif</label>
+                <div className="flex gap-2">
+                  {LEVELS.map((l) => (
+                    <motion.button key={l} whileTap={{ scale: 0.95 }} onClick={() => setLevel(l)}
+                      className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
+                      style={level === l
+                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" }
+                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }
+                      }>
+                      {l}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Séances & repas */}
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Habitudes</p>
+              <div className="grid grid-cols-2 gap-3">
+                <FieldInput label="Séances / semaine" value={sessions} onChange={setSessions} type="number" placeholder="3" />
+                <FieldInput label="Repas / jour" value={meals} onChange={setMeals} type="number" placeholder="3" />
+              </div>
+
+              {/* Régime */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Régime alimentaire</label>
+                <select
+                  value={diet}
+                  onChange={(e) => setDiet(e.target.value)}
+                  className="px-4 py-3 rounded-2xl text-sm outline-none cursor-pointer"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748" }}
+                >
+                  {DIETS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer mt-2"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 20px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+              >
+                {saving ? "Enregistrement…" : "Enregistrer mon profil"}
+              </motion.button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -273,6 +504,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 export default function ParametresPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [showProfileModal, setShowProfileModal]   = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -300,6 +532,25 @@ export default function ParametresPage() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="flex flex-col">
+
+        {/* Profil & Objectifs */}
+        <Section title="Profil & Objectifs" />
+        <div className="flex flex-col gap-2">
+          <Row
+            icon={User}
+            label="Mes données personnelles"
+            sublabel="Âge, taille, poids, objectifs, niveau"
+            onClick={() => setShowProfileModal(true)}
+            iconBg="linear-gradient(135deg, rgba(212,192,255,0.5), rgba(245,230,163,0.3))"
+          />
+          <Row
+            icon={Target}
+            label="Mes objectifs fitness"
+            sublabel="Personnalise les recommandations du Coach IA"
+            onClick={() => setShowProfileModal(true)}
+            iconBg="linear-gradient(135deg, rgba(167,139,250,0.25), rgba(212,192,255,0.2))"
+          />
+        </div>
 
         {/* Compte */}
         <Section title="Compte" />
@@ -396,6 +647,7 @@ export default function ParametresPage() {
 
       {/* Modals */}
       <AnimatePresence>
+        {showProfileModal  && <ProfileDataModal    onClose={() => setShowProfileModal(false)}  onSaved={() => showToast("Profil enregistré ✓")} />}
         {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
         {showDeleteModal   && <DeleteAccountModal  onClose={() => setShowDeleteModal(false)} />}
         {toast && (

@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Mic, MicOff, Sparkles, ArrowLeft } from "lucide-react";
+import { Send, Mic, MicOff, Sparkles, ArrowLeft, UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 /* ─── Types ─────────────────────────────────────────────── */
 type Msg = {
@@ -68,6 +69,12 @@ declare global {
     SpeechRecognition?: SpeechRecognitionConstructor;
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
+}
+
+/* ─── Profile completeness check ───────────────────────── */
+function isProfileIncomplete(ctx: UserContext | null): boolean {
+  if (!ctx) return false;
+  return !ctx.age || !ctx.weight || !ctx.level || ctx.skipped === true;
 }
 
 /* ─── Suggestion chips ───────────────────────────────────── */
@@ -482,6 +489,36 @@ export default function CoachPage() {
                   </motion.button>
                 ))}
               </div>
+
+              {/* Profile incomplete banner */}
+              {isProfileIncomplete(userContext) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="w-full max-w-xs mx-auto"
+                >
+                  <Link href="/parametres" className="block">
+                    <div
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(212,192,255,0.25) 0%, rgba(245,230,163,0.2) 100%)",
+                        border: "1px solid rgba(167,139,250,0.25)",
+                        boxShadow: "0 2px 12px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
+                      }}
+                    >
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}>
+                        <UserCog size={15} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>Complète ton profil</p>
+                        <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>Pour des plans vraiment personnalisés →</p>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -572,6 +609,34 @@ export default function CoachPage() {
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Profile CTA after last AI message if profile incomplete */}
+        {isProfileIncomplete(userContext) && messages.length > 0 && !isStreaming && messages[messages.length - 1]?.role === "assistant" && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex justify-start pl-9"
+          >
+            <Link href="/parametres">
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl cursor-pointer"
+                style={{
+                  background: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.25) 100%)",
+                  border: "1px solid rgba(167,139,250,0.3)",
+                  boxShadow: "0 2px 10px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
+                }}
+              >
+                <UserCog size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                <span className="text-[12px] font-semibold" style={{ color: "#7C3AED" }}>
+                  Remplir mon profil →
+                </span>
+              </motion.div>
+            </Link>
+          </motion.div>
+        )}
 
         {/* Bottom spacer so last msg isn't hidden behind input bar */}
         <div className="h-2 flex-shrink-0" />
