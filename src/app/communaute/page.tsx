@@ -3,9 +3,10 @@
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import CreatePostModal from "@/components/CreatePostModal";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -1447,6 +1448,7 @@ function CommunautePageInner() {
   const [showNewDM, setShowNewDM] = useState(false);
   const [storyGroup, setStoryGroup] = useState<RealStory[] | null>(null);
   const [showAddStory, setShowAddStory] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
   const [realStories, setRealStories] = useState<RealStory[]>([]);
   const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
@@ -2292,6 +2294,26 @@ function CommunautePageInner() {
                 </motion.div>
               );
             })}
+
+            {/* ── Floating Action Button : créer un post libre ── */}
+            {user && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", bounce: 0.4, delay: 0.3 }}
+                whileHover={{ scale: 1.08, boxShadow: "0 12px 32px rgba(167,139,250,0.45)" }}
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setShowCreatePost(true)}
+                className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-14 h-14 rounded-full flex items-center justify-center cursor-pointer"
+                style={{
+                  background: "linear-gradient(135deg, #A78BFA 0%, #D4C0FF 60%, #F5E6A3 100%)",
+                  boxShadow: "0 8px 24px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.5)",
+                }}
+                aria-label="Créer un post"
+              >
+                <PenLine size={22} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+              </motion.button>
+            )}
           </motion.div>
         )}
 
@@ -2715,6 +2737,15 @@ function CommunautePageInner() {
             onClose={() => setShowAddStory(false)}
             userId={user?.id ?? null}
             onPublished={() => { loadStories(); }}
+          />
+        )}
+        {showCreatePost && (
+          <CreatePostModal
+            onClose={() => setShowCreatePost(false)}
+            onSuccess={() => {
+              loadFeed();
+              showToast("Post publié ✓");
+            }}
           />
         )}
         {storyGroup && <StoryViewer stories={storyGroup} onClose={() => setStoryGroup(null)} />}

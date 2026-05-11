@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils, Shield, Settings } from "lucide-react";
+import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils, Shield, Settings, Bot } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import { useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase";
 const tabs = [
   { href: "/", label: "Accueil", icon: Home },
   { href: "/nutrition", label: "Nutrition", icon: Utensils },
+  { href: "/coach", label: "Coach IA", icon: Bot },
   { href: "/progression", label: "Progression", icon: TrendingUp },
   { href: "/communaute", label: "Communauté", icon: Users },
   { href: "/profil", label: "Profil", icon: User },

@@ -12,6 +12,7 @@ import StatsPanel from "@/components/StatsPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import WeeklyProgramme from "@/components/WeeklyProgramme";
 import { stats } from "@/data/statsData";
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
@@ -809,7 +810,7 @@ function Dashboard() {
         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }} className="min-h-0" style={{ height: "100%" }}>
           <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} className="flex flex-col items-center justify-center gap-7 overflow-y-auto py-4">
+        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} className="flex flex-col items-center justify-start gap-7 overflow-y-auto py-4">
           <VocalOrb onTranscript={handleVoiceTranscript} />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} whileHover={{ y: -3, transition: { duration: 0.2 } }}
             className="lg-surface lg-highlight relative rounded-3xl px-6 py-5 flex items-center gap-5 w-full max-w-sm">
@@ -825,6 +826,11 @@ function Dashboard() {
               <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
             ))}
           </div>
+          {user && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.5 }} className="w-full" style={{ paddingLeft: 0, paddingRight: 0 }}>
+              <WeeklyProgramme />
+            </motion.div>
+          )}
         </motion.div>
         <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }} className="min-h-0" style={{ height: "100%" }}>
           <StatsPanel />
@@ -868,7 +874,7 @@ function Dashboard() {
             <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
           ))}
         </div>
-        <div className="px-6 pb-6 grid grid-cols-2 gap-3">
+        <div className="px-6 pb-4 grid grid-cols-2 gap-3">
           {[{key:"chat" as const,icon:MessageCircle,label:"Chat IA",color:"#A78BFA",bg:"lg-rose"},{key:"stats" as const,icon:BarChart3,label:"Détails",color:"#D4A843",bg:"lg-turquoise"}].map(({key,icon:Icon,label,color,bg},i) => (
             <motion.button key={key} onClick={() => setMobilePanel(key)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
               whileHover={{ scale: 1.03, y: -2, transition: { duration: 0.15 } }} whileTap={{ scale: 0.96, transition: { duration: 0.08 } }}
@@ -878,6 +884,11 @@ function Dashboard() {
             </motion.button>
           ))}
         </div>
+        {user && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
+            <WeeklyProgramme />
+          </motion.div>
+        )}
       </div>
 
       {/* Mobile drawer */}
