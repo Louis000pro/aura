@@ -483,6 +483,7 @@ const DIETS_LIST = [
 ];
 
 function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: () => void; onSave: () => void }) {
+  const { user } = useAuth();
   const storageKey = `aura_onboarding_${pseudo}`;
   const [data, setData] = useState<OnboardingData>(() => {
     try {
@@ -491,6 +492,34 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
     } catch {}
     return { age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" };
   });
+  const [saving, setSaving] = useState(false);
+
+  /* Load from Supabase on mount to get the most up-to-date data */
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    supabase.from("profiles")
+      .select("onboarding_age,onboarding_height,onboarding_weight,onboarding_gender,onboarding_goals,onboarding_level,onboarding_sessions_week,onboarding_meals_day,onboarding_diet")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data: p }) => {
+        if (p && (p.onboarding_age || p.onboarding_weight || p.onboarding_level)) {
+          const merged: OnboardingData = {
+            age: p.onboarding_age?.toString() ?? "",
+            height: p.onboarding_height?.toString() ?? "",
+            weight: p.onboarding_weight?.toString() ?? "",
+            gender: p.onboarding_gender ?? "",
+            goals: p.onboarding_goals ?? [],
+            level: p.onboarding_level ?? "",
+            sessionsPerWeek: p.onboarding_sessions_week?.toString() ?? "",
+            mealsPerDay: p.onboarding_meals_day?.toString() ?? "",
+            diet: p.onboarding_diet ?? "",
+          };
+          setData(merged);
+          localStorage.setItem(storageKey, JSON.stringify(merged));
+        }
+      });
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key: keyof OnboardingData, val: string) => setData(d => ({ ...d, [key]: val }));
   const toggleGoal = (id: string) =>
@@ -499,8 +528,29 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
       goals: d.goals.includes(id) ? d.goals.filter(g => g !== id) : [...d.goals, id],
     }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    /* Save to localStorage */
     localStorage.setItem(storageKey, JSON.stringify(data));
+
+    /* Also save to Supabase so Coach IA and WeeklyProgramme can read it */
+    if (user?.id) {
+      setSaving(true);
+      const supabase = createClient();
+      await supabase.from("profiles").update({
+        onboarding_age: data.age ? parseInt(data.age) : null,
+        onboarding_height: data.height ? parseInt(data.height) : null,
+        onboarding_weight: data.weight ? parseFloat(data.weight) : null,
+        onboarding_gender: data.gender || null,
+        onboarding_goals: data.goals,
+        onboarding_level: data.level || null,
+        onboarding_sessions_week: data.sessionsPerWeek ? parseInt(data.sessionsPerWeek) : null,
+        onboarding_meals_day: data.mealsPerDay ? parseInt(data.mealsPerDay) : null,
+        onboarding_diet: data.diet || null,
+        onboarding_completed: true,
+      }).eq("id", user.id);
+      setSaving(false);
+    }
+
     onSave();
     onClose();
   };
@@ -698,14 +748,16 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSave}
+            disabled={saving}
             className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
             style={{
               background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
               color: "#2D3748",
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
+              opacity: saving ? 0.7 : 1,
             }}
           >
-            Sauvegarder
+            {saving ? "Enregistrement…" : "Sauvegarder"}
           </motion.button>
         </div>
       </motion.div>

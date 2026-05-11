@@ -104,8 +104,28 @@ export default function CoachPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  /* ── Conversation persistence helpers ── */
+  const historyKey = user?.id ? `aura_coach_history_${user.id}` : null;
+
+  const loadHistory = (): Msg[] => {
+    if (!historyKey || typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(historyKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  };
+
+  const saveHistory = (msgs: Msg[]) => {
+    if (!historyKey || typeof window === "undefined") return;
+    try {
+      // Keep last 60 messages to avoid storage overflow
+      const toStore = msgs.slice(-60).map(m => ({ ...m, streaming: false }));
+      localStorage.setItem(historyKey, JSON.stringify(toStore));
+    } catch {}
+  };
+
   /* ── State ── */
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(() => loadHistory());
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -118,12 +138,12 @@ export default function CoachPage() {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* ── Auto-scroll ── */
+  /* ── Auto-scroll + persist history ── */
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (messages.length > 0 && !isStreaming) saveHistory(messages);
+  }, [messages, isStreaming]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Auto-focus input ── */
   useEffect(() => {
@@ -135,7 +155,7 @@ export default function CoachPage() {
     if (!user?.id) return;
 
     const loadContext = async () => {
-      /* Profile */
+      /* 1 — Try Supabase first */
       const { data: profile } = await supabase
         .from("profiles")
         .select(
@@ -144,7 +164,9 @@ export default function CoachPage() {
         .eq("id", user.id)
         .maybeSingle();
 
-      if (profile) {
+      const hasSupabaseData = profile && (profile.onboarding_age || profile.onboarding_weight || profile.onboarding_level);
+
+      if (hasSupabaseData) {
         setUserContext({
           pseudo: user.pseudo,
           age: profile.onboarding_age?.toString(),
@@ -158,7 +180,45 @@ export default function CoachPage() {
           diet: profile.onboarding_diet,
         });
       } else {
-        setUserContext({ pseudo: user.pseudo, skipped: true });
+        /* 2 — Fallback: check localStorage (data saved from /profil "Mes objectifs") */
+        const lsKey = `aura_onboarding_${user.pseudo}`;
+        let lsData: Record<string, unknown> | null = null;
+        try {
+          const raw = typeof window !== "undefined" ? localStorage.getItem(lsKey) : null;
+          if (raw) lsData = JSON.parse(raw);
+        } catch {}
+
+        if (lsData && (lsData.age || lsData.weight || lsData.level)) {
+          /* Use it immediately */
+          setUserContext({
+            pseudo: user.pseudo,
+            age: lsData.age as string,
+            height: lsData.height as string,
+            weight: lsData.weight as string,
+            gender: (lsData.gender as string) || "non précisé",
+            goals: (lsData.goals as string[]) ?? [],
+            level: lsData.level as string,
+            sessionsPerWeek: lsData.sessionsPerWeek as string,
+            mealsPerDay: lsData.mealsPerDay as string,
+            diet: lsData.diet as string,
+          });
+
+          /* Sync localStorage → Supabase so it's available next time */
+          supabase.from("profiles").update({
+            onboarding_age: lsData.age ? parseInt(lsData.age as string) : null,
+            onboarding_height: lsData.height ? parseInt(lsData.height as string) : null,
+            onboarding_weight: lsData.weight ? parseFloat(lsData.weight as string) : null,
+            onboarding_gender: lsData.gender,
+            onboarding_goals: lsData.goals,
+            onboarding_level: lsData.level,
+            onboarding_sessions_week: lsData.sessionsPerWeek ? parseInt(lsData.sessionsPerWeek as string) : null,
+            onboarding_meals_day: lsData.mealsPerDay ? parseInt(lsData.mealsPerDay as string) : null,
+            onboarding_diet: lsData.diet,
+            onboarding_completed: true,
+          }).eq("id", user.id).then(() => {});
+        } else {
+          setUserContext({ pseudo: user.pseudo, skipped: true });
+        }
       }
 
       /* Today's nutrition */
@@ -329,7 +389,7 @@ export default function CoachPage() {
   ═══════════════════════════════════════════════════════ */
   return (
     <div
-      className="fixed inset-0 flex flex-col"
+      className="fixed inset-0 md:left-[88px] flex flex-col"
       style={{
         background:
           "linear-gradient(180deg, rgba(240,235,255,0.4) 0%, rgba(255,255,255,0) 60%), #FAFAFA",
