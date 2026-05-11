@@ -1330,7 +1330,7 @@ export default function CommunautePage() {
         showToast(`Erreur : ${error.message}`);
         return;
       }
-      // Notification (silencieuse)
+      // Notification in-app (silencieuse)
       supabase.from("notifications").insert({
         user_id: profile.id,
         from_user_id: user.id,
@@ -1338,6 +1338,12 @@ export default function CommunautePage() {
         from_avatar_url: user.avatar ?? null,
         type: "follow",
       }).then(() => {}).catch(() => {});
+      // Email de notification (silencieux, ne bloque pas l'UI)
+      fetch("/api/notifications/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
+      }).catch(() => {});
       showToast(`Vous suivez @${profile.pseudo} 🎉`);
     } else {
       const { error } = await supabase
