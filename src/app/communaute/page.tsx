@@ -91,12 +91,7 @@ const users: User[] = [
   { handle: "chloe.zen", name: "Chloé Zen", initial: "C", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
 ];
 
-const influencers: User[] = [
-  { handle: "@coach.aura", name: "Coach Aura Officiel", initial: "✦", gradient: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", verified: true, followers: "284k", bio: "Coach IA · Programmes premium" },
-  { handle: "@sarah.wellness", name: "Sarah Wellness", initial: "S", gradient: "linear-gradient(135deg, #F0EBFF 0%, #A78BFA 100%)", verified: true, followers: "127k", bio: "Yoga · Nutrition · Mindfulness" },
-  { handle: "@nico.strength", name: "Nico Strength", initial: "N", gradient: "linear-gradient(135deg, #FFFBF0 0%, #D4A843 100%)", verified: true, followers: "98k", bio: "Powerlifting · Mobilité" },
-  { handle: "@elea.run", name: "Eléa Runner", initial: "E", gradient: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", verified: true, followers: "61k", bio: "Marathon · Trail · Récupération" },
-];
+// influencers fictifs supprimés — remplacés par de vrais comptes Supabase
 
 type FeedItem = {
   id: number;
@@ -1151,7 +1146,7 @@ export default function CommunautePage() {
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set([2]));
   // followingIds = ensemble des IDs Supabase que l'utilisateur suit réellement
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
-  const [following, setFollowing] = useState<Set<string>>(new Set()); // pour influenceurs fictifs uniquement
+  const [suggestedProfiles, setSuggestedProfiles] = useState<{ id: string; pseudo: string; full_name?: string; avatar_url?: string; bio?: string }[]>([]);
   const [openComments, setOpenComments] = useState<Set<number>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
   const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
@@ -1195,6 +1190,21 @@ export default function CommunautePage() {
         if (data) setFollowingIds(new Set(data.map((r) => r.following_id as string)));
       });
   }, [user]);
+
+  // Charger les suggestions de comptes à suivre
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("id, pseudo, full_name, avatar_url, bio")
+      .neq("id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (data) setSuggestedProfiles(data as typeof suggestedProfiles);
+      });
+  }, [user]); // eslint-disable-line
 
   // Charger les stories actives (les miennes + celles des personnes que je suis)
   // Join manuel des profils car la FK stories.user_id → auth.users (pas public.profiles)
@@ -1386,16 +1396,6 @@ export default function CommunautePage() {
     }
   };
 
-  const toggleFollow = (handle: string) => {
-    setFollowing((p) => {
-      const n = new Set(p);
-      const isNowFollowing = !n.has(handle);
-      n.has(handle) ? n.delete(handle) : n.add(handle);
-      showToast(isNowFollowing ? `Vous suivez maintenant ${handle}` : `Vous ne suivez plus ${handle}`);
-      return n;
-    });
-  };
-
   const toggleComments = (id: number) => {
     setOpenComments((p) => {
       const n = new Set(p);
@@ -1563,13 +1563,13 @@ export default function CommunautePage() {
   }, [search, searchFilter]); // eslint-disable-line
 
   const filteredResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
     return {
       realProfiles: searchFilter !== "seances" ? realProfiles : [],
-      influencers:  searchFilter !== "seances" ? influencers.filter(u => !q || u.name.toLowerCase().includes(q)) : [],
       sessions:     searchFilter !== "compte"  ? realSessions : [],
+      // Suggestions : comptes pas encore suivis (utilisé quand search est vide)
+      suggestions:  suggestedProfiles.filter(p => !followingIds.has(p.id)).slice(0, 8),
     };
-  }, [search, searchFilter, realProfiles, realSessions]);
+  }, [searchFilter, realProfiles, realSessions, suggestedProfiles, followingIds]);
 
   return (
     <div
@@ -2008,34 +2008,44 @@ export default function CommunautePage() {
               ))}
             </div>
 
-            {/* Influencers */}
-            {filteredResults.influencers.length > 0 && (
+            {/* Suggestions — comptes à découvrir (quand search est vide) */}
+            {!search.trim() && filteredResults.suggestions.length > 0 && searchFilter !== "seances" && (
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
-                  Influenceurs vérifiés
+                  Suggestions
                 </p>
                 <div className="flex flex-col gap-2">
-                  {filteredResults.influencers.map((u) => {
-                    const isFollowing = following.has(u.handle);
+                  {filteredResults.suggestions.map((profile) => {
+                    const isF = followingIds.has(profile.id);
                     return (
-                      <div key={u.handle} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
-                        <Avatar user={u} size={44} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{u.name}</p>
-                          <p className="text-[11px] font-light truncate" style={{ color: "#718096" }}>{u.bio}</p>
-                          <p className="text-[10px]" style={{ color: "#A0AEC0" }}>{u.followers} abonnés</p>
-                        </div>
-                        <motion.button
-                          whileTap={{ scale: 0.94 }}
-                          onClick={() => toggleFollow(u.handle)}
-                          className="text-[11px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer transition-all"
-                          style={isFollowing
-                            ? { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
-                            : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                          }
-                        >
-                          {isFollowing ? "Suivi ✓" : "Suivre"}
-                        </motion.button>
+                      <div key={profile.id} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
+                        <Link href={`/profil/${profile.pseudo}`} className="flex-shrink-0">
+                          <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold overflow-hidden"
+                            style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                            {profile.avatar_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                              : (profile.pseudo?.[0] ?? "?").toUpperCase()}
+                          </div>
+                        </Link>
+                        <Link href={`/profil/${profile.pseudo}`} className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
+                          <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
+                          {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
+                        </Link>
+                        {user && user.id !== profile.id && (
+                          <motion.button
+                            whileTap={{ scale: 0.92 }}
+                            onClick={() => handleFollowReal(profile)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
+                            style={isF
+                              ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
+                              : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                            }
+                          >
+                            {isF ? <><UserCheck size={12} strokeWidth={2} /> Suivi</> : <><UserPlus size={12} strokeWidth={2} /> Suivre</>}
+                          </motion.button>
+                        )}
                       </div>
                     );
                   })}
@@ -2168,10 +2178,10 @@ export default function CommunautePage() {
               </div>
             )}
 
-            {!searchLoading && filteredResults.realProfiles.length === 0 && filteredResults.influencers.length === 0 && filteredResults.sessions.length === 0 && !(searchFilter === "seances" && search.trim()) && (
+            {!searchLoading && search.trim() && filteredResults.realProfiles.length === 0 && filteredResults.sessions.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
-                  {search ? `Aucun résultat pour « ${search} »` : "Tape quelque chose pour rechercher"}
+                  Aucun résultat pour « {search} »
                 </p>
               </div>
             )}
