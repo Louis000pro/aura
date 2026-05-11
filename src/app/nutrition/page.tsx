@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus } from "lucide-react";
+import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 
@@ -30,6 +30,16 @@ type AnalysisResult = {
   proteins: number;
   carbs: number;
   fats: number;
+};
+
+type DaySummary = {
+  date: string;
+  total_calories: number;
+  total_proteins: number;
+  total_carbs: number;
+  total_fats: number;
+  meal_count: number;
+  water_ml: number;
 };
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
@@ -1479,11 +1489,362 @@ function rowToMeal(r: any): MealEntry {
   };
 }
 
+/* ─── Nutrition Calendar ─────────────────────────────────────────────── */
+const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const WEEK_SHORT = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+
+function calBg(pct: number): React.CSSProperties {
+  if (pct <= 0)   return {};
+  if (pct < 0.25) return { background: "rgba(212,192,255,0.28)" };
+  if (pct < 0.50) return { background: "rgba(167,139,250,0.38)" };
+  if (pct < 0.75) return { background: "rgba(167,139,250,0.58)" };
+  if (pct < 0.90) return { background: "rgba(167,139,250,0.76)" };
+  return { background: "linear-gradient(135deg,rgba(167,139,250,0.9) 0%,rgba(212,168,67,0.75) 100%)" };
+}
+
+function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void }) {
+  const { user } = useAuth();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const [calMonth, setCalMonth] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [allData, setAllData]   = useState<Map<string, DaySummary>>(new Map());
+  const [loading, setLoading]   = useState(true);
+  const [regDate, setRegDate]   = useState<Date | null>(null);
+
+  /* Registration date */
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user.created_at) {
+        const d = new Date(data.session.user.created_at);
+        d.setHours(0,0,0,0);
+        setRegDate(d);
+      }
+    });
+  }, [user]);
+
+  /* Load all nutrition + hydration data */
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    setLoading(true);
+    const supabase = createClient();
+    Promise.all([
+      supabase.from("nutrition_logs").select("date,calories,proteins,carbs,fats").eq("user_id", user.id),
+      supabase.from("hydration_logs").select("date,water_ml").eq("user_id", user.id),
+    ]).then(([{ data: nutr }, { data: hydr }]) => {
+      const map = new Map<string, DaySummary>();
+      const blank = (): DaySummary => ({ date:"", total_calories:0, total_proteins:0, total_carbs:0, total_fats:0, meal_count:0, water_ml:0 });
+
+      (nutr ?? []).forEach((r: { date:string; calories:number; proteins:number; carbs:number; fats:number }) => {
+        const e = map.get(r.date) ?? { ...blank(), date: r.date };
+        map.set(r.date, { ...e,
+          total_calories: e.total_calories + (r.calories ?? 0),
+          total_proteins: e.total_proteins + (r.proteins ?? 0),
+          total_carbs:    e.total_carbs    + (r.carbs    ?? 0),
+          total_fats:     e.total_fats     + (r.fats     ?? 0),
+          meal_count:     e.meal_count + 1,
+        });
+      });
+
+      (hydr ?? []).forEach((r: { date:string; water_ml:number }) => {
+        const e = map.get(r.date) ?? { ...blank(), date: r.date };
+        map.set(r.date, { ...e, water_ml: r.water_ml });
+      });
+
+      setAllData(map);
+      setLoading(false);
+    });
+  }, [user]);
+
+  /* Calendar grid */
+  const firstOfMonth = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
+  const dow0 = firstOfMonth.getDay(); // 0=Sun … 6=Sat
+  const offset = dow0 === 0 ? -6 : 1 - dow0; // shift to Monday-first
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(firstOfMonth.getDate() + offset);
+
+  const allDays = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    return d;
+  });
+  const weeks = [] as Date[][];
+  for (let i = 0; i < allDays.length; i += 7) {
+    const w = allDays.slice(i, i+7);
+    if (w.some(d => d.getMonth() === calMonth.getMonth())) weeks.push(w);
+  }
+
+  /* Navigation constraints */
+  const regMonth = regDate ? new Date(regDate.getFullYear(), regDate.getMonth(), 1) : null;
+  const todayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const canPrev = regMonth ? calMonth > regMonth : true;
+  const canNext = calMonth < todayMonth;
+
+  /* Monthly stats */
+  const mk = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}`;
+  const monthEntries = [...allData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
+  const trackedThisMonth = monthEntries.filter(d => d.meal_count > 0).length;
+  const daysInMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate();
+  const hasTrack = monthEntries.filter(d => d.meal_count > 0);
+  const avgCal   = hasTrack.length > 0 ? Math.round(hasTrack.reduce((s,d) => s + d.total_calories,0) / hasTrack.length) : 0;
+  const waterArr = monthEntries.filter(d => d.water_ml > 0);
+  const avgWater = waterArr.length > 0 ? Math.round(waterArr.reduce((s,d) => s + d.water_ml,0) / waterArr.length) : 0;
+
+  /* Streak calculation (all-time) */
+  const sorted = [...allData.entries()].filter(([,v]) => v.meal_count > 0).map(([k]) => k).sort();
+  let streak = 0, bestStreak = 0, cur = 0;
+  for (let i = 0; i < sorted.length; i++) {
+    cur = i === 0 ? 1
+      : (new Date(sorted[i]).getTime() - new Date(sorted[i-1]).getTime()) / 86400000 === 1 ? cur+1 : 1;
+    bestStreak = Math.max(bestStreak, cur);
+  }
+  /* Current streak: count backward from today (or yesterday) */
+  for (let i = sorted.length-1; i >= 0; i--) {
+    const diff = Math.round((today.getTime() - new Date(sorted[i]).getTime()) / 86400000);
+    if (i === sorted.length-1 && diff > 1) break;
+    if (i < sorted.length-1 && Math.round((new Date(sorted[i+1]).getTime() - new Date(sorted[i]).getTime()) / 86400000) !== 1) break;
+    streak++;
+  }
+
+  /* All-time aggregates */
+  const allTracked = [...allData.values()].filter(d => d.meal_count > 0);
+  const globalAvgCal = allTracked.length > 0
+    ? Math.round(allTracked.reduce((s,d) => s + d.total_calories,0) / allTracked.length)
+    : 0;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
+      className="max-w-5xl">
+
+      {/* Month navigation header */}
+      <div className="flex items-center justify-between mb-4">
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => canPrev && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1))}
+          disabled={!canPrev}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
+          style={{ background: canPrev ? "rgba(240,235,255,0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
+            border: "1px solid rgba(212,192,255,0.3)", boxShadow: canPrev ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}
+        >
+          <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+        </motion.button>
+
+        <div className="text-center">
+          <p className="text-base font-semibold" style={{ color: "#2D3748" }}>
+            {MONTHS_FR[calMonth.getMonth()]} {calMonth.getFullYear()}
+          </p>
+          {regDate && (
+            <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+              Suivi depuis le {regDate.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1">
+          {(calMonth.getMonth() !== today.getMonth() || calMonth.getFullYear() !== today.getFullYear()) && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setCalMonth(new Date(today.getFullYear(), today.getMonth(), 1))}
+              className="text-[10px] font-semibold px-2.5 py-1.5 rounded-xl cursor-pointer"
+              style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}
+            >
+              Auj.
+            </motion.button>
+          )}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => canNext && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1))}
+            disabled={!canNext}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
+            style={{ background: canNext ? "rgba(240,235,255,0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
+              border: "1px solid rgba(212,192,255,0.3)", boxShadow: canNext ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}
+          >
+            <ChevronRight size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+          </motion.button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <motion.div className="w-5 h-5 rounded-full border-2"
+            style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+            animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+        </div>
+      ) : (
+        <>
+          {/* Day-of-week headers */}
+          <div className="grid grid-cols-7 mb-1.5">
+            {WEEK_SHORT.map((d) => (
+              <div key={d} className="flex justify-center py-1">
+                <span className="text-[10px] font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>{d}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="flex flex-col gap-1">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-7 gap-1">
+                {week.map((day, di) => {
+                  const ds = toDateStr(day);
+                  const s = allData.get(ds);
+                  const inMonth    = day.getMonth() === calMonth.getMonth();
+                  const isToday    = day.toDateString() === today.toDateString();
+                  const isFuture   = day > today;
+                  const isBeforeReg= regDate ? day < regDate : false;
+                  const hasData    = !!s && s.meal_count > 0;
+                  const pct        = hasData ? Math.min(s.total_calories / GOALS.calories, 1) : 0;
+                  const highContrast = pct >= 0.5;
+                  const isClickable= inMonth && !isFuture && !isBeforeReg;
+
+                  return (
+                    <motion.button
+                      key={di}
+                      whileHover={isClickable ? { scale: 1.07, y: -1 } : {}}
+                      whileTap={isClickable  ? { scale: 0.92 } : {}}
+                      onClick={() => isClickable && onDayClick(day)}
+                      disabled={!isClickable}
+                      className="relative flex flex-col items-center justify-start py-1.5 px-0.5 rounded-xl overflow-hidden"
+                      style={{
+                        minHeight: 56,
+                        cursor: isClickable ? "pointer" : "default",
+                        opacity: !inMonth || isBeforeReg ? 0.2 : isFuture ? 0.4 : 1,
+                        border: isToday
+                          ? "2px solid rgba(167,139,250,0.8)"
+                          : hasData ? "1px solid rgba(167,139,250,0.15)" : "1px solid rgba(212,192,255,0.12)",
+                        ...calBg(pct),
+                        ...(isToday && !hasData ? { background: "rgba(240,235,255,0.5)" } : {}),
+                      }}
+                    >
+                      {/* Date number */}
+                      <span className="text-[11px] font-bold leading-none"
+                        style={{ color: highContrast ? "#fff" : isToday ? "#7C3AED" : "#2D3748" }}>
+                        {day.getDate()}
+                      </span>
+
+                      {/* Calories */}
+                      {hasData && (
+                        <span className="text-[9px] font-semibold leading-none mt-0.5"
+                          style={{ color: highContrast ? "rgba(255,255,255,0.9)" : "#6B5FC0" }}>
+                          {s.total_calories >= 1000
+                            ? `${(s.total_calories/1000).toFixed(1)}k`
+                            : `${s.total_calories}`}
+                        </span>
+                      )}
+
+                      {/* Progress sliver */}
+                      {hasData && (
+                        <div className="w-full px-1 mt-auto pt-0.5">
+                          <div className="h-0.5 rounded-full overflow-hidden"
+                            style={{ background: highContrast ? "rgba(255,255,255,0.2)" : "rgba(167,139,250,0.15)" }}>
+                            <div className="h-full rounded-full"
+                              style={{ width: `${Math.min(pct*100,100)}%`,
+                                background: highContrast ? "rgba(255,255,255,0.7)" : "rgba(167,139,250,0.8)" }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Water dot */}
+                      {!!s && s.water_ml >= 500 && (
+                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
+                          style={{ background: highContrast ? "rgba(255,255,255,0.8)" : "#38BDF8" }} />
+                      )}
+
+                      {/* Today ring */}
+                      {isToday && (
+                        <div className="absolute inset-0 rounded-[10px] pointer-events-none"
+                          style={{ boxShadow: "inset 0 0 0 2px rgba(167,139,250,0.8)" }} />
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
+            {[
+              { c: "rgba(212,192,255,0.4)",  l: "< 25 %"  },
+              { c: "rgba(167,139,250,0.45)", l: "25–50 %"  },
+              { c: "rgba(167,139,250,0.68)", l: "50–75 %"  },
+              { c: "linear-gradient(90deg,rgba(167,139,250,0.9),rgba(212,168,67,0.85))", l: "≥ 90 %" },
+            ].map(({ c, l }) => (
+              <div key={l} className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ background: c }} />
+                <span className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>{l}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-1 ml-auto">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#38BDF8" }} />
+              <span className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>eau ≥ 500 ml</span>
+            </div>
+          </div>
+
+          {/* Monthly stats tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+            {[
+              { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "#2D3748" },
+              { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "#A78BFA" },
+              { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "#D4A843" },
+              { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#38BDF8" },
+            ].map(({ icon, label, val, unit, color }) => (
+              <motion.div key={label}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-1.5 p-3.5 rounded-2xl"
+                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.9)",
+                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+                <span className="text-base">{icon}</span>
+                <div>
+                  <span className="text-lg font-light leading-none" style={{ color }}>{val}</span>
+                  {unit && <span className="text-[10px] font-light ml-1" style={{ color: "#A0AEC0" }}>{unit}</span>}
+                </div>
+                <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{label}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* All-time summary banner */}
+          {allTracked.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="mt-4 p-4 rounded-2xl"
+              style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.22) 0%,rgba(245,230,163,0.16) 100%)",
+                border: "1px solid rgba(167,139,250,0.14)", backdropFilter: "blur(12px)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+                Depuis l'inscription
+              </p>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                {[
+                  { val: allTracked.length, unit: "jours", label: "trackés",   color: "#2D3748" },
+                  { val: bestStreak,        unit: "jours", label: "meil. série",color: "#A78BFA" },
+                  { val: globalAvgCal > 0 ? globalAvgCal.toLocaleString("fr-FR") : "—",
+                    unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "#D4A843" },
+                ].map(({ val, unit, label, color }) => (
+                  <div key={label}>
+                    <p className="text-xl font-extralight leading-tight" style={{ color }}>
+                      {val}
+                      <span className="text-xs font-light ml-0.5" style={{ color: "#A0AEC0" }}>{unit}</span>
+                    </p>
+                    <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </>
+      )}
+    </motion.div>
+  );
+}
+
 /* ─── Page principale ────────────────────────────────────────────────── */
 export default function NutritionPage() {
   const { user } = useAuth();
   const supabase = createClient();
   const today = new Date();
+  const [calView, setCalView] = useState<"journal" | "calendrier">("journal");
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [waterMl, setWaterMl] = useState(0);
@@ -1659,8 +2020,52 @@ export default function NutritionPage() {
         </div>
       </motion.div>
 
-      {/* ── Week selector ────────────────────────────────────── */}
+      {/* ── Tab toggle: Journal / Calendrier ─────────────────── */}
       <motion.div
+        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
+        className="flex items-center gap-2 mb-5 max-w-5xl"
+      >
+        {(["journal", "calendrier"] as const).map((v) => {
+          const active = calView === v;
+          const Icon = v === "journal" ? BookOpen : CalendarDays;
+          const labels = { journal: "Journal", calendrier: "Calendrier" };
+          return (
+            <motion.button
+              key={v}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setCalView(v)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all duration-200"
+              style={{
+                background: active ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(240,235,255,0.6)",
+                color: active ? "#2D3748" : "#A0AEC0",
+                boxShadow: active ? "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                border: active ? "none" : "1px solid rgba(212,192,255,0.3)",
+              }}
+            >
+              <Icon size={13} strokeWidth={1.8} />
+              {labels[v]}
+            </motion.button>
+          );
+        })}
+      </motion.div>
+
+      {/* ── Calendar view ────────────────────────────────────── */}
+      <AnimatePresence mode="wait">
+        {calView === "calendrier" && (
+          <motion.div key="cal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <NutritionCalendar
+              onDayClick={(date) => {
+                setSelectedDate(date);
+                setWeekDays(getMondayWeek(date));
+                setCalView("journal");
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Week selector ────────────────────────────────────── */}
+      {calView === "journal" && <motion.div
         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
         className="flex justify-between mb-6 max-w-5xl">
         {weekDays.map((day, i) => {
@@ -1688,10 +2093,10 @@ export default function NutritionPage() {
             </motion.button>
           );
         })}
-      </motion.div>
+      </motion.div>}
 
       {/* ── Statut ──────────────────────────────────────────────── */}
-      {isLoading && (
+      {calView === "journal" && isLoading && (
         <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "#A0AEC0" }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
             <Loader2 size={14} strokeWidth={1.5} />
@@ -1699,7 +2104,7 @@ export default function NutritionPage() {
           <span className="text-xs font-light">Chargement…</span>
         </div>
       )}
-      {!user && !isLoading && (
+      {calView === "journal" && !user && !isLoading && (
         <div className="max-w-5xl mb-4 px-4 py-3 rounded-2xl flex items-center gap-3"
           style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
           <span style={{ fontSize: 16 }}>🔒</span>
@@ -1710,6 +2115,7 @@ export default function NutritionPage() {
       )}
 
       {/* ── 2-column grid ──────────────────────────────────────── */}
+      {calView === "journal" && (
       <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 max-w-5xl">
 
         {/* LEFT — Ring + Macros */}
@@ -1937,6 +2343,7 @@ export default function NutritionPage() {
           )}
         </motion.div>
       </div>
+      )}
 
       {/* ── Modals + Toast ──────────────────────────────────────── */}
       <AnimatePresence>
