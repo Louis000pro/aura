@@ -29,6 +29,16 @@ type Stats = {
   totalFollows: number;
   totalSessions: number;
   totalNotifs: number;
+  totalPosts: number;
+};
+
+type ChartPoint = { label: string; value: number };
+type DonutSlice = { label: string; value: number; color: string };
+
+type ChartData = {
+  usersByWeek:    ChartPoint[];
+  postsByDay:     ChartPoint[];
+  postsByAudience: DonutSlice[];
 };
 
 /* ─── Helpers ─── */
@@ -40,6 +50,131 @@ function timeAgo(iso: string) {
   if (d < 30) return `Il y a ${d}j`;
   const m = Math.floor(d / 30);
   return `Il y a ${m} mois`;
+}
+
+/* ─── Chart helpers ─── */
+function BarChart({ data, color = "#A78BFA" }: { data: ChartPoint[]; color?: string }) {
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div>
+      <div className="flex items-end gap-1" style={{ height: 72 }}>
+        {data.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center justify-end">
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: Math.max((d.value / max) * 56, d.value > 0 ? 3 : 0) }}
+              transition={{ delay: i * 0.04, duration: 0.45, ease: "easeOut" }}
+              style={{ background: d.value > 0 ? color : "rgba(212,192,255,0.2)", borderRadius: 4, width: "100%" }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex mt-1.5 gap-1">
+        {data.map((d, i) => (
+          <span key={i} className="flex-1 text-center" style={{ fontSize: 8, color: "#A0AEC0", lineHeight: 1 }}>
+            {d.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AreaChart({ data, color = "#A78BFA" }: { data: ChartPoint[]; color?: string }) {
+  const W = 280, H = 72;
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const pad = { t: 8, b: 20, l: 4, r: 4 };
+  const chartH = H - pad.t - pad.b;
+  const chartW = W - pad.l - pad.r;
+  const n = data.length;
+
+  const pts = data.map((d, i) => ({
+    x: pad.l + (i / Math.max(n - 1, 1)) * chartW,
+    y: pad.t + chartH - (d.value / max) * chartH,
+  }));
+
+  const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${(pad.l + chartW).toFixed(1)},${(pad.t + chartH).toFixed(1)} L${pad.l},${(pad.t + chartH).toFixed(1)} Z`;
+  const gradId = `ag-${color.replace(/[^a-z0-9]/gi, "")}`;
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${gradId})`} />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <motion.circle
+            key={i} cx={p.x} cy={p.y} r={3}
+            fill={color}
+            initial={{ scale: 0 }} animate={{ scale: 1 }}
+            transition={{ delay: 0.3 + i * 0.05, type: "spring", bounce: 0.5 }}
+          />
+        ))}
+      </svg>
+      <div className="flex mt-0.5">
+        {data.map((d, i) => (
+          <span key={i} className="flex-1 text-center" style={{ fontSize: 8, color: "#A0AEC0" }}>
+            {d.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DonutChart({ data }: { data: DonutSlice[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const R = 36, CX = 46, CY = 46, SW = 12;
+  const circ = 2 * Math.PI * R;
+  let cum = 0;
+  return (
+    <div className="flex items-center gap-5">
+      <svg viewBox="0 0 92 92" width={92} height={92} style={{ flexShrink: 0 }}>
+        <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(212,192,255,0.15)" strokeWidth={SW} />
+        {data.map((d, i) => {
+          const pct = d.value / total;
+          const dash = pct * circ;
+          const offset = -(cum / total) * circ - circ / 4;
+          cum += d.value;
+          return (
+            <motion.circle
+              key={i} cx={CX} cy={CY} r={R}
+              fill="none" stroke={d.color} strokeWidth={SW}
+              strokeDasharray={`${dash} ${circ - dash}`}
+              strokeDashoffset={offset}
+              strokeLinecap="butt"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.12, duration: 0.4 }}
+            />
+          );
+        })}
+        <text x={CX} y={CY + 4} textAnchor="middle" style={{ fontSize: 13, fontWeight: 600, fill: "#2D3748" }}>
+          {total}
+        </text>
+        <text x={CX} y={CY + 15} textAnchor="middle" style={{ fontSize: 7, fill: "#A0AEC0" }}>
+          posts
+        </text>
+      </svg>
+      <div className="flex flex-col gap-2.5 flex-1">
+        {data.map((d) => (
+          <div key={d.label} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: d.color }} />
+            <span className="text-xs flex-1 font-light" style={{ color: "#718096" }}>{d.label}</span>
+            <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{d.value}</span>
+            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
+              {Math.round((d.value / total) * 100)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ─── Stat Card ─── */
@@ -76,6 +211,7 @@ export default function AdminPage() {
   const router = useRouter();
 
   const [stats, setStats] = useState<Stats | null>(null);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
   const [loadingData, setLoadingData] = useState(true);
@@ -101,19 +237,51 @@ export default function AdminPage() {
     const supabase = createClient();
 
     try {
-      const [usersRes, followsRes, sessionsRes, notifsRes] = await Promise.all([
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+      const [usersRes, followsRes, sessionsRes, notifsRes, postsRes, postAudienceRes] = await Promise.all([
         supabase.from("profiles").select("id, pseudo, full_name, avatar_url, is_admin, created_at").order("created_at", { ascending: false }),
         supabase.from("followers").select("follower_id", { count: "exact", head: true }),
         supabase.from("workout_sessions").select("id", { count: "exact", head: true }),
         supabase.from("notifications").select("id", { count: "exact", head: true }),
+        supabase.from("posts").select("created_at").gte("created_at", sevenDaysAgo),
+        supabase.from("posts").select("audience"),
       ]);
 
       setStats({
-        totalUsers: usersRes.data?.length ?? 0,
-        totalFollows: followsRes.count ?? 0,
+        totalUsers:    usersRes.data?.length ?? 0,
+        totalFollows:  followsRes.count ?? 0,
         totalSessions: sessionsRes.count ?? 0,
-        totalNotifs: notifsRes.count ?? 0,
+        totalNotifs:   notifsRes.count ?? 0,
+        totalPosts:    postsRes.data?.length ?? 0,
       });
+
+      // ── Compute chart data ──────────────────────────────
+      // Posts par jour (7 derniers jours)
+      const postsByDay: ChartPoint[] = [];
+      for (let d = 6; d >= 0; d--) {
+        const day = new Date(Date.now() - d * 86400000);
+        const label = day.toLocaleDateString("fr-FR", { weekday: "short" });
+        const value = (postsRes.data ?? []).filter((p) => {
+          const pd = new Date(p.created_at as string);
+          return pd.toDateString() === day.toDateString();
+        }).length;
+        postsByDay.push({ label: label[0].toUpperCase() + label.slice(1, 3), value });
+      }
+
+      // Posts par audience
+      const audienceCount: Record<string, number> = { public: 0, friends: 0, private: 0 };
+      (postAudienceRes.data ?? []).forEach((p) => {
+        const a = (p.audience as string) ?? "public";
+        audienceCount[a] = (audienceCount[a] ?? 0) + 1;
+      });
+      const postsByAudience: DonutSlice[] = [
+        { label: "Public",   value: audienceCount.public,  color: "#A78BFA" },
+        { label: "Amis",     value: audienceCount.friends, color: "#F5E6A3" },
+        { label: "Privé",    value: audienceCount.private, color: "#CBD5E0" },
+      ];
+
+      setChartData({ usersByWeek: [], postsByDay, postsByAudience });
 
       if (usersRes.data) {
         // Enrichir avec les comptes follower/following
@@ -127,6 +295,19 @@ export default function AdminPage() {
           })
         );
         setUsers(enriched);
+
+        // Users par semaine (8 dernières semaines)
+        const usersByWeek: ChartPoint[] = [];
+        for (let w = 7; w >= 0; w--) {
+          const start = new Date(Date.now() - (w + 1) * 7 * 86400000);
+          const end   = new Date(Date.now() - w * 7 * 86400000);
+          const value = enriched.filter((u) => {
+            const d = new Date(u.created_at);
+            return d >= start && d < end;
+          }).length;
+          usersByWeek.push({ label: `S${8 - w}`, value });
+        }
+        setChartData((prev) => prev ? { ...prev, usersByWeek } : null);
       }
     } finally {
       setLoadingData(false);
@@ -214,10 +395,10 @@ export default function AdminPage() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} color="#A78BFA" />
-          <StatCard icon={UserCheck} label="Abonnements" value={stats.totalFollows} color="#34D399" />
-          <StatCard icon={Dumbbell} label="Séances" value={stats.totalSessions} color="#FBBF24" />
-          <StatCard icon={Activity} label="Notifs" value={stats.totalNotifs} color="#FB923C" />
+          <StatCard icon={Users}     label="Utilisateurs"  value={stats.totalUsers}    color="#A78BFA" />
+          <StatCard icon={UserCheck} label="Abonnements"   value={stats.totalFollows}  color="#34D399" />
+          <StatCard icon={TrendingUp} label="Posts"        value={stats.totalPosts}    color="#F9A8D4" />
+          <StatCard icon={Dumbbell}  label="Séances"       value={stats.totalSessions} color="#FBBF24" />
         </div>
       )}
 
@@ -394,33 +575,75 @@ export default function AdminPage() {
 
         {tab === "stats" && stats && (
           <motion.div key="stats" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
-            {/* Ratios */}
-            <div
-              className="rounded-2xl p-5"
-              style={{
-                background: "rgba(255,255,255,0.75)",
-                border: "1px solid rgba(255,255,255,0.85)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)",
-                backdropFilter: "blur(12px)",
-              }}
-            >
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>
-                Engagement
-              </p>
+
+            {/* ── Croissance utilisateurs ── */}
+            <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Croissance</p>
+                <span className="text-[10px] font-medium" style={{ color: "#A78BFA" }}>8 dernières semaines</span>
+              </div>
+              {chartData?.usersByWeek.length ? (
+                <BarChart data={chartData.usersByWeek} color="#A78BFA" />
+              ) : (
+                <div className="h-20 flex items-center justify-center">
+                  <p className="text-xs" style={{ color: "#A0AEC0" }}>Pas encore de données</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Activité des posts ── */}
+            <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Activité des posts</p>
+                <span className="text-[10px] font-medium" style={{ color: "#F9A8D4" }}>7 derniers jours</span>
+              </div>
+              {chartData?.postsByDay ? (
+                <AreaChart data={chartData.postsByDay} color="#F472B6" />
+              ) : (
+                <div className="h-20 flex items-center justify-center">
+                  <p className="text-xs" style={{ color: "#A0AEC0" }}>Pas encore de données</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Répartition du contenu ── */}
+            <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Répartition du contenu</p>
+              {chartData?.postsByAudience ? (
+                <DonutChart data={chartData.postsByAudience} />
+              ) : (
+                <div className="h-20 flex items-center justify-center">
+                  <p className="text-xs" style={{ color: "#A0AEC0" }}>Pas encore de données</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Ratios d'engagement ── */}
+            <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Engagement moyen</p>
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Abonnements / utilisateur", value: stats.totalUsers > 0 ? (stats.totalFollows / stats.totalUsers).toFixed(1) : "0", icon: TrendingUp, color: "#A78BFA" },
-                  { label: "Séances / utilisateur", value: stats.totalUsers > 0 ? (stats.totalSessions / stats.totalUsers).toFixed(1) : "0", icon: Dumbbell, color: "#FBBF24" },
-                  { label: "Utilisateurs actifs", value: users.filter(u => (u.follower_count ?? 0) + (u.following_count ?? 0) > 0).length, icon: Activity, color: "#34D399" },
-                ].map(({ label, value, icon: Icon, color }) => (
+                  { label: "Abonnements / utilisateur", value: stats.totalUsers > 0 ? (stats.totalFollows / stats.totalUsers).toFixed(1) : "0", icon: TrendingUp, color: "#A78BFA", pct: Math.min((stats.totalFollows / stats.totalUsers) / 10, 1) },
+                  { label: "Séances / utilisateur",     value: stats.totalUsers > 0 ? (stats.totalSessions / stats.totalUsers).toFixed(1) : "0", icon: Dumbbell,   color: "#FBBF24", pct: Math.min((stats.totalSessions / stats.totalUsers) / 20, 1) },
+                  { label: "Posts / utilisateur",       value: stats.totalUsers > 0 ? (stats.totalPosts / stats.totalUsers).toFixed(1) : "0",    icon: Activity,   color: "#F472B6", pct: Math.min((stats.totalPosts / stats.totalUsers) / 5, 1) },
+                ].map(({ label, value, icon: Icon, color, pct }) => (
                   <div key={label} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}16` }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
                       <Icon size={13} strokeWidth={1.5} style={{ color }} />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium" style={{ color: "#718096" }}>{label}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-medium" style={{ color: "#718096" }}>{label}</span>
                         <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{value}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(212,192,255,0.2)" }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(pct ?? 0) * 100}%` }}
+                          transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                          className="h-full rounded-full"
+                          style={{ background: color }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -428,38 +651,46 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Top utilisateurs */}
-            <div
-              className="rounded-2xl p-5"
-              style={{
-                background: "rgba(255,255,255,0.75)",
-                border: "1px solid rgba(255,255,255,0.85)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)",
-                backdropFilter: "blur(12px)",
-              }}
-            >
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>
-                Top abonnés
-              </p>
-              <div className="flex flex-col gap-2">
+            {/* ── Top abonnés ── */}
+            <div className="rounded-2xl p-5" style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Top abonnés</p>
+              <div className="flex flex-col gap-2.5">
                 {[...users]
                   .sort((a, b) => (b.follower_count ?? 0) - (a.follower_count ?? 0))
                   .slice(0, 5)
-                  .map((u, i) => (
-                    <div key={u.id} className="flex items-center gap-2">
-                      <span className="w-5 text-[10px] font-semibold text-center" style={{ color: i === 0 ? "#D4A843" : "#A0AEC0" }}>
-                        {i + 1}
-                      </span>
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold overflow-hidden flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                        {u.pseudo[0]?.toUpperCase()}
+                  .map((u, i) => {
+                    const maxF = users[0] ? Math.max(...users.map(u => u.follower_count ?? 0), 1) : 1;
+                    return (
+                      <div key={u.id} className="flex items-center gap-2.5">
+                        <span className="w-5 text-[10px] font-bold text-center flex-shrink-0"
+                          style={{ color: i === 0 ? "#D4A843" : i === 1 ? "#A0AEC0" : "#C4CDD8" }}>
+                          {i + 1}
+                        </span>
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold overflow-hidden flex-shrink-0"
+                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                          {u.pseudo[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>@{u.pseudo}</span>
+                            <span className="text-[11px] font-semibold flex-shrink-0 ml-2" style={{ color: "#A78BFA" }}>{u.follower_count}</span>
+                          </div>
+                          <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(212,192,255,0.2)" }}>
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${((u.follower_count ?? 0) / maxF) * 100}%` }}
+                              transition={{ duration: 0.5, ease: "easeOut", delay: i * 0.06 }}
+                              className="h-full rounded-full"
+                              style={{ background: "linear-gradient(90deg,#D4C0FF,#A78BFA)" }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <span className="flex-1 text-sm font-medium truncate" style={{ color: "#2D3748" }}>@{u.pseudo}</span>
-                      <span className="text-xs font-semibold" style={{ color: "#A78BFA" }}>{u.follower_count} abonnés</span>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
+
           </motion.div>
         )}
       </AnimatePresence>
