@@ -11,6 +11,7 @@ export type User = {
   lastName: string;
   email: string;
   avatar?: string;
+  is_admin?: boolean;
 };
 
 type AuthError = { message: string } | null;
@@ -34,7 +35,7 @@ type AuthCtx = {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: string } | null): User {
+function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: string; is_admin?: boolean } | null): User {
   const m = sbUser.user_metadata ?? {};
   return {
     id: sbUser.id,
@@ -43,6 +44,7 @@ function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: strin
     lastName: m.last_name ?? (m.full_name as string | undefined)?.split(" ").slice(1).join(" ") ?? "",
     email: sbUser.email ?? "",
     avatar: profile?.avatar_url ?? m.avatar_url ?? m.picture,
+    is_admin: profile?.is_admin ?? false,
   };
 }
 
@@ -62,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
     supabase
       .from("profiles")
-      .select("pseudo, avatar_url")
+      .select("pseudo, avatar_url, is_admin")
       .eq("id", sbUser.id)
       .maybeSingle()
       .then(({ data }) => {

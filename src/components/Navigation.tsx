@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils } from "lucide-react";
+import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -131,6 +131,25 @@ export default function Navigation() {
           <AnimatePresence mode="wait">
             {user ? (
               <motion.div key="user" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex flex-col items-center gap-2">
+                {/* Lien admin (visible uniquement pour les admins) */}
+                {user.is_admin && (
+                  <Link href="/admin" aria-label="Administration" title="Administration">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.88 }}
+                      transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={
+                        pathname === "/admin"
+                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                          : { background: "rgba(240,235,255,0.5)" }
+                      }
+                    >
+                      <Shield size={16} strokeWidth={1.5} style={{ color: pathname === "/admin" ? "#2D3748" : "#A0AEC0" }} />
+                    </motion.div>
+                  </Link>
+                )}
+
                 {/* Cloche notifications */}
                 <NotificationBell side="right" />
 
