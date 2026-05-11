@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check } from "lucide-react";
+import { UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, MessageCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -302,39 +302,50 @@ export default function PublicProfilePage() {
           <div className="flex gap-2">
 
           {!isOwnProfile && user && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={handleFollow}
-              disabled={followLoading}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
-              style={
-                isFollowing
-                  ? {
-                      background: "rgba(240,235,255,0.7)",
-                      color: "#A78BFA",
-                      border: "1px solid rgba(167,139,250,0.2)",
-                    }
-                  : {
-                      background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                      color: "#2D3748",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 14px rgba(167,139,250,0.25)",
-                    }
-              }
-            >
-              {isFollowing ? (
-                <>
-                  <UserCheck size={13} strokeWidth={2} />
-                  Suivi
-                </>
-              ) : (
-                <>
-                  <UserPlus size={13} strokeWidth={2} />
-                  Suivre
-                </>
-              )}
-            </motion.button>
+            <>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleFollow}
+                disabled={followLoading}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
+                style={
+                  isFollowing
+                    ? {
+                        background: "rgba(240,235,255,0.7)",
+                        color: "#A78BFA",
+                        border: "1px solid rgba(167,139,250,0.2)",
+                      }
+                    : {
+                        background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                        color: "#2D3748",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 14px rgba(167,139,250,0.25)",
+                      }
+                }
+              >
+                {isFollowing ? (
+                  <><UserCheck size={13} strokeWidth={2} />Suivi</>
+                ) : (
+                  <><UserPlus size={13} strokeWidth={2} />Suivre</>
+                )}
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => profile && router.push(`/communaute?dm=${profile.id}&pseudo=${profile.pseudo}`)}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
+                style={{
+                  background: "rgba(255,255,255,0.7)",
+                  color: "#718096",
+                  border: "1px solid rgba(212,192,255,0.4)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <MessageCircle size={13} strokeWidth={1.5} />
+                Message
+              </motion.button>
+            </>
           )}
 
           {isOwnProfile && (

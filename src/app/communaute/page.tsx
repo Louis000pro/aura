@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass } from "lucide-react";
 import Link from "next/link";
@@ -1136,6 +1137,7 @@ function postTimeAgo(iso: string) {
 
 export default function CommunautePage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<View>("feed");
   const [search, setSearch] = useState("");
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
@@ -1190,6 +1192,31 @@ export default function CommunautePage() {
         if (data) setFollowingIds(new Set(data.map((r) => r.following_id as string)));
       });
   }, [user]);
+
+  // Ouvrir directement un DM si paramètre ?dm=userId&pseudo=xxx présent
+  useEffect(() => {
+    const dmId     = searchParams?.get("dm");
+    const dmPseudo = searchParams?.get("pseudo");
+    if (!dmId || !dmPseudo) return;
+
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("id, pseudo, full_name, avatar_url")
+      .eq("id", dmId)
+      .maybeSingle()
+      .then(({ data }) => {
+        const partner: DMPartner = {
+          id:         dmId,
+          pseudo:     data?.pseudo   ?? dmPseudo,
+          full_name:  data?.full_name ?? null,
+          avatar_url: data?.avatar_url ?? null,
+        };
+        setActiveDMPartner(partner);
+        setDmMessages([]);
+        setView("thread");
+      });
+  }, [searchParams]); // eslint-disable-line
 
   // Charger les suggestions de comptes à suivre
   useEffect(() => {
