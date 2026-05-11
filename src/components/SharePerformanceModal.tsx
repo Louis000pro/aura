@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Lock, Globe, Users } from "lucide-react";
+import { X, Send, Lock, Globe, Users, Check } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "./PerformanceCard";
+import { createClient } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 type Audience = "public" | "friends" | "private";
 
 const audiences: { id: Audience; label: string; icon: typeof Globe; color: string }[] = [
-  { id: "public", label: "Public", icon: Globe, color: "#7ED8D8" },
-  { id: "friends", label: "Amis", icon: Users, color: "#F9A8C9" },
-  { id: "private", label: "Privé", icon: Lock, color: "#A0AEC0" },
+  { id: "public",  label: "Public", icon: Globe,  color: "#7ED8D8" },
+  { id: "friends", label: "Amis",   icon: Users,  color: "#F9A8C9" },
+  { id: "private", label: "Privé",  icon: Lock,   color: "#A0AEC0" },
 ];
 
 export default function SharePerformanceModal({
@@ -22,15 +24,39 @@ export default function SharePerformanceModal({
   onClose: () => void;
   data: PerformanceData;
 }) {
-  const [caption, setCaption] = useState("");
+  const { user } = useAuth();
+  const [caption, setCaption]   = useState("");
   const [audience, setAudience] = useState<Audience>("friends");
-  const [posted, setPosted] = useState(false);
+  const [posting, setPosting]   = useState(false);
+  const [posted, setPosted]     = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    if (!user) { setError("Connecte-toi pour partager"); return; }
+    setPosting(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { error: err } = await supabase.from("posts").insert({
+      user_id:          user.id,
+      type:             data.type,
+      caption:          caption.trim(),
+      audience,
+      performance_data: data,
+    });
+
+    setPosting(false);
+
+    if (err) {
+      setError(err.message);
+      return;
+    }
+
     setPosted(true);
     setTimeout(() => {
       setPosted(false);
       setCaption("");
+      setAudience("friends");
       onClose();
     }, 1600);
   };
@@ -65,15 +91,13 @@ export default function SharePerformanceModal({
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", bounce: 0.5, delay: 0.1 }}
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+                  style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
                 >
-                  <Send size={24} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                  <Check size={24} strokeWidth={2} style={{ color: "#2D3748" }} />
                 </motion.div>
-                <p className="text-base font-medium" style={{ color: "#2D3748" }}>
-                  Partagé avec succès
-                </p>
+                <p className="text-base font-medium" style={{ color: "#2D3748" }}>Publié !</p>
                 <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>
-                  Votre performance est visible
+                  Visible dans le feed de tes abonnés
                 </p>
               </motion.div>
             ) : (
@@ -111,6 +135,7 @@ export default function SharePerformanceModal({
                     onChange={(e) => setCaption(e.target.value)}
                     placeholder="Ajouter une légende…"
                     rows={2}
+                    maxLength={300}
                     className="w-full px-4 py-3 rounded-2xl text-sm font-light outline-none resize-none"
                     style={{
                       background: "rgba(255,255,255,0.6)",
@@ -131,7 +156,7 @@ export default function SharePerformanceModal({
                       style={
                         audience === id
                           ? {
-                              background: "linear-gradient(135deg, rgba(255,240,245,0.95) 0%, rgba(224,255,255,0.95) 100%)",
+                              background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)",
                               border: "1px solid rgba(255,255,255,0.8)",
                               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
                             }
@@ -149,20 +174,36 @@ export default function SharePerformanceModal({
                   ))}
                 </div>
 
+                {/* Error */}
+                {error && (
+                  <p className="px-5 pb-2 text-xs text-center" style={{ color: "#FC8181" }}>{error}</p>
+                )}
+
                 {/* Action */}
                 <div className="px-5 pb-5">
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleShare}
+                    disabled={posting}
                     className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden"
                     style={{
-                      background: "linear-gradient(135deg, #FFD6E7 0%, #B2F0F0 100%)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(249,168,201,0.25)",
+                      background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(167,139,250,0.25)",
+                      opacity: posting ? 0.7 : 1,
                     }}
                   >
-                    <Send size={14} strokeWidth={2} style={{ color: "#2D3748" }} />
+                    {posting ? (
+                      <motion.div
+                        className="w-4 h-4 rounded-full border-2"
+                        style={{ borderColor: "rgba(45,55,72,0.3)", borderTopColor: "#2D3748" }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                      />
+                    ) : (
+                      <Send size={14} strokeWidth={2} style={{ color: "#2D3748" }} />
+                    )}
                     <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                      Partager la performance
+                      {posting ? "Publication…" : "Partager la performance"}
                     </span>
                   </motion.button>
                 </div>

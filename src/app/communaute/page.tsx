@@ -47,6 +47,19 @@ type RealStory = {
   profiles: { pseudo: string; full_name: string | null; avatar_url: string | null } | null;
 };
 
+type RealPost = {
+  id: string;
+  user_id: string;
+  type: "workout" | "meal" | "day";
+  caption: string;
+  audience: "public" | "friends" | "private";
+  performance_data: PerformanceData;
+  created_at: string;
+  author: { pseudo: string; full_name?: string; avatar_url?: string } | null;
+  post_likes: { user_id: string }[];
+  post_comments: { id: string }[];
+};
+
 const users: User[] = [
   { handle: "sofia.m", name: "Sofia Martinez", initial: "S", gradient: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", verified: false },
   { handle: "leo.fit", name: "Léo Bertrand", initial: "L", gradient: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", verified: false },
@@ -881,7 +894,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
 
 // Options Menu (dropdown)
 function OptionsMenu({ postId, saved, onSave, onHide, onReport, onClose }: {
-  postId: number; saved: boolean;
+  postId: string | number; saved: boolean;
   onSave: () => void; onHide: () => void; onReport: () => void; onClose: () => void;
 }) {
   return (
@@ -1001,7 +1014,7 @@ function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: (
 }
 
 // Comments Section (inline)
-function CommentsSection({ postId, initialCount, onClose }: { postId: number; initialCount: number; onClose: () => void }) {
+function CommentsSection({ postId, initialCount, onClose }: { postId: string | number; initialCount: number; onClose: () => void }) {
   const [comments, setComments] = useState<Comment[]>([
     { id: 1, user: "leo.fit", text: "Incroyable ! Continue comme ça 💪", time: "Il y a 5 min" },
     { id: 2, user: "mia.rose", text: "Wow quel score 🔥", time: "Il y a 12 min" },
@@ -1084,6 +1097,16 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: number; in
   );
 }
 
+function postTimeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "À l'instant";
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}j`;
+}
+
 export default function CommunautePage() {
   const { user } = useAuth();
   const [view, setView] = useState<View>("feed");
@@ -1102,10 +1125,18 @@ export default function CommunautePage() {
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
   const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const [sharePost, setSharePost] = useState<FeedItem | null>(null);
+  const [sharePost, setSharePost] = useState<{ caption?: string } | null>(null);
   const [storyGroup, setStoryGroup] = useState<RealStory[] | null>(null);
   const [showAddStory, setShowAddStory] = useState(false);
   const [realStories, setRealStories] = useState<RealStory[]>([]);
+  const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
+  const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
+  const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
+  const [savedRealIds, setSavedRealIds] = useState<Set<string>>(new Set());
+  const [openRealMenu, setOpenRealMenu] = useState<string | null>(null);
+  const [burstRealId, setBurstRealId] = useState<string | null>(null);
   const [threadInput, setThreadInput] = useState("");
   const [threadMessages, setThreadMessages] = useState<Message[]>(initialThreadMessages);
   const [toast, setToast] = useState<string | null>(null);
@@ -1177,6 +1208,57 @@ export default function CommunautePage() {
 
   useEffect(() => { loadStories(); }, [loadStories]);
 
+  // Charger le feed réel depuis Supabase
+  const loadFeed = useCallback(async () => {
+    if (!user) return;
+    setFeedLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("posts")
+      .select(`
+        id, type, caption, audience, performance_data, created_at, user_id,
+        author:profiles!user_id(pseudo, full_name, avatar_url),
+        post_likes(user_id),
+        post_comments(id)
+      `)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    if (data) {
+      setRealFeedPosts(data as unknown as RealPost[]);
+      const liked = new Set<string>();
+      (data as unknown as RealPost[]).forEach((p) => {
+        if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
+      });
+      setLikedRealIds(liked);
+    }
+    setFeedLoading(false);
+  }, [user]);
+
+  useEffect(() => { loadFeed(); }, [loadFeed]);
+
+  // Realtime : nouveau post dans le feed
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel("community-posts")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
+        const { data } = await supabase
+          .from("posts")
+          .select(`
+            id, type, caption, audience, performance_data, created_at, user_id,
+            author:profiles!user_id(pseudo, full_name, avatar_url),
+            post_likes(user_id),
+            post_comments(id)
+          `)
+          .eq("id", (payload.new as { id: string }).id)
+          .maybeSingle();
+        if (data) setRealFeedPosts((prev) => [data as unknown as RealPost, ...prev]);
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [user]);
+
   // Suivre / ne plus suivre un vrai profil Supabase
   const handleFollowReal = async (profile: { id: string; pseudo: string; avatar_url?: string }) => {
     if (!user) { showToast("Connecte-toi pour suivre"); return; }
@@ -1243,6 +1325,30 @@ export default function CommunautePage() {
       }
       return n;
     });
+  };
+
+  const toggleRealLike = async (postId: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const isLiked = likedRealIds.has(postId);
+    setLikedRealIds((prev) => {
+      const n = new Set(prev);
+      isLiked ? n.delete(postId) : n.add(postId);
+      return n;
+    });
+    setRealFeedPosts((prev) => prev.map((p) => p.id !== postId ? p : {
+      ...p,
+      post_likes: isLiked
+        ? p.post_likes.filter((l) => l.user_id !== user.id)
+        : [...p.post_likes, { user_id: user.id }],
+    }));
+    if (!isLiked) {
+      setBurstRealId(postId);
+      setTimeout(() => setBurstRealId(null), 700);
+      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+    } else {
+      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+    }
   };
 
   const toggleFollow = (handle: string) => {
@@ -1318,12 +1424,10 @@ export default function CommunautePage() {
     };
   }, [search, searchFilter, realProfiles, realSessions]);
 
-  const visibleFeed = feedData.filter((p) => !hiddenPosts.has(p.id));
-
   return (
     <div
       className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 max-w-2xl mx-auto md:mx-0 md:max-w-4xl relative overflow-x-hidden"
-      onClick={() => openMenu !== null && setOpenMenu(null)}
+      onClick={() => { if (openMenu !== null) setOpenMenu(null); if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
@@ -1515,19 +1619,45 @@ export default function CommunautePage() {
               );
             })()}
 
-            {/* Posts */}
-            {visibleFeed.length === 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-                <p className="text-4xl mb-3">👁</p>
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucun post à afficher</p>
+            {/* Posts réels depuis Supabase */}
+            {feedLoading && (
+              <div className="flex justify-center py-10">
+                <motion.div
+                  className="w-6 h-6 rounded-full border-2"
+                  style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                />
+              </div>
+            )}
+
+            {!feedLoading && realFeedPosts.filter(p => !hiddenRealIds.has(p.id)).length === 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
+                <div
+                  className="w-16 h-16 rounded-3xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.25) 100%)", border: "1px solid rgba(167,139,250,0.15)" }}
+                >
+                  <Heart size={22} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                </div>
+                <div className="text-center px-6">
+                  <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucun post pour l&apos;instant</p>
+                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                    Suis des personnes et partage tes performances depuis ton profil.
+                  </p>
+                </div>
               </motion.div>
             )}
 
-            {visibleFeed.map((post, postIdx) => {
-              const liked = likedIds.has(post.id);
-              const isMenuOpen = openMenu === post.id;
-              const isSaved = savedPosts.has(post.id);
-              const isCommentsOpen = openComments.has(post.id);
+            {!feedLoading && realFeedPosts.filter(p => !hiddenRealIds.has(p.id)).map((post, postIdx) => {
+              const liked = likedRealIds.has(post.id);
+              const isMenuOpen = openRealMenu === post.id;
+              const isSaved = savedRealIds.has(post.id);
+              const isCommentsOpen = openRealComments.has(post.id);
+              const likesCount = post.post_likes.length;
+              const commentsCount = post.post_comments.length;
+              const authorPseudo = post.author?.pseudo ?? "utilisateur";
+              const authorName = post.author?.full_name || authorPseudo;
+              const authorAvatar = post.author?.avatar_url;
 
               return (
                 <motion.div
@@ -1539,43 +1669,51 @@ export default function CommunautePage() {
                   whileHover={{ y: -2, transition: { duration: 0.18 } }}
                   className="lg-surface lg-highlight relative rounded-3xl overflow-visible"
                 >
-
                   {/* Header */}
                   <div className="flex items-center gap-3 px-4 pt-4 pb-3 relative">
-                    <motion.div whileHover={{ scale: 1.1 }} transition={{ type: "spring", bounce: 0.4 }}>
-                      <Avatar user={post.user} size={36} />
-                    </motion.div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{post.user.name}</p>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>@{post.user.handle} · {post.time}</p>
-                    </div>
+                    <Link href={`/profil/${authorPseudo}`} className="flex-shrink-0">
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ type: "spring", bounce: 0.4 }}
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
+                        style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+                      >
+                        {authorAvatar
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
+                          : authorPseudo[0]?.toUpperCase()}
+                      </motion.div>
+                    </Link>
+                    <Link href={`/profil/${authorPseudo}`} className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{authorName}</p>
+                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>@{authorPseudo} · {postTimeAgo(post.created_at)}</p>
+                    </Link>
                     <div className="relative">
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9, rotate: 90 }}
                         transition={{ duration: 0.2 }}
-                        onClick={(e) => { e.stopPropagation(); setOpenMenu(isMenuOpen ? null : post.id); }}
+                        onClick={(e) => { e.stopPropagation(); setOpenRealMenu(isMenuOpen ? null : post.id); }}
                         className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
                         aria-label="Plus"
                       >
                         <MoreHorizontal size={16} strokeWidth={1.5} style={{ color: isMenuOpen ? "#A78BFA" : "#A0AEC0" }} />
                       </motion.button>
-
                       <AnimatePresence>
                         {isMenuOpen && (
                           <OptionsMenu
                             postId={post.id}
                             saved={isSaved}
                             onSave={() => {
-                              setSavedPosts((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; });
-                              showToast(isSaved ? "Retiré des favoris" : "Sauvegardé dans vos favoris ✓");
+                              setSavedRealIds((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; });
+                              showToast(isSaved ? "Retiré des favoris" : "Sauvegardé ✓");
                             }}
                             onHide={() => {
-                              setHiddenPosts((p) => new Set([...p, post.id]));
+                              setHiddenRealIds((p) => new Set([...p, post.id]));
                               showToast("Post masqué");
                             }}
                             onReport={() => showToast("Signalement envoyé. Merci !")}
-                            onClose={() => setOpenMenu(null)}
+                            onClose={() => setOpenRealMenu(null)}
                           />
                         )}
                       </AnimatePresence>
@@ -1584,18 +1722,17 @@ export default function CommunautePage() {
 
                   {/* Performance Card */}
                   <div className="px-4">
-                    <PerformanceCard data={post.card} size="md" interactive />
+                    <PerformanceCard data={post.performance_data} size="md" interactive />
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-4 px-4 pt-3">
-                    {/* Like */}
                     <motion.button
                       whileTap={{ scale: 0.7 }}
-                      onClick={() => toggleLike(post.id)}
+                      onClick={() => toggleRealLike(post.id)}
                       className="relative flex items-center gap-1.5 cursor-pointer"
                     >
-                      {burstPost === post.id && [0, 1, 2, 3, 4].map((i) => (
+                      {burstRealId === post.id && [0, 1, 2, 3, 4].map((i) => (
                         <motion.div
                           key={`burst-${post.id}-${i}`}
                           className="absolute pointer-events-none"
@@ -1610,11 +1747,10 @@ export default function CommunautePage() {
                       </motion.div>
                     </motion.button>
 
-                    {/* Comment */}
                     <motion.button
                       whileHover={{ scale: 1.15 }}
                       whileTap={{ scale: 0.85, rotate: -15 }}
-                      onClick={() => toggleComments(post.id)}
+                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                       className="flex items-center cursor-pointer"
                       aria-label="Commenter"
                     >
@@ -1626,24 +1762,18 @@ export default function CommunautePage() {
                       />
                     </motion.button>
 
-                    {/* Share */}
                     <motion.button
                       whileHover={{ scale: 1.15, rotate: 15 }}
                       whileTap={{ scale: 0.85 }}
-                      onClick={() => setSharePost(post)}
+                      onClick={() => setSharePost({ caption: post.caption })}
                       className="flex items-center cursor-pointer"
                       aria-label="Partager"
                     >
                       <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
                     </motion.button>
 
-                    {/* Save indicator */}
                     {isSaved && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="ml-auto"
-                      >
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="ml-auto">
                         <Bookmark size={16} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
                       </motion.div>
                     )}
@@ -1652,11 +1782,11 @@ export default function CommunautePage() {
                   {/* Stats + caption */}
                   <div className="px-4 pt-2 pb-1">
                     <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                      {post.likes + (liked && !post.liked ? 1 : !liked && post.liked ? -1 : 0)} mentions « j&apos;aime »
+                      {likesCount} mention{likesCount !== 1 ? "s" : ""} « j&apos;aime »
                     </p>
                     {post.caption && (
                       <p className="text-sm font-light leading-relaxed mt-1" style={{ color: "#2D3748" }}>
-                        <span className="font-semibold mr-1.5">{post.user.handle}</span>
+                        <span className="font-semibold mr-1.5">{authorPseudo}</span>
                         {post.caption}
                       </p>
                     )}
@@ -1664,19 +1794,18 @@ export default function CommunautePage() {
                       whileHover={{ color: "#2D3748" }}
                       className="text-[10px] mt-2 cursor-pointer mb-3"
                       style={{ color: "#A0AEC0" }}
-                      onClick={() => toggleComments(post.id)}
+                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                     >
-                      {isCommentsOpen ? "Masquer les commentaires" : `Voir les ${post.comments} commentaires`}
+                      {isCommentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
                     </motion.p>
                   </div>
 
-                  {/* Comments Section */}
                   <AnimatePresence>
                     {isCommentsOpen && (
                       <CommentsSection
                         postId={post.id}
-                        initialCount={post.comments}
-                        onClose={() => toggleComments(post.id)}
+                        initialCount={commentsCount}
+                        onClose={() => setOpenRealComments((p) => { const n = new Set(p); n.delete(post.id); return n; })}
                       />
                     )}
                   </AnimatePresence>
