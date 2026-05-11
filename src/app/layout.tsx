@@ -5,6 +5,8 @@ import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import OnboardingWrapper from "@/components/OnboardingWrapper";
+import PWARegister from "@/components/PWARegister";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +19,13 @@ export const metadata: Metadata = {
   description: "Un accompagnement de santé premium piloté par l'IA multimodale.",
   icons: {
     icon: "/favicon.ico",
+    apple: "/icons/icon-192.png",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Aura",
   },
 };
 
@@ -36,6 +45,8 @@ export default function RootLayout({
           <AuthProvider>
             <Navigation />
             <MainWrapper>{children}</MainWrapper>
+            <OnboardingWrapper />
+            <PWARegister />
           </AuthProvider>
         </SessionProviderWrapper>
       </body>

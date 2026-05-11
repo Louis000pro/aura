@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass } from "lucide-react";
@@ -963,7 +963,7 @@ function OptionsMenu({ postId, saved, onSave, onHide, onReport, onClose }: {
 }
 
 // Share Modal
-function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: () => void }) {
+function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string; onClose: () => void; onShareDM?: () => void }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -1003,16 +1003,16 @@ function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: (
 
         <div className="grid grid-cols-4 gap-3 mb-5">
           {[
-            { label: "DM", emoji: "💬", color: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)" },
-            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)" },
-            { label: "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)" },
-            { label: "Aura", emoji: "✦", color: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" },
-          ].map(({ label, emoji, color }) => (
+            { label: "DM", emoji: "💬", color: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", action: () => { onClose(); onShareDM?.(); } },
+            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", action: onClose },
+            { label: "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", action: handleCopy },
+            { label: "Aura", emoji: "✦", color: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", action: onClose },
+          ].map(({ label, emoji, color, action }) => (
             <motion.button
               key={label}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              onClick={label === "Copier" ? handleCopy : onClose}
+              onClick={action}
               className="flex flex-col items-center gap-2 cursor-pointer"
             >
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: color, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}>
@@ -1041,6 +1041,215 @@ function ShareModal({ postCaption, onClose }: { postCaption?: string; onClose: (
   );
 }
 
+// ── Nouveau DM : rechercher un utilisateur ──────────────────
+function NewDMModal({ onClose, onStartThread }: { onClose: () => void; onStartThread: (partner: DMPartner) => void }) {
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<DMPartner[]>([]);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 120);
+  }, []);
+
+  useEffect(() => {
+    if (!search.trim()) { setResults([]); return; }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, pseudo, full_name, avatar_url")
+        .ilike("pseudo", `%${search.trim()}%`)
+        .limit(10);
+      setResults((data as DMPartner[]) ?? []);
+      setLoading(false);
+    }, 280);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30, scale: 0.97 }}
+        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+        className="w-full max-w-sm rounded-3xl p-5"
+        style={{
+          background: "rgba(255,255,255,0.95)",
+          backdropFilter: "blur(32px)",
+          border: "1px solid rgba(255,255,255,0.9)",
+          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Nouveau message</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl mb-4" style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(167,139,250,0.15)" }}>
+          <Search size={14} strokeWidth={1.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Rechercher par pseudo…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-sm outline-none placeholder:font-light"
+            style={{ color: "#2D3748" }}
+          />
+          {loading && (
+            <motion.div className="w-3.5 h-3.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+          {results.length === 0 && search.trim() && !loading && (
+            <p className="text-center text-xs py-6 font-light" style={{ color: "#A0AEC0" }}>Aucun résultat pour « {search} »</p>
+          )}
+          {results.length === 0 && !search.trim() && (
+            <p className="text-center text-xs py-6 font-light" style={{ color: "#C4C9D4" }}>Tape le pseudo d&apos;un utilisateur</p>
+          )}
+          {results.map((r) => (
+            <motion.button
+              key={r.id}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => { onStartThread(r); onClose(); }}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left cursor-pointer"
+              style={{ background: "rgba(240,235,255,0.4)" }}
+            >
+              <ProfileAvatar partner={r} size={38} />
+              <div>
+                <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>{r.full_name ?? r.pseudo}</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>@{r.pseudo}</p>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── Partager un post vers un DM ─────────────────────────────
+function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: () => void; onSent: (partner: DMPartner) => void }) {
+  const { user } = useAuth();
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<DMPartner[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 120); }, []);
+
+  useEffect(() => {
+    if (!search.trim()) { setResults([]); return; }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      const supabase = createClient();
+      const { data } = await supabase.from("profiles").select("id, pseudo, full_name, avatar_url").ilike("pseudo", `%${search.trim()}%`).limit(10);
+      setResults((data as DMPartner[]) ?? []);
+      setLoading(false);
+    }, 280);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const sendPost = async (partner: DMPartner) => {
+    if (!user || sending) return;
+    setSending(partner.id);
+    const supabase = createClient();
+    const title = post.performance_data?.title ?? "Performance";
+    const msg = `[Post partagé] ${title}${post.caption ? ` — ${post.caption.slice(0, 80)}` : ""}`;
+    await supabase.from("direct_messages").insert({ sender_id: user.id, receiver_id: partner.id, content: msg });
+    setSending(null);
+    onSent(partner);
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
+        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+        className="w-full max-w-sm rounded-3xl p-5"
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Envoyer en DM</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Preview du post */}
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl mb-3" style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.15) 0%, rgba(245,230,163,0.1) 100%)", border: "1px solid rgba(167,139,250,0.12)" }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
+            {post.type === "workout" ? "🏋️" : post.type === "meal" ? "🥗" : "📊"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold truncate" style={{ color: "#2D3748" }}>{post.performance_data?.title ?? "Post"}</p>
+            {post.caption && <p className="text-[10px] font-light truncate" style={{ color: "#A0AEC0" }}>{post.caption}</p>}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl mb-3" style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(167,139,250,0.15)" }}>
+          <Search size={14} strokeWidth={1.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
+          <input ref={inputRef} type="text" placeholder="Envoyer à…" value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none placeholder:font-light" style={{ color: "#2D3748" }} />
+          {loading && <motion.div className="w-3.5 h-3.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />}
+        </div>
+
+        <div className="flex flex-col gap-1 max-h-52 overflow-y-auto">
+          {results.length === 0 && !search.trim() && (
+            <p className="text-center text-xs py-5 font-light" style={{ color: "#C4C9D4" }}>Recherche un destinataire par pseudo</p>
+          )}
+          {results.length === 0 && search.trim() && !loading && (
+            <p className="text-center text-xs py-5 font-light" style={{ color: "#A0AEC0" }}>Aucun résultat</p>
+          )}
+          {results.map((r) => (
+            <motion.button
+              key={r.id}
+              whileHover={{ x: 2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => sendPost(r)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left cursor-pointer"
+              style={{ background: "rgba(240,235,255,0.4)" }}
+            >
+              <ProfileAvatar partner={r} size={36} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-none truncate" style={{ color: "#2D3748" }}>{r.full_name ?? r.pseudo}</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>@{r.pseudo}</p>
+              </div>
+              {sending === r.id ? (
+                <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+              ) : (
+                <Send size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+              )}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Comments Section (inline)
 type RealComment = {
   id: string;
@@ -1050,7 +1259,7 @@ type RealComment = {
   author: { pseudo: string; avatar_url?: string | null } | null;
 };
 
-function CommentsSection({ postId, initialCount, onClose }: { postId: string | number; initialCount: number; onClose: () => void }) {
+function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { postId: string | number; initialCount: number; onClose: () => void; onCommentAdded?: () => void }) {
   const { user } = useAuth();
   const [comments, setComments]   = useState<RealComment[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -1102,6 +1311,7 @@ function CommentsSection({ postId, initialCount, onClose }: { postId: string | n
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
     } else if (data) {
       setComments((prev) => prev.map((c) => c.id === optimistic.id ? (data as unknown as RealComment) : c));
+      onCommentAdded?.();
     }
   };
 
@@ -1214,7 +1424,7 @@ function postTimeAgo(iso: string) {
   return `${Math.floor(h / 24)}j`;
 }
 
-export default function CommunautePage() {
+function CommunautePageInner() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [view, setView] = useState<View>("feed");
@@ -1232,7 +1442,9 @@ export default function CommunautePage() {
   const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
   const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
   const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const [sharePost, setSharePost] = useState<{ caption?: string } | null>(null);
+  const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
+  const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
+  const [showNewDM, setShowNewDM] = useState(false);
   const [storyGroup, setStoryGroup] = useState<RealStory[] | null>(null);
   const [showAddStory, setShowAddStory] = useState(false);
   const [realStories, setRealStories] = useState<RealStory[]>([]);
@@ -2032,7 +2244,7 @@ export default function CommunautePage() {
                     <motion.button
                       whileHover={{ scale: 1.15, rotate: 15 }}
                       whileTap={{ scale: 0.85 }}
-                      onClick={() => setSharePost({ caption: post.caption })}
+                      onClick={() => setSharePost({ caption: post.caption, post })}
                       className="flex items-center cursor-pointer"
                       aria-label="Partager"
                     >
@@ -2073,6 +2285,7 @@ export default function CommunautePage() {
                         postId={post.id}
                         initialCount={commentsCount}
                         onClose={() => setOpenRealComments((p) => { const n = new Set(p); n.delete(post.id); return n; })}
+                        onCommentAdded={() => setRealFeedPosts((prev) => prev.map((p) => p.id !== post.id ? p : { ...p, post_comments: [...p.post_comments, { id: `opt-${Date.now()}` }] }))}
                       />
                     )}
                   </AnimatePresence>
@@ -2317,6 +2530,20 @@ export default function CommunautePage() {
             exit={{ opacity: 0 }}
             className="flex flex-col gap-2"
           >
+            {/* En-tête : "Messages" + bouton nouveau DM */}
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Messages</p>
+              <motion.button
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowNewDM(true)}
+                className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 2px 8px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+                aria-label="Nouveau message"
+              >
+                <Plus size={14} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+              </motion.button>
+            </div>
             {dmsLoading ? (
               <div className="flex justify-center py-12">
                 <motion.div
@@ -2454,7 +2681,35 @@ export default function CommunautePage() {
 
       {/* Global Modals */}
       <AnimatePresence>
-        {sharePost && <ShareModal postCaption={sharePost.caption} onClose={() => setSharePost(null)} />}
+        {sharePost && (
+          <ShareModal
+            postCaption={sharePost.caption}
+            onClose={() => setSharePost(null)}
+            onShareDM={() => { if (sharePost.post) setShareToDMPost(sharePost.post); }}
+          />
+        )}
+        {shareToDMPost && (
+          <ShareToDMModal
+            post={shareToDMPost}
+            onClose={() => setShareToDMPost(null)}
+            onSent={(partner) => {
+              setActiveDMPartner(partner);
+              setDmMessages([]);
+              setView("thread");
+              showToast(`Post envoyé à @${partner.pseudo} !`);
+            }}
+          />
+        )}
+        {showNewDM && (
+          <NewDMModal
+            onClose={() => setShowNewDM(false)}
+            onStartThread={(partner) => {
+              setActiveDMPartner(partner);
+              setDmMessages([]);
+              setView("thread");
+            }}
+          />
+        )}
         {showAddStory && (
           <AddStoryModal
             onClose={() => setShowAddStory(false)}
@@ -2487,4 +2742,8 @@ export default function CommunautePage() {
       </div>
     </div>
   );
+}
+
+export default function CommunautePage() {
+  return <Suspense fallback={null}><CommunautePageInner /></Suspense>;
 }

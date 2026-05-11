@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils, Shield } from "lucide-react";
+import { Home, TrendingUp, Users, User, LogIn, LogOut, Utensils, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import { useEffect, useState } from "react";
@@ -196,6 +196,17 @@ export default function Navigation() {
                     style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
                   >
                     {(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}
+                  </motion.div>
+                </Link>
+                <Link href="/parametres" aria-label="Paramètres" title="Paramètres">
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.88 }}
+                    transition={{ type: "spring", bounce: 0.4, duration: 0.3 }}
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
+                    style={pathname === "/parametres" ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" } : { background: "rgba(240,235,255,0.5)" }}
+                  >
+                    <Settings size={16} strokeWidth={1.5} style={{ color: pathname === "/parametres" ? "#2D3748" : "#A0AEC0" }} />
                   </motion.div>
                 </Link>
                 <motion.button
