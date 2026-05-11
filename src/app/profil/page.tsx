@@ -807,7 +807,7 @@ const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: str
 
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshProfile } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages">("performances");
   const [showEdit, setShowEdit] = useState(false);
@@ -889,6 +889,8 @@ export default function ProfilPage() {
     setProfileAvatar(newAvatar);
     setShowEdit(false);
     showToast("Profil mis à jour ✓");
+    // Rafraîchit le user dans le contexte (nav, initiale, avatar partout)
+    void refreshProfile();
   };
 
   const displayPseudo = profilePseudo || user?.pseudo || "";

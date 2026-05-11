@@ -31,6 +31,7 @@ type AuthCtx = {
   resendSignupOtp: (email: string) => Promise<AuthError>;
   clearWelcome: () => void;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -176,12 +177,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearWelcome = () => setJustLoggedIn(false);
 
+  const refreshProfile = async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) enrichUser(data.session.user);
+  };
+
   return (
     <AuthContext.Provider value={{
       user, session, isLoading, justLoggedIn, isNewUser,
       signUp, signIn, signInWithGoogle, signOut, resetPassword,
       verifySignupOtp, resendSignupOtp,
-      clearWelcome, logout: signOut,
+      clearWelcome, logout: signOut, refreshProfile,
     }}>
       {children}
     </AuthContext.Provider>
