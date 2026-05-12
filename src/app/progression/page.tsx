@@ -219,9 +219,11 @@ function WeightChart({
   data: WeightEntry[];
   range: "week" | "month";
   onRangeChange: (r: "week" | "month") => void;
-  onAdd: (kg: number) => void;
+  onAdd: (kg: number, date: string) => void;
 }) {
+  const todayStr = new Date().toISOString().slice(0, 10);
   const [inputVal, setInputVal] = useState("");
+  const [dateVal, setDateVal]   = useState(todayStr);
   const [adding, setAdding]     = useState(false);
 
   const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
@@ -274,7 +276,8 @@ function WeightChart({
   const handleAdd = () => {
     const kg = parseFloat(inputVal.replace(",", "."));
     if (isNaN(kg) || kg < 20 || kg > 300) return;
-    onAdd(kg); setInputVal(""); setAdding(false);
+    if (!dateVal) return;
+    onAdd(kg, dateVal); setInputVal(""); setDateVal(todayStr); setAdding(false);
   };
 
   return (
@@ -326,16 +329,22 @@ function WeightChart({
         {adding && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }} className="mb-3 overflow-hidden">
-            <div className="flex gap-2">
-              <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
-                value={inputVal} onChange={e => setInputVal(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
-                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
+                  value={inputVal} onChange={e => setInputVal(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
+                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                <input type="date" value={dateVal} onChange={e => setDateVal(e.target.value)}
+                  max={todayStr}
+                  className="px-3 py-2 rounded-xl text-sm outline-none cursor-pointer"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748", minWidth: 0 }} />
+              </div>
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
-                className="px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
+                className="w-full py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                OK
+                Enregistrer
               </motion.button>
             </div>
           </motion.div>
@@ -1812,18 +1821,17 @@ export default function ProgressionPage() {
 
   useEffect(() => { fetchProgressData(); }, [fetchProgressData]);
 
-  const addWeight = async (kg: number) => {
+  const addWeight = async (kg: number, date: string) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
     const supabase = createClient();
-    const today = toDateStr(new Date());
     const { error } = await supabase.from("weight_logs").upsert(
-      { user_id: user.id, date: today, weight_kg: kg },
+      { user_id: user.id, date, weight_kg: kg },
       { onConflict: "user_id,date" }
     );
     if (!error) {
       setWeights(prev => {
-        const filtered = prev.filter(w => w.date !== today);
-        return [...filtered, { date: today, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
+        const filtered = prev.filter(w => w.date !== date);
+        return [...filtered, { date, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
       });
       showToast(`Poids enregistré : ${kg} kg ✓`);
     }
