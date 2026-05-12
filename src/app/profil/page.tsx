@@ -924,7 +924,7 @@ export default function ProfilPage() {
       </div>
 
       {/* ─── Header ─── */}
-      <div className="relative z-10 pt-12 px-5 md:px-8 max-w-lg mx-auto">
+      <div className="relative z-10 pt-12 px-5 md:px-8 max-w-2xl mx-auto">
 
         {/* Avatar + pseudo + bio */}
         <motion.div
@@ -1088,7 +1088,7 @@ export default function ProfilPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-lg mx-auto"
+            className="px-5 md:px-8 max-w-2xl mx-auto"
           >
             {userPosts.length === 0 ? (
               <motion.div
@@ -1131,7 +1131,7 @@ export default function ProfilPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-lg mx-auto"
+            className="px-5 md:px-8 max-w-2xl mx-auto"
           >
             {savedPosts.length === 0 ? (
               <motion.div
@@ -1174,7 +1174,7 @@ export default function ProfilPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-lg mx-auto"
+            className="px-5 md:px-8 max-w-2xl mx-auto"
           >
             {workoutSessions.length === 0 ? (
               <motion.div
