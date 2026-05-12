@@ -782,6 +782,139 @@ const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: str
   public:  { label: "Public", icon: Globe,  color: "#34D399" },
 };
 
+type Highlight = { id: string; name: string; coverUrl: string };
+
+/* ─────────────── New Highlight Modal ─────────────── */
+function NewHighlightModal({ userId, onSave, onClose }: {
+  userId: string;
+  onSave: (h: Highlight) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const coverRef = useRef<HTMLInputElement>(null);
+
+  const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/highlight_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+        setCoverUrl(data.publicUrl + "?t=" + Date.now());
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({ id: Date.now().toString(), name: name.trim(), coverUrl });
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+        className="w-full max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-8"
+        style={{ background: "rgba(255,255,255,0.98)", boxShadow: "0 -12px 60px rgba(167,139,250,0.2)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center mb-5 md:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.1)" }} />
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-base font-black tracking-tight" style={{ color: "#1A202C" }}>Nouvelle catégorie</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Cover picker */}
+        <div className="flex flex-col items-center mb-6">
+          <motion.div
+            whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+            onClick={() => coverRef.current?.click()}
+            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center cursor-pointer relative"
+            style={{
+              background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.4),rgba(245,230,163,0.4))",
+              border: "2.5px solid transparent",
+              backgroundClip: "padding-box",
+              boxShadow: "0 0 0 2.5px transparent, 0 4px 20px rgba(167,139,250,0.2)",
+              outline: "2.5px solid",
+              outlineColor: "transparent",
+              background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.35),rgba(245,230,163,0.35))",
+            }}
+          >
+            {coverUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={coverUrl} alt="cover" className="w-full h-full object-cover" />
+              : uploading
+              ? <div className="text-xs font-medium" style={{ color: "#A78BFA" }}>Upload…</div>
+              : <div className="flex flex-col items-center gap-1">
+                  <Camera size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  <span className="text-[9px] font-semibold" style={{ color: "#A78BFA" }}>Photo / Vidéo</span>
+                </div>
+            }
+          </motion.div>
+          <input ref={coverRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleCover} />
+          <p className="text-[11px] mt-2 font-light" style={{ color: "#A0AEC0" }}>Appuie pour importer</p>
+        </div>
+
+        {/* Name input */}
+        <div className="mb-6">
+          <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: "#A0AEC0" }}>Nom de la catégorie</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex : Fitness, Voyage, Nutrition…"
+            maxLength={24}
+            className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+            style={{
+              background: "rgba(240,235,255,0.55)",
+              border: "1px solid rgba(167,139,250,0.2)",
+              color: "#1A202C",
+            }}
+          />
+        </div>
+
+        {/* Save */}
+        <motion.button
+          whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
+          onClick={handleSave}
+          disabled={!name.trim()}
+          className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
+          style={{
+            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.5)",
+            color: name.trim() ? "#3D2F6B" : "#A0AEC0",
+            boxShadow: name.trim() ? "0 4px 18px rgba(167,139,250,0.3)" : "none",
+          }}
+        >
+          Créer la catégorie
+        </motion.button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
@@ -791,6 +924,11 @@ export default function ProfilPage() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [showNewHighlight, setShowNewHighlight] = useState(false);
+  const [highlights, setHighlights] = useState<Highlight[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("aura_highlights") ?? "[]"); } catch { return []; }
+  });
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
   const [profileFullName, setProfileFullName] = useState("");
@@ -887,6 +1025,13 @@ export default function ProfilPage() {
     showToast("Profil mis à jour ✓");
     // Rafraîchit le user dans le contexte (nav, initiale, avatar partout)
     void refreshProfile();
+  };
+
+  const handleAddHighlight = (h: Highlight) => {
+    const updated = [...highlights, h];
+    setHighlights(updated);
+    localStorage.setItem("aura_highlights", JSON.stringify(updated));
+    showToast("Catégorie créée ✓");
   };
 
   const displayPseudo = profilePseudo || user?.pseudo || "";
@@ -1051,6 +1196,7 @@ export default function ProfilPage() {
           <motion.button
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.93 }}
+            onClick={() => setShowNewHighlight(true)}
             className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
           >
             <div
@@ -1066,31 +1212,31 @@ export default function ProfilPage() {
             <span className="text-[10px] font-semibold" style={{ color: "#A0AEC0", letterSpacing: "0.02em" }}>Nouveau</span>
           </motion.button>
 
-          {/* Stories placeholder */}
-          {["Sport", "Nutri", "Progrès"].map((label, i) => (
+          {/* Highlights créés */}
+          {highlights.map((h, i) => (
             <motion.button
-              key={label}
+              key={h.id}
               whileHover={{ scale: 1.06 }}
               whileTap={{ scale: 0.93 }}
               className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.18 + i * 0.05 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.06, type: "spring", bounce: 0.4 }}
             >
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center"
+                className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center"
                 style={{
-                  background: "linear-gradient(135deg,rgba(212,192,255,0.35) 0%,rgba(245,230,163,0.3) 100%)",
-                  border: "2px solid rgba(255,255,255,0.9)",
-                  boxShadow: "0 2px 12px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.8)",
-                  padding: 2,
-                  background: `linear-gradient(white,white) padding-box, linear-gradient(135deg,#C4A8FF,#F5E6A3) border-box`,
-                  borderColor: "transparent",
+                  background: "linear-gradient(white,white) padding-box, linear-gradient(135deg,#C4A8FF,#F5E6A3) border-box",
+                  border: "2.5px solid transparent",
+                  boxShadow: "0 3px 14px rgba(167,139,250,0.18)",
                 }}
               >
-                <span className="text-xl">{["🏋️","🥗","📈"][i]}</span>
+                {h.coverUrl
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={h.coverUrl} alt={h.name} className="w-full h-full object-cover" />
+                  : <span className="text-2xl">{h.name.charAt(0).toUpperCase()}</span>}
               </div>
-              <span className="text-[10px] font-semibold" style={{ color: "#718096", letterSpacing: "0.02em" }}>{label}</span>
+              <span className="text-[10px] font-semibold max-w-[64px] truncate text-center" style={{ color: "#718096", letterSpacing: "0.02em" }}>{h.name}</span>
             </motion.button>
           ))}
         </motion.div>
@@ -1293,6 +1439,13 @@ export default function ProfilPage() {
             pseudo={displayPseudo}
             onClose={() => setShowGoals(false)}
             onSave={() => showToast("Objectifs mis à jour ✓")}
+          />
+        )}
+        {showNewHighlight && user && (
+          <NewHighlightModal
+            userId={user.id}
+            onSave={handleAddHighlight}
+            onClose={() => setShowNewHighlight(false)}
           />
         )}
         {showFollowList && user && (
