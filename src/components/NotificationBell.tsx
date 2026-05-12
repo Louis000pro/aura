@@ -28,7 +28,7 @@ function formatRelative(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function NotificationBell({ side = "right" }: { side?: "right" | "bottom" }) {
+export default function NotificationBell({ side = "right" }: { side?: "right" | "bottom" | "top" }) {
   const { user } = useAuth();
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [open, setOpen] = useState(false);
@@ -101,6 +101,8 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
   const panelStyle =
     side === "right"
       ? { left: "calc(100% + 12px)", top: 0 }
+      : side === "top"
+      ? { top: "calc(100% + 12px)", right: 0 }
       : { bottom: "calc(100% + 12px)", left: "50%", transform: "translateX(-50%)" };
 
   return (

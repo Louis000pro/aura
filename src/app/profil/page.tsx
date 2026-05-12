@@ -898,77 +898,114 @@ export default function ProfilPage() {
   const displayAvatar = profileAvatar || user?.avatar || "";
 
   return (
-    <div className="min-h-screen pb-28">
+    <div className="relative min-h-screen pb-28">
 
-      {/* Notifs + Settings — top LEFT */}
-      <div className="absolute top-4 left-4 md:left-[100px] z-40 flex items-center gap-2">
-        <NotificationBell side="bottom" />
+      {/* ─── Gradient background blob ─── */}
+      <div
+        className="absolute top-0 left-0 right-0 h-64 pointer-events-none"
+        style={{
+          background: "linear-gradient(180deg, rgba(212,192,255,0.22) 0%, rgba(245,230,163,0.08) 60%, transparent 100%)",
+          zIndex: 0,
+        }}
+      />
+
+      {/* ─── Notifs + Settings — top RIGHT ─── */}
+      <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
+        <NotificationBell side="top" />
         <Link href="/parametres">
           <motion.div
-            whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
+            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", border: "1px solid rgba(212,192,255,0.4)", boxShadow: "0 2px 12px rgba(167,139,250,0.12)" }}
+            style={{
+              background: "rgba(255,255,255,0.88)",
+              backdropFilter: "blur(16px)",
+              border: "1px solid rgba(212,192,255,0.45)",
+              boxShadow: "0 2px 14px rgba(167,139,250,0.15)",
+            }}
           >
             <Settings size={15} strokeWidth={1.6} style={{ color: "#A78BFA" }} />
           </motion.div>
         </Link>
       </div>
 
-      {/* ── Instagram-style header ── */}
-      <div className="pt-10 px-5 md:px-8">
+      {/* ─── Header ─── */}
+      <div className="relative z-10 pt-12 px-5 md:px-8 max-w-lg mx-auto">
 
-        {/* Avatar + name + bio */}
+        {/* Avatar + pseudo + bio */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="flex flex-col items-center text-center mb-5"
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col items-center text-center mb-6"
         >
-          {/* Avatar ring */}
+          {/* Avatar */}
           <motion.div
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setShowEdit(true)}
-            className="relative mb-3 cursor-pointer"
+            className="relative mb-4 cursor-pointer"
             style={{
-              width: 100,
-              height: 100,
+              width: 108,
+              height: 108,
               borderRadius: "50%",
               padding: 3,
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.28)",
+              background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 50%,#A8D8FF 100%)",
+              boxShadow: "0 12px 40px rgba(167,139,250,0.35), 0 0 0 1px rgba(255,255,255,0.6)",
             }}
           >
+            {/* Glow ring */}
             <div
-              className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-4xl font-light"
-              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "#2D3748" }}
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 50%,#A8D8FF 100%)",
+                filter: "blur(8px)",
+                opacity: 0.4,
+                transform: "scale(1.08)",
+              }}
+            />
+            <div
+              className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center text-4xl"
+              style={{
+                background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)",
+                color: "#7C5CFA",
+                fontWeight: 300,
+              }}
             >
               {displayAvatar
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                 : <span>{displayPseudo.charAt(0).toUpperCase() || "?"}</span>}
             </div>
-            {/* Camera badge */}
             <div
-              className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full flex items-center justify-center"
+              className="absolute bottom-0.5 right-0.5 w-8 h-8 rounded-full flex items-center justify-center"
               style={{
                 background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                border: "2px solid white",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                border: "2.5px solid white",
               }}
             >
-              <Camera size={12} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+              <Camera size={13} strokeWidth={2.2} style={{ color: "#2D3748" }} />
             </div>
           </motion.div>
 
-          {/* Pseudo */}
-          <p className="text-[26px] font-semibold mt-1" style={{ color: "#2D3748" }}>
+          {/* Pseudo — bold, impactful */}
+          <h1
+            className="text-[28px] tracking-tight leading-none"
+            style={{
+              fontWeight: 900,
+              background: "linear-gradient(135deg,#2D3748 0%,#4A3F7A 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              letterSpacing: "-0.02em",
+            }}
+          >
             {displayPseudo}
-          </p>
+          </h1>
 
           {/* Bio */}
           {profileBio && (
-            <p className="text-sm mt-2.5 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
+            <p className="text-[13px] mt-2 max-w-[240px] leading-relaxed font-light" style={{ color: "#718096" }}>
               {profileBio}
             </p>
           )}
@@ -976,42 +1013,37 @@ export default function ProfilPage() {
 
         {/* Stats row */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.08 }}
-          className="flex items-stretch mb-3 rounded-2xl overflow-hidden"
+          transition={{ duration: 0.45, delay: 0.1 }}
+          className="flex items-stretch mb-3 rounded-3xl overflow-hidden"
           style={{
-            background: "rgba(255,255,255,0.75)",
-            border: "1px solid rgba(255,255,255,0.85)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 16px rgba(167,139,250,0.08)",
-            backdropFilter: "blur(12px)",
+            background: "rgba(255,255,255,0.8)",
+            border: "1px solid rgba(255,255,255,0.9)",
+            boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+            backdropFilter: "blur(20px)",
           }}
         >
           {[
-            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "—", clickable: false },
-            { label: "Abonnés", value: followerCount !== null ? String(followerCount) : "—", clickable: true },
-            { label: "Abonnements", value: followingCount !== null ? String(followingCount) : "—", clickable: true },
+            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: false },
+            { label: "Abonnés", value: followerCount !== null ? String(followerCount) : "0", clickable: true },
+            { label: "Abonnements", value: followingCount !== null ? String(followingCount) : "0", clickable: true },
           ].map(({ label, value, clickable }, i) => (
             <div key={label} className="flex items-stretch flex-1">
               {i > 0 && (
-                <div className="w-px self-stretch my-3" style={{ background: "rgba(212,192,255,0.35)" }} />
+                <div className="w-px self-stretch my-3.5" style={{ background: "rgba(212,192,255,0.3)" }} />
               )}
               <motion.button
-                whileHover={clickable ? { scale: 1.04 } : {}}
-                whileTap={clickable ? { scale: 0.93 } : {}}
-                onClick={() => {
-                  if (clickable) setShowFollowList(label as "Abonnés" | "Abonnements");
-                }}
-                className="flex-1 flex flex-col items-center py-3.5 cursor-pointer"
+                whileHover={clickable ? { scale: 1.05 } : {}}
+                whileTap={clickable ? { scale: 0.94 } : {}}
+                onClick={() => { if (clickable) setShowFollowList(label as "Abonnés" | "Abonnements"); }}
+                className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
-                <span className="text-[22px] font-semibold leading-none" style={{ color: "#2D3748" }}>
+                <span className="text-[24px] font-black leading-none" style={{ color: "#1A202C", letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
-                <span
-                  className="text-[9px] font-semibold tracking-widest uppercase mt-1"
-                  style={{ color: clickable ? "#A78BFA" : "#B0BBCA" }}
-                >
+                <span className="text-[9px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "#A78BFA" : "#B0BBCA" }}>
                   {label}
                 </span>
               </motion.button>
@@ -1019,462 +1051,186 @@ export default function ProfilPage() {
           ))}
         </motion.div>
 
-        {/* Modifier le profil button */}
+        {/* Modifier le profil */}
         <motion.button
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.38, delay: 0.13 }}
-          whileHover={{ scale: 1.01 }}
+          transition={{ duration: 0.38, delay: 0.15 }}
+          whileHover={{ scale: 1.01, boxShadow: "0 6px 24px rgba(167,139,250,0.2)" }}
           whileTap={{ scale: 0.97 }}
           onClick={() => setShowEdit(true)}
-          className="w-full py-2.5 rounded-2xl text-sm font-semibold cursor-pointer mb-5"
+          className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mb-6"
           style={{
-            background: "rgba(255,255,255,0.75)",
-            border: "1.5px solid rgba(212,192,255,0.65)",
-            color: "#2D3748",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+            background: "rgba(255,255,255,0.8)",
+            border: "1.5px solid rgba(167,139,250,0.4)",
+            color: "#5A4A8A",
+            boxShadow: "0 2px 12px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.95)",
             backdropFilter: "blur(12px)",
+            letterSpacing: "0.01em",
           }}
         >
           Modifier le profil
         </motion.button>
 
-        {/* Tabs */}
+        {/* ─── Tabs ─── */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.18 }}
-          className="flex gap-1 mb-5 p-1 rounded-2xl"
-          style={{ background: "rgba(240,235,255,0.55)" }}
+          transition={{ delay: 0.2 }}
+          className="flex gap-1.5 mb-6 p-1.5 rounded-2xl"
+          style={{
+            background: "rgba(240,235,255,0.6)",
+            border: "1px solid rgba(212,192,255,0.2)",
+          }}
         >
-          {(["performances", "seances", "reglages"] as const).map((tab) => (
+          {([
+            { id: "performances" as const, emoji: "📸", label: "Publications" },
+            { id: "seances"      as const, emoji: "🎥", label: "Vidéos" },
+            { id: "reglages"     as const, emoji: "🏋️", label: "Séances" },
+          ]).map(({ id, emoji, label }) => (
             <motion.button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 relative"
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold cursor-pointer flex flex-col items-center gap-0.5 relative"
               animate={{
-                background: activeTab === tab
+                background: activeTab === id
                   ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)"
                   : "transparent",
-                color: activeTab === tab ? "#2D3748" : "#A0AEC0",
+                color: activeTab === id ? "#3D2F6B" : "#A0AEC0",
               }}
               style={{
-                boxShadow: activeTab === tab
-                  ? "inset 0 1px 0 rgba(255,255,255,0.85), 0 2px 8px rgba(167,139,250,0.15)"
+                boxShadow: activeTab === id
+                  ? "0 3px 12px rgba(167,139,250,0.22), inset 0 1px 0 rgba(255,255,255,0.9)"
                   : "none",
+                letterSpacing: "0.02em",
               }}
             >
-              {tab === "performances" ? "📸 Publications" : tab === "seances" ? "🎥 Vidéos enregistrées" : "🏋️ Séances enregistrées"}
-              {tab === "seances" && publishedSessions.length > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[8px] font-bold flex items-center justify-center"
-                  style={{ background: "#A78BFA", color: "#fff" }}
-                >
-                  {publishedSessions.length}
-                </span>
-              )}
+              <span className="text-base leading-none">{emoji}</span>
+              <span>{label}</span>
             </motion.button>
           ))}
         </motion.div>
       </div>
 
-      {/* ── Tab content ── */}
+      {/* ─── Tab content ─── */}
       <AnimatePresence mode="wait">
-        {activeTab === "performances" ? (
+        {activeTab === "performances" && (
           <motion.div
-            key="performances"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.28 }}
-            className="px-5 md:px-8"
+            key="publications"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-lg mx-auto"
           >
-            {/* Mini stats grid */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {[
-                { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "—", gradient: "linear-gradient(135deg,#FFFBF0 0%,#F5E6A3 100%)", accent: "#D4A843" },
-                { label: "Jours actifs", value: "—", gradient: "linear-gradient(135deg,#F0EBFF 0%,#D4C0FF 100%)", accent: "#A78BFA" },
-                { label: "Score moyen", value: "—", gradient: "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", accent: "#A0AEC0" },
-              ].map(({ label, value, gradient }) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ y: -2, scale: 1.02 }}
-                  className="rounded-2xl p-3.5 text-center"
-                  style={{
-                    background: gradient,
-                    boxShadow: "0 2px 12px rgba(167,139,250,0.08)",
-                    border: "1px solid rgba(255,255,255,0.8)",
-                  }}
-                >
-                  <p className="text-[22px] font-light leading-none" style={{ color: "#2D3748" }}>{value}</p>
-                  <p className="text-[9px] font-semibold tracking-wider uppercase mt-1.5" style={{ color: "#718096" }}>{label}</p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Performance cards */}
-            <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
-              Dernières performances
-            </p>
-            <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
-              {samplePerformances.map((perf, i) => (
-                <motion.div
-                  key={i}
-                  className="flex-shrink-0 relative"
-                  style={{ width: 172 }}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.08, type: "spring", bounce: 0.3 }}
-                >
-                  <PerformanceCard data={perf} size="sm" interactive />
-                  <motion.button
-                    whileHover={{ scale: 1.08, y: -1 }}
-                    whileTap={{ scale: 0.92 }}
-                    onClick={(e) => { e.stopPropagation(); setShareData(perf); }}
-                    className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,rgba(212,192,255,0.92) 0%,rgba(245,230,163,0.92) 100%)",
-                      border: "1px solid rgba(255,255,255,0.7)",
-                      backdropFilter: "blur(12px)",
-                      boxShadow: "0 2px 8px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.8)",
-                    }}
-                    aria-label="Partager"
-                  >
-                    <Share2 size={11} strokeWidth={2.5} style={{ color: "#2D3748" }} />
-                    <span className="text-[10px] font-semibold" style={{ color: "#2D3748" }}>Partager</span>
-                  </motion.button>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        ) : activeTab === "seances" ? (
-          /* ── Séances publiées ── */
-          <motion.div
-            key="seances"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.28 }}
-            className="px-5 md:px-8"
-          >
-            {publishedSessions.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center py-14 gap-5 rounded-3xl"
-                style={{ background: "rgba(255,255,255,0.55)", border: "1px dashed rgba(167,139,250,0.3)" }}
-              >
-                <div
-                  className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.35) 0%,rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(167,139,250,0.15)" }}
-                >
-                  <Sparkles size={24} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
-                </div>
-                <div className="text-center px-6">
-                  <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucune séance publiée</p>
-                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
-                    Publie des séances depuis ta bibliothèque pour les retrouver ici.
-                  </p>
-                </div>
-              </motion.div>
-            ) : (
-              <>
-                {/* Summary */}
-                <div
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-5"
-                  style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.16) 0%,rgba(245,230,163,0.13) 100%)", border: "1px solid rgba(167,139,250,0.16)" }}
-                >
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.45) 0%,rgba(245,230,163,0.4) 100%)" }}
-                  >
-                    <Sparkles size={15} strokeWidth={1.4} style={{ color: "#A78BFA" }} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>
-                      {publishedSessions.length} séance{publishedSessions.length > 1 ? "s" : ""} partagée{publishedSessions.length > 1 ? "s" : ""}
-                    </p>
-                    <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
-                      {publishedSessions.reduce((a, s) => a + s.duration, 0)} min de contenu
-                    </p>
-                  </div>
-                </div>
-
-                {/* Cards grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {publishedSessions.map((s, i) => {
-                    const Icon = resolveProfileIcon(s.icon);
-                    const visInfo = VIS_LABELS[s.visibility];
-                    const VisIcon = visInfo.icon;
-                    return (
-                      <motion.div
-                        key={s.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.06 }}
-                        className="rounded-3xl overflow-hidden flex flex-col"
-                        style={{
-                          background: "rgba(255,255,255,0.82)",
-                          border: "1px solid rgba(255,255,255,0.92)",
-                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 24px rgba(0,0,0,0.05)",
-                        }}
-                      >
-                        {/* Header */}
-                        <div className="px-4 pt-4 pb-3" style={{ background: `${s.accent}10`, borderBottom: `1px solid ${s.accent}18` }}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div
-                              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                              style={{ background: `${s.accent}24`, border: `1px solid ${s.accent}44` }}
-                            >
-                              <Icon size={14} strokeWidth={1.5} style={{ color: s.accent }} />
-                            </div>
-                            <span
-                              className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-                              style={{ background: `${PROF_DIFF_COLOR[s.difficulty] ?? "#A0AEC0"}18`, color: PROF_DIFF_COLOR[s.difficulty] ?? "#A0AEC0" }}
-                            >
-                              {s.difficulty}
-                            </span>
-                            <span
-                              className="ml-auto flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full"
-                              style={{ background: `${visInfo.color}14`, color: visInfo.color }}
-                            >
-                              <VisIcon size={9} strokeWidth={2} />
-                              {visInfo.label}
-                            </span>
-                          </div>
-                          <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "#2D3748" }}>{s.title}</h3>
-                          <div className="flex flex-wrap gap-1">
-                            {s.muscles.slice(0, 3).map(m => (
-                              <span key={m} className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ background: `${s.accent}16`, color: s.accent }}>{m}</span>
-                            ))}
-                            {s.muscles.length > 3 && <span className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(160,174,192,0.12)", color: "#A0AEC0" }}>+{s.muscles.length - 3}</span>}
-                          </div>
-                        </div>
-                        {/* Stats */}
-                        <div className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: "1px solid rgba(240,235,255,0.5)" }}>
-                          <div className="flex items-center gap-1.5">
-                            <Clock size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{s.duration} min</span>
-                          </div>
-                          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
-                          <div className="flex items-center gap-1.5">
-                            <Dumbbell size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{s.exercises} exos</span>
-                          </div>
-                        </div>
-                        {/* CTA */}
-                        <div className="px-4 py-3">
-                          <motion.button
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => setProfilActiveWorkout(s)}
-                            className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
-                            style={{ background: `linear-gradient(135deg, ${s.accent}ee, ${s.accent}aa)`, boxShadow: `0 4px 14px ${s.accent}44` }}
-                          >
-                            <Play size={12} strokeWidth={2.5} style={{ color: "#fff" }} />
-                            <span className="text-xs font-semibold" style={{ color: "#fff" }}>Commencer</span>
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* Workout modal */}
-            <AnimatePresence>
-              {profilActiveWorkout && (
-                <WorkoutGuideModal
-                  sessionId={profilActiveWorkout.id}
-                  title={profilActiveWorkout.title}
-                  accent={profilActiveWorkout.accent}
-                  duration={profilActiveWorkout.duration}
-                  difficulty={profilActiveWorkout.difficulty}
-                  exerciseList={profilActiveWorkout.exercise_list}
-                  onClose={() => setProfilActiveWorkout(null)}
-                  onComplete={() => setProfilActiveWorkout(null)}
-                />
-              )}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="reglages"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.28 }}
-            className="px-5 md:px-8 flex flex-col gap-4"
-          >
-            {/* Objectifs & morphologie */}
-            <motion.button
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setShowGoals(true)}
-              className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl cursor-pointer text-left"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 }}
+              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
               style={{
-                background: "rgba(255,255,255,0.75)",
-                border: "1px solid rgba(255,255,255,0.85)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px rgba(167,139,250,0.08)",
+                background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)",
+                border: "1.5px dashed rgba(167,139,250,0.25)",
                 backdropFilter: "blur(12px)",
               }}
             >
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" }}
+                className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)",
+                  boxShadow: "0 8px 32px rgba(167,139,250,0.15)",
+                  border: "1px solid rgba(212,192,255,0.3)",
+                }}
               >
-                <Target size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                <span className="text-3xl">📸</span>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Objectifs & morphologie</p>
-                <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>Poids, taille, goals, niveau…</p>
+              <div className="text-center px-8">
+                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
+                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                  Tes publications apparaîtront ici dès que tu en partageras une.
+                </p>
               </div>
-              <Pencil size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-            </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
 
-            {/* Genre selector */}
-            <div
-              className="rounded-2xl px-5 py-4"
+        {activeTab === "seances" && (
+          <motion.div
+            key="videos"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-lg mx-auto"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 }}
+              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
               style={{
-                background: "rgba(255,255,255,0.75)",
-                border: "1px solid rgba(255,255,255,0.85)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px rgba(167,139,250,0.08)",
+                background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)",
+                border: "1.5px dashed rgba(167,139,250,0.25)",
                 backdropFilter: "blur(12px)",
               }}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Genre</p>
-                  <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>Personnalise les illustrations</p>
-                </div>
-                <div className="flex gap-2">
-                  {(["homme", "femme"] as const).map((g) => (
-                    <motion.button
-                      key={g}
-                      whileTap={{ scale: 0.93 }}
-                      onClick={() => {
-                        updateSettings({ gender: g });
-                        showToast(g === "homme" ? "Genre : Homme ✓" : "Genre : Femme ✓");
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
-                      style={
-                        settings.gender === g
-                          ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                          : { background: "rgba(0,0,0,0.04)", color: "#A0AEC0", border: "1px solid rgba(0,0,0,0.06)" }
-                      }
-                    >
-                      {g === "homme" ? <Mars size={12} strokeWidth={1.8} /> : <Venus size={12} strokeWidth={1.8} />}
-                      {g === "homme" ? "Homme" : "Femme"}
-                    </motion.button>
-                  ))}
-                </div>
+              <div
+                className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)",
+                  boxShadow: "0 8px 32px rgba(167,139,250,0.15)",
+                  border: "1px solid rgba(212,192,255,0.3)",
+                }}
+              >
+                <span className="text-3xl">🎥</span>
               </div>
-            </div>
+              <div className="text-center px-8">
+                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo enregistrée</p>
+                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                  Les vidéos que tu enregistreras s'afficheront ici automatiquement.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
 
-            {/* Settings list */}
-            <div
-              className="rounded-2xl overflow-hidden"
+        {activeTab === "reglages" && (
+          <motion.div
+            key="seances-enr"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-lg mx-auto"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.05 }}
+              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
               style={{
-                background: "rgba(255,255,255,0.75)",
-                border: "1px solid rgba(255,255,255,0.85)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 12px rgba(167,139,250,0.08)",
+                background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)",
+                border: "1.5px dashed rgba(167,139,250,0.25)",
                 backdropFilter: "blur(12px)",
               }}
             >
-              {[
-                {
-                  icon: notifEnabled ? Bell : BellOff,
-                  label: "Notifications",
-                  desc: notifEnabled ? "Rappels & insights activés" : "Désactivées",
-                  type: "toggle" as const,
-                  onClick: () => {
-                    setNotifEnabled((v) => !v);
-                    showToast(notifEnabled ? "Notifications désactivées" : "Notifications activées ✓");
-                  },
-                },
-                {
-                  icon: Shield,
-                  label: "Confidentialité",
-                  desc: "Données sécurisées · RGPD",
-                  type: "chevron" as const,
-                  onClick: () => setShowPrivacy(true),
-                },
-                {
-                  icon: Star,
-                  label: "Plan Premium",
-                  desc: "Actif jusqu'au 15 juin 2026",
-                  type: "external" as const,
-                  onClick: () => showToast("Gestion de l'abonnement…"),
-                },
-                {
-                  icon: CreditCard,
-                  label: "Paiement",
-                  desc: "•••• 4242 · Stripe",
-                  type: "external" as const,
-                  onClick: () => showToast("Portail de paiement Stripe…"),
-                },
-              ].map(({ icon: Icon, label, desc, type, onClick }, i, arr) => (
-                <div key={label}>
-                  <motion.button
-                    whileTap={{ scale: 0.99 }}
-                    onClick={onClick}
-                    className="w-full flex items-center gap-4 px-5 py-4 cursor-pointer"
-                    style={{ background: "transparent" }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)" }}
-                    >
-                      <Icon size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
-                      <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{desc}</p>
-                    </div>
-                    {type === "toggle" ? (
-                      <motion.div
-                        animate={{ background: notifEnabled ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.6)" }}
-                        className="relative w-10 h-5 rounded-full flex-shrink-0"
-                      >
-                        <motion.div
-                          animate={{ x: notifEnabled ? 18 : 2 }}
-                          transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
-                          className="absolute top-0.5 w-4 h-4 rounded-full"
-                          style={{ background: "white", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
-                        />
-                      </motion.div>
-                    ) : type === "external" ? (
-                      <ExternalLink size={14} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                    ) : (
-                      <ChevronRight size={16} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                    )}
-                  </motion.button>
-                  {i < arr.length - 1 && (
-                    <div className="h-px mx-5" style={{ background: "rgba(240,235,255,0.9)" }} />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Logout */}
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl cursor-pointer"
-              style={{
-                border: "1px solid rgba(212,192,255,0.6)",
-                color: "#A0AEC0",
-                background: "transparent",
-              }}
-            >
-              <LogOut size={15} strokeWidth={1.5} />
-              <span className="text-sm font-medium">Se déconnecter</span>
-            </motion.button>
+              <div
+                className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)",
+                  boxShadow: "0 8px 32px rgba(167,139,250,0.15)",
+                  border: "1px solid rgba(212,192,255,0.3)",
+                }}
+              >
+                <span className="text-3xl">🏋️</span>
+              </div>
+              <div className="text-center px-8">
+                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
+                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                  Tes séances enregistrées apparaîtront ici une fois complétées.
+                </p>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1506,11 +1262,13 @@ export default function ProfilPage() {
         {toast && <Toast message={toast} />}
       </AnimatePresence>
 
-      <SharePerformanceModal
-        open={!!shareData}
-        onClose={() => setShareData(null)}
-        data={shareData ?? samplePerformances[0]}
-      />
+      {shareData && (
+        <SharePerformanceModal
+          open={true}
+          onClose={() => setShareData(null)}
+          data={shareData}
+        />
+      )}
     </div>
   );
 }
