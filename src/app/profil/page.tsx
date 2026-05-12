@@ -7,8 +7,9 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles,
-  Trophy, Settings2,
+  Trophy, Settings2, Settings, Plus,
 } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
@@ -858,6 +859,75 @@ const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: str
   public:  { label: "Public", icon: Globe,  color: "#34D399" },
 };
 
+/* ─────────────── Stories à la une ─────────────── */
+const DEFAULT_STORIES = [
+  { id: "sport",   emoji: "🏋️", label: "Sport" },
+  { id: "nutri",   emoji: "🥗", label: "Nutrition" },
+  { id: "prog",    emoji: "📈", label: "Progrès" },
+  { id: "cardio",  emoji: "🏃", label: "Cardio" },
+];
+
+function StoriesHighlights({ userId, onEdit }: { userId: string; onEdit: () => void }) {
+  const [stories] = useState(DEFAULT_STORIES);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.22, duration: 0.4 }}
+      className="px-5 md:px-8 mb-5"
+    >
+      <div className="flex items-center gap-4 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+        {/* Bouton "Nouveau" */}
+        <motion.button
+          whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
+          onClick={onEdit}
+          className="flex flex-col items-center gap-1.5 cursor-pointer flex-shrink-0"
+        >
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center"
+            style={{
+              background: "rgba(255,255,255,0.75)",
+              backdropFilter: "blur(12px)",
+              border: "1.5px dashed rgba(167,139,250,0.5)",
+              boxShadow: "0 2px 12px rgba(167,139,250,0.1)",
+            }}
+          >
+            <Plus size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          </div>
+          <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>Nouveau</span>
+        </motion.button>
+
+        {/* Stories */}
+        {stories.map((s, i) => (
+          <motion.button
+            key={s.id}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 + i * 0.06, type: "spring", bounce: 0.4 }}
+            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
+            className="flex flex-col items-center gap-1.5 cursor-pointer flex-shrink-0"
+          >
+            {/* Anneau dégradé */}
+            <div
+              className="rounded-full p-[2.5px]"
+              style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: "0 4px 16px rgba(167,139,250,0.25)" }}
+            >
+              <div
+                className="w-[58px] h-[58px] rounded-full flex items-center justify-center text-2xl"
+                style={{ background: "rgba(255,255,255,0.95)", border: "2px solid white" }}
+              >
+                {s.emoji}
+              </div>
+            </div>
+            <span className="text-[10px] font-medium" style={{ color: "#2D3748" }}>{s.label}</span>
+          </motion.button>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
@@ -995,119 +1065,77 @@ export default function ProfilPage() {
   return (
     <div className="min-h-screen pb-28">
 
-      {/* ─── 1. HERO COVER SECTION ─── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative w-full overflow-hidden"
-        style={{
-          height: 220,
-          background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 50%, #C7E9FF 100%)",
-        }}
-      >
-        {/* Floating orbs */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 220,
-            height: 220,
-            top: -60,
-            left: -40,
-            background: "radial-gradient(circle, rgba(167,139,250,0.55) 0%, rgba(167,139,250,0) 70%)",
-            filter: "blur(30px)",
-          }}
-          animate={{ scale: [1, 1.15, 1], x: [0, 30, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 260,
-            height: 260,
-            bottom: -80,
-            right: -60,
-            background: "radial-gradient(circle, rgba(245,230,163,0.65) 0%, rgba(245,230,163,0) 70%)",
-            filter: "blur(34px)",
-          }}
-          animate={{ scale: [1, 1.2, 1], x: [0, -25, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-        />
-
-        {/* Avatar overlapping cover bottom */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.45 }}
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2"
-        >
+      {/* ─── Header top-right actions ─── */}
+      <div className="fixed top-4 right-4 z-40 flex items-center gap-2 md:hidden">
+        <NotificationBell side="bottom" />
+        <Link href="/parametres">
           <motion.div
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setShowEdit(true)}
-            className="relative cursor-pointer"
-            style={{
-              width: 100,
-              height: 100,
-              borderRadius: "50%",
-              padding: 3,
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 10px 36px rgba(167,139,250,0.35)",
-            }}
+            whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", border: "1px solid rgba(212,192,255,0.4)", boxShadow: "0 2px 12px rgba(167,139,250,0.12)" }}
           >
-            <div
-              className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-4xl font-light"
-              style={{
-                background: displayAvatar
-                  ? "transparent"
-                  : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)",
-                color: "#2D3748",
-                border: "3px solid #ffffff",
-              }}
-            >
-              {displayAvatar
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                : <span>{displayPseudo.charAt(0).toUpperCase() || "?"}</span>}
-            </div>
-            <div
-              className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
-                border: "2px solid white",
-              }}
-            >
-              <Camera size={12} strokeWidth={2.5} style={{ color: "#2D3748" }} />
-            </div>
+            <Settings size={15} strokeWidth={1.6} style={{ color: "#A78BFA" }} />
           </motion.div>
-        </motion.div>
-      </motion.div>
+        </Link>
+      </div>
 
-      {/* ─── Identity (name, pseudo, bio) ─── */}
+      {/* ─── Avatar + Identity ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-        className="flex flex-col items-center text-center px-5 md:px-8 mt-[60px]"
+        transition={{ duration: 0.45 }}
+        className="flex flex-col items-center text-center pt-10 px-5 md:px-8 mb-5"
       >
-        {profileFullName ? (
-          <p className="text-[18px] font-semibold leading-tight" style={{ color: "#2D3748" }}>
-            {profileFullName}
-          </p>
-        ) : null}
-        <p className="text-sm font-light mt-0.5" style={{ color: "#A78BFA" }}>
-          @{displayPseudo}
-        </p>
-        <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>
-          {user?.email}
-        </p>
+        {/* Avatar ring */}
+        <motion.div
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowEdit(true)}
+          className="relative mb-4 cursor-pointer"
+          style={{
+            width: 100, height: 100, borderRadius: "50%", padding: 3,
+            background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+            boxShadow: "0 8px 32px rgba(167,139,250,0.28)",
+          }}
+        >
+          <div
+            className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-4xl font-light"
+            style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "#2D3748" }}
+          >
+            {displayAvatar
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+              : <span>{displayPseudo.charAt(0).toUpperCase() || "?"}</span>}
+          </div>
+          <div className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", boxShadow: "0 2px 8px rgba(0,0,0,0.18)", border: "2px solid white" }}>
+            <Camera size={12} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+          </div>
+        </motion.div>
+
+        {/* Pseudo en avant — sans @ */}
+        <motion.p
+          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+          className="text-[22px] font-semibold leading-tight tracking-tight"
+          style={{ color: "#2D3748" }}
+        >
+          {displayPseudo}
+        </motion.p>
+
+        {/* Bio */}
         {profileBio && (
-          <p className="text-sm mt-2.5 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
+          <motion.p
+            initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+            className="text-sm mt-2 max-w-xs leading-relaxed"
+            style={{ color: "#718096" }}
+          >
             {profileBio}
-          </p>
+          </motion.p>
         )}
       </motion.div>
+
+      {/* ─── Stories à la une ─── */}
+      <StoriesHighlights userId={user?.id ?? ""} onEdit={() => setShowEdit(true)} />
 
       <div className="px-5 md:px-8 mt-5">
 
