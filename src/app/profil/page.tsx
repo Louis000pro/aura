@@ -7,6 +7,7 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles,
+  Trophy, Settings2,
 } from "lucide-react";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import Link from "next/link";
@@ -878,7 +879,32 @@ export default function ProfilPage() {
   const [showGoals, setShowGoals] = useState(false);
   const [publishedSessions, setPublishedSessions] = useState<PublishedSession[]>([]);
   const [profilActiveWorkout, setProfilActiveWorkout] = useState<PublishedSession | null>(null);
+  const [profileMeta, setProfileMeta] = useState<{ level: string | null; goals: string[]; weight: number | null }>({
+    level: null,
+    goals: [],
+    weight: null,
+  });
   const { settings, updateSettings } = useProfileSettings();
+
+  /* Fetch onboarding meta (level, goals, weight) for badges */
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("onboarding_level, onboarding_goals, onboarding_weight")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setProfileMeta({
+            level: data.onboarding_level ?? null,
+            goals: data.onboarding_goals ?? [],
+            weight: data.onboarding_weight ?? null,
+          });
+        }
+      });
+  }, [user?.id]);
 
   /* Fetch profile + stats */
   useEffect(() => {
@@ -948,44 +974,102 @@ export default function ProfilPage() {
   const displayPseudo = profilePseudo || user?.pseudo || "";
   const displayAvatar = profileAvatar || user?.avatar || "";
 
+  /* ─── Badge helpers ─── */
+  const LEVEL_META: Record<string, { label: string; bg: string; color: string; border: string }> = {
+    debutant:      { label: "Débutant",      bg: "rgba(52,211,153,0.14)",  color: "#059669", border: "rgba(52,211,153,0.35)" },
+    intermediaire: { label: "Intermédiaire", bg: "rgba(167,139,250,0.16)", color: "#7C5CFA", border: "rgba(167,139,250,0.38)" },
+    avance:        { label: "Avancé",        bg: "rgba(212,168,67,0.16)",  color: "#B8881F", border: "rgba(212,168,67,0.38)" },
+  };
+  const GOAL_META: Record<string, string> = {
+    masse: "💪 Masse",
+    poids: "🔥 Poids",
+    force: "⚡ Force",
+    endurance: "🌊 Endurance",
+    sante: "🌿 Santé",
+    souplesse: "🧘 Souplesse",
+    prise_de_masse: "💪 Masse",
+    perte_de_poids: "🔥 Poids",
+  };
+  const hasMeta = !!profileMeta.level || profileMeta.goals.length > 0 || !!profileMeta.weight;
+
   return (
     <div className="min-h-screen pb-28">
 
-      {/* ── Instagram-style header ── */}
-      <div className="pt-10 px-5 md:px-8">
-
-        {/* Avatar + name + bio */}
+      {/* ─── 1. HERO COVER SECTION ─── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative w-full overflow-hidden"
+        style={{
+          height: 220,
+          background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 50%, #C7E9FF 100%)",
+        }}
+      >
+        {/* Floating orbs */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          className="absolute rounded-full"
+          style={{
+            width: 220,
+            height: 220,
+            top: -60,
+            left: -40,
+            background: "radial-gradient(circle, rgba(167,139,250,0.55) 0%, rgba(167,139,250,0) 70%)",
+            filter: "blur(30px)",
+          }}
+          animate={{ scale: [1, 1.15, 1], x: [0, 30, 0] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            width: 260,
+            height: 260,
+            bottom: -80,
+            right: -60,
+            background: "radial-gradient(circle, rgba(245,230,163,0.65) 0%, rgba(245,230,163,0) 70%)",
+            filter: "blur(34px)",
+          }}
+          animate={{ scale: [1, 1.2, 1], x: [0, -25, 0] }}
+          transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Avatar overlapping cover bottom */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="flex flex-col items-center text-center mb-5"
+          transition={{ delay: 0.1, duration: 0.45 }}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2"
         >
-          {/* Avatar ring */}
           <motion.div
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setShowEdit(true)}
-            className="relative mb-3 cursor-pointer"
+            className="relative cursor-pointer"
             style={{
               width: 100,
               height: 100,
               borderRadius: "50%",
               padding: 3,
               background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.28)",
+              boxShadow: "0 10px 36px rgba(167,139,250,0.35)",
             }}
           >
             <div
               className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-4xl font-light"
-              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "#2D3748" }}
+              style={{
+                background: displayAvatar
+                  ? "transparent"
+                  : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)",
+                color: "#2D3748",
+                border: "3px solid #ffffff",
+              }}
             >
               {displayAvatar
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                 : <span>{displayPseudo.charAt(0).toUpperCase() || "?"}</span>}
             </div>
-            {/* Camera badge */}
             <div
               className="absolute bottom-0.5 right-0.5 w-7 h-7 rounded-full flex items-center justify-center"
               style={{
@@ -997,69 +1081,71 @@ export default function ProfilPage() {
               <Camera size={12} strokeWidth={2.5} style={{ color: "#2D3748" }} />
             </div>
           </motion.div>
-
-          {/* Full name */}
-          {profileFullName ? (
-            <p className="text-[17px] font-semibold leading-tight" style={{ color: "#2D3748" }}>
-              {profileFullName}
-            </p>
-          ) : null}
-
-          {/* Pseudo */}
-          <p className="text-sm font-light mt-0.5" style={{ color: "#A78BFA" }}>
-            @{displayPseudo}
-          </p>
-
-          {/* Email subtle */}
-          <p className="text-[11px] mt-0.5" style={{ color: "#C4CDD8" }}>
-            {user?.email}
-          </p>
-
-          {/* Bio */}
-          {profileBio && (
-            <p className="text-sm mt-2.5 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
-              {profileBio}
-            </p>
-          )}
         </motion.div>
+      </motion.div>
 
-        {/* Stats row */}
+      {/* ─── Identity (name, pseudo, bio) ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="flex flex-col items-center text-center px-5 md:px-8 mt-[60px]"
+      >
+        {profileFullName ? (
+          <p className="text-[18px] font-semibold leading-tight" style={{ color: "#2D3748" }}>
+            {profileFullName}
+          </p>
+        ) : null}
+        <p className="text-sm font-light mt-0.5" style={{ color: "#A78BFA" }}>
+          @{displayPseudo}
+        </p>
+        <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>
+          {user?.email}
+        </p>
+        {profileBio && (
+          <p className="text-sm mt-2.5 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
+            {profileBio}
+          </p>
+        )}
+      </motion.div>
+
+      <div className="px-5 md:px-8 mt-5">
+
+        {/* ─── 2. STATS ROW ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.08 }}
-          className="flex items-stretch mb-3 rounded-2xl overflow-hidden"
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="flex items-stretch mb-4 rounded-3xl overflow-hidden"
           style={{
-            background: "rgba(255,255,255,0.75)",
-            border: "1px solid rgba(255,255,255,0.85)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 16px rgba(167,139,250,0.08)",
-            backdropFilter: "blur(12px)",
+            background: "rgba(255,255,255,0.8)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(212,192,255,0.45)",
+            boxShadow: "0 8px 32px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.95)",
           }}
         >
           {[
-            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "—", clickable: false },
-            { label: "Abonnés", value: followerCount !== null ? String(followerCount) : "—", clickable: true },
-            { label: "Abonnements", value: followingCount !== null ? String(followingCount) : "—", clickable: true },
+            { label: "Séances",     value: sessionCount   !== null ? String(sessionCount)   : "—", clickable: false },
+            { label: "Abonnés",     value: followerCount  !== null ? String(followerCount)  : "—", clickable: true  },
+            { label: "Abonnements", value: followingCount !== null ? String(followingCount) : "—", clickable: true  },
           ].map(({ label, value, clickable }, i) => (
             <div key={label} className="flex items-stretch flex-1">
               {i > 0 && (
-                <div className="w-px self-stretch my-3" style={{ background: "rgba(212,192,255,0.35)" }} />
+                <div className="w-px self-stretch my-3" style={{ background: "rgba(212,192,255,0.4)" }} />
               )}
               <motion.button
                 whileHover={clickable ? { scale: 1.04 } : {}}
                 whileTap={clickable ? { scale: 0.93 } : {}}
-                onClick={() => {
-                  if (clickable) setShowFollowList(label as "Abonnés" | "Abonnements");
-                }}
-                className="flex-1 flex flex-col items-center py-3.5 cursor-pointer"
+                onClick={() => { if (clickable) setShowFollowList(label as "Abonnés" | "Abonnements"); }}
+                className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
-                <span className="text-[22px] font-semibold leading-none" style={{ color: "#2D3748" }}>
+                <span className="text-[24px] font-semibold leading-none" style={{ color: "#2D3748" }}>
                   {value}
                 </span>
                 <span
-                  className="text-[9px] font-semibold tracking-widest uppercase mt-1"
-                  style={{ color: clickable ? "#A78BFA" : "#B0BBCA" }}
+                  className="text-[9px] font-semibold tracking-widest uppercase mt-1.5"
+                  style={{ color: clickable ? "#A78BFA" : "#A0AEC0" }}
                 >
                   {label}
                 </span>
@@ -1068,55 +1154,148 @@ export default function ProfilPage() {
           ))}
         </motion.div>
 
-        {/* Modifier le profil button */}
-        <motion.button
-          initial={{ opacity: 0, y: 6 }}
+        {/* ─── 3. PROFILE BADGES ROW ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.38, delay: 0.13 }}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowEdit(true)}
-          className="w-full py-2.5 rounded-2xl text-sm font-semibold cursor-pointer mb-5"
+          transition={{ duration: 0.4, delay: 0.25 }}
+          className="flex flex-wrap items-center justify-center gap-2 mb-4"
+        >
+          {hasMeta ? (
+            <>
+              {profileMeta.level && LEVEL_META[profileMeta.level] && (
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    background: LEVEL_META[profileMeta.level].bg,
+                    color: LEVEL_META[profileMeta.level].color,
+                    border: `1px solid ${LEVEL_META[profileMeta.level].border}`,
+                  }}
+                >
+                  {LEVEL_META[profileMeta.level].label}
+                </span>
+              )}
+              {profileMeta.goals.map((g) => (
+                <span
+                  key={g}
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    background: "rgba(255,255,255,0.75)",
+                    color: "#2D3748",
+                    border: "1px solid rgba(212,192,255,0.5)",
+                    backdropFilter: "blur(12px)",
+                  }}
+                >
+                  {GOAL_META[g] ?? g}
+                </span>
+              ))}
+              {profileMeta.weight && (
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{
+                    background: "rgba(245,230,163,0.3)",
+                    color: "#B8881F",
+                    border: "1px solid rgba(212,168,67,0.35)",
+                  }}
+                >
+                  ⚖️ {profileMeta.weight} kg
+                </span>
+              )}
+            </>
+          ) : (
+            <Link
+              href="/parametres"
+              className="text-xs font-medium px-3 py-1 rounded-full"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                color: "#A78BFA",
+                border: "1px dashed rgba(167,139,250,0.45)",
+              }}
+            >
+              Complète ton profil →
+            </Link>
+          )}
+        </motion.div>
+
+        {/* ─── 4. ACTION BUTTONS ROW ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="flex gap-2 mb-6"
+        >
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowEdit(true)}
+            className="flex-1 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
+            style={{
+              background: "rgba(255,255,255,0.75)",
+              backdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(212,192,255,0.65)",
+              color: "#2D3748",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 16px rgba(167,139,250,0.08)",
+            }}
+          >
+            Modifier le profil
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowGoals(true)}
+            className="hidden md:flex flex-1 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer items-center justify-center gap-1.5"
+            style={{
+              background: "rgba(255,255,255,0.75)",
+              backdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(212,192,255,0.65)",
+              color: "#2D3748",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 16px rgba(167,139,250,0.08)",
+            }}
+          >
+            <Target size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+            Mes objectifs
+          </motion.button>
+        </motion.div>
+
+        {/* ─── 5. TABS ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.35 }}
+          className="flex gap-1 mb-6 p-1.5 rounded-2xl"
           style={{
-            background: "rgba(255,255,255,0.75)",
-            border: "1.5px solid rgba(212,192,255,0.65)",
-            color: "#2D3748",
+            background: "rgba(255,255,255,0.6)",
+            backdropFilter: "blur(16px)",
+            border: "1px solid rgba(255,255,255,0.85)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-            backdropFilter: "blur(12px)",
           }}
         >
-          Modifier le profil
-        </motion.button>
-
-        {/* Tabs */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.18 }}
-          className="flex gap-1 mb-5 p-1 rounded-2xl"
-          style={{ background: "rgba(240,235,255,0.55)" }}
-        >
-          {(["performances", "seances", "reglages"] as const).map((tab) => (
+          {([
+            { id: "performances" as const, label: "Performances", Icon: Trophy },
+            { id: "seances" as const,      label: "Séances",      Icon: Dumbbell },
+            { id: "reglages" as const,     label: "Réglages",     Icon: Settings2 },
+          ]).map(({ id, label, Icon }) => (
             <motion.button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 relative"
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 relative flex items-center justify-center gap-1.5"
               animate={{
-                background: activeTab === tab
+                background: activeTab === id
                   ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)"
                   : "transparent",
-                color: activeTab === tab ? "#2D3748" : "#A0AEC0",
+                color: activeTab === id ? "#2D3748" : "#A0AEC0",
               }}
               style={{
-                boxShadow: activeTab === tab
-                  ? "inset 0 1px 0 rgba(255,255,255,0.85), 0 2px 8px rgba(167,139,250,0.15)"
+                boxShadow: activeTab === id
+                  ? "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 10px rgba(167,139,250,0.18)"
                   : "none",
               }}
             >
-              {tab === "performances" ? "🏆 Performances" : tab === "seances" ? "📚 Séances" : "⚙️ Réglages"}
-              {tab === "seances" && publishedSessions.length > 0 && (
+              <Icon size={13} strokeWidth={2} />
+              <span>{label}</span>
+              {id === "seances" && publishedSessions.length > 0 && (
                 <span
-                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[8px] font-bold flex items-center justify-center"
+                  className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[8px] font-bold flex items-center justify-center"
                   style={{ background: "#A78BFA", color: "#fff" }}
                 >
                   {publishedSessions.length}
@@ -1132,29 +1311,30 @@ export default function ProfilPage() {
         {activeTab === "performances" ? (
           <motion.div
             key="performances"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.28 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
             className="px-5 md:px-8"
           >
             {/* Mini stats grid */}
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[
-                { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "—", gradient: "linear-gradient(135deg,#FFFBF0 0%,#F5E6A3 100%)", accent: "#D4A843" },
-                { label: "Jours actifs", value: "—", gradient: "linear-gradient(135deg,#F0EBFF 0%,#D4C0FF 100%)", accent: "#A78BFA" },
-                { label: "Score moyen", value: "—", gradient: "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", accent: "#A0AEC0" },
-              ].map(({ label, value, gradient }) => (
+                { label: "Séances",      value: sessionCount !== null ? String(sessionCount) : "—", gradient: "linear-gradient(135deg,#FFFBF0 0%,#F5E6A3 100%)" },
+                { label: "Jours actifs", value: "—",                                                  gradient: "linear-gradient(135deg,#F0EBFF 0%,#D4C0FF 100%)" },
+                { label: "Score moyen",  value: "—",                                                  gradient: "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)" },
+              ].map(({ label, value, gradient }, i) => (
                 <motion.div
                   key={label}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
                   whileHover={{ y: -2, scale: 1.02 }}
                   className="rounded-2xl p-3.5 text-center"
                   style={{
                     background: gradient,
-                    boxShadow: "0 2px 12px rgba(167,139,250,0.08)",
-                    border: "1px solid rgba(255,255,255,0.8)",
+                    boxShadow: "0 4px 24px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+                    border: "1px solid rgba(255,255,255,0.9)",
                   }}
                 >
                   <p className="text-[22px] font-light leading-none" style={{ color: "#2D3748" }}>{value}</p>
@@ -1163,7 +1343,6 @@ export default function ProfilPage() {
               ))}
             </div>
 
-            {/* Performance cards */}
             <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
               Dernières performances
             </p>
@@ -1197,15 +1376,56 @@ export default function ProfilPage() {
                 </motion.div>
               ))}
             </div>
+
+            {/* Objectifs & morphologie card with gradient left stripe */}
+            <motion.button
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowGoals(true)}
+              className="w-full mt-2 mb-2 relative overflow-hidden rounded-2xl flex items-center gap-4 px-5 py-4 cursor-pointer text-left"
+              style={{
+                background: "rgba(255,255,255,0.75)",
+                backdropFilter: "blur(16px)",
+                border: "1px solid rgba(255,255,255,0.9)",
+                boxShadow: "0 4px 24px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+              }}
+            >
+              {/* Gradient left stripe */}
+              <div
+                className="absolute left-0 top-0 bottom-0"
+                style={{
+                  width: 4,
+                  background: "linear-gradient(180deg,#D4C0FF 0%,#F5E6A3 100%)",
+                }}
+              />
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ml-1"
+                style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" }}
+              >
+                <Target size={16} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>Objectifs & morphologie</p>
+                <p className="text-[11px] font-light mt-0.5" style={{ color: "#718096" }}>
+                  {profileMeta.level && LEVEL_META[profileMeta.level]
+                    ? `${LEVEL_META[profileMeta.level].label}${profileMeta.weight ? ` · ${profileMeta.weight} kg` : ""}`
+                    : "Poids, taille, goals, niveau…"}
+                </p>
+              </div>
+              <Pencil size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+            </motion.button>
           </motion.div>
         ) : activeTab === "seances" ? (
           /* ── Séances publiées ── */
           <motion.div
             key="seances"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.28 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
             className="px-5 md:px-8"
           >
             {publishedSessions.length === 0 ? (
@@ -1351,10 +1571,10 @@ export default function ProfilPage() {
         ) : (
           <motion.div
             key="reglages"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.28 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3 }}
             className="px-5 md:px-8 flex flex-col gap-4"
           >
             {/* Objectifs & morphologie */}
