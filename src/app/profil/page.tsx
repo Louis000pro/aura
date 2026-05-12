@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,52 +8,28 @@ import {
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings,
 } from "lucide-react";
+
+/* ─────────────── Tab data types ─────────────── */
+type UserPost = {
+  id: string;
+  type: string;
+  caption: string | null;
+  performance_data: Record<string, unknown> | null;
+  created_at: string;
+  user_id: string;
+};
+type WorkoutSessionItem = {
+  id: string;
+  title: string | null;
+  started_at: string | null;
+};
 import NotificationBell from "@/components/NotificationBell";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
-import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
-import SharePerformanceModal from "@/components/SharePerformanceModal";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
 import { createClient } from "@/lib/supabase";
-
-/* ─────────────── Sample data ─────────────── */
-const samplePerformances: PerformanceData[] = [
-  {
-    type: "workout",
-    title: "Push Day · Poitrine & Épaules",
-    date: "Aujourd'hui",
-    metrics: [
-      { label: "Volume", value: "12 400", unit: "kg" },
-      { label: "Durée", value: "58", unit: "min" },
-      { label: "Séries", value: "24" },
-    ],
-    highlight: "Record personnel sur développé couché 🎯",
-  },
-  {
-    type: "day",
-    title: "Journée optimale",
-    date: "Hier",
-    metrics: [
-      { label: "Score", value: "91", unit: "/100" },
-      { label: "Calories", value: "1 847", unit: "kcal" },
-      { label: "Pas", value: "8 200" },
-    ],
-    highlight: "Meilleure récupération du mois",
-  },
-  {
-    type: "meal",
-    title: "Nutrition parfaite",
-    date: "Aujourd'hui",
-    metrics: [
-      { label: "Calories", value: "1 847", unit: "kcal" },
-      { label: "Protéines", value: "142", unit: "g" },
-      { label: "Glucides", value: "210", unit: "g" },
-    ],
-    highlight: "Objectif protéines atteint ✓",
-  },
-];
 
 /* ─────────────── Toast ─────────────── */
 function Toast({ message }: { message: string }) {
@@ -814,7 +790,6 @@ export default function ProfilPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
-  const [notifEnabled, setNotifEnabled] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
@@ -823,10 +798,10 @@ export default function ProfilPage() {
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
-  const [shareData, setShareData] = useState<PerformanceData | null>(null);
   const [showGoals, setShowGoals] = useState(false);
-  const [publishedSessions, setPublishedSessions] = useState<PublishedSession[]>([]);
-  const [profilActiveWorkout, setProfilActiveWorkout] = useState<PublishedSession | null>(null);
+  const [userPosts, setUserPosts] = useState<UserPost[]>([]);
+  const [savedPosts, setSavedPosts] = useState<UserPost[]>([]);
+  const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
   const { settings, updateSettings } = useProfileSettings();
 
   /* Fetch profile + stats */
@@ -859,19 +834,39 @@ export default function ProfilPage() {
     });
   }, [user?.id]);
 
-  const fetchPublishedSessions = useCallback(async () => {
+  useEffect(() => {
     if (!user?.id) return;
     const supabase = createClient();
-    const { data } = await supabase
-      .from("custom_sessions")
-      .select("*")
-      .eq("user_id", user.id)
-      .in("visibility", ["friends", "public"])
-      .order("created_at", { ascending: false });
-    if (data) setPublishedSessions(data as PublishedSession[]);
-  }, [user?.id]);
 
-  useEffect(() => { fetchPublishedSessions(); }, [fetchPublishedSessions]);
+    // Publications : posts de l'utilisateur
+    supabase
+      .from("posts")
+      .select("id, type, caption, performance_data, created_at, user_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) setUserPosts(data as UserPost[]); });
+
+    // Vidéos enregistrées : posts que l'user a likés
+    supabase
+      .from("post_likes")
+      .select("post_id, posts!post_id(id, type, caption, performance_data, created_at, user_id)")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) {
+          const posts = data.map((d: { posts: UserPost }) => d.posts).filter(Boolean);
+          setSavedPosts(posts);
+        }
+      });
+
+    // Séances enregistrées : workout sessions
+    supabase
+      .from("workout_sessions")
+      .select("id, title, started_at")
+      .eq("user_id", user.id)
+      .order("started_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => { if (data) setWorkoutSessions(data as WorkoutSessionItem[]); });
+  }, [user?.id]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -984,21 +979,14 @@ export default function ProfilPage() {
                 border: "2.5px solid white",
               }}
             >
-              <Camera size={13} strokeWidth={2.2} style={{ color: "#2D3748" }} />
+              <Pencil size={13} strokeWidth={2.2} style={{ color: "#2D3748" }} />
             </div>
           </motion.div>
 
           {/* Pseudo — bold, impactful */}
           <h1
-            className="text-[28px] tracking-tight leading-none"
-            style={{
-              fontWeight: 900,
-              background: "linear-gradient(135deg,#2D3748 0%,#4A3F7A 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              letterSpacing: "-0.02em",
-            }}
+            className="text-[28px] font-black tracking-[-0.03em] leading-none"
+            style={{ color: "#1A202C" }}
           >
             {displayPseudo}
           </h1>
@@ -1051,27 +1039,6 @@ export default function ProfilPage() {
           ))}
         </motion.div>
 
-        {/* Modifier le profil */}
-        <motion.button
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.38, delay: 0.15 }}
-          whileHover={{ scale: 1.01, boxShadow: "0 6px 24px rgba(167,139,250,0.2)" }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setShowEdit(true)}
-          className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mb-6"
-          style={{
-            background: "rgba(255,255,255,0.8)",
-            border: "1.5px solid rgba(167,139,250,0.4)",
-            color: "#5A4A8A",
-            boxShadow: "0 2px 12px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.95)",
-            backdropFilter: "blur(12px)",
-            letterSpacing: "0.01em",
-          }}
-        >
-          Modifier le profil
-        </motion.button>
-
         {/* ─── Tabs ─── */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -1123,34 +1090,37 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-lg mx-auto"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.05 }}
-              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-              style={{
-                background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)",
-                border: "1.5px dashed rgba(167,139,250,0.25)",
-                backdropFilter: "blur(12px)",
-              }}
-            >
-              <div
-                className="w-20 h-20 rounded-3xl flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)",
-                  boxShadow: "0 8px 32px rgba(167,139,250,0.15)",
-                  border: "1px solid rgba(212,192,255,0.3)",
-                }}
+            {userPosts.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
               >
-                <span className="text-3xl">📸</span>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  <span className="text-3xl">📸</span>
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1">
+                {userPosts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    className="aspect-square rounded-lg overflow-hidden flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(255,255,255,0.5)" }}
+                    whileHover={{ scale: 0.97 }}
+                  >
+                    <div className="text-center p-2">
+                      <p className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>{post.caption || post.type}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-              <div className="text-center px-8">
-                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
-                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>
-                  Tes publications apparaîtront ici dès que tu en partageras une.
-                </p>
-              </div>
-            </motion.div>
+            )}
           </motion.div>
         )}
 
@@ -1163,34 +1133,37 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-lg mx-auto"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.05 }}
-              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-              style={{
-                background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)",
-                border: "1.5px dashed rgba(167,139,250,0.25)",
-                backdropFilter: "blur(12px)",
-              }}
-            >
-              <div
-                className="w-20 h-20 rounded-3xl flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)",
-                  boxShadow: "0 8px 32px rgba(167,139,250,0.15)",
-                  border: "1px solid rgba(212,192,255,0.3)",
-                }}
+            {savedPosts.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
               >
-                <span className="text-3xl">🎥</span>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  <span className="text-3xl">🎥</span>
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo enregistrée</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les vidéos que tu enregistreras s&apos;afficheront ici automatiquement.</p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1">
+                {savedPosts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    className="aspect-square rounded-lg overflow-hidden flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(255,255,255,0.5)" }}
+                    whileHover={{ scale: 0.97 }}
+                  >
+                    <div className="text-center p-2">
+                      <p className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>{post.caption || post.type}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-              <div className="text-center px-8">
-                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo enregistrée</p>
-                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>
-                  Les vidéos que tu enregistreras s'afficheront ici automatiquement.
-                </p>
-              </div>
-            </motion.div>
+            )}
           </motion.div>
         )}
 
@@ -1203,34 +1176,44 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-lg mx-auto"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.05 }}
-              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-              style={{
-                background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)",
-                border: "1.5px dashed rgba(167,139,250,0.25)",
-                backdropFilter: "blur(12px)",
-              }}
-            >
-              <div
-                className="w-20 h-20 rounded-3xl flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)",
-                  boxShadow: "0 8px 32px rgba(167,139,250,0.15)",
-                  border: "1px solid rgba(212,192,255,0.3)",
-                }}
+            {workoutSessions.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
               >
-                <span className="text-3xl">🏋️</span>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  <span className="text-3xl">🏋️</span>
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes séances enregistrées apparaîtront ici une fois complétées.</p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {workoutSessions.map((session) => (
+                  <motion.div
+                    key={session.id}
+                    className="flex items-center gap-4 px-4 py-3.5 rounded-2xl"
+                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 12px rgba(167,139,250,0.06)" }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                      <Dumbbell size={16} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: "#1A202C" }}>{session.title || "Séance"}</p>
+                      <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                        {session.started_at ? new Date(session.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Date inconnue"}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-              <div className="text-center px-8">
-                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
-                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>
-                  Tes séances enregistrées apparaîtront ici une fois complétées.
-                </p>
-              </div>
-            </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1262,13 +1245,6 @@ export default function ProfilPage() {
         {toast && <Toast message={toast} />}
       </AnimatePresence>
 
-      {shareData && (
-        <SharePerformanceModal
-          open={true}
-          onClose={() => setShareData(null)}
-          data={shareData}
-        />
-      )}
     </div>
   );
 }
