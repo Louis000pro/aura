@@ -19,7 +19,7 @@ import SharePerformanceModal from "@/components/SharePerformanceModal";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
 import { createClient } from "@/lib/supabase";
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Sample data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Sample data â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 const samplePerformances: PerformanceData[] = [
   {
     type: "workout",
@@ -52,11 +52,11 @@ const samplePerformances: PerformanceData[] = [
       { label: "ProtÃ©ines", value: "142", unit: "g" },
       { label: "Glucides", value: "210", unit: "g" },
     ],
-    highlight: "Objectif protÃ©ines atteint âœ“",
+    highlight: "Objectif protéines atteint ✓",
   },
 ];
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Toast â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 function Toast({ message }: { message: string }) {
   return (
     <motion.div
@@ -80,7 +80,7 @@ function Toast({ message }: { message: string }) {
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Edit Profile Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Edit Profile Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 function EditProfileModal({
   pseudo, fullName, bio, avatarUrl, userId, onSave, onClose,
 }: {
@@ -295,7 +295,7 @@ function EditProfileModal({
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Follow List Modal (vraies donnÃ©es Supabase) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Follow List Modal (vraies donnÃ©es Supabase) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 type RealFollowUser = {
   id: string;
   pseudo: string;
@@ -463,10 +463,10 @@ function FollowListModal({ type, userId, onClose }: { type: "AbonnÃ©s" | "Abon
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Goals Edit Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Goals Edit Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 const GOALS_LIST = [
   { id: "masse",     label: "Prise de masse",  emoji: "ðŸ’ª" },
-  { id: "poids",     label: "Perte de poids",  emoji: "ðŸ”¥" },
+  { id: "poids",     label: "Perte de poids",  emoji: "🔥" },
   { id: "force",     label: "Force",            emoji: "ðŸ‹ï¸" },
   { id: "endurance", label: "Endurance",        emoji: "âš¡" },
   { id: "sante",     label: "SantÃ© gÃ©nÃ©rale",   emoji: "ðŸŒ¿" },
@@ -474,7 +474,7 @@ const GOALS_LIST = [
 ];
 const LEVELS_LIST = [
   { id: "debutant",      label: "DÃ©butant",      sub: "< 6 mois" },
-  { id: "intermediaire", label: "IntermÃ©diaire", sub: "6 mois â€“ 2 ans" },
+  { id: "intermediaire", label: "IntermÃ©diaire", sub: "6 mois — 2 ans" },
   { id: "avance",        label: "AvancÃ©",        sub: "> 2 ans" },
 ];
 const DIETS_LIST = [
@@ -767,7 +767,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Privacy Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Privacy Modal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 function PrivacyModal({ onClose }: { onClose: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
@@ -831,7 +831,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Published session types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Published session types â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 type PublishedSession = {
   id: string;
   title: string;
@@ -859,11 +859,11 @@ const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: str
   public:  { label: "Public", icon: Globe,  color: "#34D399" },
 };
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Stories Ã  la une â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Stories Ã  la une â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 const DEFAULT_STORIES = [
   { id: "sport",   emoji: "ðŸ‹ï¸", label: "Sport" },
   { id: "nutri",   emoji: "ðŸ¥—", label: "Nutrition" },
-  { id: "prog",    emoji: "ðŸ“ˆ", label: "ProgrÃ¨s" },
+  { id: "prog",    emoji: "📈", label: "Progrès" },
   { id: "cardio",  emoji: "ðŸƒ", label: "Cardio" },
 ];
 
@@ -928,7 +928,7 @@ function StoriesHighlights({ userId, onEdit }: { userId: string; onEdit: () => v
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ Main Page â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€ */
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
   const router = useRouter();
@@ -1059,7 +1059,7 @@ export default function ProfilPage() {
     setProfileBio(newBio);
     setProfileAvatar(newAvatar);
     setShowEdit(false);
-    showToast("Profil mis Ã  jour âœ“");
+    showToast("Profil mis à jour ✓");
     // RafraÃ®chit le user dans le contexte (nav, initiale, avatar partout)
     void refreshProfile();
   };
@@ -1067,7 +1067,7 @@ export default function ProfilPage() {
   const displayPseudo = profilePseudo || user?.pseudo || "";
   const displayAvatar = profileAvatar || user?.avatar || "";
 
-  /* â”€â”€â”€ Badge helpers â”€â”€â”€ */
+  /* â"€â"€â"€ Badge helpers â"€â"€â"€ */
   const LEVEL_META: Record<string, { label: string; bg: string; color: string; border: string }> = {
     debutant:      { label: "DÃ©butant",      bg: "rgba(52,211,153,0.14)",  color: "#059669", border: "rgba(52,211,153,0.35)" },
     intermediaire: { label: "IntermÃ©diaire", bg: "rgba(167,139,250,0.16)", color: "#7C5CFA", border: "rgba(167,139,250,0.38)" },
@@ -1075,21 +1075,21 @@ export default function ProfilPage() {
   };
   const GOAL_META: Record<string, string> = {
     masse: "ðŸ’ª Masse",
-    poids: "ðŸ”¥ Poids",
+    poids: "🔥 Poids",
     force: "âš¡ Force",
     endurance: "ðŸŒŠ Endurance",
     sante: "ðŸŒ¿ SantÃ©",
     souplesse: "ðŸ§˜ Souplesse",
     prise_de_masse: "ðŸ’ª Masse",
-    perte_de_poids: "ðŸ”¥ Poids",
+    perte_de_poids: "🔥 Poids",
   };
   const hasMeta = !!profileMeta.level || profileMeta.goals.length > 0 || !!profileMeta.weight;
 
   return (
     <div className="min-h-screen pb-28">
 
-      {/* â”€â”€â”€ Notifs + Settings â€” top right du profil â”€â”€â”€ */}
-      <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
+      {/* Notifs + Settings — top LEFT du profil */}
+      <div className="absolute top-4 left-4 md:left-[100px] z-40 flex items-center gap-2">
         <NotificationBell side="bottom" />
         <Link href="/parametres">
           <motion.div
@@ -1102,7 +1102,7 @@ export default function ProfilPage() {
         </Link>
       </div>
 
-      {/* â”€â”€â”€ Header Instagram-style â”€â”€â”€ */}
+      {/* â"€â"€â"€ Header Instagram-style â"€â"€â"€ */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
         className="px-5 md:px-10 pt-10 pb-6 max-w-3xl mx-auto"
@@ -1134,7 +1134,7 @@ export default function ProfilPage() {
 
             {/* Pseudo + bouton modifier */}
             <div className="flex items-center gap-3 flex-wrap justify-center md:justify-start">
-              <h1 className="text-[20px] font-semibold tracking-tight" style={{ color: "#2D3748" }}>{displayPseudo}</h1>
+              <h1 className="text-[26px] font-semibold tracking-tight" style={{ color: "#2D3748" }}>{displayPseudo}</h1>
               <motion.button
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                 onClick={() => setShowEdit(true)}
@@ -1148,9 +1148,9 @@ export default function ProfilPage() {
             {/* Stats: publications Â· abonnÃ©s Â· abonnements */}
             <div className="flex items-center gap-6 text-sm">
               {[
-                { val: postCount !== null ? postCount : "â€”", label: "publications", clickable: false },
-                { val: followerCount !== null ? followerCount : "â€”", label: "abonnÃ©s", clickable: true },
-                { val: followingCount !== null ? followingCount : "â€”", label: "abonnements", clickable: true },
+                { val: postCount !== null ? postCount : "—", label: "publications", clickable: false },
+                { val: followerCount !== null ? followerCount : "—", label: "abonnÃ©s", clickable: true },
+                { val: followingCount !== null ? followingCount : "—", label: "abonnements", clickable: true },
               ].map(({ val, label, clickable }) => (
                 <motion.button key={label}
                   whileHover={clickable ? { scale: 1.05 } : {}} whileTap={clickable ? { scale: 0.93 } : {}}
@@ -1184,29 +1184,23 @@ export default function ProfilPage() {
                     {GOAL_META[g] ?? g}
                   </span>
                 ))}
-                {profileMeta.weight && (
-                  <span className="px-2.5 py-1 rounded-full text-[11px] font-medium"
-                    style={{ background: "rgba(245,230,163,0.3)", color: "#B8881F", border: "1px solid rgba(212,168,67,0.3)" }}>
-                    âš–ï¸ {profileMeta.weight} kg
-                  </span>
-                )}
               </div>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* â”€â”€â”€ Stories Ã  la une â”€â”€â”€ */}
+      {/* â"€â"€â"€ Stories Ã  la une â"€â"€â"€ */}
       <div style={{ borderTop: "1px solid rgba(240,235,255,0.9)", borderBottom: "1px solid rgba(240,235,255,0.9)" }}>
         <StoriesHighlights userId={user?.id ?? ""} onEdit={() => setShowEdit(true)} />
       </div>
 
-      {/* â”€â”€â”€ Onglets icÃ´nes â”€â”€â”€ */}
+      {/* â"€â"€â"€ Onglets icÃ´nes â"€â"€â"€ */}
       <div className="flex justify-center" style={{ borderBottom: "1px solid rgba(240,235,255,0.9)" }}>
         {([
           { id: "posts" as const,  Icon: LayoutGrid, label: "Publications" },
-          { id: "liked" as const,  Icon: Heart,       label: "J'aime" },
-          { id: "saved" as const,  Icon: Bookmark,    label: "EnregistrÃ©s" },
+          { id: "liked" as const,  Icon: Heart,       label: "Vidéos enregistrées" },
+          { id: "saved" as const,  Icon: Bookmark,    label: "Séances enregistrées" },
         ]).map(({ id, Icon, label }) => (
           <motion.button
             key={id}
@@ -1230,7 +1224,7 @@ export default function ProfilPage() {
         ))}
       </div>
 
-      {/* â”€â”€â”€ Contenu des onglets â”€â”€â”€ */}
+      {/* â"€â"€â"€ Contenu des onglets â"€â"€â"€ */}
       <AnimatePresence mode="wait">
 
         {/* PUBLICATIONS */}
@@ -1322,11 +1316,11 @@ export default function ProfilPage() {
 
       </AnimatePresence>
 
-      {/* â”€â”€ Dummy section kept for unused state to avoid lint errors â”€â”€ */}
+      {/* â"€â"€ Dummy section kept for unused state to avoid lint errors â"€â"€ */}
       {false && <>{activeTab === "posts" && publishedSessions.length > -1 && profilActiveWorkout}</>}
 
 
-      {/* â”€â”€ Modals â”€â”€ */}
+      {/* â"€â"€ Modals â"€â"€ */}
       <AnimatePresence>
         {showEdit && user && (
           <EditProfileModal
@@ -1344,7 +1338,7 @@ export default function ProfilPage() {
           <GoalsEditModal
             pseudo={displayPseudo}
             onClose={() => setShowGoals(false)}
-            onSave={() => showToast("Objectifs mis Ã  jour âœ“")}
+            onSave={() => showToast("Objectifs mis à jour ✓")}
           />
         )}
         {showFollowList && user && (
