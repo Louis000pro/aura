@@ -924,7 +924,7 @@ export default function ProfilPage() {
       </div>
 
       {/* ─── Header ─── */}
-      <div className="relative z-10 pt-12 px-5 md:px-8 max-w-2xl mx-auto">
+      <div className="relative z-10 pt-12 px-5 md:px-8 max-w-3xl mx-auto">
 
         {/* Avatar + pseudo + bio */}
         <motion.div
@@ -944,7 +944,7 @@ export default function ProfilPage() {
               height: 108,
               borderRadius: "50%",
               padding: 3,
-              background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 50%,#A8D8FF 100%)",
+              background: "linear-gradient(135deg,#C4A8FF 0%,#D4C0FF 50%,#F5E6A3 100%)",
               boxShadow: "0 12px 40px rgba(167,139,250,0.35), 0 0 0 1px rgba(255,255,255,0.6)",
             }}
           >
@@ -952,7 +952,7 @@ export default function ProfilPage() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 50%,#A8D8FF 100%)",
+                background: "linear-gradient(135deg,#C4A8FF 0%,#D4C0FF 50%,#F5E6A3 100%)",
                 filter: "blur(8px)",
                 opacity: 0.4,
                 transform: "scale(1.08)",
@@ -1088,7 +1088,7 @@ export default function ProfilPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-2xl mx-auto"
+            className="px-5 md:px-8 max-w-3xl mx-auto"
           >
             {userPosts.length === 0 ? (
               <motion.div
@@ -1131,7 +1131,7 @@ export default function ProfilPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-2xl mx-auto"
+            className="px-5 md:px-8 max-w-3xl mx-auto"
           >
             {savedPosts.length === 0 ? (
               <motion.div
@@ -1174,7 +1174,7 @@ export default function ProfilPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-2xl mx-auto"
+            className="px-5 md:px-8 max-w-3xl mx-auto"
           >
             {workoutSessions.length === 0 ? (
               <motion.div
