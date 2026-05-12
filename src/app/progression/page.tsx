@@ -229,15 +229,34 @@ function WeightChart({
   const prev    = pts.at(-2)?.weight ?? null;
   const trend   = current !== null && prev !== null ? +(current - prev).toFixed(1) : null;
 
-  const W = 300, H = 90, PX = 14, PY = 10;
+  const W = 300, H = 90, PX = 28, PY = 10, PB = 18;
   const ws   = pts.map(p => p.weight);
   const minW = ws.length > 0 ? Math.min(...ws) - 1.5 : 60;
   const maxW = ws.length > 0 ? Math.max(...ws) + 1.5 : 90;
 
   const tx = (i: number) =>
-    pts.length < 2 ? W / 2 : PX + (i / (pts.length - 1)) * (W - 2 * PX);
+    pts.length < 2 ? W / 2 : PX + (i / (pts.length - 1)) * (W - PX - 8);
   const ty = (w: number) =>
-    PY + ((maxW - w) / (maxW - minW)) * (H - 2 * PY);
+    PY + ((maxW - w) / (maxW - minW)) * (H - PY - PB);
+
+  // Quadrillage : 3 lignes horizontales (min, mid, max)
+  const yGridValues = [
+    minW + 1.5,
+    (minW + maxW) / 2,
+    maxW - 1.5,
+  ];
+
+  // Labels abscisse : tous les pts en 7j, tous les 5 en 30j
+  const xStep = range === "week" ? 1 : Math.ceil(pts.length / 6);
+  const xLabelIndices = pts.map((_, i) => i).filter(i => i % xStep === 0 || i === pts.length - 1);
+
+  const fmtDay = (dateStr: string) => {
+    const d = new Date(dateStr + "T12:00:00");
+    const days = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
+    return range === "week"
+      ? days[d.getDay()]
+      : String(d.getDate());
+  };
 
   let linePath = "", areaPath = "";
   if (pts.length >= 2) {
@@ -338,6 +357,35 @@ function WeightChart({
               <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.01" />
             </linearGradient>
           </defs>
+
+          {/* ── Quadrillage horizontal (ordonnée) ── */}
+          {yGridValues.map((w, i) => {
+            const y = ty(w);
+            return (
+              <g key={i}>
+                <line x1={PX} y1={y} x2={W - 8} y2={y}
+                  stroke="rgba(160,174,192,0.18)" strokeWidth="1" strokeDasharray="3 3" />
+                <text x={PX - 4} y={y + 3.5} textAnchor="end" fontSize="7.5" fill="rgba(160,174,192,0.7)" fontWeight="500">
+                  {w.toFixed(1)}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* ── Quadrillage vertical (abscisse) ── */}
+          {xLabelIndices.map((i) => {
+            const x = tx(i);
+            return (
+              <g key={i}>
+                <line x1={x} y1={PY} x2={x} y2={H - PB}
+                  stroke="rgba(160,174,192,0.18)" strokeWidth="1" strokeDasharray="3 3" />
+                <text x={x} y={H - 4} textAnchor="middle" fontSize="7.5" fill="rgba(160,174,192,0.7)" fontWeight="500">
+                  {fmtDay(pts[i].date)}
+                </text>
+              </g>
+            );
+          })}
+
           {areaPath && <path d={areaPath} fill="url(#wGrad)" />}
           {linePath && <path d={linePath} fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
           {pts.map((p, i) => (
