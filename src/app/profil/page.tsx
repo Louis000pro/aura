@@ -785,15 +785,18 @@ const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: str
 type Highlight = { id: string; name: string; coverUrl: string };
 
 /* ─────────────── New Highlight Modal ─────────────── */
-function NewHighlightModal({ userId, onSave, onClose }: {
+function NewHighlightModal({ userId, initial, onSave, onDelete, onClose }: {
   userId: string;
+  initial?: Highlight;
   onSave: (h: Highlight) => void;
+  onDelete?: () => void;
   onClose: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [coverUrl, setCoverUrl] = useState(initial?.coverUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const coverRef = useRef<HTMLInputElement>(null);
+  const isEdit = !!initial;
 
   const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -815,8 +818,7 @@ function NewHighlightModal({ userId, onSave, onClose }: {
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({ id: Date.now().toString(), name: name.trim(), coverUrl });
-    onClose();
+    onSave({ id: initial?.id ?? Date.now().toString(), name: name.trim(), coverUrl });
   };
 
   return (
@@ -839,7 +841,7 @@ function NewHighlightModal({ userId, onSave, onClose }: {
         </div>
 
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "#1A202C" }}>Nouvelle catégorie</h2>
+          <h2 className="text-base font-black tracking-tight" style={{ color: "#1A202C" }}>{isEdit ? "Modifier la catégorie" : "Nouvelle catégorie"}</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
             style={{ background: "rgba(240,235,255,0.8)" }}>
@@ -908,8 +910,20 @@ function NewHighlightModal({ userId, onSave, onClose }: {
             boxShadow: name.trim() ? "0 4px 18px rgba(167,139,250,0.3)" : "none",
           }}
         >
-          Créer la catégorie
+          {isEdit ? "Enregistrer" : "Créer la catégorie"}
         </motion.button>
+
+        {/* Supprimer (mode édition) */}
+        {isEdit && onDelete && (
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onDelete}
+            className="w-full py-3 mt-2 rounded-2xl text-sm font-semibold cursor-pointer"
+            style={{ color: "#E53E3E", background: "rgba(229,62,62,0.07)", border: "1px solid rgba(229,62,62,0.15)" }}
+          >
+            Supprimer la catégorie
+          </motion.button>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -925,6 +939,7 @@ export default function ProfilPage() {
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [showNewHighlight, setShowNewHighlight] = useState(false);
+  const [editHighlight, setEditHighlight] = useState<Highlight | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>(() => {
     if (typeof window === "undefined") return [];
     try { return JSON.parse(localStorage.getItem("aura_highlights") ?? "[]"); } catch { return []; }
@@ -1032,6 +1047,22 @@ export default function ProfilPage() {
     setHighlights(updated);
     localStorage.setItem("aura_highlights", JSON.stringify(updated));
     showToast("Catégorie créée ✓");
+  };
+
+  const handleUpdateHighlight = (updated: Highlight) => {
+    const list = highlights.map((h) => h.id === updated.id ? updated : h);
+    setHighlights(list);
+    localStorage.setItem("aura_highlights", JSON.stringify(list));
+    setEditHighlight(null);
+    showToast("Catégorie modifiée ✓");
+  };
+
+  const handleDeleteHighlight = (id: string) => {
+    const list = highlights.filter((h) => h.id !== id);
+    setHighlights(list);
+    localStorage.setItem("aura_highlights", JSON.stringify(list));
+    setEditHighlight(null);
+    showToast("Catégorie supprimée");
   };
 
   const displayPseudo = profilePseudo || user?.pseudo || "";
@@ -1214,30 +1245,44 @@ export default function ProfilPage() {
 
           {/* Highlights créés */}
           {highlights.map((h, i) => (
-            <motion.button
+            <motion.div
               key={h.id}
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.93 }}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 relative group"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.06, type: "spring", bounce: 0.4 }}
             >
-              <div
-                className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(white,white) padding-box, linear-gradient(135deg,#C4A8FF,#F5E6A3) border-box",
-                  border: "2.5px solid transparent",
-                  boxShadow: "0 3px 14px rgba(167,139,250,0.18)",
-                }}
+              <motion.div
+                whileHover={{ scale: 1.06 }}
+                whileTap={{ scale: 0.93 }}
+                className="relative cursor-pointer"
               >
-                {h.coverUrl
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={h.coverUrl} alt={h.name} className="w-full h-full object-cover" />
-                  : <span className="text-2xl">{h.name.charAt(0).toUpperCase()}</span>}
-              </div>
+                <div
+                  className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(white,white) padding-box, linear-gradient(135deg,#C4A8FF,#F5E6A3) border-box",
+                    border: "2.5px solid transparent",
+                    boxShadow: "0 3px 14px rgba(167,139,250,0.18)",
+                  }}
+                >
+                  {h.coverUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={h.coverUrl} alt={h.name} className="w-full h-full object-cover" />
+                    : <span className="text-2xl">{h.name.charAt(0).toUpperCase()}</span>}
+                </div>
+                {/* Bouton édition — visible au hover */}
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  whileHover={{ opacity: 1, scale: 1 }}
+                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background: "linear-gradient(135deg,#C4A8FF,#F5E6A3)", boxShadow: "0 1px 6px rgba(167,139,250,0.4)" }}
+                  onClick={() => setEditHighlight(h)}
+                >
+                  <Pencil size={9} strokeWidth={2.5} style={{ color: "#3D2F6B" }} />
+                </motion.button>
+              </motion.div>
               <span className="text-[10px] font-semibold max-w-[64px] truncate text-center" style={{ color: "#718096", letterSpacing: "0.02em" }}>{h.name}</span>
-            </motion.button>
+            </motion.div>
           ))}
         </motion.div>
 
@@ -1246,35 +1291,31 @@ export default function ProfilPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-1.5 mb-6 p-1.5 rounded-2xl"
+          className="flex gap-1 mb-6 p-1 rounded-2xl"
           style={{
             background: "rgba(240,235,255,0.6)",
             border: "1px solid rgba(212,192,255,0.2)",
           }}
         >
           {([
-            { id: "performances" as const, emoji: "📸", label: "Publications" },
-            { id: "seances"      as const, emoji: "🎥", label: "Vidéos" },
-            { id: "reglages"     as const, emoji: "🏋️", label: "Séances" },
+            { id: "performances" as const, emoji: "🖼", label: "Publications" },
+            { id: "seances"      as const, emoji: "▶", label: "Vidéos" },
+            { id: "reglages"     as const, emoji: "💪", label: "Séances" },
           ]).map(({ id, emoji, label }) => (
             <motion.button
               key={id}
               onClick={() => setActiveTab(id)}
-              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold cursor-pointer flex flex-col items-center gap-0.5 relative"
+              className="flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"
               animate={{
-                background: activeTab === id
-                  ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)"
-                  : "transparent",
+                background: activeTab === id ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "transparent",
                 color: activeTab === id ? "#3D2F6B" : "#A0AEC0",
               }}
               style={{
-                boxShadow: activeTab === id
-                  ? "0 3px 12px rgba(167,139,250,0.22), inset 0 1px 0 rgba(255,255,255,0.9)"
-                  : "none",
+                boxShadow: activeTab === id ? "0 2px 10px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
                 letterSpacing: "0.02em",
               }}
             >
-              <span className="text-base leading-none">{emoji}</span>
+              <span className="text-sm leading-none">{emoji}</span>
               <span>{label}</span>
             </motion.button>
           ))}
@@ -1446,6 +1487,15 @@ export default function ProfilPage() {
             userId={user.id}
             onSave={handleAddHighlight}
             onClose={() => setShowNewHighlight(false)}
+          />
+        )}
+        {editHighlight && user && (
+          <NewHighlightModal
+            userId={user.id}
+            initial={editHighlight}
+            onSave={handleUpdateHighlight}
+            onDelete={() => handleDeleteHighlight(editHighlight.id)}
+            onClose={() => setEditHighlight(null)}
           />
         )}
         {showFollowList && user && (
