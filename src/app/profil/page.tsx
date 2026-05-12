@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
-  ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight,
+  ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings,
 } from "lucide-react";
 
@@ -1036,6 +1036,62 @@ export default function ProfilPage() {
                 </span>
               </motion.button>
             </div>
+          ))}
+        </motion.div>
+
+        {/* ─── Stories à la une ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.17 }}
+          className="flex items-center gap-4 mb-5 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {/* Bouton Nouveau */}
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.93 }}
+            className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+          >
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{
+                background: "rgba(255,255,255,0.85)",
+                border: "2px dashed rgba(167,139,250,0.4)",
+                boxShadow: "0 2px 12px rgba(167,139,250,0.1)",
+              }}
+            >
+              <Plus size={22} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+            </div>
+            <span className="text-[10px] font-semibold" style={{ color: "#A0AEC0", letterSpacing: "0.02em" }}>Nouveau</span>
+          </motion.button>
+
+          {/* Stories placeholder */}
+          {["Sport", "Nutri", "Progrès"].map((label, i) => (
+            <motion.button
+              key={label}
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.93 }}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.18 + i * 0.05 }}
+            >
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg,rgba(212,192,255,0.35) 0%,rgba(245,230,163,0.3) 100%)",
+                  border: "2px solid rgba(255,255,255,0.9)",
+                  boxShadow: "0 2px 12px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  padding: 2,
+                  background: `linear-gradient(white,white) padding-box, linear-gradient(135deg,#C4A8FF,#F5E6A3) border-box`,
+                  borderColor: "transparent",
+                }}
+              >
+                <span className="text-xl">{["🏋️","🥗","📈"][i]}</span>
+              </div>
+              <span className="text-[10px] font-semibold" style={{ color: "#718096", letterSpacing: "0.02em" }}>{label}</span>
+            </motion.button>
           ))}
         </motion.div>
 
