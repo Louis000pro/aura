@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Users, User, LogIn, LogOut,
-  Settings, Shield, Plus, Utensils, Bot, ChevronRight,
+  Settings, Shield, Plus, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -15,8 +15,6 @@ import { createClient } from "@/lib/supabase";
 
 const TABS = [
   { href: "/",           label: "Accueil",    icon: Home },
-  { href: "/nutrition",  label: "Nutrition",  icon: Utensils },
-  { href: "/coach",      label: "Coach IA",   icon: Bot },
   { href: "/progression",label: "Progression",icon: TrendingUp },
   { href: "/communaute", label: "Communauté", icon: Users },
   { href: "/profil",     label: "Profil",     icon: User },
