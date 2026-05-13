@@ -212,6 +212,132 @@ const CHART_CARD = {
   boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
 };
 
+/* ─── WheelDatePicker ───────────────────────────────────── */
+const ITEM_H    = 36;
+const W_VISIBLE = 5;
+const W_PAD     = Math.floor(W_VISIBLE / 2); // 2
+const FR_MONTHS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+
+function WheelCol({ items, selectedIdx, onSelect }: {
+  items: string[];
+  selectedIdx: number;
+  onSelect: (i: number) => void;
+}) {
+  const ref          = useRef<HTMLDivElement>(null);
+  const scrollingRef = useRef(false);
+  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Scroll to selected on mount (instant) and on external change (smooth)
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = selectedIdx * ITEM_H;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (ref.current && !scrollingRef.current)
+      ref.current.scrollTo({ top: selectedIdx * ITEM_H, behavior: "smooth" });
+  }, [selectedIdx]);
+
+  const handleScroll = () => {
+    if (!ref.current) return;
+    scrollingRef.current = true;
+    onSelect(Math.max(0, Math.min(Math.round(ref.current.scrollTop / ITEM_H), items.length - 1)));
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => { scrollingRef.current = false; }, 200);
+  };
+
+  return (
+    <div className="relative flex-1" style={{ height: W_VISIBLE * ITEM_H }}>
+      {/* Barre centrale */}
+      <div className="absolute inset-x-1 pointer-events-none z-10 rounded-xl"
+        style={{ top: W_PAD * ITEM_H, height: ITEM_H, background: "rgba(167,139,250,0.13)", border: "1px solid rgba(167,139,250,0.3)" }} />
+      {/* Fondu haut */}
+      <div className="absolute top-0 inset-x-0 pointer-events-none z-20"
+        style={{ height: W_PAD * ITEM_H, background: "linear-gradient(to bottom,rgba(255,255,255,0.97),transparent)" }} />
+      {/* Fondu bas */}
+      <div className="absolute bottom-0 inset-x-0 pointer-events-none z-20"
+        style={{ height: W_PAD * ITEM_H, background: "linear-gradient(to top,rgba(255,255,255,0.97),transparent)" }} />
+      <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-scroll"
+        style={{ scrollSnapType: "y mandatory", scrollbarWidth: "none" } as React.CSSProperties}>
+        {Array(W_PAD).fill(0).map((_, i) => <div key={`t${i}`} style={{ height: ITEM_H }} />)}
+        {items.map((item, i) => (
+          <div key={i}
+            style={{ height: ITEM_H, scrollSnapAlign: "center", color: i === selectedIdx ? "#2D3748" : "#C0AEDD", fontWeight: i === selectedIdx ? 600 : 400, fontSize: i === selectedIdx ? 14 : 12 }}
+            className="flex items-center justify-center cursor-pointer select-none transition-all"
+            onClick={() => { onSelect(i); ref.current?.scrollTo({ top: i * ITEM_H, behavior: "smooth" }); }}
+          >{item}</div>
+        ))}
+        {Array(W_PAD).fill(0).map((_, i) => <div key={`b${i}`} style={{ height: ITEM_H }} />)}
+      </div>
+    </div>
+  );
+}
+
+function WheelDatePicker({ value, onChange, max }: { value: string; onChange: (v: string) => void; max: string }) {
+  const [open, setOpen] = useState(false);
+  const maxYear = new Date(max + "T12:00:00").getFullYear();
+  const minYear = maxYear - 6;
+
+  const parse = (s: string) => { const [y,m,d] = s.split("-").map(Number); return { y: y||maxYear, m: m||1, d: d||1 }; };
+  const { y: iy, m: im, d: id } = parse(value);
+  const [sY, setSY] = useState(iy);
+  const [sM, setSM] = useState(im);
+  const [sD, setSD] = useState(id);
+
+  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => String(minYear + i));
+  const daysInMonth = new Date(sY, sM, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, "0"));
+
+  // Clamp day si changement de mois/année
+  useEffect(() => {
+    const max2 = new Date(sY, sM, 0).getDate();
+    if (sD > max2) setSD(max2);
+  }, [sY, sM, sD]);
+
+  // Sync vers le parent uniquement après le montage
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    const d = String(sD).padStart(2,"0"), m = String(sM).padStart(2,"0");
+    onChange(`${sY}-${m}-${d}`);
+  }, [sY, sM, sD]); // eslint-disable-line
+
+  const fmt = (s: string) => { const [y,m,d] = s.split("-"); return `${d}/${m}/${y}`; };
+
+  return (
+    <div className="relative">
+      <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm cursor-pointer"
+        style={{ background: "rgba(240,235,255,0.5)", border: `1px solid ${open ? "rgba(167,139,250,0.6)" : "rgba(212,192,255,0.5)"}`, color: "#2D3748" }}>
+        <span>{fmt(value)}</span>
+        <span className="text-base">📅</span>
+      </motion.button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }} transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+            className="absolute z-50 rounded-2xl overflow-hidden"
+            style={{ top: "calc(100% + 6px)", right: 0, minWidth: 220,
+              background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
+              border: "1px solid rgba(212,192,255,0.5)", boxShadow: "0 8px 32px rgba(167,139,250,0.18)" }}>
+            <div className="flex gap-0 px-2 pt-2">
+              <WheelCol items={days}   selectedIdx={sD - 1}          onSelect={i => setSD(i + 1)} />
+              <WheelCol items={FR_MONTHS} selectedIdx={sM - 1}       onSelect={i => setSM(i + 1)} />
+              <WheelCol items={years}  selectedIdx={sY - minYear}     onSelect={i => setSY(minYear + i)} />
+            </div>
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => setOpen(false)}
+              className="w-full py-2.5 text-sm font-semibold cursor-pointer mt-1"
+              style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+              Confirmer
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ─── WeightChart ────────────────────────────────────────── */
 function WeightChart({
   data, range, onRangeChange, onAdd,
@@ -336,10 +462,7 @@ function WeightChart({
                   onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
                   className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
                   style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
-                <input type="date" value={dateVal} onChange={e => setDateVal(e.target.value)}
-                  max={todayStr}
-                  className="px-3 py-2 rounded-xl text-sm outline-none cursor-pointer"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748", minWidth: 0 }} />
+                <WheelDatePicker value={dateVal} onChange={setDateVal} max={todayStr} />
               </div>
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
                 className="w-full py-2 rounded-xl text-xs font-semibold cursor-pointer"
