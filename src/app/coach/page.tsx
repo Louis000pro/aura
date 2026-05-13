@@ -228,17 +228,60 @@ export default function CoachPage() {
         .eq("user_id", user.id)
         .eq("date", todayISODate());
 
+      let totalCalories = 0, totalProteins = 0;
       if (nutritionRows && nutritionRows.length > 0) {
-        const totalCalories = nutritionRows.reduce(
-          (sum: number, r: { calories: number }) => sum + (r.calories ?? 0),
-          0
-        );
-        const totalProteins = nutritionRows.reduce(
-          (sum: number, r: { proteins: number }) => sum + (r.proteins ?? 0),
-          0
-        );
-        setLiveStats({ calories: Math.round(totalCalories), proteins: Math.round(totalProteins) });
+        totalCalories = nutritionRows.reduce((sum: number, r: { calories: number }) => sum + (r.calories ?? 0), 0);
+        totalProteins = nutritionRows.reduce((sum: number, r: { proteins: number }) => sum + (r.proteins ?? 0), 0);
       }
+
+      /* Recent workout sessions (last 5) */
+      const { data: sessionRows } = await supabase
+        .from("workout_sessions")
+        .select("title, started_at, duration_minutes, calories_burned")
+        .eq("user_id", user.id)
+        .order("started_at", { ascending: false })
+        .limit(5);
+
+      const recentSessions = (sessionRows ?? []).map((s: { title: string; started_at: string; duration_minutes?: number }) => {
+        const d = new Date(s.started_at);
+        const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+        return `${dayNames[d.getDay()]} : ${s.title}${s.duration_minutes ? ` (${s.duration_minutes} min)` : ""}`;
+      });
+
+      /* Last recorded weight */
+      const { data: weightRow } = await supabase
+        .from("weight_logs")
+        .select("weight_kg, date")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      /* Streak */
+      const { data: streakData } = await supabase
+        .from("workout_sessions")
+        .select("started_at")
+        .eq("user_id", user.id)
+        .order("started_at", { ascending: false })
+        .limit(60);
+      let streak = 0;
+      if (streakData && streakData.length > 0) {
+        const days = new Set((streakData as { started_at: string }[]).map(s => s.started_at.slice(0, 10)));
+        const today = new Date();
+        for (let i = 0; i < 60; i++) {
+          const d = new Date(today); d.setDate(d.getDate() - i);
+          if (days.has(d.toISOString().slice(0, 10))) streak++;
+          else if (i > 0) break;
+        }
+      }
+
+      setLiveStats({
+        calories: Math.round(totalCalories),
+        proteins: Math.round(totalProteins),
+        streak: streak > 0 ? streak : undefined,
+        lastWeight: weightRow?.weight_kg ?? undefined,
+        recentSessions: recentSessions.length > 0 ? recentSessions : undefined,
+      });
     };
 
     loadContext();

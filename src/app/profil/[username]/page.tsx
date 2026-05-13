@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, MessageCircle } from "lucide-react";
+import { UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, MessageCircle, Grid3X3, LayoutList } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
 
 type Profile = {
   id: string;
@@ -16,12 +17,25 @@ type Profile = {
   avatar_url?: string;
   level?: string;
   goals?: string[];
+  is_admin?: boolean;
 };
 
 type DbSession = {
   id: string;
   title: string;
   started_at: string;
+};
+
+type DbPost = {
+  id: string;
+  type: string;
+  caption: string | null;
+  media_url: string | null;
+  media_type: string | null;
+  performance_data: Record<string, unknown> | null;
+  created_at: string;
+  post_likes: { user_id: string }[];
+  post_comments: { id: string }[];
 };
 
 export default function PublicProfilePage() {
@@ -40,6 +54,12 @@ export default function PublicProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [profileStories, setProfileStories] = useState<HighlightItem[]>([]);
+  const [viewingStories, setViewingStories] = useState<HighlightViewData | null>(null);
+  const [userPosts, setUserPosts] = useState<DbPost[]>([]);
+  const [postCount, setPostCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [profileTab, setProfileTab] = useState<"posts" | "sessions">("posts");
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
@@ -49,7 +69,7 @@ export default function PublicProfilePage() {
 
     supabase
       .from("profiles")
-      .select("id, pseudo, name, full_name, bio, avatar_url, level, goals")
+      .select("id, pseudo, name, full_name, bio, avatar_url, level, goals, is_admin")
       .eq("pseudo", username)
       .maybeSingle()
       .then(async ({ data, error }) => {
@@ -72,6 +92,34 @@ export default function PublicProfilePage() {
         setSessionCount(sessionsRes.count ?? 0);
         if (recentRes.data) setRecentSessions(recentRes.data);
 
+        // ── Posts de l'utilisateur ──
+        const { data: postsData, count: postsCount } = await supabase
+          .from("posts")
+          .select("id, type, caption, media_url, media_type, performance_data, created_at, post_likes(user_id), post_comments(id)", { count: "exact" })
+          .eq("user_id", data.id)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (postsData) setUserPosts(postsData as unknown as DbPost[]);
+        setPostCount(postsCount ?? 0);
+
+        // ── Streak (jours consécutifs avec séance) ──
+        const { data: streakData } = await supabase
+          .from("workout_sessions")
+          .select("started_at")
+          .eq("user_id", data.id)
+          .order("started_at", { ascending: false })
+          .limit(60);
+        if (streakData && streakData.length > 0) {
+          const days = new Set<string>(streakData.map((s: { started_at: string }) => s.started_at.slice(0, 10)));
+          let s = 0; const today = new Date();
+          for (let i = 0; i < 60; i++) {
+            const d = new Date(today); d.setDate(d.getDate() - i);
+            if (days.has(d.toISOString().slice(0, 10))) s++;
+            else if (i > 0) break;
+          }
+          setStreak(s);
+        }
+
         if (user && user.id !== data.id) {
           const { data: followData } = await supabase
             .from("followers")
@@ -81,6 +129,16 @@ export default function PublicProfilePage() {
             .maybeSingle();
           setIsFollowing(!!followData);
         }
+
+        // Charger les stories actives du profil
+        const { data: storiesData } = await supabase
+          .from("stories")
+          .select("id, media_url, media_type, caption")
+          .eq("user_id", data.id)
+          .gt("expires_at", new Date().toISOString())
+          .not("media_url", "is", null)
+          .order("created_at", { ascending: true });
+        if (storiesData) setProfileStories(storiesData as HighlightItem[]);
 
         setLoading(false);
       });
@@ -109,13 +167,13 @@ export default function PublicProfilePage() {
           { onConflict: "follower_id,following_id", ignoreDuplicates: true }
         );
       if (error) { showToast(`Erreur : ${error.message}`); setFollowLoading(false); return; }
-      supabase.from("notifications").insert({
+      void Promise.resolve(supabase.from("notifications").insert({
         user_id: profile.id,
         from_user_id: user.id,
         from_pseudo: user.pseudo,
         from_avatar_url: user.avatar ?? null,
         type: "follow",
-      }).then(() => {}).catch(() => {});
+      })).then(() => {}).catch(() => {});
       // Email de notification (silencieux)
       fetch("/api/notifications/follow", {
         method: "POST",
@@ -188,10 +246,10 @@ export default function PublicProfilePage() {
     );
   }
 
-  const displayName = profile?.full_name || profile?.pseudo || profile?.name || username;
   const displayPseudo = profile?.pseudo ?? username;
   const displayAvatar = profile?.avatar_url ?? "";
-  const initial = displayName[0]?.toUpperCase() ?? "?";
+  const initial = displayPseudo[0]?.toUpperCase() ?? "?";
+  const isCertified = profile?.is_admin === true;
 
   return (
     <div className="min-h-screen px-6 pt-10 pb-12 max-w-2xl mx-auto relative overflow-hidden">
@@ -248,17 +306,29 @@ export default function PublicProfilePage() {
         />
 
         <div className="flex flex-col items-center text-center relative z-10 mb-4">
-          {/* Avatar */}
-          <div
-            className="relative mb-3"
+          {/* Avatar — ring animé si story active */}
+          <motion.div
+            className="relative mb-3 cursor-pointer"
             style={{
               width: 88,
               height: 88,
               borderRadius: "50%",
               padding: 3,
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 6px 24px rgba(167,139,250,0.28)",
+              background: profileStories.length > 0
+                ? "linear-gradient(135deg,#A78BFA 0%,#F5E6A3 50%,#C4A8FF 100%)"
+                : "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+              boxShadow: profileStories.length > 0
+                ? "0 6px 28px rgba(167,139,250,0.5)"
+                : "0 6px 24px rgba(167,139,250,0.28)",
             }}
+            whileHover={{ scale: profileStories.length > 0 ? 1.05 : 1 }}
+            whileTap={{ scale: profileStories.length > 0 ? 0.95 : 1 }}
+            onClick={() => profileStories.length > 0 && setViewingStories({
+              id: "__profile_stories__",
+              name: displayPseudo,
+              cover_url: profileStories[0]?.media_url,
+              items: profileStories,
+            })}
           >
             <div
               className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
@@ -269,19 +339,46 @@ export default function PublicProfilePage() {
                 ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                 : <span>{initial}</span>}
             </div>
+            {/* Indicateur story */}
+            {profileStories.length > 0 && (
+              <div className="absolute -bottom-0.5 -right-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold"
+                style={{ background: "linear-gradient(135deg,#A78BFA,#F5E6A3)", color: "#3D2F6B", border: "2px solid white" }}>
+                STORY
+              </div>
+            )}
+          </motion.div>
+
+          {/* Pseudo + badge certifié */}
+          <div className="flex items-center gap-2 justify-center">
+            <p className="text-xl font-semibold leading-tight" style={{ color: "#2D3748" }}>
+              @{displayPseudo}
+            </p>
+            {isCertified && (
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
+                className="flex-shrink-0 flex items-center justify-center rounded-full"
+                title="Compte certifié"
+                style={{ width: 22, height: 22, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 2px 8px rgba(124,92,250,0.4)" }}
+              >
+                <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
+                  <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </motion.div>
+            )}
           </div>
 
-          {/* Name */}
-          <p className="text-xl font-semibold leading-tight" style={{ color: "#2D3748" }}>
-            {displayName}
-          </p>
-          <p className="text-sm font-light mt-0.5" style={{ color: "#A78BFA" }}>
-            @{displayPseudo}
-          </p>
+          {/* Goals / titre */}
+          {profile?.goals && profile.goals.length > 0 && (
+            <p className="text-sm mt-1.5 font-medium" style={{ color: "#718096" }}>
+              {profile.goals.join(" · ")}
+            </p>
+          )}
 
           {/* Bio */}
           {profile?.bio && (
-            <p className="text-sm mt-2 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
+            <p className="text-sm mt-1.5 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
               {profile.bio}
             </p>
           )}
@@ -371,7 +468,7 @@ export default function PublicProfilePage() {
           style={{ borderTop: "1px solid rgba(167,139,250,0.1)" }}
         >
           {[
-            { label: "Séances", value: String(sessionCount) },
+            { label: "Posts", value: String(postCount) },
             {
               label: "Abonnés",
               value:
@@ -422,7 +519,7 @@ export default function PublicProfilePage() {
           {
             icon: Flame,
             label: "Streak",
-            value: "—",
+            value: streak > 0 ? `${streak}j` : "—",
             color: "#D4A843",
             bg: "linear-gradient(135deg, rgba(245,230,163,0.45) 0%, rgba(212,168,67,0.2) 100%)",
           },
@@ -451,53 +548,105 @@ export default function PublicProfilePage() {
         ))}
       </motion.div>
 
-      {/* Recent sessions */}
-      {recentSessions.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-        >
-          <p
-            className="text-[10px] font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#A0AEC0" }}
-          >
-            Séances récentes
-          </p>
-          <div className="flex flex-col gap-2">
-            {recentSessions.map((s, i) => (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.07 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                style={{
-                  background: "rgba(255,255,255,0.7)",
-                  border: "1px solid rgba(255,255,255,0.7)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                  backdropFilter: "blur(24px)",
-                }}
-              >
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(167,139,250,0.12)" }}
+      {/* ── Tab switcher Posts / Séances ── */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 mb-4">
+        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.12)" }}>
+          {([
+            { key: "posts", label: "Posts", icon: Grid3X3 },
+            { key: "sessions", label: "Séances", icon: LayoutList },
+          ] as const).map(({ key, label, icon: Icon }) => (
+            <motion.button key={key} whileTap={{ scale: 0.96 }} onClick={() => setProfileTab(key)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+              style={profileTab === key
+                ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                : { color: "#A0AEC0" }
+              }
+            >
+              <Icon size={13} strokeWidth={1.8} />
+              {label}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+
+      {/* ── Posts grid ── */}
+      {profileTab === "posts" && (
+        <motion.div key="posts-tab" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.25 }}>
+          {userPosts.length === 0 ? (
+            <div className="flex flex-col items-center py-12 gap-3">
+              <div className="text-4xl">📸</div>
+              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucun post partagé</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-1.5">
+              {userPosts.map((post, i) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="relative rounded-2xl overflow-hidden aspect-square cursor-pointer"
+                  style={{ background: post.type === "workout" ? "linear-gradient(135deg,#F0EBFF,#D4C0FF)" : post.type === "meal" ? "linear-gradient(135deg,#ECFDF5,#A7F3D0)" : "linear-gradient(135deg,#FFFBF0,#FDE68A)" }}
+                  whileHover={{ scale: 1.03 }}
                 >
-                  <Dumbbell size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>
-                    {s.title}
-                  </p>
-                  <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
-                    {formatDate(s.started_at)}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  {post.media_url && (post.media_type === "image" || post.media_type?.startsWith("image"))
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={post.media_url} alt="" className="w-full h-full object-cover" />
+                    : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2 gap-1">
+                        <span className="text-2xl">{post.type === "workout" ? "🏋️" : post.type === "meal" ? "🥗" : "📊"}</span>
+                        {post.caption && <p className="text-[9px] text-center leading-tight font-medium line-clamp-2" style={{ color: "#4A5568" }}>{post.caption}</p>}
+                      </div>
+                    )
+                  }
+                  {/* Likes overlay */}
+                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.35)" }}>
+                    <span style={{ fontSize: 8 }}>❤️</span>
+                    <span className="text-[9px] font-semibold text-white">{post.post_likes.length}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
+
+      {/* ── Sessions list ── */}
+      {profileTab === "sessions" && (
+        <motion.div key="sessions-tab" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.25 }}>
+          {recentSessions.length === 0 ? (
+            <div className="flex flex-col items-center py-12 gap-3">
+              <div className="text-4xl">🏋️</div>
+              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune séance enregistrée</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {recentSessions.map((s, i) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                  style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)", backdropFilter: "blur(24px)" }}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }}>
+                    <Dumbbell size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{s.title}</p>
+                    <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{formatDate(s.started_at)}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      </AnimatePresence>
 
       {/* Toast */}
       <AnimatePresence>
@@ -521,6 +670,13 @@ export default function PublicProfilePage() {
               {toast}
             </span>
           </motion.div>
+        )}
+        {viewingStories && (
+          <StoryHighlightViewer
+            highlight={viewingStories}
+            isOwner={false}
+            onClose={() => setViewingStories(null)}
+          />
         )}
       </AnimatePresence>
     </div>

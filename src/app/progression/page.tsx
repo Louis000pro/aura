@@ -9,6 +9,7 @@ import {
   Globe, Lock, Users,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
+import NutritionTab from "@/components/NutritionTab";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
@@ -212,148 +213,38 @@ const CHART_CARD = {
   boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
 };
 
-/* ─── WheelDatePicker ───────────────────────────────────── */
-const ITEM_H    = 36;
-const W_VISIBLE = 5;
-const W_PAD     = Math.floor(W_VISIBLE / 2); // 2
-const FR_MONTHS = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-
-function WheelCol({ items, selectedIdx, onSelect }: {
-  items: string[];
-  selectedIdx: number;
-  onSelect: (i: number) => void;
-}) {
-  const ref          = useRef<HTMLDivElement>(null);
-  const scrollingRef = useRef(false);
-  const timerRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Scroll to selected on mount (instant) and on external change (smooth)
-  useEffect(() => {
-    if (ref.current) ref.current.scrollTop = selectedIdx * ITEM_H;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
-    if (ref.current && !scrollingRef.current)
-      ref.current.scrollTo({ top: selectedIdx * ITEM_H, behavior: "smooth" });
-  }, [selectedIdx]);
-
-  const handleScroll = () => {
-    if (!ref.current) return;
-    scrollingRef.current = true;
-    onSelect(Math.max(0, Math.min(Math.round(ref.current.scrollTop / ITEM_H), items.length - 1)));
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => { scrollingRef.current = false; }, 200);
-  };
-
-  return (
-    <div className="relative flex-1" style={{ height: W_VISIBLE * ITEM_H }}>
-      {/* Barre centrale */}
-      <div className="absolute inset-x-1 pointer-events-none z-10 rounded-xl"
-        style={{ top: W_PAD * ITEM_H, height: ITEM_H, background: "rgba(167,139,250,0.13)", border: "1px solid rgba(167,139,250,0.3)" }} />
-      {/* Fondu haut */}
-      <div className="absolute top-0 inset-x-0 pointer-events-none z-20"
-        style={{ height: W_PAD * ITEM_H, background: "linear-gradient(to bottom,rgba(255,255,255,0.97),transparent)" }} />
-      {/* Fondu bas */}
-      <div className="absolute bottom-0 inset-x-0 pointer-events-none z-20"
-        style={{ height: W_PAD * ITEM_H, background: "linear-gradient(to top,rgba(255,255,255,0.97),transparent)" }} />
-      <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-scroll"
-        style={{ scrollSnapType: "y mandatory", scrollbarWidth: "none" } as React.CSSProperties}>
-        {Array(W_PAD).fill(0).map((_, i) => <div key={`t${i}`} style={{ height: ITEM_H }} />)}
-        {items.map((item, i) => (
-          <div key={i}
-            style={{ height: ITEM_H, scrollSnapAlign: "center", color: i === selectedIdx ? "#2D3748" : "#C0AEDD", fontWeight: i === selectedIdx ? 600 : 400, fontSize: i === selectedIdx ? 14 : 12 }}
-            className="flex items-center justify-center cursor-pointer select-none transition-all"
-            onClick={() => { onSelect(i); ref.current?.scrollTo({ top: i * ITEM_H, behavior: "smooth" }); }}
-          >{item}</div>
-        ))}
-        {Array(W_PAD).fill(0).map((_, i) => <div key={`b${i}`} style={{ height: ITEM_H }} />)}
-      </div>
-    </div>
-  );
-}
-
-
 /* ─── WeightChart ────────────────────────────────────────── */
 function WeightChart({
-  data, range, onRangeChange, onAdd, onDelete, onEdit,
+  data, range, onRangeChange, onAdd, goalType,
 }: {
   data: WeightEntry[];
-  range: "week" | "month" | "year" | "all";
-  onRangeChange: (r: "week" | "month" | "year" | "all") => void;
-  onAdd: (kg: number, date: string) => void;
-  onDelete: (date: string) => void;
-  onEdit: (date: string, kg: number) => void;
+  range: "week" | "month";
+  onRangeChange: (r: "week" | "month") => void;
+  onAdd: (kg: number) => void;
+  goalType?: "masse" | "poids" | null;
 }) {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const [inputVal, setInputVal]       = useState("");
-  const [adding, setAdding]           = useState(false);
-  const [pickerOpen, setPickerOpen]   = useState(false);
-  const [editingDate, setEditingDate] = useState<string | null>(null);
-  const [editVal, setEditVal]         = useState("");
+  const [inputVal, setInputVal] = useState("");
+  const [adding, setAdding]     = useState(false);
 
-  // Picker state — initialisé sur aujourd'hui
-  const todayParts = todayStr.split("-").map(Number);
-  const [sY, setSY] = useState(todayParts[0]);
-  const [sM, setSM] = useState(todayParts[1]);
-  const [sD, setSD] = useState(todayParts[2]);
-
-  const MIN_YEAR   = 2015;
-  const MAX_YEAR   = new Date().getFullYear();
-  const years      = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
-  const daysInMon  = new Date(sY, sM, 0).getDate();
-  const days       = Array.from({ length: daysInMon }, (_, i) => String(i + 1).padStart(2, "0"));
-
-  // Clamp day si le mois change
-  useEffect(() => {
-    const mx = new Date(sY, sM, 0).getDate();
-    if (sD > mx) setSD(mx);
-  }, [sY, sM, sD]);
-
-  const dateVal = `${sY}-${String(sM).padStart(2,"0")}-${String(sD).padStart(2,"0")}`;
-  const fmtDate2 = `${String(sD).padStart(2,"0")}/${String(sM).padStart(2,"0")}/${sY}`;
-
-  const cutoff = (days: number) => {
-    const d = new Date(); d.setDate(d.getDate() - days);
-    return d.toISOString().slice(0, 10);
-  };
-  const pts = (range === "week"  ? data.filter(p => p.date >= cutoff(7))
-             : range === "month" ? data.filter(p => p.date >= cutoff(30))
-             : range === "year"  ? data.filter(p => p.date >= cutoff(365))
-             : data).sort((a, b) => a.date.localeCompare(b.date));
+  const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
   const current = pts.at(-1)?.weight ?? null;
-  const prev    = pts.at(-2)?.weight ?? null;
-  const trend   = current !== null && prev !== null ? +(current - prev).toFixed(1) : null;
+  const first   = pts.at(0)?.weight ?? null;
+  const trend   = current !== null && first !== null && pts.length > 1
+    ? +(current - first).toFixed(1) : null;
+  const isGoodTrend = trend === null ? null
+    : goalType === "masse" ? trend > 0
+    : trend < 0;
 
-  const W = 300, H = 90, PX = 28, PY = 10, PB = 18;
+  const trendColor  = trend === null || trend === 0 ? "#A0AEC0" : isGoodTrend ? "#34D399" : "#FC8181";
+  const lineColor   = goalType === "masse" ? "#34D399" : "#A78BFA";
+  const gradColor   = goalType === "masse" ? "#34D399" : "#A78BFA";
+
+  const W = 320, H = 110, PX = 32, PY = 14;
   const ws   = pts.map(p => p.weight);
-  const minW = ws.length > 0 ? Math.min(...ws) - 1.5 : 60;
-  const maxW = ws.length > 0 ? Math.max(...ws) + 1.5 : 90;
-
-  const tx = (i: number) =>
-    pts.length < 2 ? W / 2 : PX + (i / (pts.length - 1)) * (W - PX - 8);
-  const ty = (w: number) =>
-    PY + ((maxW - w) / (maxW - minW)) * (H - PY - PB);
-
-  // Quadrillage : 3 lignes horizontales (min, mid, max)
-  const yGridValues = [
-    minW + 1.5,
-    (minW + maxW) / 2,
-    maxW - 1.5,
-  ];
-
-  // Labels abscisse adaptatifs selon le range
-  const xStep = range === "week" ? 1 : Math.ceil(pts.length / 6);
-  const xLabelIndices = pts.map((_, i) => i).filter(i => i % xStep === 0 || i === pts.length - 1);
-
-  const fmtDay = (dateStr: string) => {
-    const d = new Date(dateStr + "T12:00:00");
-    const weekDays = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
-    const months   = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-    if (range === "week")  return weekDays[d.getDay()];
-    if (range === "month") return String(d.getDate());
-    if (range === "year")  return months[d.getMonth()];
-    return `${months[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
-  };
+  const minW = ws.length > 0 ? Math.min(...ws) - 2 : 60;
+  const maxW = ws.length > 0 ? Math.max(...ws) + 2 : 90;
+  const tx   = (i: number) => pts.length < 2 ? W/2 : PX + (i / (pts.length-1)) * (W - 2*PX);
+  const ty   = (w: number) => PY + ((maxW - w) / (maxW - minW)) * (H - 2*PY);
 
   let linePath = "", areaPath = "";
   if (pts.length >= 2) {
@@ -371,50 +262,79 @@ function WeightChart({
   const handleAdd = () => {
     const kg = parseFloat(inputVal.replace(",", "."));
     if (isNaN(kg) || kg < 20 || kg > 300) return;
-    onAdd(kg, dateVal); setInputVal(""); setAdding(false); setPickerOpen(false);
+    onAdd(kg); setInputVal(""); setAdding(false);
   };
 
+  const goalLabel = goalType === "masse" ? "🏋️ Prise de masse" : goalType === "poids" ? "🔥 Perte de poids" : null;
+
   return (
-    <div className="rounded-3xl p-5" style={CHART_CARD}>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>POIDS</p>
-          <div className="flex items-baseline gap-1.5 mt-0.5">
-            {current !== null ? (
-              <>
-                <span className="text-2xl font-light" style={{ color: "#2D3748" }}>{current.toFixed(1)}</span>
-                <span className="text-sm" style={{ color: "#A0AEC0" }}>kg</span>
-                {trend !== null && (
-                  <span className="text-xs font-semibold"
-                    style={{ color: trend < 0 ? "#34D399" : trend > 0 ? "#FC8181" : "#A0AEC0" }}>
-                    {trend > 0 ? "+" : ""}{trend} kg
+    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
+      {/* Header band */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "#A0AEC0" }}>POIDS</p>
+              {goalLabel && (
+                <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA" }}>
+                  {goalLabel}
+                </span>
+              )}
+            </div>
+            <div className="flex items-end gap-2">
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
+                {current !== null ? current.toFixed(1) : "—"}
+              </span>
+              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>kg</span>
+              {trend !== null && trend !== 0 && (
+                <motion.span
+                  initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  className="mb-1 text-sm font-bold px-2.5 py-1 rounded-xl"
+                  style={{
+                    background: isGoodTrend ? "rgba(52,211,153,0.12)" : "rgba(252,129,129,0.12)",
+                    color: trendColor,
+                  }}>
+                  {trend > 0 ? "+" : ""}{trend} kg
+                </motion.span>
+              )}
+            </div>
+            {/* Min / Max sur la période */}
+            {pts.length >= 2 && (
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                  Min <span className="font-semibold" style={{ color: "#4A5568" }}>{Math.min(...ws).toFixed(1)}</span>
+                </span>
+                <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                  Max <span className="font-semibold" style={{ color: "#4A5568" }}>{Math.max(...ws).toFixed(1)}</span>
+                </span>
+                {first !== null && current !== null && (
+                  <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                    Départ <span className="font-semibold" style={{ color: "#4A5568" }}>{first.toFixed(1)}</span>
                   </span>
                 )}
-              </>
-            ) : (
-              <span className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune mesure</span>
+              </div>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
-            {(["week", "month", "year", "all"] as const).map(r => (
-              <button key={r} onClick={() => onRangeChange(r)}
-                className="px-2 py-1 text-[10px] font-semibold cursor-pointer"
-                style={{
-                  background: range === r ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "transparent",
-                  color: range === r ? "#2D3748" : "#A0AEC0",
-                }}>
-                {r === "week" ? "7j" : r === "month" ? "30j" : r === "year" ? "1an" : "Tout"}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
+              {(["week", "month"] as const).map(r => (
+                <button key={r} onClick={() => onRangeChange(r)}
+                  className="px-2.5 py-1 text-[10px] font-semibold cursor-pointer"
+                  style={{
+                    background: range === r ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "transparent",
+                    color: range === r ? "#2D3748" : "#A0AEC0",
+                  }}>
+                  {r === "week" ? "7j" : "30j"}
+                </button>
+              ))}
+            </div>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
+              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+              style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
+              <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
+            </motion.button>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
-            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-            <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
-          </motion.button>
         </div>
       </div>
 
@@ -422,161 +342,107 @@ function WeightChart({
       <AnimatePresence>
         {adding && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} className="mb-3 overflow-hidden">
-            <div className="flex flex-col gap-2">
-              {/* Ligne poids + bouton date */}
-              <div className="flex gap-2">
-                <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
-                  value={inputVal} onChange={e => setInputVal(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
-                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
-                <motion.button type="button" whileTap={{ scale: 0.97 }}
-                  onClick={() => setPickerOpen(o => !o)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm cursor-pointer flex-shrink-0"
-                  style={{ background: "rgba(240,235,255,0.5)", border: `1px solid ${pickerOpen ? "rgba(167,139,250,0.6)" : "rgba(212,192,255,0.5)"}`, color: "#2D3748" }}>
-                  <span>{fmtDate2}</span>
-                  <span className="text-base">📅</span>
-                </motion.button>
-              </div>
-
-              {/* Colonnes défilantes — inline, pleine largeur */}
-              <AnimatePresence>
-                {pickerOpen && (
-                  <motion.div key="picker"
-                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
-                    className="overflow-hidden rounded-2xl"
-                    style={{ background: "rgba(248,245,255,0.9)", border: "1px solid rgba(212,192,255,0.4)" }}>
-                    <div className="flex px-1 pt-1">
-                      <WheelCol items={days}      selectedIdx={sD - 1}         onSelect={i => setSD(i + 1)} />
-                      <WheelCol items={FR_MONTHS} selectedIdx={sM - 1}         onSelect={i => setSM(i + 1)} />
-                      <WheelCol items={years}     selectedIdx={sY - MIN_YEAR}  onSelect={i => setSY(MIN_YEAR + i)} />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
+            exit={{ opacity: 0, height: 0 }} className="px-5 pb-3 overflow-hidden">
+            <div className="flex gap-2">
+              <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
+                value={inputVal} onChange={e => setInputVal(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
+                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
-                className="w-full py-2 rounded-xl text-xs font-semibold cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                Enregistrer
+                className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
+                style={{ background: "linear-gradient(135deg,#C4A8FF,#A78BFA)", color: "white" }}>
+                OK
               </motion.button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* SVG chart */}
+      {/* Chart */}
       {pts.length === 0 ? (
-        <div className="flex items-center justify-center py-8">
+        <div className="flex flex-col items-center justify-center py-10 gap-2">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(167,139,250,0.08)" }}>
+            <span style={{ color: "#C4A8FF", fontSize: 18 }}>⚖️</span>
+          </div>
           <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
-            Appuie sur + pour enregistrer<br />ton premier poids
+            Ajoute ton premier poids<br />pour suivre ta progression
           </p>
         </div>
       ) : (
-        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
-          <defs>
-            <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#A78BFA" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.01" />
-            </linearGradient>
-          </defs>
+        <div className="px-2 pb-4">
+          <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+            <defs>
+              <linearGradient id="wAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={gradColor} stopOpacity="0.2" />
+                <stop offset="80%"  stopColor={gradColor} stopOpacity="0.04" />
+                <stop offset="100%" stopColor={gradColor} stopOpacity="0" />
+              </linearGradient>
+              <filter id="wGlow">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
 
-          {/* ── Quadrillage horizontal (ordonnée) ── */}
-          {yGridValues.map((w, i) => {
-            const y = ty(w);
-            return (
-              <g key={i}>
-                <line x1={PX} y1={y} x2={W - 8} y2={y}
-                  stroke="rgba(160,174,192,0.18)" strokeWidth="1" strokeDasharray="3 3" />
-                <text x={PX - 4} y={y + 3.5} textAnchor="end" fontSize="7.5" fill="rgba(160,174,192,0.7)" fontWeight="500">
-                  {w.toFixed(1)}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* ── Quadrillage vertical (abscisse) ── */}
-          {xLabelIndices.map((i) => {
-            const x = tx(i);
-            return (
-              <g key={i}>
-                <line x1={x} y1={PY} x2={x} y2={H - PB}
-                  stroke="rgba(160,174,192,0.18)" strokeWidth="1" strokeDasharray="3 3" />
-                <text x={x} y={H - 4} textAnchor="middle" fontSize="7.5" fill="rgba(160,174,192,0.7)" fontWeight="500">
-                  {fmtDay(pts[i].date)}
-                </text>
-              </g>
-            );
-          })}
-
-          {areaPath && <path d={areaPath} fill="url(#wGrad)" />}
-          {linePath && <path d={linePath} fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />}
-          {pts.map((p, i) => (
-            <circle key={i} cx={tx(i)} cy={ty(p.weight)}
-              r={i === pts.length - 1 ? 4 : 2.5}
-              fill={i === pts.length - 1 ? "#A78BFA" : "white"}
-              stroke="#A78BFA" strokeWidth={i === pts.length - 1 ? 0 : 1.5} />
-          ))}
-          {pts.length > 0 && (
-            <text x={tx(pts.length - 1)} y={ty(pts.at(-1)!.weight) - 8}
-              textAnchor="middle" fontSize="9" fontWeight="600" fill="#A78BFA">
-              {pts.at(-1)!.weight.toFixed(1)}
-            </text>
-          )}
-        </svg>
-      )}
-
-      {/* ── Liste des entrées (modifier / supprimer) ── */}
-      {data.length > 0 && (
-        <div className="mt-4 flex flex-col gap-1.5">
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Historique</p>
-          <div className="max-h-40 overflow-y-auto flex flex-col gap-1" style={{ scrollbarWidth: "thin" }}>
-            {[...data].sort((a, b) => b.date.localeCompare(a.date)).map(entry => {
-              const [y, m, d] = entry.date.split("-");
-              const label = `${d}/${m}/${y}`;
-              const isEditing = editingDate === entry.date;
+            {/* Grid lines horizontales légères */}
+            {[0.25, 0.5, 0.75].map((p, i) => {
+              const y = PY + p * (H - 2 * PY);
+              const w = minW + (1 - p) * (maxW - minW);
               return (
-                <div key={entry.date} className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                  style={{ background: "rgba(240,235,255,0.5)" }}>
-                  <span className="text-xs flex-shrink-0" style={{ color: "#A0AEC0" }}>{label}</span>
-                  {isEditing ? (
-                    <>
-                      <input type="number" step="0.1" autoFocus value={editVal}
-                        onChange={e => setEditVal(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter") { const kg = parseFloat(editVal.replace(",",".")); if (!isNaN(kg) && kg > 20) { onEdit(entry.date, kg); setEditingDate(null); } }
-                          if (e.key === "Escape") setEditingDate(null);
-                        }}
-                        className="flex-1 px-2 py-0.5 rounded-lg text-xs outline-none min-w-0"
-                        style={{ background: "white", border: "1px solid rgba(167,139,250,0.4)", color: "#2D3748" }} />
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => { const kg = parseFloat(editVal.replace(",",".")); if (!isNaN(kg) && kg > 20) { onEdit(entry.date, kg); setEditingDate(null); } }}
-                        className="text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>OK</motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingDate(null)}
-                        className="text-xs px-1.5 py-0.5 rounded-lg cursor-pointer flex-shrink-0"
-                        style={{ color: "#A0AEC0" }}>✕</motion.button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-xs font-semibold" style={{ color: "#2D3748" }}>{entry.weight.toFixed(1)} kg</span>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setEditingDate(entry.date); setEditVal(String(entry.weight)); }}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                        style={{ background: "rgba(167,139,250,0.12)" }}>
-                        <span style={{ fontSize: 11 }}>✏️</span>
-                      </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(entry.date)}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                        style={{ background: "rgba(252,129,129,0.12)" }}>
-                        <span style={{ fontSize: 11 }}>🗑️</span>
-                      </motion.button>
-                    </>
-                  )}
-                </div>
+                <g key={i}>
+                  <line x1={PX} y1={y} x2={W - PX/2} y2={y}
+                    stroke="rgba(167,139,250,0.07)" strokeWidth="1" strokeDasharray="3,4" />
+                  <text x={PX - 4} y={y + 3.5} textAnchor="end"
+                    fontSize="7.5" fill="rgba(160,174,192,0.8)" fontWeight="500">
+                    {w.toFixed(0)}
+                  </text>
+                </g>
               );
             })}
-          </div>
+
+            {/* Area fill */}
+            {areaPath && <path d={areaPath} fill="url(#wAreaGrad)" />}
+
+            {/* Line */}
+            {linePath && (
+              <path d={linePath} fill="none" stroke={lineColor}
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                filter="url(#wGlow)" />
+            )}
+
+            {/* Points */}
+            {pts.map((p, i) => {
+              const isLast = i === pts.length - 1;
+              const cx = tx(i), cy = ty(p.weight);
+              return isLast ? (
+                <g key={i}>
+                  <circle cx={cx} cy={cy} r={9} fill={lineColor} fillOpacity="0.12" />
+                  <circle cx={cx} cy={cy} r={5} fill={lineColor}
+                    style={{ filter: `drop-shadow(0 0 4px ${lineColor})` }} />
+                  <circle cx={cx} cy={cy} r={2} fill="white" />
+                </g>
+              ) : (
+                <circle key={i} cx={cx} cy={cy}
+                  r={2.5} fill="white" stroke={lineColor} strokeWidth="1.5" />
+              );
+            })}
+
+            {/* Labels date sur X (premier, milieu, dernier) */}
+            {pts.length > 0 && [0, Math.floor((pts.length-1)/2), pts.length-1]
+              .filter((v, i, a) => a.indexOf(v) === i)
+              .map(i => {
+                const d = new Date(pts[i].date + "T00:00:00");
+                const lbl = `${d.getDate()}/${d.getMonth()+1}`;
+                return (
+                  <text key={i} x={tx(i)} y={H + 12} textAnchor="middle"
+                    fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">
+                    {lbl}
+                  </text>
+                );
+              })
+            }
+          </svg>
         </div>
       )}
     </div>
@@ -586,89 +452,167 @@ function WeightChart({
 /* ─── CalorieChart ───────────────────────────────────────── */
 function CalorieChart({ data, goal }: { data: CalorieDay[]; goal: number }) {
   const today      = toDateStr(new Date());
-  const todayTotal = data.find(d => d.date === today)?.total ?? 0;
+  const todayEntry = data.find(d => d.date === today);
+  const todayTotal = todayEntry?.total ?? 0;
+  const remaining  = Math.max(goal - todayTotal, 0);
+  const pctToday   = Math.min(todayTotal / goal, 1);
   const activeDays = data.filter(d => d.total > 0);
   const avgCals    = activeDays.length > 0
     ? Math.round(activeDays.reduce((s, d) => s + d.total, 0) / activeDays.length) : 0;
-  const maxCals  = Math.max(...data.map(d => d.total), goal, 1);
-  const goalPct  = (goal / maxCals) * 85;
+  const maxCals    = Math.max(...data.map(d => d.total), goal * 1.15, 1);
+  const CHART_H    = 80;
+
+  const C = 2 * Math.PI * 24; // ring circumference r=24
 
   return (
-    <div className="rounded-3xl p-5" style={CHART_CARD}>
+    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>CALORIES · 7J</p>
-          <div className="flex items-baseline gap-1.5 mt-0.5">
-            <span className="text-2xl font-light" style={{ color: "#2D3748" }}>
-              {todayTotal > 0 ? todayTotal.toLocaleString("fr-FR") : "—"}
-            </span>
-            <span className="text-sm" style={{ color: "#A0AEC0" }}>aujourd&apos;hui</span>
-          </div>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>MOY.</p>
-          <p className="text-sm font-semibold mt-0.5"
-            style={{ color: avgCals > 0 ? (avgCals > goal ? "#FC8181" : "#34D399") : "#A0AEC0" }}>
-            {avgCals > 0 ? avgCals.toLocaleString("fr-FR") : "—"}
-          </p>
-        </div>
-      </div>
+      <div className="px-5 pt-5 pb-4">
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3" style={{ color: "#A0AEC0" }}>
+          CALORIES
+        </p>
 
-      {/* Bars */}
-      <div className="relative" style={{ height: 80 }}>
-        <div className="absolute left-0 right-0 pointer-events-none"
-          style={{ bottom: `${goalPct}%`, borderTop: "1px dashed rgba(167,139,250,0.35)" }} />
-        <div className="flex items-end gap-1.5 h-full">
-          {data.map((d, i) => {
-            const isToday  = d.date === today;
-            const barPct   = d.total > 0 ? (d.total / maxCals) * 85 : 1;
-            const overGoal = d.total > goal;
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                <motion.div className="w-full rounded-t-lg"
-                  initial={{ height: 0 }}
-                  animate={{ height: `${barPct}%` }}
-                  transition={{ duration: 0.55, delay: i * 0.06, ease: "easeOut" }}
-                  style={{
-                    background: d.total === 0
-                      ? "rgba(167,139,250,0.08)"
-                      : overGoal  ? "linear-gradient(to top, #FC8181, #FCA5A5)"
-                      : isToday   ? "linear-gradient(to top, #A78BFA, #C4B5FD)"
-                      :             "linear-gradient(to top, #7B5CC4, #A78BFA)",
-                    minHeight: "3px",
-                  }} />
+        {/* Ring + stats */}
+        <div className="flex items-center gap-4">
+          {/* Mini ring */}
+          <div className="relative flex-shrink-0" style={{ width: 64, height: 64 }}>
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <defs>
+                <linearGradient id="cRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stopColor="#A78BFA" />
+                  <stop offset="100%" stopColor="#D4A843" />
+                </linearGradient>
+              </defs>
+              {/* Track */}
+              <circle cx="32" cy="32" r="24" fill="none"
+                stroke="rgba(167,139,250,0.12)" strokeWidth="6" />
+              {/* Progress */}
+              <motion.circle cx="32" cy="32" r="24" fill="none"
+                stroke={todayTotal > goal ? "#FC8181" : "url(#cRingGrad)"}
+                strokeWidth="6" strokeLinecap="round"
+                strokeDasharray={C}
+                initial={{ strokeDashoffset: C }}
+                animate={{ strokeDashoffset: C * (1 - pctToday) }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                style={{ transform: "rotate(-90deg)", transformOrigin: "center" }} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[13px] font-bold leading-none" style={{ color: "#2D3748" }}>
+                {pctToday >= 1 ? "100" : Math.round(pctToday * 100)}
+              </span>
+              <span className="text-[8px]" style={{ color: "#A0AEC0" }}>%</span>
+            </div>
+          </div>
+
+          {/* Stats today */}
+          <div className="flex-1">
+            <div className="flex items-end gap-1.5 mb-1">
+              <span className="text-[2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
+                {todayTotal > 0 ? todayTotal.toLocaleString("fr-FR") : "0"}
+              </span>
+              <span className="text-xs font-light mb-1" style={{ color: "#A0AEC0" }}>
+                / {goal.toLocaleString("fr-FR")} kcal
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-[9px] uppercase font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>Restant</p>
+                <p className="text-sm font-bold" style={{ color: remaining === 0 ? "#FC8181" : "#34D399" }}>
+                  {remaining > 0 ? remaining.toLocaleString("fr-FR") : "0"}
+                </p>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Day labels */}
-      <div className="flex gap-1.5 mt-2">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 text-center">
-            <span className="text-[9px] font-semibold"
-              style={{ color: d.date === today ? "#A78BFA" : "#A0AEC0" }}>
-              {d.label}
-            </span>
+              <div style={{ width: 1, height: 28, background: "rgba(167,139,250,0.15)" }} />
+              <div>
+                <p className="text-[9px] uppercase font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>Moy. 7j</p>
+                <p className="text-sm font-bold"
+                  style={{ color: avgCals > 0 ? (avgCals > goal ? "#FC8181" : "#A78BFA") : "#A0AEC0" }}>
+                  {avgCals > 0 ? avgCals.toLocaleString("fr-FR") : "—"}
+                </p>
+              </div>
+            </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-3">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ background: "#A78BFA" }} />
-          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>Consommé</span>
+      {/* Separateur */}
+      <div style={{ height: 1, background: "rgba(167,139,250,0.07)", margin: "0 20px" }} />
+
+      {/* Bar chart semaine */}
+      <div className="px-4 pt-3 pb-5">
+        <p className="text-[9px] font-bold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+          CETTE SEMAINE
+        </p>
+        <div className="relative" style={{ height: CHART_H }}>
+          {/* Goal line */}
+          <div className="absolute left-0 right-0 pointer-events-none"
+            style={{ bottom: `${Math.min((goal / maxCals) * CHART_H, CHART_H - 4)}px` }}>
+            <div className="flex items-center gap-1">
+              <div className="flex-1" style={{ borderTop: "1.5px dashed rgba(167,139,250,0.35)" }} />
+              <span className="text-[8px] font-bold" style={{ color: "rgba(167,139,250,0.65)" }}>
+                {goal >= 1000 ? `${(goal/1000).toFixed(1)}k` : goal}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-end gap-1 h-full">
+            {data.map((d, i) => {
+              const isToday  = d.date === today;
+              const barH     = d.total > 0 ? Math.max((d.total / maxCals) * CHART_H, 5) : 4;
+              const overGoal = d.total > goal;
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
+                  {/* Valeur au-dessus de la barre */}
+                  {d.total > 0 && (
+                    <motion.span
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.06 + 0.3 }}
+                      className="text-[8px] font-bold"
+                      style={{ color: overGoal ? "#FC8181" : isToday ? "#8B5CF6" : "#A78BFA" }}>
+                      {d.total >= 1000 ? `${(d.total/1000).toFixed(1)}k` : d.total}
+                    </motion.span>
+                  )}
+                  <div style={{ height: barH, width: "100%" }} className="flex justify-center">
+                    <motion.div
+                      initial={{ scaleY: 0 }}
+                      animate={{ scaleY: 1 }}
+                      transition={{ duration: 0.45, delay: i * 0.06, ease: [0.34, 1.06, 0.64, 1] }}
+                      style={{
+                        width: isToday ? "90%" : "75%",
+                        height: "100%",
+                        borderRadius: isToday ? "8px 8px 5px 5px" : "6px 6px 4px 4px",
+                        background: d.total === 0
+                          ? "rgba(167,139,250,0.07)"
+                          : overGoal
+                          ? "linear-gradient(to top,#EF4444,#F87171,#FCA5A5)"
+                          : isToday
+                          ? "linear-gradient(to top,#7C3AED,#8B5CF6,#C4B5FD)"
+                          : "linear-gradient(to top,#7B5CC4,#A78BFA,#DDD6FE)",
+                        boxShadow: isToday && d.total > 0
+                          ? "0 4px 16px rgba(124,92,250,0.4)"
+                          : d.total > 0 ? "0 2px 8px rgba(167,139,250,0.2)" : "none",
+                        transformOrigin: "bottom",
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 border-t" style={{ borderColor: "rgba(167,139,250,0.5)", borderStyle: "dashed" }} />
-          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>Objectif {goal.toLocaleString("fr-FR")}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full" style={{ background: "#FC8181" }} />
-          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>Dépassé</span>
+
+        {/* Labels jours */}
+        <div className="flex gap-1 mt-1.5">
+          {data.map((d, i) => (
+            <div key={i} className="flex-1 text-center">
+              <span className="text-[9px] font-semibold"
+                style={{
+                  color: d.date === today ? "#7C3AED" : "#A0AEC0",
+                  fontWeight: d.date === today ? 800 : 600,
+                }}>
+                {d.label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1883,7 +1827,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
-  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances">("progression");
+  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances" | "nutrition" | "mensurations" | "records">("progression");
   const [shareData, setShareData]           = useState<PerformanceData | null>(null);
   const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
   const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
@@ -1897,6 +1841,22 @@ export default function ProgressionPage() {
   const [libraryFilter, setLibraryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const { settings } = useProfileSettings();
   const { user } = useAuth();
+
+  // Lire l'objectif fitness depuis l'onboarding (localStorage)
+  const [fitnessGoal, setFitnessGoal] = useState<"masse" | "poids" | null>(null);
+  useEffect(() => {
+    try {
+      const pseudo = user?.pseudo;
+      if (!pseudo) return;
+      const raw = localStorage.getItem(`aura_onboarding_${pseudo}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { goals?: string[] };
+      const goals = parsed.goals ?? [];
+      if (goals.includes("masse") && !goals.includes("poids")) setFitnessGoal("masse");
+      else if (goals.includes("poids") && !goals.includes("masse")) setFitnessGoal("poids");
+      else setFitnessGoal(null);
+    } catch { /* ignore */ }
+  }, [user?.pseudo]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: "left" | "right") =>
     scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
@@ -1914,8 +1874,75 @@ export default function ProgressionPage() {
 
   // Charts state
   const [weights, setWeights]         = useState<WeightEntry[]>([]);
-  const [weightRange, setWeightRange] = useState<"week" | "month" | "year" | "all">("week");
+  const [weightRange, setWeightRange] = useState<"week" | "month">("week");
   const [calorieWeek, setCalorieWeek] = useState<CalorieDay[]>([]);
+
+  // ── Mensurations state ──────────────────────────────────────
+  type Measurement = { id: string; date: string; chest_cm?: number | null; waist_cm?: number | null; hips_cm?: number | null; arms_cm?: number | null; thighs_cm?: number | null; neck_cm?: number | null; body_fat?: number | null };
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [newMeas, setNewMeas] = useState({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" });
+  const [savingMeas, setSavingMeas] = useState(false);
+
+  // ── Personal Records state ──────────────────────────────────
+  type PR = { id: string; exercise: string; value: number; unit: string; reps?: number | null; date: string; note?: string | null };
+  const [prs, setPrs] = useState<PR[]>([]);
+  const [newPR, setNewPR] = useState({ exercise: "", value: "", unit: "kg", reps: "", note: "" });
+  const [savingPR, setSavingPR] = useState(false);
+  const [prFilter, setPrFilter] = useState("");
+
+  const commonExercises = ["Développé couché", "Squat", "Soulevé de terre", "Développé militaire", "Rowing barre", "Tractions", "Dips", "Curl biceps", "Extension triceps", "Leg press"];
+
+  const fetchMeasurements = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("body_measurements").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(20);
+    if (data) setMeasurements(data as Measurement[]);
+  }, [user]);
+
+  const fetchPRs = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("personal_records").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(100);
+    if (data) setPrs(data as PR[]);
+  }, [user]);
+
+  useEffect(() => { if (activeTab === "mensurations") fetchMeasurements(); }, [activeTab, fetchMeasurements]);
+  useEffect(() => { if (activeTab === "records") fetchPRs(); }, [activeTab, fetchPRs]);
+
+  const saveMeasurement = async () => {
+    if (!user) return;
+    setSavingMeas(true);
+    const supabase = createClient();
+    const today = toDateStr(new Date());
+    const payload = {
+      user_id: user.id, date: today,
+      chest_cm:  newMeas.chest   ? parseFloat(newMeas.chest)   : null,
+      waist_cm:  newMeas.waist   ? parseFloat(newMeas.waist)   : null,
+      hips_cm:   newMeas.hips    ? parseFloat(newMeas.hips)    : null,
+      arms_cm:   newMeas.arms    ? parseFloat(newMeas.arms)    : null,
+      thighs_cm: newMeas.thighs  ? parseFloat(newMeas.thighs)  : null,
+      neck_cm:   newMeas.neck    ? parseFloat(newMeas.neck)    : null,
+      body_fat:  newMeas.body_fat ? parseFloat(newMeas.body_fat) : null,
+    };
+    const { error } = await supabase.from("body_measurements").upsert(payload, { onConflict: "user_id,date" });
+    setSavingMeas(false);
+    if (!error) { showToast("Mensurations enregistrées ✓"); setNewMeas({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" }); fetchMeasurements(); }
+    else showToast("Erreur : " + error.message);
+  };
+
+  const savePR = async () => {
+    if (!user || !newPR.exercise || !newPR.value) return;
+    setSavingPR(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("personal_records").insert({
+      user_id: user.id, exercise: newPR.exercise, value: parseFloat(newPR.value),
+      unit: newPR.unit, reps: newPR.reps ? parseInt(newPR.reps) : null,
+      note: newPR.note || null, date: toDateStr(new Date()),
+    });
+    setSavingPR(false);
+    if (!error) { showToast("Record enregistré 🏆"); setNewPR({ exercise: "", value: "", unit: "kg", reps: "", note: "" }); fetchPRs(); }
+    else showToast("Erreur : " + error.message);
+  };
 
   const fetchSessions = useCallback(async () => {
     if (!user) return;
@@ -1989,36 +2016,21 @@ export default function ProgressionPage() {
 
   useEffect(() => { fetchProgressData(); }, [fetchProgressData]);
 
-  const addWeight = async (kg: number, date: string) => {
+  const addWeight = async (kg: number) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
     const supabase = createClient();
+    const today = toDateStr(new Date());
     const { error } = await supabase.from("weight_logs").upsert(
-      { user_id: user.id, date, weight_kg: kg },
+      { user_id: user.id, date: today, weight_kg: kg },
       { onConflict: "user_id,date" }
     );
     if (!error) {
       setWeights(prev => {
-        const filtered = prev.filter(w => w.date !== date);
-        return [...filtered, { date, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
+        const filtered = prev.filter(w => w.date !== today);
+        return [...filtered, { date: today, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
       });
       showToast(`Poids enregistré : ${kg} kg ✓`);
     }
-  };
-
-  const deleteWeight = async (date: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("weight_logs").delete()
-      .eq("user_id", user.id).eq("date", date);
-    if (!error) {
-      setWeights(prev => prev.filter(w => w.date !== date));
-      showToast("Mesure supprimée ✓");
-    }
-  };
-
-  const editWeight = async (date: string, kg: number) => {
-    await addWeight(kg, date); // upsert gère la mise à jour
-    showToast(`Poids modifié : ${kg} kg ✓`);
   };
 
   const handleStartWorkout = async (session: WorkoutSession) => {
@@ -2076,8 +2088,11 @@ export default function ProgressionPage() {
         className="flex gap-2 mb-8"
       >
         {([
-          { key: "progression", label: "Progression" },
-          { key: "mes-seances", label: "Mes Séances" },
+          { key: "progression",    label: "Progression" },
+          { key: "mes-seances",    label: "Mes Séances" },
+          { key: "nutrition",      label: "Nutrition" },
+          { key: "mensurations",   label: "Mensurations" },
+          { key: "records",        label: "Records" },
         ] as const).map(({ key, label }) => (
           <motion.button
             key={key}
@@ -2128,31 +2143,12 @@ export default function ProgressionPage() {
             range={weightRange}
             onRangeChange={setWeightRange}
             onAdd={addWeight}
-            onDelete={deleteWeight}
-            onEdit={editWeight}
+            goalType={fitnessGoal}
           />
           <CalorieChart data={calorieWeek} goal={2200} />
         </div>
       </motion.div>
 
-      {/* Upload Zones */}
-      <motion.div
-        className="flex gap-3 mb-10 max-w-5xl"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <UploadZone
-          icon={Camera} label="Scan Nutrition" sublabel="L'IA reconnaît vos repas"
-          accept="image/*" cardClass="lg-rose"
-          captureMode="photo" captureLabel="Photographier votre repas"
-        />
-        <UploadZone
-          icon={Video} label="Analyse Posture" sublabel="Feedback en temps réel"
-          accept="video/*" cardClass="lg-turquoise"
-          captureMode="video" captureLabel="Enregistrer votre mouvement"
-        />
-      </motion.div>
 
       {/* ── Timeline ── */}
       <motion.div
@@ -2560,6 +2556,252 @@ export default function ProgressionPage() {
             );
           })()}
 
+        </motion.div>
+      )}
+
+      {/* ══════════ TAB NUTRITION ══════════ */}
+      {activeTab === "nutrition" && (
+        <motion.div
+          key="nutrition-tab"
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 16 }}
+          transition={{ duration: 0.3 }}
+        >
+          <NutritionTab showBackButton={false} />
+        </motion.div>
+      )}
+
+      {/* ══════════ TAB MENSURATIONS ══════════ */}
+      {activeTab === "mensurations" && (
+        <motion.div key="mensurations-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.3 }} className="flex flex-col gap-6">
+
+          {/* Form */}
+          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Ajouter mes mesures d&apos;aujourd&apos;hui</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: "chest",    label: "Poitrine", emoji: "📏" },
+                { key: "waist",    label: "Taille",   emoji: "🎯" },
+                { key: "hips",     label: "Hanches",  emoji: "📐" },
+                { key: "arms",     label: "Bras",     emoji: "💪" },
+                { key: "thighs",   label: "Cuisses",  emoji: "🦵" },
+                { key: "neck",     label: "Cou",      emoji: "📏" },
+                { key: "body_fat", label: "% Gras",   emoji: "⚡" },
+              ].map(({ key, label, emoji }) => (
+                <div key={key} className="flex flex-col gap-1">
+                  <label className="text-xs font-medium" style={{ color: "#718096" }}>{emoji} {label}</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder={key === "body_fat" ? "%" : "cm"}
+                    value={newMeas[key as keyof typeof newMeas]}
+                    onChange={(e) => setNewMeas(p => ({ ...p, [key]: e.target.value }))}
+                    className="px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
+                  />
+                </div>
+              ))}
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={saveMeasurement}
+              disabled={savingMeas}
+              className="w-full mt-4 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+            >
+              {savingMeas ? "Enregistrement…" : "Enregistrer les mesures"}
+            </motion.button>
+          </div>
+
+          {/* History */}
+          {measurements.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>Historique</p>
+              <div className="flex flex-col gap-3">
+                {measurements.map((m, i) => (
+                  <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                    className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
+                    <p className="text-xs font-semibold mb-2" style={{ color: "#A78BFA" }}>
+                      {new Date(m.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Poitrine", val: m.chest_cm, unit: "cm" },
+                        { label: "Taille",   val: m.waist_cm, unit: "cm" },
+                        { label: "Hanches",  val: m.hips_cm,  unit: "cm" },
+                        { label: "Bras",     val: m.arms_cm,  unit: "cm" },
+                        { label: "Cuisses",  val: m.thighs_cm,unit: "cm" },
+                        { label: "% Gras",   val: m.body_fat, unit: "%" },
+                      ].filter(x => x.val != null).map(({ label, val, unit }) => (
+                        <div key={label} className="text-center p-2 rounded-xl" style={{ background: "rgba(240,235,255,0.4)" }}>
+                          <p className="text-base font-light" style={{ color: "#2D3748" }}>{val}{unit}</p>
+                          <p className="text-[9px] font-medium" style={{ color: "#A0AEC0" }}>{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {measurements.length === 0 && (
+            <div className="flex flex-col items-center py-12 gap-3">
+              <div className="text-4xl">📏</div>
+              <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>Aucune mensuration enregistrée.<br/>Ajoute tes premières mesures ci-dessus.</p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ══════════ TAB RECORDS ══════════ */}
+      {activeTab === "records" && (
+        <motion.div key="records-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.3 }} className="flex flex-col gap-6">
+
+          {/* Form */}
+          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Nouveau record personnel 🏆</p>
+            <div className="flex flex-col gap-3">
+              {/* Exercice */}
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Exercice</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Développé couché"
+                  value={newPR.exercise}
+                  onChange={(e) => setNewPR(p => ({ ...p, exercise: e.target.value }))}
+                  list="exercise-suggestions"
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
+                />
+                <datalist id="exercise-suggestions">
+                  {commonExercises.map(e => <option key={e} value={e} />)}
+                </datalist>
+              </div>
+              {/* Value + unit */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Valeur</label>
+                  <input
+                    type="number" step="0.5" placeholder="100"
+                    value={newPR.value}
+                    onChange={(e) => setNewPR(p => ({ ...p, value: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Unité</label>
+                  <select
+                    value={newPR.unit}
+                    onChange={(e) => setNewPR(p => ({ ...p, unit: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
+                  >
+                    <option value="kg">kg</option>
+                    <option value="km">km</option>
+                    <option value="min">min</option>
+                    <option value="reps">reps</option>
+                    <option value="s">sec</option>
+                  </select>
+                </div>
+              </div>
+              {/* Reps + note */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Répétitions (optionnel)</label>
+                  <input
+                    type="number" placeholder="Ex: 3"
+                    value={newPR.reps}
+                    onChange={(e) => setNewPR(p => ({ ...p, reps: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Note (optionnel)</label>
+                  <input
+                    type="text" placeholder="Ex: PR absolu !"
+                    value={newPR.note}
+                    onChange={(e) => setNewPR(p => ({ ...p, note: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
+                  />
+                </div>
+              </div>
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={savePR}
+              disabled={savingPR || !newPR.exercise || !newPR.value}
+              className="w-full mt-4 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+              style={{
+                background: newPR.exercise && newPR.value ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
+                color: newPR.exercise && newPR.value ? "#2D3748" : "#A0AEC0",
+                boxShadow: newPR.exercise && newPR.value ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+              }}
+            >
+              {savingPR ? "Enregistrement…" : "Ajouter le record 🏆"}
+            </motion.button>
+          </div>
+
+          {/* Filter + list */}
+          {prs.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Mes records</p>
+                <input
+                  type="text" placeholder="Filtrer…" value={prFilter}
+                  onChange={(e) => setPrFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl text-xs outline-none"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748", width: 120 }}
+                />
+              </div>
+              {/* Group PRs by exercise and show best */}
+              {(() => {
+                const grouped = prs
+                  .filter(p => !prFilter || p.exercise.toLowerCase().includes(prFilter.toLowerCase()))
+                  .reduce<Record<string, PR[]>>((acc, p) => { (acc[p.exercise] ??= []).push(p); return acc; }, {});
+                return Object.entries(grouped).map(([exercise, records], gi) => {
+                  const best = records.reduce((a, b) => a.value >= b.value ? a : b);
+                  return (
+                    <motion.div key={exercise} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.06 }}
+                      className="rounded-2xl p-4 mb-3 relative overflow-hidden"
+                      style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.15) 0%, rgba(245,230,163,0.1) 100%)", border: "1px solid rgba(167,139,250,0.15)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{exercise}</p>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
+                          <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{best.value} {best.unit}</span>
+                          {best.reps && <span className="text-[10px] font-medium" style={{ color: "#4A5568" }}>× {best.reps}</span>}
+                        </div>
+                      </div>
+                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                        {records.length} entrée{records.length > 1 ? "s" : ""} · Dernier : {new Date(best.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                        {best.note && ` · ${best.note}`}
+                      </p>
+                      {records.length > 1 && (
+                        <div className="flex gap-1.5 mt-2 flex-wrap">
+                          {records.slice(0, 5).map((r, ri) => (
+                            <span key={ri} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(167,139,250,0.12)", color: "#7C5CFA" }}>
+                              {new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} : {r.value}{r.unit}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                });
+              })()}
+            </div>
+          )}
+
+          {prs.length === 0 && (
+            <div className="flex flex-col items-center py-12 gap-3">
+              <div className="text-4xl">🏆</div>
+              <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>Aucun record enregistré.<br/>Ajoute ton premier PR ci-dessus !</p>
+            </div>
+          )}
         </motion.div>
       )}
 

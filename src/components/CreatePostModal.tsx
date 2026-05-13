@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Image, Send } from "lucide-react";
+import { X, Image, Video, Send, Upload, Globe, Users, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,30 +11,101 @@ type Props = {
   onSuccess: () => void;
 };
 
+type Audience = "public" | "friends" | "private";
+
 export default function CreatePostModal({ onClose, onSuccess }: Props) {
   const { user } = useAuth();
-  const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [showImageInput, setShowImageInput] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaKind, setMediaKind] = useState<"image" | "video" | null>(null);
+  const [audience, setAudience] = useState<Audience>("public");
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
+  const fileRef = useRef<HTMLInputElement>(null);
   const MAX_CHARS = 500;
-  const remaining = MAX_CHARS - content.length;
-  const canSubmit = content.trim().length > 0 && remaining >= 0 && !submitting;
+  const remaining = MAX_CHARS - caption.length;
+  const canSubmit = (caption.trim().length > 0 || mediaFile) && remaining >= 0 && !submitting;
+
+  const handleFile = (file: File) => {
+    const isVideo = file.type.startsWith("video/");
+    const isImage = file.type.startsWith("image/");
+    if (!isVideo && !isImage) { setError("Seules les images et vidéos sont acceptées"); return; }
+    if (file.size > 50 * 1024 * 1024) { setError("Fichier trop lourd (max 50 Mo)"); return; }
+    setError(null);
+    setMediaFile(file);
+    setMediaKind(isVideo ? "video" : "image");
+    const url = URL.createObjectURL(file);
+    setMediaPreview(url);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  }, []); // eslint-disable-line
+
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaKind(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit || !user) return;
     setSubmitting(true);
     setError(null);
+    setUploadProgress(0);
 
     const supabase = createClient();
+    let mediaUrl: string | null = null;
+    let mediaType: string | null = null;
+
+    // Upload du fichier si présent
+    if (mediaFile) {
+      const ext = mediaFile.name.split(".").pop() ?? (mediaKind === "video" ? "mp4" : "jpg");
+      const path = `${user.id}/posts/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+
+      setUploadProgress(20);
+      const { data, error: uploadErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, mediaFile, { upsert: false, contentType: mediaFile.type });
+
+      if (uploadErr) {
+        setError(`Erreur upload : ${uploadErr.message}`);
+        setSubmitting(false);
+        return;
+      }
+      setUploadProgress(70);
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(data.path);
+      mediaUrl = urlData.publicUrl;
+      mediaType = mediaKind ?? "image";
+    }
+
+    setUploadProgress(85);
+
     const { error: insertError } = await supabase.from("posts").insert({
       user_id: user.id,
-      content: content.trim(),
-      image_url: imageUrl.trim() || null,
+      type: "day",
+      caption: caption.trim() || null,
+      audience,
+      performance_data: {},
+      media_url: mediaUrl,
+      media_type: mediaType,
     });
 
+    setUploadProgress(100);
     setSubmitting(false);
 
     if (insertError) {
@@ -46,146 +117,193 @@ export default function CreatePostModal({ onClose, onSuccess }: Props) {
     onClose();
   };
 
+  const audienceOptions: { key: Audience; label: string; icon: typeof Globe }[] = [
+    { key: "public",  label: "Public",  icon: Globe },
+    { key: "friends", label: "Amis",    icon: Users },
+    { key: "private", label: "Privé",   icon: Lock  },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(240,235,255,0.8)", backdropFilter: "blur(28px)" }}
+      style={{ background: "rgba(240,235,255,0.85)", backdropFilter: "blur(28px)" }}
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, y: 32, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.97 }}
-        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-        className="w-full max-w-md rounded-3xl p-6"
+        transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
+        className="w-full max-w-md rounded-3xl p-6 flex flex-col gap-4"
         style={{
-          background: "rgba(255,255,255,0.9)",
+          background: "rgba(255,255,255,0.96)",
           backdropFilter: "blur(32px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 24px 64px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+          maxHeight: "90vh",
+          overflowY: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
-            Nouveau post
-          </h2>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={onClose}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Nouveau post</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}
-            aria-label="Fermer"
-          >
+            style={{ background: "rgba(240,235,255,0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
         </div>
 
-        {/* Author row */}
+        {/* Author */}
         {user && (
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden"
-              style={{
-                background: user.avatar
-                  ? "transparent"
-                  : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                color: "#2D3748",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-              }}
-            >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-semibold"
+              style={{ background: user.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
               {user.avatar
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={user.avatar} alt={user.pseudo} className="w-full h-full object-cover" />
                 : user.pseudo?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div>
-              <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>
-                {user.name || user.pseudo}
-              </p>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>
-                @{user.pseudo}
-              </p>
+              <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>{user.name || user.pseudo}</p>
+              <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>@{user.pseudo}</p>
             </div>
           </div>
         )}
 
-        {/* Textarea */}
-        <div
-          className="relative mb-3 rounded-2xl"
-          style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.4)" }}
-        >
+        {/* Caption */}
+        <div className="relative rounded-2xl"
+          style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.4)" }}>
           <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
             placeholder="Quoi de neuf ? Partage ta progression, une pensée, une victoire…"
-            rows={5}
+            rows={4}
             maxLength={MAX_CHARS}
-            className="w-full bg-transparent text-sm outline-none px-4 pt-3 pb-8 rounded-2xl resize-none placeholder:font-light"
+            className="w-full bg-transparent text-sm outline-none px-4 pt-3 pb-7 rounded-2xl resize-none placeholder:font-light"
             style={{ color: "#2D3748" }}
             autoFocus
           />
-          {/* Char counter */}
-          <span
-            className="absolute bottom-2.5 right-3 text-[11px] font-medium select-none"
-            style={{ color: remaining <= 30 ? (remaining < 0 ? "#FC8181" : "#D4A843") : "#C4C9D4" }}
-          >
+          <span className="absolute bottom-2.5 right-3 text-[11px] font-medium select-none"
+            style={{ color: remaining <= 30 ? (remaining < 0 ? "#FC8181" : "#D4A843") : "#C4C9D4" }}>
             {remaining}
           </span>
         </div>
 
-        {/* Image URL toggle */}
-        <div className="mb-4">
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setShowImageInput((v) => !v)}
-            className="flex items-center gap-2 text-xs font-medium cursor-pointer px-3 py-1.5 rounded-xl transition-colors"
-            style={{
-              background: showImageInput ? "rgba(212,192,255,0.25)" : "rgba(240,235,255,0.6)",
-              color: showImageInput ? "#7C3AED" : "#A0AEC0",
-              border: "1px solid rgba(212,192,255,0.3)",
-            }}
-          >
-            <Image size={13} strokeWidth={1.8} />
-            {showImageInput ? "Masquer l'image" : "Ajouter une image"}
-          </motion.button>
-
-          <AnimatePresence>
-            {showImageInput && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden mt-2"
+        {/* Media zone */}
+        <AnimatePresence mode="wait">
+          {!mediaPreview ? (
+            <motion.div
+              key="drop-zone"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileRef.current?.click()}
+              className="relative rounded-2xl flex flex-col items-center justify-center gap-3 py-8 cursor-pointer transition-all"
+              style={{
+                background: dragging ? "rgba(167,139,250,0.1)" : "rgba(240,235,255,0.4)",
+                border: `2px dashed ${dragging ? "#A78BFA" : "rgba(167,139,250,0.3)"}`,
+              }}
+            >
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF,#F0E6FF)" }}>
+                  <Image size={18} strokeWidth={1.5} style={{ color: "#7C5CFA" }} />
+                </div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg,#FDE68A,#F5E6A3)" }}>
+                  <Video size={18} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>
+                  {dragging ? "Dépose ici !" : "Ajoute une photo ou vidéo"}
+                </p>
+                <p className="text-xs mt-0.5 font-light" style={{ color: "#A0AEC0" }}>
+                  Glisse-dépose ou clique · JPG, PNG, MP4, MOV · max 50 Mo
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl" style={{ background: "rgba(167,139,250,0.12)" }}>
+                <Upload size={12} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                <span className="text-xs font-semibold" style={{ color: "#A78BFA" }}>Choisir un fichier</span>
+              </div>
+              <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
+            </motion.div>
+          ) : (
+            <motion.div key="preview" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              className="relative rounded-2xl overflow-hidden"
+              style={{ background: "#000", maxHeight: 280 }}>
+              {mediaKind === "video"
+                ? <video src={mediaPreview} className="w-full object-cover" style={{ maxHeight: 280 }} controls muted playsInline />
+                // eslint-disable-next-line @next/next/no-img-element
+                : <img src={mediaPreview} alt="aperçu" className="w-full object-cover" style={{ maxHeight: 280 }} />
+              }
+              {/* Remove button */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={removeMedia}
+                className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}
               >
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://exemple.com/image.jpg"
-                  className="w-full text-xs outline-none px-3 py-2.5 rounded-xl"
-                  style={{
-                    background: "rgba(240,235,255,0.5)",
-                    border: "1px solid rgba(212,192,255,0.5)",
-                    color: "#2D3748",
-                  }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+                <X size={14} strokeWidth={2.5} style={{ color: "white" }} />
+              </motion.button>
+              {/* File info badge */}
+              <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg flex items-center gap-1.5"
+                style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
+                {mediaKind === "video"
+                  ? <Video size={11} strokeWidth={2} style={{ color: "rgba(255,255,255,0.8)" }} />
+                  : <Image size={11} strokeWidth={2} style={{ color: "rgba(255,255,255,0.8)" }} />
+                }
+                <span className="text-[10px] font-medium text-white/80 truncate max-w-[140px]">
+                  {mediaFile?.name}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Audience */}
+        <div className="flex gap-1.5">
+          {audienceOptions.map(({ key, label, icon: Icon }) => (
+            <motion.button key={key} whileTap={{ scale: 0.95 }}
+              onClick={() => setAudience(key)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
+              style={audience === key
+                ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.3)" }
+              }
+            >
+              <Icon size={11} strokeWidth={2} />
+              {label}
+            </motion.button>
+          ))}
         </div>
 
+        {/* Upload progress bar */}
+        <AnimatePresence>
+          {submitting && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+              <div className="rounded-full overflow-hidden" style={{ height: 4, background: "rgba(167,139,250,0.15)" }}>
+                <motion.div className="h-full rounded-full"
+                  style={{ background: "linear-gradient(90deg,#A78BFA,#F5E6A3)" }}
+                  animate={{ width: `${uploadProgress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+              <p className="text-[10px] text-center mt-1 font-light" style={{ color: "#A0AEC0" }}>
+                {uploadProgress < 70 ? "Upload en cours…" : uploadProgress < 90 ? "Finalisation…" : "Publication…"}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Error */}
-        {error && (
-          <p className="text-xs mb-3 px-1" style={{ color: "#FC8181" }}>
-            {error}
-          </p>
-        )}
+        {error && <p className="text-xs px-1" style={{ color: "#FC8181" }}>{error}</p>}
 
         {/* Submit */}
         <motion.button
@@ -194,33 +312,15 @@ export default function CreatePostModal({ onClose, onSuccess }: Props) {
           onClick={handleSubmit}
           disabled={!canSubmit}
           className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all"
-          style={
-            canSubmit
-              ? {
-                  background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                  color: "#2D3748",
-                  boxShadow: "0 4px 16px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.8)",
-                }
-              : {
-                  background: "rgba(240,235,255,0.6)",
-                  color: "#A0AEC0",
-                  cursor: "not-allowed",
-                }
+          style={canSubmit
+            ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 16px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.8)" }
+            : { background: "rgba(240,235,255,0.6)", color: "#A0AEC0", cursor: "not-allowed" }
           }
         >
-          {submitting ? (
-            <motion.div
-              className="w-4 h-4 rounded-full border-2"
-              style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }}
-            />
-          ) : (
-            <>
-              <Send size={14} strokeWidth={2} />
-              Publier
-            </>
-          )}
+          {submitting
+            ? <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+            : <><Send size={14} strokeWidth={2} />Publier</>
+          }
         </motion.button>
       </motion.div>
     </motion.div>
