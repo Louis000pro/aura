@@ -41,9 +41,11 @@ type User = {
 type RealStory = {
   id: string;
   user_id: string;
-  content_type: "workout" | "meal" | "text";
+  content_type: "workout" | "meal" | "text" | "photo" | "video";
   content_data: Record<string, unknown> | null;
   caption: string | null;
+  media_url?: string | null;
+  media_type?: string | null;
   created_at: string;
   expires_at: string;
   profiles: { pseudo: string; full_name: string | null; avatar_url: string | null } | null;
@@ -56,8 +58,10 @@ type RealPost = {
   caption: string;
   audience: "public" | "friends" | "private";
   performance_data: PerformanceData;
+  media_url?: string | null;
+  media_type?: string | null;
   created_at: string;
-  author: { pseudo: string; full_name?: string; avatar_url?: string } | null;
+  author: { pseudo: string; full_name?: string; avatar_url?: string; is_admin?: boolean } | null;
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
 };
@@ -232,6 +236,30 @@ function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: numb
 // ── helpers pour le contenu d'une story ──────────────────────
 function StoryCard({ story }: { story: RealStory }) {
   const d = story.content_data ?? {};
+
+  // Photo ou vidéo
+  if ((story.content_type === "photo" || story.content_type === "video") && story.media_url) {
+    return (
+      <motion.div
+        key={story.id}
+        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", bounce: 0.3 }}
+        className="w-full max-w-sm rounded-3xl overflow-hidden"
+        style={{ aspectRatio: "9/16", maxHeight: 420, background: "#000", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+      >
+        {story.content_type === "video"
+          ? <video src={story.media_url} className="w-full h-full object-cover" muted playsInline autoPlay loop />
+          // eslint-disable-next-line @next/next/no-img-element
+          : <img src={story.media_url} alt="" className="w-full h-full object-cover" />}
+        {story.caption && (
+          <div className="absolute bottom-0 inset-x-0 px-4 pb-4 pt-8"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)" }}>
+            <p className="text-white text-sm font-medium">{story.caption}</p>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
 
   if (story.content_type === "workout") {
     const catGrad: Record<string, string> = {
@@ -511,7 +539,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
 }
 
 // Add Story Modal — enregistre vraiment dans Supabase
-type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "loading" | "saving" | "success" | "no-session" | "db-error";
+type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "photo-pick" | "photo-preview" | "loading" | "saving" | "success" | "no-session" | "db-error";
 type WorkoutPreview = { session_title: string; duration_minutes: number; calories_burned: number; category: string; started_at?: string };
 
 function AddStoryModal({ onClose, userId, onPublished }: {
@@ -526,6 +554,13 @@ function AddStoryModal({ onClose, userId, onPublished }: {
   const [textContent, setTextContent] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("✨");
   const [error, setError]             = useState<string | null>(null);
+  const [mediaFile, setMediaFile]     = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType]     = useState<"image" | "video">("image");
+  const [publishedStoryId, setPublishedStoryId] = useState<string | null>(null);
+  const [publishedMediaUrl, setPublishedMediaUrl] = useState<string | null>(null);
+  const [savingToHL, setSavingToHL]   = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const EMOJIS = ["💪", "🥗", "🧘", "🔥", "🏃", "✨", "🏆", "😴"];
 
@@ -596,6 +631,73 @@ function AddStoryModal({ onClose, userId, onPublished }: {
     onPublished();
   };
 
+  // Sélection d'un fichier photo/vidéo
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isVid = file.type.startsWith("video/");
+    setMediaFile(file);
+    setMediaType(isVid ? "video" : "image");
+    setMediaPreview(URL.createObjectURL(file));
+    setStep("photo-preview");
+  };
+
+  // Publier la photo/vidéo comme story
+  const publishMedia = async () => {
+    if (!userId || !mediaFile) return;
+    setStep("saving");
+    try {
+      const supabase = createClient();
+      const ext  = mediaFile.name.split(".").pop();
+      const path = `${userId}/story_${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, mediaFile, { upsert: true });
+      if (uploadErr) { setError(uploadErr.message); setStep("photo-preview"); return; }
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const mediaUrl = urlData.publicUrl + "?t=" + Date.now();
+      const { data: inserted, error: e } = await supabase.from("stories").insert({
+        user_id:      userId,
+        content_type: mediaType,
+        content_data: null,
+        caption:      caption.trim() || null,
+        media_url:    mediaUrl,
+        media_type:   mediaType,
+      }).select("id").single();
+      if (e) { setError(e.message); setStep("photo-preview"); return; }
+      setPublishedStoryId(inserted?.id ?? null);
+      setPublishedMediaUrl(mediaUrl);
+      setStep("success");
+      onPublished();
+    } catch (err) {
+      setError(String(err));
+      setStep("photo-preview");
+    }
+  };
+
+  // Sauvegarder la story publiée dans une story à la une
+  const saveToHighlight = async () => {
+    if (!userId || !publishedMediaUrl) return;
+    setSavingToHL(true);
+    try {
+      const supabase = createClient();
+      // Fetch user's highlights
+      const { data: hls } = await supabase.from("highlights").select("id, name").eq("user_id", userId).order("created_at", { ascending: true });
+      if (!hls || hls.length === 0) {
+        // Create a default highlight
+        const { data: hl } = await supabase.from("highlights").insert({ user_id: userId, name: "Story", cover_url: publishedMediaUrl }).select("id").single();
+        if (hl) {
+          await supabase.from("highlight_items").insert({ highlight_id: hl.id, media_url: publishedMediaUrl, media_type: mediaType, story_id: publishedStoryId ?? null });
+        }
+      } else {
+        // Add to first highlight (or could show picker — simplified here)
+        const hl = hls[0];
+        const { data: existing } = await supabase.from("highlight_items").select("id", { count: "exact", head: true }).eq("highlight_id", hl.id);
+        const order = (existing as unknown as { count: number })?.count ?? 0;
+        await supabase.from("highlight_items").insert({ highlight_id: hl.id, media_url: publishedMediaUrl, media_type: mediaType, story_id: publishedStoryId ?? null, display_order: order });
+      }
+    } finally { setSavingToHL(false); }
+    onClose();
+  };
+
   // Formate la date relative d'une séance
   const fmtDate = (iso?: string) => {
     if (!iso) return "";
@@ -642,29 +744,31 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                   <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2.5">
                 {[
-                  { icon: Share2, label: "Ma séance", desc: "Choisir une perf",   action: handleWorkout },
-                  { icon: Camera, label: "Texte",     desc: "Un message + emoji", action: () => setStep("text-input") },
-                ].map(({ icon: Icon, label, desc, action }) => (
+                  { emoji: "📷", label: "Photo / Vidéo", desc: "Depuis ta galerie", action: () => fileRef.current?.click() },
+                  { emoji: "💪", label: "Ma séance",     desc: "Perf sportive",    action: handleWorkout },
+                  { emoji: "✍️", label: "Texte",         desc: "Message + emoji",  action: () => setStep("text-input") },
+                ].map(({ emoji, label, desc, action }) => (
                   <motion.button
                     key={label}
-                    whileHover={{ scale: 1.03, y: -2 }}
+                    whileHover={{ scale: 1.04, y: -2 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={action}
-                    className="flex flex-col items-center gap-2 p-4 rounded-2xl cursor-pointer"
+                    className="flex flex-col items-center gap-2 p-3.5 rounded-2xl cursor-pointer"
                     style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", border: "1px solid rgba(255,255,255,0.8)" }}
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)" }}>
-                      <Icon size={18} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl" style={{ background: "rgba(255,255,255,0.7)" }}>
+                      {emoji}
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>{desc}</p>
+                      <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>{label}</p>
+                      <p className="text-[9px]" style={{ color: "#A0AEC0" }}>{desc}</p>
                     </div>
                   </motion.button>
                 ))}
               </div>
+              <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
               {error && <p className="text-xs text-center mt-3" style={{ color: "#FC8181" }}>{error}</p>}
             </motion.div>
           )}
@@ -812,6 +916,43 @@ function AddStoryModal({ onClose, userId, onPublished }: {
             </motion.div>
           )}
 
+          {/* ── Aperçu photo/vidéo ── */}
+          {step === "photo-preview" && mediaPreview && (
+            <motion.div key="photo-preview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center gap-2 mb-4">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setStep("pick"); setMediaPreview(null); setMediaFile(null); }} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Aperçu de ta story</h2>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: "9/16", maxHeight: 280, background: "#000" }}>
+                {mediaType === "video"
+                  ? <video src={mediaPreview} className="w-full h-full object-cover" muted playsInline autoPlay loop />
+                  // eslint-disable-next-line @next/next/no-img-element
+                  : <img src={mediaPreview} alt="" className="w-full h-full object-cover" />}
+              </div>
+
+              <input
+                type="text"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Ajouter une légende (optionnel)…"
+                className="w-full text-sm outline-none px-4 py-3 rounded-xl mb-4"
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+              />
+              {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={publishMedia}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+              >
+                Publier la story
+              </motion.button>
+            </motion.div>
+          )}
+
           {/* ── Aucune séance ── */}
           {step === "no-session" && (
             <motion.div key="no-session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-4">
@@ -904,10 +1045,32 @@ function AddStoryModal({ onClose, userId, onPublished }: {
               </motion.div>
               <p className="text-lg font-light" style={{ color: "#2D3748" }}>Story publiée !</p>
               <p className="text-sm text-center font-light" style={{ color: "#A0AEC0" }}>Visible pendant 24h par tes abonnés</p>
+
+              {/* Option sauvegarder dans highlight (pour photo/vidéo uniquement) */}
+              {publishedMediaUrl && (
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={saveToHighlight}
+                  disabled={savingToHL}
+                  className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                  style={{ background: "rgba(212,192,255,0.3)", color: "#5A4A8A", border: "1px solid rgba(167,139,250,0.3)" }}
+                >
+                  {savingToHL ? (
+                    <>
+                      <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                        animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                      Sauvegarde…
+                    </>
+                  ) : (
+                    <>⭐ Sauvegarder dans une story à la une</>
+                  )}
+                </motion.button>
+              )}
+
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={onClose}
-                className="mt-2 px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
+                className="mt-1 px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
                 style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
               >
                 Fermer
@@ -1526,26 +1689,18 @@ function CommunautePageInner() {
       });
   }, [user]); // eslint-disable-line
 
-  // Charger les stories actives (les miennes + celles des personnes que je suis)
-  // Join manuel des profils car la FK stories.user_id → auth.users (pas public.profiles)
+  // Charger TOUTES les stories actives — visibles par tous les utilisateurs
   const loadStories = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
 
-    // 1. IDs à charger : moi + abonnements
-    const { data: followedData } = await supabase
-      .from("followers")
-      .select("following_id")
-      .eq("follower_id", user.id);
-    const ids = [user.id, ...(followedData?.map((r) => r.following_id as string) ?? [])];
-
-    // 2. Stories actives (sans join automatique)
+    // Toutes les stories actives (pas de filtre par following → visible par tous)
     const { data: storiesData } = await supabase
       .from("stories")
-      .select("id, user_id, content_type, content_data, caption, created_at, expires_at")
-      .in("user_id", ids)
+      .select("id, user_id, content_type, content_data, caption, media_url, media_type, created_at, expires_at")
       .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (!storiesData || storiesData.length === 0) {
       setRealStories([]);
@@ -1581,8 +1736,8 @@ function CommunautePageInner() {
     const { data } = await supabase
       .from("posts")
       .select(`
-        id, type, caption, audience, performance_data, created_at, user_id,
-        author:profiles!user_id(pseudo, full_name, avatar_url),
+        id, type, caption, audience, performance_data, media_url, media_type, created_at, user_id,
+        author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
         post_likes(user_id),
         post_comments(id)
       `)
@@ -1611,8 +1766,8 @@ function CommunautePageInner() {
         const { data } = await supabase
           .from("posts")
           .select(`
-            id, type, caption, audience, performance_data, created_at, user_id,
-            author:profiles!user_id(pseudo, full_name, avatar_url),
+            id, type, caption, audience, performance_data, media_url, media_type, created_at, user_id,
+            author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
             post_likes(user_id),
             post_comments(id)
           `)
@@ -1651,13 +1806,13 @@ function CommunautePageInner() {
         return;
       }
       // Notification in-app (silencieuse)
-      supabase.from("notifications").insert({
+      void Promise.resolve(supabase.from("notifications").insert({
         user_id: profile.id,
         from_user_id: user.id,
         from_pseudo: user.pseudo,
         from_avatar_url: user.avatar ?? null,
         type: "follow",
-      }).then(() => {}).catch(() => {});
+      })).then(() => {}).catch(() => {});
       // Email de notification (silencieux, ne bloque pas l'UI)
       fetch("/api/notifications/follow", {
         method: "POST",
@@ -2050,12 +2205,17 @@ function CommunautePageInner() {
                             className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden font-semibold text-lg"
                             style={{
                               background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                              outline: "2px solid #D4C0FF",
+                              outline: "2.5px solid",
+                              outlineColor: (group[0]?.content_type === "photo" || group[0]?.content_type === "video") ? "#A78BFA" : "#D4C0FF",
                               outlineOffset: 2,
                               color: "#2D3748",
                             }}
                           >
-                            {p?.avatar_url
+                            {/* Show photo thumbnail if first story is a photo */}
+                            {(group[0]?.content_type === "photo" || group[0]?.content_type === "video") && group[0]?.media_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={group[0].media_url} alt={name} className="w-full h-full object-cover" />
+                              : p?.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
                               ? <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" />
                               : initial
@@ -2137,8 +2297,8 @@ function CommunautePageInner() {
               const likesCount = post.post_likes.length;
               const commentsCount = post.post_comments.length;
               const authorPseudo = post.author?.pseudo ?? "utilisateur";
-              const authorName = post.author?.full_name || authorPseudo;
               const authorAvatar = post.author?.avatar_url;
+              const authorCertified = post.author?.is_admin === true;
 
               return (
                 <motion.div
@@ -2166,8 +2326,18 @@ function CommunautePageInner() {
                       </motion.div>
                     </Link>
                     <Link href={`/profil/${authorPseudo}`} className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{authorName}</p>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>@{authorPseudo} · {postTimeAgo(post.created_at)}</p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
+                        {authorCertified && (
+                          <div className="flex-shrink-0 flex items-center justify-center rounded-full"
+                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
+                            <svg width="9" height="9" viewBox="0 0 13 13" fill="none">
+                              <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>{postTimeAgo(post.created_at)}</p>
                     </Link>
                     <div className="relative">
                       <motion.button
@@ -2201,10 +2371,23 @@ function CommunautePageInner() {
                     </div>
                   </div>
 
-                  {/* Performance Card */}
-                  <div className="px-4">
-                    <PerformanceCard data={post.performance_data} size="md" interactive />
-                  </div>
+                  {/* Media (photo/vidéo) si présente */}
+                  {post.media_url && (
+                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ maxHeight: 320, background: "#000" }}>
+                      {post.media_type === "video"
+                        ? <video src={post.media_url} className="w-full object-cover" style={{ maxHeight: 320 }} controls muted playsInline />
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 320 }} />
+                      }
+                    </div>
+                  )}
+
+                  {/* Performance Card — seulement si performance_data a un vrai type */}
+                  {post.performance_data && (post.performance_data as { type?: string }).type && (
+                    <div className="px-4">
+                      <PerformanceCard data={post.performance_data} size="md" interactive />
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex items-center gap-4 px-4 pt-3">
@@ -2217,14 +2400,14 @@ function CommunautePageInner() {
                         <motion.div
                           key={`burst-${post.id}-${i}`}
                           className="absolute pointer-events-none"
-                          style={{ width: 6, height: 6, borderRadius: "50%", background: i % 2 === 0 ? "#A78BFA" : "#D4A843" }}
+                          style={{ width: 6, height: 6, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
                           initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
                           animate={{ scale: [0, 1.2, 0], x: [0, (i - 2) * 20], y: [0, -22 - i * 4], opacity: [1, 1, 0] }}
                           transition={{ duration: 0.55, delay: i * 0.04 }}
                         />
                       ))}
                       <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#A78BFA" : "none"} style={{ color: liked ? "#A78BFA" : "#2D3748" }} />
+                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
                       </motion.div>
                     </motion.button>
 
@@ -2263,7 +2446,7 @@ function CommunautePageInner() {
                   {/* Stats + caption */}
                   <div className="px-4 pt-2 pb-1">
                     <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                      {likesCount} mention{likesCount !== 1 ? "s" : ""} « j&apos;aime »
+                      {likesCount} j&apos;aime
                     </p>
                     {post.caption && (
                       <p className="text-sm font-light leading-relaxed mt-1" style={{ color: "#2D3748" }}>
