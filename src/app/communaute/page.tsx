@@ -28,15 +28,6 @@ type SessionResult = {
   exercise_list?: unknown[];
 };
 
-type User = {
-  handle: string;
-  name: string;
-  initial: string;
-  gradient: string;
-  verified?: boolean;
-  followers?: string;
-  bio?: string;
-};
 
 type RealStory = {
   id: string;
@@ -89,126 +80,6 @@ type DMConversation = {
   unreadCount: number;
 };
 
-const users: User[] = [
-  { handle: "sofia.m", name: "Sofia Martinez", initial: "S", gradient: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", verified: false },
-  { handle: "leo.fit", name: "Léo Bertrand", initial: "L", gradient: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", verified: false },
-  { handle: "mia.rose", name: "Mia Rose", initial: "M", gradient: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", verified: false },
-  { handle: "antoine.b", name: "Antoine Blanc", initial: "A", gradient: "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)" },
-  { handle: "chloe.zen", name: "Chloé Zen", initial: "C", gradient: "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)" },
-];
-
-// influencers fictifs supprimés — remplacés par de vrais comptes Supabase
-
-type FeedItem = {
-  id: number;
-  user: User;
-  time: string;
-  caption?: string;
-  card: PerformanceData;
-  likes: number;
-  comments: number;
-  liked: boolean;
-};
-
-const feedData: FeedItem[] = [
-  {
-    id: 1,
-    user: users[0],
-    time: "12 min",
-    caption: "Nouveau record perso ! Le programme Aura me pousse à me dépasser ✦",
-    card: {
-      type: "workout",
-      title: "Force · Haut du corps",
-      date: "Aujourd'hui · 08:30",
-      metrics: [
-        { label: "Durée", value: "47", unit: "min" },
-        { label: "Volume", value: "3.2", unit: "t" },
-        { label: "Calories", value: "412", unit: "kcal" },
-        { label: "Intensité", value: "8.4", unit: "/10" },
-      ],
-      highlight: "Record perso au développé couché : 70 kg",
-    },
-    likes: 84,
-    comments: 12,
-    liked: false,
-  },
-  {
-    id: 2,
-    user: users[1],
-    time: "1 h",
-    caption: "L'IA a parfaitement identifié les macros. Bluffant.",
-    card: {
-      type: "meal",
-      title: "Bowl protéiné",
-      date: "Aujourd'hui · 12:45",
-      metrics: [
-        { label: "Calories", value: "612", unit: "kcal" },
-        { label: "Protéines", value: "48", unit: "g" },
-        { label: "Glucides", value: "67", unit: "g" },
-        { label: "Lipides", value: "18", unit: "g" },
-      ],
-      highlight: "Idéal pour la récupération musculaire",
-    },
-    likes: 41,
-    comments: 7,
-    liked: true,
-  },
-  {
-    id: 3,
-    user: users[2],
-    time: "3 h",
-    caption: "3 semaines de pratique, mon dos me remercie chaque matin.",
-    card: {
-      type: "day",
-      title: "Bilan du mardi",
-      date: "Hier",
-      metrics: [
-        { label: "Pas", value: "11.2k", unit: "" },
-        { label: "Sommeil", value: "7h45", unit: "" },
-        { label: "FC repos", value: "62", unit: "bpm" },
-        { label: "Score", value: "94", unit: "/100" },
-      ],
-      highlight: "Récupération optimale",
-    },
-    likes: 132,
-    comments: 24,
-    liked: false,
-  },
-];
-
-// stories array supprimé — remplacé par realStories depuis Supabase
-
-// DMs — replaced by real Supabase data
-
-type Comment = { id: number; user: string; text: string; time: string };
-
-function Avatar({ user, size = 40, ring = false }: { user: User; size?: number; ring?: boolean }) {
-  return (
-    <div
-      className="rounded-full flex items-center justify-center flex-shrink-0 font-semibold relative"
-      style={{
-        width: size,
-        height: size,
-        background: user.gradient,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-        outline: ring ? "2px solid #D4C0FF" : undefined,
-        outlineOffset: ring ? 2 : undefined,
-        color: "#2D3748",
-        fontSize: size * 0.4,
-      }}
-    >
-      {user.initial}
-      {user.verified && (
-        <div
-          className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 2px 6px rgba(167,139,250,0.4)" }}
-        >
-          <BadgeCheck size={9} strokeWidth={3} style={{ color: "#FFFFFF" }} fill="#D4A843" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: number }) {
   const initial = (partner.pseudo ?? "?")[0]?.toUpperCase() ?? "?";
@@ -1598,14 +1469,10 @@ function CommunautePageInner() {
   const [realSessions, setRealSessions] = useState<SessionResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [likedIds, setLikedIds] = useState<Set<number>>(new Set([2]));
   // followingIds = ensemble des IDs Supabase que l'utilisateur suit réellement
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [suggestedProfiles, setSuggestedProfiles] = useState<{ id: string; pseudo: string; full_name?: string; avatar_url?: string; bio?: string }[]>([]);
-  const [openComments, setOpenComments] = useState<Set<number>>(new Set());
-  const [savedPosts, setSavedPosts] = useState<Set<number>>(new Set());
-  const [hiddenPosts, setHiddenPosts] = useState<Set<number>>(new Set());
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
+
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -1628,7 +1495,6 @@ function CommunautePageInner() {
   const [dmInput, setDmInput] = useState("");
   const [dmSending, setDmSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [burstPost, setBurstPost] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string) => {
@@ -1840,19 +1706,6 @@ function CommunautePageInner() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [dmMessages]);
 
-  const toggleLike = (id: number) => {
-    setLikedIds((p) => {
-      const n = new Set(p);
-      const isNowLiked = !n.has(id);
-      isNowLiked ? n.add(id) : n.delete(id);
-      if (isNowLiked) {
-        setBurstPost(id);
-        setTimeout(() => setBurstPost(null), 700);
-      }
-      return n;
-    });
-  };
-
   const toggleRealLike = async (postId: string) => {
     if (!user) return;
     const supabase = createClient();
@@ -1875,14 +1728,6 @@ function CommunautePageInner() {
     } else {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
     }
-  };
-
-  const toggleComments = (id: number) => {
-    setOpenComments((p) => {
-      const n = new Set(p);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
   };
 
   // ── Charger les conversations DM ──────────────────────────
@@ -2055,7 +1900,7 @@ function CommunautePageInner() {
   return (
     <div
       className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 max-w-2xl mx-auto md:mx-0 md:max-w-4xl relative overflow-x-hidden"
-      onClick={() => { if (openMenu !== null) setOpenMenu(null); if (openRealMenu !== null) setOpenRealMenu(null); }}
+      onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
