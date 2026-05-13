@@ -2293,11 +2293,11 @@ function CommunautePageInner() {
                   {/* Stats + caption */}
                   <div className="px-4 pt-2 pb-1">
                     <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                      {likesCount} j&apos;aime
+                      {likesCount}{" "}j&apos;aime
                     </p>
                     {post.caption && (
                       <p className="text-sm font-light leading-relaxed mt-1" style={{ color: "#2D3748" }}>
-                        <span className="font-semibold mr-1.5">{authorPseudo}</span>
+                        <span className="font-semibold mr-1.5">@{authorPseudo}</span>
                         {post.caption}
                       </p>
                     )}

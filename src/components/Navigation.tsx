@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Users, User, LogIn, LogOut,
-  Settings, Shield, Plus,
+  Settings, Shield, Plus, Utensils, Bot, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -13,9 +13,10 @@ import PublishModal from "@/components/PublishModal";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 
-/* ── 5 onglets principaux (Coach IA retiré) ── */
 const TABS = [
   { href: "/",           label: "Accueil",    icon: Home },
+  { href: "/nutrition",  label: "Nutrition",  icon: Utensils },
+  { href: "/coach",      label: "Coach IA",   icon: Bot },
   { href: "/progression",label: "Progression",icon: TrendingUp },
   { href: "/communaute", label: "Communauté", icon: Users },
   { href: "/profil",     label: "Profil",     icon: User },
