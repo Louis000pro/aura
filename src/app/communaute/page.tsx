@@ -2382,8 +2382,10 @@ function CommunautePageInner() {
                     </div>
                   )}
 
-                  {/* Performance Card — seulement si performance_data a un vrai type */}
-                  {post.performance_data && (post.performance_data as { type?: string }).type && (
+                  {/* Performance Card — seulement si performance_data a un type reconnu */}
+                  {post.performance_data && (["workout", "meal", "day"] as const).includes(
+                    (post.performance_data as { type?: string }).type as "workout" | "meal" | "day"
+                  ) && (
                     <div className="px-4">
                       <PerformanceCard data={post.performance_data} size="md" interactive />
                     </div>
