@@ -275,17 +275,21 @@ function WheelCol({ items, selectedIdx, onSelect }: {
 
 /* ─── WeightChart ────────────────────────────────────────── */
 function WeightChart({
-  data, range, onRangeChange, onAdd,
+  data, range, onRangeChange, onAdd, onDelete, onEdit,
 }: {
   data: WeightEntry[];
   range: "week" | "month" | "year" | "all";
   onRangeChange: (r: "week" | "month" | "year" | "all") => void;
   onAdd: (kg: number, date: string) => void;
+  onDelete: (date: string) => void;
+  onEdit: (date: string, kg: number) => void;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
   const [inputVal, setInputVal]       = useState("");
   const [adding, setAdding]           = useState(false);
   const [pickerOpen, setPickerOpen]   = useState(false);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editVal, setEditVal]         = useState("");
 
   // Picker state — initialisé sur aujourd'hui
   const todayParts = todayStr.split("-").map(Number);
@@ -308,10 +312,14 @@ function WeightChart({
   const dateVal = `${sY}-${String(sM).padStart(2,"0")}-${String(sD).padStart(2,"0")}`;
   const fmtDate2 = `${String(sD).padStart(2,"0")}/${String(sM).padStart(2,"0")}/${sY}`;
 
-  const pts     = range === "week" ? data.slice(-7)
-                : range === "month" ? data.slice(-30)
-                : range === "year"  ? data.slice(-365)
-                : data;
+  const cutoff = (days: number) => {
+    const d = new Date(); d.setDate(d.getDate() - days);
+    return d.toISOString().slice(0, 10);
+  };
+  const pts = (range === "week"  ? data.filter(p => p.date >= cutoff(7))
+             : range === "month" ? data.filter(p => p.date >= cutoff(30))
+             : range === "year"  ? data.filter(p => p.date >= cutoff(365))
+             : data).sort((a, b) => a.date.localeCompare(b.date));
   const current = pts.at(-1)?.weight ?? null;
   const prev    = pts.at(-2)?.weight ?? null;
   const trend   = current !== null && prev !== null ? +(current - prev).toFixed(1) : null;
@@ -518,6 +526,58 @@ function WeightChart({
             </text>
           )}
         </svg>
+      )}
+
+      {/* ── Liste des entrées (modifier / supprimer) ── */}
+      {data.length > 0 && (
+        <div className="mt-4 flex flex-col gap-1.5">
+          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Historique</p>
+          <div className="max-h-40 overflow-y-auto flex flex-col gap-1" style={{ scrollbarWidth: "thin" }}>
+            {[...data].sort((a, b) => b.date.localeCompare(a.date)).map(entry => {
+              const [y, m, d] = entry.date.split("-");
+              const label = `${d}/${m}/${y}`;
+              const isEditing = editingDate === entry.date;
+              return (
+                <div key={entry.date} className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                  style={{ background: "rgba(240,235,255,0.5)" }}>
+                  <span className="text-xs flex-shrink-0" style={{ color: "#A0AEC0" }}>{label}</span>
+                  {isEditing ? (
+                    <>
+                      <input type="number" step="0.1" autoFocus value={editVal}
+                        onChange={e => setEditVal(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") { const kg = parseFloat(editVal.replace(",",".")); if (!isNaN(kg) && kg > 20) { onEdit(entry.date, kg); setEditingDate(null); } }
+                          if (e.key === "Escape") setEditingDate(null);
+                        }}
+                        className="flex-1 px-2 py-0.5 rounded-lg text-xs outline-none min-w-0"
+                        style={{ background: "white", border: "1px solid rgba(167,139,250,0.4)", color: "#2D3748" }} />
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => { const kg = parseFloat(editVal.replace(",",".")); if (!isNaN(kg) && kg > 20) { onEdit(entry.date, kg); setEditingDate(null); } }}
+                        className="text-xs font-semibold px-2 py-0.5 rounded-lg cursor-pointer flex-shrink-0"
+                        style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>OK</motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingDate(null)}
+                        className="text-xs px-1.5 py-0.5 rounded-lg cursor-pointer flex-shrink-0"
+                        style={{ color: "#A0AEC0" }}>✕</motion.button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-xs font-semibold" style={{ color: "#2D3748" }}>{entry.weight.toFixed(1)} kg</span>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setEditingDate(entry.date); setEditVal(String(entry.weight)); }}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                        style={{ background: "rgba(167,139,250,0.12)" }}>
+                        <span style={{ fontSize: 11 }}>✏️</span>
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(entry.date)}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
+                        style={{ background: "rgba(252,129,129,0.12)" }}>
+                        <span style={{ fontSize: 11 }}>🗑️</span>
+                      </motion.button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1945,6 +2005,22 @@ export default function ProgressionPage() {
     }
   };
 
+  const deleteWeight = async (date: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("weight_logs").delete()
+      .eq("user_id", user.id).eq("date", date);
+    if (!error) {
+      setWeights(prev => prev.filter(w => w.date !== date));
+      showToast("Mesure supprimée ✓");
+    }
+  };
+
+  const editWeight = async (date: string, kg: number) => {
+    await addWeight(kg, date); // upsert gère la mise à jour
+    showToast(`Poids modifié : ${kg} kg ✓`);
+  };
+
   const handleStartWorkout = async (session: WorkoutSession) => {
     /* Always open the guided workout modal */
     setActiveWorkout(session);
@@ -2052,6 +2128,8 @@ export default function ProgressionPage() {
             range={weightRange}
             onRangeChange={setWeightRange}
             onAdd={addWeight}
+            onDelete={deleteWeight}
+            onEdit={editWeight}
           />
           <CalorieChart data={calorieWeek} goal={2200} />
         </div>
