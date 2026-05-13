@@ -278,8 +278,8 @@ function WeightChart({
   data, range, onRangeChange, onAdd,
 }: {
   data: WeightEntry[];
-  range: "week" | "month";
-  onRangeChange: (r: "week" | "month") => void;
+  range: "week" | "month" | "year" | "all";
+  onRangeChange: (r: "week" | "month" | "year" | "all") => void;
   onAdd: (kg: number, date: string) => void;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -293,8 +293,9 @@ function WeightChart({
   const [sM, setSM] = useState(todayParts[1]);
   const [sD, setSD] = useState(todayParts[2]);
 
-  const minYear    = sY - 6;
-  const years      = Array.from({ length: 7 }, (_, i) => String(minYear + i));
+  const MIN_YEAR   = 2015;
+  const MAX_YEAR   = new Date().getFullYear();
+  const years      = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, i) => String(MIN_YEAR + i));
   const daysInMon  = new Date(sY, sM, 0).getDate();
   const days       = Array.from({ length: daysInMon }, (_, i) => String(i + 1).padStart(2, "0"));
 
@@ -307,7 +308,10 @@ function WeightChart({
   const dateVal = `${sY}-${String(sM).padStart(2,"0")}-${String(sD).padStart(2,"0")}`;
   const fmtDate2 = `${String(sD).padStart(2,"0")}/${String(sM).padStart(2,"0")}/${sY}`;
 
-  const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
+  const pts     = range === "week" ? data.slice(-7)
+                : range === "month" ? data.slice(-30)
+                : range === "year"  ? data.slice(-365)
+                : data;
   const current = pts.at(-1)?.weight ?? null;
   const prev    = pts.at(-2)?.weight ?? null;
   const trend   = current !== null && prev !== null ? +(current - prev).toFixed(1) : null;
@@ -329,16 +333,18 @@ function WeightChart({
     maxW - 1.5,
   ];
 
-  // Labels abscisse : tous les pts en 7j, tous les 5 en 30j
+  // Labels abscisse adaptatifs selon le range
   const xStep = range === "week" ? 1 : Math.ceil(pts.length / 6);
   const xLabelIndices = pts.map((_, i) => i).filter(i => i % xStep === 0 || i === pts.length - 1);
 
   const fmtDay = (dateStr: string) => {
     const d = new Date(dateStr + "T12:00:00");
-    const days = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
-    return range === "week"
-      ? days[d.getDay()]
-      : String(d.getDate());
+    const weekDays = ["Di", "Lu", "Ma", "Me", "Je", "Ve", "Sa"];
+    const months   = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+    if (range === "week")  return weekDays[d.getDay()];
+    if (range === "month") return String(d.getDate());
+    if (range === "year")  return months[d.getMonth()];
+    return `${months[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
   };
 
   let linePath = "", areaPath = "";
@@ -385,14 +391,14 @@ function WeightChart({
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
-            {(["week", "month"] as const).map(r => (
+            {(["week", "month", "year", "all"] as const).map(r => (
               <button key={r} onClick={() => onRangeChange(r)}
-                className="px-2.5 py-1 text-[10px] font-semibold cursor-pointer"
+                className="px-2 py-1 text-[10px] font-semibold cursor-pointer"
                 style={{
                   background: range === r ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "transparent",
                   color: range === r ? "#2D3748" : "#A0AEC0",
                 }}>
-                {r === "week" ? "7j" : "30j"}
+                {r === "week" ? "7j" : r === "month" ? "30j" : r === "year" ? "1an" : "Tout"}
               </button>
             ))}
           </div>
@@ -435,9 +441,9 @@ function WeightChart({
                     className="overflow-hidden rounded-2xl"
                     style={{ background: "rgba(248,245,255,0.9)", border: "1px solid rgba(212,192,255,0.4)" }}>
                     <div className="flex px-1 pt-1">
-                      <WheelCol items={days}      selectedIdx={sD - 1}      onSelect={i => setSD(i + 1)} />
-                      <WheelCol items={FR_MONTHS} selectedIdx={sM - 1}      onSelect={i => setSM(i + 1)} />
-                      <WheelCol items={years}     selectedIdx={sY - minYear} onSelect={i => setSY(minYear + i)} />
+                      <WheelCol items={days}      selectedIdx={sD - 1}         onSelect={i => setSD(i + 1)} />
+                      <WheelCol items={FR_MONTHS} selectedIdx={sM - 1}         onSelect={i => setSM(i + 1)} />
+                      <WheelCol items={years}     selectedIdx={sY - MIN_YEAR}  onSelect={i => setSY(MIN_YEAR + i)} />
                     </div>
                   </motion.div>
                 )}
@@ -1848,7 +1854,7 @@ export default function ProgressionPage() {
 
   // Charts state
   const [weights, setWeights]         = useState<WeightEntry[]>([]);
-  const [weightRange, setWeightRange] = useState<"week" | "month">("week");
+  const [weightRange, setWeightRange] = useState<"week" | "month" | "year" | "all">("week");
   const [calorieWeek, setCalorieWeek] = useState<CalorieDay[]>([]);
 
   const fetchSessions = useCallback(async () => {
