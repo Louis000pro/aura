@@ -272,71 +272,6 @@ function WheelCol({ items, selectedIdx, onSelect }: {
   );
 }
 
-function WheelDatePicker({ value, onChange, max }: { value: string; onChange: (v: string) => void; max: string }) {
-  const [open, setOpen] = useState(false);
-  const maxYear = new Date(max + "T12:00:00").getFullYear();
-  const minYear = maxYear - 6;
-
-  const parse = (s: string) => { const [y,m,d] = s.split("-").map(Number); return { y: y||maxYear, m: m||1, d: d||1 }; };
-  const { y: iy, m: im, d: id } = parse(value);
-  const [sY, setSY] = useState(iy);
-  const [sM, setSM] = useState(im);
-  const [sD, setSD] = useState(id);
-
-  const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => String(minYear + i));
-  const daysInMonth = new Date(sY, sM, 0).getDate();
-  const days = Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, "0"));
-
-  // Clamp day si changement de mois/année
-  useEffect(() => {
-    const max2 = new Date(sY, sM, 0).getDate();
-    if (sD > max2) setSD(max2);
-  }, [sY, sM, sD]);
-
-  // Sync vers le parent uniquement après le montage
-  const mounted = useRef(false);
-  useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
-    const d = String(sD).padStart(2,"0"), m = String(sM).padStart(2,"0");
-    onChange(`${sY}-${m}-${d}`);
-  }, [sY, sM, sD]); // eslint-disable-line
-
-  const fmt = (s: string) => { const [y,m,d] = s.split("-"); return `${d}/${m}/${y}`; };
-
-  return (
-    <div className="relative">
-      <motion.button type="button" whileTap={{ scale: 0.97 }} onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm cursor-pointer"
-        style={{ background: "rgba(240,235,255,0.5)", border: `1px solid ${open ? "rgba(167,139,250,0.6)" : "rgba(212,192,255,0.5)"}`, color: "#2D3748" }}>
-        <span>{fmt(value)}</span>
-        <span className="text-base">📅</span>
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.97 }} transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
-            className="absolute z-50 rounded-2xl overflow-hidden"
-            style={{ top: "calc(100% + 6px)", right: 0, minWidth: 220,
-              background: "rgba(255,255,255,0.98)", backdropFilter: "blur(20px)",
-              border: "1px solid rgba(212,192,255,0.5)", boxShadow: "0 8px 32px rgba(167,139,250,0.18)" }}>
-            <div className="flex gap-0 px-2 pt-2">
-              <WheelCol items={days}   selectedIdx={sD - 1}          onSelect={i => setSD(i + 1)} />
-              <WheelCol items={FR_MONTHS} selectedIdx={sM - 1}       onSelect={i => setSM(i + 1)} />
-              <WheelCol items={years}  selectedIdx={sY - minYear}     onSelect={i => setSY(minYear + i)} />
-            </div>
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => setOpen(false)}
-              className="w-full py-2.5 text-sm font-semibold cursor-pointer mt-1"
-              style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-              Confirmer
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
 /* ─── WeightChart ────────────────────────────────────────── */
 function WeightChart({
@@ -348,9 +283,29 @@ function WeightChart({
   onAdd: (kg: number, date: string) => void;
 }) {
   const todayStr = new Date().toISOString().slice(0, 10);
-  const [inputVal, setInputVal] = useState("");
-  const [dateVal, setDateVal]   = useState(todayStr);
-  const [adding, setAdding]     = useState(false);
+  const [inputVal, setInputVal]       = useState("");
+  const [adding, setAdding]           = useState(false);
+  const [pickerOpen, setPickerOpen]   = useState(false);
+
+  // Picker state — initialisé sur aujourd'hui
+  const todayParts = todayStr.split("-").map(Number);
+  const [sY, setSY] = useState(todayParts[0]);
+  const [sM, setSM] = useState(todayParts[1]);
+  const [sD, setSD] = useState(todayParts[2]);
+
+  const minYear    = sY - 6;
+  const years      = Array.from({ length: 7 }, (_, i) => String(minYear + i));
+  const daysInMon  = new Date(sY, sM, 0).getDate();
+  const days       = Array.from({ length: daysInMon }, (_, i) => String(i + 1).padStart(2, "0"));
+
+  // Clamp day si le mois change
+  useEffect(() => {
+    const mx = new Date(sY, sM, 0).getDate();
+    if (sD > mx) setSD(mx);
+  }, [sY, sM, sD]);
+
+  const dateVal = `${sY}-${String(sM).padStart(2,"0")}-${String(sD).padStart(2,"0")}`;
+  const fmtDate2 = `${String(sD).padStart(2,"0")}/${String(sM).padStart(2,"0")}/${sY}`;
 
   const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
   const current = pts.at(-1)?.weight ?? null;
@@ -402,8 +357,7 @@ function WeightChart({
   const handleAdd = () => {
     const kg = parseFloat(inputVal.replace(",", "."));
     if (isNaN(kg) || kg < 20 || kg > 300) return;
-    if (!dateVal) return;
-    onAdd(kg, dateVal); setInputVal(""); setDateVal(todayStr); setAdding(false);
+    onAdd(kg, dateVal); setInputVal(""); setAdding(false); setPickerOpen(false);
   };
 
   return (
@@ -456,14 +410,39 @@ function WeightChart({
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }} className="mb-3 overflow-hidden">
             <div className="flex flex-col gap-2">
+              {/* Ligne poids + bouton date */}
               <div className="flex gap-2">
                 <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
                   value={inputVal} onChange={e => setInputVal(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
                   className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
                   style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
-                <WheelDatePicker value={dateVal} onChange={setDateVal} max={todayStr} />
+                <motion.button type="button" whileTap={{ scale: 0.97 }}
+                  onClick={() => setPickerOpen(o => !o)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm cursor-pointer flex-shrink-0"
+                  style={{ background: "rgba(240,235,255,0.5)", border: `1px solid ${pickerOpen ? "rgba(167,139,250,0.6)" : "rgba(212,192,255,0.5)"}`, color: "#2D3748" }}>
+                  <span>{fmtDate2}</span>
+                  <span className="text-base">📅</span>
+                </motion.button>
               </div>
+
+              {/* Colonnes défilantes — inline, pleine largeur */}
+              <AnimatePresence>
+                {pickerOpen && (
+                  <motion.div key="picker"
+                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+                    className="overflow-hidden rounded-2xl"
+                    style={{ background: "rgba(248,245,255,0.9)", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    <div className="flex px-1 pt-1">
+                      <WheelCol items={days}      selectedIdx={sD - 1}      onSelect={i => setSD(i + 1)} />
+                      <WheelCol items={FR_MONTHS} selectedIdx={sM - 1}      onSelect={i => setSM(i + 1)} />
+                      <WheelCol items={years}     selectedIdx={sY - minYear} onSelect={i => setSY(minYear + i)} />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
                 className="w-full py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
