@@ -14,6 +14,7 @@ type UserPost = {
   id: string;
   type: string;
   caption: string | null;
+  description?: string | null;
   performance_data: Record<string, unknown> | null;
   created_at: string;
   user_id: string;
@@ -1210,6 +1211,7 @@ export default function ProfilPage() {
   const [showGoals, setShowGoals] = useState(false);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
   const [savedPosts, setSavedPosts] = useState<UserPost[]>([]);
+  const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
   const { settings, updateSettings } = useProfileSettings();
 
@@ -1330,7 +1332,7 @@ export default function ProfilPage() {
     // Publications : posts de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, performance_data, created_at, user_id, media_url, media_type, post_likes(user_id)")
+      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, post_likes(user_id)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -1790,9 +1792,10 @@ export default function ProfilPage() {
                     {photoPosts.map((post) => (
                       <motion.div
                         key={post.id}
-                        className="aspect-square rounded-lg overflow-hidden relative"
+                        className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
                         style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)" }}
                         whileHover={{ scale: 0.97 }}
+                        onClick={() => setSelectedPost(post)}
                       >
                         {post.media_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -1848,9 +1851,10 @@ export default function ProfilPage() {
                   {videoPosts.map((post) => (
                     <motion.div
                       key={post.id}
-                      className="aspect-square rounded-lg overflow-hidden relative"
+                      className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
                       style={{ background: "#000" }}
                       whileHover={{ scale: 0.97 }}
+                      onClick={() => setSelectedPost(post)}
                     >
                       <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
                       {/* Play icon overlay */}
@@ -1979,6 +1983,107 @@ export default function ProfilPage() {
           <FollowListModal type={showFollowList} userId={user.id} onClose={() => setShowFollowList(null)} />
         )}
         {toast && <Toast message={toast} />}
+      </AnimatePresence>
+
+      {/* ─── Post detail modal ─── */}
+      <AnimatePresence>
+        {selectedPost && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(10px)" }}
+            onClick={() => setSelectedPost(null)}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 60, opacity: 0, scale: 0.96 }}
+              transition={{ type: "spring", bounce: 0.22, duration: 0.4 }}
+              className="w-full max-w-sm rounded-t-3xl md:rounded-3xl overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.97)",
+                boxShadow: "0 -12px 48px rgba(167,139,250,0.2)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                    style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                  >
+                    {displayAvatar
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                      : displayPseudo.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                      {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+                        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                          <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                            <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                      {new Date(selectedPost.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  </div>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setSelectedPost(null)}
+                  className="w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(240,235,255,0.8)" }}
+                >
+                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+              </div>
+
+              {/* Caption / titre */}
+              {selectedPost.caption && (
+                <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                  {selectedPost.caption}
+                </p>
+              )}
+
+              {/* Media */}
+              {selectedPost.media_url && (
+                <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                  {selectedPost.media_type === "video"
+                    ? <video src={selectedPost.media_url} className="w-full object-cover" controls playsInline style={{ maxHeight: 380 }} />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
+                  }
+                </div>
+              )}
+
+              {/* Description / bio */}
+              {selectedPost.description && (
+                <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                  {selectedPost.description}
+                </p>
+              )}
+
+              {/* Likes */}
+              <div className="px-4 pb-5 flex items-center gap-2">
+                <span style={{ color: "#F43F5E", fontSize: 16 }}>♥</span>
+                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                  {selectedPost.likes_count ?? 0}{" "}j&apos;aime
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
     </div>
