@@ -2879,19 +2879,34 @@ function CommunautePageInner() {
                 whileTap={{ scale: 0.98 }}
                 onClick={async () => {
                   const supabase = createClient();
-                  const { error } = await supabase
+                  const newCaption = editingPost.caption.trim();
+                  const newBio = (editingPost.bio ?? "").trim() || null;
+
+                  // 1. Update caption (always works)
+                  const { error: captionErr } = await supabase
                     .from("posts")
-                    .update({ caption: editingPost.caption.trim(), description: (editingPost.bio ?? "").trim() || null })
+                    .update({ caption: newCaption })
                     .eq("id", editingPost.id);
-                  if (!error) {
-                    setRealFeedPosts((prev) =>
-                      prev.map((p) => p.id === editingPost.id
-                        ? { ...p, caption: editingPost.caption.trim(), description: (editingPost.bio ?? "").trim() || null }
-                        : p)
-                    );
-                    showToast("Post modifié ✓");
-                    setEditingPost(null);
+
+                  if (captionErr) {
+                    showToast("Erreur lors de la sauvegarde");
+                    return;
                   }
+
+                  // 2. Update description separately (nécessite la migration SQL)
+                  await supabase
+                    .from("posts")
+                    .update({ description: newBio })
+                    .eq("id", editingPost.id);
+
+                  // Mise à jour du feed en local
+                  setRealFeedPosts((prev) =>
+                    prev.map((p) => p.id === editingPost.id
+                      ? { ...p, caption: newCaption, description: newBio }
+                      : p)
+                  );
+                  showToast("Post modifié ✓");
+                  setEditingPost(null);
                 }}
                 className="w-full py-3 rounded-2xl text-sm font-bold"
                 style={{
