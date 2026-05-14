@@ -1212,6 +1212,10 @@ export default function ProfilPage() {
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
   const [savedPosts, setSavedPosts] = useState<UserPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
+  const [editingSelectedPost, setEditingSelectedPost] = useState(false);
+  const [editCaption, setEditCaption] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
   const { settings, updateSettings } = useProfileSettings();
 
@@ -1985,7 +1989,7 @@ export default function ProfilPage() {
         {toast && <Toast message={toast} />}
       </AnimatePresence>
 
-      {/* ─── Post detail modal ─── */}
+      {/* ─── Post detail / edit modal ─── */}
       <AnimatePresence>
         {selectedPost && (
           <motion.div
@@ -1994,7 +1998,7 @@ export default function ProfilPage() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
             style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(10px)" }}
-            onClick={() => setSelectedPost(null)}
+            onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); }}
           >
             <motion.div
               initial={{ y: 60, opacity: 0, scale: 0.96 }}
@@ -2005,7 +2009,7 @@ export default function ProfilPage() {
               style={{
                 background: "rgba(255,255,255,0.97)",
                 boxShadow: "0 -12px 48px rgba(167,139,250,0.2)",
-                maxHeight: "90vh",
+                maxHeight: "92vh",
                 overflowY: "auto",
               }}
               onClick={(e) => e.stopPropagation()}
@@ -2039,48 +2043,166 @@ export default function ProfilPage() {
                     </p>
                   </div>
                 </div>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setSelectedPost(null)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(240,235,255,0.8)" }}
-                >
-                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                </motion.button>
+                <div className="flex items-center gap-2">
+                  {/* Bouton modifier */}
+                  {!editingSelectedPost && (
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        setEditCaption(selectedPost.caption ?? "");
+                        setEditBio(selectedPost.description ?? "");
+                        setEditingSelectedPost(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                      style={{ background: "rgba(167,139,250,0.15)", color: "#7C5CFA" }}
+                    >
+                      <Pencil size={11} strokeWidth={2} />
+                      Modifier
+                    </motion.button>
+                  )}
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); }}
+                    className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(240,235,255,0.8)" }}
+                  >
+                    <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                  </motion.button>
+                </div>
               </div>
 
-              {/* Caption / titre */}
-              {selectedPost.caption && (
-                <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
-                  {selectedPost.caption}
-                </p>
+              {/* ── Mode lecture ── */}
+              {!editingSelectedPost && (
+                <>
+                  {selectedPost.caption && (
+                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                      {selectedPost.caption}
+                    </p>
+                  )}
+                  {selectedPost.media_url && (
+                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                      {selectedPost.media_type === "video"
+                        ? <video src={selectedPost.media_url} className="w-full object-cover" controls playsInline style={{ maxHeight: 380 }} />
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
+                      }
+                    </div>
+                  )}
+                  {selectedPost.description && (
+                    <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                      {selectedPost.description}
+                    </p>
+                  )}
+                  <div className="px-4 pb-5 flex items-center gap-2">
+                    <span style={{ color: "#F43F5E", fontSize: 16 }}>♥</span>
+                    <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                      {selectedPost.likes_count ?? 0}{" "}j&apos;aime
+                    </span>
+                  </div>
+                </>
               )}
 
-              {/* Media */}
-              {selectedPost.media_url && (
-                <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
-                  {selectedPost.media_type === "video"
-                    ? <video src={selectedPost.media_url} className="w-full object-cover" controls playsInline style={{ maxHeight: 380 }} />
-                    // eslint-disable-next-line @next/next/no-img-element
-                    : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
-                  }
+              {/* ── Mode édition ── */}
+              {editingSelectedPost && (
+                <div className="px-4 pb-5 flex flex-col gap-4">
+                  {/* Aperçu media */}
+                  {selectedPost.media_url && (
+                    <div className="rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                      {selectedPost.media_type === "video"
+                        ? <video src={selectedPost.media_url} className="w-full object-cover" muted playsInline style={{ maxHeight: 200 }} />
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
+                      }
+                    </div>
+                  )}
+
+                  {/* Titre */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Titre</label>
+                    <input
+                      type="text"
+                      value={editCaption}
+                      onChange={(e) => setEditCaption(e.target.value)}
+                      maxLength={200}
+                      className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+                      placeholder="Titre du post..."
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Bio */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Bio</label>
+                    <textarea
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      rows={3}
+                      maxLength={500}
+                      className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
+                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+                      placeholder="Description du post..."
+                    />
+                  </div>
+
+                  {/* Boutons */}
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setEditingSelectedPost(false)}
+                      className="flex-1 py-3 rounded-2xl text-sm font-semibold"
+                      style={{ background: "rgba(240,235,255,0.6)", color: "#718096" }}
+                    >
+                      Annuler
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={editSaving}
+                      onClick={async () => {
+                        setEditSaving(true);
+                        const supabase = createClient();
+                        const newCaption = editCaption.trim();
+                        const newBio = editBio.trim() || null;
+
+                        // Sauvegarde caption (toujours)
+                        const { error } = await supabase
+                          .from("posts")
+                          .update({ caption: newCaption })
+                          .eq("id", selectedPost.id);
+
+                        if (error) {
+                          showToast("Erreur : " + error.message);
+                          setEditSaving(false);
+                          return;
+                        }
+
+                        // Sauvegarde description (si la colonne existe)
+                        await supabase
+                          .from("posts")
+                          .update({ description: newBio })
+                          .eq("id", selectedPost.id);
+
+                        // Mise à jour locale
+                        const updated = { ...selectedPost, caption: newCaption, description: newBio };
+                        setSelectedPost(updated);
+                        setUserPosts((prev) => prev.map((p) => p.id === selectedPost.id ? updated : p));
+                        setEditingSelectedPost(false);
+                        setEditSaving(false);
+                        showToast("Post modifié ✓");
+                      }}
+                      className="flex-[2] py-3 rounded-2xl text-sm font-bold"
+                      style={{
+                        background: editSaving ? "rgba(212,192,255,0.5)" : "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                        color: "#3D2F6B",
+                        boxShadow: editSaving ? "none" : "0 4px 16px rgba(167,139,250,0.3)",
+                      }}
+                    >
+                      {editSaving ? "Sauvegarde..." : "Sauvegarder"}
+                    </motion.button>
+                  </div>
                 </div>
               )}
-
-              {/* Description / bio */}
-              {selectedPost.description && (
-                <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
-                  {selectedPost.description}
-                </p>
-              )}
-
-              {/* Likes */}
-              <div className="px-4 pb-5 flex items-center gap-2">
-                <span style={{ color: "#F43F5E", fontSize: 16 }}>♥</span>
-                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                  {selectedPost.likes_count ?? 0}{" "}j&apos;aime
-                </span>
-              </div>
             </motion.div>
           </motion.div>
         )}
