@@ -96,7 +96,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
       media_url: url,
       media_type: mediaType,
       audience: "public",
-      performance_data: null,
+      performance_data: {},
     });
     setPublishing(false);
     if (err) { setError(err.message); return; }
