@@ -1330,12 +1330,13 @@ export default function ProfilPage() {
     // Publications : posts de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, performance_data, created_at, user_id, media_url, media_type, post_likes(id)")
+      .select("id, type, caption, performance_data, created_at, user_id, media_url, media_type, post_likes(user_id)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { console.error("posts query error:", error.message); return; }
         if (data) {
-          const posts = (data as unknown as (UserPost & { post_likes: { id: string }[] })[]).map((p) => ({
+          const posts = (data as unknown as (UserPost & { post_likes: { user_id: string }[] })[]).map((p) => ({
             ...p,
             likes_count: p.post_likes?.length ?? 0,
           }));

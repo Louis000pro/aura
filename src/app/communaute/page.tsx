@@ -47,6 +47,7 @@ type RealPost = {
   user_id: string;
   type: "workout" | "meal" | "day";
   caption: string;
+  description?: string | null;
   audience: "public" | "friends" | "private";
   performance_data: PerformanceData;
   media_url?: string | null;
@@ -1503,7 +1504,7 @@ function CommunautePageInner() {
   const [dmInput, setDmInput] = useState("");
   const [dmSending, setDmSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
+  const [editingPost, setEditingPost] = useState<{ id: string; caption: string; bio: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string) => {
@@ -1611,7 +1612,7 @@ function CommunautePageInner() {
     const { data } = await supabase
       .from("posts")
       .select(`
-        id, type, caption, audience, performance_data, media_url, media_type, created_at, user_id,
+        id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
         author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
         post_likes(user_id),
         post_comments(id)
@@ -1641,7 +1642,7 @@ function CommunautePageInner() {
         const { data } = await supabase
           .from("posts")
           .select(`
-            id, type, caption, audience, performance_data, media_url, media_type, created_at, user_id,
+            id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
             author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
             post_likes(user_id),
             post_comments(id)
@@ -2210,8 +2211,8 @@ function CommunautePageInner() {
                             postId={post.id}
                             saved={isSaved}
                             isOwn={post.user_id === user?.id}
-                            canEdit={post.user_id === user?.id && (Date.now() - new Date(post.created_at).getTime()) < 10 * 60 * 1000}
-                            onEdit={() => { setEditingPost({ id: post.id, caption: post.caption ?? "" }); setOpenRealMenu(null); }}
+                            canEdit={post.user_id === user?.id}
+                            onEdit={() => { setEditingPost({ id: post.id, caption: post.caption ?? "", bio: post.description ?? "" }); setOpenRealMenu(null); }}
                             onSave={() => {
                               setSavedRealIds((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; });
                               showToast(isSaved ? "Retiré des favoris" : "Sauvegardé ✓");
@@ -2234,7 +2235,7 @@ function CommunautePageInner() {
                     </div>
                   </div>
 
-                  {/* Titre / caption — affiché en haut avant la photo */}
+                  {/* Titre — affiché en haut avant la photo */}
                   {post.caption && (
                     <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
                       {post.caption}
@@ -2250,6 +2251,13 @@ function CommunautePageInner() {
                         : <img src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 320 }} />
                       }
                     </div>
+                  )}
+
+                  {/* Bio / description — affichée après la photo */}
+                  {post.description && (
+                    <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                      {post.description}
+                    </p>
                   )}
 
                   {/* Performance Card — seulement si performance_data a un type reconnu */}
@@ -2799,7 +2807,7 @@ function CommunautePageInner() {
         )}
         {storyGroup && <StoryViewer stories={storyGroup} onClose={() => setStoryGroup(null)} />}
 
-        {/* Edit post modal — disponible 10 min après publication */}
+        {/* Edit post modal */}
         {editingPost && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -2828,20 +2836,44 @@ function CommunautePageInner() {
                   <X size={18} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
               </div>
-              <textarea
-                value={editingPost.caption}
-                onChange={(e) => setEditingPost((p) => p ? { ...p, caption: e.target.value } : p)}
-                rows={4}
-                maxLength={500}
-                className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
-                style={{
-                  background: "rgba(240,235,255,0.5)",
-                  border: "1px solid rgba(212,192,255,0.6)",
-                  color: "#2D3748",
-                }}
-                placeholder="Titre du post..."
-                autoFocus
-              />
+
+              {/* Titre */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Titre</label>
+                <input
+                  type="text"
+                  value={editingPost.caption}
+                  onChange={(e) => setEditingPost((p) => p ? { ...p, caption: e.target.value } : p)}
+                  maxLength={200}
+                  className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                  style={{
+                    background: "rgba(240,235,255,0.5)",
+                    border: "1px solid rgba(212,192,255,0.6)",
+                    color: "#2D3748",
+                  }}
+                  placeholder="Titre du post..."
+                  autoFocus
+                />
+              </div>
+
+              {/* Bio / description */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Bio</label>
+                <textarea
+                  value={editingPost.bio ?? ""}
+                  onChange={(e) => setEditingPost((p) => p ? { ...p, bio: e.target.value } : p)}
+                  rows={3}
+                  maxLength={500}
+                  className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
+                  style={{
+                    background: "rgba(240,235,255,0.5)",
+                    border: "1px solid rgba(212,192,255,0.6)",
+                    color: "#2D3748",
+                  }}
+                  placeholder="Description du post..."
+                />
+              </div>
+
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -2849,11 +2881,13 @@ function CommunautePageInner() {
                   const supabase = createClient();
                   const { error } = await supabase
                     .from("posts")
-                    .update({ caption: editingPost.caption.trim() })
+                    .update({ caption: editingPost.caption.trim(), description: (editingPost.bio ?? "").trim() || null })
                     .eq("id", editingPost.id);
                   if (!error) {
                     setRealFeedPosts((prev) =>
-                      prev.map((p) => p.id === editingPost.id ? { ...p, caption: editingPost.caption.trim() } : p)
+                      prev.map((p) => p.id === editingPost.id
+                        ? { ...p, caption: editingPost.caption.trim(), description: (editingPost.bio ?? "").trim() || null }
+                        : p)
                     );
                     showToast("Post modifié ✓");
                     setEditingPost(null);
