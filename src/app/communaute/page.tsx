@@ -1491,6 +1491,7 @@ function CommunautePageInner() {
   const [realStories, setRealStories] = useState<RealStory[]>([]);
   const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
@@ -1511,6 +1512,31 @@ function CommunautePageInner() {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   };
+
+  // ── Algorithme de ranking ────────────────────────────────────
+  const getScore = useCallback((post: RealPost): number => {
+    const likes    = post.post_likes.length;
+    const comments = post.post_comments.length;
+    const ageMs    = Date.now() - new Date(post.created_at).getTime();
+    const ageH     = ageMs / (1000 * 60 * 60);
+
+    // Bonus de récence : décroît avec le temps
+    const recency = ageH < 1 ? 10 : ageH < 6 ? 5 : ageH < 24 ? 2 : ageH < 72 ? 0.5 : 0;
+
+    // Bonus abonnement : posts des gens suivis remontent
+    const followBonus = followingIds.has(post.user_id) ? 8 : 0;
+
+    // Pénalité de fatigue : évite de revoir les posts déjà vus/masqués
+    const hiddenPenalty = hiddenRealIds.has(post.id) ? -100 : 0;
+
+    return likes * 3 + comments * 2 + recency + followBonus + hiddenPenalty;
+  }, [followingIds, hiddenRealIds]);
+
+  const sortedFeedPosts = useMemo(() => {
+    const visible = realFeedPosts.filter(p => !hiddenRealIds.has(p.id));
+    if (feedMode === "recent") return visible; // ordre chronologique (déjà trié par Supabase)
+    return [...visible].sort((a, b) => getScore(b) - getScore(a));
+  }, [realFeedPosts, hiddenRealIds, feedMode, getScore]);
 
   // Charger les abonnements réels depuis Supabase
   useEffect(() => {
@@ -2115,6 +2141,26 @@ function CommunautePageInner() {
               );
             })()}
 
+            {/* ── Toggle algorithme / récents ── */}
+            {!feedLoading && (
+              <div className="flex items-center gap-2 px-1">
+                {(["algo", "recent"] as const).map((mode) => (
+                  <motion.button
+                    key={mode}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => setFeedMode(mode)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all"
+                    style={feedMode === mode
+                      ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                      : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
+                    }
+                  >
+                    {mode === "algo" ? "🔥 Pour toi" : "🕐 Récents"}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
             {/* Posts réels depuis Supabase */}
             {feedLoading && (
               <div className="flex justify-center py-10">
@@ -2127,7 +2173,7 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {!feedLoading && realFeedPosts.filter(p => !hiddenRealIds.has(p.id)).length === 0 && (
+            {!feedLoading && sortedFeedPosts.length === 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -2144,7 +2190,7 @@ function CommunautePageInner() {
               </motion.div>
             )}
 
-            {!feedLoading && realFeedPosts.filter(p => !hiddenRealIds.has(p.id)).map((post, postIdx) => {
+            {!feedLoading && sortedFeedPosts.map((post, postIdx) => {
               const liked = likedRealIds.has(post.id);
               const isMenuOpen = openRealMenu === post.id;
               const isSaved = savedRealIds.has(post.id);
@@ -2154,6 +2200,8 @@ function CommunautePageInner() {
               const authorPseudo = post.author?.pseudo ?? "utilisateur";
               const authorAvatar = post.author?.avatar_url;
               const authorCertified = post.author?.is_admin === true;
+              const postScore = feedMode === "algo" ? getScore(post) : 0;
+              const isHot = feedMode === "algo" && postScore >= 15;
 
               return (
                 <motion.div
@@ -2183,6 +2231,9 @@ function CommunautePageInner() {
                     <Link href={`/profil/${authorPseudo}`} className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
+                        {isHot && (
+                          <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "linear-gradient(135deg,#FF6B35,#FF8C42)", color: "#fff", boxShadow: "0 1px 6px rgba(255,107,53,0.4)" }}>🔥 Trending</span>
+                        )}
                         {authorCertified && (
                           <div className="flex-shrink-0 flex items-center justify-center rounded-full"
                             style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
