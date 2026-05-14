@@ -1767,37 +1767,52 @@ export default function ProfilPage() {
                   <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
                 </div>
               </motion.div>
-            ) : (
-              <div className="grid grid-cols-3 gap-1">
-                {userPosts.map((post) => (
+            ) : (() => {
+                const photoPosts = userPosts.filter(p => p.media_type !== "video");
+                return photoPosts.length === 0 ? (
                   <motion.div
-                    key={post.id}
-                    className="aspect-square rounded-lg overflow-hidden relative"
-                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)" }}
-                    whileHover={{ scale: 0.97 }}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                    style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
                   >
-                    {post.media_url ? (
-                      post.media_type === "video"
-                        ? <video src={post.media_url} className="w-full h-full object-cover" muted playsInline />
-                        // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={post.media_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center p-2">
-                        <p className="text-xs font-medium text-center leading-relaxed" style={{ color: "#2D3748" }}>{post.caption || "📝"}</p>
-                      </div>
-                    )}
-                    {/* Overlay likes */}
-                    {(post.likes_count ?? 0) > 0 && (
-                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
-                        style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                        <span style={{ color: "#F43F5E", fontSize: 10 }}>♥</span>
-                        <span className="text-[10px] font-semibold text-white">{post.likes_count}</span>
-                      </div>
-                    )}
+                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                      <span className="text-3xl">📸</span>
+                    </div>
+                    <div className="text-center px-8">
+                      <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune photo</p>
+                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications photo apparaîtront ici.</p>
+                    </div>
                   </motion.div>
-                ))}
-              </div>
-            )}
+                ) : (
+                  <div className="grid grid-cols-3 gap-1">
+                    {photoPosts.map((post) => (
+                      <motion.div
+                        key={post.id}
+                        className="aspect-square rounded-lg overflow-hidden relative"
+                        style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)" }}
+                        whileHover={{ scale: 0.97 }}
+                      >
+                        {post.media_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={post.media_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center p-2">
+                            <p className="text-xs font-medium text-center leading-relaxed" style={{ color: "#2D3748" }}>{post.caption || "📝"}</p>
+                          </div>
+                        )}
+                        {(post.likes_count ?? 0) > 0 && (
+                          <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                            <span style={{ color: "#F43F5E", fontSize: 10 }}>♥</span>
+                            <span className="text-[10px] font-semibold text-white">{post.likes_count}</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                );
+              })()}
           </motion.div>
         )}
 
@@ -1810,37 +1825,51 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
-            {savedPosts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                  <span className="text-3xl">🎥</span>
+            {(() => {
+              const videoPosts = userPosts.filter(p => p.media_type === "video");
+              return videoPosts.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                  style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                >
+                  <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                    <span className="text-3xl">🎥</span>
+                  </div>
+                  <div className="text-center px-8">
+                    <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo</p>
+                    <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications vidéo apparaîtront ici automatiquement.</p>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="grid grid-cols-3 gap-1">
+                  {videoPosts.map((post) => (
+                    <motion.div
+                      key={post.id}
+                      className="aspect-square rounded-lg overflow-hidden relative"
+                      style={{ background: "#000" }}
+                      whileHover={{ scale: 0.97 }}
+                    >
+                      <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
+                      {/* Play icon overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
+                          <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
+                        </div>
+                      </div>
+                      {(post.likes_count ?? 0) > 0 && (
+                        <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                          <span style={{ color: "#F43F5E", fontSize: 10 }}>♥</span>
+                          <span className="text-[10px] font-semibold text-white">{post.likes_count}</span>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
                 </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo enregistrée</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les vidéos que tu enregistreras s&apos;afficheront ici automatiquement.</p>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="grid grid-cols-3 gap-1">
-                {savedPosts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    className="aspect-square rounded-lg overflow-hidden flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(255,255,255,0.5)" }}
-                    whileHover={{ scale: 0.97 }}
-                  >
-                    <div className="text-center p-2">
-                      <p className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>{post.caption || post.type}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+              );
+            })()}
           </motion.div>
         )}
 

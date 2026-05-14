@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import CreatePostModal from "@/components/CreatePostModal";
@@ -956,12 +956,13 @@ function AddStoryModal({ onClose, userId, onPublished }: {
 }
 
 // Options Menu (dropdown)
-function OptionsMenu({ postId, saved, isOwn, onSave, onHide, onReport, onDelete, onClose }: {
-  postId: string | number; saved: boolean; isOwn: boolean;
-  onSave: () => void; onHide: () => void; onReport: () => void; onDelete: () => void; onClose: () => void;
+function OptionsMenu({ postId, saved, isOwn, canEdit, onSave, onHide, onReport, onDelete, onEdit, onClose }: {
+  postId: string | number; saved: boolean; isOwn: boolean; canEdit: boolean;
+  onSave: () => void; onHide: () => void; onReport: () => void; onDelete: () => void; onEdit: () => void; onClose: () => void;
 }) {
   const items = isOwn
     ? [
+        ...(canEdit ? [{ icon: Pencil, label: "Modifier le post", action: onEdit, color: "#A78BFA" }] : []),
         { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
         { icon: X, label: "Supprimer le post", action: onDelete, color: "#EF4444" },
       ]
@@ -1502,6 +1503,7 @@ function CommunautePageInner() {
   const [dmInput, setDmInput] = useState("");
   const [dmSending, setDmSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [editingPost, setEditingPost] = useState<{ id: string; caption: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string) => {
@@ -2208,6 +2210,8 @@ function CommunautePageInner() {
                             postId={post.id}
                             saved={isSaved}
                             isOwn={post.user_id === user?.id}
+                            canEdit={post.user_id === user?.id && (Date.now() - new Date(post.created_at).getTime()) < 10 * 60 * 1000}
+                            onEdit={() => { setEditingPost({ id: post.id, caption: post.caption ?? "" }); setOpenRealMenu(null); }}
                             onSave={() => {
                               setSavedRealIds((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; });
                               showToast(isSaved ? "Retiré des favoris" : "Sauvegardé ✓");
@@ -2229,6 +2233,13 @@ function CommunautePageInner() {
                       </AnimatePresence>
                     </div>
                   </div>
+
+                  {/* Titre / caption — affiché en haut avant la photo */}
+                  {post.caption && (
+                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                      {post.caption}
+                    </p>
+                  )}
 
                   {/* Media (photo/vidéo) si présente */}
                   {post.media_url && (
@@ -2304,17 +2315,11 @@ function CommunautePageInner() {
                     )}
                   </div>
 
-                  {/* Stats + caption */}
+                  {/* Stats */}
                   <div className="px-4 pt-2 pb-1">
                     <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
                       {likesCount}{" "}j&apos;aime
                     </p>
-                    {post.caption && (
-                      <p className="text-sm font-light leading-relaxed mt-1" style={{ color: "#2D3748" }}>
-                        <span className="font-semibold mr-1.5">@{authorPseudo}</span>
-                        {post.caption}
-                      </p>
-                    )}
                     <motion.p
                       whileHover={{ color: "#2D3748" }}
                       className="text-[10px] mt-2 cursor-pointer mb-3"
@@ -2793,6 +2798,80 @@ function CommunautePageInner() {
           />
         )}
         {storyGroup && <StoryViewer stories={storyGroup} onClose={() => setStoryGroup(null)} />}
+
+        {/* Edit post modal — disponible 10 min après publication */}
+        {editingPost && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
+            onClick={() => setEditingPost(null)}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 80, opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", bounce: 0.25 }}
+              className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 flex flex-col gap-4"
+              style={{
+                background: "rgba(255,255,255,0.97)",
+                boxShadow: "0 -8px 40px rgba(167,139,250,0.25)",
+                border: "1px solid rgba(255,255,255,0.9)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-black" style={{ color: "#2D3748" }}>Modifier le post</h3>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingPost(null)}>
+                  <X size={18} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+              </div>
+              <textarea
+                value={editingPost.caption}
+                onChange={(e) => setEditingPost((p) => p ? { ...p, caption: e.target.value } : p)}
+                rows={4}
+                maxLength={500}
+                className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
+                style={{
+                  background: "rgba(240,235,255,0.5)",
+                  border: "1px solid rgba(212,192,255,0.6)",
+                  color: "#2D3748",
+                }}
+                placeholder="Titre du post..."
+                autoFocus
+              />
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={async () => {
+                  const supabase = createClient();
+                  const { error } = await supabase
+                    .from("posts")
+                    .update({ caption: editingPost.caption.trim() })
+                    .eq("id", editingPost.id);
+                  if (!error) {
+                    setRealFeedPosts((prev) =>
+                      prev.map((p) => p.id === editingPost.id ? { ...p, caption: editingPost.caption.trim() } : p)
+                    );
+                    showToast("Post modifié ✓");
+                    setEditingPost(null);
+                  }
+                }}
+                className="w-full py-3 rounded-2xl text-sm font-bold"
+                style={{
+                  background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                  color: "#3D2F6B",
+                  boxShadow: "0 4px 16px rgba(167,139,250,0.3)",
+                }}
+              >
+                Sauvegarder
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.9 }}
