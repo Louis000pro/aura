@@ -17,6 +17,9 @@ type UserPost = {
   performance_data: Record<string, unknown> | null;
   created_at: string;
   user_id: string;
+  media_url?: string | null;
+  media_type?: string | null;
+  likes_count?: number;
 };
 type WorkoutSessionItem = {
   id: string;
@@ -1198,6 +1201,8 @@ export default function ProfilPage() {
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
   const [profileFullName, setProfileFullName] = useState("");
   const [profileBio, setProfileBio] = useState("");
+  const [profileGoals, setProfileGoals] = useState<string[]>([]);
+  const [profileLevel, setProfileLevel] = useState<string>("");
   const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
@@ -1325,10 +1330,18 @@ export default function ProfilPage() {
     // Publications : posts de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, performance_data, created_at, user_id")
+      .select("id, type, caption, performance_data, created_at, user_id, media_url, media_type, post_likes(id)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .then(({ data }) => { if (data) setUserPosts(data as UserPost[]); });
+      .then(({ data }) => {
+        if (data) {
+          const posts = (data as unknown as (UserPost & { post_likes: { id: string }[] })[]).map((p) => ({
+            ...p,
+            likes_count: p.post_likes?.length ?? 0,
+          }));
+          setUserPosts(posts);
+        }
+      });
 
     // Vidéos enregistrées : posts que l'user a likés
     supabase
@@ -1395,6 +1408,25 @@ export default function ProfilPage() {
 
   const displayPseudo = profilePseudo || user?.pseudo || "";
   const displayAvatar = profileAvatar || user?.avatar || "";
+
+  const refreshGoals = () => {
+    const pseudo = displayPseudo;
+    if (!pseudo) return;
+    try {
+      const raw = localStorage.getItem(`aura_onboarding_${pseudo}`);
+      if (raw) {
+        const d = JSON.parse(raw) as { goals?: string[]; level?: string };
+        setProfileGoals(Array.isArray(d.goals) ? d.goals : []);
+        setProfileLevel(d.level ?? "");
+      }
+    } catch {}
+  };
+
+  // Charge les objectifs depuis le localStorage quand le pseudo est disponible
+  useEffect(() => {
+    refreshGoals();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayPseudo]);
 
   return (
     <div className="relative min-h-screen pb-28">
@@ -1523,6 +1555,27 @@ export default function ProfilPage() {
               </motion.div>
             )}
           </div>
+
+          {/* Goals / titre */}
+          {profileGoals.length > 0 && (
+            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "#A78BFA" }}>
+              {profileGoals
+                .map((id) => GOALS_LIST.find((g) => g.id === id))
+                .filter(Boolean)
+                .map((g) => `${g!.emoji} ${g!.label}`)
+                .join(" · ")}
+            </p>
+          )}
+
+          {/* Niveau */}
+          {profileLevel && (
+            <span
+              className="mt-1 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(212,192,255,0.3)", color: "#7C5CFA", border: "1px solid rgba(167,139,250,0.25)" }}
+            >
+              {LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel}
+            </span>
+          )}
 
           {/* Bio */}
           {profileBio && (
@@ -1719,13 +1772,28 @@ export default function ProfilPage() {
                 {userPosts.map((post) => (
                   <motion.div
                     key={post.id}
-                    className="aspect-square rounded-lg overflow-hidden flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(255,255,255,0.5)" }}
+                    className="aspect-square rounded-lg overflow-hidden relative"
+                    style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)" }}
                     whileHover={{ scale: 0.97 }}
                   >
-                    <div className="text-center p-2">
-                      <p className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>{post.caption || post.type}</p>
-                    </div>
+                    {post.media_url ? (
+                      post.media_type === "video"
+                        ? <video src={post.media_url} className="w-full h-full object-cover" muted playsInline />
+                        // eslint-disable-next-line @next/next/no-img-element
+                        : <img src={post.media_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-2">
+                        <p className="text-xs font-medium text-center leading-relaxed" style={{ color: "#2D3748" }}>{post.caption || "📝"}</p>
+                      </div>
+                    )}
+                    {/* Overlay likes */}
+                    {(post.likes_count ?? 0) > 0 && (
+                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                        style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                        <span style={{ color: "#F43F5E", fontSize: 10 }}>♥</span>
+                        <span className="text-[10px] font-semibold text-white">{post.likes_count}</span>
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>
@@ -1845,7 +1913,7 @@ export default function ProfilPage() {
           <GoalsEditModal
             pseudo={displayPseudo}
             onClose={() => setShowGoals(false)}
-            onSave={() => showToast("Objectifs mis à jour ✓")}
+            onSave={() => { showToast("Objectifs mis à jour ✓"); refreshGoals(); }}
           />
         )}
         {showNewHighlight && user && (

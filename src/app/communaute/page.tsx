@@ -956,10 +956,21 @@ function AddStoryModal({ onClose, userId, onPublished }: {
 }
 
 // Options Menu (dropdown)
-function OptionsMenu({ postId, saved, onSave, onHide, onReport, onClose }: {
-  postId: string | number; saved: boolean;
-  onSave: () => void; onHide: () => void; onReport: () => void; onClose: () => void;
+function OptionsMenu({ postId, saved, isOwn, onSave, onHide, onReport, onDelete, onClose }: {
+  postId: string | number; saved: boolean; isOwn: boolean;
+  onSave: () => void; onHide: () => void; onReport: () => void; onDelete: () => void; onClose: () => void;
 }) {
+  const items = isOwn
+    ? [
+        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
+        { icon: X, label: "Supprimer le post", action: onDelete, color: "#EF4444" },
+      ]
+    : [
+        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
+        { icon: EyeOff, label: "Masquer ce post", action: onHide, color: "#2D3748" },
+        { icon: Flag, label: "Signaler", action: onReport, color: "#A78BFA" },
+      ];
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.85, y: -8 }}
@@ -975,11 +986,7 @@ function OptionsMenu({ postId, saved, onSave, onHide, onReport, onClose }: {
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {[
-        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
-        { icon: EyeOff, label: "Masquer ce post", action: onHide, color: "#2D3748" },
-        { icon: Flag, label: "Signaler", action: onReport, color: "#A78BFA" },
-      ].map(({ icon: Icon, label, action, color }, i) => (
+      {items.map(({ icon: Icon, label, action, color }, i) => (
         <div key={label}>
           <motion.button
             whileHover={{ background: "rgba(240,235,255,0.5)" }}
@@ -2200,6 +2207,7 @@ function CommunautePageInner() {
                           <OptionsMenu
                             postId={post.id}
                             saved={isSaved}
+                            isOwn={post.user_id === user?.id}
                             onSave={() => {
                               setSavedRealIds((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; });
                               showToast(isSaved ? "Retiré des favoris" : "Sauvegardé ✓");
@@ -2209,6 +2217,12 @@ function CommunautePageInner() {
                               showToast("Post masqué");
                             }}
                             onReport={() => showToast("Signalement envoyé. Merci !")}
+                            onDelete={async () => {
+                              const supabase = createClient();
+                              await supabase.from("posts").delete().eq("id", post.id);
+                              setRealFeedPosts((prev) => prev.filter((p) => p.id !== post.id));
+                              showToast("Post supprimé");
+                            }}
                             onClose={() => setOpenRealMenu(null)}
                           />
                         )}
