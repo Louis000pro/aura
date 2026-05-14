@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,7 +14,14 @@ import PublishModal from "@/components/PublishModal";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 
-const TABS = [
+type TabItem = {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  sub?: { href: string; label: string; icon?: React.ElementType }[];
+};
+
+const TABS: TabItem[] = [
   { href: "/",           label: "Accueil",    icon: Home },
   { href: "/progression",label: "Progression",icon: TrendingUp },
   { href: "/communaute", label: "Communauté", icon: Users },

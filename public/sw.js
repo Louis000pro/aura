@@ -1,49 +1,89 @@
-// Aura Service Worker — v1
-const CACHE = "aura-v1";
+// Aura Service Worker — v3
+// Strategy:
+//   - Navigation (HTML) → Network-first (toujours la version fraîche)
+//   - _next/static/ (chunks JS/CSS hachés) → Cache-first (immutables)
+//   - Images/assets → Stale-while-revalidate
+//   - API / Supabase → Bypass (pas de cache)
 
-// Assets à pre-cacher
-const PRECACHE = ["/", "/manifest.json"];
+const STATIC_CACHE  = "aura-static-v3";   // chunks Next.js (immutables par hash)
+const DYNAMIC_CACHE = "aura-dynamic-v3";  // images, fonts, etc.
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(PRECACHE))
-  );
+// ── Install ──────────────────────────────────────────────────
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
+// ── Activate : supprime tous les anciens caches ──────────────
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+      Promise.all(
+        keys
+          .filter((k) => k !== STATIC_CACHE && k !== DYNAMIC_CACHE)
+          .map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// ── Fetch ────────────────────────────────────────────────────
 self.addEventListener("fetch", (e) => {
-  // Stale-while-revalidate pour les navigations, network-only pour les API/Supabase
+  if (e.request.method !== "GET") return;
+
   const url = new URL(e.request.url);
-  const isAPI = url.hostname.includes("supabase") || url.pathname.startsWith("/api/");
 
-  if (isAPI || e.request.method !== "GET") return; // laisse passer sans intercepter
+  // 1. API / Supabase / auth → réseau direct, pas de cache
+  if (
+    url.hostname.includes("supabase") ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/")
+  ) return;
 
+  // 2. Chunks Next.js (_next/static/) → Cache-first
+  //    Ces fichiers ont un hash dans leur nom → immutables
+  if (url.pathname.startsWith("/_next/static/")) {
+    e.respondWith(
+      caches.open(STATIC_CACHE).then((cache) =>
+        cache.match(e.request).then((cached) => {
+          if (cached) return cached;
+          return fetch(e.request).then((res) => {
+            if (res.ok) cache.put(e.request, res.clone());
+            return res;
+          });
+        })
+      )
+    );
+    return;
+  }
+
+  // 3. Navigations HTML (pages) → Network-first
+  //    On va TOUJOURS chercher la version fraîche en priorité
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request).catch(() =>
+        caches.match(e.request).then((c) => c ?? caches.match("/"))
+      )
+    );
+    return;
+  }
+
+  // 4. Autres assets (images, fonts, icons) → Stale-while-revalidate
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fresh = fetch(e.request).then((res) => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, clone));
-        }
-        return res;
-      });
-      return cached ?? fresh;
-    })
+    caches.open(DYNAMIC_CACHE).then((cache) =>
+      cache.match(e.request).then((cached) => {
+        const fresh = fetch(e.request).then((res) => {
+          if (res.ok) cache.put(e.request, res.clone());
+          return res;
+        }).catch(() => cached);
+        return cached ?? fresh;
+      })
+    )
   );
 });
 
 // ── Push Notifications ──────────────────────────────────────
 self.addEventListener("push", (e) => {
-  const data = e.data?.json() ?? {};
+  const data  = e.data?.json() ?? {};
   const title = data.title ?? "Aura";
   const body  = data.body  ?? "Nouvelle notification";
   const icon  = data.icon  ?? "/icons/icon-192.png";
