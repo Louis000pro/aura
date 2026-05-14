@@ -90,12 +90,13 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     const supabase = createClient();
     const { error: err } = await supabase.from("posts").insert({
       user_id: user.id,
-      type: mediaType === "video" ? "video" : "photo",
-      caption: caption.trim() || title.trim() || null,
+      type: "day",                          // seul type valide pour posts media
+      caption: title.trim() || null,        // titre → caption (affiché en haut)
+      description: caption.trim() || null,  // description → bio (affiché en bas)
       media_url: url,
       media_type: mediaType,
       audience: "public",
-      performance_data: title.trim() ? { title: title.trim() } : null,
+      performance_data: null,
     });
     setPublishing(false);
     if (err) { setError(err.message); return; }
