@@ -153,7 +153,7 @@ export default function RecherchePage() {
 
     if (user) {
       supabase
-        .from("follows")
+        .from("followers")
         .select("following_id")
         .eq("follower_id", user.id)
         .then(({ data }) => {
@@ -216,13 +216,13 @@ export default function RecherchePage() {
 
     if (isFollowing) {
       await supabase
-        .from("follows")
+        .from("followers")
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", profileId);
     } else {
       await supabase
-        .from("follows")
+        .from("followers")
         .insert({ follower_id: user.id, following_id: profileId });
     }
   }, [user, following]);

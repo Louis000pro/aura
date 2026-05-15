@@ -1,9 +1,13 @@
-﻿"use client";
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, MessageCircle, Grid3X3, LayoutList } from "lucide-react";
+import {
+  UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check,
+  MessageCircle, Grid3X3, LayoutList,
+  Heart, Share2, Repeat2, X, Send,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
@@ -36,7 +40,167 @@ type DbPost = {
   created_at: string;
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
+  post_reposts: { user_id: string }[];
 };
+
+type ProfilComment = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  author: { pseudo: string; avatar_url?: string | null } | null;
+};
+
+function InlineComments({ postId, postOwnerId }: { postId: string; postOwnerId?: string }) {
+  const { user } = useAuth();
+  const [comments, setComments] = useState<ProfilComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("post_comments")
+      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true })
+      .limit(50)
+      .then(({ data }) => {
+        setComments((data as unknown as ProfilComment[]) ?? []);
+        setLoading(false);
+        setTimeout(() => inputRef.current?.focus(), 100);
+      });
+  }, [postId]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || sending) return;
+    const content = input.trim();
+    setInput("");
+    setSending(true);
+    const tmpId = `tmp-${Date.now()}`;
+    setComments((prev) => [
+      ...prev,
+      {
+        id: tmpId,
+        content,
+        created_at: new Date().toISOString(),
+        user_id: user.id,
+        author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
+      },
+    ]);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("post_comments")
+      .insert({ post_id: postId, user_id: user.id, content });
+    setSending(false);
+    if (error) {
+      setComments((prev) => prev.filter((c) => c.id !== tmpId));
+      setInput(content);
+    } else if (postOwnerId && postOwnerId !== user.id) {
+      void supabase.from("notifications").insert({
+        user_id: postOwnerId,
+        from_user_id: user.id,
+        from_pseudo: user.pseudo,
+        from_avatar_url: user.avatar ?? null,
+        type: "comment",
+        post_id: postId,
+      });
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.3 }}
+      className="overflow-hidden"
+    >
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+        <div className="flex flex-col gap-2 mb-3 max-h-40 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-3">
+              <motion.div
+                className="w-4 h-4 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>
+              Sois le premier à commenter
+            </p>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="flex items-start gap-2">
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden flex-shrink-0"
+                  style={{
+                    background: c.author?.avatar_url
+                      ? "transparent"
+                      : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                    color: "#2D3748",
+                  }}
+                >
+                  {c.author?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (c.author?.pseudo?.[0] ?? "?").toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs" style={{ color: "#2D3748" }}>
+                    <span className="font-semibold mr-1">{c.author?.pseudo}</span>
+                    <span className="font-light">{c.content}</span>
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi"}
+            disabled={!user}
+            className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
+            style={{
+              background: "rgba(240,235,255,0.5)",
+              border: "1px solid rgba(212,192,255,0.5)",
+              color: "#2D3748",
+            }}
+          />
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleSend}
+            disabled={!input.trim() || !user || sending}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{
+              background:
+                input.trim() && user
+                  ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
+                  : "rgba(240,235,255,0.5)",
+            }}
+          >
+            <Send
+              size={12}
+              strokeWidth={2}
+              style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }}
+            />
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -60,6 +224,13 @@ export default function PublicProfilePage() {
   const [postCount, setPostCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [profileTab, setProfileTab] = useState<"posts" | "sessions">("posts");
+
+  // Action bar state
+  const [selectedPost, setSelectedPost] = useState<DbPost | null>(null);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
+  const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+  const [burstId, setBurstId] = useState<string | null>(null);
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
@@ -95,11 +266,23 @@ export default function PublicProfilePage() {
         // ── Posts de l'utilisateur ──
         const { data: postsData, count: postsCount } = await supabase
           .from("posts")
-          .select("id, type, caption, media_url, media_type, performance_data, created_at, post_likes(user_id), post_comments(id)", { count: "exact" })
+          .select("id, type, caption, media_url, media_type, performance_data, created_at, post_likes(user_id), post_comments(id), post_reposts(user_id)", { count: "exact" })
           .eq("user_id", data.id)
           .order("created_at", { ascending: false })
           .limit(20);
-        if (postsData) setUserPosts(postsData as unknown as DbPost[]);
+        if (postsData) {
+          setUserPosts(postsData as unknown as DbPost[]);
+          const liked = new Set<string>();
+          const reposted = new Set<string>();
+          if (user) {
+            (postsData as unknown as DbPost[]).forEach((p) => {
+              if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
+              if (p.post_reposts?.some((r) => r.user_id === user.id)) reposted.add(p.id);
+            });
+          }
+          setLikedIds(liked);
+          setRepostedIds(reposted);
+        }
         setPostCount(postsCount ?? 0);
 
         // ── Streak (jours consécutifs avec séance) ──
@@ -191,6 +374,97 @@ export default function PublicProfilePage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  const toggleLike = async (postId: string) => {
+    if (!user || !profile) return;
+    const supabase = createClient();
+    const isLiked = likedIds.has(postId);
+    setLikedIds((prev) => {
+      const n = new Set(prev);
+      isLiked ? n.delete(postId) : n.add(postId);
+      return n;
+    });
+    setUserPosts((prev) =>
+      prev.map((p) =>
+        p.id !== postId
+          ? p
+          : {
+              ...p,
+              post_likes: isLiked
+                ? p.post_likes.filter((l) => l.user_id !== user.id)
+                : [...p.post_likes, { user_id: user.id }],
+            }
+      )
+    );
+    if (!isLiked) {
+      setBurstId(postId);
+      setTimeout(() => setBurstId(null), 700);
+      await supabase
+        .from("post_likes")
+        .upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      if (profile.id !== user.id) {
+        void supabase.from("notifications").insert({
+          user_id: profile.id,
+          from_user_id: user.id,
+          from_pseudo: user.pseudo,
+          from_avatar_url: user.avatar ?? null,
+          type: "like",
+          post_id: postId,
+        });
+      }
+    } else {
+      await supabase
+        .from("post_likes")
+        .delete()
+        .eq("post_id", postId)
+        .eq("user_id", user.id);
+    }
+  };
+
+  const toggleRepost = async (postId: string) => {
+    if (!user || !profile) return;
+    const supabase = createClient();
+    const isReposted = repostedIds.has(postId);
+    setRepostedIds((prev) => {
+      const n = new Set(prev);
+      isReposted ? n.delete(postId) : n.add(postId);
+      return n;
+    });
+    setUserPosts((prev) =>
+      prev.map((p) =>
+        p.id !== postId
+          ? p
+          : {
+              ...p,
+              post_reposts: isReposted
+                ? (p.post_reposts ?? []).filter((r) => r.user_id !== user.id)
+                : [...(p.post_reposts ?? []), { user_id: user.id }],
+            }
+      )
+    );
+    if (!isReposted) {
+      await supabase
+        .from("post_reposts")
+        .upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      if (profile.id !== user.id) {
+        void supabase.from("notifications").insert({
+          user_id: profile.id,
+          from_user_id: user.id,
+          from_pseudo: user.pseudo,
+          from_avatar_url: user.avatar ?? null,
+          type: "repost",
+          post_id: postId,
+        });
+      }
+      showToast("Post boosté ! 🔄");
+    } else {
+      await supabase
+        .from("post_reposts")
+        .delete()
+        .eq("post_id", postId)
+        .eq("user_id", user.id);
+    }
   };
 
   const formatDate = (iso: string) => {
@@ -590,6 +864,7 @@ export default function PublicProfilePage() {
                   className="relative rounded-2xl overflow-hidden aspect-square cursor-pointer"
                   style={{ background: post.type === "workout" ? "linear-gradient(135deg,#F0EBFF,#D4C0FF)" : post.type === "meal" ? "linear-gradient(135deg,#ECFDF5,#A7F3D0)" : "linear-gradient(135deg,#FFFBF0,#FDE68A)" }}
                   whileHover={{ scale: 1.03 }}
+                  onClick={() => setSelectedPost(post)}
                 >
                   {post.media_url && (post.media_type === "image" || post.media_type?.startsWith("image"))
                     // eslint-disable-next-line @next/next/no-img-element
@@ -646,6 +921,233 @@ export default function PublicProfilePage() {
         </motion.div>
       )}
 
+      </AnimatePresence>
+
+      {/* Modal post sélectionné */}
+      <AnimatePresence>
+        {selectedPost && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={() => setSelectedPost(null)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="w-full max-w-lg rounded-t-3xl overflow-hidden overflow-y-auto"
+              style={{ background: "rgba(255,255,255,0.97)", maxHeight: "90vh" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+              </div>
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold"
+                    style={{
+                      background: displayAvatar
+                        ? "transparent"
+                        : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                      color: "#2D3748",
+                    }}
+                  >
+                    {displayAvatar
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                      : initial}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                    <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                      {(() => {
+                        const diff = Date.now() - new Date(selectedPost.created_at).getTime();
+                        const h = Math.floor(diff / 3600000);
+                        const d = Math.floor(h / 24);
+                        if (h < 1) return "À l'instant";
+                        if (h < 24) return `${h}h`;
+                        if (d < 7) return `${d}j`;
+                        return new Date(selectedPost.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+                      })()}
+                    </p>
+                  </div>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setSelectedPost(null)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(240,235,255,0.8)" }}
+                >
+                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+              </div>
+
+              {/* Caption */}
+              {selectedPost.caption && (
+                <p className="px-4 pb-2 text-sm font-semibold" style={{ color: "#2D3748" }}>
+                  {selectedPost.caption}
+                </p>
+              )}
+
+              {/* Media */}
+              {selectedPost.media_url && (
+                <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                  {selectedPost.media_type === "video"
+                    ? (
+                      <video
+                        src={selectedPost.media_url}
+                        className="w-full object-cover"
+                        controls
+                        playsInline
+                        style={{ maxHeight: 380 }}
+                      />
+                    )
+                    : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={selectedPost.media_url}
+                        alt=""
+                        className="w-full object-cover rounded-2xl"
+                        style={{ maxHeight: 380 }}
+                      />
+                    )
+                  }
+                </div>
+              )}
+
+              {/* Action bar */}
+              {(() => {
+                const liked = likedIds.has(selectedPost.id);
+                const reposted = repostedIds.has(selectedPost.id);
+                const commentsOpen = openComments.has(selectedPost.id);
+                const likesCount = selectedPost.post_likes?.length ?? 0;
+                const repostsCount = selectedPost.post_reposts?.length ?? 0;
+                return (
+                  <>
+                    <div className="flex items-center gap-4 px-4 pt-2">
+                      <motion.button
+                        whileTap={{ scale: 0.7 }}
+                        onClick={() => toggleLike(selectedPost.id)}
+                        className="relative flex items-center cursor-pointer"
+                      >
+                        {burstId === selectedPost.id &&
+                          [0, 1, 2, 3, 4].map((i) => (
+                            <motion.div
+                              key={i}
+                              className="absolute pointer-events-none"
+                              style={{
+                                width: 5,
+                                height: 5,
+                                borderRadius: "50%",
+                                background: i % 2 === 0 ? "#F43F5E" : "#FB7185",
+                              }}
+                              initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                              animate={{
+                                scale: [0, 1.2, 0],
+                                x: [0, (i - 2) * 18],
+                                y: [0, -20 - i * 4],
+                                opacity: [1, 1, 0],
+                              }}
+                              transition={{ duration: 0.55, delay: i * 0.04 }}
+                            />
+                          ))}
+                        <motion.div
+                          animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }}
+                        >
+                          <Heart
+                            size={20}
+                            strokeWidth={liked ? 0 : 1.5}
+                            fill={liked ? "#F43F5E" : "none"}
+                            style={{ color: liked ? "#F43F5E" : "#2D3748" }}
+                          />
+                        </motion.div>
+                      </motion.button>
+
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() =>
+                          setOpenComments((p) => {
+                            const n = new Set(p);
+                            n.has(selectedPost.id) ? n.delete(selectedPost.id) : n.add(selectedPost.id);
+                            return n;
+                          })
+                        }
+                        className="cursor-pointer"
+                      >
+                        <MessageCircle
+                          size={20}
+                          strokeWidth={1.5}
+                          fill={commentsOpen ? "rgba(167,139,250,0.2)" : "none"}
+                          style={{ color: commentsOpen ? "#A78BFA" : "#2D3748" }}
+                        />
+                      </motion.button>
+
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => toggleRepost(selectedPost.id)}
+                        className="cursor-pointer"
+                      >
+                        <motion.div
+                          animate={reposted ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }}
+                        >
+                          <Repeat2
+                            size={20}
+                            strokeWidth={1.5}
+                            style={{ color: reposted ? "#34D399" : "#2D3748" }}
+                          />
+                        </motion.div>
+                      </motion.button>
+
+                      <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer">
+                        <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                      </motion.button>
+                    </div>
+
+                    <div className="px-4 pt-2 pb-1">
+                      {likesCount > 0 && (
+                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                          {likesCount} j&apos;aime
+                          {repostsCount > 0
+                            ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}`
+                            : ""}
+                        </p>
+                      )}
+                      <motion.p
+                        whileHover={{ color: "#2D3748" }}
+                        className="text-[11px] mt-1 cursor-pointer mb-3"
+                        style={{ color: "#A0AEC0" }}
+                        onClick={() =>
+                          setOpenComments((p) => {
+                            const n = new Set(p);
+                            n.has(selectedPost.id) ? n.delete(selectedPost.id) : n.add(selectedPost.id);
+                            return n;
+                          })
+                        }
+                      >
+                        {commentsOpen ? "Masquer" : "Voir les commentaires"}
+                      </motion.p>
+                    </div>
+
+                    {/* Comments inline */}
+                    <AnimatePresence>
+                      {commentsOpen && (
+                        <InlineComments postId={selectedPost.id} postOwnerId={profile?.id} />
+                      )}
+                    </AnimatePresence>
+                  </>
+                );
+              })()}
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Toast */}
