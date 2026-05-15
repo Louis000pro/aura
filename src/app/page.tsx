@@ -45,91 +45,120 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
   );
 }
 
-/* ─── Welcome Overlay (plein écran, 2–4 secondes aléatoires) ─── */
+/* ─── Welcome Overlay ─── */
 function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: boolean; onDismiss: () => void }) {
   const [progress, setProgress] = useState(100);
-  const duration = useRef(2000 + Math.floor(Math.random() * 2001));
+  const duration = useRef(3500);
+
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 5 ? "Bonne nuit" : hour < 12 ? "Bon matin" : hour < 18 ? "Bonjour" : "Bonsoir";
 
   useEffect(() => {
-    const t1 = setTimeout(() => setProgress(0), 80);
+    const t1 = setTimeout(() => setProgress(0), 100);
     const t2 = setTimeout(onDismiss, duration.current);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [onDismiss]);
 
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.04 }}
+      transition={{ duration: 0.35 }}
       className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
-      style={{ background: "rgba(240,235,255,0.8)", backdropFilter: "blur(10px)" }}
+      style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}
+      onClick={onDismiss}
     >
+      {/* Halos de fond */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-5%", left: "-5%", width: 500, height: 500, background: "rgba(212,192,255,0.5)", filter: "blur(80px)" }}
-        animate={{ scale: [1,1.15,1], x: [-10,20,-10] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
+        style={{ top: "-20%", left: "-15%", width: 640, height: 640, background: "radial-gradient(circle, rgba(212,192,255,0.55) 0%, transparent 65%)", filter: "blur(60px)" }}
+        animate={{ scale: [1,1.12,1], x: [-8,18,-8] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-5%", right: "-5%", width: 450, height: 450, background: "rgba(245,230,163,0.5)", filter: "blur(80px)" }}
-        animate={{ scale: [1,1.2,1], x: [10,-20,10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} />
+        style={{ bottom: "-20%", right: "-15%", width: 560, height: 560, background: "radial-gradient(circle, rgba(245,230,163,0.5) 0%, transparent 65%)", filter: "blur(60px)" }}
+        animate={{ scale: [1,1.18,1], x: [8,-18,8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.6 }} />
 
-      {/* Particules de célébration */}
-      {Array.from({ length: 8 }).map((_, i) => (
-        <motion.div key={i} className="absolute rounded-full pointer-events-none"
-          style={{ width: 7 + (i % 3) * 3, height: 7 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(167,139,250,0.7)" : "rgba(212,168,67,0.6)", left: `${15 + i * 10}%`, top: `${15 + (i % 4) * 18}%`, willChange: "transform, opacity" }}
-          animate={{ y: [0, -100, 0], x: [0, (i % 2 === 0 ? 40 : -40), 0], opacity: [0, 0.9, 0], scale: [0, 1, 0] }}
-          transition={{ duration: 2.5, delay: i * 0.2, repeat: Infinity, repeatDelay: 2 }} />
-      ))}
-
+      {/* Carte principale */}
       <motion.div
-        initial={{ scale: 0.8, opacity: 0, y: 30 }}
+        initial={{ scale: 0.88, opacity: 0, y: 32 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: -20 }}
-        transition={{ type: "spring", damping: 18, stiffness: 240, delay: 0.06 }}
-        className="relative z-10 flex flex-col items-center text-center px-8"
+        exit={{ scale: 0.94, opacity: 0, y: -16 }}
+        transition={{ type: "spring", damping: 22, stiffness: 260, delay: 0.05 }}
+        className="relative z-10 flex flex-col items-center text-center mx-5 rounded-[2.5rem] overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,0.78)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(255,255,255,0.92)",
+          boxShadow: "0 40px 100px rgba(167,139,250,0.18), 0 8px 32px rgba(212,168,67,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+          maxWidth: 360,
+          width: "100%",
+          paddingTop: 40,
+          paddingBottom: 0,
+          paddingLeft: 32,
+          paddingRight: 32,
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Avatar pulsant */}
-        <div className="relative mb-7">
-          {[0,1,2].map((i) => (
-            <motion.div key={i} className="absolute rounded-full"
-              style={{ inset: -(12 + i * 14), border: `1px solid rgba(167,139,250,${0.35 - i * 0.1})` }}
-              animate={{ scale: [1,1.12,1], opacity: [0.6,0.08,0.6] }}
-              transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.45 }} />
-          ))}
+        {/* Particules internes */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <motion.div key={i} className="absolute rounded-full pointer-events-none"
+            style={{ width: 5 + (i % 3) * 3, height: 5 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(167,139,250,0.75)" : "rgba(212,168,67,0.65)", left: `${8 + i * 16}%`, top: `${8 + (i % 3) * 20}%`, willChange: "transform, opacity" }}
+            animate={{ y: [0, -70, 0], opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
+            transition={{ duration: 2.2, delay: 0.4 + i * 0.22, repeat: Infinity, repeatDelay: 2 }} />
+        ))}
+
+        {/* Badge salutation */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full mb-7"
+          style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.12), rgba(212,168,67,0.10))", border: "1px solid rgba(167,139,250,0.18)" }}>
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+            {isNew ? "Nouvelle aventure" : timeGreeting}
+          </span>
+          <span className="text-sm" style={{ color: "#D4A843" }}>✦</span>
+        </motion.div>
+
+        {/* Avatar */}
+        <div className="relative mb-6">
+          {/* Halo pulsant derrière l'avatar */}
+          <motion.div className="absolute rounded-full pointer-events-none"
+            style={{ inset: -16, background: "radial-gradient(circle, rgba(167,139,250,0.22) 0%, transparent 70%)" }}
+            animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.15, 0.6] }}
+            transition={{ duration: 2.4, repeat: Infinity }} />
           <motion.div
-            initial={{ scale: 0, rotate: -25 }} animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", bounce: 0.55, delay: 0.15 }}
-            className="w-28 h-28 rounded-[2rem] flex items-center justify-center text-5xl font-bold"
-            style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "0 16px 56px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.8)" }}
+            initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", bounce: 0.52, delay: 0.14 }}
+            className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-4xl font-bold"
+            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 14px 48px rgba(167,139,250,0.38), 0 4px 16px rgba(212,168,67,0.18), inset 0 1px 0 rgba(255,255,255,0.85)" }}
           >
             {(pseudo || "?")[0]?.toUpperCase()}
           </motion.div>
           {[0,1,2,3].map((i) => (
             <motion.div key={i} className="absolute pointer-events-none"
-              style={{ left: `${[5,80,40,-10][i]}%`, top: `${[-8,-8,100,40][i]}%` }}
+              style={{ left: `${[2,82,42,-14][i]}%`, top: `${[-10,-6,96,42][i]}%` }}
               initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0,1.5,0], opacity: [0,1,0], y: i % 2 === 0 ? [-4,-22,-4] : [4,22,4] }}
-              transition={{ duration: 1.5, delay: 0.3 + i * 0.2, repeat: Infinity, repeatDelay: 1 }}
-            >
-              <Sparkles size={13} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
+              animate={{ scale: [0,1.4,0], opacity: [0,1,0], y: i % 2 === 0 ? [-3,-18,-3] : [3,18,3] }}
+              transition={{ duration: 1.6, delay: 0.28 + i * 0.22, repeat: Infinity, repeatDelay: 1.4 }}>
+              <Sparkles size={12} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
             </motion.div>
           ))}
         </div>
 
-        <motion.h2 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
-          className="text-4xl font-extralight mb-2" style={{ color: "#2D3748" }}>
-          {isNew ? "Bienvenue sur Aura !" : "Bon retour !"}
-        </motion.h2>
-        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
-          className="text-xl font-light mb-2" style={{ color: "#A78BFA" }}>
+        {/* Texte */}
+        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.27 }}
+          className="text-3xl font-extralight mb-1" style={{ color: "#2D3748" }}>
+          {isNew ? "Bienvenue !" : "Bon retour !"}
+        </motion.p>
+        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}
+          className="text-xl font-light mb-3" style={{ background: "linear-gradient(135deg, #A78BFA, #D4A843)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
           @{pseudo || "toi"}
         </motion.p>
-        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.46 }}
-          className="text-sm font-light" style={{ color: "#718096" }}>
+        <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.44 }}
+          className="text-sm font-light leading-relaxed mb-8" style={{ color: "#718096" }}>
           {isNew ? "Votre parcours commence maintenant ✦" : "Prêt à repousser vos limites ? 💪"}
         </motion.p>
 
-        {/* Barre de progression durée variable */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-          className="mt-8 w-52 h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.15)" }}>
+        {/* Barre de progression en bas de la carte */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52 }}
+          className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.1)" }}>
           <div className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg,#A78BFA,#D4A843)", width: `${progress}%`, transition: progress === 0 ? `width ${duration.current}ms linear` : "none" }} />
+            style={{ background: "linear-gradient(90deg, #A78BFA, #D4A843)", width: `${progress}%`, transition: progress === 0 ? `width ${duration.current}ms linear` : "none" }} />
         </motion.div>
       </motion.div>
     </motion.div>
