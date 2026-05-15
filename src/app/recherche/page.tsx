@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
@@ -84,7 +84,7 @@ function ProfileAvatar({ profile }: { profile: Profile }) {
 /* ─── Glass card wrapper ─────────────────────────────────────── */
 const glassCard: React.CSSProperties = {
   background: "rgba(255,255,255,0.65)",
-  backdropFilter: "blur(20px)",
+  backdropFilter: "blur(10px)",
   border: "1px solid rgba(255,255,255,0.75)",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
 };
@@ -256,7 +256,7 @@ export default function RecherchePage() {
           className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
           style={{
             background: "rgba(255,255,255,0.75)",
-            backdropFilter: "blur(24px)",
+            backdropFilter: "blur(10px)",
             border: "1px solid rgba(255,255,255,0.8)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px rgba(167,139,250,0.08)",
           }}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -321,7 +321,7 @@ export default function StoryHighlightViewer({
               className="absolute top-[100px] right-3 z-30 rounded-2xl overflow-hidden min-w-[200px]"
               style={{
                 background: "rgba(20,20,25,0.96)",
-                backdropFilter: "blur(24px)",
+                backdropFilter: "blur(10px)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
               }}

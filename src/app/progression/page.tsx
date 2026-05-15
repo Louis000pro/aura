@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
@@ -208,7 +208,7 @@ function toDateStr(d: Date) {
 
 const CHART_CARD = {
   background: "rgba(255,255,255,0.78)",
-  backdropFilter: "blur(20px)",
+  backdropFilter: "blur(10px)",
   border: "1px solid rgba(255,255,255,0.9)",
   boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
 };
@@ -1302,7 +1302,7 @@ function LibraryCard({
                 className="absolute bottom-full mb-1 left-0 right-0 rounded-2xl overflow-hidden z-50"
                 style={{
                   background: "rgba(255,255,255,0.97)",
-                  backdropFilter: "blur(20px)",
+                  backdropFilter: "blur(10px)",
                   border: "1px solid rgba(240,235,255,0.9)",
                   boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
                 }}
@@ -1490,7 +1490,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
         className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
         style={{
           background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
           maxHeight: "92vh",
@@ -2577,7 +2577,7 @@ export default function ProgressionPage() {
         <motion.div key="mensurations-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.3 }} className="flex flex-col gap-6">
 
           {/* Form */}
-          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
+          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
             <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Ajouter mes mesures d&apos;aujourd&apos;hui</p>
             <div className="grid grid-cols-2 gap-3">
               {[
@@ -2660,7 +2660,7 @@ export default function ProgressionPage() {
         <motion.div key="records-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.3 }} className="flex flex-col gap-6">
 
           {/* Form */}
-          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
+          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
             <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Nouveau record personnel 🏆</p>
             <div className="flex flex-col gap-3">
               {/* Exercice */}
@@ -2885,7 +2885,7 @@ export default function ProgressionPage() {
             initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-            style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2)", whiteSpace: "nowrap" }}>
+            style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2)", whiteSpace: "nowrap" }}>
             <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
             <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
           </motion.div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -54,7 +54,7 @@ function ChatUI({
       {/* Glassmorphism background (only for inline) */}
       {!isFullscreen && (
         <div className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 32px rgba(167,139,250,0.1)" }} />
+          style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 32px rgba(167,139,250,0.1)" }} />
       )}
 
       {/* Header */}
@@ -207,7 +207,7 @@ export default function AIChatPanel({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[9999] flex flex-col"
-              style={{ background: "rgba(240,235,255,0.6)", backdropFilter: "blur(32px)" }}
+              style={{ background: "rgba(240,235,255,0.6)", backdropFilter: "blur(12px)" }}
             >
               {/* Blobs décoratifs */}
               <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
@@ -225,7 +225,7 @@ export default function AIChatPanel({
                   maxWidth: 760,
                   margin: "16px auto",
                   background: "rgba(255,255,255,0.88)",
-                  backdropFilter: "blur(40px)",
+                  backdropFilter: "blur(12px)",
                   borderRadius: 28,
                   border: "1px solid rgba(255,255,255,0.9)",
                   boxShadow: "0 24px 80px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.95)",

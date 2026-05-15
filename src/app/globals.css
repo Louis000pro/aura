@@ -32,7 +32,7 @@
 
   body {
     background: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
-    background-attachment: fixed;
+    background-attachment: scroll;
     color: #2D3748;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -195,4 +195,16 @@
   .animate-gradient-shift { animation: gradient-shift 5s ease infinite; background-size: 200% 200%; }
   .animate-breathe     { animation: breathe 3s ease-in-out infinite; }
   .animate-spin-slow   { animation: spin-slow 20s linear infinite; }
+
+  /* GPU compositing hints */
+  .gpu { transform: translateZ(0); backface-visibility: hidden; }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

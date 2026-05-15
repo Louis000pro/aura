@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -630,7 +630,7 @@ export default function PublicProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.07 }}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                  style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)", backdropFilter: "blur(24px)" }}
+                  style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)", backdropFilter: "blur(10px)" }}
                 >
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }}>
                     <Dumbbell size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
@@ -659,7 +659,7 @@ export default function PublicProfilePage() {
             className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
               background: "rgba(255,255,255,0.95)",
-              backdropFilter: "blur(24px)",
+              backdropFilter: "blur(10px)",
               border: "1px solid rgba(255,255,255,0.9)",
               boxShadow: "0 8px 32px rgba(167,139,250,0.2)",
               whiteSpace: "nowrap",

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -165,7 +165,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             overflow: "hidden",
             zIndex: 99999,
             background: "rgba(255,255,255,0.97)",
-            backdropFilter: "blur(32px)",
+            backdropFilter: "blur(12px)",
             border: "1px solid rgba(255,255,255,0.9)",
             boxShadow: "0 16px 56px rgba(167,139,250,0.18), 0 2px 8px rgba(0,0,0,0.08)",
             borderRadius: 20,

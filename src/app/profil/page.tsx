@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ function Toast({ message }: { message: string }) {
       className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
       style={{
         background: "rgba(255,255,255,0.95)",
-        backdropFilter: "blur(24px)",
+        backdropFilter: "blur(10px)",
         border: "1px solid rgba(240,235,255,0.9)",
         boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
         color: "#2D3748",
@@ -131,7 +131,7 @@ function EditProfileModal({
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-8 md:pb-6"
         style={{
           background: "rgba(255,255,255,0.98)",
-          backdropFilter: "blur(40px)",
+          backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -366,7 +366,7 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
         exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(40px)", boxShadow: "0 -12px 48px rgba(167,139,250,0.18)", maxHeight: "82vh" }}
+        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(167,139,250,0.18)", maxHeight: "82vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -514,7 +514,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
         style={{
           background: "rgba(255,255,255,0.98)",
-          backdropFilter: "blur(40px)",
+          backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
           maxHeight: "90vh",
         }}
@@ -1602,7 +1602,7 @@ export default function ProfilPage() {
             background: "rgba(255,255,255,0.8)",
             border: "1px solid rgba(255,255,255,0.9)",
             boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
-            backdropFilter: "blur(20px)",
+            backdropFilter: "blur(10px)",
           }}
         >
           {[

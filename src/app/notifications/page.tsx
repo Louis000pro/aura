@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -336,7 +336,7 @@ export default function NotificationsPage() {
                     background: notif.read
                       ? "rgba(255,255,255,0.55)"
                       : "rgba(255,255,255,0.8)",
-                    backdropFilter: "blur(20px)",
+                    backdropFilter: "blur(10px)",
                     border: notif.read
                       ? "1px solid rgba(255,255,255,0.65)"
                       : "1px solid rgba(167,139,250,0.3)",

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
         className="relative z-10 w-full max-w-md mx-4">
 
         <div className="relative rounded-3xl px-8 py-10"
-          style={{ background:"rgba(255,255,255,0.85)",backdropFilter:"blur(48px) saturate(200%)",border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
+          style={{ background:"rgba(255,255,255,0.85)",backdropFilter:"blur(12px) saturate(200%)",border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
 
           <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
             style={{ background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.95),transparent)" }} />
@@ -188,7 +188,7 @@ export default function ResetPasswordPage() {
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-2">
                   <motion.div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-                    style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.8)",backdropFilter:"blur(20px)",boxShadow:"0 4px 16px rgba(167,139,250,0.06)" }}>
+                    style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.8)",backdropFilter:"blur(10px)",boxShadow:"0 4px 16px rgba(167,139,250,0.06)" }}>
                     <Lock size={15} style={{ color:"#A0AEC0" }} />
                     <input type={showPwd?"text":"password"} placeholder="Nouveau mot de passe" value={password}
                       onChange={e => setPassword(e.target.value)} required autoFocus
@@ -202,7 +202,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <motion.div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-                  style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.8)",backdropFilter:"blur(20px)",boxShadow:"0 4px 16px rgba(167,139,250,0.06)" }}>
+                  style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.8)",backdropFilter:"blur(10px)",boxShadow:"0 4px 16px rgba(167,139,250,0.06)" }}>
                   <Lock size={15} style={{ color:"#A0AEC0" }} />
                   <input type={showCfm?"text":"password"} placeholder="Confirmer le mot de passe" value={confirm}
                     onChange={e => setConfirm(e.target.value)} required
