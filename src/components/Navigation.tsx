@@ -99,7 +99,7 @@ export default function Navigation() {
                 transition={{ type: "spring", stiffness: 500, damping: 35 }} />
             )}
             <div className="relative z-10">
-              <Icon size={22} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#2D3748" : "#A0AEC0" }} />
+              <Icon size={22} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#2D3748" : "#A0AEC0", transition: "color 0.2s ease" }} />
               {badge && !isActive && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
@@ -130,7 +130,7 @@ export default function Navigation() {
                   style={{ background: "linear-gradient(135deg,rgba(240,235,255,0.95),rgba(255,251,240,0.95))", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95),0 2px 12px -2px rgba(167,139,250,0.22)" }}
                   transition={{ type: "spring", stiffness: 500, damping: 35 }} />
               )}
-              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#2D3748" : "#A0AEC0", position: "relative", zIndex: 1 }} />
+              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#2D3748" : "#A0AEC0", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
             </motion.div>
           </Link>
 
