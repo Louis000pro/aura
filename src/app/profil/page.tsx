@@ -1509,6 +1509,64 @@ export default function ProfilPage() {
       .order("started_at", { ascending: false })
       .limit(20)
       .then(({ data }) => { if (data) setWorkoutSessions(data as WorkoutSessionItem[]); });
+
+    // ── Temps réel : likes / commentaires / reposts ──
+    const rt = createClient();
+
+    // Quelqu'un like un post de l'utilisateur
+    const likesChannel = rt.channel("profile-post-likes")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_likes" }, (payload) => {
+        const { post_id, user_id } = payload.new as { post_id: string; user_id: string };
+        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
+          ...p,
+          post_likes: p.post_likes.some((l) => l.user_id === user_id) ? p.post_likes : [...p.post_likes, { user_id }],
+          likes_count: (p.likes_count ?? p.post_likes.length) + 1,
+        }));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "post_likes" }, (payload) => {
+        const { post_id, user_id } = payload.old as { post_id: string; user_id: string };
+        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
+          ...p,
+          post_likes: p.post_likes.filter((l) => l.user_id !== user_id),
+          likes_count: Math.max(0, (p.likes_count ?? p.post_likes.length) - 1),
+        }));
+      })
+      .subscribe();
+
+    // Quelqu'un commente un post de l'utilisateur
+    const commentsChannel = rt.channel("profile-post-comments")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_comments" }, (payload) => {
+        const { post_id, id } = payload.new as { post_id: string; id: string };
+        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
+          ...p,
+          post_comments: p.post_comments.some((c) => c.id === id) ? p.post_comments : [...p.post_comments, { id }],
+        }));
+      })
+      .subscribe();
+
+    // Quelqu'un reposte un post de l'utilisateur
+    const repostsChannel = rt.channel("profile-post-reposts")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_reposts" }, (payload) => {
+        const { post_id, user_id } = payload.new as { post_id: string; user_id: string };
+        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
+          ...p,
+          post_reposts: p.post_reposts.some((r) => r.user_id === user_id) ? p.post_reposts : [...p.post_reposts, { user_id }],
+        }));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "post_reposts" }, (payload) => {
+        const { post_id, user_id } = payload.old as { post_id: string; user_id: string };
+        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
+          ...p,
+          post_reposts: p.post_reposts.filter((r) => r.user_id !== user_id),
+        }));
+      })
+      .subscribe();
+
+    return () => {
+      rt.removeChannel(likesChannel).catch(() => {});
+      rt.removeChannel(commentsChannel).catch(() => {});
+      rt.removeChannel(repostsChannel).catch(() => {});
+    };
   }, [user?.id]);
 
   const showToast = (msg: string) => {
