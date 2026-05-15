@@ -45,7 +45,7 @@ export default function PerformanceCard({
   interactive?:   boolean;
   /** Override gradient background */
   customBg?:      string;
-  /** Photo background (URL or data URL). Gradient is applied as overlay. */
+  /** Photo background (URL or data URL). */
   customBgImage?: string;
   /** Which metric index to display as the hero (large number). Default 0 */
   heroIndex?:     number;
@@ -55,6 +55,12 @@ export default function PerformanceCard({
   const { icon: Icon, label } = typeDefaults[data.type];
   const defaultBg = GRADIENT_PRESETS.find(p => p.key === typeDefaults[data.type].gradientKey)?.bg ?? GRADIENT_PRESETS[0].bg;
   const bg = customBg ?? defaultBg;
+
+  // Photo mode helpers
+  const photoNoOverlay = !!(customBgImage && !customBg);
+  const overlayOpacity = customBgImage ? (customBg ? 0.62 : 0) : 1;
+  // Text shadow for readability on raw photo
+  const ts = photoNoOverlay ? "0 1px 10px rgba(0,0,0,0.85), 0 0 4px rgba(0,0,0,0.5)" : undefined;
 
   // Resolve metrics
   const all   = data.metrics;
@@ -74,13 +80,13 @@ export default function PerformanceCard({
       transition={{ duration: 0.2 }}
       className={`relative rounded-3xl overflow-hidden flex flex-col ${px} ${py}`}
       style={{
-        background: customBgImage ? "#000" : bg,
+        background: customBgImage ? "#111" : bg,
         boxShadow:  "0 16px 48px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.18)",
         gap:        isSmall ? 12 : 16,
         ...(isSmall ? { aspectRatio: "2 / 3" } : {}),
       }}
     >
-      {/* Photo background */}
+      {/* ── Photo background ── */}
       {customBgImage && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -90,36 +96,49 @@ export default function PerformanceCard({
           style={{ zIndex: 0 }}
         />
       )}
-      {/* Gradient overlay */}
+
+      {/* ── Gradient / colour overlay ── */}
       <div
         className="absolute inset-0"
-        style={{
-          background: bg,
-          opacity:    customBgImage ? 0.78 : 1,
-          zIndex:     1,
-        }}
+        style={{ background: bg, opacity: overlayOpacity, zIndex: 1 }}
       />
-      {/* Top-edge highlight */}
-      <div className="absolute top-0 inset-x-0 h-px" style={{ background: "rgba(255,255,255,0.28)", zIndex: 2 }} />
-      {/* Left inner highlight */}
-      <div className="absolute inset-y-0 left-0 w-24 pointer-events-none" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.06), transparent)", zIndex: 2 }} />
+
+      {/* ── Photo vignette (top + bottom) when no overlay ── */}
+      {photoNoOverlay && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, transparent 42%, transparent 58%, rgba(0,0,0,0.68) 100%)",
+            zIndex: 2,
+          }}
+        />
+      )}
+
+      {/* ── Decorative highlights (solid-gradient mode only) ── */}
+      {!photoNoOverlay && (
+        <>
+          <div className="absolute top-0 inset-x-0 h-px" style={{ background: "rgba(255,255,255,0.28)", zIndex: 2 }} />
+          <div className="absolute inset-y-0 left-0 w-24 pointer-events-none" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.06), transparent)", zIndex: 2 }} />
+        </>
+      )}
 
       {/* ── Top row ── */}
       <div className="flex items-center justify-between relative z-10">
         <div
           className="flex items-center gap-1.5 rounded-full"
           style={{
-            background: "rgba(255,255,255,0.18)",
-            border:     "1px solid rgba(255,255,255,0.22)",
+            background: photoNoOverlay ? "rgba(0,0,0,0.38)" : "rgba(255,255,255,0.18)",
+            border:     `1px solid ${photoNoOverlay ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.22)"}`,
             padding:    isSmall ? "4px 10px" : "5px 12px",
+            backdropFilter: photoNoOverlay ? "blur(6px)" : undefined,
           }}
         >
           <Icon size={isSmall ? 11 : 13} strokeWidth={2} style={{ color: "#fff" }} />
-          <span className="font-bold text-white tracking-[0.2em] uppercase" style={{ fontSize: isSmall ? "0.5rem" : "0.58rem" }}>
+          <span className="font-bold text-white tracking-[0.2em] uppercase" style={{ fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts }}>
             {label}
           </span>
         </div>
-        <span className="font-light" style={{ color: "rgba(255,255,255,0.6)", fontSize: isSmall ? "0.58rem" : "0.68rem" }}>
+        <span className="font-light" style={{ color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.58rem" : "0.68rem", textShadow: ts }}>
           {data.date}
         </span>
       </div>
@@ -127,20 +146,20 @@ export default function PerformanceCard({
       {/* ── Hero metric ── */}
       {hero && (
         <div className={`relative z-10 ${isSmall ? "flex-1 flex flex-col justify-center" : ""}`}>
-          <p className="font-semibold tracking-[0.24em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.6)", fontSize: isSmall ? "0.5rem" : "0.58rem" }}>
+          <p className="font-semibold tracking-[0.24em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.75)", fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts }}>
             {hero.label}
           </p>
           <div className="flex items-end gap-2 mb-2">
-            <span className="font-bold leading-none text-white" style={{ fontSize: heroSize, letterSpacing: "-0.02em" }}>
+            <span className="font-bold leading-none text-white" style={{ fontSize: heroSize, letterSpacing: "-0.02em", textShadow: ts }}>
               {hero.value}
             </span>
             {hero.unit && (
-              <span className="font-normal leading-none" style={{ color: "rgba(255,255,255,0.55)", fontSize: isSmall ? "0.9rem" : "1.25rem", marginBottom: isSmall ? "0.25rem" : "0.5rem" }}>
+              <span className="font-normal leading-none" style={{ color: "rgba(255,255,255,0.7)", fontSize: isSmall ? "0.9rem" : "1.25rem", marginBottom: isSmall ? "0.25rem" : "0.5rem", textShadow: ts }}>
                 {hero.unit}
               </span>
             )}
           </div>
-          <p className="font-medium" style={{ color: "rgba(255,255,255,0.72)", fontSize: isSmall ? "0.7rem" : "0.88rem" }}>
+          <p className="font-medium" style={{ color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.7rem" : "0.88rem", textShadow: ts }}>
             {data.title}
           </p>
         </div>
@@ -148,7 +167,7 @@ export default function PerformanceCard({
 
       {/* ── Separator ── */}
       {subs.length > 0 && (
-        <div className="relative z-10 h-px w-full" style={{ background: "rgba(255,255,255,0.2)" }} />
+        <div className="relative z-10 h-px w-full" style={{ background: photoNoOverlay ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.2)" }} />
       )}
 
       {/* ── Sub metrics ── */}
@@ -159,15 +178,15 @@ export default function PerformanceCard({
         >
           {subs.slice(0, 3).map((m) => (
             <div key={m.label}>
-              <p className="font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.52)", fontSize: isSmall ? "0.44rem" : "0.52rem" }}>
+              <p className="font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.65)", fontSize: isSmall ? "0.44rem" : "0.52rem", textShadow: ts }}>
                 {m.label}
               </p>
               <div className="flex items-baseline gap-0.5">
-                <span className="font-bold text-white" style={{ fontSize: isSmall ? "1.05rem" : "1.3rem" }}>
+                <span className="font-bold text-white" style={{ fontSize: isSmall ? "1.05rem" : "1.3rem", textShadow: ts }}>
                   {m.value}
                 </span>
                 {m.unit && (
-                  <span className="font-normal" style={{ color: "rgba(255,255,255,0.48)", fontSize: "0.58rem" }}>
+                  <span className="font-normal" style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.58rem", textShadow: ts }}>
                     {m.unit}
                   </span>
                 )}
@@ -179,7 +198,14 @@ export default function PerformanceCard({
 
       {/* ── Branding ── */}
       <div className="relative z-10 flex items-center justify-end mt-auto">
-        <span className="font-black text-white tracking-[0.42em] uppercase" style={{ fontSize: isSmall ? "0.52rem" : "0.62rem", opacity: 0.85 }}>
+        <span
+          className="font-black text-white tracking-[0.42em] uppercase"
+          style={{
+            fontSize: isSmall ? "0.52rem" : "0.62rem",
+            opacity:  photoNoOverlay ? 0.9 : 0.85,
+            textShadow: ts,
+          }}
+        >
           ✦ AURA
         </span>
       </div>

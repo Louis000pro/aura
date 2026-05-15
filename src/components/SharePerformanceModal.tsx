@@ -198,6 +198,7 @@ export default function SharePerformanceModal({
                                 if (!file) return;
                                 const url = URL.createObjectURL(file);
                                 setCustomBgImage(url);
+                                setCustomBg(undefined); // no overlay by default in photo mode
                                 // reset so same file can be re-selected
                                 e.target.value = "";
                               }}
@@ -251,14 +252,51 @@ export default function SharePerformanceModal({
                             )}
                           </div>
 
-                          {/* ── Couleur ── */}
+                          {/* ── Couleur / Superposition ── */}
                           <div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>Couleur</p>
+                            <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>
+                              {customBgImage ? "Superposition" : "Couleur"}
+                            </p>
                             <div className="flex gap-2 flex-wrap">
+                              {/* "Aucun" swatch — visible uniquement en mode photo */}
+                              {customBgImage && (
+                                <motion.button
+                                  whileTap={{ scale: 0.88 }}
+                                  onClick={() => setCustomBg(undefined)}
+                                  title="Aucun filtre"
+                                  className="relative rounded-full cursor-pointer flex-shrink-0 overflow-hidden"
+                                  style={{
+                                    width: 32, height: 32,
+                                    background: "#F0F0F0",
+                                    border: "1.5px solid #E2E8F0",
+                                    boxShadow: !customBg
+                                      ? "0 0 0 2.5px #fff, 0 0 0 4.5px #A78BFA"
+                                      : "0 2px 6px rgba(0,0,0,0.1)",
+                                  }}
+                                >
+                                  {/* Diagonal red slash = "none" */}
+                                  <div style={{
+                                    position: "absolute", top: "50%", left: -2, right: -2,
+                                    height: 1.5, background: "#FC8181",
+                                    transform: "rotate(-40deg)", transformOrigin: "center",
+                                  }} />
+                                  {!customBg && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <Check size={10} strokeWidth={3} style={{ color: "#A78BFA" }} />
+                                    </div>
+                                  )}
+                                </motion.button>
+                              )}
+
+                              {/* Gradient swatches */}
                               {GRADIENT_PRESETS.map(({ key, bg, name }) => {
-                                const isSelected = customBg === bg || (!customBg && key === (
-                                  data.type === "workout" ? "violet" : data.type === "meal" ? "emerald" : "amber"
-                                ));
+                                const isSelected = customBgImage
+                                  // photo mode: exact match only
+                                  ? customBg === bg
+                                  // no-photo mode: exact match or type default
+                                  : customBg === bg || (!customBg && key === (
+                                      data.type === "workout" ? "violet" : data.type === "meal" ? "emerald" : "amber"
+                                    ));
                                 return (
                                   <motion.button
                                     key={key}
@@ -283,6 +321,11 @@ export default function SharePerformanceModal({
                                 );
                               })}
                             </div>
+                            {customBgImage && (
+                              <p className="text-[10px] mt-2" style={{ color: "#A0AEC0" }}>
+                                ∅ = photo seule · couleur = filtre semi-transparent
+                              </p>
+                            )}
                           </div>
 
                           {/* ── Valeurs ── */}
