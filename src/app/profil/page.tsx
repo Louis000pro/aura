@@ -36,7 +36,6 @@ import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
 import { createClient } from "@/lib/supabase";
-import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 
 /* ─────────────── Toast ─────────────── */
 function Toast({ message }: { message: string }) {
