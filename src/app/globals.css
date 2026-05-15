@@ -209,6 +209,16 @@
   }
 }
 
+/* ─────────────────────── SKELETON SHIMMER ─────────────────────── */
+@layer utilities {
+  .skeleton {
+    background: linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.4) 50%, rgba(212,192,255,0.2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer-x 1.5s infinite;
+    border-radius: 9999px;
+  }
+}
+
 /* ─────────────────────────── DARK MODE ─────────────────────────── */
 
 [data-theme="dark"] body {
@@ -309,3 +319,44 @@
 [data-theme="dark"] textarea::placeholder {
   color: #6B6A80 !important;
 }
+
+/* Cards & surfaces with white/light backgrounds */
+[data-theme="dark"] [style*="rgba(255,255,255,0.85)"],
+[data-theme="dark"] [style*="rgba(255,255,255,0.9)"],
+[data-theme="dark"] [style*="rgba(255,255,255,0.97)"],
+[data-theme="dark"] [style*="rgba(255,255,255,0.95)"],
+[data-theme="dark"] [style*="rgba(255,255,255,0.7)"],
+[data-theme="dark"] [style*="rgba(255,255,255,0.65)"] {
+  background: rgba(28, 22, 55, 0.82) !important;
+  border-color: rgba(100, 80, 180, 0.2) !important;
+}
+
+/* Inline white/light backgrounds */
+[data-theme="dark"] [style*="background: \"rgba(255,255,255"],
+[data-theme="dark"] [style*="background:\"rgba(255,255,255"] {
+  background: rgba(28, 22, 55, 0.82) !important;
+}
+
+/* Body background in dark mode */
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, #0D0B18 0%, #130F22 50%, #0D0B18 100%) !important;
+}
+
+/* Feed post cards specifically */
+[data-theme="dark"] .feed-card {
+  background: rgba(22, 17, 45, 0.9) !important;
+  border-color: rgba(100, 80, 180, 0.18) !important;
+}
+
+/* Inputs */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: rgba(35, 28, 62, 0.8) !important;
+  border-color: rgba(100, 80, 180, 0.3) !important;
+  color: #E2E0EA !important;
+}
+
+/* Secondary text */
+[data-theme="dark"] [style*="#2D3748"] { color: #E2E0EA !important; }
+[data-theme="dark"] [style*="45, 55, 72"] { color: #E2E0EA !important; }

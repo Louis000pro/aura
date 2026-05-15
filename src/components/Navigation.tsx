@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Users, User, LogIn, LogOut,
-  Settings, Shield, Plus, ChevronRight,
+  Settings, Shield, Plus, ChevronRight, Search,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -23,9 +23,13 @@ type TabItem = {
 
 const TABS: TabItem[] = [
   { href: "/",           label: "Accueil",    icon: Home },
-  { href: "/progression",label: "Progression",icon: TrendingUp },
+  { href: "/recherche",  label: "Recherche",  icon: Search },
   { href: "/communaute", label: "Communauté", icon: Users },
   { href: "/profil",     label: "Profil",     icon: User },
+];
+
+const DESKTOP_EXTRA: TabItem[] = [
+  { href: "/progression", label: "Progression", icon: TrendingUp },
 ];
 
 export default function Navigation() {
@@ -242,8 +246,11 @@ export default function Navigation() {
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="lg-strong lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
         >
-          {/* 5 icônes de navigation */}
+          {/* Icônes de navigation */}
           {TABS.map(({ href, label, icon, sub }) => (
+            <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} />
+          ))}
+          {DESKTOP_EXTRA.map(({ href, label, icon, sub }) => (
             <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} />
           ))}
 

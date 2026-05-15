@@ -2226,13 +2226,39 @@ function CommunautePageInner() {
 
             {/* Posts réels depuis Supabase */}
             {feedLoading && (
-              <div className="flex justify-center py-10">
-                <motion.div
-                  className="w-6 h-6 rounded-full border-2"
-                  style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                />
+              <div className="flex flex-col gap-4">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className="rounded-3xl overflow-hidden"
+                    style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.08)" }}
+                  >
+                    {/* Header skeleton */}
+                    <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                      <div className="w-9 h-9 rounded-full animate-pulse" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.3) 25%, rgba(212,192,255,0.5) 50%, rgba(212,192,255,0.3) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite" }} />
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <div className="h-3 w-24 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.3) 25%, rgba(212,192,255,0.5) 50%, rgba(212,192,255,0.3) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite" }} />
+                        <div className="h-2 w-14 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.1s" }} />
+                      </div>
+                    </div>
+                    {/* Content skeleton */}
+                    <div className="px-4 pb-2 flex flex-col gap-2">
+                      <div className="h-3 w-3/4 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.25) 25%, rgba(212,192,255,0.4) 50%, rgba(212,192,255,0.25) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.05s" }} />
+                      <div className="h-3 w-1/2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.1s" }} />
+                    </div>
+                    {/* Image skeleton */}
+                    <div className="mx-4 mb-3 h-48 rounded-2xl" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.15s" }} />
+                    {/* Action bar skeleton */}
+                    <div className="flex items-center gap-4 px-4 pb-4">
+                      {[20, 20, 20, 20].map((w, j) => (
+                        <div key={j} className="h-5 rounded-full" style={{ width: w, background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: `shimmer-x 1.5s infinite ${j * 0.05}s` }} />
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             )}
 
