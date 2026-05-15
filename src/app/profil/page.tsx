@@ -7,7 +7,7 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
-  MoreHorizontal, MessageCircle, Repeat2, Bookmark,
+  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 
@@ -23,7 +23,128 @@ type UserPost = {
   media_url?: string | null;
   media_type?: string | null;
   likes_count?: number;
+  post_likes: { user_id: string }[];
+  post_comments: { id: string }[];
+  post_reposts: { user_id: string }[];
 };
+
+/* ─────────────── CommentsSection ─────────────── */
+type ProfilComment = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  author: { pseudo: string; avatar_url?: string | null } | null;
+};
+
+function postTimeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "À l'instant";
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}j`;
+}
+
+function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { postId: string; initialCount: number; onClose: () => void; onCommentAdded?: () => void }) {
+  const { user } = useAuth();
+  const [comments, setComments] = useState<ProfilComment[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [input, setInput]       = useState("");
+  const [sending, setSending]   = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("post_comments")
+      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true })
+      .limit(50)
+      .then(({ data }) => {
+        setComments((data as unknown as ProfilComment[]) ?? []);
+        setLoading(false);
+        setTimeout(() => inputRef.current?.focus(), 100);
+      });
+  }, [postId]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || sending) return;
+    const content = input.trim();
+    setInput("");
+    setSending(true);
+    const tmpId = `tmp-${Date.now()}`;
+    const optimistic: ProfilComment = {
+      id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id,
+      author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
+    };
+    setComments((prev) => [...prev, optimistic]);
+    const supabase = createClient();
+    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, content });
+    setSending(false);
+    if (error) { setComments((prev) => prev.filter((c) => c.id !== tmpId)); setInput(content); }
+    else { onCommentAdded?.(); }
+  };
+
+  void onClose;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="overflow-hidden"
+    >
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+        <div className="flex flex-col gap-2.5 mb-3 max-h-52 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-3">
+              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
+          ) : comments.map((c, i) => {
+            const pseudo = c.author?.pseudo ?? "inconnu";
+            const avatar = c.author?.avatar_url;
+            return (
+              <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2">
+                <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                    {avatar
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                      : pseudo[0]?.toUpperCase()}
+                  </div>
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-relaxed" style={{ color: "#2D3748" }}>
+                    <Link href={`/profil/${pseudo}`}><span className="font-semibold mr-1.5 hover:underline">{pseudo}</span></Link>
+                    <span className="font-light">{c.content}</span>
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{postTimeAgo(c.created_at)}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2">
+          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"} disabled={!user}
+            className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
+            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+          <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)", transition: "background 0.2s" }}>
+            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 type WorkoutSessionItem = {
   id: string;
   title: string | null;
@@ -1213,6 +1334,10 @@ export default function ProfilPage() {
   const [showGoals, setShowGoals] = useState(false);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
   const [savedPosts, setSavedPosts] = useState<UserPost[]>([]);
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [repostedPostIds, setRepostedPostIds] = useState<Set<string>>(new Set());
+  const [openPostComments, setOpenPostComments] = useState<Set<string>>(new Set());
+  const [burstPostId, setBurstPostId] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [editingSelectedPost, setEditingSelectedPost] = useState(false);
   const [editCaption, setEditCaption] = useState("");
@@ -1338,17 +1463,29 @@ export default function ProfilPage() {
     // Publications : posts de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, post_likes(user_id)")
+      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, post_likes(user_id), post_comments(id), post_reposts(user_id)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) { console.error("posts query error:", error.message); return; }
         if (data) {
-          const posts = (data as unknown as (UserPost & { post_likes: { user_id: string }[] })[]).map((p) => ({
+          const posts = (data as unknown as UserPost[]).map((p) => ({
             ...p,
+            post_likes: p.post_likes ?? [],
+            post_comments: p.post_comments ?? [],
+            post_reposts: p.post_reposts ?? [],
             likes_count: p.post_likes?.length ?? 0,
           }));
           setUserPosts(posts);
+          // Initialiser les sets de likes/reposts
+          const liked = new Set<string>();
+          const reposted = new Set<string>();
+          posts.forEach((p) => {
+            if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
+            if (p.post_reposts.some((r) => r.user_id === user.id)) reposted.add(p.id);
+          });
+          setLikedPostIds(liked);
+          setRepostedPostIds(reposted);
         }
       });
 
@@ -1377,6 +1514,42 @@ export default function ProfilPage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  const togglePostLike = async (postId: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const isLiked = likedPostIds.has(postId);
+    setLikedPostIds((prev) => { const n = new Set(prev); isLiked ? n.delete(postId) : n.add(postId); return n; });
+    setUserPosts((prev) => prev.map((p) => p.id !== postId ? p : {
+      ...p,
+      post_likes: isLiked ? p.post_likes.filter((l) => l.user_id !== user.id) : [...p.post_likes, { user_id: user.id }],
+      likes_count: isLiked ? (p.likes_count ?? 1) - 1 : (p.likes_count ?? 0) + 1,
+    }));
+    if (!isLiked) {
+      setBurstPostId(postId);
+      setTimeout(() => setBurstPostId(null), 700);
+      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+    } else {
+      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+    }
+  };
+
+  const togglePostRepost = async (postId: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const isReposted = repostedPostIds.has(postId);
+    setRepostedPostIds((prev) => { const n = new Set(prev); isReposted ? n.delete(postId) : n.add(postId); return n; });
+    setUserPosts((prev) => prev.map((p) => p.id !== postId ? p : {
+      ...p,
+      post_reposts: isReposted ? p.post_reposts.filter((r) => r.user_id !== user.id) : [...p.post_reposts, { user_id: user.id }],
+    }));
+    if (!isReposted) {
+      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      showToast("Post boosté ! 🔄");
+    } else {
+      await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
+    }
   };
 
   const handleLogout = () => {
@@ -1886,33 +2059,79 @@ export default function ProfilPage() {
                         )}
 
                         {/* Action bar */}
-                        <div className="flex items-center gap-4 px-4 pt-3">
-                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
-                            <Heart size={22} strokeWidth={1.8} />
-                          </motion.button>
-                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
-                            <MessageCircle size={22} strokeWidth={1.8} />
-                          </motion.button>
-                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
-                            <Repeat2 size={22} strokeWidth={1.8} />
-                          </motion.button>
-                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
-                            <Share2 size={22} strokeWidth={1.8} />
-                          </motion.button>
-                          <motion.button whileTap={{ scale: 0.85 }} className="ml-auto cursor-pointer" style={{ color: "#718096" }}>
-                            <Bookmark size={22} strokeWidth={1.8} />
-                          </motion.button>
-                        </div>
+                        {(() => {
+                          const liked = likedPostIds.has(post.id);
+                          const reposted = repostedPostIds.has(post.id);
+                          const commentsOpen = openPostComments.has(post.id);
+                          const likesCount = post.post_likes?.length ?? post.likes_count ?? 0;
+                          const commentsCount = post.post_comments?.length ?? 0;
+                          const repostsCount = post.post_reposts?.length ?? 0;
+                          return (
+                            <>
+                              <div className="flex items-center gap-4 px-4 pt-3">
+                                {/* Like */}
+                                <motion.button whileTap={{ scale: 0.7 }} onClick={() => togglePostLike(post.id)} className="relative flex items-center cursor-pointer">
+                                  {burstPostId === post.id && [0,1,2,3,4].map((i) => (
+                                    <motion.div key={`b-${post.id}-${i}`} className="absolute pointer-events-none"
+                                      style={{ width: 5, height: 5, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
+                                      initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                                      animate={{ scale: [0,1.2,0], x: [0,(i-2)*18], y: [0,-20-i*4], opacity: [1,1,0] }}
+                                      transition={{ duration: 0.55, delay: i*0.04 }} />
+                                  ))}
+                                  <motion.div animate={liked ? { scale: [1,1.5,0.9,1.15,1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
+                                    <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
+                                  </motion.div>
+                                </motion.button>
 
-                        {/* Stats */}
-                        <div className="px-4 pt-2 pb-4">
-                          {(post.likes_count ?? 0) > 0 && (
-                            <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                              {post.likes_count} j&apos;aime
-                            </p>
-                          )}
-                          <p className="text-[11px]" style={{ color: "#A0AEC0" }}>Ajouter un commentaire</p>
-                        </div>
+                                {/* Commentaire */}
+                                <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85, rotate: -15 }}
+                                  onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                                  className="flex items-center cursor-pointer">
+                                  <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(167,139,250,0.2)" : "none"} style={{ color: commentsOpen ? "#A78BFA" : "#2D3748" }} />
+                                </motion.button>
+
+                                {/* Repost */}
+                                <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
+                                  onClick={() => togglePostRepost(post.id)} className="flex items-center cursor-pointer">
+                                  <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
+                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#2D3748" }} />
+                                  </motion.div>
+                                </motion.button>
+
+                                {/* Partager */}
+                                <motion.button whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.85 }} className="flex items-center cursor-pointer">
+                                  <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                                </motion.button>
+                              </div>
+
+                              {/* Stats */}
+                              <div className="px-4 pt-2 pb-1">
+                                {likesCount > 0 && (
+                                  <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                                    {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
+                                  </p>
+                                )}
+                                <motion.p whileHover={{ color: "#2D3748" }}
+                                  className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "#A0AEC0" }}
+                                  onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}>
+                                  {commentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
+                                </motion.p>
+                              </div>
+
+                              {/* Section commentaires */}
+                              <AnimatePresence>
+                                {commentsOpen && (
+                                  <CommentsSection
+                                    postId={post.id}
+                                    initialCount={commentsCount}
+                                    onClose={() => setOpenPostComments((p) => { const n = new Set(p); n.delete(post.id); return n; })}
+                                    onCommentAdded={() => setUserPosts((prev) => prev.map((pp) => pp.id !== post.id ? pp : { ...pp, post_comments: [...pp.post_comments, { id: `opt-${Date.now()}` }] }))}
+                                  />
+                                )}
+                              </AnimatePresence>
+                            </>
+                          );
+                        })()}
                       </motion.div>
                     ))}
                   </div>
