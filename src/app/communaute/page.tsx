@@ -1305,7 +1305,7 @@ type RealComment = {
   author: { pseudo: string; avatar_url?: string | null } | null;
 };
 
-function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { postId: string | number; initialCount: number; onClose: () => void; onCommentAdded?: () => void }) {
+function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOwnerId }: { postId: string | number; initialCount: number; onClose: () => void; onCommentAdded?: () => void; postOwnerId?: string }) {
   const { user } = useAuth();
   const [comments, setComments]   = useState<RealComment[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -1354,14 +1354,19 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
 
     setSending(false);
     if (error) {
-      // Rollback optimiste + restore input
       setComments((prev) => prev.filter((c) => c.id !== tmpId));
       setInput(content);
-      // Afficher l'erreur en console pour debug
       console.error("[CommentsSection] insert error:", error);
     } else {
-      // Le commentaire optimiste reste tel quel (id temporaire, pas grave)
       onCommentAdded?.();
+      // Notif au propriétaire du post
+      if (postOwnerId && postOwnerId !== user.id) {
+        void supabase.from("notifications").insert({
+          user_id: postOwnerId, from_user_id: user.id,
+          from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
+          type: "comment", post_id: String(postId),
+        });
+      }
     }
   };
 
@@ -1773,6 +1778,15 @@ function CommunautePageInner() {
       setBurstRealId(postId);
       setTimeout(() => setBurstRealId(null), 700);
       await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      // Notif au propriétaire du post
+      const post = realFeedPosts.find((p) => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        void supabase.from("notifications").insert({
+          user_id: post.user_id, from_user_id: user.id,
+          from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
+          type: "like", post_id: postId,
+        });
+      }
     } else {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
     }
@@ -1796,6 +1810,15 @@ function CommunautePageInner() {
     if (!isReposted) {
       await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
       showToast("Post boosté ! 🔄");
+      // Notif au propriétaire du post
+      const post = realFeedPosts.find((p) => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        void supabase.from("notifications").insert({
+          user_id: post.user_id, from_user_id: user.id,
+          from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
+          type: "repost", post_id: postId,
+        });
+      }
     } else {
       await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
     }
@@ -2450,6 +2473,7 @@ function CommunautePageInner() {
                       <CommentsSection
                         postId={post.id}
                         initialCount={commentsCount}
+                        postOwnerId={post.user_id}
                         onClose={() => setOpenRealComments((p) => { const n = new Set(p); n.delete(post.id); return n; })}
                         onCommentAdded={() => setRealFeedPosts((prev) => prev.map((p) => p.id !== post.id ? p : { ...p, post_comments: [...p.post_comments, { id: `opt-${Date.now()}` }] }))}
                       />

@@ -2,20 +2,49 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Bell } from "lucide-react";
+import { Bell, Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
+type NotifType = "follow" | "like" | "comment" | "repost";
+
 type Notif = {
   id: string;
-  type: "follow";
+  type: NotifType;
   from_pseudo: string;
   from_avatar_url?: string;
+  from_user_id?: string;
+  post_id?: string | null;
   read: boolean;
   created_at: string;
 };
+
+function notifLabel(n: Notif): string {
+  switch (n.type) {
+    case "like":    return `a aimé ta publication`;
+    case "comment": return `a commenté ton post`;
+    case "repost":  return `a reposté ta publication`;
+    default:        return `te suit maintenant`;
+  }
+}
+
+function NotifIcon({ type }: { type: NotifType }) {
+  const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
+    like:    { icon: <Heart size={9} fill="currentColor" />,    bg: "#FEE2E2", color: "#EF4444" },
+    comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#3B82F6" },
+    repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#10B981" },
+    follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(212,192,255,0.6)", color: "#A78BFA" },
+  };
+  const c = cfg[type];
+  return (
+    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white"
+      style={{ background: c.bg, color: c.color }}>
+      {c.icon}
+    </span>
+  );
+}
 
 function formatRelative(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -197,7 +226,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               </div>
             ) : (
               notifs.map((n, i) => (
-                <Link key={n.id} href={`/profil/${n.from_pseudo}`} onClick={() => setOpen(false)}>
+                <Link key={n.id} href={n.post_id ? `/communaute` : `/profil/${n.from_pseudo}`} onClick={() => setOpen(false)}>
                   <motion.div
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -209,25 +238,28 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                       borderBottom: i < notifs.length - 1 ? "1px solid rgba(167,139,250,0.06)" : "none",
                     }}
                   >
-                    {/* Avatar */}
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 overflow-hidden"
-                      style={{
-                        background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                        color: "#2D3748",
-                      }}
-                    >
-                      {n.from_avatar_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={n.from_avatar_url} alt={n.from_pseudo} className="w-full h-full object-cover" />
-                        : (n.from_pseudo[0] ?? "?").toUpperCase()}
+                    {/* Avatar + badge type */}
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
+                        style={{
+                          background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                          color: "#2D3748",
+                        }}
+                      >
+                        {n.from_avatar_url
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={n.from_avatar_url} alt={n.from_pseudo} className="w-full h-full object-cover" />
+                          : (n.from_pseudo[0] ?? "?").toUpperCase()}
+                      </div>
+                      <NotifIcon type={n.type} />
                     </div>
 
                     {/* Text */}
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] leading-snug" style={{ color: "#2D3748" }}>
                         <span className="font-semibold">@{n.from_pseudo}</span>
-                        {" "}a commencé à vous suivre
+                        {" "}{notifLabel(n)}
                       </p>
                       <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>
                         {formatRelative(n.created_at)}
