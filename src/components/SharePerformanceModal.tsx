@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Lock, Globe, Users, Check, ChevronDown, Star, Eye, EyeOff, ImagePlus, Trash2 } from "lucide-react";
-import PerformanceCard, { type PerformanceData, GRADIENT_PRESETS } from "./PerformanceCard";
+import PerformanceCard, { type PerformanceData, PHOTO_FILTER_PRESETS } from "./PerformanceCard";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -32,18 +32,20 @@ export default function SharePerformanceModal({
   const [error,      setError]      = useState<string | null>(null);
 
   /* ── Personnalisation ── */
-  const [customOpen,    setCustomOpen]    = useState(false);
-  const [customBg,      setCustomBg]      = useState<string | undefined>(undefined);
-  const [customBgImage, setCustomBgImage] = useState<string | undefined>(undefined);
+  const [customOpen,      setCustomOpen]      = useState(false);
+  const [customBgImage,   setCustomBgImage]   = useState<string | undefined>(undefined);
+  const [photoFilterKey,  setPhotoFilterKey]  = useState<string | undefined>(undefined);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [heroIndex,     setHeroIndex]     = useState(0);
-  // visibleSubs: set of metric indices (excluding hero) that appear in the sub-grid
-  const [visibleSubs,   setVisibleSubs]   = useState<Set<number>>(
+  const [heroIndex,   setHeroIndex]   = useState(0);
+  const [visibleSubs, setVisibleSubs] = useState<Set<number>>(
     () => new Set(data.metrics.map((_, i) => i).filter(i => i !== 0))
   );
 
+  const selectedFilter = PHOTO_FILTER_PRESETS.find(f => f.key === photoFilterKey);
+  const cssFilter = selectedFilter?.filter;
+
   const toggleSub = (idx: number) => {
-    if (idx === heroIndex) return; // hero can't be toggled off here
+    if (idx === heroIndex) return;
     setVisibleSubs(prev => {
       const next = new Set(prev);
       next.has(idx) ? next.delete(idx) : next.add(idx);
@@ -53,11 +55,10 @@ export default function SharePerformanceModal({
 
   const setHero = (idx: number) => {
     setHeroIndex(idx);
-    // If the new hero was in visible subs, remove it; add the old hero to subs
     setVisibleSubs(prev => {
       const next = new Set(prev);
       next.delete(idx);
-      next.add(heroIndex); // old hero moves to subs
+      next.add(heroIndex);
       return next;
     });
   };
@@ -107,12 +108,12 @@ export default function SharePerformanceModal({
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
             className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] z-[110] rounded-3xl overflow-hidden"
             style={{
-              background:   "rgba(255,255,255,0.96)",
+              background:     "rgba(255,255,255,0.96)",
               backdropFilter: "blur(20px)",
-              border:       "1px solid rgba(255,255,255,0.9)",
-              boxShadow:    "0 32px 80px rgba(167,139,250,0.18), 0 8px 32px rgba(0,0,0,0.1)",
-              maxHeight:    "92vh",
-              overflowY:    "auto",
+              border:         "1px solid rgba(255,255,255,0.9)",
+              boxShadow:      "0 32px 80px rgba(167,139,250,0.18), 0 8px 32px rgba(0,0,0,0.1)",
+              maxHeight:      "92vh",
+              overflowY:      "auto",
             }}
           >
             {posted ? (
@@ -150,8 +151,8 @@ export default function SharePerformanceModal({
                   <PerformanceCard
                     data={data}
                     size="md"
-                    customBg={customBg}
                     customBgImage={customBgImage}
+                    photoFilter={cssFilter}
                     heroIndex={heroIndex}
                     shownIndices={shownIndices}
                   />
@@ -196,24 +197,17 @@ export default function SharePerformanceModal({
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
-                                const url = URL.createObjectURL(file);
-                                setCustomBgImage(url);
-                                setCustomBg(undefined); // no overlay by default in photo mode
-                                // reset so same file can be re-selected
+                                setCustomBgImage(URL.createObjectURL(file));
+                                setPhotoFilterKey(undefined); // reset filter on new photo
                                 e.target.value = "";
                               }}
                             />
                             {customBgImage ? (
-                              <div className="flex items-center gap-2">
-                                {/* Thumbnail */}
-                                <div
-                                  className="relative rounded-2xl overflow-hidden flex-shrink-0"
-                                  style={{ width: 56, height: 56 }}
-                                >
+                              <div className="flex items-center gap-3">
+                                <div className="relative rounded-2xl overflow-hidden flex-shrink-0" style={{ width: 56, height: 56 }}>
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img src={customBgImage} alt="" className="w-full h-full object-cover" />
+                                  <img src={customBgImage} alt="" className="w-full h-full object-cover" style={{ filter: cssFilter }} />
                                 </div>
-                                {/* Change / Remove */}
                                 <div className="flex flex-col gap-1.5 flex-1">
                                   <motion.button
                                     whileTap={{ scale: 0.95 }}
@@ -222,11 +216,11 @@ export default function SharePerformanceModal({
                                     style={{ background: "rgba(167,139,250,0.12)", color: "#7C5CFA" }}
                                   >
                                     <ImagePlus size={12} strokeWidth={2} />
-                                    Changer
+                                    Changer la photo
                                   </motion.button>
                                   <motion.button
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() => setCustomBgImage(undefined)}
+                                    onClick={() => { setCustomBgImage(undefined); setPhotoFilterKey(undefined); }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer"
                                     style={{ background: "rgba(252,129,129,0.1)", color: "#FC8181" }}
                                   >
@@ -239,7 +233,7 @@ export default function SharePerformanceModal({
                               <motion.button
                                 whileTap={{ scale: 0.97 }}
                                 onClick={() => photoInputRef.current?.click()}
-                                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl cursor-pointer"
+                                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl cursor-pointer"
                                 style={{
                                   border:     "1.5px dashed rgba(167,139,250,0.3)",
                                   background: "rgba(240,235,255,0.25)",
@@ -247,86 +241,89 @@ export default function SharePerformanceModal({
                                 }}
                               >
                                 <ImagePlus size={14} strokeWidth={1.5} />
-                                <span className="text-xs font-medium">Ajouter une photo</span>
+                                <span className="text-xs font-medium">Ajouter une photo de fond</span>
                               </motion.button>
                             )}
                           </div>
 
-                          {/* ── Couleur / Superposition ── */}
-                          <div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>
-                              {customBgImage ? "Superposition" : "Couleur"}
-                            </p>
-                            <div className="flex gap-2 flex-wrap">
-                              {/* "Aucun" swatch — visible uniquement en mode photo */}
-                              {customBgImage && (
-                                <motion.button
-                                  whileTap={{ scale: 0.88 }}
-                                  onClick={() => setCustomBg(undefined)}
-                                  title="Aucun filtre"
-                                  className="relative rounded-full cursor-pointer flex-shrink-0 overflow-hidden"
-                                  style={{
-                                    width: 32, height: 32,
-                                    background: "#F0F0F0",
-                                    border: "1.5px solid #E2E8F0",
-                                    boxShadow: !customBg
-                                      ? "0 0 0 2.5px #fff, 0 0 0 4.5px #A78BFA"
-                                      : "0 2px 6px rgba(0,0,0,0.1)",
-                                  }}
+                          {/* ── Filtres (photo mode only) ── */}
+                          {customBgImage && (
+                            <div>
+                              <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>Filtre</p>
+                              {/* Horizontal scroll strip */}
+                              <div
+                                className="flex gap-3 pb-1"
+                                style={{ overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+                              >
+                                {/* "Aucun" — raw photo, no filter */}
+                                <button
+                                  onClick={() => setPhotoFilterKey(undefined)}
+                                  className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
                                 >
-                                  {/* Diagonal red slash = "none" */}
-                                  <div style={{
-                                    position: "absolute", top: "50%", left: -2, right: -2,
-                                    height: 1.5, background: "#FC8181",
-                                    transform: "rotate(-40deg)", transformOrigin: "center",
-                                  }} />
-                                  {!customBg && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <Check size={10} strokeWidth={3} style={{ color: "#A78BFA" }} />
-                                    </div>
-                                  )}
-                                </motion.button>
-                              )}
-
-                              {/* Gradient swatches */}
-                              {GRADIENT_PRESETS.map(({ key, bg, name }) => {
-                                const isSelected = customBgImage
-                                  // photo mode: exact match only
-                                  ? customBg === bg
-                                  // no-photo mode: exact match or type default
-                                  : customBg === bg || (!customBg && key === (
-                                      data.type === "workout" ? "violet" : data.type === "meal" ? "emerald" : "amber"
-                                    ));
-                                return (
-                                  <motion.button
-                                    key={key}
-                                    whileTap={{ scale: 0.88 }}
-                                    onClick={() => setCustomBg(bg)}
-                                    title={name}
-                                    className="relative rounded-full cursor-pointer flex-shrink-0"
+                                  <div
+                                    className="relative overflow-hidden"
                                     style={{
-                                      width: 32, height: 32,
-                                      background: bg,
-                                      boxShadow: isSelected
-                                        ? "0 0 0 2.5px #fff, 0 0 0 4.5px #A78BFA"
-                                        : "0 2px 6px rgba(0,0,0,0.2)",
+                                      width: 54, height: 54,
+                                      borderRadius: 12,
+                                      boxShadow: !photoFilterKey
+                                        ? "0 0 0 2.5px #A78BFA"
+                                        : "0 2px 8px rgba(0,0,0,0.18)",
                                     }}
                                   >
-                                    {isSelected && (
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <Check size={12} strokeWidth={3} style={{ color: "#fff" }} />
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={customBgImage} alt="" className="w-full h-full object-cover" />
+                                    {!photoFilterKey && (
+                                      <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(167,139,250,0.25)" }}>
+                                        <Check size={14} strokeWidth={3} style={{ color: "#fff" }} />
                                       </div>
                                     )}
-                                  </motion.button>
-                                );
-                              })}
+                                  </div>
+                                  <span style={{ fontSize: "0.52rem", fontWeight: 700, letterSpacing: "0.06em", color: !photoFilterKey ? "#A78BFA" : "#A0AEC0" }}>
+                                    Aucun
+                                  </span>
+                                </button>
+
+                                {/* 20 filter thumbnails */}
+                                {PHOTO_FILTER_PRESETS.map(({ key, name, filter }) => {
+                                  const isSelected = photoFilterKey === key;
+                                  return (
+                                    <button
+                                      key={key}
+                                      onClick={() => setPhotoFilterKey(key)}
+                                      className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                                    >
+                                      <div
+                                        className="relative overflow-hidden"
+                                        style={{
+                                          width: 54, height: 54,
+                                          borderRadius: 12,
+                                          boxShadow: isSelected
+                                            ? "0 0 0 2.5px #A78BFA"
+                                            : "0 2px 8px rgba(0,0,0,0.18)",
+                                        }}
+                                      >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={customBgImage}
+                                          alt={name}
+                                          className="w-full h-full object-cover"
+                                          style={{ filter }}
+                                        />
+                                        {isSelected && (
+                                          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.18)" }}>
+                                            <Check size={14} strokeWidth={3} style={{ color: "#fff" }} />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span style={{ fontSize: "0.52rem", fontWeight: 700, letterSpacing: "0.06em", color: isSelected ? "#A78BFA" : "#A0AEC0" }}>
+                                        {name}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                            {customBgImage && (
-                              <p className="text-[10px] mt-2" style={{ color: "#A0AEC0" }}>
-                                ∅ = photo seule · couleur = filtre semi-transparent
-                              </p>
-                            )}
-                          </div>
+                          )}
 
                           {/* ── Valeurs ── */}
                           <div>
@@ -344,7 +341,6 @@ export default function SharePerformanceModal({
                                       border:     isHero ? "1px solid rgba(167,139,250,0.2)" : "1px solid rgba(0,0,0,0.05)",
                                     }}
                                   >
-                                    {/* Star = hero */}
                                     <motion.button
                                       whileTap={{ scale: 0.82 }}
                                       onClick={() => setHero(idx)}
@@ -358,25 +354,17 @@ export default function SharePerformanceModal({
                                         fill={isHero ? "#D4A843" : "none"}
                                       />
                                     </motion.button>
-
-                                    {/* Label + value */}
                                     <div className="flex-1 min-w-0">
-                                      <span className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>
-                                        {m.label}
-                                      </span>
+                                      <span className="text-xs font-medium truncate" style={{ color: "#2D3748" }}>{m.label}</span>
                                       <span className="text-xs font-light ml-1.5" style={{ color: "#A0AEC0" }}>
                                         {m.value}{m.unit ? ` ${m.unit}` : ""}
                                       </span>
                                     </div>
-
-                                    {/* Hero badge */}
                                     {isHero && (
                                       <span className="text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: "rgba(212,168,67,0.15)", color: "#B45309" }}>
                                         HERO
                                       </span>
                                     )}
-
-                                    {/* Toggle visibility (only for non-hero) */}
                                     {!isHero && (
                                       <motion.button
                                         whileTap={{ scale: 0.85 }}
@@ -385,8 +373,8 @@ export default function SharePerformanceModal({
                                         title={isVisible ? "Masquer" : "Afficher"}
                                       >
                                         {isVisible
-                                          ? <Eye     size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                                          : <EyeOff  size={15} strokeWidth={1.5} style={{ color: "#CBD5E0" }} />
+                                          ? <Eye    size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                                          : <EyeOff size={15} strokeWidth={1.5} style={{ color: "#CBD5E0" }} />
                                         }
                                       </motion.button>
                                     )}
@@ -398,6 +386,7 @@ export default function SharePerformanceModal({
                               ★ = valeur affichée en grand · 👁 = afficher/masquer
                             </p>
                           </div>
+
                         </div>
                       </motion.div>
                     )}
