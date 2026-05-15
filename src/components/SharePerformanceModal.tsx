@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Lock, Globe, Users, Check, ChevronDown, Star, Eye, EyeOff } from "lucide-react";
+import { X, Send, Lock, Globe, Users, Check, ChevronDown, Star, Eye, EyeOff, ImagePlus, Trash2 } from "lucide-react";
 import PerformanceCard, { type PerformanceData, GRADIENT_PRESETS } from "./PerformanceCard";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -34,6 +34,8 @@ export default function SharePerformanceModal({
   /* ── Personnalisation ── */
   const [customOpen,    setCustomOpen]    = useState(false);
   const [customBg,      setCustomBg]      = useState<string | undefined>(undefined);
+  const [customBgImage, setCustomBgImage] = useState<string | undefined>(undefined);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [heroIndex,     setHeroIndex]     = useState(0);
   // visibleSubs: set of metric indices (excluding hero) that appear in the sub-grid
   const [visibleSubs,   setVisibleSubs]   = useState<Set<number>>(
@@ -149,6 +151,7 @@ export default function SharePerformanceModal({
                     data={data}
                     size="md"
                     customBg={customBg}
+                    customBgImage={customBgImage}
                     heroIndex={heroIndex}
                     shownIndices={shownIndices}
                   />
@@ -181,6 +184,72 @@ export default function SharePerformanceModal({
                         className="overflow-hidden"
                       >
                         <div className="pt-3 flex flex-col gap-4">
+
+                          {/* ── Photo de fond ── */}
+                          <div>
+                            <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>Photo de fond</p>
+                            <input
+                              ref={photoInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const url = URL.createObjectURL(file);
+                                setCustomBgImage(url);
+                                // reset so same file can be re-selected
+                                e.target.value = "";
+                              }}
+                            />
+                            {customBgImage ? (
+                              <div className="flex items-center gap-2">
+                                {/* Thumbnail */}
+                                <div
+                                  className="relative rounded-2xl overflow-hidden flex-shrink-0"
+                                  style={{ width: 56, height: 56 }}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={customBgImage} alt="" className="w-full h-full object-cover" />
+                                </div>
+                                {/* Change / Remove */}
+                                <div className="flex flex-col gap-1.5 flex-1">
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => photoInputRef.current?.click()}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer"
+                                    style={{ background: "rgba(167,139,250,0.12)", color: "#7C5CFA" }}
+                                  >
+                                    <ImagePlus size={12} strokeWidth={2} />
+                                    Changer
+                                  </motion.button>
+                                  <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setCustomBgImage(undefined)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer"
+                                    style={{ background: "rgba(252,129,129,0.1)", color: "#FC8181" }}
+                                  >
+                                    <Trash2 size={12} strokeWidth={2} />
+                                    Supprimer
+                                  </motion.button>
+                                </div>
+                              </div>
+                            ) : (
+                              <motion.button
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => photoInputRef.current?.click()}
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl cursor-pointer"
+                                style={{
+                                  border:     "1.5px dashed rgba(167,139,250,0.3)",
+                                  background: "rgba(240,235,255,0.25)",
+                                  color:      "#A78BFA",
+                                }}
+                              >
+                                <ImagePlus size={14} strokeWidth={1.5} />
+                                <span className="text-xs font-medium">Ajouter une photo</span>
+                              </motion.button>
+                            )}
+                          </div>
 
                           {/* ── Couleur ── */}
                           <div>
