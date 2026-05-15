@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ImagePlus, Video, CheckCircle2, Loader2, ChevronLeft } from "lucide-react";
+import { X, ImagePlus, Video, CheckCircle2, Loader2, ChevronLeft, Camera, Images } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -22,6 +22,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const resetMedia = () => {
     setFile(null);
@@ -241,8 +242,8 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
               >
                 {/* Upload zone */}
                 <div
-                  onClick={() => fileRef.current?.click()}
-                  className="relative cursor-pointer rounded-2xl overflow-hidden flex items-center justify-center"
+                  onClick={preview ? () => fileRef.current?.click() : undefined}
+                  className={`relative rounded-2xl overflow-hidden flex items-center justify-center${preview ? " cursor-pointer" : ""}`}
                   style={{
                     aspectRatio: "9/16",
                     maxHeight: 340,
@@ -256,15 +257,28 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                       // eslint-disable-next-line @next/next/no-img-element
                       : <img src={preview} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="flex flex-col items-center gap-3 p-6 text-center">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(196,168,255,0.15)" }}>
-                        <ImagePlus size={28} strokeWidth={1.4} style={{ color: "rgba(196,168,255,0.8)" }} />
+                    <div className="flex flex-col items-center gap-4 p-6 w-full">
+                      <div className="flex gap-3 w-full">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+                          className="flex-1 flex flex-col items-center gap-2 py-5 rounded-2xl"
+                          style={{ background: "rgba(196,168,255,0.15)", border: "1.5px solid rgba(196,168,255,0.25)" }}
+                        >
+                          <Camera size={26} strokeWidth={1.4} style={{ color: "rgba(196,168,255,0.9)" }} />
+                          <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                          className="flex-1 flex flex-col items-center gap-2 py-5 rounded-2xl"
+                          style={{ background: "rgba(196,168,255,0.15)", border: "1.5px solid rgba(196,168,255,0.25)" }}
+                        >
+                          <Images size={26} strokeWidth={1.4} style={{ color: "rgba(196,168,255,0.9)" }} />
+                          <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.75)" }}>Galerie</span>
+                        </button>
                       </div>
-                      <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>
-                        Appuie pour ajouter
-                      </p>
-                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>Photo ou vidéo</p>
+                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Photo ou vidéo</p>
                     </div>
                   )}
                   {preview && (
@@ -275,6 +289,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
 
                 {/* Title */}
                 <div>
@@ -326,8 +341,8 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
               >
                 {/* Upload zone */}
                 <div
-                  onClick={() => fileRef.current?.click()}
-                  className="relative cursor-pointer rounded-2xl overflow-hidden flex items-center justify-center"
+                  onClick={preview ? () => fileRef.current?.click() : undefined}
+                  className={`relative rounded-2xl overflow-hidden flex items-center justify-center${preview ? " cursor-pointer" : ""}`}
                   style={{
                     aspectRatio: "1/1",
                     background: preview ? "black" : "linear-gradient(135deg,#FFF8E7,#FFF0F0)",
@@ -340,12 +355,28 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                       // eslint-disable-next-line @next/next/no-img-element
                       : <img src={preview} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="flex flex-col items-center gap-3 p-6 text-center">
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(212,168,67,0.12)" }}>
-                        <Video size={28} strokeWidth={1.4} style={{ color: "rgba(212,168,67,0.6)" }} />
+                    <div className="flex flex-col items-center gap-4 p-6 w-full">
+                      <div className="flex gap-3 w-full">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+                          className="flex-1 flex flex-col items-center gap-2 py-5 rounded-2xl"
+                          style={{ background: "rgba(212,168,67,0.1)", border: "1.5px solid rgba(212,168,67,0.25)" }}
+                        >
+                          <Camera size={26} strokeWidth={1.4} style={{ color: "rgba(212,168,67,0.8)" }} />
+                          <span className="text-xs font-semibold" style={{ color: "#A0AEC0" }}>Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
+                          className="flex-1 flex flex-col items-center gap-2 py-5 rounded-2xl"
+                          style={{ background: "rgba(212,168,67,0.1)", border: "1.5px solid rgba(212,168,67,0.25)" }}
+                        >
+                          <Images size={26} strokeWidth={1.4} style={{ color: "rgba(212,168,67,0.8)" }} />
+                          <span className="text-xs font-semibold" style={{ color: "#A0AEC0" }}>Galerie</span>
+                        </button>
                       </div>
-                      <p className="text-sm font-semibold" style={{ color: "#A0AEC0" }}>Photo ou vidéo</p>
+                      <p className="text-xs" style={{ color: "#CBD5E0" }}>Photo ou vidéo</p>
                     </div>
                   )}
                   {preview && (
@@ -356,6 +387,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+                <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
 
                 {/* Title */}
                 <div>

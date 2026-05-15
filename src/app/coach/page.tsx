@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -462,7 +462,7 @@ export default function CoachPage() {
         style={{
           borderBottom: "1px solid rgba(212,192,255,0.2)",
           background: "rgba(255,255,255,0.7)",
-          backdropFilter: "blur(20px)",
+          backdropFilter: "blur(10px)",
         }}
       >
         {/* Back button */}
@@ -750,7 +750,7 @@ export default function CoachPage() {
         className="relative flex-shrink-0 px-4 pb-safe-bottom pb-4 pt-3"
         style={{
           background: "rgba(255,255,255,0.82)",
-          backdropFilter: "blur(24px)",
+          backdropFilter: "blur(10px)",
           borderTop: "1px solid rgba(212,192,255,0.2)",
         }}
       >

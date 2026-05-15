@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -134,7 +134,7 @@ export default function OnboardingModal({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[300] flex items-center justify-center px-4"
-      style={{ background: "rgba(240,235,255,0.55)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(240,235,255,0.55)", backdropFilter: "blur(10px)" }}
     >
       {/* Blobs déco */}
       <motion.div className="absolute rounded-full pointer-events-none"
@@ -147,7 +147,7 @@ export default function OnboardingModal({
       <motion.div initial={{ scale: 0.9, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.92, opacity: 0 }} transition={{ type: "spring", damping: 24, stiffness: 260 }}
         className="relative w-full max-w-md overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(48px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "2rem", boxShadow: "0 32px 80px -16px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.95)" }}
+        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "2rem", boxShadow: "0 32px 80px -16px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.95)" }}
       >
         <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent)" }} />
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -314,7 +314,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex flex-col select-none"
-      style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(20px)", cursor: paused ? "default" : "pointer" }}
+      style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(10px)", cursor: paused ? "default" : "pointer" }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
@@ -599,7 +599,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
           background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -1032,7 +1032,7 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
           background: "rgba(255,255,255,0.9)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -1129,7 +1129,7 @@ function NewDMModal({ onClose, onStartThread }: { onClose: () => void; onStartTh
         className="w-full max-w-sm rounded-3xl p-5"
         style={{
           background: "rgba(255,255,255,0.95)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
         }}
@@ -1233,7 +1233,7 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-5"
-        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">

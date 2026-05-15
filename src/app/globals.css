@@ -32,7 +32,7 @@
 
   body {
     background: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
-    background-attachment: fixed;
+    background-attachment: scroll;
     color: #2D3748;
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -195,4 +195,117 @@
   .animate-gradient-shift { animation: gradient-shift 5s ease infinite; background-size: 200% 200%; }
   .animate-breathe     { animation: breathe 3s ease-in-out infinite; }
   .animate-spin-slow   { animation: spin-slow 20s linear infinite; }
+
+  /* GPU compositing hints */
+  .gpu { transform: translateZ(0); backface-visibility: hidden; }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─────────────────────────── DARK MODE ─────────────────────────── */
+
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, #0F0E1A 0%, #15111E 50%, #0F0E1A 100%) !important;
+  color: #E2E0EA !important;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] ::selection {
+  background-color: rgba(167, 139, 250, 0.3);
+  color: #E2E0EA;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 80, 180, 0.5);
+}
+
+/* Glass surfaces */
+[data-theme="dark"] .lg-surface {
+  background: linear-gradient(135deg, rgba(40, 32, 72, 0.82) 0%, rgba(28, 22, 55, 0.62) 100%) !important;
+  border-color: rgba(100, 80, 180, 0.22) !important;
+  box-shadow:
+    0 1px 0 0 rgba(120, 100, 200, 0.25) inset,
+    0 -1px 0 0 rgba(80, 60, 160, 0.15) inset,
+    0 8px 32px -8px rgba(80, 60, 160, 0.22),
+    0 24px 56px -12px rgba(60, 40, 120, 0.1) !important;
+}
+
+[data-theme="dark"] .lg-strong {
+  background: linear-gradient(135deg, rgba(22, 18, 45, 0.97) 0%, rgba(16, 12, 36, 0.94) 100%) !important;
+  border-color: rgba(100, 80, 180, 0.28) !important;
+  box-shadow:
+    0 1px 0 0 rgba(120, 100, 200, 0.3) inset,
+    0 -1px 0 0 rgba(80, 60, 160, 0.15) inset,
+    0 4px 24px -4px rgba(80, 60, 160, 0.18) !important;
+}
+
+[data-theme="dark"] .lg-rose {
+  background: linear-gradient(135deg, rgba(55, 38, 110, 0.85) 0%, rgba(75, 52, 138, 0.62) 100%) !important;
+  border-color: rgba(120, 90, 200, 0.3) !important;
+}
+
+[data-theme="dark"] .lg-turquoise {
+  background: linear-gradient(135deg, rgba(42, 36, 18, 0.85) 0%, rgba(62, 52, 22, 0.62) 100%) !important;
+  border-color: rgba(160, 130, 60, 0.25) !important;
+}
+
+[data-theme="dark"] .lg-bicolor {
+  background: linear-gradient(135deg, rgba(48, 34, 96, 0.78) 0%, rgba(38, 32, 18, 0.78) 100%) !important;
+  border-color: rgba(100, 80, 180, 0.22) !important;
+}
+
+/* Text color overrides — !important needed to beat inline styles */
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] label,
+[data-theme="dark"] li,
+[data-theme="dark"] td,
+[data-theme="dark"] th {
+  color: #E2E0EA !important;
+}
+
+/* Preserve accent colors */
+[data-theme="dark"] [style*="#A78BFA"],
+[data-theme="dark"] [style*="167, 139, 250"] { color: #A78BFA !important; }
+[data-theme="dark"] [style*="#D4A843"],
+[data-theme="dark"] [style*="212, 168, 67"] { color: #D4A843 !important; }
+[data-theme="dark"] [style*="#EF4444"],
+[data-theme="dark"] [style*="239, 68, 68"] { color: #EF4444 !important; }
+[data-theme="dark"] [style*="#10B981"],
+[data-theme="dark"] [style*="16, 185, 129"] { color: #10B981 !important; }
+[data-theme="dark"] [style*="#F59E0B"],
+[data-theme="dark"] [style*="245, 158, 11"] { color: #F59E0B !important; }
+[data-theme="dark"] [style*="#A0AEC0"],
+[data-theme="dark"] [style*="160, 174, 192"] { color: #9A98B0 !important; }
+[data-theme="dark"] [style*="#718096"],
+[data-theme="dark"] [style*="113, 128, 150"] { color: #7A7890 !important; }
+
+/* Button backgrounds */
+[data-theme="dark"] button {
+  color: #E2E0EA !important;
+}
+
+/* Input fields */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea {
+  background: rgba(35, 28, 62, 0.7) !important;
+  border-color: rgba(100, 80, 180, 0.25) !important;
+  color: #E2E0EA !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #6B6A80 !important;
 }

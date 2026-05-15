@@ -207,7 +207,7 @@ export default function Navigation() {
       </AnimatePresence>
 
       {/* ══ Mobile Bottom Bar ══ */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <div className="lg-strong lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
             {TABS.map(({ href, label, icon, sub }) => (
@@ -236,7 +236,7 @@ export default function Navigation() {
       </nav>
 
       {/* ══ Desktop Sidebar ══ */}
-      <aside className="hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col">
+      <aside className="hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col" style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}

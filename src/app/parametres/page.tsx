@@ -1,11 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Palette, User, Target } from "lucide-react";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Palette, Moon, Sun, User, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { useTheme } from "@/hooks/useTheme";
 
 /* ── Section header ─────────────────────────────────────── */
 function Section({ title }: { title: string }) {
@@ -166,7 +167,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
         initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)", maxHeight: "90vh" }}
+        style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)", maxHeight: "90vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -339,7 +340,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -442,7 +443,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(32px)", border: "1px solid rgba(252,165,165,0.3)", boxShadow: "0 20px 60px rgba(239,68,68,0.1), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(252,165,165,0.3)", boxShadow: "0 20px 60px rgba(239,68,68,0.1), inset 0 1px 0 rgba(255,255,255,0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -504,6 +505,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 export default function ParametresPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { isDark, toggleTheme } = useTheme();
   const [showProfileModal, setShowProfileModal]   = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
@@ -590,13 +592,53 @@ export default function ParametresPage() {
         {/* Apparence */}
         <Section title="Apparence" />
         <div className="flex flex-col gap-2">
-          <Row
-            icon={Palette}
-            label="Thème"
-            sublabel="Lumineux · Aura Classic"
-            onClick={() => showToast("Bientôt disponible !")}
-            iconBg="linear-gradient(135deg, rgba(245,230,163,0.35), rgba(212,192,255,0.25))"
-          />
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left cursor-pointer"
+            style={{
+              background: isDark ? "rgba(30, 25, 55, 0.70)" : "rgba(255,255,255,0.7)",
+              border: isDark ? "1px solid rgba(100,80,180,0.3)" : "1px solid rgba(255,255,255,0.8)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+            }}
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, rgba(245,230,163,0.35), rgba(212,192,255,0.25))" }}
+            >
+              {isDark
+                ? <Moon size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                : <Sun  size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate" style={{ color: isDark ? "#E2E0EA" : "#2D3748" }}>Mode sombre</p>
+              <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>
+                {isDark ? "Sombre · Aura Night" : "Lumineux · Aura Classic"}
+              </p>
+            </div>
+            {/* Toggle pill */}
+            <div
+              className="relative flex-shrink-0 rounded-full transition-colors duration-300"
+              style={{
+                width: 44,
+                height: 26,
+                background: isDark
+                  ? "linear-gradient(135deg, #A78BFA, #7C3AED)"
+                  : "rgba(200,195,215,0.5)",
+              }}
+            >
+              <motion.div
+                layout
+                animate={{ x: isDark ? 20 : 2 }}
+                transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                className="absolute top-[3px] rounded-full"
+                style={{ width: 20, height: 20, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.18)" }}
+              />
+            </div>
+          </motion.button>
         </div>
 
         {/* Légal */}

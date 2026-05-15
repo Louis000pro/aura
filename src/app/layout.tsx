@@ -15,7 +15,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Aura ✦ Votre Concierge de Santé",
+  title: "Aura ✦",
   description: "Un accompagnement de santé premium piloté par l'IA multimodale.",
   icons: {
     icon: "/favicon.ico",
@@ -40,6 +40,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="fr" className={`${geist.variable} h-full antialiased`}>
+      {/* Inline script runs before first paint — prevents dark mode flash */}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('aura-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();` }} />
+      </head>
       <body className="min-h-full">
         <SessionProviderWrapper>
           <AuthProvider>

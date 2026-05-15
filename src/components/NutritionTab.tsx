@@ -387,7 +387,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
   const CARD_STYLE = {
     background: "rgba(255,255,255,0.96)",
-    backdropFilter: "blur(40px)",
+    backdropFilter: "blur(12px)",
     border: "1px solid rgba(255,255,255,0.9)",
     boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
   };
@@ -850,7 +850,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
   const CARD_STYLE = {
     background: "rgba(255,255,255,0.96)",
-    backdropFilter: "blur(40px)",
+    backdropFilter: "blur(12px)",
     border: "1px solid rgba(255,255,255,0.9)",
     boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
   };
@@ -1326,7 +1326,7 @@ function ManualModal({ onClose, onAdd }: {
         className="w-full max-w-sm rounded-3xl p-5"
         style={{
           background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(40px)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15)",
         }}
@@ -1953,7 +1953,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
 
   const CARD = {
     background: "rgba(255,255,255,0.78)",
-    backdropFilter: "blur(20px)",
+    backdropFilter: "blur(10px)",
     border: "1px solid rgba(255,255,255,0.9)",
     boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
   };
@@ -2376,7 +2376,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
               background: "rgba(255,255,255,0.92)",
-              backdropFilter: "blur(24px)",
+              backdropFilter: "blur(10px)",
               border: "1px solid rgba(255,255,255,0.9)",
               boxShadow: "0 8px 32px rgba(167,139,250,0.2)",
               whiteSpace: "nowrap",

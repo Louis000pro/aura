@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
-  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings,
+  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film,
 } from "lucide-react";
 
 /* ─────────────── Tab data types ─────────────── */
@@ -47,7 +47,7 @@ function Toast({ message }: { message: string }) {
       className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
       style={{
         background: "rgba(255,255,255,0.95)",
-        backdropFilter: "blur(24px)",
+        backdropFilter: "blur(10px)",
         border: "1px solid rgba(240,235,255,0.9)",
         boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
         color: "#2D3748",
@@ -131,7 +131,7 @@ function EditProfileModal({
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-8 md:pb-6"
         style={{
           background: "rgba(255,255,255,0.98)",
-          backdropFilter: "blur(40px)",
+          backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -366,7 +366,7 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
         exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(40px)", boxShadow: "0 -12px 48px rgba(167,139,250,0.18)", maxHeight: "82vh" }}
+        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(167,139,250,0.18)", maxHeight: "82vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -514,7 +514,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
         style={{
           background: "rgba(255,255,255,0.98)",
-          backdropFilter: "blur(40px)",
+          backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
           maxHeight: "90vh",
         }}
@@ -1602,7 +1602,7 @@ export default function ProfilPage() {
             background: "rgba(255,255,255,0.8)",
             border: "1px solid rgba(255,255,255,0.9)",
             boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
-            backdropFilter: "blur(20px)",
+            backdropFilter: "blur(10px)",
           }}
         >
           {[
@@ -1724,10 +1724,10 @@ export default function ProfilPage() {
           }}
         >
           {([
-            { id: "performances" as const, emoji: "📷", label: "Publications" },
-            { id: "seances"      as const, emoji: "🎬", label: "Vidéos" },
-            { id: "reglages"     as const, emoji: "💪", label: "Séances" },
-          ]).map(({ id, emoji, label }) => (
+            { id: "performances" as const, Icon: Camera,   label: "Publications" },
+            { id: "seances"      as const, Icon: Film,     label: "Vidéos" },
+            { id: "reglages"     as const, Icon: Dumbbell, label: "Séances" },
+          ]).map(({ id, Icon, label }) => (
             <motion.button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -1741,7 +1741,7 @@ export default function ProfilPage() {
                 letterSpacing: "0.02em",
               }}
             >
-              <span className="text-sm leading-none">{emoji}</span>
+              <Icon size={13} strokeWidth={2} />
               <span>{label}</span>
             </motion.button>
           ))}
@@ -1767,7 +1767,7 @@ export default function ProfilPage() {
                 style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
               >
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                  <span className="text-3xl">📸</span>
+                  <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
@@ -1784,7 +1784,7 @@ export default function ProfilPage() {
                     style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
                   >
                     <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                      <span className="text-3xl">📸</span>
+                      <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                     </div>
                     <div className="text-center px-8">
                       <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune photo</p>
@@ -1843,7 +1843,7 @@ export default function ProfilPage() {
                   style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
                 >
                   <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                    <span className="text-3xl">🎥</span>
+                    <Film size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                   </div>
                   <div className="text-center px-8">
                     <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo</p>
@@ -1899,7 +1899,7 @@ export default function ProfilPage() {
                 style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
               >
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                  <span className="text-3xl">🏋️</span>
+                  <Dumbbell size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>

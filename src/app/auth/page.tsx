@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,7 @@ function Field({
   const [focused, setFocused] = useState(false);
   return (
     <motion.div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-      style={{ background: "rgba(255,255,255,0.8)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(255,255,255,0.8)", backdropFilter: "blur(10px)" }}
       animate={{
         border: focused ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(220,215,235,0.6)",
         boxShadow: focused ? "0 4px 20px rgba(167,139,250,0.10)" : "0 2px 8px rgba(167,139,250,0.04)",
@@ -325,7 +325,7 @@ export default function AuthPage() {
         className="relative z-10 w-full max-w-md mx-4"
       >
         <div className="relative rounded-3xl px-8 py-10 overflow-hidden"
-          style={{ background:"rgba(255,255,255,0.85)",backdropFilter:"blur(48px) saturate(200%)",border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
+          style={{ background:"rgba(255,255,255,0.85)",backdropFilter:"blur(12px) saturate(200%)",border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
 
           <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
             style={{ background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.95),transparent)" }} />
@@ -335,7 +335,7 @@ export default function AuthPage() {
             {success && (
               <motion.div initial={{ opacity:0,scale:0.85 }} animate={{ opacity:1,scale:1 }}
                 className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-3"
-                style={{ background:"linear-gradient(135deg,rgba(212,192,255,0.97),rgba(245,230,163,0.97))",backdropFilter:"blur(20px)" }}>
+                style={{ background:"linear-gradient(135deg,rgba(212,192,255,0.97),rgba(245,230,163,0.97))",backdropFilter:"blur(10px)" }}>
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }} transition={{ type:"spring",bounce:0.5 }}>
                   <CheckCircle2 size={52} style={{ color:"#2D3748" }} strokeWidth={1.5} />
                 </motion.div>
@@ -350,7 +350,7 @@ export default function AuthPage() {
               <motion.div initial={{ opacity:0,scale:0.92 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.92 }}
                 transition={{ duration:0.35,ease:[0.25,0.46,0.45,0.94] }}
                 className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-5 px-8 py-10"
-                style={{ background:"rgba(255,255,255,0.97)",backdropFilter:"blur(24px)" }}>
+                style={{ background:"rgba(255,255,255,0.97)",backdropFilter:"blur(10px)" }}>
 
                 {/* Icône */}
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }}
@@ -465,7 +465,7 @@ export default function AuthPage() {
             whileHover={{ scale:1.02,y:-1 }} whileTap={{ scale:0.97 }}
             onClick={handleGoogle} disabled={googleLoading}
             className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-sm font-medium cursor-pointer mb-5"
-            style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.9)",backdropFilter:"blur(20px)",color:"#2D3748",boxShadow:"0 2px 12px rgba(167,139,250,0.08),inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+            style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.9)",backdropFilter:"blur(10px)",color:"#2D3748",boxShadow:"0 2px 12px rgba(167,139,250,0.08),inset 0 1px 0 rgba(255,255,255,0.95)" }}>
             {googleLoading ? (
               <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(167,139,250,0.2)",borderTopColor:"#A78BFA" }}
                 animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />

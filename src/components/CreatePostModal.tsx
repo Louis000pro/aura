@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -129,7 +129,7 @@ export default function CreatePostModal({ onClose, onSuccess }: Props) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(240,235,255,0.85)", backdropFilter: "blur(28px)" }}
+      style={{ background: "rgba(240,235,255,0.85)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
       <motion.div
@@ -140,7 +140,7 @@ export default function CreatePostModal({ onClose, onSuccess }: Props) {
         className="w-full max-w-md rounded-3xl p-6 flex flex-col gap-4"
         style={{
           background: "rgba(255,255,255,0.96)",
-          backdropFilter: "blur(32px)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 24px 64px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
           maxHeight: "90vh",

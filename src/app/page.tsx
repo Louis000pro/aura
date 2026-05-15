@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -60,7 +60,7 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
       className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
-      style={{ background: "rgba(240,235,255,0.8)", backdropFilter: "blur(28px)" }}
+      style={{ background: "rgba(240,235,255,0.8)", backdropFilter: "blur(10px)" }}
     >
       <motion.div className="absolute rounded-full pointer-events-none"
         style={{ top: "-5%", left: "-5%", width: 500, height: 500, background: "rgba(212,192,255,0.5)", filter: "blur(80px)" }}
@@ -70,11 +70,11 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
         animate={{ scale: [1,1.2,1], x: [10,-20,10] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} />
 
       {/* Particules de célébration */}
-      {Array.from({ length: 16 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <motion.div key={i} className="absolute rounded-full pointer-events-none"
-          style={{ width: 6 + Math.random() * 8, height: 6 + Math.random() * 8, background: i % 2 === 0 ? "rgba(167,139,250,0.7)" : "rgba(212,168,67,0.6)", left: `${10 + Math.random() * 80}%`, top: `${10 + Math.random() * 80}%` }}
-          animate={{ y: [0, -(80 + Math.random() * 120), 0], x: [0, (Math.random() - 0.5) * 80, 0], opacity: [0, 0.9, 0], scale: [0, 1, 0] }}
-          transition={{ duration: 1.8 + Math.random() * 1.5, delay: 0.1 + i * 0.12, repeat: Infinity, repeatDelay: 1.5 }} />
+          style={{ width: 7 + (i % 3) * 3, height: 7 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(167,139,250,0.7)" : "rgba(212,168,67,0.6)", left: `${15 + i * 10}%`, top: `${15 + (i % 4) * 18}%`, willChange: "transform, opacity" }}
+          animate={{ y: [0, -100, 0], x: [0, (i % 2 === 0 ? 40 : -40), 0], opacity: [0, 0.9, 0], scale: [0, 1, 0] }}
+          transition={{ duration: 2.5, delay: i * 0.2, repeat: Infinity, repeatDelay: 2 }} />
       ))}
 
       <motion.div
@@ -142,7 +142,7 @@ function HomeToast({ message }: { message: string }) {
     <motion.div initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
       className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-      style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2),inset 0 1px 0 rgba(255,255,255,0.9)", whiteSpace: "nowrap" }}
+      style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2),inset 0 1px 0 rgba(255,255,255,0.9)", whiteSpace: "nowrap" }}
     >
       <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
       <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{message}</span>
@@ -169,7 +169,7 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: s
       <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(40px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15),inset 0 1px 0 rgba(255,255,255,0.95)" }}
+        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15),inset 0 1px 0 rgba(255,255,255,0.95)" }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Nutrition</p><h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Ajouter un repas</h2></div>
@@ -223,7 +223,7 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
       <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(40px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(212,168,67,0.12),inset 0 1px 0 rgba(255,255,255,0.95)" }}
+        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(212,168,67,0.12),inset 0 1px 0 rgba(255,255,255,0.95)" }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Performance</p><h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Définir un objectif</h2></div>
@@ -302,14 +302,14 @@ function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
-    setParticles(Array.from({ length: 60 }, (_, i) => ({
+    setParticles(Array.from({ length: 18 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: i < 20 ? 1.5 + Math.random() * 2 : i < 45 ? 3 + Math.random() * 5 : 7 + Math.random() * 12,
-      delay: Math.random() * 6,
-      duration: 5 + Math.random() * 7,
-      opacity: i < 20 ? 0.85 : i < 45 ? 0.55 : 0.25,
+      size: i < 8 ? 2 + Math.random() * 2 : i < 14 ? 4 + Math.random() * 4 : 8 + Math.random() * 10,
+      delay: Math.random() * 4,
+      duration: 8 + Math.random() * 6,
+      opacity: i < 8 ? 0.7 : i < 14 ? 0.45 : 0.2,
     })));
   }, []);
 
@@ -318,48 +318,39 @@ function LandingPage() {
 
       {/* ── Grands blobs ambiants ── */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)" }}
-        animate={{ scale: [1,1.15,1], x: [-25,40,-25], y: [-15,25,-15], borderRadius: ["60% 40% 30% 70%/60% 30% 70% 40%","30% 60% 70% 40%/50% 60% 30% 60%","60% 40% 30% 70%/60% 30% 70% 40%"] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }} />
+        style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)", willChange: "transform" }}
+        animate={{ scale: [1,1.12,1], y: [-15,20,-15] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-20%", right: "-12%", width: 750, height: 750, background: "rgba(245,220,130,0.3)", filter: "blur(100px)" }}
-        animate={{ scale: [1,1.12,1], x: [25,-35,25], y: [20,-30,20], borderRadius: ["50% 60% 30% 60%/30% 60% 70% 40%","60% 30% 40% 60%/70% 40% 60% 30%","50% 60% 30% 60%/30% 60% 70% 40%"] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "20%", right: "8%", width: 420, height: 420, background: "rgba(167,139,250,0.18)", filter: "blur(80px)" }}
-        animate={{ scale: [1,1.3,1], y: [0,40,0] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 4 }} />
+        style={{ bottom: "-20%", right: "-12%", width: 750, height: 750, background: "rgba(245,220,130,0.3)", filter: "blur(100px)", willChange: "transform" }}
+        animate={{ scale: [1,1.1,1], y: [20,-25,20] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
 
       {/* ── Particules ── */}
       {mounted && particles.map(({ id, x, y, size, delay, duration, opacity }) => (
         <motion.div key={id} className="absolute rounded-full pointer-events-none"
-          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, background: id % 3 === 0 ? `rgba(167,139,250,${opacity})` : id % 3 === 1 ? `rgba(212,168,67,${opacity})` : `rgba(212,192,255,${opacity * 0.8})` }}
-          animate={{ y: ["-20px","20px","-20px"], x: ["-8px","8px","-8px"], opacity: [opacity * 0.15, opacity, opacity * 0.15], scale: [1,1.4,1] }}
+          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, willChange: "transform, opacity", background: id % 3 === 0 ? `rgba(167,139,250,${opacity})` : id % 3 === 1 ? `rgba(212,168,67,${opacity})` : `rgba(212,192,255,${opacity * 0.8})` }}
+          animate={{ y: ["-16px","16px","-16px"], opacity: [opacity * 0.2, opacity, opacity * 0.2] }}
           transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }} />
       ))}
 
-      {/* ── Anneaux rotatifs ── */}
-      {[700, 560, 420].map((size, i) => (
-        <motion.div key={size} className="absolute pointer-events-none rounded-full"
-          style={{ width: size, height: size, border: `1px solid rgba(${i % 2 === 0 ? "167,139,250" : "212,168,67"},${0.1 - i * 0.025})`, top: "50%", left: "50%", marginTop: -size/2, marginLeft: -size/2 }}
-          animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
-          transition={{ duration: 35 + i * 12, repeat: Infinity, ease: "linear" }} />
-      ))}
+      {/* ── Anneau décoratif ── */}
+      <div className="absolute pointer-events-none rounded-full"
+        style={{ width: 600, height: 600, border: "1px solid rgba(167,139,250,0.07)", top: "50%", left: "50%", marginTop: -300, marginLeft: -300 }} />
 
       {/* ── Nav bar ── */}
       <motion.nav
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="relative z-20 flex items-center justify-between px-6 md:px-10 py-5"
       >
-        <motion.span className="text-2xl font-extralight tracking-[0.15em]" style={{ color: "#2D3748" }}
-          animate={{ opacity: [0.8, 1, 0.8] }} transition={{ duration: 4, repeat: Infinity }}>
+        <span className="text-2xl font-extralight tracking-[0.15em]" style={{ color: "#2D3748" }}>
           Aura
-        </motion.span>
+        </span>
         <div className="flex items-center gap-3">
           <Link href="/auth?mode=login">
             <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
               className="px-4 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
-              style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4A5568", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
+              style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4A5568", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
               Se connecter
             </motion.div>
           </Link>
@@ -387,7 +378,7 @@ function LandingPage() {
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 md:mb-10"
-          style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(20px)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 20px rgba(167,139,250,0.12)" }}
+          style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 20px rgba(167,139,250,0.12)" }}
         >
           <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#A78BFA" }} animate={{ opacity: [1,0.3,1], scale: [1,1.4,1] }} transition={{ duration: 1.6, repeat: Infinity }} />
           <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#5A6177" }}>IA · Musculation · Nutrition</span>
@@ -448,7 +439,7 @@ function LandingPage() {
 
           {/* Glass card centrale — aperçu app */}
           <motion.div className="relative z-10 px-7 py-5 rounded-3xl"
-            style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(32px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 16px 56px rgba(167,139,250,0.2), 0 4px 16px rgba(212,168,67,0.1), inset 0 1px 0 rgba(255,255,255,0.95)" }}
+            style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 16px 56px rgba(167,139,250,0.2), 0 4px 16px rgba(212,168,67,0.1), inset 0 1px 0 rgba(255,255,255,0.95)" }}
             animate={{ y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
             <div className="flex items-center gap-4">
@@ -494,7 +485,7 @@ function LandingPage() {
               transition={{ delay: 1.15 + i * 0.09, type: "spring", bounce: 0.35 }}
               whileHover={{ y: -3, scale: 1.04 }}
               className="flex items-center gap-2.5 px-4 py-3 rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.62)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 4px 18px rgba(167,139,250,0.07)", cursor: "default" }}
+              style={{ background: "rgba(255,255,255,0.62)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 4px 18px rgba(167,139,250,0.07)", cursor: "default" }}
             >
               <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: i % 2 === 0 ? "linear-gradient(135deg,rgba(240,235,255,0.95) 0%,rgba(212,192,255,0.75) 100%)" : "linear-gradient(135deg,rgba(255,251,240,0.95) 0%,rgba(245,230,163,0.75) 100%)" }}>
