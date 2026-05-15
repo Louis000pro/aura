@@ -1334,8 +1334,9 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
     setSending(true);
 
     // Optimiste
+    const tmpId = `tmp-${Date.now()}`;
     const optimistic: RealComment = {
-      id: `tmp-${Date.now()}`,
+      id: tmpId,
       content,
       created_at: new Date().toISOString(),
       user_id: user.id,
@@ -1344,17 +1345,20 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
     setComments((prev) => [...prev, optimistic]);
 
     const supabase = createClient();
-    const { data, error } = await supabase
+    // Insert seul (sans select chainé pour éviter les erreurs de join)
+    const { error } = await supabase
       .from("post_comments")
-      .insert({ post_id: String(postId), user_id: user.id, content })
-      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-      .single();
+      .insert({ post_id: String(postId), user_id: user.id, content });
 
     setSending(false);
     if (error) {
-      setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
-    } else if (data) {
-      setComments((prev) => prev.map((c) => c.id === optimistic.id ? (data as unknown as RealComment) : c));
+      // Rollback optimiste + restore input
+      setComments((prev) => prev.filter((c) => c.id !== tmpId));
+      setInput(content);
+      // Afficher l'erreur en console pour debug
+      console.error("[CommentsSection] insert error:", error);
+    } else {
+      // Le commentaire optimiste reste tel quel (id temporaire, pas grave)
       onCommentAdded?.();
     }
   };
