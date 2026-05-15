@@ -1777,8 +1777,8 @@ export default function ProfilPage() {
                 </div>
               </motion.div>
             ) : (() => {
-                const photoPosts = userPosts.filter(p => p.media_type !== "video");
-                return photoPosts.length === 0 ? (
+                const allPosts = userPosts;
+                return allPosts.length === 0 ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -1789,42 +1789,111 @@ export default function ProfilPage() {
                       <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                     </div>
                     <div className="text-center px-8">
-                      <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune photo</p>
-                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications photo apparaîtront ici.</p>
+                      <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
+                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
                     </div>
                   </motion.div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-1">
-                    {photoPosts.map((post) => (
+                  <div className="flex flex-col gap-4">
+                    {allPosts.map((post, idx) => (
                       <motion.div
                         key={post.id}
-                        className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
-                        style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3) 0%,rgba(245,230,163,0.3) 100%)" }}
-                        whileHover={{ scale: 0.97 }}
-                        onClick={() => setSelectedPost(post)}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: idx * 0.06 }}
+                        className="rounded-3xl overflow-hidden"
+                        style={{
+                          background: "rgba(255,255,255,0.85)",
+                          border: "1px solid rgba(255,255,255,0.9)",
+                          boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+                        }}
                       >
-                        {post.performance_data ? (
-                          <div className="w-full h-full overflow-hidden">
-                            <PerformanceCard
-                              data={post.performance_data as PerformanceData}
-                              size="sm"
-                            />
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                              {displayAvatar
+                                // eslint-disable-next-line @next/next/no-img-element
+                                ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                                : displayPseudo.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                                {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+                                  <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                                    <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                                {(() => {
+                                  const diff = Date.now() - new Date(post.created_at).getTime();
+                                  const h = Math.floor(diff / 3600000);
+                                  const d = Math.floor(h / 24);
+                                  if (h < 1) return "À l'instant";
+                                  if (h < 24) return `${h}h`;
+                                  if (d < 7) return `${d}j`;
+                                  return new Date(post.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+                                })()}
+                              </p>
+                            </div>
                           </div>
-                        ) : post.media_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={post.media_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center p-2">
-                            <p className="text-xs font-medium text-center leading-relaxed" style={{ color: "#2D3748" }}>{post.caption || "📝"}</p>
+                          {/* Bouton modifier */}
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => { setSelectedPost(post); setEditCaption(post.caption ?? ""); setEditBio(post.description ?? ""); setEditingSelectedPost(true); }}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold cursor-pointer"
+                            style={{ background: "rgba(167,139,250,0.12)", color: "#7C5CFA" }}
+                          >
+                            <Pencil size={10} strokeWidth={2} />
+                            Modifier
+                          </motion.button>
+                        </div>
+
+                        {/* Titre / Caption */}
+                        {post.caption && (
+                          <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                            {post.caption}
+                          </p>
+                        )}
+
+                        {/* Media */}
+                        {post.media_url && (
+                          <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                            {post.media_type === "video"
+                              ? <video src={post.media_url} className="w-full object-cover" controls playsInline style={{ maxHeight: 380 }} />
+                              // eslint-disable-next-line @next/next/no-img-element
+                              : <img src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
+                            }
                           </div>
                         )}
-                        {(post.likes_count ?? 0) > 0 && (
-                          <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
-                            style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                            <span style={{ color: "#F43F5E", fontSize: 10 }}>♥</span>
-                            <span className="text-[10px] font-semibold text-white">{post.likes_count}</span>
+
+                        {/* PerformanceCard */}
+                        {post.performance_data && (["workout", "meal", "day"] as const).includes(
+                          (post.performance_data as { type?: string }).type as "workout" | "meal" | "day"
+                        ) && (
+                          <div className="px-4 mb-3">
+                            <PerformanceCard data={post.performance_data as PerformanceData} size="md" interactive />
                           </div>
                         )}
+
+                        {/* Description */}
+                        {post.description && (
+                          <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                            {post.description}
+                          </p>
+                        )}
+
+                        {/* Stats */}
+                        <div className="px-4 pt-1 pb-4">
+                          {(post.likes_count ?? 0) > 0 && (
+                            <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                              {post.likes_count} j&apos;aime
+                            </p>
+                          )}
+                        </div>
                       </motion.div>
                     ))}
                   </div>

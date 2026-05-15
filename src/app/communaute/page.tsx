@@ -2361,108 +2361,89 @@ function CommunautePageInner() {
                     </div>
                   )}
 
-                  {/* ── Actions style X ── */}
-                  <div className="flex items-center justify-between px-4 pt-3 pb-2">
-                    {/* Groupe gauche : commentaire · repost · like */}
-                    <div className="flex items-center gap-5">
+                  {/* ── Actions ── */}
+                  <div className="flex items-center gap-4 px-4 pt-3">
+                    {/* Like */}
+                    <motion.button
+                      whileTap={{ scale: 0.7 }}
+                      onClick={() => toggleRealLike(post.id)}
+                      className="relative flex items-center cursor-pointer"
+                    >
+                      {burstRealId === post.id && [0, 1, 2, 3, 4].map((i) => (
+                        <motion.div
+                          key={`burst-${post.id}-${i}`}
+                          className="absolute pointer-events-none"
+                          style={{ width: 6, height: 6, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
+                          initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                          animate={{ scale: [0, 1.2, 0], x: [0, (i - 2) * 20], y: [0, -22 - i * 4], opacity: [1, 1, 0] }}
+                          transition={{ duration: 0.55, delay: i * 0.04 }}
+                        />
+                      ))}
+                      <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
+                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
+                      </motion.div>
+                    </motion.button>
 
-                      {/* Commentaire */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.85 }}
-                        onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                        className="flex items-center gap-1.5 cursor-pointer"
-                        aria-label="Commenter"
-                      >
-                        <MessageCircle size={20} strokeWidth={1.5}
-                          fill={isCommentsOpen ? "rgba(167,139,250,0.15)" : "none"}
-                          style={{ color: isCommentsOpen ? "#A78BFA" : "#718096" }} />
-                        {commentsCount > 0 && (
-                          <span className="text-xs font-medium" style={{ color: isCommentsOpen ? "#A78BFA" : "#718096" }}>{commentsCount}</span>
-                        )}
-                      </motion.button>
+                    {/* Commentaire */}
+                    <motion.button
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.85, rotate: -15 }}
+                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                      className="flex items-center cursor-pointer"
+                      aria-label="Commenter"
+                    >
+                      <MessageCircle size={20} strokeWidth={1.5}
+                        fill={isCommentsOpen ? "rgba(167,139,250,0.2)" : "none"}
+                        style={{ color: isCommentsOpen ? "#A78BFA" : "#2D3748" }} />
+                    </motion.button>
 
-                      {/* Repost / Boost */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.85 }}
-                        onClick={() => toggleRepost(post.id)}
-                        className="flex items-center gap-1.5 cursor-pointer"
-                        aria-label="Booster"
-                      >
-                        <motion.div animate={repostedRealIds.has(post.id) ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                          <Repeat2 size={20} strokeWidth={1.5}
-                            style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }} />
-                        </motion.div>
-                        {repostsCount > 0 && (
-                          <span className="text-xs font-medium" style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }}>{repostsCount}</span>
-                        )}
-                      </motion.button>
+                    {/* Repartage / Boost */}
+                    <motion.button
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.85 }}
+                      onClick={() => toggleRepost(post.id)}
+                      className="flex items-center cursor-pointer"
+                      aria-label="Repartager"
+                    >
+                      <motion.div animate={repostedRealIds.has(post.id) ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
+                        <Repeat2 size={20} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#2D3748" }} />
+                      </motion.div>
+                    </motion.button>
 
-                      {/* Like */}
-                      <motion.button
-                        whileTap={{ scale: 0.7 }}
-                        onClick={() => toggleRealLike(post.id)}
-                        className="relative flex items-center gap-1.5 cursor-pointer"
-                      >
-                        {burstRealId === post.id && [0, 1, 2, 3, 4].map((i) => (
-                          <motion.div
-                            key={`burst-${post.id}-${i}`}
-                            className="absolute pointer-events-none"
-                            style={{ width: 5, height: 5, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
-                            initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-                            animate={{ scale: [0, 1.2, 0], x: [0, (i - 2) * 18], y: [0, -20 - i * 3], opacity: [1, 1, 0] }}
-                            transition={{ duration: 0.55, delay: i * 0.04 }}
-                          />
-                        ))}
-                        <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                          <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#718096" }} />
-                        </motion.div>
-                        {likesCount > 0 && (
-                          <span className="text-xs font-medium" style={{ color: liked ? "#F43F5E" : "#718096" }}>{likesCount}</span>
-                        )}
-                      </motion.button>
-                    </div>
+                    {/* Partager */}
+                    <motion.button
+                      whileHover={{ scale: 1.15, rotate: 15 }}
+                      whileTap={{ scale: 0.85 }}
+                      onClick={() => setSharePost({ caption: post.caption, post })}
+                      className="flex items-center cursor-pointer"
+                      aria-label="Partager"
+                    >
+                      <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                    </motion.button>
 
-                    {/* Groupe droit : partager + sauvegarder */}
-                    <div className="flex items-center gap-3">
-                      {isSaved && (
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                          <Bookmark size={18} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
-                        </motion.div>
-                      )}
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.85 }}
-                        onClick={() => setSharePost({ caption: post.caption, post })}
-                        className="flex items-center cursor-pointer"
-                        aria-label="Partager"
-                      >
-                        <Share2 size={18} strokeWidth={1.5} style={{ color: "#718096" }} />
-                      </motion.button>
-                    </div>
+                    {isSaved && (
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="ml-auto">
+                        <Bookmark size={16} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
+                      </motion.div>
+                    )}
                   </div>
 
-                  {/* Lien vers commentaires */}
-                  {commentsCount > 0 && (
+                  {/* Stats */}
+                  <div className="px-4 pt-2 pb-1">
+                    {likesCount > 0 && (
+                      <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                        {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
+                      </p>
+                    )}
                     <motion.p
                       whileHover={{ color: "#2D3748" }}
-                      className="px-4 text-[11px] cursor-pointer pb-3"
+                      className="text-[11px] mt-1.5 cursor-pointer mb-3"
                       style={{ color: "#A0AEC0" }}
                       onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                     >
-                      {isCommentsOpen ? "Masquer les commentaires" : `Voir les ${commentsCount} commentaires`}
+                      {isCommentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
                     </motion.p>
-                  )}
-                  {commentsCount === 0 && (
-                    <motion.p
-                      className="px-4 text-[11px] cursor-pointer pb-3"
-                      style={{ color: "#CBD5E0" }}
-                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                    >
-                      Ajouter un commentaire
-                    </motion.p>
-                  )}
+                  </div>
 
                   <AnimatePresence>
                     {isCommentsOpen && (
