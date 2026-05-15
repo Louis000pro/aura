@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Palette, User, Target } from "lucide-react";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Palette, Moon, Sun, User, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { useTheme } from "@/hooks/useTheme";
 
 /* ── Section header ─────────────────────────────────────── */
 function Section({ title }: { title: string }) {
@@ -504,6 +505,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 export default function ParametresPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const { isDark, toggleTheme } = useTheme();
   const [showProfileModal, setShowProfileModal]   = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
@@ -590,13 +592,53 @@ export default function ParametresPage() {
         {/* Apparence */}
         <Section title="Apparence" />
         <div className="flex flex-col gap-2">
-          <Row
-            icon={Palette}
-            label="Thème"
-            sublabel="Lumineux · Aura Classic"
-            onClick={() => showToast("Bientôt disponible !")}
-            iconBg="linear-gradient(135deg, rgba(245,230,163,0.35), rgba(212,192,255,0.25))"
-          />
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left cursor-pointer"
+            style={{
+              background: isDark ? "rgba(30, 25, 55, 0.70)" : "rgba(255,255,255,0.7)",
+              border: isDark ? "1px solid rgba(100,80,180,0.3)" : "1px solid rgba(255,255,255,0.8)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+            }}
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, rgba(245,230,163,0.35), rgba(212,192,255,0.25))" }}
+            >
+              {isDark
+                ? <Moon size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                : <Sun  size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate" style={{ color: isDark ? "#E2E0EA" : "#2D3748" }}>Mode sombre</p>
+              <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>
+                {isDark ? "Sombre · Aura Night" : "Lumineux · Aura Classic"}
+              </p>
+            </div>
+            {/* Toggle pill */}
+            <div
+              className="relative flex-shrink-0 rounded-full transition-colors duration-300"
+              style={{
+                width: 44,
+                height: 26,
+                background: isDark
+                  ? "linear-gradient(135deg, #A78BFA, #7C3AED)"
+                  : "rgba(200,195,215,0.5)",
+              }}
+            >
+              <motion.div
+                layout
+                animate={{ x: isDark ? 20 : 2 }}
+                transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                className="absolute top-[3px] rounded-full"
+                style={{ width: 20, height: 20, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.18)" }}
+              />
+            </div>
+          </motion.button>
         </div>
 
         {/* Légal */}
