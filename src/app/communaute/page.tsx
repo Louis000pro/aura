@@ -2074,13 +2074,23 @@ function CommunautePageInner() {
                         : { background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(167,139,250,0.5)" }
                       }
                     >
-                      {user?.avatar
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={user.avatar} alt="moi" className="w-full h-full object-cover rounded-full" />
-                        : myGroup
-                          ? <span className="text-2xl font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
-                          : <Plus size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                      }
+                      {user?.avatar ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={user.avatar} alt="moi" className="w-full h-full object-cover rounded-full" />
+                          {/* Overlay "+" quand pas encore de story */}
+                          {!myGroup && (
+                            <div className="absolute inset-0 rounded-full flex items-center justify-center"
+                              style={{ background: "rgba(0,0,0,0.38)" }}>
+                              <Plus size={20} strokeWidth={2} style={{ color: "white" }} />
+                            </div>
+                          )}
+                        </>
+                      ) : myGroup ? (
+                        <span className="text-2xl font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
+                      ) : (
+                        <Plus size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                      )}
                       {/* Badge count si plusieurs stories */}
                       {myGroup && myGroup.length > 1 && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
@@ -2093,6 +2103,27 @@ function CommunautePageInner() {
                       Ma story
                     </span>
                   </motion.div>
+
+                  {/* Bouton ajouter une nouvelle story — juste après "Ma story" quand j'en ai déjà une */}
+                  {myGroup && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.05, type: "spring", bounce: 0.4 }}
+                      className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                      onClick={() => setShowAddStory(true)}
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.92 }}
+                        className="w-16 h-16 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(240,235,255,0.6)", border: "2px dashed rgba(167,139,250,0.4)" }}
+                      >
+                        <Plus size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                      </motion.div>
+                      <span className="text-[10px] font-medium" style={{ color: "#A78BFA" }}>Nouvelle</span>
+                    </motion.div>
+                  )}
 
                   {/* Stories des autres utilisateurs */}
                   {otherGroups.map((group, i) => {
@@ -2146,26 +2177,6 @@ function CommunautePageInner() {
                     );
                   })}
 
-                  {/* Bouton ajouter une nouvelle story quand j'en ai déjà une */}
-                  {myGroup && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.05, type: "spring", bounce: 0.4 }}
-                      className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                      onClick={() => setShowAddStory(true)}
-                    >
-                      <motion.div
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.92 }}
-                        className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(240,235,255,0.6)", border: "2px dashed rgba(167,139,250,0.4)" }}
-                      >
-                        <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                      </motion.div>
-                      <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>Nouvelle</span>
-                    </motion.div>
-                  )}
                 </div>
               );
             })()}

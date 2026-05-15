@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
-  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film,
+  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
 } from "lucide-react";
+import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -2104,13 +2105,21 @@ export default function ProfilPage() {
                       }
                     </div>
                   )}
+                  {/* PerformanceCard pour posts séance/repas/jour */}
+                  {selectedPost.performance_data && (["workout", "meal", "day"] as const).includes(
+                    (selectedPost.performance_data as { type?: string }).type as "workout" | "meal" | "day"
+                  ) && (
+                    <div className="px-4 pb-3">
+                      <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" interactive />
+                    </div>
+                  )}
                   {selectedPost.description && (
                     <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
                       {selectedPost.description}
                     </p>
                   )}
                   <div className="px-4 pb-5 flex items-center gap-2">
-                    <span style={{ color: "#F43F5E", fontSize: 16 }}>♥</span>
+                    <Heart size={16} strokeWidth={0} fill="#F43F5E" style={{ color: "#F43F5E" }} />
                     <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
                       {selectedPost.likes_count ?? 0}{" "}j&apos;aime
                     </span>
