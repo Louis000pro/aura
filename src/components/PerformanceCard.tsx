@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Dumbbell, Apple, Sun } from "lucide-react";
+import { Dumbbell, Apple, Sun, Star, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type PerformanceType = "workout" | "meal" | "day";
@@ -14,7 +14,6 @@ export type PerformanceData = {
   highlight?: string;
 };
 
-/** Gradient presets — used as solid background when no photo */
 export const GRADIENT_PRESETS: { key: string; bg: string; name: string }[] = [
   { key: "violet",  bg: "linear-gradient(145deg, #3B0F8C 0%, #5B21B6 55%, #7C3AED 100%)", name: "Violet" },
   { key: "indigo",  bg: "linear-gradient(145deg, #1E1B8B 0%, #3730A3 55%, #4F46E5 100%)", name: "Indigo" },
@@ -26,7 +25,6 @@ export const GRADIENT_PRESETS: { key: string; bg: string; name: string }[] = [
   { key: "slate",   bg: "linear-gradient(145deg, #0F172A 0%, #1E293B 55%, #334155 100%)", name: "Ardoise" },
 ];
 
-/** Photo filters — CSS filter strings applied to the background image */
 export const PHOTO_FILTER_PRESETS: { key: string; name: string; filter: string }[] = [
   { key: "aura",    name: "Aura",    filter: "brightness(1.05) contrast(1.08) saturate(1.15)" },
   { key: "golden",  name: "Golden",  filter: "brightness(1.1) sepia(0.45) saturate(1.5) hue-rotate(-5deg)" },
@@ -65,40 +63,71 @@ export default function PerformanceCard({
   photoFilter,
   heroIndex   = 0,
   shownIndices,
+  heroTextScale = 1,
+  heroAlign     = "left",
+  /* Edit-mode props */
+  editMode    = false,
+  onMakeHero,
+  onToggleSub,
 }: {
   data:           PerformanceData;
   size?:          "sm" | "md" | "lg";
   interactive?:   boolean;
-  /** Solid gradient background (used when no photo). */
   customBg?:      string;
-  /** Photo background — image URL or data URL. */
   customBgImage?: string;
-  /** CSS filter string to apply to the background photo (from PHOTO_FILTER_PRESETS). */
   photoFilter?:   string;
-  /** Which metric index to display as the hero (large number). Default 0 */
   heroIndex?:     number;
-  /** Which metric indices to show in the sub-grid. Undefined = all non-hero */
   shownIndices?:  number[];
+  /** Multiplier applied to the hero font size (default 1). */
+  heroTextScale?: number;
+  /** Alignment of the hero metric block. */
+  heroAlign?:     "left" | "center";
+  /** When true, shows inline star/× controls on each metric. */
+  editMode?:      boolean;
+  /** Fire with the original metric index to make it the new hero. */
+  onMakeHero?:    (idx: number) => void;
+  /** Fire with the original metric index to toggle visibility. */
+  onToggleSub?:   (idx: number) => void;
 }) {
   const { icon: Icon, label } = typeDefaults[data.type];
   const defaultBg = GRADIENT_PRESETS.find(p => p.key === typeDefaults[data.type].gradientKey)?.bg ?? GRADIENT_PRESETS[0].bg;
   const bg = customBg ?? defaultBg;
 
   const hasPhoto = !!customBgImage;
-  // Text shadow for readability on photo
   const ts = hasPhoto ? "0 1px 10px rgba(0,0,0,0.85), 0 0 4px rgba(0,0,0,0.5)" : undefined;
 
-  // Resolve metrics
-  const all  = data.metrics;
+  // Resolve metrics — track original indices for edit-mode callbacks
+  const all = data.metrics;
   const hero = all[heroIndex] ?? all[0];
-  const subs = shownIndices !== undefined
-    ? shownIndices.filter(i => i !== heroIndex && i < all.length).map(i => all[i])
-    : all.filter((_, i) => i !== heroIndex);
+  const subItems: { m: typeof all[number]; originalIdx: number }[] =
+    shownIndices !== undefined
+      ? shownIndices
+          .filter(i => i !== heroIndex && i < all.length)
+          .map(i => ({ m: all[i], originalIdx: i }))
+      : all
+          .map((m, i) => ({ m, originalIdx: i }))
+          .filter(({ originalIdx }) => originalIdx !== heroIndex);
 
   const isSmall  = size === "sm";
-  const heroSize = isSmall ? "2.2rem" : "clamp(3.2rem, 9vw, 4.5rem)";
   const px       = isSmall ? "px-4" : "px-6";
   const py       = isSmall ? "py-4" : "py-5";
+
+  // Scaled hero size
+  const scale     = heroTextScale;
+  const heroSz    = isSmall
+    ? `${2.2 * scale}rem`
+    : `clamp(${3.2 * scale}rem, ${9 * scale}vw, ${4.5 * scale}rem)`;
+
+  const centered = heroAlign === "center";
+
+  // Shared edit-overlay style for action buttons floating on a metric
+  const editBtn: React.CSSProperties = {
+    width: 16, height: 16, borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "rgba(255,255,255,0.92)",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+    cursor: "pointer", flexShrink: 0,
+  };
 
   return (
     <motion.div
@@ -112,34 +141,25 @@ export default function PerformanceCard({
         ...(isSmall ? { aspectRatio: "2 / 3" } : {}),
       }}
     >
-      {/* ── Photo background ── */}
+      {/* Photo background */}
       {customBgImage && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={customBgImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ zIndex: 0, filter: photoFilter ?? "none" }}
-        />
+        <img src={customBgImage} alt="" className="absolute inset-0 w-full h-full object-cover"
+          style={{ zIndex: 0, filter: photoFilter ?? "none" }} />
       )}
 
-      {/* ── Solid gradient (no photo) ── */}
-      {!hasPhoto && (
-        <div className="absolute inset-0" style={{ background: bg, zIndex: 1 }} />
-      )}
+      {/* Solid gradient (no photo) */}
+      {!hasPhoto && <div className="absolute inset-0" style={{ background: bg, zIndex: 1 }} />}
 
-      {/* ── Photo vignette (top + bottom) for text readability ── */}
+      {/* Photo vignette */}
       {hasPhoto && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, transparent 40%, transparent 58%, rgba(0,0,0,0.65) 100%)",
-            zIndex: 2,
-          }}
-        />
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.48) 0%, transparent 40%, transparent 58%, rgba(0,0,0,0.65) 100%)",
+          zIndex: 2,
+        }} />
       )}
 
-      {/* ── Decorative highlights (solid-gradient mode only) ── */}
+      {/* Highlights (solid mode only) */}
       {!hasPhoto && (
         <>
           <div className="absolute top-0 inset-x-0 h-px" style={{ background: "rgba(255,255,255,0.28)", zIndex: 2 }} />
@@ -149,15 +169,12 @@ export default function PerformanceCard({
 
       {/* ── Top row ── */}
       <div className="flex items-center justify-between relative z-10">
-        <div
-          className="flex items-center gap-1.5 rounded-full"
-          style={{
-            background:     hasPhoto ? "rgba(0,0,0,0.38)" : "rgba(255,255,255,0.18)",
-            border:         `1px solid ${hasPhoto ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.22)"}`,
-            padding:        isSmall ? "4px 10px" : "5px 12px",
-            backdropFilter: hasPhoto ? "blur(6px)" : undefined,
-          }}
-        >
+        <div className="flex items-center gap-1.5 rounded-full" style={{
+          background:     hasPhoto ? "rgba(0,0,0,0.38)" : "rgba(255,255,255,0.18)",
+          border:         `1px solid ${hasPhoto ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.22)"}`,
+          padding:        isSmall ? "4px 10px" : "5px 12px",
+          backdropFilter: hasPhoto ? "blur(6px)" : undefined,
+        }}>
           <Icon size={isSmall ? 11 : 13} strokeWidth={2} style={{ color: "#fff" }} />
           <span className="font-bold text-white tracking-[0.2em] uppercase" style={{ fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts }}>
             {label}
@@ -170,52 +187,86 @@ export default function PerformanceCard({
 
       {/* ── Hero metric ── */}
       {hero && (
-        <div className={`relative z-10 ${isSmall ? "flex-1 flex flex-col justify-center" : ""}`}>
-          <p className="font-semibold tracking-[0.24em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.75)", fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts }}>
+        <div
+          className={`relative z-10 ${isSmall ? "flex-1 flex flex-col justify-center" : ""} ${centered ? "items-center" : ""}`}
+          style={{ display: "flex", flexDirection: "column", alignItems: centered ? "center" : "flex-start" }}
+        >
+          <p className="font-semibold tracking-[0.24em] uppercase mb-2"
+            style={{ color: "rgba(255,255,255,0.75)", fontSize: isSmall ? "0.5rem" : "0.58rem", textShadow: ts, textAlign: centered ? "center" : "left" }}>
             {hero.label}
           </p>
-          <div className="flex items-end gap-2 mb-2">
-            <span className="font-bold leading-none text-white" style={{ fontSize: heroSize, letterSpacing: "-0.02em", textShadow: ts }}>
+          <div className={`flex items-end gap-2 mb-2 ${centered ? "justify-center" : ""}`}>
+            <span className="font-bold leading-none text-white"
+              style={{ fontSize: heroSz, letterSpacing: "-0.02em", textShadow: ts }}>
               {hero.value}
             </span>
             {hero.unit && (
-              <span className="font-normal leading-none" style={{ color: "rgba(255,255,255,0.7)", fontSize: isSmall ? "0.9rem" : "1.25rem", marginBottom: isSmall ? "0.25rem" : "0.5rem", textShadow: ts }}>
+              <span className="font-normal leading-none"
+                style={{ color: "rgba(255,255,255,0.7)", fontSize: isSmall ? "0.9rem" : "1.25rem", marginBottom: isSmall ? "0.25rem" : "0.5rem", textShadow: ts }}>
                 {hero.unit}
               </span>
             )}
           </div>
-          <p className="font-medium" style={{ color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.7rem" : "0.88rem", textShadow: ts }}>
+          <p className="font-medium"
+            style={{ color: "rgba(255,255,255,0.85)", fontSize: isSmall ? "0.7rem" : "0.88rem", textShadow: ts, textAlign: centered ? "center" : "left" }}>
             {data.title}
           </p>
         </div>
       )}
 
       {/* ── Separator ── */}
-      {subs.length > 0 && (
+      {subItems.length > 0 && (
         <div className="relative z-10 h-px w-full" style={{ background: "rgba(255,255,255,0.25)" }} />
       )}
 
       {/* ── Sub metrics ── */}
-      {subs.length > 0 && (
+      {subItems.length > 0 && (
         <div
           className="relative z-10 grid"
-          style={{ gridTemplateColumns: `repeat(${Math.min(subs.length, 3)}, 1fr)`, gap: isSmall ? 8 : 12 }}
+          style={{ gridTemplateColumns: `repeat(${Math.min(subItems.length, 3)}, 1fr)`, gap: isSmall ? 8 : 12 }}
         >
-          {subs.slice(0, 3).map((m) => (
-            <div key={m.label}>
-              <p className="font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.65)", fontSize: isSmall ? "0.44rem" : "0.52rem", textShadow: ts }}>
+          {subItems.slice(0, 3).map(({ m, originalIdx }) => (
+            <div key={originalIdx} className="relative">
+              <p className="font-semibold tracking-[0.2em] uppercase mb-1"
+                style={{ color: "rgba(255,255,255,0.65)", fontSize: isSmall ? "0.44rem" : "0.52rem", textShadow: ts }}>
                 {m.label}
               </p>
               <div className="flex items-baseline gap-0.5">
-                <span className="font-bold text-white" style={{ fontSize: isSmall ? "1.05rem" : "1.3rem", textShadow: ts }}>
+                <span className="font-bold text-white"
+                  style={{ fontSize: isSmall ? "1.05rem" : "1.3rem", textShadow: ts }}>
                   {m.value}
                 </span>
                 {m.unit && (
-                  <span className="font-normal" style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.58rem", textShadow: ts }}>
+                  <span className="font-normal"
+                    style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.58rem", textShadow: ts }}>
                     {m.unit}
                   </span>
                 )}
               </div>
+
+              {/* Edit-mode action buttons */}
+              {editMode && (
+                <div className="absolute -top-1 -right-1 flex gap-0.5">
+                  {/* Make hero */}
+                  <motion.button
+                    whileTap={{ scale: 0.8 }}
+                    onClick={(e) => { e.stopPropagation(); onMakeHero?.(originalIdx); }}
+                    style={editBtn}
+                    title="Afficher en grand"
+                  >
+                    <Star size={8} strokeWidth={0} fill="#D4A843" />
+                  </motion.button>
+                  {/* Hide */}
+                  <motion.button
+                    whileTap={{ scale: 0.8 }}
+                    onClick={(e) => { e.stopPropagation(); onToggleSub?.(originalIdx); }}
+                    style={editBtn}
+                    title="Masquer"
+                  >
+                    <X size={8} strokeWidth={2.5} color="#FC8181" />
+                  </motion.button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -223,10 +274,8 @@ export default function PerformanceCard({
 
       {/* ── Branding ── */}
       <div className="relative z-10 flex items-center justify-end mt-auto">
-        <span
-          className="font-black text-white tracking-[0.42em] uppercase"
-          style={{ fontSize: isSmall ? "0.52rem" : "0.62rem", opacity: 0.85, textShadow: ts }}
-        >
+        <span className="font-black text-white tracking-[0.42em] uppercase"
+          style={{ fontSize: isSmall ? "0.52rem" : "0.62rem", opacity: 0.85, textShadow: ts }}>
           ✦ AURA
         </span>
       </div>
