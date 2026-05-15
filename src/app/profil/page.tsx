@@ -35,6 +35,7 @@ import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
 import { createClient } from "@/lib/supabase";
+import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 
 /* ─────────────── Toast ─────────────── */
 function Toast({ message }: { message: string }) {
@@ -1801,7 +1802,14 @@ export default function ProfilPage() {
                         whileHover={{ scale: 0.97 }}
                         onClick={() => setSelectedPost(post)}
                       >
-                        {post.media_url ? (
+                        {post.performance_data ? (
+                          <div className="w-full h-full overflow-hidden">
+                            <PerformanceCard
+                              data={post.performance_data as PerformanceData}
+                              size="sm"
+                            />
+                          </div>
+                        ) : post.media_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={post.media_url} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -2074,6 +2082,14 @@ export default function ProfilPage() {
               {/* ── Mode lecture ── */}
               {!editingSelectedPost && (
                 <>
+                  {selectedPost.performance_data && (
+                    <div className="px-4 pb-3">
+                      <PerformanceCard
+                        data={selectedPost.performance_data as PerformanceData}
+                        size="md"
+                      />
+                    </div>
+                  )}
                   {selectedPost.caption && (
                     <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
                       {selectedPost.caption}
