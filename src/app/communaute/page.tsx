@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2 } from "lucide-react";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import CreatePostModal from "@/components/CreatePostModal";
@@ -56,6 +56,7 @@ type RealPost = {
   author: { pseudo: string; full_name?: string; avatar_url?: string; is_admin?: boolean } | null;
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
+  post_reposts: { user_id: string }[];
 };
 
 type DirectMessage = {
@@ -109,24 +110,24 @@ function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: numb
 function StoryCard({ story }: { story: RealStory }) {
   const d = story.content_data ?? {};
 
-  // Photo ou vidéo
+  // Photo ou vidéo — full screen dans le viewer
   if ((story.content_type === "photo" || story.content_type === "video") && story.media_url) {
     return (
       <motion.div
         key={story.id}
-        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", bounce: 0.3 }}
-        className="w-full max-w-sm rounded-3xl overflow-hidden"
-        style={{ aspectRatio: "9/16", maxHeight: 420, background: "#000", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className="absolute inset-0"
+        style={{ background: "#000" }}
       >
         {story.content_type === "video"
           ? <video src={story.media_url} className="w-full h-full object-cover" muted playsInline autoPlay loop />
           // eslint-disable-next-line @next/next/no-img-element
           : <img src={story.media_url} alt="" className="w-full h-full object-cover" />}
         {story.caption && (
-          <div className="absolute bottom-0 inset-x-0 px-4 pb-4 pt-8"
-            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)" }}>
-            <p className="text-white text-sm font-medium">{story.caption}</p>
+          <div className="absolute bottom-0 inset-x-0 px-6 pb-10 pt-16"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)" }}>
+            <p className="text-white text-base font-semibold">{story.caption}</p>
           </div>
         )}
       </motion.div>
@@ -134,35 +135,32 @@ function StoryCard({ story }: { story: RealStory }) {
   }
 
   if (story.content_type === "workout") {
-    const catGrad: Record<string, string> = {
-      force:    "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
-      cardio:   "linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)",
-      mobilite: "linear-gradient(135deg, #A7F3D0 0%, #34D399 100%)",
-      fullbody: "linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%)",
-    };
-    const grad = catGrad[(d.category as string) ?? "force"] ?? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)";
     return (
       <motion.div
         key={story.id}
-        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", bounce: 0.3 }}
-        className="w-full max-w-sm rounded-3xl p-8 text-center"
-        style={{ background: grad, boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        transition={{ duration: 0.25 }}
+        className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center"
+        style={{ background: "linear-gradient(160deg, #1A0A35 0%, #3D1A6B 50%, #2D1F50 100%)" }}
       >
-        <div className="text-6xl mb-4">🏋️</div>
-        <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>{(d.session_title as string) ?? "Séance"}</p>
-        {story.caption && <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>}
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="text-7xl mb-5">💪</div>
+        <div className="inline-block px-4 py-1.5 rounded-full text-xs font-bold mb-5 tracking-widest uppercase"
+          style={{ background: "rgba(167,139,250,0.2)", color: "rgba(212,192,255,0.9)", border: "1px solid rgba(167,139,250,0.3)" }}>
+          Séance
+        </div>
+        <p className="text-2xl font-bold text-white mb-2">{(d.session_title as string) ?? "Séance"}</p>
+        {story.caption && <p className="text-sm font-light mb-6" style={{ color: "rgba(255,255,255,0.65)" }}>{story.caption}</p>}
+        <div className="flex justify-center gap-8 mt-2">
           {(d.duration_minutes as number) > 0 && (
             <div className="text-center">
-              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.duration_minutes as number}</p>
-              <p className="text-xs" style={{ color: "#718096" }}>min</p>
+              <p className="text-3xl font-bold text-white">{d.duration_minutes as number}</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(212,192,255,0.7)" }}>min</p>
             </div>
           )}
           {(d.calories_burned as number) > 0 && (
             <div className="text-center">
-              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories_burned as number}</p>
-              <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
+              <p className="text-3xl font-bold text-white">{d.calories_burned as number}</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(212,192,255,0.7)" }}>kcal</p>
             </div>
           )}
         </div>
@@ -174,25 +172,29 @@ function StoryCard({ story }: { story: RealStory }) {
     return (
       <motion.div
         key={story.id}
-        initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", bounce: 0.3 }}
-        className="w-full max-w-sm rounded-3xl p-8 text-center"
-        style={{ background: "linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        transition={{ duration: 0.25 }}
+        className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center"
+        style={{ background: "linear-gradient(160deg, #0A2A1A 0%, #1A4A2A 50%, #0D2A1A 100%)" }}
       >
-        <div className="text-6xl mb-4">🥗</div>
-        <p className="text-xl font-semibold mb-1" style={{ color: "#2D3748" }}>{(d.meal_title as string) ?? "Repas"}</p>
-        {story.caption && <p className="text-sm font-light mb-4" style={{ color: "#4A5568" }}>{story.caption}</p>}
-        <div className="flex justify-center gap-6 mt-4">
+        <div className="text-7xl mb-5">🥗</div>
+        <div className="inline-block px-4 py-1.5 rounded-full text-xs font-bold mb-5 tracking-widest uppercase"
+          style={{ background: "rgba(52,211,153,0.15)", color: "rgba(110,231,183,0.9)", border: "1px solid rgba(52,211,153,0.25)" }}>
+          Repas
+        </div>
+        <p className="text-2xl font-bold text-white mb-2">{(d.meal_title as string) ?? "Repas"}</p>
+        {story.caption && <p className="text-sm font-light mb-6" style={{ color: "rgba(255,255,255,0.65)" }}>{story.caption}</p>}
+        <div className="flex justify-center gap-8 mt-2">
           {(d.calories as number) > 0 && (
             <div className="text-center">
-              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.calories as number}</p>
-              <p className="text-xs" style={{ color: "#718096" }}>kcal</p>
+              <p className="text-3xl font-bold text-white">{d.calories as number}</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(110,231,183,0.7)" }}>kcal</p>
             </div>
           )}
           {(d.proteins as number) > 0 && (
             <div className="text-center">
-              <p className="text-2xl font-bold" style={{ color: "#2D3748" }}>{d.proteins as number}g</p>
-              <p className="text-xs" style={{ color: "#718096" }}>protéines</p>
+              <p className="text-3xl font-bold text-white">{d.proteins as number}g</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(110,231,183,0.7)" }}>protéines</p>
             </div>
           )}
         </div>
@@ -203,15 +205,15 @@ function StoryCard({ story }: { story: RealStory }) {
   return (
     <motion.div
       key={story.id}
-      initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", bounce: 0.3 }}
-      className="w-full max-w-sm rounded-3xl p-8 text-center"
-      style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+      className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center"
+      style={{ background: "linear-gradient(160deg, #1A0A35 0%, #3D2F6B 60%, #2D1F50 100%)" }}
     >
-      <div className="text-6xl mb-4">{(d.emoji as string) ?? "✨"}</div>
-      <p className="text-lg font-medium leading-snug" style={{ color: "#2D3748" }}>{(d.text as string) ?? ""}</p>
+      <div className="text-7xl mb-5">{(d.emoji as string) ?? "✨"}</div>
+      <p className="text-2xl font-semibold leading-snug text-white">{(d.text as string) ?? (story.caption ?? "")}</p>
       {story.caption && story.caption !== (d.text as string) && (
-        <p className="text-sm font-light mt-3" style={{ color: "#718096" }}>{story.caption}</p>
+        <p className="text-sm font-light mt-4" style={{ color: "rgba(212,192,255,0.7)" }}>{story.caption}</p>
       )}
     </motion.div>
   );
@@ -367,7 +369,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       </div>
 
       {/* Contenu */}
-      <div className="flex-1 flex items-center justify-center px-6 pointer-events-none">
+      <div className="relative flex-1 overflow-hidden pointer-events-none">
         <AnimatePresence mode="wait">
           <StoryCard key={story.id} story={story} />
         </AnimatePresence>
@@ -1496,6 +1498,7 @@ function CommunautePageInner() {
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
   const [savedRealIds, setSavedRealIds] = useState<Set<string>>(new Set());
+  const [repostedRealIds, setRepostedRealIds] = useState<Set<string>>(new Set());
   const [openRealMenu, setOpenRealMenu] = useState<string | null>(null);
   const [burstRealId, setBurstRealId] = useState<string | null>(null);
   const [dmConversations, setDmConversations] = useState<DMConversation[]>([]);
@@ -1641,17 +1644,21 @@ function CommunautePageInner() {
         id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
         author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
         post_likes(user_id),
-        post_comments(id)
+        post_comments(id),
+        post_reposts(user_id)
       `)
       .order("created_at", { ascending: false })
       .limit(30);
     if (data) {
       setRealFeedPosts(data as unknown as RealPost[]);
       const liked = new Set<string>();
+      const reposted = new Set<string>();
       (data as unknown as RealPost[]).forEach((p) => {
         if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
+        if (p.post_reposts?.some((r) => r.user_id === user.id)) reposted.add(p.id);
       });
       setLikedRealIds(liked);
+      setRepostedRealIds(reposted);
     }
     setFeedLoading(false);
   }, [user]);
@@ -1671,7 +1678,8 @@ function CommunautePageInner() {
             id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
             author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
             post_likes(user_id),
-            post_comments(id)
+            post_comments(id),
+            post_reposts(user_id)
           `)
           .eq("id", (payload.new as { id: string }).id)
           .maybeSingle();
@@ -1763,6 +1771,29 @@ function CommunautePageInner() {
       await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
     } else {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+    }
+  };
+
+  const toggleRepost = async (postId: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const isReposted = repostedRealIds.has(postId);
+    setRepostedRealIds((prev) => {
+      const n = new Set(prev);
+      isReposted ? n.delete(postId) : n.add(postId);
+      return n;
+    });
+    setRealFeedPosts((prev) => prev.map((p) => p.id !== postId ? p : {
+      ...p,
+      post_reposts: isReposted
+        ? p.post_reposts.filter((r) => r.user_id !== user.id)
+        : [...p.post_reposts, { user_id: user.id }],
+    }));
+    if (!isReposted) {
+      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      showToast("Post boosté ! 🔄");
+    } else {
+      await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
     }
   };
 
@@ -2044,14 +2075,8 @@ function CommunautePageInner() {
                         ? <img src={user.avatar} alt="moi" className="w-full h-full object-cover rounded-full" />
                         : myGroup
                           ? <span className="text-2xl font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
-                          : <Plus size={18} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                          : <Plus size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
                       }
-                      {!myGroup && (
-                        <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full flex items-center justify-center"
-                          style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white" }}>
-                          <Plus size={10} strokeWidth={3} style={{ color: "#2D3748" }} />
-                        </div>
-                      )}
                       {/* Badge count si plusieurs stories */}
                       {myGroup && myGroup.length > 1 && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
@@ -2060,8 +2085,8 @@ function CommunautePageInner() {
                         </div>
                       )}
                     </motion.div>
-                    <span className="text-[10px] font-medium" style={{ color: myGroup ? "#2D3748" : "#A0AEC0" }}>
-                      {myGroup ? "Ma story" : "Vous"}
+                    <span className="text-[10px] font-medium" style={{ color: myGroup ? "#2D3748" : "#A78BFA" }}>
+                      Ma story
                     </span>
                   </motion.div>
 
@@ -2197,6 +2222,7 @@ function CommunautePageInner() {
               const isCommentsOpen = openRealComments.has(post.id);
               const likesCount = post.post_likes.length;
               const commentsCount = post.post_comments.length;
+              const repostsCount = post.post_reposts?.length ?? 0;
               const authorPseudo = post.author?.pseudo ?? "utilisateur";
               const authorAvatar = post.author?.avatar_url;
               const authorCertified = post.author?.is_admin === true;
@@ -2320,74 +2346,108 @@ function CommunautePageInner() {
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-4 px-4 pt-3">
-                    <motion.button
-                      whileTap={{ scale: 0.7 }}
-                      onClick={() => toggleRealLike(post.id)}
-                      className="relative flex items-center gap-1.5 cursor-pointer"
-                    >
-                      {burstRealId === post.id && [0, 1, 2, 3, 4].map((i) => (
-                        <motion.div
-                          key={`burst-${post.id}-${i}`}
-                          className="absolute pointer-events-none"
-                          style={{ width: 6, height: 6, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
-                          initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-                          animate={{ scale: [0, 1.2, 0], x: [0, (i - 2) * 20], y: [0, -22 - i * 4], opacity: [1, 1, 0] }}
-                          transition={{ duration: 0.55, delay: i * 0.04 }}
-                        />
-                      ))}
-                      <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
-                      </motion.div>
-                    </motion.button>
+                  {/* ── Actions style X ── */}
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                    {/* Groupe gauche : commentaire · repost · like */}
+                    <div className="flex items-center gap-5">
 
-                    <motion.button
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.85, rotate: -15 }}
-                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                      className="flex items-center cursor-pointer"
-                      aria-label="Commenter"
-                    >
-                      <MessageCircle
-                        size={20}
-                        strokeWidth={1.5}
-                        fill={isCommentsOpen ? "rgba(167,139,250,0.2)" : "none"}
-                        style={{ color: isCommentsOpen ? "#A78BFA" : "#2D3748" }}
-                      />
-                    </motion.button>
+                      {/* Commentaire */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                        className="flex items-center gap-1.5 cursor-pointer"
+                        aria-label="Commenter"
+                      >
+                        <MessageCircle size={20} strokeWidth={1.5}
+                          fill={isCommentsOpen ? "rgba(167,139,250,0.15)" : "none"}
+                          style={{ color: isCommentsOpen ? "#A78BFA" : "#718096" }} />
+                        {commentsCount > 0 && (
+                          <span className="text-xs font-medium" style={{ color: isCommentsOpen ? "#A78BFA" : "#718096" }}>{commentsCount}</span>
+                        )}
+                      </motion.button>
 
-                    <motion.button
-                      whileHover={{ scale: 1.15, rotate: 15 }}
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => setSharePost({ caption: post.caption, post })}
-                      className="flex items-center cursor-pointer"
-                      aria-label="Partager"
-                    >
-                      <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                    </motion.button>
+                      {/* Repost / Boost */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => toggleRepost(post.id)}
+                        className="flex items-center gap-1.5 cursor-pointer"
+                        aria-label="Booster"
+                      >
+                        <motion.div animate={repostedRealIds.has(post.id) ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
+                          <Repeat2 size={20} strokeWidth={1.5}
+                            style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }} />
+                        </motion.div>
+                        {repostsCount > 0 && (
+                          <span className="text-xs font-medium" style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }}>{repostsCount}</span>
+                        )}
+                      </motion.button>
 
-                    {isSaved && (
-                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="ml-auto">
-                        <Bookmark size={16} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
-                      </motion.div>
-                    )}
+                      {/* Like */}
+                      <motion.button
+                        whileTap={{ scale: 0.7 }}
+                        onClick={() => toggleRealLike(post.id)}
+                        className="relative flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {burstRealId === post.id && [0, 1, 2, 3, 4].map((i) => (
+                          <motion.div
+                            key={`burst-${post.id}-${i}`}
+                            className="absolute pointer-events-none"
+                            style={{ width: 5, height: 5, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
+                            initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                            animate={{ scale: [0, 1.2, 0], x: [0, (i - 2) * 18], y: [0, -20 - i * 3], opacity: [1, 1, 0] }}
+                            transition={{ duration: 0.55, delay: i * 0.04 }}
+                          />
+                        ))}
+                        <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
+                          <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#718096" }} />
+                        </motion.div>
+                        {likesCount > 0 && (
+                          <span className="text-xs font-medium" style={{ color: liked ? "#F43F5E" : "#718096" }}>{likesCount}</span>
+                        )}
+                      </motion.button>
+                    </div>
+
+                    {/* Groupe droit : partager + sauvegarder */}
+                    <div className="flex items-center gap-3">
+                      {isSaved && (
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                          <Bookmark size={18} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
+                        </motion.div>
+                      )}
+                      <motion.button
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => setSharePost({ caption: post.caption, post })}
+                        className="flex items-center cursor-pointer"
+                        aria-label="Partager"
+                      >
+                        <Share2 size={18} strokeWidth={1.5} style={{ color: "#718096" }} />
+                      </motion.button>
+                    </div>
                   </div>
 
-                  {/* Stats */}
-                  <div className="px-4 pt-2 pb-1">
-                    <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                      {likesCount}{" "}j&apos;aime
-                    </p>
+                  {/* Lien vers commentaires */}
+                  {commentsCount > 0 && (
                     <motion.p
                       whileHover={{ color: "#2D3748" }}
-                      className="text-[10px] mt-2 cursor-pointer mb-3"
+                      className="px-4 text-[11px] cursor-pointer pb-3"
                       style={{ color: "#A0AEC0" }}
                       onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                     >
-                      {isCommentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
+                      {isCommentsOpen ? "Masquer les commentaires" : `Voir les ${commentsCount} commentaires`}
                     </motion.p>
-                  </div>
+                  )}
+                  {commentsCount === 0 && (
+                    <motion.p
+                      className="px-4 text-[11px] cursor-pointer pb-3"
+                      style={{ color: "#CBD5E0" }}
+                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                    >
+                      Ajouter un commentaire
+                    </motion.p>
+                  )}
 
                   <AnimatePresence>
                     {isCommentsOpen && (
