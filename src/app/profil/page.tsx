@@ -7,6 +7,7 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
+  MoreHorizontal, MessageCircle, Repeat2, Bookmark,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 
@@ -1839,15 +1840,14 @@ export default function ProfilPage() {
                               </p>
                             </div>
                           </div>
-                          {/* Bouton modifier */}
+                          {/* Bouton options */}
                           <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => { setSelectedPost(post); setEditCaption(post.caption ?? ""); setEditBio(post.description ?? ""); setEditingSelectedPost(true); }}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold cursor-pointer"
-                            style={{ background: "rgba(167,139,250,0.12)", color: "#7C5CFA" }}
+                            className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                            style={{ background: "rgba(167,139,250,0.1)" }}
                           >
-                            <Pencil size={10} strokeWidth={2} />
-                            Modifier
+                            <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#7C5CFA" }} />
                           </motion.button>
                         </div>
 
@@ -1885,13 +1885,33 @@ export default function ProfilPage() {
                           </p>
                         )}
 
+                        {/* Action bar */}
+                        <div className="flex items-center gap-4 px-4 pt-3">
+                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
+                            <Heart size={22} strokeWidth={1.8} />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
+                            <MessageCircle size={22} strokeWidth={1.8} />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
+                            <Repeat2 size={22} strokeWidth={1.8} />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer" style={{ color: "#718096" }}>
+                            <Share2 size={22} strokeWidth={1.8} />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.85 }} className="ml-auto cursor-pointer" style={{ color: "#718096" }}>
+                            <Bookmark size={22} strokeWidth={1.8} />
+                          </motion.button>
+                        </div>
+
                         {/* Stats */}
-                        <div className="px-4 pt-1 pb-4">
+                        <div className="px-4 pt-2 pb-4">
                           {(post.likes_count ?? 0) > 0 && (
                             <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
                               {post.likes_count} j&apos;aime
                             </p>
                           )}
+                          <p className="text-[11px]" style={{ color: "#A0AEC0" }}>Ajouter un commentaire</p>
                         </div>
                       </motion.div>
                     ))}
