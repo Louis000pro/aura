@@ -36,18 +36,21 @@ export default function PerformanceCard({
   size        = "md",
   interactive = false,
   customBg,
+  customBgImage,
   heroIndex   = 0,
   shownIndices,
 }: {
-  data:          PerformanceData;
-  size?:         "sm" | "md" | "lg";
-  interactive?:  boolean;
+  data:           PerformanceData;
+  size?:          "sm" | "md" | "lg";
+  interactive?:   boolean;
   /** Override gradient background */
-  customBg?:     string;
+  customBg?:      string;
+  /** Photo background (URL or data URL). Gradient is applied as overlay. */
+  customBgImage?: string;
   /** Which metric index to display as the hero (large number). Default 0 */
-  heroIndex?:    number;
+  heroIndex?:     number;
   /** Which metric indices to show in the sub-grid. Undefined = all non-hero */
-  shownIndices?: number[];
+  shownIndices?:  number[];
 }) {
   const { icon: Icon, label } = typeDefaults[data.type];
   const defaultBg = GRADIENT_PRESETS.find(p => p.key === typeDefaults[data.type].gradientKey)?.bg ?? GRADIENT_PRESETS[0].bg;
@@ -71,16 +74,35 @@ export default function PerformanceCard({
       transition={{ duration: 0.2 }}
       className={`relative rounded-3xl overflow-hidden flex flex-col ${px} ${py}`}
       style={{
-        background: bg,
+        background: customBgImage ? "#000" : bg,
         boxShadow:  "0 16px 48px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.18)",
         gap:        isSmall ? 12 : 16,
         ...(isSmall ? { aspectRatio: "2 / 3" } : {}),
       }}
     >
+      {/* Photo background */}
+      {customBgImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={customBgImage}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ zIndex: 0 }}
+        />
+      )}
+      {/* Gradient overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: bg,
+          opacity:    customBgImage ? 0.78 : 1,
+          zIndex:     1,
+        }}
+      />
       {/* Top-edge highlight */}
-      <div className="absolute top-0 inset-x-0 h-px" style={{ background: "rgba(255,255,255,0.28)" }} />
+      <div className="absolute top-0 inset-x-0 h-px" style={{ background: "rgba(255,255,255,0.28)", zIndex: 2 }} />
       {/* Left inner highlight */}
-      <div className="absolute inset-y-0 left-0 w-24 pointer-events-none" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.06), transparent)" }} />
+      <div className="absolute inset-y-0 left-0 w-24 pointer-events-none" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.06), transparent)", zIndex: 2 }} />
 
       {/* ── Top row ── */}
       <div className="flex items-center justify-between relative z-10">
