@@ -235,6 +235,11 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
+  // Reset scroll position when navigating to a public profile
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [username]);
+
   useEffect(() => {
     if (!username) return;
     const supabase = createClient();
@@ -527,7 +532,7 @@ export default function PublicProfilePage() {
   const isCertified = profile?.is_admin === true;
 
   return (
-    <div className="min-h-screen px-6 pt-10 pb-12 max-w-2xl mx-auto relative overflow-hidden">
+    <div className="min-h-screen px-6 pt-10 pb-12 max-w-2xl mx-auto relative overflow-x-hidden">
       {/* Blobs */}
       <div
         className="fixed top-0 left-0 pointer-events-none -z-10"
