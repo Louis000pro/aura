@@ -2418,26 +2418,24 @@ function CommunautePageInner() {
                     </div>
                   )}
 
-                  {/* "Faire cette séance" — si le post workout contient une exercise_list */}
+                  {/* "Faire cette séance" — visible sur tous les posts workout */}
                   {post.type === "workout" && (() => {
                     const pd = post.performance_data as PerformanceData & { exercise_list?: unknown[]; category?: string };
-                    const exList = pd?.exercise_list;
-                    if (!Array.isArray(exList) || exList.length === 0) return null;
+                    const exList = (Array.isArray(pd?.exercise_list) ? pd.exercise_list : []) as Exercise[];
+                    const durMetric = pd?.metrics?.find(m => m.label === "Durée");
+                    const dur = durMetric ? parseInt(durMetric.value) || 30 : 30;
                     return (
                       <div className="px-4 pb-1">
                         <motion.button
                           whileTap={{ scale: 0.97 }}
                           onClick={() => setCommunityWorkout({
                             sessionId: "community",
-                            title:      pd.title ?? "Séance",
+                            title:      pd?.title ?? "Séance",
                             accent:     "#A78BFA",
-                            duration:   (() => {
-                              const dur = pd.metrics?.find(m => m.label === "Durée");
-                              return dur ? parseInt(dur.value) || 30 : 30;
-                            })(),
+                            duration:   dur,
                             difficulty: "Intermédiaire",
-                            category:   pd.category ?? "force",
-                            exerciseList: exList as Exercise[],
+                            category:   pd?.category ?? "force",
+                            exerciseList: exList,
                           })}
                           className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
                           style={{
@@ -2448,6 +2446,9 @@ function CommunautePageInner() {
                         >
                           <Play size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
                           Faire cette séance
+                          {exList.length === 0 && (
+                            <span className="text-[9px] font-normal opacity-60 ml-1">(aperçu limité)</span>
+                          )}
                         </motion.button>
                       </div>
                     );
