@@ -2923,7 +2923,13 @@ function CommunautePageInner() {
                     transition={{ delay: i < 6 ? i * 0.04 : 0, type: "spring", bounce: 0.3 }}
                     className={`flex ${isMe ? "justify-end" : "justify-start"} items-end gap-2`}
                   >
-                    {!isMe && <ProfileAvatar partner={activeDMPartner} size={28} />}
+                    {!isMe && (
+                      <Link href={`/profil/${activeDMPartner.pseudo}`} className="flex-shrink-0">
+                        <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}>
+                          <ProfileAvatar partner={activeDMPartner} size={28} />
+                        </motion.div>
+                      </Link>
+                    )}
                     <div>
                       <div
                         className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
