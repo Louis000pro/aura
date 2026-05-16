@@ -2521,36 +2521,43 @@ export default function ProfilPage() {
                     const exList = (pd?.exercise_list ?? []) as Exercise[];
                     const durMetric = pd?.metrics?.find(m => m.label === "Durée");
                     const dur = durMetric ? parseInt(durMetric.value) || 30 : 30;
+                    const builtinId  = resolveSessionId(pd?.title ?? "");
+                    const hasEmbedded = exList.length > 0;
+                    const hasBuiltin  = !!builtinId;
+                    const unavailable = !hasEmbedded && !hasBuiltin;
                     return (
                       <div className="px-4 pb-3">
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => {
-                            setSelectedPost(null);
-                            setProfileWorkout({
-                              sessionId:    exList.length > 0 ? "profile-post" : resolveSessionId(pd?.title ?? ""),
-                              title:        pd?.title ?? "Séance",
-                              accent:       "#A78BFA",
-                              duration:     dur,
-                              difficulty:   "Intermédiaire",
-                              category:     pd?.category ?? "force",
-                              exerciseList: exList,
-                            });
-                          }}
-                          className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
-                          style={{
-                            background: "linear-gradient(135deg,rgba(167,139,250,0.18) 0%,rgba(212,192,255,0.12) 100%)",
-                            border: "1px solid rgba(167,139,250,0.28)",
-                            color: "#7C5CFA",
-                          }}
-                        >
-                          <Play size={14} strokeWidth={2} />
-                          Faire cette séance
-                        </motion.button>
-                        {exList.length === 0 && (
-                          <p className="text-center text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
-                            Détail des exercices non disponible pour ce post
-                          </p>
+                        {unavailable ? (
+                          <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs"
+                            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#A0AEC0" }}>
+                            <span>Séance perso — exercices non embarqués</span>
+                            <span className="text-[10px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
+                          </div>
+                        ) : (
+                          <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => {
+                              setSelectedPost(null);
+                              setProfileWorkout({
+                                sessionId:    hasEmbedded ? "profile-post" : builtinId!,
+                                title:        pd?.title ?? "Séance",
+                                accent:       "#A78BFA",
+                                duration:     dur,
+                                difficulty:   "Intermédiaire",
+                                category:     pd?.category ?? "force",
+                                exerciseList: exList,
+                              });
+                            }}
+                            className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
+                            style={{
+                              background: "linear-gradient(135deg,rgba(167,139,250,0.18) 0%,rgba(212,192,255,0.12) 100%)",
+                              border: "1px solid rgba(167,139,250,0.28)",
+                              color: "#7C5CFA",
+                            }}
+                          >
+                            <Play size={14} strokeWidth={2} />
+                            Faire cette séance
+                          </motion.button>
                         )}
                       </div>
                     );
