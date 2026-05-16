@@ -1390,8 +1390,29 @@ const ALL_MUSCLES = [
   "Quadriceps", "Fessiers", "Mollets", "Hanches", "Cardio",
 ];
 
-type ExerciseForm = { name: string; sets: number; reps: number; rest: number; restAfter: number };
+type ExerciseForm = {
+  name: string;
+  sets: number;
+  reps: number;
+  rest: number;
+  restAfter: number;
+  tip?: string;
+  benefit?: string;
+  exMuscles?: string[];
+};
 const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: 10, rest: 60, restAfter: 90 };
+
+/** Durée calculée = temps actif + repos inter-séries + transitions, arrondie à 5 min */
+function calcDuration(forms: ExerciseForm[]): number {
+  const SEC_PER_REP = 3;
+  let total = 0;
+  forms.forEach((ex, i) => {
+    total += ex.sets * ex.reps * SEC_PER_REP;      // temps actif
+    total += (ex.sets - 1) * ex.rest;              // repos inter-séries
+    if (i < forms.length - 1) total += ex.restAfter; // transition entre exercices
+  });
+  return Math.max(5, Math.round((total / 60) / 5) * 5);
+}
 
 function CreateSessionModal({ onClose, onCreate, editSession }: {
   onClose: () => void;
@@ -1402,7 +1423,6 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
   const [title, setTitle]       = useState(editSession?.title ?? "");
   const [category, setCategory] = useState<WorkoutCategory>(editSession?.category ?? "force");
-  const [duration, setDuration] = useState(editSession?.duration ?? 30);
   const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>(editSession?.difficulty ?? "Intermédiaire");
   // Custom muscles = muscles from editSession that are not in the predefined list
   const [customMuscles, setCustomMuscles] = useState<string[]>(
@@ -1414,6 +1434,50 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
     editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest, restAfter: e.restAfter ?? 90 }))
     ?? [{ ...DEFAULT_EX }]
   );
+
+  // IA
+  const [aiDescription, setAiDescription] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  // Durée calculée automatiquement depuis les exercices
+  const duration = calcDuration(exForms);
+
+  const handleAiGenerate = async () => {
+    if (!aiDescription.trim()) return;
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const res = await fetch("/api/workout/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: aiDescription, category, difficulty }),
+      });
+      if (!res.ok) throw new Error("Erreur serveur");
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (data.title) setTitle(data.title);
+      if (Array.isArray(data.exercises) && data.exercises.length > 0) {
+        setExForms(data.exercises.map((e: { name: string; sets?: number; reps?: number; rest?: number; restAfter?: number; tip?: string; benefit?: string; muscles?: string[] }) => ({
+          name: e.name ?? "",
+          sets: Number(e.sets) || 3,
+          reps: Number(e.reps) || 10,
+          rest: Number(e.rest) || 60,
+          restAfter: Number(e.restAfter) || 90,
+          tip: e.tip,
+          benefit: e.benefit,
+          exMuscles: Array.isArray(e.muscles) ? e.muscles : undefined,
+        })));
+      }
+      if (Array.isArray(data.muscles) && data.muscles.length > 0) {
+        setSelectedMuscles(data.muscles);
+      }
+    } catch {
+      setAiError("Génération impossible, réessaie.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const toggleMuscle = (m: string) =>
     setSelectedMuscles(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
@@ -1447,9 +1511,9 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
       reps: String(e.reps),
       rest: e.rest,
       restAfter: e.restAfter,
-      tip: "Concentre-toi sur la forme et la respiration.",
-      benefit: "Renforce et améliore les performances.",
-      muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
+      tip: e.tip ?? "Concentre-toi sur la forme et la respiration.",
+      benefit: e.benefit ?? "Renforce et améliore les performances.",
+      muscles: e.exMuscles ?? (selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"]),
     }));
     onCreate({
       id: editSession?.id ?? `custom-${Date.now()}`,
@@ -1517,6 +1581,47 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-6" style={{ scrollbarWidth: "none" }}>
 
+          {/* ── 0. Assistant IA ── */}
+          <div className="rounded-2xl p-4 flex flex-col gap-3"
+            style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.18) 0%, rgba(245,230,163,0.12) 100%)", border: "1px solid rgba(167,139,250,0.25)" }}>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Assistant IA ✦</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}>Optionnel</span>
+            </div>
+            <textarea
+              value={aiDescription}
+              onChange={e => setAiDescription(e.target.value)}
+              placeholder="Décris ta séance idéale… ex : séance push pour prise de masse, 45 min, avec développé couché et épaules"
+              rows={3}
+              className="w-full px-4 py-3 rounded-2xl text-sm outline-none resize-none"
+              style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(212,192,255,0.45)", color: "#2D3748", lineHeight: 1.5 }}
+            />
+            {aiError && (
+              <p className="text-[11px]" style={{ color: "#FC8181" }}>{aiError}</p>
+            )}
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={handleAiGenerate}
+              disabled={!aiDescription.trim() || aiLoading}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+              style={aiDescription.trim() && !aiLoading
+                ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
+              }
+            >
+              {aiLoading ? (
+                <>
+                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Génération en cours…
+                </>
+              ) : (
+                <>✦ Générer la séance avec l'IA</>
+              )}
+            </motion.button>
+          </div>
+
           {/* ── 1. Infos générales ── */}
           <div className="flex flex-col gap-4">
             <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Informations</p>
@@ -1546,23 +1651,16 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
               ))}
             </div>
 
-            {/* Durée + Difficulté */}
+            {/* Durée calculée + Difficulté */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Durée estimée</label>
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl" style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)" }}>
-                  <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.max(10, d - 5))}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                    style={{ background: "rgba(255,255,255,0.8)" }}>
-                    <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>−</span>
-                  </motion.button>
-                  <span className="flex-1 text-center text-sm font-semibold" style={{ color: "#2D3748" }}>{duration} min</span>
-                  <motion.button whileTap={{ scale: 0.85 }} onClick={() => setDuration(d => Math.min(180, d + 5))}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                    style={{ background: "rgba(255,255,255,0.8)" }}>
-                    <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
-                  </motion.button>
+                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Durée calculée</label>
+                <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl"
+                  style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)" }}>
+                  <Clock size={13} strokeWidth={1.8} style={{ color: "#A78BFA", flexShrink: 0 }} />
+                  <span className="text-sm font-bold" style={{ color: "#A78BFA" }}>{duration} min</span>
                 </div>
+                <p className="text-[9px] mt-1 text-center" style={{ color: "#A0AEC0" }}>Mise à jour auto</p>
               </div>
               <div>
                 <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Niveau</label>
