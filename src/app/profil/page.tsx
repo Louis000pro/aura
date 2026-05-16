@@ -2103,13 +2103,17 @@ export default function ProfilPage() {
                           </div>
                         )}
 
-                        {/* PerformanceCard */}
+                        {/* PerformanceCard — cliquable pour ouvrir le détail */}
                         {post.performance_data && (["workout", "meal", "day"] as const).includes(
                           (post.performance_data as { type?: string }).type as "workout" | "meal" | "day"
                         ) && (
-                          <div className="px-4 mb-3">
+                          <motion.div
+                            className="px-4 mb-3 cursor-pointer"
+                            whileTap={{ scale: 0.985 }}
+                            onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
+                          >
                             <PerformanceCard data={post.performance_data as PerformanceData} size="md" interactive />
-                          </div>
+                          </motion.div>
                         )}
 
                         {/* Description */}
@@ -2471,14 +2475,6 @@ export default function ProfilPage() {
               {/* ── Mode lecture ── */}
               {!editingSelectedPost && (
                 <>
-                  {selectedPost.performance_data && (
-                    <div className="px-4 pb-3">
-                      <PerformanceCard
-                        data={selectedPost.performance_data as PerformanceData}
-                        size="md"
-                      />
-                    </div>
-                  )}
                   {selectedPost.caption && (
                     <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
                       {selectedPost.caption}
@@ -2493,12 +2489,12 @@ export default function ProfilPage() {
                       }
                     </div>
                   )}
-                  {/* PerformanceCard pour posts séance/repas/jour */}
+                  {/* PerformanceCard — taille complète dans le modal */}
                   {selectedPost.performance_data && (["workout", "meal", "day"] as const).includes(
                     (selectedPost.performance_data as { type?: string }).type as "workout" | "meal" | "day"
                   ) && (
                     <div className="px-4 pb-3">
-                      <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" interactive />
+                      <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" />
                     </div>
                   )}
                   {selectedPost.description && (
