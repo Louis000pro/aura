@@ -244,8 +244,10 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
-  // Reset scroll instantly — useLayoutEffect (before paint) + useEffect (after paint)
-  // to override BOTH CSS smooth-scroll and Next.js App Router post-navigation scroll restoration.
+  // Reset scroll to top on every profile visit.
+  // useLayoutEffect = before paint (prevents first-paint at wrong position).
+  // setTimeout(0) = macrotask queue, runs AFTER all React useEffects including
+  // Next.js App Router's own scroll-restoration parent effect.
   useLayoutEffect(() => {
     history.scrollRestoration = "manual";
     document.documentElement.scrollTop = 0;
@@ -255,11 +257,12 @@ export default function PublicProfilePage() {
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
-    const raf = requestAnimationFrame(() => {
+    // setTimeout(0) fires after ALL pending React effects (including Next.js parent effects)
+    const id = setTimeout(() => {
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-    });
-    return () => cancelAnimationFrame(raf);
+    }, 0);
+    return () => clearTimeout(id);
   }, [username]);
 
   useEffect(() => {
