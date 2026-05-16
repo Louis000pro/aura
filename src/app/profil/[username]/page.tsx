@@ -229,9 +229,10 @@ export default function PublicProfilePage() {
   // Sticky mini-header
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   useEffect(() => {
-    const onScroll = () => setShowStickyHeader(window.scrollY > 160);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const check = () => setShowStickyHeader(window.scrollY > 160);
+    check(); // check on mount (handles already-scrolled state)
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
   }, []);
 
   // Action bar state
