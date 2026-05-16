@@ -14,6 +14,25 @@ export async function POST(req: Request) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+    // Extraire la durée cible si mentionnée dans la description (ex: "20min", "20 minutes")
+    const durationMatch = description.match(/(\d+)\s*min/i);
+    const targetMinutes = durationMatch ? parseInt(durationMatch[1]) : null;
+    const targetSeconds = targetMinutes ? targetMinutes * 60 : null;
+
+    const durationConstraint = targetSeconds
+      ? `
+CONTRAINTE DE DUREE CRITIQUE : la seance doit durer exactement ${targetMinutes} minutes.
+La duree est calculee avec cette formule precise, exercice par exercice :
+  temps_actif    = sets x reps x 3 secondes
+  repos_series   = (sets - 1) x rest secondes
+  transition     = restAfter secondes (sauf pour le dernier exercice)
+  total_exercice = temps_actif + repos_series + transition
+
+La somme de tous les total_exercice doit etre proche de ${targetSeconds} secondes (= ${targetMinutes} min).
+Ajuste le nombre d exercices, les sets, reps, rest et restAfter en consequence.
+Calcule mentalement le total avant de repondre et verifie qu il est proche de ${targetSeconds}s.`
+      : "";
+
     const response = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
@@ -28,6 +47,7 @@ export async function POST(req: Request) {
 Description : "${description}"
 Categorie : ${category ?? "force"}
 Niveau : ${difficulty ?? "Intermediaire"}
+${durationConstraint}
 
 Retourne un JSON avec exactement ce format :
 {
@@ -48,17 +68,17 @@ Retourne un JSON avec exactement ce format :
 }
 
 Regles :
-- Entre 4 et 8 exercices, adaptes au niveau ${difficulty ?? "Intermediaire"}
 - sets : 2 a 5 (entier)
 - reps : 6 a 20 (entier)
 - rest : repos entre series en secondes, 30 a 120 (entier)
 - restAfter : repos apres l exercice en secondes, 60 a 180 (entier)
 - tip et benefit : phrases courtes (max 10 mots)
+${targetSeconds ? `- Nombre d exercices : ajuste pour respecter la contrainte de duree (${targetMinutes} min)` : "- Entre 4 et 8 exercices, adaptes au niveau"}
 - Retourne UNIQUEMENT le JSON, rien d autre`,
         },
       ],
       max_tokens: 1800,
-      temperature: 0.65,
+      temperature: 0.4,
     });
 
     const text = response.choices[0]?.message?.content ?? "";
