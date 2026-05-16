@@ -1343,6 +1343,10 @@ export default function ProfilPage() {
   const [burstPostId, setBurstPostId] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [editingSelectedPost, setEditingSelectedPost] = useState(false);
+  const [profileWorkout, setProfileWorkout] = useState<{
+    sessionId: string; title: string; accent: string; duration: number;
+    difficulty: string; category: string; exerciseList: Exercise[];
+  } | null>(null);
   const [editCaption, setEditCaption] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editSaving, setEditSaving] = useState(false);
@@ -2388,6 +2392,19 @@ export default function ProfilPage() {
           <FollowListModal type={showFollowList} userId={user.id} onClose={() => setShowFollowList(null)} />
         )}
         {toast && <Toast message={toast} />}
+        {/* WorkoutGuideModal lancé depuis un post du profil */}
+        {profileWorkout && (
+          <WorkoutGuideModal
+            sessionId={profileWorkout.sessionId}
+            title={profileWorkout.title}
+            accent={profileWorkout.accent}
+            duration={profileWorkout.duration}
+            difficulty={profileWorkout.difficulty}
+            category={profileWorkout.category}
+            exerciseList={profileWorkout.exerciseList}
+            onClose={() => setProfileWorkout(null)}
+          />
+        )}
       </AnimatePresence>
 
       {/* ─── Post detail / edit modal ─── */}
@@ -2497,6 +2514,48 @@ export default function ProfilPage() {
                       <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" />
                     </div>
                   )}
+
+                  {/* Bouton "Faire cette séance" pour les posts workout */}
+                  {selectedPost.type === "workout" && (() => {
+                    const pd = selectedPost.performance_data as PerformanceData & { exercise_list?: unknown[]; category?: string };
+                    const exList = (pd?.exercise_list ?? []) as Exercise[];
+                    const durMetric = pd?.metrics?.find(m => m.label === "Durée");
+                    const dur = durMetric ? parseInt(durMetric.value) || 30 : 30;
+                    return (
+                      <div className="px-4 pb-3">
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => {
+                            setSelectedPost(null);
+                            setProfileWorkout({
+                              sessionId: "profile-post",
+                              title:     pd?.title ?? "Séance",
+                              accent:    "#A78BFA",
+                              duration:  dur,
+                              difficulty: "Intermédiaire",
+                              category:  pd?.category ?? "force",
+                              exerciseList: exList,
+                            });
+                          }}
+                          className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
+                          style={{
+                            background: "linear-gradient(135deg,rgba(167,139,250,0.18) 0%,rgba(212,192,255,0.12) 100%)",
+                            border: "1px solid rgba(167,139,250,0.28)",
+                            color: "#7C5CFA",
+                          }}
+                        >
+                          <Play size={14} strokeWidth={2} />
+                          Faire cette séance
+                        </motion.button>
+                        {exList.length === 0 && (
+                          <p className="text-center text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+                            Détail des exercices non disponible pour ce post
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {selectedPost.description && (
                     <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
                       {selectedPost.description}
