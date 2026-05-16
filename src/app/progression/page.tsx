@@ -2033,18 +2033,10 @@ export default function ProgressionPage() {
     }
   };
 
-  const handleStartWorkout = async (session: WorkoutSession) => {
-    /* Always open the guided workout modal */
+  const handleStartWorkout = (session: WorkoutSession) => {
+    /* Open the guided workout modal — DB save happens on completion inside WorkoutGuideModal */
     setActiveWorkout(session);
-    /* Log to Supabase if authenticated */
-    if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("workout_sessions").insert({
-      user_id: user.id, title: session.title, category: session.category,
-      duration_minutes: session.duration, calories_burned: Math.round(session.duration * 6.5),
-      started_at: new Date().toISOString(),
-    });
-    if (!error) { showToast(`${session.title} démarrée ✓`); setTimeout(fetchSessions, 500); }
+    showToast(`${session.title} démarrée ✓`);
   };
 
   const displayTimeline = realTimeline.length > 0 ? realTimeline : timelineEvents;
@@ -2825,9 +2817,11 @@ export default function ProgressionPage() {
             category={activeWorkout.category}
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
-            onComplete={() =>
-              setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]))
-            }
+            onComplete={() => {
+              setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]));
+              /* WorkoutGuideModal saves to DB on completion — refresh list after a short delay */
+              setTimeout(fetchSessions, 1200);
+            }}
           />
         )}
       </AnimatePresence>

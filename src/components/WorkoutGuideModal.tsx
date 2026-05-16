@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
-  Pause, Play, HelpCircle, ArrowLeft, Share2,
+  Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck,
 } from "lucide-react";
 import ExerciseAvatar from "@/components/ExerciseAvatar";
 import { createClient } from "@/lib/supabase";
@@ -311,38 +311,64 @@ export default function WorkoutGuideModal({
   const [elapsed,       setElapsed]       = useState(0);
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
-  const [storyStatus,   setStoryStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [sessionSaved,  setSessionSaved]  = useState(false);
 
   const { user } = useAuth();
 
   const pausedAtRef = useRef<number>(0);
 
-  /* ── Notify parent when workout is done ── */
+  /* ── Notify parent + auto-save session when workout is done ── */
   useEffect(() => {
-    if (phase === "done") onComplete?.();
+    if (phase !== "done") return;
+    onComplete?.();
+    // Auto-save to workout_sessions with actual elapsed time + exercises
+    if (!user) return;
+    const supabase = createClient();
+    const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
+    supabase.from("workout_sessions").insert({
+      user_id:          user.id,
+      title,
+      category:         resolvedCategory,
+      duration_minutes: Math.round(elapsed / 60) || 1,
+      calories_burned:  Math.round((elapsed / 60) * 6.5),
+      elapsed_seconds:  elapsed,
+      exercises:        exercises,
+      started_at:       new Date().toISOString(),
+    }).then(({ error }) => {
+      if (!error) setSessionSaved(true);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  /* ── Partager la séance comme story ── */
-  const shareAsStory = useCallback(async () => {
+  /* ── Partager la séance comme publication permanente ── */
+  const shareAsPost = useCallback(async () => {
     if (!user) return;
-    setStoryStatus("saving");
-    // category prop prioritaire, sinon on tente de le déduire du sessionId (ex: "force-haut" → "force")
+    setShareStatus("saving");
     const resolvedCategory = category ?? (sessionId.includes("-") ? sessionId.split("-")[0] : null) ?? "force";
     const supabase = createClient();
-    const { error } = await supabase.from("stories").insert({
-      user_id: user.id,
-      content_type: "workout",
-      content_data: {
-        session_title: title,
-        duration_minutes: Math.round(elapsed / 60),
-        calories_burned: 0,
+    const elapsedMin = Math.round(elapsed / 60) || 1;
+    const { error } = await supabase.from("posts").insert({
+      user_id:  user.id,
+      type:     "workout",
+      caption:  "",
+      audience: "friends",
+      performance_data: {
+        type:      "workout",
+        title,
+        date:      new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
+        metrics:   [
+          { label: "Durée",     value: String(elapsedMin),           unit: "min" },
+          { label: "Exercices", value: String(exercises.length),     unit: ""    },
+          { label: "Séries",    value: String(exercises.reduce((a, e) => a + e.sets, 0)), unit: "" },
+          { label: "Calories",  value: String(Math.round(elapsedMin * 6.5)), unit: "kcal" },
+        ],
+        exercise_list: exercises,
         category: resolvedCategory,
       },
-      caption: null,
     });
-    setStoryStatus(error ? "error" : "done");
-  }, [user, category, sessionId, title, elapsed]);
+    setShareStatus(error ? "error" : "done");
+  }, [user, category, sessionId, title, elapsed, exercises]);
 
   const cur      = exercises[exerciseIdx];
   const isHiit   = !!cur?.hiit;
@@ -920,6 +946,20 @@ export default function WorkoutGuideModal({
                     </div>
                   ))}
                 </div>
+                {/* Session saved indicator */}
+                <AnimatePresence>
+                  {sessionSaved && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center justify-center gap-1.5"
+                    >
+                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "#34D399" }} />
+                      <span className="text-[11px] font-medium" style={{ color: "#34D399" }}>
+                        Séance enregistrée dans ton profil
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
@@ -993,40 +1033,37 @@ export default function WorkoutGuideModal({
             {phase === "done" && (
               <motion.div key="done-actions" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-2">
-                {/* Partager en story */}
-                {user && storyStatus !== "done" && (
+                {/* Partager en publication */}
+                {user && shareStatus !== "done" && (
                   <motion.button
                     whileTap={{ scale: 0.97 }}
-                    onClick={shareAsStory}
-                    disabled={storyStatus === "saving"}
+                    onClick={shareAsPost}
+                    disabled={shareStatus === "saving"}
                     className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                    style={{ background: `linear-gradient(135deg,${accent}ee,${accent}88)`, color: "#fff", boxShadow: `0 6px 20px ${accent}44`, opacity: storyStatus === "saving" ? 0.7 : 1 }}
+                    style={{ background: `linear-gradient(135deg,${accent}ee,${accent}88)`, color: "#fff", boxShadow: `0 6px 20px ${accent}44`, opacity: shareStatus === "saving" ? 0.7 : 1 }}
                   >
-                    {storyStatus === "saving"
+                    {shareStatus === "saving"
                       ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block" }}>⏳</motion.span> Publication…</>
-                      : <><Share2 size={15} strokeWidth={2} /> Partager en story</>
+                      : <><Share2 size={15} strokeWidth={2} /> Partager la séance</>
                     }
                   </motion.button>
                 )}
-                {storyStatus === "done" && (
+                {shareStatus === "done" && (
                   <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                     className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
                     style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}44` }}
                   >
-                    ✓ Story publiée — visible 24h
+                    ✓ Séance publiée — visible par tes amis
                   </motion.div>
                 )}
-                {storyStatus === "error" && (
+                {shareStatus === "error" && (
                   <div className="text-center">
                     <p className="text-xs mb-1" style={{ color: "#FC8181" }}>
                       Erreur de publication.
                     </p>
-                    <p className="text-[10px]" style={{ color: "rgba(252,129,129,0.7)" }}>
-                      Exécute le SQL <code>20260511_stories.sql</code> dans Supabase, puis réessaie.
-                    </p>
                     <motion.button
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => setStoryStatus("idle")}
+                      onClick={() => setShareStatus("idle")}
                       className="mt-2 px-4 py-1.5 rounded-lg text-xs cursor-pointer"
                       style={{ background: "rgba(252,129,129,0.15)", color: "#FC8181" }}
                     >

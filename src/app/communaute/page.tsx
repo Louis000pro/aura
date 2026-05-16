@@ -3,10 +3,11 @@
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2 } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import CreatePostModal from "@/components/CreatePostModal";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -1494,6 +1495,12 @@ function CommunautePageInner() {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [suggestedProfiles, setSuggestedProfiles] = useState<{ id: string; pseudo: string; full_name?: string; avatar_url?: string; bio?: string }[]>([]);
 
+  /* Workout guide modal launched from a community post */
+  const [communityWorkout, setCommunityWorkout] = useState<{
+    sessionId: string; title: string; accent: string; duration: number;
+    difficulty: string; category: string; exerciseList: Exercise[];
+  } | null>(null);
+
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -2411,6 +2418,41 @@ function CommunautePageInner() {
                     </div>
                   )}
 
+                  {/* "Faire cette séance" — si le post workout contient une exercise_list */}
+                  {post.type === "workout" && (() => {
+                    const pd = post.performance_data as PerformanceData & { exercise_list?: unknown[]; category?: string };
+                    const exList = pd?.exercise_list;
+                    if (!Array.isArray(exList) || exList.length === 0) return null;
+                    return (
+                      <div className="px-4 pb-1">
+                        <motion.button
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => setCommunityWorkout({
+                            sessionId: "community",
+                            title:      pd.title ?? "Séance",
+                            accent:     "#A78BFA",
+                            duration:   (() => {
+                              const dur = pd.metrics?.find(m => m.label === "Durée");
+                              return dur ? parseInt(dur.value) || 30 : 30;
+                            })(),
+                            difficulty: "Intermédiaire",
+                            category:   pd.category ?? "force",
+                            exerciseList: exList as Exercise[],
+                          })}
+                          className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
+                          style={{
+                            background: "linear-gradient(135deg,rgba(167,139,250,0.15) 0%,rgba(212,192,255,0.1) 100%)",
+                            border: "1px solid rgba(167,139,250,0.25)",
+                            color: "#A78BFA",
+                          }}
+                        >
+                          <Play size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                          Faire cette séance
+                        </motion.button>
+                      </div>
+                    );
+                  })()}
+
                   {/* ── Actions ── */}
                   <div className="flex items-center gap-4 px-4 pt-3">
                     {/* Like */}
@@ -3098,6 +3140,19 @@ function CommunautePageInner() {
             <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
             <span className="text-sm font-medium">{toast}</span>
           </motion.div>
+        )}
+        {/* Workout guide launched from a community post */}
+        {communityWorkout && (
+          <WorkoutGuideModal
+            sessionId={communityWorkout.sessionId}
+            title={communityWorkout.title}
+            accent={communityWorkout.accent}
+            duration={communityWorkout.duration}
+            difficulty={communityWorkout.difficulty}
+            category={communityWorkout.category}
+            exerciseList={communityWorkout.exerciseList}
+            onClose={() => setCommunityWorkout(null)}
+          />
         )}
       </AnimatePresence>
       </div>

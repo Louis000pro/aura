@@ -7,7 +7,7 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
-  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send,
+  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -150,6 +150,8 @@ type WorkoutSessionItem = {
   id: string;
   title: string | null;
   started_at: string | null;
+  duration_minutes: number;
+  elapsed_seconds: number;
 };
 import NotificationBell from "@/components/NotificationBell";
 import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
@@ -1505,10 +1507,10 @@ export default function ProfilPage() {
     // Séances enregistrées : workout sessions
     supabase
       .from("workout_sessions")
-      .select("id, title, started_at")
+      .select("id, title, started_at, duration_minutes, elapsed_seconds")
       .eq("user_id", user.id)
       .order("started_at", { ascending: false })
-      .limit(20)
+      .limit(50)
       .then(({ data }) => { if (data) setWorkoutSessions(data as WorkoutSessionItem[]); });
 
     // ── Temps réel : likes / commentaires / reposts ──
@@ -2283,25 +2285,45 @@ export default function ProfilPage() {
               </motion.div>
             ) : (
               <div className="flex flex-col gap-3">
-                {workoutSessions.map((session) => (
-                  <motion.div
-                    key={session.id}
-                    className="flex items-center gap-4 px-4 py-3.5 rounded-2xl"
-                    style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 12px rgba(167,139,250,0.06)" }}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
-                      <Dumbbell size={16} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "#1A202C" }}>{session.title || "Séance"}</p>
-                      <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
-                        {session.started_at ? new Date(session.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Date inconnue"}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
+                {workoutSessions.map((session) => {
+                  const durationMin = session.elapsed_seconds
+                    ? Math.round(session.elapsed_seconds / 60)
+                    : session.duration_minutes || null;
+                  return (
+                    <motion.div
+                      key={session.id}
+                      className="flex items-center gap-4 px-4 py-3.5 rounded-2xl"
+                      style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 12px rgba(167,139,250,0.06)" }}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "#1A202C" }}>{session.title || "Séance"}</p>
+                        <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                          {session.started_at ? new Date(session.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Date inconnue"}
+                          {durationMin ? ` · ${durationMin} min` : ""}
+                        </p>
+                      </div>
+                      {/* Delete button */}
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={async () => {
+                          const supabase = createClient();
+                          const { error } = await supabase.from("workout_sessions").delete().eq("id", session.id);
+                          if (!error) setWorkoutSessions(prev => prev.filter(s => s.id !== session.id));
+                        }}
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
+                        style={{ background: "rgba(252,129,129,0.1)", border: "1px solid rgba(252,129,129,0.18)" }}
+                        title="Supprimer cette séance"
+                      >
+                        <Trash2 size={13} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+                      </motion.button>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </motion.div>
