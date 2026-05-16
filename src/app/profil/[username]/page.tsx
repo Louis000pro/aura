@@ -244,12 +244,22 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
-  // Reset scroll position when navigating to a public profile.
-  // Direct scrollTop assignment bypasses CSS scroll-behavior:smooth (unlike window.scrollTo).
+  // Reset scroll instantly — useLayoutEffect (before paint) + useEffect (after paint)
+  // to override BOTH CSS smooth-scroll and Next.js App Router post-navigation scroll restoration.
   useLayoutEffect(() => {
     history.scrollRestoration = "manual";
     document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0; // Safari fallback
+    document.body.scrollTop = 0;
+  }, [username]);
+
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const raf = requestAnimationFrame(() => {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(raf);
   }, [username]);
 
   useEffect(() => {
