@@ -8,7 +8,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
-import StatsPanel from "@/components/StatsPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
@@ -641,6 +640,44 @@ function Dashboard() {
 
   const chatMessagesRef = useRef<Message[]>(initialChatMessages);
 
+  // Clé de cache programme (même logique que WeeklyProgramme)
+  const getProgrammeCacheKey = useCallback(() => {
+    if (!user) return null;
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+    return `aura_programme_${user.id}_w${week}_${now.getFullYear()}`;
+  }, [user]);
+
+  // Applique une mise à jour de jour dans le programme localStorage — retourne le label pour le toast
+  const applyProgrammeUpdate = useCallback((rawJson: string): string | null => {
+    const cacheKey = getProgrammeCacheKey();
+    if (!cacheKey) return null;
+    try {
+      // Nettoyage : retire les backticks markdown éventuels
+      const clean = rawJson.replace(/```json?/g, "").replace(/```/g, "").trim();
+      const update = JSON.parse(clean);
+      if (!update.jour) return null;
+      const raw = localStorage.getItem(cacheKey);
+      const programme = raw ? JSON.parse(raw) : { semaine: [] };
+      if (!Array.isArray(programme.semaine)) programme.semaine = [];
+      const idx = programme.semaine.findIndex(
+        (d: { jour: string }) => d.jour?.toLowerCase() === update.jour.toLowerCase()
+      );
+      if (idx >= 0) {
+        programme.semaine[idx] = update;
+      } else {
+        programme.semaine.push(update);
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(programme));
+      window.dispatchEvent(new CustomEvent("programme-updated"));
+      return `${update.jour} : ${update.titre || update.type}`;
+    } catch (e) {
+      console.error("Programme update parse error", e);
+      return null;
+    }
+  }, [getProgrammeCacheKey]);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     const n = new Date();
@@ -653,11 +690,24 @@ function Dashboard() {
     setChatMessages(newMessages);
     setAiTyping(true);
 
-    // Historique pour l'API : exclut les 3 messages initiaux hardcodés
+    // Historique pour l'API
     const apiMessages = newMessages.slice(initialChatMessages.length).map((m) => ({
       role: m.from === "me" ? "user" as const : "assistant" as const,
       content: m.text,
     }));
+
+    // Programme actuel (pour que l'IA sache ce qu'il y a déjà)
+    const cacheKey = getProgrammeCacheKey();
+    let programmeText: string | null = null;
+    if (cacheKey) {
+      try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+          const p = JSON.parse(raw);
+          programmeText = p.semaine?.map((d: { jour: string; type: string; titre: string }) => `${d.jour}: ${d.type} - ${d.titre}`).join(", ") ?? null;
+        }
+      } catch { /* ignore */ }
+    }
 
     try {
       const response = await fetch("/api/chat", {
@@ -674,6 +724,7 @@ function Dashboard() {
             score: liveStats.score || undefined,
             streak: liveStats.streak || undefined,
           } : null,
+          programme: programmeText,
         }),
       });
 
@@ -685,15 +736,34 @@ function Dashboard() {
       chatMessagesRef.current = withAi;
       setChatMessages(withAi);
 
-      // Stream les tokens au fur et à mesure
+      // Stream les tokens
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let fullText = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
         setChatMessages((m) => {
           const updated = m.map((msg) => msg.id === aiMsgId ? { ...msg, text: msg.text + chunk } : msg);
+          chatMessagesRef.current = updated;
+          return updated;
+        });
+      }
+
+      // Détecte et applique une mise à jour de programme (regex souple)
+      const match = fullText.match(/\[PROGRAMME_UPDATE\]([\s\S]*?)\[\/PROGRAMME_UPDATE\]/i);
+      if (match) {
+        const label = applyProgrammeUpdate(match[1].trim());
+        if (label) showToast(`✅ ${label} mis à jour`);
+        // Nettoie le bloc JSON du message affiché
+        setChatMessages((m) => {
+          const updated = m.map((msg) =>
+            msg.id === aiMsgId
+              ? { ...msg, text: msg.text.replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "").trim() }
+              : msg
+          );
           chatMessagesRef.current = updated;
           return updated;
         });
@@ -704,7 +774,7 @@ function Dashboard() {
       chatMessagesRef.current = [...chatMessagesRef.current, errMsg];
       setChatMessages(chatMessagesRef.current);
     }
-  }, [user, userContext]);
+  }, [user, userContext, liveStats, getProgrammeCacheKey, applyProgrammeUpdate]);
 
   const handleVoiceTranscript = useCallback((text: string) => {
     sendMessage(text);
@@ -721,22 +791,22 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <motion.header className="relative z-10 flex items-center justify-between px-6 pt-8 pb-2 md:px-10 md:pt-10 flex-shrink-0"
+
+      {/* ── Header ── */}
+      <motion.header className="relative z-10 flex items-center justify-between px-5 pt-7 pb-2 md:px-8 md:pt-9 flex-shrink-0"
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
         <div>
-          <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
-          <motion.h1 className="text-2xl md:text-3xl font-extralight mt-1" style={{ color: "#2D3748" }} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
+          <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
+          <motion.h1 className="text-2xl md:text-3xl font-extralight mt-0.5" style={{ color: "#2D3748" }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
             {user ? `${user.pseudo ?? user.name}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
           </motion.h1>
         </div>
-        <div className="flex items-center gap-3">
-          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35, type: "spring", bounce: 0.4 }}
-            className="lg-rose lg-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-default">
-            <Flame size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{liveStats.loaded ? `${liveStats.streak} j` : "—"}</span>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring", bounce: 0.4 }}
-            ref={menuRef} style={{ position: "relative" }}>
+        <div className="flex items-center gap-2.5">
+          {/* Avatar + menu */}
+          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, type: "spring", bounce: 0.4 }} ref={menuRef} style={{ position: "relative" }}>
             {user ? (
               <>
                 <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
@@ -745,30 +815,16 @@ function Dashboard() {
                   style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: showMenu ? "0 0 0 2.5px rgba(167,139,250,0.5),0 4px 16px rgba(167,139,250,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)", transition: "box-shadow 0.2s" }}>
                   <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
                 </motion.div>
-
-                {/* PORTAL — AnimatePresence à l'intérieur du portal, pas à l'extérieur */}
                 {typeof window !== "undefined" && createPortal(
                   <AnimatePresence>
                     {showMenu && (
-                      <motion.div
-                        ref={dropdownRef}
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
+                      <motion.div ref={dropdownRef} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
                         style={{ position: "fixed", right: 16, top: 70, zIndex: 99999, minWidth: 210 }}>
-                        <div style={{
-                          backgroundColor: "#fff",
-                          borderRadius: 16,
-                          overflow: "hidden",
-                          border: "1px solid rgba(167,139,250,0.2)",
-                          boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)",
-                        }}>
-                          {/* Infos utilisateur */}
+                        <div style={{ backgroundColor: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(167,139,250,0.2)", boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)" }}>
                           <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(167,139,250,0.1)" }}>
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
                                 <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
                               </div>
                               <div className="min-w-0">
@@ -777,9 +833,8 @@ function Dashboard() {
                               </div>
                             </div>
                           </div>
-
                           {[
-                            { icon: User2, label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
+                            { icon: User2,    label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
                             { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
                           ].map(({ icon: Icon, label, action }) => (
                             <button key={label} onClick={action}
@@ -794,11 +849,8 @@ function Dashboard() {
                               <ChevronRight size={12} strokeWidth={2} style={{ color: "#D1D5DB" }} />
                             </button>
                           ))}
-
                           <div style={{ height: 1, margin: "4px 12px", backgroundColor: "rgba(167,139,250,0.1)" }} />
-
-                          <button
-                            onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
+                          <button onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 transition-colors hover:bg-red-50"
                             style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
                             <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
@@ -815,7 +867,8 @@ function Dashboard() {
               </>
             ) : (
               <Link href="/auth">
-                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} className="lg-bicolor lg-highlight relative flex items-center gap-1.5 px-3 py-2 rounded-full cursor-pointer">
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                  className="lg-bicolor lg-highlight relative flex items-center gap-1.5 px-3 py-2 rounded-full cursor-pointer">
                   <LogIn size={12} strokeWidth={1.5} style={{ color: "#2D3748" }} />
                   <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>Connexion</span>
                 </motion.div>
@@ -825,51 +878,90 @@ function Dashboard() {
         </div>
       </motion.header>
 
-      {/* DESKTOP 3-column */}
-      <div className="hidden md:grid relative z-10 grid-cols-[320px_1fr_320px] gap-5 px-6 pb-6 pt-4" style={{ height: "calc(100vh - 96px)" }}>
-        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }} className="min-h-0" style={{ height: "100%" }}>
+      {/* ── DESKTOP : 3 colonnes ── */}
+      <div className="hidden md:grid relative z-10 grid-cols-[300px_1fr_300px] gap-4 px-5 pb-5 pt-3" style={{ height: "calc(100vh - 90px)" }}>
+
+        {/* ─ Gauche : Chat IA ─ */}
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="min-h-0" style={{ height: "100%" }}>
           <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }} className="flex flex-col items-center justify-start gap-7 overflow-y-auto py-4">
+
+        {/* ─ Centre : VocalOrb + Score + Quick actions ─ */}
+        <motion.div initial={{ opacity: 0, scale: 0.93 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex flex-col items-center justify-center gap-5 py-4" style={{ overflow: "visible" }}>
+
+          {/* VocalOrb — héros de la page */}
           <VocalOrb onTranscript={handleVoiceTranscript} />
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }} whileHover={{ y: -3, transition: { duration: 0.2 } }}
-            className="lg-surface lg-highlight relative rounded-3xl px-6 py-5 flex items-center gap-5 w-full max-w-sm">
-            <ScoreRing score={liveStats.score} />
-            <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Score du jour</p>
-              <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{liveStats.score >= 85 ? "Récupération excellente" : liveStats.score >= 65 ? "Forme correcte" : "Récupération en cours"}</p>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#718096" }}>{liveStats.score >= 85 ? "Idéal pour séance intensive" : "Intensité modérée conseillée"}</p>
-            </div>
-          </motion.div>
-          <div className="flex gap-3 w-full max-w-sm">
+
+          {/* Quick actions */}
+          <div className="flex gap-3 w-full max-w-xs">
             {quickActionsConfig.map(({ icon, label, color, bg }, i) => (
               <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
             ))}
           </div>
-          {user && (
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.5 }} className="w-full" style={{ paddingLeft: 0, paddingRight: 0 }}>
-              <WeeklyProgramme />
-            </motion.div>
-          )}
         </motion.div>
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }} className="min-h-0" style={{ height: "100%" }}>
-          <StatsPanel />
+
+        {/* ─ Droite : Stats + Programme ─ */}
+        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex flex-col min-h-0 overflow-y-auto rounded-3xl p-4 gap-3"
+          style={{ height: "100%", background: "rgba(255,255,255,0.92)", border: "1px solid rgba(212,192,255,0.25)", boxShadow: "0 8px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,1)" }}>
+
+          {/* ── Aujourd'hui ── */}
+          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase flex-shrink-0" style={{ color: "#A0AEC0" }}>Aujourd'hui</p>
+
+          <div className="grid grid-cols-3 gap-2 flex-shrink-0">
+            {[
+              { label: "Calories", value: liveStats.loaded && liveStats.calories > 0 ? `${liveStats.calories}` : "—",  unit: "kcal",     accent: "#A78BFA", icon: "🔥" },
+              { label: "Pas",      value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "/10k", accent: "#D4A843", icon: "👟" },
+              { label: "Sommeil",  value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit: "", accent: "#A78BFA", icon: "😴" },
+            ].map((s, i) => {
+              const matchStat = stats.find((st) => st.label === s.label);
+              return (
+                <motion.div key={s.label}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 + i * 0.07, type: "spring", bounce: 0.3 }}
+                  whileHover={{ y: -2 }} whileTap={matchStat ? { scale: 0.96 } : {}}
+                  onClick={() => matchStat && setSelectedStat(matchStat)}
+                  className={`rounded-2xl p-3 flex flex-col gap-1.5 ${matchStat ? "cursor-pointer" : "cursor-default"}`}
+                  style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))`, border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 8px rgba(167,139,250,0.06)" }}>
+                  <span className="text-base leading-none">{s.icon}</span>
+                  <p className="text-[8px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                  <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>
+                    {s.value}
+                    {s.unit && <span className="text-[9px] font-normal ml-0.5" style={{ color: "#A0AEC0" }}>{s.unit}</span>}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Séparateur */}
+          <div className="h-px flex-shrink-0" style={{ background: "rgba(167,139,250,0.1)" }} />
+
+          {/* ── Programme ── */}
+          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase flex-shrink-0" style={{ color: "#A0AEC0" }}>Programme</p>
+          {user && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <WeeklyProgramme />
+            </div>
+          )}
         </motion.div>
       </div>
 
-      {/* MOBILE */}
+      {/* ── MOBILE ── */}
       <div className="md:hidden flex flex-col relative z-10">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }} className="px-6 pb-2">
-          <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="px-5 pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {[
-              { label:"Score",    value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—",   unit: liveStats.loaded && liveStats.score > 0 ? "/100" : "",  bg:"lg-bicolor" },
-              { label:"Calories", value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.loaded && liveStats.calories > 0 ? "kcal" : "", bg:"lg-rose" },
-              { label:"Pas",      value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit:"", bg:"lg-turquoise" },
-              { label:"Sommeil",  value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit:"", bg:"lg-bicolor" },
-            ].map((s,i) => {
-              const matchStat = stats.find((st) => st.label === s.label);
+              { label: "Score",     value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—",  unit: liveStats.score > 0 ? "/100" : "", bg: "lg-bicolor",   statKey: "Score" },
+              { label: "Calories",  value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.calories > 0 ? "kcal" : "", bg: "lg-rose", statKey: "Calories" },
+              { label: "Pas",       value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "", bg: "lg-turquoise", statKey: "Pas" },
+              { label: "Sommeil",   value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit: "", bg: "lg-bicolor", statKey: "Sommeil" },
+            ].map((s, i) => {
+              const matchStat = stats.find((st) => st.label === s.statKey);
               return (
-                <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
+                <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
                   whileHover={{ scale: 1.04, y: -2 }} whileTap={matchStat ? { scale: 0.97 } : {}}
                   onClick={() => matchStat && setSelectedStat(matchStat)}
                   className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] ${matchStat ? "cursor-pointer" : "cursor-default"}`}>
@@ -878,37 +970,35 @@ function Dashboard() {
                     <span className="text-xl font-semibold" style={{ color: "#2D3748" }}>{s.value}</span>
                     {s.unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{s.unit}</span>}
                   </div>
-                  {matchStat && (
-                    <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full" style={{ background: matchStat.iconColor, opacity: 0.6 }} />
-                  )}
                 </motion.div>
               );
             })}
           </div>
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }} className="flex-1 flex items-center justify-center px-6 py-6">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.25 }} className="flex-1 flex items-center justify-center px-6 py-6">
           <VocalOrb onTranscript={handleVoiceTranscript} />
         </motion.div>
-        <div className="px-6 pb-3 flex gap-2">
+        <div className="px-5 pb-3 flex gap-2">
           {quickActionsConfig.map(({ icon, label, color, bg }, i) => (
             <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
           ))}
         </div>
-        <div className="px-6 pb-4 grid grid-cols-2 gap-3">
-          {[{key:"chat" as const,icon:MessageCircle,label:"Chat IA",color:"#A78BFA",bg:"lg-rose"},{key:"stats" as const,icon:BarChart3,label:"Détails",color:"#D4A843",bg:"lg-turquoise"}].map(({key,icon:Icon,label,color,bg},i) => (
-            <motion.button key={key} onClick={() => setMobilePanel(key)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
-              whileHover={{ scale: 1.03, y: -2, transition: { duration: 0.15 } }} whileTap={{ scale: 0.96, transition: { duration: 0.08 } }}
+        <div className="px-5 pb-4 grid grid-cols-2 gap-3">
+          {[
+            { key: "chat" as const, icon: MessageCircle, label: "Chat IA",   color: "#A78BFA", bg: "lg-rose" },
+            { key: "stats" as const, icon: BarChart3,    label: "Stats & Programme", color: "#D4A843", bg: "lg-turquoise" },
+          ].map(({ key, icon: Icon, label, color, bg }, i) => (
+            <motion.button key={key} onClick={() => setMobilePanel(key)}
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
+              whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.96 }}
               className={`${bg} lg-highlight relative rounded-2xl py-3 px-4 flex items-center justify-center gap-2 cursor-pointer`}>
               <Icon size={15} strokeWidth={1.5} style={{ color }} />
               <span className="text-xs font-medium" style={{ color: "#2D3748" }}>{label}</span>
             </motion.button>
           ))}
         </div>
-        {user && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.35 }}>
-            <WeeklyProgramme />
-          </motion.div>
-        )}
       </div>
 
       {/* Mobile drawer */}
@@ -919,8 +1009,37 @@ function Dashboard() {
               className="fixed inset-0 z-40 md:hidden" style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }} />
             <motion.div initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden">
-              {mobilePanel === "chat" ? <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} /> : <StatsPanel />}
+              className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden overflow-y-auto">
+              {mobilePanel === "chat" ? (
+                <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
+              ) : (
+                <div className="h-full rounded-3xl overflow-y-auto p-4 flex flex-col gap-3"
+                  style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15)" }}>
+                  <p className="text-[10px] font-semibold tracking-[0.18em] uppercase px-1 pt-1" style={{ color: "#A0AEC0" }}>Aujourd'hui</p>
+                  {[
+                    { label: "Calories",   value: liveStats.loaded && liveStats.calories > 0 ? `${liveStats.calories}` : "—",  unit: "kcal",     bg: "lg-rose",      statKey: "Calories" },
+                    { label: "Pas",        value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "/ 10 000", bg: "lg-bicolor", statKey: "Pas" },
+                    { label: "Sommeil",    value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit: "", bg: "lg-turquoise", statKey: "Sommeil" },
+                  ].map((s) => {
+                    const matchStat = stats.find((st) => st.label === s.statKey);
+                    return (
+                      <div key={s.label}
+                        onClick={() => matchStat && setSelectedStat(matchStat)}
+                        className={`${s.bg} lg-highlight rounded-2xl px-4 py-3 flex items-center justify-between ${matchStat ? "cursor-pointer" : ""}`}>
+                        <div>
+                          <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                          <p className="text-base font-semibold mt-0.5" style={{ color: "#2D3748" }}>{s.value}
+                            {s.unit && <span className="text-[11px] font-normal ml-1" style={{ color: "#718096" }}>{s.unit}</span>}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="h-px mx-1 rounded-full" style={{ background: "rgba(167,139,250,0.12)" }} />
+                  <p className="text-[10px] font-semibold tracking-[0.18em] uppercase px-1" style={{ color: "#A0AEC0" }}>Programme</p>
+                  {user && <WeeklyProgramme />}
+                </div>
+              )}
             </motion.div>
           </>
         )}
@@ -932,12 +1051,7 @@ function Dashboard() {
         {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}
         {showOnboarding && user && (
-          <OnboardingModal
-            key="onboarding"
-            pseudo={user.pseudo ?? user.name ?? ""}
-            onComplete={handleOnboardingComplete}
-            onSkip={handleOnboardingSkip}
-          />
+          <OnboardingModal key="onboarding" pseudo={user.pseudo ?? user.name ?? ""} onComplete={handleOnboardingComplete} onSkip={handleOnboardingSkip} />
         )}
       </AnimatePresence>
     </div>

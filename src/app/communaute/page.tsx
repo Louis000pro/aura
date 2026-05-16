@@ -61,6 +61,12 @@ type RealPost = {
   post_reposts: { user_id: string }[];
 };
 
+type DmReaction = {
+  emoji: string;
+  count: number;
+  reacted: boolean; // current user reacted?
+};
+
 type DirectMessage = {
   id: string;
   sender_id: string;
@@ -68,6 +74,9 @@ type DirectMessage = {
   content: string;
   created_at: string;
   read_at: string | null;
+  reply_to_id?: string | null;
+  reply_to_content?: string | null; // fetched client-side
+  reactions?: DmReaction[];
 };
 
 type DMPartner = {
@@ -415,7 +424,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
 }
 
 // Add Story Modal — enregistre vraiment dans Supabase
-type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "photo-pick" | "photo-preview" | "loading" | "saving" | "success" | "no-session" | "db-error";
+type AddStep = "pick" | "workout-list" | "workout-preview" | "text-input" | "meal-input" | "photo-pick" | "photo-preview" | "loading" | "saving" | "success" | "no-session" | "db-error";
 type WorkoutPreview = { session_title: string; duration_minutes: number; calories_burned: number; category: string; started_at?: string };
 
 function AddStoryModal({ onClose, userId, onPublished }: {
@@ -429,6 +438,9 @@ function AddStoryModal({ onClose, userId, onPublished }: {
   const [caption, setCaption]         = useState("");
   const [textContent, setTextContent] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("✨");
+  const [mealTitle, setMealTitle]   = useState("");
+  const [mealCals, setMealCals]     = useState("");
+  const [mealProts, setMealProts]   = useState("");
   const [error, setError]             = useState<string | null>(null);
   const [mediaFile, setMediaFile]     = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
@@ -503,6 +515,25 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       caption:      null,
     });
     if (e) { setError(e.message); setStep("text-input"); return; }
+    setStep("success");
+    onPublished();
+  };
+
+  const publishMeal = async () => {
+    if (!userId || !mealTitle.trim()) return;
+    setStep("saving");
+    const supabase = createClient();
+    const { error: e } = await supabase.from("stories").insert({
+      user_id:      userId,
+      content_type: "meal",
+      content_data: {
+        meal_title: mealTitle.trim(),
+        calories:   mealCals ? parseInt(mealCals) || 0 : 0,
+        proteins:   mealProts ? parseInt(mealProts) || 0 : 0,
+      },
+      caption: caption.trim() || null,
+    });
+    if (e) { setError(e.message); setStep("meal-input"); return; }
     setStep("success");
     onPublished();
   };
@@ -620,10 +651,11 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                   <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
               </div>
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5">
                 {[
                   { emoji: "📷", label: "Photo / Vidéo", desc: "Depuis ta galerie", action: () => fileRef.current?.click() },
                   { emoji: "💪", label: "Ma séance",     desc: "Perf sportive",    action: handleWorkout },
+                  { emoji: "🥗", label: "Mon repas",     desc: "Calories & protéines", action: () => setStep("meal-input") },
                   { emoji: "✍️", label: "Texte",         desc: "Message + emoji",  action: () => setStep("text-input") },
                 ].map(({ emoji, label, desc, action }) => (
                   <motion.button
@@ -788,6 +820,83 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 }}
               >
                 Publier
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* ── Saisie repas ── */}
+          {step === "meal-input" && (
+            <motion.div key="meal-input" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center gap-2 mb-5">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                </motion.button>
+                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Mon repas 🥗</h2>
+              </div>
+
+              <div className="flex flex-col gap-3 mb-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Nom du repas *</p>
+                  <input
+                    type="text"
+                    value={mealTitle}
+                    onChange={e => setMealTitle(e.target.value)}
+                    placeholder="Ex : Bowl protéiné, Déjeuner…"
+                    autoFocus
+                    className="w-full text-sm outline-none px-4 py-3 rounded-xl"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Calories</p>
+                    <input
+                      type="number"
+                      value={mealCals}
+                      onChange={e => setMealCals(e.target.value)}
+                      placeholder="kcal"
+                      className="w-full text-sm outline-none px-3 py-2.5 rounded-xl"
+                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Protéines</p>
+                    <input
+                      type="number"
+                      value={mealProts}
+                      onChange={e => setMealProts(e.target.value)}
+                      placeholder="grammes"
+                      className="w-full text-sm outline-none px-3 py-2.5 rounded-xl"
+                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Légende (optionnel)</p>
+                  <input
+                    type="text"
+                    value={caption}
+                    onChange={e => setCaption(e.target.value)}
+                    placeholder="Ajoute une note…"
+                    className="w-full text-sm outline-none px-4 py-2.5 rounded-xl"
+                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                  />
+                </div>
+              </div>
+
+              {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={publishMeal}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
+                style={{
+                  background: mealTitle.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.6)",
+                  color: mealTitle.trim() ? "#2D3748" : "#A0AEC0",
+                  boxShadow: mealTitle.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                  cursor: mealTitle.trim() ? "pointer" : "not-allowed",
+                }}
+              >
+                Publier la story
               </motion.button>
             </motion.div>
           )}
@@ -1368,6 +1477,11 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
           from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
           type: "comment", post_id: String(postId),
         });
+        fetch("/api/notifications/comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ commenter_id: user.id, post_owner_id: postOwnerId, post_id: String(postId), comment_preview: content }),
+        }).catch(() => {});
       }
     }
   };
@@ -1524,6 +1638,9 @@ function CommunautePageInner() {
   const [dmMessages, setDmMessages] = useState<DirectMessage[]>([]);
   const [dmInput, setDmInput] = useState("");
   const [dmSending, setDmSending] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<DirectMessage | null>(null);
+  const [activeMessageMenu, setActiveMessageMenu] = useState<string | null>(null);
+  const dmInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<{ id: string; caption: string; bio: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1794,6 +1911,11 @@ function CommunautePageInner() {
           from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
           type: "like", post_id: postId,
         });
+        fetch("/api/notifications/like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: postId }),
+        }).catch(() => {});
       }
     } else {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
@@ -1826,6 +1948,11 @@ function CommunautePageInner() {
           from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
           type: "repost", post_id: postId,
         });
+        fetch("/api/notifications/repost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: postId }),
+        }).catch(() => {});
       }
     } else {
       await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
@@ -1894,13 +2021,59 @@ function CommunautePageInner() {
     const supabase = createClient();
     const { data } = await supabase
       .from("direct_messages")
-      .select("id, sender_id, receiver_id, content, created_at, read_at")
+      .select("id, sender_id, receiver_id, content, created_at, read_at, reply_to_id")
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
       .order("created_at", { ascending: true })
       .limit(100);
 
     if (data) {
-      setDmMessages(data as DirectMessage[]);
+      const msgs = data as (DirectMessage & { reply_to_id?: string | null })[];
+
+      // Fetch reply_to content for messages that have a reply
+      const replyIds = [...new Set(msgs.filter(m => m.reply_to_id).map(m => m.reply_to_id!))];
+      let replyMap: Record<string, string> = {};
+      if (replyIds.length > 0) {
+        const { data: replyData } = await supabase
+          .from("direct_messages")
+          .select("id, content")
+          .in("id", replyIds);
+        if (replyData) {
+          replyMap = Object.fromEntries(replyData.map((r: { id: string; content: string }) => [r.id, r.content]));
+        }
+      }
+
+      // Fetch reactions for all messages
+      const msgIds = msgs.map(m => m.id);
+      let reactionsMap: Record<string, DmReaction[]> = {};
+      if (msgIds.length > 0) {
+        const { data: rxData } = await supabase
+          .from("dm_reactions")
+          .select("message_id, emoji, user_id")
+          .in("message_id", msgIds);
+        if (rxData) {
+          const grouped: Record<string, { emoji: string; user_ids: string[] }[]> = {};
+          for (const rx of rxData as { message_id: string; emoji: string; user_id: string }[]) {
+            if (!grouped[rx.message_id]) grouped[rx.message_id] = [];
+            const existing = grouped[rx.message_id].find(g => g.emoji === rx.emoji);
+            if (existing) existing.user_ids.push(rx.user_id);
+            else grouped[rx.message_id].push({ emoji: rx.emoji, user_ids: [rx.user_id] });
+          }
+          for (const [msgId, groups] of Object.entries(grouped)) {
+            reactionsMap[msgId] = groups.map(g => ({
+              emoji: g.emoji,
+              count: g.user_ids.length,
+              reacted: g.user_ids.includes(user.id),
+            }));
+          }
+        }
+      }
+
+      setDmMessages(msgs.map(m => ({
+        ...m,
+        reply_to_content: m.reply_to_id ? replyMap[m.reply_to_id] ?? null : null,
+        reactions: reactionsMap[m.id] ?? [],
+      })));
+
       // Marquer comme lus
       supabase.from("direct_messages")
         .update({ read_at: new Date().toISOString() })
@@ -1939,7 +2112,10 @@ function CommunautePageInner() {
   const handleSendDM = async () => {
     if (!user || !activeDMPartner || !dmInput.trim() || dmSending) return;
     const content = dmInput.trim();
+    const replyId = replyingTo?.id ?? null;
+    const replyContent = replyingTo?.content ?? null;
     setDmInput("");
+    setReplyingTo(null);
     setDmSending(true);
     const supabase = createClient();
     const optimistic: DirectMessage = {
@@ -1949,11 +2125,16 @@ function CommunautePageInner() {
       content,
       created_at: new Date().toISOString(),
       read_at: null,
+      reply_to_id: replyId,
+      reply_to_content: replyContent,
+      reactions: [],
     };
     setDmMessages((prev) => [...prev, optimistic]);
+    const insertPayload: Record<string, unknown> = { sender_id: user.id, receiver_id: activeDMPartner.id, content };
+    if (replyId) insertPayload.reply_to_id = replyId;
     const { data, error } = await supabase
       .from("direct_messages")
-      .insert({ sender_id: user.id, receiver_id: activeDMPartner.id, content })
+      .insert(insertPayload)
       .select()
       .single();
     setDmSending(false);
@@ -1961,7 +2142,38 @@ function CommunautePageInner() {
       setDmMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       showToast("Erreur d'envoi");
     } else if (data) {
-      setDmMessages((prev) => prev.map((m) => m.id === optimistic.id ? (data as DirectMessage) : m));
+      setDmMessages((prev) => prev.map((m) => m.id === optimistic.id ? { ...(data as DirectMessage), reply_to_content: replyContent, reactions: [] } : m));
+    }
+  };
+
+  // ── Réagir à un message ────────────────────────────────────
+  const handleDmReaction = async (msgId: string, emoji: string) => {
+    if (!user) return;
+    setActiveMessageMenu(null);
+    const supabase = createClient();
+
+    setDmMessages(prev => prev.map(m => {
+      if (m.id !== msgId) return m;
+      const reactions = m.reactions ?? [];
+      const existing = reactions.find(r => r.emoji === emoji);
+      if (existing?.reacted) {
+        // Retire la réaction
+        return { ...m, reactions: reactions.map(r => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r).filter(r => r.count > 0) };
+      } else if (existing) {
+        return { ...m, reactions: reactions.map(r => r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r) };
+      } else {
+        return { ...m, reactions: [...reactions, { emoji, count: 1, reacted: true }] };
+      }
+    }));
+
+    // Check if already reacted
+    const msg = dmMessages.find(m => m.id === msgId);
+    const alreadyReacted = msg?.reactions?.find(r => r.emoji === emoji)?.reacted;
+
+    if (alreadyReacted) {
+      await supabase.from("dm_reactions").delete().eq("message_id", msgId).eq("user_id", user.id).eq("emoji", emoji);
+    } else {
+      await supabase.from("dm_reactions").upsert({ message_id: msgId, user_id: user.id, emoji }, { ignoreDuplicates: true });
     }
   };
 
@@ -2425,14 +2637,11 @@ function CommunautePageInner() {
                     const durMetric = pd?.metrics?.find(m => m.label === "Durée");
                     const dur = durMetric ? parseInt(durMetric.value) || 30 : 30;
                     const builtinId = resolveSessionId(pd?.title ?? "");
-                    // Cas 1 : exercices embarqués dans le post (séance perso ou nouvelle)
                     const hasEmbedded = exList.length > 0;
-                    // Cas 2 : séance intégrée reconnue par le titre
                     const hasBuiltin  = !!builtinId;
-                    // Cas 3 : séance perso sans exercices embarqués → non disponible
                     const unavailable = !hasEmbedded && !hasBuiltin;
                     return (
-                      <div className="px-4 pb-1">
+                      <div className="px-4 pt-4 pb-1">
                         {unavailable ? (
                           <div className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs"
                             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#4A5568" }}>
@@ -2894,87 +3103,194 @@ function CommunautePageInner() {
         )}
 
         {/* ────── THREAD ────── */}
-        {view === "thread" && activeDMPartner && (
-          <motion.div
-            key="thread"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col flex-1"
-            style={{ minHeight: "calc(100vh - 200px)" }}
-          >
-            <div className="flex flex-col gap-3 flex-1 pb-4 overflow-y-auto">
-              {dmMessages.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 gap-2">
-                  <ProfileAvatar partner={activeDMPartner} size={48} />
-                  <p className="text-sm font-light mt-1" style={{ color: "#A0AEC0" }}>
-                    Début de la conversation avec @{activeDMPartner.pseudo}
-                  </p>
-                </div>
-              )}
-              {dmMessages.map((msg, i) => {
-                const isMe = msg.sender_id === user?.id;
-                const timeStr = new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-                return (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: i < 6 ? i * 0.04 : 0, type: "spring", bounce: 0.3 }}
-                    className={`flex ${isMe ? "justify-end" : "justify-start"} items-end gap-2`}
-                  >
-                    {!isMe && (
-                      <Link href={`/profil/${activeDMPartner.pseudo}`} className="flex-shrink-0">
-                        <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}>
-                          <ProfileAvatar partner={activeDMPartner} size={28} />
-                        </motion.div>
-                      </Link>
-                    )}
-                    <div>
-                      <div
-                        className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
-                        style={isMe
-                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                          : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
-                        }
-                      >
-                        {msg.content}
-                      </div>
-                      <p className={`text-[9px] mt-1 ${isMe ? "text-right" : ""}`} style={{ color: "#A0AEC0" }}>{timeStr}</p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
+        {view === "thread" && activeDMPartner && (() => {
+          const DM_EMOJIS = ["❤️", "😂", "🔥", "👍", "😮", "😢"];
+          return (
+            <motion.div
+              key="thread"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col flex-1"
+              style={{ minHeight: "calc(100vh - 200px)" }}
+              onClick={() => setActiveMessageMenu(null)}
+            >
+              <div className="flex flex-col gap-1 flex-1 pb-4 overflow-y-auto">
+                {dmMessages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2">
+                    <ProfileAvatar partner={activeDMPartner} size={48} />
+                    <p className="text-sm font-light mt-1" style={{ color: "#A0AEC0" }}>
+                      Début de la conversation avec @{activeDMPartner.pseudo}
+                    </p>
+                  </div>
+                )}
+                {dmMessages.map((msg, i) => {
+                  const isMe = msg.sender_id === user?.id;
+                  const timeStr = new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+                  const showMenu = activeMessageMenu === msg.id;
+                  const hasReactions = (msg.reactions ?? []).length > 0;
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ delay: i < 6 ? i * 0.04 : 0, type: "spring", bounce: 0.3 }}
+                      className={`flex ${isMe ? "justify-end" : "justify-start"} items-end gap-2 relative`}
+                      style={{ marginBottom: hasReactions ? 8 : 0 }}
+                    >
+                      {!isMe && (
+                        <Link href={`/profil/${activeDMPartner.pseudo}`} className="flex-shrink-0">
+                          <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}>
+                            <ProfileAvatar partner={activeDMPartner} size={28} />
+                          </motion.div>
+                        </Link>
+                      )}
+                      <div className="relative">
+                        {/* Emoji picker popup */}
+                        <AnimatePresence>
+                          {showMenu && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.85, y: 6 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.85, y: 6 }}
+                              transition={{ type: "spring", bounce: 0.3, duration: 0.2 }}
+                              className={`absolute z-50 flex items-center gap-1 px-2 py-1.5 rounded-2xl ${isMe ? "right-0" : "left-0"}`}
+                              style={{ bottom: "calc(100% + 6px)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", boxShadow: "0 4px 24px rgba(0,0,0,0.12)", border: "1px solid rgba(240,235,255,0.8)" }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {DM_EMOJIS.map(emoji => (
+                                <motion.button
+                                  key={emoji}
+                                  whileHover={{ scale: 1.3 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleDmReaction(msg.id, emoji)}
+                                  className="text-lg leading-none p-1 rounded-lg cursor-pointer"
+                                  style={{ background: msg.reactions?.find(r => r.emoji === emoji)?.reacted ? "rgba(167,139,250,0.15)" : "transparent" }}
+                                >
+                                  {emoji}
+                                </motion.button>
+                              ))}
+                              {/* Séparateur + bouton répondre */}
+                              <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.08)", margin: "0 2px" }} />
+                              <motion.button
+                                whileHover={{ scale: 1.15 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); setActiveMessageMenu(null); setTimeout(() => dmInputRef.current?.focus(), 50); }}
+                                className="p-1 rounded-lg cursor-pointer text-xs"
+                                style={{ color: "#A78BFA", fontWeight: 600 }}
+                              >
+                                ↩
+                              </motion.button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
 
-            <div className="lg-strong lg-highlight relative flex items-center gap-2 p-2.5 rounded-2xl mt-auto">
-              <input
-                type="text"
-                value={dmInput}
-                onChange={(e) => setDmInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSendDM(); }}
-                placeholder="Message…"
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0] px-2"
-                style={{ color: "#2D3748" }}
-              />
-              <motion.button
-                whileHover={{ scale: dmInput.trim() ? 1.08 : 1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleSendDM}
-                disabled={dmSending}
-                className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200"
-                style={{
-                  background: dmInput.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
-                  boxShadow: dmInput.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
-                }}
-                aria-label="Envoyer"
-              >
-                <Send size={13} strokeWidth={2} style={{ color: dmInput.trim() ? "#2D3748" : "#A0AEC0" }} />
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
+                        {/* Bulle */}
+                        <motion.div
+                          whileTap={{ scale: 0.97 }}
+                          onContextMenu={(e) => { e.preventDefault(); setActiveMessageMenu(showMenu ? null : msg.id); }}
+                          onClick={(e) => { e.stopPropagation(); setActiveMessageMenu(showMenu ? null : msg.id); }}
+                        >
+                          {/* Reply preview dans la bulle */}
+                          {msg.reply_to_content && (
+                            <div
+                              className="mb-1 px-3 py-1.5 rounded-xl text-xs truncate max-w-[220px]"
+                              style={{ background: isMe ? "rgba(255,255,255,0.35)" : "rgba(167,139,250,0.1)", borderLeft: "2px solid #A78BFA", color: "#718096" }}
+                            >
+                              {msg.reply_to_content.slice(0, 60)}{msg.reply_to_content.length > 60 ? "…" : ""}
+                            </div>
+                          )}
+                          <div
+                            className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
+                            style={isMe
+                              ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                              : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
+                            }
+                          >
+                            {msg.content}
+                          </div>
+                        </motion.div>
+
+                        {/* Réactions */}
+                        {hasReactions && (
+                          <div className={`flex gap-1 mt-1 flex-wrap ${isMe ? "justify-end" : "justify-start"}`}>
+                            {(msg.reactions ?? []).map(r => (
+                              <motion.button
+                                key={r.emoji}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleDmReaction(msg.id, r.emoji)}
+                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs cursor-pointer"
+                                style={{ background: r.reacted ? "rgba(167,139,250,0.2)" : "rgba(0,0,0,0.05)", border: r.reacted ? "1px solid rgba(167,139,250,0.4)" : "1px solid transparent", color: "#4A5568" }}
+                              >
+                                <span>{r.emoji}</span>
+                                {r.count > 1 && <span style={{ fontSize: 10, color: "#718096" }}>{r.count}</span>}
+                              </motion.button>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className={`text-[9px] mt-1 ${isMe ? "text-right" : ""}`} style={{ color: "#A0AEC0" }}>{timeStr}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Reply bar */}
+              <AnimatePresence>
+                {replyingTo && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl mb-2"
+                    style={{ background: "rgba(167,139,250,0.08)", borderLeft: "3px solid #A78BFA" }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>
+                        {replyingTo.sender_id === user?.id ? "Toi" : `@${activeDMPartner.pseudo}`}
+                      </p>
+                      <p className="text-xs font-light truncate" style={{ color: "#718096" }}>
+                        {replyingTo.content.slice(0, 60)}{replyingTo.content.length > 60 ? "…" : ""}
+                      </p>
+                    </div>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => setReplyingTo(null)} className="flex-shrink-0 cursor-pointer" style={{ color: "#A0AEC0" }}>
+                      <X size={14} />
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="lg-strong lg-highlight relative flex items-center gap-2 p-2.5 rounded-2xl mt-auto">
+                <input
+                  ref={dmInputRef}
+                  type="text"
+                  value={dmInput}
+                  onChange={(e) => setDmInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSendDM(); }}
+                  placeholder="Message…"
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0] px-2"
+                  style={{ color: "#2D3748" }}
+                />
+                <motion.button
+                  whileHover={{ scale: dmInput.trim() ? 1.08 : 1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleSendDM}
+                  disabled={dmSending}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200"
+                  style={{
+                    background: dmInput.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
+                    boxShadow: dmInput.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                  }}
+                  aria-label="Envoyer"
+                >
+                  <Send size={13} strokeWidth={2} style={{ color: dmInput.trim() ? "#2D3748" : "#A0AEC0" }} />
+                </motion.button>
+              </div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Global Modals */}

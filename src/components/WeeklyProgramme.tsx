@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, ChevronDown, ChevronUp, Dumbbell, Settings } from "lucide-react";
+import { RefreshCw, Dumbbell, Settings } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -81,134 +81,52 @@ function saveToCache(key: string, data: Programme): void {
   } catch { /* ignore */ }
 }
 
-/* ─── Skeleton card ─── */
-function SkeletonCard() {
+const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+/* ─── Skeleton inline ─── */
+function SkeletonDetail() {
   return (
-    <div
-      className="rounded-2xl p-4 flex-shrink-0"
-      style={{
-        background: "rgba(255,255,255,0.7)",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
-        minWidth: 130,
-        width: 130,
-      }}
-    >
-      <motion.div
-        className="rounded-full mb-3"
-        style={{ height: 10, width: "55%", background: "rgba(167,139,250,0.12)" }}
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="rounded-full mb-2"
-        style={{ height: 18, width: "70%", background: "rgba(167,139,250,0.09)" }}
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: 0.15 }}
-      />
-      <motion.div
-        className="rounded-full"
-        style={{ height: 10, width: "45%", background: "rgba(167,139,250,0.07)" }}
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-      />
+    <div className="flex flex-col gap-2 pt-1">
+      {[60, 80, 50, 70, 55].map((w, i) => (
+        <motion.div key={i} className="rounded-full"
+          style={{ height: 10, width: `${w}%`, background: "rgba(167,139,250,0.1)" }}
+          animate={{ opacity: [0.4, 0.9, 0.4] }}
+          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }} />
+      ))}
     </div>
   );
 }
 
-/* ─── Day Card ─── */
-function DayCard({ day, index }: { day: WorkoutDay; index: number }) {
-  const [expanded, setExpanded] = useState(false);
+/* ─── Day detail panel ─── */
+function DayDetail({ day }: { day: WorkoutDay }) {
   const isRest = day.type.toLowerCase() === "repos";
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.05 * index, type: "spring", bounce: 0.3 }}
-      className="rounded-2xl p-4 flex-shrink-0 cursor-pointer select-none"
-      style={{
-        background: "rgba(255,255,255,0.7)",
-        backdropFilter: "blur(12px)",
-        boxShadow: expanded
-          ? "0 6px 28px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)"
-          : "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
-        minWidth: 130,
-        width: 130,
-        transition: "box-shadow 0.2s",
-      }}
-      onClick={() => !isRest && setExpanded((v) => !v)}
-      whileHover={!isRest ? { y: -2, scale: 1.02, transition: { duration: 0.15 } } : {}}
-      whileTap={!isRest ? { scale: 0.97, transition: { duration: 0.08 } } : {}}
-    >
-      {/* Day name */}
-      <p
-        className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-        style={{ color: "#A0AEC0" }}
-      >
-        {day.jour}
-      </p>
-
-      {/* Badge */}
-      <span style={getBadgeStyle(day.type)}>{day.type}</span>
-
-      {/* Title */}
-      {!isRest && (
-        <p
-          className="text-xs font-medium mt-2 leading-snug"
-          style={{ color: "#2D3748" }}
-        >
-          {day.titre}
-        </p>
+    <motion.div key={day.jour}
+      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2, ease: "easeOut" }}
+      className="flex flex-col gap-2.5">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span style={getBadgeStyle(day.type)}>{day.type}</span>
+        {day.duree && !isRest && (
+          <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{day.duree}</span>
+        )}
+      </div>
+      {!isRest && day.titre && (
+        <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{day.titre}</p>
       )}
-
-      {/* Duration */}
-      {day.duree && !isRest && (
-        <p className="text-[10px] mt-1.5" style={{ color: "#A0AEC0" }}>
-          {day.duree}
-        </p>
+      {isRest && (
+        <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Journée de récupération — repose-toi bien 💤</p>
       )}
-
-      {/* Expand hint */}
-      {!isRest && (
-        <div className="flex items-center justify-end mt-2">
-          {expanded ? (
-            <ChevronUp size={12} strokeWidth={2} style={{ color: "#A78BFA" }} />
-          ) : (
-            <ChevronDown size={12} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-          )}
+      {!isRest && day.exercices && day.exercices.length > 0 && (
+        <div className="flex flex-col gap-1.5 mt-0.5">
+          {day.exercices.map((ex, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <div className="rounded-full flex-shrink-0 mt-1.5" style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.8 }} />
+              <p className="text-[11px] leading-snug" style={{ color: "#4A5568" }}>{ex}</p>
+            </div>
+          ))}
         </div>
       )}
-
-      {/* Exercises (expanded) */}
-      <AnimatePresence>
-        {expanded && !isRest && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            style={{ overflow: "hidden" }}
-          >
-            <div
-              className="mt-3 pt-3"
-              style={{ borderTop: "1px solid rgba(167,139,250,0.12)" }}
-            >
-              {day.exercices?.map((ex, i) => (
-                <div key={i} className="flex items-start gap-1.5 mb-1.5">
-                  <div
-                    className="rounded-full flex-shrink-0 mt-1"
-                    style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.7 }}
-                  />
-                  <p className="text-[10px] leading-snug" style={{ color: "#4A5568" }}>
-                    {ex}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
@@ -221,6 +139,10 @@ export default function WeeklyProgramme() {
   const [programme, setProgramme] = useState<Programme | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Today's day index (0 = Lundi … 6 = Dimanche), fallback to 0
+  const todayIndex = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
+  const [selectedDay, setSelectedDay] = useState(todayIndex);
 
   /* ── Fetch profile ── */
   useEffect(() => {
@@ -323,6 +245,23 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     }
   }, [profileLoaded, profile, generate]);
 
+  /* ── Recharge depuis le cache quand l'IA modifie le programme ── */
+  useEffect(() => {
+    const handler = () => {
+      if (!user) return;
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+      const key = `aura_programme_${user.id}_w${week}_${now.getFullYear()}`;
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) setProgramme(JSON.parse(raw));
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("programme-updated", handler);
+    return () => window.removeEventListener("programme-updated", handler);
+  }, [user]);
+
   /* ── No profile data ── */
   const hasOnboardingData =
     profile &&
@@ -383,93 +322,109 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     );
   }
 
+  const currentDay = programme?.semaine?.[selectedDay];
+  const trackRef = useRef<HTMLDivElement>(null);
+  const namesRef = useRef<HTMLDivElement>(null);
+  const nameRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const getDayFromX = (clientX: number): number => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect) return selectedDay;
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    // 7 segments égaux : chaque jour occupe 1/7 de la largeur
+    return Math.min(6, Math.floor((x / rect.width) * 7));
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setSelectedDay(getDayFromX(e.clientX));
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    setSelectedDay(getDayFromX(e.clientX));
+  };
+
+  // Scroll le nom sélectionné dans la vue quand le slider bouge
+  useEffect(() => {
+    nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [selectedDay]);
+
+  // Centre de chaque segment sur une grille de 7 (ex: jour 0 → 7.1%, jour 6 → 92.9%)
+  const pct = ((selectedDay + 0.5) / 7) * 100;
+
   return (
-    <div className="px-6 pb-4">
-      {/* Section header */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-lg font-light" style={{ color: "#2D3748" }}>
-          Programme auto-généré
-        </p>
-        {programme && !loading && (
-          <motion.button
-            whileHover={{ scale: 1.06, rotate: 15 }}
-            whileTap={{ scale: 0.92 }}
-            onClick={() => generate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
-            style={{
-              background: "rgba(167,139,250,0.1)",
-              border: "1px solid rgba(167,139,250,0.2)",
-            }}
-          >
-            <RefreshCw size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
-            <span
-              className="text-[10px] font-semibold tracking-wide"
-              style={{ color: "#A78BFA" }}
-            >
-              Régénérer
-            </span>
-          </motion.button>
-        )}
-      </div>
+    <div className="flex flex-col gap-3">
 
-      {/* Error state */}
-      {error && !loading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="rounded-2xl p-4 mb-3 flex items-center justify-between"
-          style={{
-            background: "rgba(252,129,129,0.08)",
-            border: "1px solid rgba(252,129,129,0.2)",
-          }}
-        >
-          <p className="text-xs" style={{ color: "#DC2626" }}>
-            {error}
-          </p>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => generate(true)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
-            style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}
-          >
-            Réessayer
-          </motion.button>
-        </motion.div>
-      )}
+      {/* ── Slider jour ── */}
+      <div className="flex flex-col gap-2">
 
-      {/* Cards scroll area */}
-      <div
-        className="flex gap-3 overflow-x-auto pb-2"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {/* Loading skeletons */}
-        {loading &&
-          Array.from({ length: 7 }).map((_, i) => <SkeletonCard key={i} />)}
-
-        {/* Programme cards */}
-        {!loading &&
-          programme?.semaine?.map((day, i) => (
-            <DayCard key={`${day.jour}-${i}`} day={day} index={i} />
+        {/* Noms complets scrollables */}
+        <div ref={namesRef} className="flex overflow-x-auto gap-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
+          {DAY_LABELS.map((label, i) => (
+            <button key={label}
+              ref={el => { nameRefs.current[i] = el; }}
+              onClick={() => setSelectedDay(i)}
+              className="flex-shrink-0 cursor-pointer select-none"
+              style={{
+                color: i === selectedDay ? "#2D3748" : "#A0AEC0",
+                fontWeight: i === selectedDay ? 600 : 400,
+                fontSize: 12,
+                transition: "color 0.15s, font-weight 0.15s",
+                background: "none", border: "none", padding: 0,
+              }}>
+              {label}
+            </button>
           ))}
+        </div>
 
-        {/* Initial loading (profile loaded, no programme yet, not loading) */}
-        {!loading && !programme && profileLoaded && hasOnboardingData && (
-          Array.from({ length: 7 }).map((_, i) => <SkeletonCard key={i} />)
+        {/* Track draggable — pas de rond, juste la barre qui se remplit */}
+        <div ref={trackRef}
+          className="relative rounded-full cursor-pointer select-none touch-none"
+          style={{ height: 5, background: "rgba(167,139,250,0.12)" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}>
+          {/* Fill — centré sur le segment du jour */}
+          <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, #A78BFA, #D4A843)", transition: "width 0.12s ease" }} />
+        </div>
+
+        {/* Régénérer */}
+        {programme && !loading && (
+          <div className="flex justify-end">
+            <button
+              onClick={() => generate(true)}
+              className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
+              <RefreshCw size={10} strokeWidth={2.5} />
+              <span className="text-[9px] font-medium">Régénérer</span>
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Tap hint */}
-      {programme && !loading && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-[10px] mt-1.5"
-          style={{ color: "#A0AEC0" }}
-        >
-          Appuie sur une séance pour voir les exercices
-        </motion.p>
-      )}
+      {/* ── Détail du jour sélectionné ── */}
+      <div className="min-h-[100px]">
+        {/* Erreur */}
+        {error && !loading && (
+          <div className="rounded-2xl p-3 flex items-center justify-between"
+            style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.18)" }}>
+            <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(true)}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
+              style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}>
+              Réessayer
+            </motion.button>
+          </div>
+        )}
+
+        {/* Skeleton */}
+        {(loading || (!programme && profileLoaded && hasOnboardingData)) && <SkeletonDetail />}
+
+        {/* Contenu */}
+        <AnimatePresence mode="wait">
+          {!loading && currentDay && <DayDetail key={selectedDay} day={currentDay} />}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -8,17 +8,10 @@ import { Send, Sparkles, Maximize2, Minimize2, X } from "lucide-react";
 export type Message = { id: number; from: "ai" | "me"; text: string; time: string };
 
 export const initialChatMessages: Message[] = [
-  { id: 1, from: "ai", text: "Bonjour ✦ Comment vous sentez-vous aujourd'hui ?", time: "08:02" },
-  { id: 2, from: "me", text: "Un peu fatiguée, mal dormi", time: "08:03" },
-  {
-    id: 3,
-    from: "ai",
-    text: "Je note. Je vous propose une séance douce de mobilité 20 min, et un petit-déjeuner riche en magnésium.",
-    time: "08:03",
-  },
+  { id: 1, from: "ai", text: "Bonjour ✦ Comment tu vas aujourd'hui ? Je suis là pour toi — dis-moi ce que tu veux qu'on fasse ensemble 💪", time: "" },
 ];
 
-const suggestions = ["Plan du jour", "Ma récup'", "Repas idéal", "Séance du jour", "Objectif calorique"];
+const suggestions = ["Plan du jour", "Ma récup", "Repas idéal", "Séance du jour", "Objectif calorique"];
 
 /* ─── Shared chat UI ─── */
 function ChatUI({
@@ -51,10 +44,10 @@ function ChatUI({
     <div className={`relative flex flex-col overflow-hidden ${isFullscreen ? "h-full" : "h-full"}`}
       style={isFullscreen ? {} : { borderRadius: "1.5rem" }}>
 
-      {/* Glassmorphism background (only for inline) */}
+      {/* Solid background (only for inline) */}
       {!isFullscreen && (
         <div className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.75)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 32px rgba(167,139,250,0.1)" }} />
+          style={{ background: "rgba(255,255,255,0.92)", border: "1px solid rgba(212,192,255,0.25)", boxShadow: "0 8px 32px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)" }} />
       )}
 
       {/* Header */}

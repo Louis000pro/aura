@@ -107,6 +107,11 @@ function InlineComments({ postId, postOwnerId }: { postId: string; postOwnerId?:
         user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo,
         from_avatar_url: user.avatar ?? null, type: "comment", post_id: postId,
       });
+      fetch("/api/notifications/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commenter_id: user.id, post_owner_id: postOwnerId, post_id: postId, comment_preview: content }),
+      }).catch(() => {});
     }
   };
 
@@ -337,6 +342,11 @@ export default function PublicProfilePage() {
       await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
       if (profile.id !== user.id) {
         void supabase.from("notifications").insert({ user_id: profile.id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "like", post_id: postId });
+        fetch("/api/notifications/like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ liker_id: user.id, post_owner_id: profile.id, post_id: postId }),
+        }).catch(() => {});
       }
     } else {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
@@ -356,6 +366,11 @@ export default function PublicProfilePage() {
       await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
       if (profile.id !== user.id) {
         void supabase.from("notifications").insert({ user_id: profile.id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "repost", post_id: postId });
+        fetch("/api/notifications/repost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reposter_id: user.id, post_owner_id: profile.id, post_id: postId }),
+        }).catch(() => {});
       }
       showToast("Post boosté ! 🔄");
     } else {

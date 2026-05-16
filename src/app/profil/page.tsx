@@ -2526,7 +2526,7 @@ export default function ProfilPage() {
                     const hasBuiltin  = !!builtinId;
                     const unavailable = !hasEmbedded && !hasBuiltin;
                     return (
-                      <div className="px-4 pb-3">
+                      <div className="px-4 pt-2 pb-3">
                         {unavailable ? (
                           <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs"
                             style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#A0AEC0" }}>

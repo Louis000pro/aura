@@ -199,7 +199,7 @@ function resolveIcon(icon: unknown): typeof Dumbbell {
 }
 
 /* ─── Chart helpers ─────────────────────────────────────── */
-type WeightEntry = { date: string; weight: number };
+type WeightEntry = { date: string; weight: number; id?: string };
 type CalorieDay  = { date: string; total: number; label: string };
 
 function toDateStr(d: Date) {
@@ -215,35 +215,40 @@ const CHART_CARD = {
 
 /* ─── WeightChart ────────────────────────────────────────── */
 function WeightChart({
-  data, range, onRangeChange, onAdd, goalType,
+  data, range, onRangeChange, onAdd, onDelete, onUpdate, goalType,
 }: {
   data: WeightEntry[];
   range: "week" | "month";
   onRangeChange: (r: "week" | "month") => void;
   onAdd: (kg: number) => void;
+  onDelete: (date: string) => void;
+  onUpdate: (date: string, kg: number) => void;
   goalType?: "masse" | "poids" | null;
 }) {
-  const [inputVal, setInputVal] = useState("");
-  const [adding, setAdding]     = useState(false);
+  const [inputVal, setInputVal]   = useState("");
+  const [adding, setAdding]       = useState(false);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
+  const [editVal, setEditVal]     = useState("");
 
   const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
   const current = pts.at(-1)?.weight ?? null;
-  const first   = pts.at(0)?.weight ?? null;
-  const trend   = current !== null && first !== null && pts.length > 1
-    ? +(current - first).toFixed(1) : null;
-  const isGoodTrend = trend === null ? null
-    : goalType === "masse" ? trend > 0
-    : trend < 0;
-
-  const trendColor  = trend === null || trend === 0 ? "#A0AEC0" : isGoodTrend ? "#34D399" : "#FC8181";
-  const lineColor   = goalType === "masse" ? "#34D399" : "#A78BFA";
-  const gradColor   = goalType === "masse" ? "#34D399" : "#A78BFA";
+  const lineColor = goalType === "masse" ? "#34D399" : "#A78BFA";
+  const gradColor = goalType === "masse" ? "#34D399" : "#A78BFA";
 
   const W = 320, H = 110, PX = 32, PY = 14;
   const ws   = pts.map(p => p.weight);
   const minW = ws.length > 0 ? Math.min(...ws) - 2 : 60;
   const maxW = ws.length > 0 ? Math.max(...ws) + 2 : 90;
-  const tx   = (i: number) => pts.length < 2 ? W/2 : PX + (i / (pts.length-1)) * (W - 2*PX);
+
+  // Espacement proportionnel au temps réel
+  const timestamps = pts.map(p => new Date(p.date + "T00:00:00").getTime());
+  const minT = timestamps[0] ?? 0;
+  const maxT = timestamps[timestamps.length - 1] ?? 1;
+  const tx = (i: number) => {
+    if (pts.length < 2) return W / 2;
+    const range = maxT - minT || 1;
+    return PX + ((timestamps[i] - minT) / range) * (W - 2 * PX);
+  };
   const ty   = (w: number) => PY + ((maxW - w) / (maxW - minW)) * (H - 2*PY);
 
   let linePath = "", areaPath = "";
@@ -287,34 +292,7 @@ function WeightChart({
                 {current !== null ? current.toFixed(1) : "—"}
               </span>
               <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>kg</span>
-              {trend !== null && trend !== 0 && (
-                <motion.span
-                  initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="mb-1 text-sm font-bold px-2.5 py-1 rounded-xl"
-                  style={{
-                    background: isGoodTrend ? "rgba(52,211,153,0.12)" : "rgba(252,129,129,0.12)",
-                    color: trendColor,
-                  }}>
-                  {trend > 0 ? "+" : ""}{trend} kg
-                </motion.span>
-              )}
             </div>
-            {/* Min / Max sur la période */}
-            {pts.length >= 2 && (
-              <div className="flex items-center gap-3 mt-1.5">
-                <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
-                  Min <span className="font-semibold" style={{ color: "#4A5568" }}>{Math.min(...ws).toFixed(1)}</span>
-                </span>
-                <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
-                  Max <span className="font-semibold" style={{ color: "#4A5568" }}>{Math.max(...ws).toFixed(1)}</span>
-                </span>
-                {first !== null && current !== null && (
-                  <span className="text-[10px]" style={{ color: "#A0AEC0" }}>
-                    Départ <span className="font-semibold" style={{ color: "#4A5568" }}>{first.toFixed(1)}</span>
-                  </span>
-                )}
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
@@ -371,7 +349,7 @@ function WeightChart({
           </p>
         </div>
       ) : (
-        <div className="px-2 pb-4">
+        <div className="px-2 pb-2">
           <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
             <defs>
               <linearGradient id="wAreaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -385,7 +363,6 @@ function WeightChart({
               </filter>
             </defs>
 
-            {/* Grid lines horizontales légères */}
             {[0.25, 0.5, 0.75].map((p, i) => {
               const y = PY + p * (H - 2 * PY);
               const w = minW + (1 - p) * (maxW - minW);
@@ -401,17 +378,13 @@ function WeightChart({
               );
             })}
 
-            {/* Area fill */}
             {areaPath && <path d={areaPath} fill="url(#wAreaGrad)" />}
-
-            {/* Line */}
             {linePath && (
               <path d={linePath} fill="none" stroke={lineColor}
                 strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 filter="url(#wGlow)" />
             )}
 
-            {/* Points */}
             {pts.map((p, i) => {
               const isLast = i === pts.length - 1;
               const cx = tx(i), cy = ty(p.weight);
@@ -428,189 +401,195 @@ function WeightChart({
               );
             })}
 
-            {/* Labels date sur X (premier, milieu, dernier) */}
-            {pts.length > 0 && [0, Math.floor((pts.length-1)/2), pts.length-1]
-              .filter((v, i, a) => a.indexOf(v) === i)
-              .map(i => {
+            {/* Labels date : premier + dernier uniquement, bien ancrés */}
+            {pts.length >= 1 && (() => {
+              const indices = pts.length === 1 ? [0] : [0, pts.length - 1];
+              return indices.map(i => {
                 const d = new Date(pts[i].date + "T00:00:00");
-                const lbl = `${d.getDate()}/${d.getMonth()+1}`;
+                const lbl = `${d.getDate()}/${d.getMonth() + 1}`;
+                const anchor = i === 0 ? "start" : "end";
+                const x = i === 0 ? PX : W - PX / 2;
                 return (
-                  <text key={i} x={tx(i)} y={H + 12} textAnchor="middle"
+                  <text key={i} x={x} y={H + 13} textAnchor={anchor}
                     fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">
                     {lbl}
                   </text>
                 );
-              })
-            }
+              });
+            })()}
           </svg>
+        </div>
+      )}
+
+      {/* ── Liste des entrées avec édition / suppression ── */}
+      {pts.length > 0 && (
+        <div className="px-4 pb-4">
+          <div style={{ height: 1, background: "rgba(167,139,250,0.07)", marginBottom: 10 }} />
+          <div className="flex flex-col gap-1 max-h-36 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {[...pts].reverse().map(entry => {
+              const d = new Date(entry.date + "T00:00:00");
+              const label = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+              const isEditing = editingDate === entry.date;
+              return (
+                <motion.div
+                  key={entry.date}
+                  layout
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                  style={{ background: isEditing ? "rgba(167,139,250,0.08)" : "transparent" }}
+                >
+                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "#A0AEC0" }}>{label}</span>
+                  {isEditing ? (
+                    <>
+                      <input
+                        type="number" step="0.1" autoFocus
+                        value={editVal}
+                        onChange={e => setEditVal(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            const kg = parseFloat(editVal.replace(",", "."));
+                            if (!isNaN(kg) && kg >= 20 && kg <= 300) { onUpdate(entry.date, kg); setEditingDate(null); }
+                          }
+                          if (e.key === "Escape") setEditingDate(null);
+                        }}
+                        className="flex-1 px-2 py-0.5 rounded-lg text-xs outline-none"
+                        style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                      />
+                      <motion.button whileTap={{ scale: 0.9 }}
+                        onClick={() => {
+                          const kg = parseFloat(editVal.replace(",", "."));
+                          if (!isNaN(kg) && kg >= 20 && kg <= 300) { onUpdate(entry.date, kg); setEditingDate(null); }
+                        }}
+                        className="px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer"
+                        style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "white" }}>
+                        OK
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingDate(null)}
+                        className="cursor-pointer" style={{ color: "#A0AEC0" }}>
+                        <X size={12} />
+                      </motion.button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-xs font-semibold" style={{ color: "#2D3748" }}>{entry.weight.toFixed(1)} kg</span>
+                      <motion.button whileTap={{ scale: 0.9 }}
+                        onClick={() => { setEditingDate(entry.date); setEditVal(String(entry.weight)); }}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
+                        style={{ background: "rgba(167,139,250,0.1)" }}>
+                        <Pencil size={10} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.9 }}
+                        onClick={() => onDelete(entry.date)}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
+                        style={{ background: "rgba(252,129,129,0.1)" }}>
+                        <Trash2 size={10} strokeWidth={2} style={{ color: "#FC8181" }} />
+                      </motion.button>
+                    </>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-/* ─── CalorieChart ───────────────────────────────────────── */
-function CalorieChart({ data, goal }: { data: CalorieDay[]; goal: number }) {
-  const today      = toDateStr(new Date());
-  const todayEntry = data.find(d => d.date === today);
-  const todayTotal = todayEntry?.total ?? 0;
-  const remaining  = Math.max(goal - todayTotal, 0);
-  const pctToday   = Math.min(todayTotal / goal, 1);
-  const activeDays = data.filter(d => d.total > 0);
-  const avgCals    = activeDays.length > 0
-    ? Math.round(activeDays.reduce((s, d) => s + d.total, 0) / activeDays.length) : 0;
-  const maxCals    = Math.max(...data.map(d => d.total), goal * 1.15, 1);
-  const CHART_H    = 80;
+/* ─── WorkoutWeekCard ────────────────────────────────────── */
+function WorkoutWeekCard({ sessions }: { sessions: TimelineEvent[] }) {
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - 6);
 
-  const C = 2 * Math.PI * 24; // ring circumference r=24
+  const weekSessions = sessions.filter(s => {
+    if (s.type !== "workout") return false;
+    const d = new Date(s.performance.date ?? "");
+    return d >= startOfWeek;
+  });
+
+  // Calcul stats depuis performance_data
+  const totalDuration = weekSessions.reduce((sum, s) => {
+    const dur = s.performance.metrics?.find(m => m.label === "Durée");
+    return sum + (dur ? parseInt(dur.value) || 0 : 0);
+  }, 0);
+  const totalCals = weekSessions.reduce((sum, s) => {
+    const cal = s.performance.metrics?.find(m => m.label === "Calories");
+    return sum + (cal ? parseInt(cal.value) || 0 : 0);
+  }, 0);
+
+  // Jours de la semaine avec dot si séance
+  const days = ["L", "M", "M", "J", "V", "S", "D"];
+  const dayDots = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const hasSession = weekSessions.some(s => (s.performance.date ?? "").startsWith(dateStr) || s.date === dateStr);
+    const isToday = i === 6;
+    return { label: days[d.getDay() === 0 ? 6 : d.getDay() - 1], hasSession, isToday };
+  });
 
   return (
     <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
-      {/* Header */}
-      <div className="px-5 pt-5 pb-4">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3" style={{ color: "#A0AEC0" }}>
-          CALORIES
-        </p>
+      <div className="px-5 pt-5 pb-3">
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3" style={{ color: "#A0AEC0" }}>SÉANCES · 7 JOURS</p>
 
-        {/* Ring + stats */}
-        <div className="flex items-center gap-4">
-          {/* Mini ring */}
-          <div className="relative flex-shrink-0" style={{ width: 64, height: 64 }}>
-            <svg width="64" height="64" viewBox="0 0 64 64">
-              <defs>
-                <linearGradient id="cRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stopColor="#A78BFA" />
-                  <stop offset="100%" stopColor="#D4A843" />
-                </linearGradient>
-              </defs>
-              {/* Track */}
-              <circle cx="32" cy="32" r="24" fill="none"
-                stroke="rgba(167,139,250,0.12)" strokeWidth="6" />
-              {/* Progress */}
-              <motion.circle cx="32" cy="32" r="24" fill="none"
-                stroke={todayTotal > goal ? "#FC8181" : "url(#cRingGrad)"}
-                strokeWidth="6" strokeLinecap="round"
-                strokeDasharray={C}
-                initial={{ strokeDashoffset: C }}
-                animate={{ strokeDashoffset: C * (1 - pctToday) }}
-                transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
-                style={{ transform: "rotate(-90deg)", transformOrigin: "center" }} />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[13px] font-bold leading-none" style={{ color: "#2D3748" }}>
-                {pctToday >= 1 ? "100" : Math.round(pctToday * 100)}
-              </span>
-              <span className="text-[8px]" style={{ color: "#A0AEC0" }}>%</span>
-            </div>
+        {weekSessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 gap-2">
+            <span style={{ fontSize: 28 }}>🏋️</span>
+            <p className="text-xs font-light text-center" style={{ color: "#A0AEC0" }}>Aucune séance cette semaine<br/>Lance-toi !</p>
           </div>
-
-          {/* Stats today */}
-          <div className="flex-1">
-            <div className="flex items-end gap-1.5 mb-1">
-              <span className="text-[2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
-                {todayTotal > 0 ? todayTotal.toLocaleString("fr-FR") : "0"}
-              </span>
-              <span className="text-xs font-light mb-1" style={{ color: "#A0AEC0" }}>
-                / {goal.toLocaleString("fr-FR")} kcal
-              </span>
+        ) : (
+          <>
+            {/* Gros chiffre */}
+            <div className="flex items-end gap-2 mb-4">
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>{weekSessions.length}</span>
+              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>séance{weekSessions.length > 1 ? "s" : ""}</span>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Stats row */}
+            <div className="flex items-center gap-4 mb-5">
               <div>
-                <p className="text-[9px] uppercase font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>Restant</p>
-                <p className="text-sm font-bold" style={{ color: remaining === 0 ? "#FC8181" : "#34D399" }}>
-                  {remaining > 0 ? remaining.toLocaleString("fr-FR") : "0"}
+                <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "#A0AEC0" }}>Durée totale</p>
+                <p className="text-sm font-bold" style={{ color: "#2D3748" }}>
+                  {totalDuration >= 60 ? `${Math.floor(totalDuration/60)}h${totalDuration%60 > 0 ? String(totalDuration%60).padStart(2,"0") : ""}` : `${totalDuration} min`}
                 </p>
               </div>
-              <div style={{ width: 1, height: 28, background: "rgba(167,139,250,0.15)" }} />
-              <div>
-                <p className="text-[9px] uppercase font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>Moy. 7j</p>
-                <p className="text-sm font-bold"
-                  style={{ color: avgCals > 0 ? (avgCals > goal ? "#FC8181" : "#A78BFA") : "#A0AEC0" }}>
-                  {avgCals > 0 ? avgCals.toLocaleString("fr-FR") : "—"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Separateur */}
-      <div style={{ height: 1, background: "rgba(167,139,250,0.07)", margin: "0 20px" }} />
-
-      {/* Bar chart semaine */}
-      <div className="px-4 pt-3 pb-5">
-        <p className="text-[9px] font-bold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
-          CETTE SEMAINE
-        </p>
-        <div className="relative" style={{ height: CHART_H }}>
-          {/* Goal line */}
-          <div className="absolute left-0 right-0 pointer-events-none"
-            style={{ bottom: `${Math.min((goal / maxCals) * CHART_H, CHART_H - 4)}px` }}>
-            <div className="flex items-center gap-1">
-              <div className="flex-1" style={{ borderTop: "1.5px dashed rgba(167,139,250,0.35)" }} />
-              <span className="text-[8px] font-bold" style={{ color: "rgba(167,139,250,0.65)" }}>
-                {goal >= 1000 ? `${(goal/1000).toFixed(1)}k` : goal}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-end gap-1 h-full">
-            {data.map((d, i) => {
-              const isToday  = d.date === today;
-              const barH     = d.total > 0 ? Math.max((d.total / maxCals) * CHART_H, 5) : 4;
-              const overGoal = d.total > goal;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
-                  {/* Valeur au-dessus de la barre */}
-                  {d.total > 0 && (
-                    <motion.span
-                      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.06 + 0.3 }}
-                      className="text-[8px] font-bold"
-                      style={{ color: overGoal ? "#FC8181" : isToday ? "#8B5CF6" : "#A78BFA" }}>
-                      {d.total >= 1000 ? `${(d.total/1000).toFixed(1)}k` : d.total}
-                    </motion.span>
-                  )}
-                  <div style={{ height: barH, width: "100%" }} className="flex justify-center">
-                    <motion.div
-                      initial={{ scaleY: 0 }}
-                      animate={{ scaleY: 1 }}
-                      transition={{ duration: 0.45, delay: i * 0.06, ease: [0.34, 1.06, 0.64, 1] }}
-                      style={{
-                        width: isToday ? "90%" : "75%",
-                        height: "100%",
-                        borderRadius: isToday ? "8px 8px 5px 5px" : "6px 6px 4px 4px",
-                        background: d.total === 0
-                          ? "rgba(167,139,250,0.07)"
-                          : overGoal
-                          ? "linear-gradient(to top,#EF4444,#F87171,#FCA5A5)"
-                          : isToday
-                          ? "linear-gradient(to top,#7C3AED,#8B5CF6,#C4B5FD)"
-                          : "linear-gradient(to top,#7B5CC4,#A78BFA,#DDD6FE)",
-                        boxShadow: isToday && d.total > 0
-                          ? "0 4px 16px rgba(124,92,250,0.4)"
-                          : d.total > 0 ? "0 2px 8px rgba(167,139,250,0.2)" : "none",
-                        transformOrigin: "bottom",
-                      }}
-                    />
+              {totalCals > 0 && (
+                <>
+                  <div style={{ width: 1, height: 28, background: "rgba(167,139,250,0.15)" }} />
+                  <div>
+                    <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "#A0AEC0" }}>Calories</p>
+                    <p className="text-sm font-bold" style={{ color: "#2D3748" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
 
-        {/* Labels jours */}
-        <div className="flex gap-1 mt-1.5">
-          {data.map((d, i) => (
-            <div key={i} className="flex-1 text-center">
-              <span className="text-[9px] font-semibold"
+        {/* Dots jours */}
+        <div style={{ height: 1, background: "rgba(167,139,250,0.07)", marginBottom: 16 }} />
+        <div className="flex justify-between">
+          {dayDots.map((d, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className="w-7 h-7 rounded-full flex items-center justify-center"
                 style={{
-                  color: d.date === today ? "#7C3AED" : "#A0AEC0",
-                  fontWeight: d.date === today ? 800 : 600,
-                }}>
-                {d.label}
-              </span>
+                  background: d.hasSession
+                    ? "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)"
+                    : d.isToday
+                    ? "rgba(167,139,250,0.12)"
+                    : "rgba(0,0,0,0.04)",
+                  border: d.isToday && !d.hasSession ? "1.5px solid rgba(167,139,250,0.35)" : "none",
+                  boxShadow: d.hasSession ? "0 2px 8px rgba(167,139,250,0.35)" : "none",
+                }}
+              >
+                {d.hasSession && <Dumbbell size={11} strokeWidth={2} style={{ color: "white" }} />}
+              </motion.div>
+              <span className="text-[9px] font-medium" style={{ color: d.isToday ? "#A78BFA" : "#A0AEC0" }}>{d.label}</span>
             </div>
           ))}
         </div>
@@ -618,6 +597,7 @@ function CalorieChart({ data, goal }: { data: CalorieDay[]; goal: number }) {
     </div>
   );
 }
+
 
 /* ─── CameraCapture Modal ───────────────────────────────── */
 type CaptureMode = "photo" | "video";
@@ -2131,6 +2111,29 @@ export default function ProgressionPage() {
     }
   };
 
+  const deleteWeight = async (date: string) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("weight_logs")
+      .delete().eq("user_id", user.id).eq("date", date);
+    if (!error) {
+      setWeights(prev => prev.filter(w => w.date !== date));
+      showToast("Entrée supprimée");
+    }
+  };
+
+  const updateWeight = async (date: string, kg: number) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("weight_logs")
+      .update({ weight_kg: kg })
+      .eq("user_id", user.id).eq("date", date);
+    if (!error) {
+      setWeights(prev => prev.map(w => w.date === date ? { ...w, weight: kg } : w));
+      showToast(`Poids mis à jour : ${kg} kg ✓`);
+    }
+  };
+
   const handleStartWorkout = (session: WorkoutSession) => {
     /* Open the guided workout modal — DB save happens on completion inside WorkoutGuideModal */
     setActiveWorkout(session);
@@ -2233,9 +2236,11 @@ export default function ProgressionPage() {
             range={weightRange}
             onRangeChange={setWeightRange}
             onAdd={addWeight}
+            onDelete={deleteWeight}
+            onUpdate={updateWeight}
             goalType={fitnessGoal}
           />
-          <CalorieChart data={calorieWeek} goal={2200} />
+          <WorkoutWeekCard sessions={displayTimeline} />
         </div>
       </motion.div>
 
