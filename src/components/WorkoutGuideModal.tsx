@@ -292,8 +292,12 @@ const exerciseData: Record<string, Exercise[]> = {
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-/** Résout l'id de session depuis le titre d'un post (fallback sur les exercices intégrés) */
-export function resolveSessionId(title: string): string {
+/**
+ * Résout l'id de session depuis le titre d'un post.
+ * Retourne null si aucune séance intégrée ne correspond
+ * (séance perso ou titre inconnu).
+ */
+export function resolveSessionId(title: string): string | null {
   const MAP: Record<string, string> = {
     "Force Haut du Corps":   "force-haut",
     "Full Body Débutant":    "fullbody-deb",
@@ -309,7 +313,7 @@ export function resolveSessionId(title: string): string {
   for (const [key, val] of Object.entries(MAP)) {
     if (title.toLowerCase().includes(key.toLowerCase())) return val;
   }
-  return "force-haut";
+  return null; // séance perso ou titre inconnu
 }
 
 /* ─── Component ──────────────────────────────────────────── */
