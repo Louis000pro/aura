@@ -6,7 +6,7 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { description, category, difficulty } = await req.json();
+    const { description, category, difficulty, muscles } = await req.json();
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
     if (!process.env.GROQ_API_KEY)
@@ -46,7 +46,8 @@ Calcule mentalement le total avant de repondre et verifie qu il est proche de ${
           content: `Genere une seance d entrainement basee sur :
 Description : "${description}"
 Categorie : ${category ?? "force"}
-Niveau : ${difficulty ?? "Intermediaire"}
+Niveau : ${difficulty ?? "Intermediaire"}${Array.isArray(muscles) && muscles.length > 0 ? `
+Muscles cibles par l utilisateur : ${muscles.join(", ")} — la seance DOIT travailler prioritairement ces muscles.` : ""}
 ${durationConstraint}
 
 Retourne un JSON avec exactement ce format :
@@ -68,8 +69,10 @@ Retourne un JSON avec exactement ce format :
 }
 
 Regles :
-- sets : 2 a 5 (entier)
-- reps : 6 a 20 (entier)
+- Adapte les valeurs au niveau "${difficulty ?? "Intermediaire"}" :
+  * Debutant    : sets 2-3, reps 8-12, rest 60-90s, exercices simples
+  * Intermediaire : sets 3-4, reps 8-15, rest 45-75s, exercices moderes
+  * Avance      : sets 4-5, reps 6-12, rest 30-60s, exercices intenses
 - rest : repos entre series en secondes, 30 a 120 (entier)
 - restAfter : repos apres l exercice en secondes, 60 a 180 (entier)
 - tip et benefit : phrases courtes (max 10 mots)
