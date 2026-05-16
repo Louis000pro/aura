@@ -292,6 +292,26 @@ const exerciseData: Record<string, Exercise[]> = {
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
+/** Résout l'id de session depuis le titre d'un post (fallback sur les exercices intégrés) */
+export function resolveSessionId(title: string): string {
+  const MAP: Record<string, string> = {
+    "Force Haut du Corps":   "force-haut",
+    "Full Body Débutant":    "fullbody-deb",
+    "HIIT Brûle-Graisses":   "hiit",
+    "Jambes & Fessiers":     "jambes",
+    "Mobilité Matinale":     "mobilite",
+    "Dos & Biceps":          "dos-biceps",
+    "Core & Gainage":        "core",
+    "Endurance Cardio":      "cardio-endurance",
+  };
+  if (MAP[title]) return MAP[title];
+  // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")
+  for (const [key, val] of Object.entries(MAP)) {
+    if (title.toLowerCase().includes(key.toLowerCase())) return val;
+  }
+  return "force-haut";
+}
+
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
   sessionId, title, accent, duration, difficulty, category, onClose, onComplete, exerciseList,

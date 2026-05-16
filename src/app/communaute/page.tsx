@@ -7,7 +7,7 @@ import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
-import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import CreatePostModal from "@/components/CreatePostModal";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -2429,12 +2429,12 @@ function CommunautePageInner() {
                         <motion.button
                           whileTap={{ scale: 0.97 }}
                           onClick={() => setCommunityWorkout({
-                            sessionId: "community",
-                            title:      pd?.title ?? "Séance",
-                            accent:     "#A78BFA",
-                            duration:   dur,
-                            difficulty: "Intermédiaire",
-                            category:   pd?.category ?? "force",
+                            sessionId:    exList.length > 0 ? "community" : resolveSessionId(pd?.title ?? ""),
+                            title:        pd?.title ?? "Séance",
+                            accent:       "#A78BFA",
+                            duration:     dur,
+                            difficulty:   "Intermédiaire",
+                            category:     pd?.category ?? "force",
                             exerciseList: exList,
                           })}
                           className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
