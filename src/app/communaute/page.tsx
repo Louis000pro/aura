@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "rea
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2 } from "lucide-react";
+import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import CreatePostModal from "@/components/CreatePostModal";
@@ -2385,11 +2386,11 @@ function CommunautePageInner() {
 
                   {/* Media (photo/vidéo) si présente */}
                   {post.media_url && (
-                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ maxHeight: 320, background: "#000" }}>
+                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
                       {post.media_type === "video"
-                        ? <video src={post.media_url} className="w-full object-cover" style={{ maxHeight: 320 }} controls muted playsInline />
+                        ? <VideoPlayer src={post.media_url} maxHeight={380} controls muted />
                         // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 320 }} />
+                        : <img src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
                       }
                     </div>
                   )}

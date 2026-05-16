@@ -10,6 +10,7 @@ import {
   MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import VideoPlayer from "@/components/VideoPlayer";
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -2091,9 +2092,9 @@ export default function ProfilPage() {
 
                         {/* Media */}
                         {post.media_url && (
-                          <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                          <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
                             {post.media_type === "video"
-                              ? <video src={post.media_url} className="w-full object-cover" controls playsInline style={{ maxHeight: 380 }} />
+                              ? <VideoPlayer src={post.media_url} maxHeight={380} controls />
                               // eslint-disable-next-line @next/next/no-img-element
                               : <img src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
                             }
@@ -2462,11 +2463,11 @@ export default function ProfilPage() {
                     </p>
                   )}
                   {selectedPost.media_url && (
-                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                    <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
                       {selectedPost.media_type === "video"
-                        ? <video src={selectedPost.media_url} className="w-full object-cover" controls playsInline style={{ maxHeight: 380 }} />
+                        ? <VideoPlayer src={selectedPost.media_url} maxHeight={380} controls />
                         // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
+                        : <img src={selectedPost.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
                       }
                     </div>
                   )}
@@ -2497,9 +2498,9 @@ export default function ProfilPage() {
                 <div className="px-4 pb-5 flex flex-col gap-4">
                   {/* Aperçu media */}
                   {selectedPost.media_url && (
-                    <div className="rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                    <div className="rounded-2xl overflow-hidden">
                       {selectedPost.media_type === "video"
-                        ? <video src={selectedPost.media_url} className="w-full object-cover" muted playsInline style={{ maxHeight: 200 }} />
+                        ? <VideoPlayer src={selectedPost.media_url} maxHeight={200} muted autoPlay />
                         // eslint-disable-next-line @next/next/no-img-element
                         : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
                       }

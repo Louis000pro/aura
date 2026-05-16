@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import VideoPlayer from "@/components/VideoPlayer";
 import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
 
 type Profile = {
@@ -999,17 +1000,9 @@ export default function PublicProfilePage() {
 
               {/* Media */}
               {selectedPost.media_url && (
-                <div className="mx-4 mb-3 rounded-2xl overflow-hidden" style={{ background: "#000" }}>
+                <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
                   {selectedPost.media_type === "video"
-                    ? (
-                      <video
-                        src={selectedPost.media_url}
-                        className="w-full object-cover"
-                        controls
-                        playsInline
-                        style={{ maxHeight: 380 }}
-                      />
-                    )
+                    ? <VideoPlayer src={selectedPost.media_url} maxHeight={380} controls />
                     : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
