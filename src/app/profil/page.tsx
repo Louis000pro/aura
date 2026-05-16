@@ -155,7 +155,7 @@ type WorkoutSessionItem = {
 };
 import NotificationBell from "@/components/NotificationBell";
 import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
-import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
@@ -2528,12 +2528,12 @@ export default function ProfilPage() {
                           onClick={() => {
                             setSelectedPost(null);
                             setProfileWorkout({
-                              sessionId: "profile-post",
-                              title:     pd?.title ?? "Séance",
-                              accent:    "#A78BFA",
-                              duration:  dur,
-                              difficulty: "Intermédiaire",
-                              category:  pd?.category ?? "force",
+                              sessionId:    exList.length > 0 ? "profile-post" : resolveSessionId(pd?.title ?? ""),
+                              title:        pd?.title ?? "Séance",
+                              accent:       "#A78BFA",
+                              duration:     dur,
+                              difficulty:   "Intermédiaire",
+                              category:     pd?.category ?? "force",
                               exerciseList: exList,
                             });
                           }}
