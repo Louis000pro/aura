@@ -1451,7 +1451,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
       const res = await fetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: aiDescription, category, difficulty }),
+        body: JSON.stringify({ description: aiDescription, category, difficulty, muscles: selectedMuscles }),
       });
       if (!res.ok) throw new Error("Erreur serveur");
       const data = await res.json();
