@@ -69,22 +69,18 @@ Retourne un JSON avec exactement ce format :
 }
 
 Regles :
-- sets : 3 a 4 (entier) — independant du niveau
-- reps : 8 a 12 (entier) — independant du niveau
-- rest : 60 a 90 secondes entre series (entier)
-- restAfter : 90 a 120 secondes entre exercices (entier)
-- Le niveau "${difficulty ?? "Intermediaire"}" influence UNIQUEMENT la complexite des exercices choisis, pas les sets/reps/repos :
-  * Debutant    : exercices accessibles, variantes faciles (ex : pompes sur les genoux, squat sans charge)
-  * Intermediaire : exercices classiques bien maitrisés (pompes, squat, dips)
-  * Avance      : exercices techniques et intenses (pompes archer, pistol squat, muscle-up)
-- La duree DOIT etre respectee meme pour un debutant : ajuste le nombre d exercices, pas les sets/reps
+- Tu es libre de choisir le nombre d exercices, les sets, reps, rest et restAfter selon ce qui est le plus efficace sportivement pour chaque exercice
+- Le niveau "${difficulty ?? "Intermediaire"}" influence la complexite et l intensite des exercices choisis :
+  * Debutant    : variantes accessibles et simples
+  * Intermediaire : exercices classiques bien maitrisés
+  * Avance      : exercices techniques et intensites elevees
 - tip et benefit : phrases courtes (max 10 mots)
-${targetSeconds ? `- Nombre d exercices : ajuste pour respecter la contrainte de duree (${targetMinutes} min)` : "- Entre 4 et 8 exercices, adaptes au niveau"}
+${targetSeconds ? `- SEULE contrainte absolue : total proche de ${targetMinutes} min (${targetSeconds}s) — ajuste librement le nombre d exercices et leurs valeurs pour y arriver` : "- Libre sur le nombre d exercices"}
 - Retourne UNIQUEMENT le JSON, rien d autre`,
         },
       ],
       max_tokens: 1800,
-      temperature: 0.4,
+      temperature: 0.6,
     });
 
     const text = response.choices[0]?.message?.content ?? "";
