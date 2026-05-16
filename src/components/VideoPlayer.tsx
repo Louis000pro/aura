@@ -1,8 +1,10 @@
 "use client";
 
+import { useRef, useEffect } from "react";
+
 /**
- * VideoPlayer — affiche une vidéo avec fond flouté (style TikTok/Reels)
- * Le fond est la même vidéo blurée, scale, assombrie → plus de barres noires
+ * VideoPlayer — vidéo avec fond flouté synchronisé (style TikTok/Reels)
+ * Le fond suit exactement la vidéo principale : play, pause, seek, time
  */
 
 interface VideoPlayerProps {
@@ -22,13 +24,54 @@ export default function VideoPlayer({
   autoPlay = false,
   className = "",
 }: VideoPlayerProps) {
+  const mainRef = useRef<HTMLVideoElement>(null);
+  const bgRef   = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const main = mainRef.current;
+    const bg   = bgRef.current;
+    if (!main || !bg) return;
+
+    // Sync time toutes les 500ms pour rester aligné
+    const syncInterval = setInterval(() => {
+      if (!main.paused && Math.abs(bg.currentTime - main.currentTime) > 0.3) {
+        bg.currentTime = main.currentTime;
+      }
+    }, 500);
+
+    const onPlay   = () => { bg.currentTime = main.currentTime; void bg.play().catch(() => {}); };
+    const onPause  = () => bg.pause();
+    const onSeeked = () => { bg.currentTime = main.currentTime; };
+    const onEnded  = () => bg.pause();
+
+    main.addEventListener("play",   onPlay);
+    main.addEventListener("pause",  onPause);
+    main.addEventListener("seeked", onSeeked);
+    main.addEventListener("ended",  onEnded);
+
+    // Si autoPlay actif, lancer les deux immédiatement
+    if (autoPlay) {
+      void main.play().catch(() => {});
+      void bg.play().catch(() => {});
+    }
+
+    return () => {
+      clearInterval(syncInterval);
+      main.removeEventListener("play",   onPlay);
+      main.removeEventListener("pause",  onPause);
+      main.removeEventListener("seeked", onSeeked);
+      main.removeEventListener("ended",  onEnded);
+    };
+  }, [src, autoPlay]);
+
   return (
     <div
       className="relative overflow-hidden w-full"
       style={{ maxHeight, background: "#000" }}
     >
-      {/* ── Fond flouté (même vidéo, décoratif) ── */}
+      {/* ── Fond flouté synchronisé ── */}
       <video
+        ref={bgRef}
         src={src}
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         style={{
@@ -37,22 +80,20 @@ export default function VideoPlayer({
           willChange: "transform",
         }}
         muted
-        autoPlay
-        loop
         playsInline
         preload="metadata"
         aria-hidden="true"
         tabIndex={-1}
       />
 
-      {/* ── Vidéo principale centrée ── */}
+      {/* ── Vidéo principale ── */}
       <video
+        ref={mainRef}
         src={src}
         className={`relative z-10 w-full object-contain block ${className}`}
         style={{ maxHeight }}
         controls={controls}
         muted={muted}
-        autoPlay={autoPlay}
         playsInline
         preload="metadata"
       />
