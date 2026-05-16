@@ -226,13 +226,13 @@ export default function PublicProfilePage() {
   const [streak, setStreak] = useState(0);
   const [profileTab, setProfileTab] = useState<"posts" | "sessions">("posts");
 
-  // Sticky mini-header
-  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  // Scroll-based profile bar visibility
+  const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const check = () => setShowStickyHeader(window.scrollY > 160);
-    check(); // check on mount (handles already-scrolled state)
-    window.addEventListener("scroll", check, { passive: true });
-    return () => window.removeEventListener("scroll", check);
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   // Action bar state
@@ -545,7 +545,7 @@ export default function PublicProfilePage() {
   const isCertified = profile?.is_admin === true;
 
   return (
-    <div className="min-h-screen px-6 pt-10 pb-12 max-w-2xl mx-auto relative overflow-x-hidden">
+    <div className="min-h-screen px-6 pb-12 max-w-2xl mx-auto relative" style={{ paddingTop: 64 }}>
       {/* Blobs */}
       <div
         className="fixed top-0 left-0 pointer-events-none -z-10"
@@ -566,24 +566,30 @@ export default function PublicProfilePage() {
         }}
       />
 
-      {/* ── Sticky mini-header (visible quand on scrolle) ── */}
-      <AnimatePresence>
-        {showStickyHeader && (
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-5 py-3 md:left-[88px]"
-            style={{
-              background: "rgba(250,248,255,0.92)",
-              backdropFilter: "blur(16px)",
-              borderBottom: "1px solid rgba(212,192,255,0.2)",
-            }}
-          >
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => router.back()} className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0" }}>
-              <ArrowLeft size={15} strokeWidth={1.5} />
-            </motion.button>
+      {/* ── Barre de navigation permanente (toujours visible) ── */}
+      <div
+        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 md:left-[88px]"
+        style={{
+          height: 52,
+          background: scrolled ? "rgba(250,248,255,0.95)" : "transparent",
+          backdropFilter: scrolled ? "blur(16px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(212,192,255,0.25)" : "none",
+          transition: "background 0.25s ease, border-color 0.25s ease",
+        }}
+      >
+        {/* Bouton retour — toujours visible */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-1.5 cursor-pointer flex-shrink-0 rounded-xl px-2 py-1.5"
+          style={{ color: scrolled ? "#718096" : "#A0AEC0" }}
+        >
+          <ArrowLeft size={16} strokeWidth={1.5} />
+          {!scrolled && <span className="text-sm font-medium">Retour</span>}
+        </button>
+
+        {/* Identité — apparaît quand on scrolle */}
+        {scrolled && profile && (
+          <>
             <div
               className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold flex-shrink-0"
               style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
@@ -593,37 +599,23 @@ export default function PublicProfilePage() {
                 ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
                 : initial}
             </div>
-            <p className="text-sm font-semibold flex-1" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+            <p className="text-sm font-semibold flex-1 truncate" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
             {!isOwnProfile && user && (
-              <motion.button
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={handleFollow}
                 disabled={followLoading}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                 style={isFollowing
                   ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
                   : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }
                 }
               >
                 {isFollowing ? "Suivi" : "Suivre"}
-              </motion.button>
+              </button>
             )}
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
-
-      {/* Back */}
-      <motion.button
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        onClick={() => router.back()}
-        whileTap={{ scale: 0.93 }}
-        className="flex items-center gap-2 mb-8 cursor-pointer"
-        style={{ color: "#A0AEC0" }}
-      >
-        <ArrowLeft size={16} strokeWidth={1.5} />
-        <span className="text-sm font-medium">Retour</span>
-      </motion.button>
+      </div>
 
       {/* Profile card */}
       <motion.div
