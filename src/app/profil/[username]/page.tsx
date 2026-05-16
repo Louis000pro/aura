@@ -244,13 +244,12 @@ export default function PublicProfilePage() {
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
-  // Reset scroll position when navigating to a public profile
-  // useLayoutEffect runs synchronously before paint — prevents browser scroll restoration
+  // Reset scroll position when navigating to a public profile.
+  // Direct scrollTop assignment bypasses CSS scroll-behavior:smooth (unlike window.scrollTo).
   useLayoutEffect(() => {
-    if (typeof window !== "undefined") {
-      history.scrollRestoration = "manual";
-      window.scrollTo(0, 0);
-    }
+    history.scrollRestoration = "manual";
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0; // Safari fallback
   }, [username]);
 
   useEffect(() => {
