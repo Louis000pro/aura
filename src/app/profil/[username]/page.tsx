@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -226,6 +226,14 @@ export default function PublicProfilePage() {
   const [streak, setStreak] = useState(0);
   const [profileTab, setProfileTab] = useState<"posts" | "sessions">("posts");
 
+  // Sticky mini-header
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowStickyHeader(window.scrollY > 160);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   // Action bar state
   const [selectedPost, setSelectedPost] = useState<DbPost | null>(null);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
@@ -236,8 +244,12 @@ export default function PublicProfilePage() {
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
   // Reset scroll position when navigating to a public profile
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+  // useLayoutEffect runs synchronously before paint — prevents browser scroll restoration
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined") {
+      history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+    }
   }, [username]);
 
   useEffect(() => {
@@ -552,6 +564,52 @@ export default function PublicProfilePage() {
           filter: "blur(70px)",
         }}
       />
+
+      {/* ── Sticky mini-header (visible quand on scrolle) ── */}
+      <AnimatePresence>
+        {showStickyHeader && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-5 py-3 md:left-[88px]"
+            style={{
+              background: "rgba(250,248,255,0.92)",
+              backdropFilter: "blur(16px)",
+              borderBottom: "1px solid rgba(212,192,255,0.2)",
+            }}
+          >
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => router.back()} className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0" }}>
+              <ArrowLeft size={15} strokeWidth={1.5} />
+            </motion.button>
+            <div
+              className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold flex-shrink-0"
+              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+            >
+              {displayAvatar
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
+                : initial}
+            </div>
+            <p className="text-sm font-semibold flex-1" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+            {!isOwnProfile && user && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleFollow}
+                disabled={followLoading}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
+                style={isFollowing
+                  ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
+                  : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }
+                }
+              >
+                {isFollowing ? "Suivi" : "Suivre"}
+              </motion.button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Back */}
       <motion.button
