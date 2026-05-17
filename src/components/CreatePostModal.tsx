@@ -17,6 +17,7 @@ type Audience = "public" | "friends" | "private";
 export default function CreatePostModal({ onClose, onSuccess, suggestedTags = [] }: Props) {
   const { user } = useAuth();
   const [caption, setCaption] = useState("");
+  const [description, setDescription] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaKind, setMediaKind] = useState<"image" | "video" | null>(null);
@@ -100,6 +101,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
       user_id: user.id,
       type: "day",
       caption: caption.trim() || null,
+      description: description.trim() || null,
       audience,
       performance_data: {},
       media_url: mediaUrl,
@@ -193,6 +195,20 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
             style={{ color: remaining <= 30 ? (remaining < 0 ? "#FC8181" : "#D4A843") : "#C4C9D4" }}>
             {remaining}
           </span>
+        </div>
+
+        {/* Description (optionnelle) */}
+        <div className="relative rounded-2xl"
+          style={{ background: "rgba(240,235,255,0.3)", border: "1px solid rgba(212,192,255,0.3)" }}>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description, #hashtags, contexte… (optionnel)"
+            rows={2}
+            maxLength={800}
+            className="w-full bg-transparent text-sm outline-none px-4 pt-3 pb-3 rounded-2xl resize-none placeholder:font-light"
+            style={{ color: "#2D3748" }}
+          />
         </div>
 
         {/* Suggested hashtags */}

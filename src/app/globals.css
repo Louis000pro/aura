@@ -187,13 +187,18 @@
 }
 
 /* ─────────────────────────── HASHTAG ─────────────────────────── */
-.hashtag {
+/* Uses <b> tag so [data-theme="dark"] span {!important} cannot override */
+.hashtag,
+b.hashtag {
   color: #A78BFA !important;
   font-weight: 700 !important;
   cursor: pointer;
   display: inline;
+  font-style: normal;
+  text-decoration: none;
 }
-.hashtag:hover { opacity: 0.75; }
+.hashtag:hover,
+b.hashtag:hover { opacity: 0.75; }
 
 @layer utilities {
   .animate-float       { animation: float 4s ease-in-out infinite; }
@@ -298,6 +303,14 @@
 /* Preserve accent colors */
 [data-theme="dark"] [style*="#A78BFA"],
 [data-theme="dark"] [style*="167, 139, 250"] { color: #A78BFA !important; }
+
+/* Hashtag purple — must come AFTER [data-theme="dark"] span rule to win the cascade */
+[data-theme="dark"] .hashtag,
+[data-theme="dark"] p .hashtag,
+[data-theme="dark"] span.hashtag {
+  color: #A78BFA !important;
+  font-weight: 700 !important;
+}
 [data-theme="dark"] [style*="#D4A843"],
 [data-theme="dark"] [style*="212, 168, 67"] { color: #D4A843 !important; }
 [data-theme="dark"] [style*="#EF4444"],

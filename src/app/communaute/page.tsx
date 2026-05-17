@@ -1826,13 +1826,13 @@ function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (
     <>
       {parts.map((part, i) =>
         /^#\w+$/.test(part) ? (
-          <span
+          <b
             key={i}
-            className="hashtag"
+            style={{ color: "#A78BFA", fontWeight: 700, cursor: "pointer", fontStyle: "normal" }}
             onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }}
           >
             {part}
-          </span>
+          </b>
         ) : (
           <span key={i}>{part}</span>
         )
