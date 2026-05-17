@@ -375,12 +375,15 @@ export default function PublicProfilePage() {
         from_avatar_url: user.avatar ?? null,
         type: "follow",
       })).then(() => {}).catch(() => {});
-      // Email de notification (silencieux)
-      fetch("/api/notifications/follow", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
-      }).catch(() => {});
+      // Email de notification (silencieux, authentifié)
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        fetch("/api/notifications/follow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+          body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
+        }).catch(() => {});
+      });
       setIsFollowing(true);
       setFollowerCount((c) => c + 1);
       showToast("Abonné ! 🎉");

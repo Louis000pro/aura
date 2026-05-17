@@ -218,12 +218,15 @@ export default function DecouvertePage() {
         user_id: profile.id, from_user_id: user.id,
         from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "follow",
       });
-      // Email
-      fetch("/api/notifications/follow", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
-      }).catch(() => {});
+      // Email (authentifié)
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        fetch("/api/notifications/follow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+          body: JSON.stringify({ follower_id: user.id, followed_id: profile.id }),
+        }).catch(() => {});
+      });
       showToast(`Vous suivez @${profile.pseudo} 🎉`);
     }
   };
