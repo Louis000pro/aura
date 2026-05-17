@@ -1653,6 +1653,170 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   );
 }
 
+/* ── Hashtag bottom sheet ──────────────────────────────────── */
+function HashtagSheet({ tag, currentUserId, onClose }: {
+  tag: string;
+  currentUserId: string | null;
+  onClose: () => void;
+}) {
+  const [posts, setPosts] = useState<RealPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setPosts([]);
+    const supabase = createClient();
+    // Two parallel ilike queries (caption + description) to avoid .or() encoding issues
+    Promise.all([
+      supabase.from("posts").select(`
+        id, type, caption, description, media_url, media_type, created_at, user_id,
+        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        post_likes(user_id),
+        post_comments(id),
+        post_reposts(user_id)
+      `).ilike("caption", `%${tag}%`).order("created_at", { ascending: false }).limit(20),
+      supabase.from("posts").select(`
+        id, type, caption, description, media_url, media_type, created_at, user_id,
+        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        post_likes(user_id),
+        post_comments(id),
+        post_reposts(user_id)
+      `).ilike("description", `%${tag}%`).order("created_at", { ascending: false }).limit(20),
+    ]).then(([capRes, descRes]) => {
+      if (cancelled) return;
+      const all = [...(capRes.data ?? []), ...(descRes.data ?? [])] as unknown as RealPost[];
+      const seen = new Set<string>();
+      const deduped = all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+      setPosts(deduped);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [tag]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        className="w-full max-w-lg rounded-t-3xl flex flex-col"
+        style={{ background: "rgba(255,255,255,0.97)", maxHeight: "75vh" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
+          <div>
+            <span className="text-base font-semibold" style={{ color: "#A78BFA" }}>{tag}</span>
+            {!loading && (
+              <span className="ml-2 text-xs font-light" style={{ color: "#A0AEC0" }}>
+                {posts.length} post{posts.length !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(240,235,255,0.8)" }}
+          >
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-4 pb-8" style={{ scrollbarWidth: "none" }}>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <motion.div
+                className="w-6 h-6 rounded-full border-2"
+                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <span className="text-4xl">#</span>
+              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                Aucun post avec {tag}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 pt-1">
+              {posts.map(p => {
+                const pseudo = (p.author as { pseudo?: string } | null)?.pseudo ?? "utilisateur";
+                const avatar = (p.author as { avatar_url?: string } | null)?.avatar_url;
+                const liked = currentUserId ? p.post_likes.some(l => l.user_id === currentUserId) : false;
+                return (
+                  <div
+                    key={p.id}
+                    className="rounded-2xl overflow-hidden"
+                    style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}
+                  >
+                    {/* Author row */}
+                    <div className="flex items-center gap-2.5 px-3 pt-3 pb-2">
+                      <div
+                        className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden"
+                        style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                      >
+                        {avatar
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                          : pseudo[0]?.toUpperCase()}
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>@{pseudo}</span>
+                      <span className="text-[10px] ml-auto" style={{ color: "#A0AEC0" }}>{postTimeAgo(p.created_at)}</span>
+                    </div>
+
+                    {/* Caption */}
+                    {p.caption && (
+                      <p className="px-3 pb-2 text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>
+                        {p.caption}
+                      </p>
+                    )}
+
+                    {/* Media thumbnail */}
+                    {p.media_url && p.media_type === "image" && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
+                    )}
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: liked ? "#F43F5E" : "#A0AEC0" }}>
+                        <Heart size={12} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#A0AEC0" }} />
+                        {p.post_likes.length}
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: "#A0AEC0" }}>
+                        <MessageCircle size={12} />
+                        {p.post_comments.length}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ── Hashtag-aware caption renderer ───────────────────────── */
 function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (tag: string) => void }) {
   // Split on #word boundaries — explicit Unicode escapes for accented chars
@@ -2351,6 +2515,7 @@ function CommunautePageInner() {
     difficulty: string; category: string; exerciseList: Exercise[];
   } | null>(null);
 
+  const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -3479,7 +3644,7 @@ function CommunautePageInner() {
                   {/* Titre — affiché en haut avant la photo */}
                   {post.caption && (
                     <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
-                      <CaptionText text={post.caption} onHashtagClick={(tag) => { setSearch(tag); setView("search"); }} />
+                      <CaptionText text={post.caption} onHashtagClick={(tag) => setActiveHashtag(tag)} />
                     </p>
                   )}
 
@@ -3497,7 +3662,7 @@ function CommunautePageInner() {
                   {/* Bio / description — affichée après la photo */}
                   {post.description && (
                     <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
-                      <CaptionText text={post.description} onHashtagClick={(tag) => { setSearch(tag); setView("search"); }} />
+                      <CaptionText text={post.description} onHashtagClick={(tag) => setActiveHashtag(tag)} />
                     </p>
                   )}
 
@@ -4270,6 +4435,17 @@ function CommunautePageInner() {
             </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Hashtag bottom sheet */}
+      <AnimatePresence>
+        {activeHashtag && (
+          <HashtagSheet
+            tag={activeHashtag}
+            currentUserId={user?.id ?? null}
+            onClose={() => setActiveHashtag(null)}
+          />
+        )}
       </AnimatePresence>
 
       {/* Global Modals */}
