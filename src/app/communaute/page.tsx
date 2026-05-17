@@ -1819,21 +1819,20 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
 
 /* ── Hashtag-aware caption renderer ───────────────────────── */
 function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (tag: string) => void }) {
-  // Split on #word boundaries — explicit Unicode escapes for accented chars
-  const parts = text.split(/(#[a-zA-Z0-9_À-ɏ]+)/g);
+  if (!text.includes("#")) return <>{text}</>;
+  // Simple split on #word — \w covers a-z A-Z 0-9 _
+  const parts = text.split(/(#\w+)/);
   return (
     <>
       {parts.map((part, i) =>
-        part.startsWith("#") ? (
-          <button
+        /^#\w+$/.test(part) ? (
+          <span
             key={i}
-            type="button"
             onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }}
-            className="font-semibold cursor-pointer transition-opacity hover:opacity-70"
-            style={{ color: "#A78BFA" }}
+            style={{ color: "#A78BFA", fontWeight: 700, cursor: "pointer", textDecoration: "none" }}
           >
             {part}
-          </button>
+          </span>
         ) : (
           <span key={i}>{part}</span>
         )
@@ -3218,7 +3217,7 @@ function CommunautePageInner() {
   // Trending hashtags : extraire les #tags les plus fréquents des posts chargés
   const trendingHashtags = useMemo(() => {
     const counts = new Map<string, number>();
-    const tagRe = /#[a-zA-Z0-9_À-ɏ]+/g;
+    const tagRe = /#\w+/g;
     realFeedPosts.forEach((p) => {
       const text = `${p.caption ?? ""} ${p.description ?? ""}`;
       const tags = text.match(tagRe);
