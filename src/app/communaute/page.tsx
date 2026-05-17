@@ -1119,15 +1119,36 @@ function OptionsMenu({ postId, saved, isOwn, canEdit, onSave, onHide, onReport, 
   );
 }
 
+// Utilitaire copie robuste (clipboard API + fallback execCommand)
+function copyToClipboard(text: string): Promise<void> {
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    return navigator.clipboard.writeText(text).catch(() => {
+      // fallback
+      const el = document.createElement("textarea");
+      el.value = text; el.style.position = "fixed"; el.style.opacity = "0";
+      document.body.appendChild(el); el.select();
+      try { document.execCommand("copy"); } finally { document.body.removeChild(el); }
+    });
+  }
+  return new Promise((resolve) => {
+    const el = document.createElement("textarea");
+    el.value = text; el.style.position = "fixed"; el.style.opacity = "0";
+    document.body.appendChild(el); el.select();
+    try { document.execCommand("copy"); } finally { document.body.removeChild(el); }
+    resolve();
+  });
+}
+
 // Share Modal
 function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string; onClose: () => void; onShareDM?: () => void }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    navigator.clipboard.writeText(url).catch(() => {});
-    setCopied(true);
-    setTimeout(() => { setCopied(false); onClose(); }, 1500);
+    copyToClipboard(url).finally(() => {
+      setCopied(true);
+      setTimeout(() => { setCopied(false); onClose(); }, 1500);
+    });
   };
 
   return (
@@ -1434,7 +1455,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
       const supabase = createClient();
       const { data, error } = await supabase
         .from("post_comments")
-        .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+        .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
         .eq("post_id", String(postId))
         .order("created_at", { ascending: true })
         .limit(50);
@@ -1444,7 +1465,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
           await fetch("/api/setup-db", { method: "POST" });
           const { data: data2, error: e2 } = await supabase
             .from("post_comments")
-            .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+            .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
             .eq("post_id", String(postId))
             .order("created_at", { ascending: true })
             .limit(50);
@@ -1481,7 +1502,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
     // Insert seul (sans select chainé pour éviter les erreurs de join)
     const { error } = await supabase
       .from("post_comments")
-      .insert({ post_id: String(postId), user_id: user.id, content });
+      .insert({ post_id: String(postId), user_id: user.id, text: content });
 
     setSending(false);
     if (error) {
@@ -1675,7 +1696,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
       const supabase = createClient();
       const { data, error } = await supabase
         .from("post_comments")
-        .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+        .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
         .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
       if (error) {
         // Table manquante → tente la migration auto
@@ -1685,7 +1706,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
           // Réessaie après migration
           const { data: data2, error: error2 } = await supabase
             .from("post_comments")
-            .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+            .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
             .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
           if (error2) { setDbError(true); }
           else { setComments((data2 as unknown as RealComment[]) ?? []); }
@@ -1705,7 +1726,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
     const tmpId = `tmp-${Date.now()}`;
     setComments(prev => [...prev, { id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id, author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null } }]);
     const supabase = createClient();
-    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, content });
+    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text: content });
     setSending(false);
     if (error) {
       console.error("[comments] insert error:", error.message, error.code);
@@ -1882,6 +1903,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const [speed, setSpeed] = useState(1);
   const [captionsOn, setCaptionsOn] = useState(false);
   const [reported, setReported] = useState(false);
+  const [shared, setShared] = useState(false);
   const [doubleTapHeart, setDoubleTapHeart] = useState(false);
 
   // Double-tap to like
@@ -1991,7 +2013,10 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
 
   const handleShare = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    navigator.clipboard.writeText(url).catch(() => {});
+    copyToClipboard(url).finally(() => {
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    });
   };
 
   const handleReport = () => {
@@ -2153,8 +2178,12 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
 
           {/* Partager */}
           <button onClick={() => handleShare()} className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <Share2 size={24} strokeWidth={1.5} style={{ color: "#fff" }} />
-            <span className="text-white text-[11px] font-semibold" style={{ opacity: 0.65 }}>Share</span>
+            <motion.div animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
+              <Share2 size={24} strokeWidth={1.5} style={{ color: shared ? "#34D399" : "#fff" }} />
+            </motion.div>
+            <span className="text-white text-[11px] font-semibold" style={{ opacity: shared ? 1 : 0.65, color: shared ? "#34D399" : "#fff" }}>
+              {shared ? "Copié ✓" : "Share"}
+            </span>
           </button>
 
           {/* Paramètres */}
