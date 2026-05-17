@@ -1651,19 +1651,19 @@ function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onComm
       initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 32, stiffness: 320 }}
       className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
-      style={{ background: "rgba(18,12,30,0.97)", backdropFilter: "blur(20px)", maxHeight: "72%", minHeight: 320 }}
+      style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }}
       onClick={e => e.stopPropagation()}
     >
       {/* Poignée */}
       <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.25)" }} />
+        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
       </div>
-      <div className="px-4 pb-3 flex items-center justify-between flex-shrink-0">
-        <p className="text-white text-sm font-semibold">{commentCount} commentaire{commentCount !== 1 ? "s" : ""}</p>
+      <div className="px-4 pb-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: "1px solid rgba(212,192,255,0.3)" }}>
+        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{commentCount} commentaire{commentCount !== 1 ? "s" : ""}</p>
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
           className="w-7 h-7 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(255,255,255,0.1)" }}>
-          <X size={13} strokeWidth={2} style={{ color: "rgba(255,255,255,0.7)" }} />
+          style={{ background: "rgba(240,235,255,0.8)" }}>
+          <X size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
         </motion.button>
       </div>
 
@@ -1761,13 +1761,13 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
             <p className="text-xs" style={{ color: "#FC8181" }}>Commentaires indisponibles</p>
           </div>
         ) : topLevel.length === 0 ? (
-          <p className="text-center text-sm py-8" style={{ color: "rgba(255,255,255,0.35)" }}>Sois le premier à commenter</p>
+          <p className="text-center text-sm py-8" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
         ) : topLevel.map((c, i) => (
           <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
-            <CommentRow c={c} user={user} dark onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+            <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
             {replies(c.id).map(r => (
               <div key={r.id} className="ml-9 mt-2">
-                <CommentRow c={r} user={user} dark onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+                <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
               </div>
             ))}
           </motion.div>
@@ -1776,14 +1776,14 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
 
       {/* Indicateur réponse */}
       {replyingTo && (
-        <div className="flex items-center gap-2 px-4 py-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2 px-4 py-1.5" style={{ borderTop: "1px solid rgba(212,192,255,0.3)", background: "rgba(240,235,255,0.5)" }}>
           <span className="text-[11px]" style={{ color: "#A78BFA" }}>↩ Répondre à @{replyingTo.pseudo}</span>
-          <button onClick={() => setReplyingTo(null)} className="text-[11px] cursor-pointer ml-auto" style={{ color: "rgba(255,255,255,0.4)" }}>✕</button>
+          <button onClick={() => setReplyingTo(null)} className="text-[11px] cursor-pointer ml-auto" style={{ color: "#A0AEC0" }}>✕</button>
         </div>
       )}
       {sendError && <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>}
 
-      <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(212,192,255,0.3)" }}>
         <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
           style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
           {user?.avatar
@@ -1796,11 +1796,11 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
           placeholder={user ? (replyingTo ? `↩ @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi"}
           disabled={!user}
           className="flex-1 text-sm outline-none px-3 py-2.5 rounded-2xl"
-          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
         <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-          style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(255,255,255,0.08)" }}>
-          <Send size={13} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "rgba(255,255,255,0.3)" }} />
+          style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)" }}>
+          <Send size={13} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
         </motion.button>
       </div>
     </div>
@@ -1818,24 +1818,24 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
       initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 32, stiffness: 320 }}
       className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl pb-8"
-      style={{ background: "rgba(18,12,30,0.97)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }}
       onClick={e => e.stopPropagation()}
     >
       <div className="flex justify-center pt-3 pb-4">
-        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.25)" }} />
+        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
       </div>
       <div className="px-5">
-        <p className="text-white text-sm font-semibold mb-4">Paramètres vidéo</p>
+        <p className="text-sm font-semibold mb-4" style={{ color: "#2D3748" }}>Paramètres vidéo</p>
         {/* Vitesse */}
         <div className="mb-5">
-          <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "rgba(212,192,255,0.6)" }}>Vitesse de lecture</p>
+          <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>Vitesse de lecture</p>
           <div className="flex gap-2">
             {speeds.map(s => (
               <motion.button key={s} whileTap={{ scale: 0.93 }} onClick={() => onSpeedChange(s)}
                 className="flex-1 py-2.5 rounded-2xl text-xs font-bold cursor-pointer"
                 style={speed === s
-                  ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 2px 12px rgba(167,139,250,0.4)" }
-                  : { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }}>
+                  ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }
+                  : { background: "rgba(240,235,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.4)" }}>
                 {s === 1 ? "×1" : `×${s}`}
               </motion.button>
             ))}
@@ -1844,29 +1844,29 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
         {/* Sous-titres */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onToggleCaptions}
           className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2 cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.4)" }}>
           <div className="flex items-center gap-3">
-            <span className="text-lg">CC</span>
+            <span className="text-base font-bold" style={{ color: "#A78BFA" }}>CC</span>
             <div>
-              <p className="text-sm font-medium text-left" style={{ color: "#fff" }}>Sous-titres</p>
-              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{captionsOn ? "Activés" : "Désactivés"}</p>
+              <p className="text-sm font-medium text-left" style={{ color: "#2D3748" }}>Sous-titres</p>
+              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>{captionsOn ? "Activés" : "Désactivés"}</p>
             </div>
           </div>
-          <div className="w-11 h-6 rounded-full flex items-center px-1 transition-all" style={{ background: captionsOn ? "linear-gradient(135deg,#D4C0FF,#A78BFA)" : "rgba(255,255,255,0.15)" }}>
-            <motion.div className="w-4 h-4 rounded-full bg-white" animate={{ x: captionsOn ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+          <div className="w-11 h-6 rounded-full flex items-center px-1 transition-all" style={{ background: captionsOn ? "linear-gradient(135deg,#D4C0FF,#A78BFA)" : "rgba(212,192,255,0.3)" }}>
+            <motion.div className="w-4 h-4 rounded-full bg-white shadow" animate={{ x: captionsOn ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
           </div>
         </motion.button>
         {/* Signaler */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onReport}
           className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-2 cursor-pointer"
-          style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.15)" }}>
+          style={{ background: "rgba(252,129,129,0.07)", border: "1px solid rgba(252,129,129,0.2)" }}>
           <Flag size={16} strokeWidth={1.5} style={{ color: "#FC8181" }} />
           <p className="text-sm font-medium" style={{ color: "#FC8181" }}>Signaler cette vidéo</p>
         </motion.button>
         {/* Fermer */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
           className="w-full py-3 mt-3 rounded-2xl text-sm font-medium cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}>
+          style={{ background: "rgba(240,235,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.3)" }}>
           Fermer
         </motion.button>
       </div>
