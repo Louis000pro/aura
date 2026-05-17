@@ -1951,14 +1951,14 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
       )}
 
       {/* ── Layout : vidéo centrée + sidebar droite ── */}
-      <div className="flex items-end gap-5 h-full py-6 relative" style={{ maxHeight: "100%", zIndex: 1 }}>
+      <div className="flex items-center gap-5 h-full px-4 relative" style={{ zIndex: 1 }}>
 
         {/* ── Colonne vidéo ── */}
-        <div className="flex flex-col justify-end h-full" style={{ width: 340 }}>
+        <div className="flex flex-col justify-center h-full">
 
-          {/* Conteneur vidéo 9/16 */}
+          {/* Conteneur vidéo 9/16 — prend toute la hauteur disponible */}
           <div className="relative rounded-2xl overflow-hidden flex-shrink-0"
-            style={{ width: 340, aspectRatio: "9/16", maxHeight: "calc(100% - 100px)", background: "#111", cursor: "pointer" }}
+            style={{ height: "calc(100% - 20px)", aspectRatio: "9/16", background: "#111", cursor: "pointer" }}
             onClick={handleVideoTap}>
 
             {post.media_url && (
@@ -2055,7 +2055,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
         </div>
 
         {/* ── Sidebar actions droite ── */}
-        <div className="flex flex-col items-center gap-5 pb-6 flex-shrink-0" style={{ width: 52 }}>
+        <div className="flex flex-col items-center justify-center gap-5 flex-shrink-0" style={{ width: 52 }}>
           {/* Like */}
           <button onClick={() => toggleLike()} className="flex flex-col items-center gap-0.5 cursor-pointer">
             <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
