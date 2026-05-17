@@ -2055,7 +2055,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
         </div>
 
         {/* ── Sidebar actions droite ── */}
-        <div className="flex flex-col items-center justify-center gap-5 flex-shrink-0" style={{ width: 52 }}>
+        <div className="flex flex-col items-center justify-end gap-5 flex-shrink-0 pb-16" style={{ width: 52, height: "calc(100% - 20px)" }}>
           {/* Like */}
           <button onClick={() => toggleLike()} className="flex flex-col items-center gap-0.5 cursor-pointer">
             <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
@@ -2100,7 +2100,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
             className="flex flex-col items-center gap-0.5 cursor-pointer">
             <div className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: showSettings ? "rgba(212,192,255,0.25)" : "rgba(255,255,255,0.1)", border: showSettings ? "1px solid rgba(212,192,255,0.5)" : "1px solid rgba(255,255,255,0.12)" }}>
-              <span className="text-sm">⚙️</span>
+              <MoreHorizontal size={18} strokeWidth={2} style={{ color: "#fff" }} />
             </div>
           </button>
         </div>
