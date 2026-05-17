@@ -1655,8 +1655,8 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
 
 /* ── Hashtag-aware caption renderer ───────────────────────── */
 function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (tag: string) => void }) {
-  // Split on #word boundaries (supports accented chars)
-  const parts = text.split(/(#[\wÀ-ɏ]+)/g);
+  // Split on #word boundaries — explicit Unicode escapes for accented chars
+  const parts = text.split(/(#[a-zA-Z0-9_À-ɏ]+)/g);
   return (
     <>
       {parts.map((part, i) =>
@@ -2338,6 +2338,7 @@ function CommunautePageInner() {
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
   const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string }[]>([]);
   const [realSessions, setRealSessions] = useState<SessionResult[]>([]);
+  const [hashtagDbPosts, setHashtagDbPosts] = useState<RealPost[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   // followingIds = ensemble des IDs Supabase que l'utilisateur suit réellement
@@ -2985,25 +2986,39 @@ function CommunautePageInner() {
     }
   };
 
-  // Fetch real profiles from Supabase on search
+  // Fetch real profiles / sessions / hashtag posts from Supabase on search
   useEffect(() => {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     const q = search.trim();
-    if (!q) { setRealProfiles([]); setRealSessions([]); return; }
+    if (!q) { setRealProfiles([]); setRealSessions([]); setHashtagDbPosts([]); return; }
+    const isHashtag = q.startsWith("#") && q.length > 1;
     searchDebounce.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
         const supabase = createClient();
-        const [profileRes, sessionRes] = await Promise.all([
-          searchFilter !== "seances"
+        const [profileRes, sessionRes, postRes] = await Promise.all([
+          !isHashtag && searchFilter !== "seances"
             ? supabase.from("profiles").select("id, pseudo, full_name, bio, avatar_url").or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`).limit(15)
             : { data: [] },
-          searchFilter !== "compte"
+          !isHashtag && searchFilter !== "compte"
             ? supabase.from("custom_sessions").select("id, title, category, duration, difficulty, muscles, accent, icon, user_id").eq("visibility", "public").ilike("title", `%${q}%`).limit(12)
+            : { data: [] },
+          isHashtag
+            ? supabase.from("posts").select(`
+                id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
+                author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
+                post_likes(user_id),
+                post_comments(id),
+                post_reposts(user_id)
+              `)
+              .or(`caption.ilike.%${q}%,description.ilike.%${q}%`)
+              .order("created_at", { ascending: false })
+              .limit(30)
             : { data: [] },
         ]);
         setRealProfiles((profileRes.data as typeof realProfiles) ?? []);
         setRealSessions((sessionRes.data as SessionResult[]) ?? []);
+        setHashtagDbPosts((postRes.data as unknown as RealPost[]) ?? []);
       } finally {
         setSearchLoading(false);
       }
@@ -3013,25 +3028,32 @@ function CommunautePageInner() {
   const filteredResults = useMemo(() => {
     const q = search.trim().toLowerCase();
     const isHashtag = q.startsWith("#") && q.length > 1;
+    // Merge DB results + locally-loaded posts, deduplicated by id
+    const localMatches = isHashtag
+      ? realFeedPosts.filter(p =>
+          p.caption?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q)
+        )
+      : [];
+    const dbIds = new Set(hashtagDbPosts.map(p => p.id));
+    const merged = [
+      ...hashtagDbPosts,
+      ...localMatches.filter(p => !dbIds.has(p.id)),
+    ];
     return {
       realProfiles: searchFilter !== "seances" ? realProfiles : [],
       sessions:     searchFilter !== "compte"  ? realSessions : [],
       // Suggestions : comptes pas encore suivis (utilisé quand search est vide)
       suggestions:  suggestedProfiles.filter(p => !followingIds.has(p.id)).slice(0, 8),
-      // Posts filtrés par hashtag
-      hashtagPosts: isHashtag
-        ? realFeedPosts.filter(p =>
-            p.caption?.toLowerCase().includes(q) ||
-            p.description?.toLowerCase().includes(q)
-          )
-        : [],
+      // Posts trouvés par hashtag (DB + local cache)
+      hashtagPosts: isHashtag ? merged : [],
     };
-  }, [searchFilter, realProfiles, realSessions, suggestedProfiles, followingIds, search, realFeedPosts]);
+  }, [searchFilter, realProfiles, realSessions, suggestedProfiles, followingIds, search, realFeedPosts, hashtagDbPosts]);
 
   // Trending hashtags : extraire les #tags les plus fréquents des posts chargés
   const trendingHashtags = useMemo(() => {
     const counts = new Map<string, number>();
-    const tagRe = /#[\wÀ-ɏ]+/g;
+    const tagRe = /#[a-zA-Z0-9_À-ɏ]+/g;
     realFeedPosts.forEach((p) => {
       const text = `${p.caption ?? ""} ${p.description ?? ""}`;
       const tags = text.match(tagRe);
