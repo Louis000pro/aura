@@ -1828,8 +1828,8 @@ function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (
         /^#\w+$/.test(part) ? (
           <span
             key={i}
+            className="hashtag"
             onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }}
-            style={{ color: "#A78BFA", fontWeight: 700, cursor: "pointer", textDecoration: "none" }}
           >
             {part}
           </span>

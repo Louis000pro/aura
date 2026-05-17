@@ -186,6 +186,15 @@
   to   { transform: rotate(360deg); }
 }
 
+/* ─────────────────────────── HASHTAG ─────────────────────────── */
+.hashtag {
+  color: #A78BFA !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  display: inline;
+}
+.hashtag:hover { opacity: 0.75; }
+
 @layer utilities {
   .animate-float       { animation: float 4s ease-in-out infinite; }
   .animate-float-slow  { animation: float-slow 6s ease-in-out infinite; }
