@@ -2228,7 +2228,7 @@ function CommunautePageInner() {
   const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
-  const [feedTab, setFeedTab] = useState<"posts" | "videos">("posts");
+  const [feedTab, setFeedTab] = useState<"posts" | "videos">("videos");
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
@@ -3034,8 +3034,8 @@ function CommunautePageInner() {
             {/* ── Tab Publications / Vidéos ── */}
             <div className="flex items-center gap-2 px-1">
               {([
-                { key: "posts" as const, label: "📝 Publications" },
                 { key: "videos" as const, label: "🎬 Vidéos" },
+                { key: "posts" as const, label: "📝 Publications" },
               ]).map(({ key, label }) => (
                 <motion.button key={key} whileTap={{ scale: 0.94 }}
                   onClick={() => setFeedTab(key)}
