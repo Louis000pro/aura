@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/aura/**)",
+      "Bash(gh pr create --title 'feat: titre, icônes, BodyAvatar, caméra, fluidité, mode sombre' --base base/pre-session --head review/session-features --body ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat\\(welcome\\): refonte de l'\\\\''écran de bienvenue *)",
+      "Bash(node -e \"const p = require\\('C:/aura/node_modules/next/package.json'\\); console.log\\(p.version\\)\")",
+      "PowerShell(Select-String -Path \"C:\\\\aura\\\\node_modules\\\\next\\\\dist\\\\server\\\\app-render\\\\app-render.js\" -Pattern \"template\" -SimpleMatch | Select-Object -First 5 | ForEach-Object { $_.Line.Trim\\(\\).Substring\\(0, [Math]::Min\\(120, $_.Line.Trim\\(\\).Length\\)\\) })",
+      "Bash(git commit -m 'feat\\(ux\\): transitions fluides entre les onglets *)",
+      "Bash(git commit -m 'feat\\(PerformanceCard\\): refonte DA luxe *)",
+      "Bash(git commit -m 'refactor\\(PerformanceCard\\): DA Strava — gradient coloré, zéro neon *)",
+      "Bash(git commit -m 'feat\\(ShareCard\\): personnalisation couleur + valeurs *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git rebase *)",
+      "Bash(git stash *)",
+      "Bash(npx tsc *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git push *)",
+      "Bash(git commit -m 'fix: IA respecte la durée demandée en connaissant la formule de calcul *)",
+      "Bash(git commit -m 'feat: IA connectée au niveau et aux muscles sélectionnés dans le formulaire *)",
+      "Bash(git commit -m 'fix: niveau = difficulté des exos uniquement, durée toujours respectée *)",
+      "Bash(git commit -m 'fix: liberté totale à l'\\\\''IA sur sets/reps/exos, seule la durée est contrainte *)",
+      "Bash(git commit -m 'fix: validation GMAIL_USER/PASS avant envoi OTP, message d'\\\\''erreur clair *)",
+      "Bash(dir /A \"C:\\\\aura\\\\.claude\\\\worktrees\\\\interesting-morse-751103\")",
+      "Bash(rm \"src/app/api/auth/[...nextauth]/route.ts\")",
+      "Bash(rmdir \"src/app/api/auth/[...nextauth]\")",
+      "Bash(git commit -m 'chore: suppression du système NextAuth redondant ajouté par l'\\\\''ami *)"
+    ]
+  }
+}
