@@ -1422,24 +1422,42 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   const { user } = useAuth();
   const [comments, setComments]   = useState<RealComment[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [dbError, setDbError]     = useState(false);
+  const [sendError, setSendError] = useState("");
   const [input, setInput]         = useState("");
   const [sending, setSending]     = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Charger les vrais commentaires
+  // Charger les commentaires
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("post_comments")
-      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-      .eq("post_id", String(postId))
-      .order("created_at", { ascending: true })
-      .limit(50)
-      .then(({ data }) => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("post_comments")
+        .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+        .eq("post_id", String(postId))
+        .order("created_at", { ascending: true })
+        .limit(50);
+      if (error) {
+        console.error("[CommentsSection] load error:", error.message);
+        try {
+          await fetch("/api/setup-db", { method: "POST" });
+          const { data: data2, error: e2 } = await supabase
+            .from("post_comments")
+            .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+            .eq("post_id", String(postId))
+            .order("created_at", { ascending: true })
+            .limit(50);
+          if (e2) setDbError(true);
+          else { setComments((data2 as unknown as RealComment[]) ?? []); setTimeout(() => inputRef.current?.focus(), 100); }
+        } catch { setDbError(true); }
+      } else {
         setComments((data as unknown as RealComment[]) ?? []);
-        setLoading(false);
         setTimeout(() => inputRef.current?.focus(), 100);
-      });
+      }
+      setLoading(false);
+    };
+    void load();
   }, [postId]);
 
   const handleSend = async () => {
@@ -1467,10 +1485,12 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
 
     setSending(false);
     if (error) {
+      console.error("[CommentsSection] insert error:", error.message, error.code);
       setComments((prev) => prev.filter((c) => c.id !== tmpId));
       setInput(content);
-      console.error("[CommentsSection] insert error:", error);
+      setSendError(error.code === "42P01" ? "Table manquante — exécute la migration" : error.message);
     } else {
+      setSendError("");
       onCommentAdded?.();
       // Notif au propriétaire du post
       if (postOwnerId && postOwnerId !== user.id) {
@@ -1509,6 +1529,10 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
             </div>
+          ) : dbError ? (
+            <p className="text-xs text-center py-2" style={{ color: "#FC8181" }}>
+              ⚠️ Commentaires indisponibles — migration requise
+            </p>
           ) : comments.length === 0 ? (
             <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>
               Sois le premier à commenter
@@ -1554,6 +1578,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
 
         {/* Saisie */}
         <div className="flex items-center gap-2">
+          {sendError && <p className="text-[10px] mb-1" style={{ color: "#FC8181" }}>{sendError}</p>}
           <input
             ref={inputRef}
             type="text"
@@ -1638,29 +1663,56 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
   type RealComment = { id: string; content: string; created_at: string; user_id: string; author: { pseudo: string; avatar_url?: string | null } | null };
   const [comments, setComments] = useState<RealComment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.from("post_comments")
-      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-      .eq("post_id", postId).order("created_at", { ascending: true }).limit(80)
-      .then(({ data }) => { setComments((data as unknown as RealComment[]) ?? []); setLoading(false); });
+    const load = async () => {
+      // Essaie de créer les tables si elles n'existent pas
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("post_comments")
+        .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+        .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
+      if (error) {
+        // Table manquante → tente la migration auto
+        console.error("[comments] load error:", error.message);
+        try {
+          await fetch("/api/setup-db", { method: "POST" });
+          // Réessaie après migration
+          const { data: data2, error: error2 } = await supabase
+            .from("post_comments")
+            .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+            .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
+          if (error2) { setDbError(true); }
+          else { setComments((data2 as unknown as RealComment[]) ?? []); }
+        } catch { setDbError(true); }
+      } else {
+        setComments((data as unknown as RealComment[]) ?? []);
+      }
+      setLoading(false);
+    };
+    void load();
   }, [postId]);
 
   const handleSend = async () => {
     if (!input.trim() || !user || sending) return;
     const content = input.trim();
-    setInput(""); setSending(true);
+    setSendError(""); setInput(""); setSending(true);
     const tmpId = `tmp-${Date.now()}`;
     setComments(prev => [...prev, { id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id, author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null } }]);
     const supabase = createClient();
     const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, content });
     setSending(false);
-    if (error) { setComments(prev => prev.filter(c => c.id !== tmpId)); setInput(content); }
-    else {
+    if (error) {
+      console.error("[comments] insert error:", error.message, error.code);
+      setComments(prev => prev.filter(c => c.id !== tmpId));
+      setInput(content);
+      setSendError(error.code === "42P01" ? "Table manquante — migration requise" : error.message);
+    } else {
       onCommentAdded();
       if (postOwnerId && postOwnerId !== user.id) {
         void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: postId });
@@ -1674,6 +1726,12 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
         {loading ? (
           <div className="flex justify-center py-6">
             <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+          </div>
+        ) : dbError ? (
+          <div className="flex flex-col items-center gap-2 py-8 px-4 text-center">
+            <span className="text-2xl">⚠️</span>
+            <p className="text-xs font-medium" style={{ color: "#FC8181" }}>Table commentaires manquante</p>
+            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>Va dans Supabase Dashboard → SQL Editor et exécute la migration</p>
           </div>
         ) : comments.length === 0 ? (
           <p className="text-center text-sm py-8" style={{ color: "rgba(255,255,255,0.35)" }}>Sois le premier à commenter</p>
@@ -1707,6 +1765,10 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
           })
         )}
       </div>
+      {/* Erreur d'envoi */}
+      {sendError && (
+        <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>
+      )}
       {/* Input */}
       <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
