@@ -1940,10 +1940,18 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
   return (
-    <div className="w-full h-full flex items-center justify-center select-none" style={{ background: "#0d0d0d" }}>
+    <div className="w-full h-full flex items-center justify-center select-none relative overflow-hidden" style={{ background: "#0d0d0d" }}>
+
+      {/* ── Fond flouté ── */}
+      {post.media_url && (
+        <video src={post.media_url}
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{ filter: "blur(28px) brightness(0.3)", transform: "scale(1.15)", zIndex: 0 }}
+          muted playsInline preload="metadata" loop autoPlay />
+      )}
 
       {/* ── Layout : vidéo centrée + sidebar droite ── */}
-      <div className="flex items-end gap-5 h-full py-6" style={{ maxHeight: "100%" }}>
+      <div className="flex items-end gap-5 h-full py-6 relative" style={{ maxHeight: "100%", zIndex: 1 }}>
 
         {/* ── Colonne vidéo ── */}
         <div className="flex flex-col justify-end h-full" style={{ width: 340 }}>
