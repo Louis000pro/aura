@@ -4,7 +4,6 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
-import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
 import PWARegister from "@/components/PWARegister";
 
@@ -45,14 +44,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('aura-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();` }} />
       </head>
       <body className="min-h-full">
-        <SessionProviderWrapper>
-          <AuthProvider>
-            <Navigation />
-            <MainWrapper>{children}</MainWrapper>
-            <OnboardingWrapper />
-            <PWARegister />
-          </AuthProvider>
-        </SessionProviderWrapper>
+        <AuthProvider>
+          <Navigation />
+          <MainWrapper>{children}</MainWrapper>
+          <OnboardingWrapper />
+          <PWARegister />
+        </AuthProvider>
       </body>
     </html>
   );

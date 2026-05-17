@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -111,7 +111,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[200] flex items-end md:items-center justify-center"
-      style={{ background: "rgba(20,10,40,0.72)", backdropFilter: "blur(20px)" }}
+      style={{ background: "rgba(20,10,40,0.72)", backdropFilter: "blur(10px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div

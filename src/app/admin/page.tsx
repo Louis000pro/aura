@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -714,7 +714,7 @@ export default function AdminPage() {
               className="w-full max-w-sm rounded-3xl p-6"
               style={{
                 background: "rgba(255,255,255,0.97)",
-                backdropFilter: "blur(40px)",
+                backdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.9)",
                 boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
               }}
