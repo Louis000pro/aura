@@ -893,12 +893,6 @@ function Dashboard() {
           {/* VocalOrb — héros de la page */}
           <VocalOrb onTranscript={handleVoiceTranscript} />
 
-          {/* Quick actions */}
-          <div className="flex gap-3 w-full max-w-xs">
-            {quickActionsConfig.map(({ icon, label, color, bg }, i) => (
-              <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
-            ))}
-          </div>
         </motion.div>
 
         {/* ─ Droite : Stats + Programme ─ */}
@@ -979,11 +973,6 @@ function Dashboard() {
           transition={{ duration: 0.6, delay: 0.25 }} className="flex-1 flex items-center justify-center px-6 py-6">
           <VocalOrb onTranscript={handleVoiceTranscript} />
         </motion.div>
-        <div className="px-5 pb-3 flex gap-2">
-          {quickActionsConfig.map(({ icon, label, color, bg }, i) => (
-            <QuickActionCard key={label} icon={icon} label={label} color={color} bg={bg} index={i} onClick={quickActionHandlers[i]} />
-          ))}
-        </div>
         <div className="px-5 pb-4 grid grid-cols-2 gap-3">
           {[
             { key: "chat" as const, icon: MessageCircle, label: "Chat IA",   color: "#A78BFA", bg: "lg-rose" },
