@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -52,7 +52,46 @@ const MEAL_META: Record<MealType, { label: string; icon: string }> = {
 
 const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-const GOALS = { calories: 2200, proteins: 140, carbs: 240, fats: 70, burned: 412 };
+/* ─── calculateGoals ────────────────────────────────────────────────── */
+function calculateGoals(profile: { age?: string; weight?: string; height?: string; gender?: string; goals?: string[]; level?: string; sessionsPerWeek?: string } | null) {
+  const weight = parseFloat(profile?.weight ?? "0") || 75;
+  const height = parseFloat(profile?.height ?? "0") || 175;
+  const age    = parseFloat(profile?.age    ?? "0") || 25;
+  const isFemale = (profile?.gender ?? "homme") === "femme";
+  const goals  = profile?.goals ?? [];
+  const level  = profile?.level ?? "Intermédiaire";
+
+  // Harris-Benedict BMR
+  const bmr = isFemale
+    ? 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
+    : 88.362  + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+
+  // Activity multiplier basé sur le niveau + séances/semaine
+  const sessionsPerWeek = parseInt(profile?.sessionsPerWeek ?? "3") || 3;
+  let actMult = 1.375;
+  if (level === "Débutant" || sessionsPerWeek <= 2) actMult = 1.2;
+  else if (level === "Avancé" || sessionsPerWeek >= 5) actMult = 1.725;
+  else if (sessionsPerWeek >= 4) actMult = 1.55;
+
+  let tdee = Math.round(bmr * actMult);
+
+  // Ajustement selon objectif
+  const wantMasse = goals.includes("prise_de_masse");
+  const wantPoids = goals.includes("perte_de_poids");
+  if (wantMasse && !wantPoids) tdee += 300;
+  else if (wantPoids && !wantMasse) tdee = Math.max(1200, tdee - 500);
+
+  // Macros : protéines 1.8g/kg pour fitness, 1.2g sinon
+  const wantsMuscle = wantMasse || goals.includes("force") || goals.includes("endurance");
+  const proteinPerKg = wantsMuscle ? 1.8 : 1.2;
+  const proteins = Math.round(weight * proteinPerKg);
+  const fats     = Math.round((tdee * 0.28) / 9);
+  const carbs    = Math.round((tdee - proteins * 4 - fats * 9) / 4);
+  // estimated burn (rough: 5-8 kcal/min de séance, ~3 séances/sem ramenées au jour)
+  const burned   = Math.round((sessionsPerWeek * 350) / 7);
+
+  return { calories: tdee, proteins, carbs: Math.max(50, carbs), fats, burned };
+}
 
 /* ─── Helpers ───────────────────────────────────────────────────────── */
 function getMondayWeek(ref: Date): Date[] {
@@ -1694,7 +1733,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                   const isFuture   = day > today;
                   const isBeforeReg= regDate ? day < regDate : false;
                   const hasData    = !!s && s.meal_count > 0;
-                  const pct        = hasData ? Math.min(s.total_calories / GOALS.calories, 1) : 0;
+                  const pct        = hasData ? Math.min(s.total_calories / goals.calories, 1) : 0;
                   const highContrast = pct >= 0.5;
                   const isClickable= inMonth && !isFuture && !isBeforeReg;
 
@@ -1857,12 +1896,23 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   const waterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const waterInitialized = useRef(false);
 
+  /* Onboarding profile + calculated goals */
+  const [onboardingProfile, setOnboardingProfile] = useState<Parameters<typeof calculateGoals>[0]>(null);
+  useEffect(() => {
+    if (!user?.pseudo) return;
+    try {
+      const raw = localStorage.getItem(`aura_onboarding_${user.pseudo}`);
+      if (raw) setOnboardingProfile(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, [user?.pseudo]);
+  const goals = useMemo(() => calculateGoals(onboardingProfile), [onboardingProfile]);
+
   /* Derived stats */
   const totalCals  = meals.reduce((s, m) => s + m.calories, 0);
   const totalProt  = meals.reduce((s, m) => s + m.proteins, 0);
   const totalCarbs = meals.reduce((s, m) => s + m.carbs, 0);
   const totalFats  = meals.reduce((s, m) => s + m.fats, 0);
-  const remaining  = Math.max(GOALS.calories - totalCals, 0);
+  const remaining  = Math.max(goals.calories - totalCals, 0);
 
   useEffect(() => { setWeekDays(getMondayWeek(today)); }, []); // eslint-disable-line
 
@@ -2137,12 +2187,12 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
             initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.12 }}
             className="rounded-3xl p-6" style={CARD}>
             <div className="flex flex-col items-center gap-5">
-              <CalorieRing consumed={totalCals} goal={GOALS.calories} />
+              <CalorieRing consumed={totalCals} goal={goals.calories} />
               <div className="w-full grid grid-cols-3 gap-2 text-center">
                 {[
                   { label: "RESTANT", val: remaining, color: "#A78BFA" },
-                  { label: "BRÛLÉ",   val: GOALS.burned, color: "#D4A843" },
-                  { label: "OBJECTIF",val: GOALS.calories, color: "#2D3748" },
+                  { label: "BRÛLÉ",   val: goals.burned, color: "#D4A843" },
+                  { label: "OBJECTIF",val: goals.calories, color: "#2D3748" },
                 ].map(({ label, val, color }) => (
                   <div key={label}>
                     <p className="text-[8px] font-semibold tracking-widest uppercase mb-0.5"
@@ -2170,9 +2220,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
               </button>
             </div>
             <div className="flex flex-col gap-4">
-              <MacroBar label="Protéines" consumed={totalProt}  goal={GOALS.proteins} color="#A78BFA" />
-              <MacroBar label="Glucides"  consumed={totalCarbs} goal={GOALS.carbs}    color="#7B5CC4" />
-              <MacroBar label="Lipides"   consumed={totalFats}  goal={GOALS.fats}     color="#D4A843" />
+              <MacroBar label="Protéines" consumed={totalProt}  goal={goals.proteins} color="#A78BFA" />
+              <MacroBar label="Glucides"  consumed={totalCarbs} goal={goals.carbs}    color="#7B5CC4" />
+              <MacroBar label="Lipides"   consumed={totalFats}  goal={goals.fats}     color="#D4A843" />
               <div style={{ height: 1, background: "rgba(167,139,250,0.08)" }} />
               <HydrationWidget
                 waterMl={waterMl}

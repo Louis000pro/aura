@@ -16,6 +16,64 @@ import { stats } from "@/data/statsData";
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 
+/* ─── Compute & save Aura score dynamically ─── */
+async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ data: sessions }, { data: nutrition }, { data: weight }] = await Promise.all([
+    supabase.from("workout_sessions")
+      .select("id, duration_minutes, calories_burned")
+      .eq("user_id", userId)
+      .gte("started_at", today + "T00:00:00")
+      .lt("started_at", today + "T23:59:59"),
+    supabase.from("nutrition_logs")
+      .select("calories")
+      .eq("user_id", userId)
+      .eq("date", today),
+    supabase.from("weight_logs")
+      .select("weight_kg")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(1),
+  ]);
+
+  let score = 30; // base score pour les utilisateurs actifs
+  const todaySessions = sessions ?? [];
+  const todayNutrition = nutrition ?? [];
+
+  // Points pour les séances (max 35 pts)
+  if (todaySessions.length > 0) {
+    const totalDuration = todaySessions.reduce((sum: number, s: { duration_minutes: number }) => sum + (s.duration_minutes || 0), 0);
+    score += Math.min(35, Math.floor(totalDuration / 2));
+  }
+
+  // Points pour la nutrition loggée (max 25 pts)
+  if (todayNutrition.length > 0) {
+    const totalCals = todayNutrition.reduce((sum: number, n: { calories: number }) => sum + (n.calories || 0), 0);
+    if (totalCals > 0) score += Math.min(25, Math.floor(todayNutrition.length * 8));
+  }
+
+  // Points pour le suivi du poids (10 pts)
+  if ((weight ?? []).length > 0) score += 10;
+
+  score = Math.min(100, score);
+
+  const calories = todayNutrition.reduce((sum: number, n: { calories: number }) => sum + (n.calories || 0), 0);
+  const burned = todaySessions.reduce((sum: number, s: { calories_burned?: number }) => sum + (s.calories_burned || 0), 0);
+
+  // Upsert dans daily_stats
+  await supabase.from("daily_stats").upsert({
+    user_id: userId,
+    date: today,
+    score,
+    calories,
+    burned,
+    streak: 1,
+  }, { onConflict: "user_id,date" });
+
+  return { score, calories, burned, steps: 0, sleepHours: 0, streak: 1 };
+}
+
 /* ─── Score Ring ─── */
 function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
   const strokeW = 4;
@@ -579,8 +637,9 @@ function Dashboard() {
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle()
-      .then(({ data, error }) => {
-        if (!error && data) {
+      .then(async ({ data, error }) => {
+        if (!error && data && data.score > 0) {
+          // Données existantes avec un score valide — on les utilise directement
           setLiveStats({
             score:      data.score       ?? 0,
             calories:   data.calories    ?? 0,
@@ -590,7 +649,20 @@ function Dashboard() {
             loaded:     true,
           });
         } else {
-          setLiveStats(prev => ({ ...prev, loaded: true }));
+          // Score absent ou nul — calcul dynamique
+          try {
+            const computed = await computeAndSaveScore(user.id, supabase);
+            setLiveStats({
+              score:      computed.score,
+              calories:   computed.calories,
+              steps:      computed.steps,
+              sleepHours: computed.sleepHours,
+              streak:     computed.streak,
+              loaded:     true,
+            });
+          } catch {
+            setLiveStats(prev => ({ ...prev, loaded: true }));
+          }
         }
       });
   }, [user]);

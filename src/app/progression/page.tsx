@@ -30,68 +30,6 @@ type TimelineEvent = {
   performance: PerformanceData;
 };
 
-const timelineEvents: TimelineEvent[] = [
-  {
-    date: "Aujourd'hui", time: "08:30", type: "workout",
-    title: "Séance Force · Haut du corps", desc: "47 min · Volume 3.2 t · 412 kcal",
-    cardClass: "lg-turquoise", dot: "#D4A843",
-    performance: {
-      type: "workout", title: "Force · Haut du corps", date: "Aujourd'hui · 08:30",
-      metrics: [
-        { label: "Durée", value: "47", unit: "min" },
-        { label: "Volume", value: "3.2", unit: "t" },
-        { label: "Calories", value: "412", unit: "kcal" },
-        { label: "Intensité", value: "8.4", unit: "/10" },
-      ],
-      highlight: "Record perso au développé couché : 70 kg",
-    },
-  },
-  {
-    date: "Aujourd'hui", time: "07:15", type: "meal",
-    title: "Petit-déjeuner protéiné", desc: "487 kcal · 32g protéines",
-    cardClass: "lg-rose", dot: "#A78BFA",
-    performance: {
-      type: "meal", title: "Petit-déjeuner protéiné", date: "Aujourd'hui · 07:15",
-      metrics: [
-        { label: "Calories", value: "487", unit: "kcal" },
-        { label: "Protéines", value: "32", unit: "g" },
-        { label: "Glucides", value: "54", unit: "g" },
-        { label: "Lipides", value: "12", unit: "g" },
-      ],
-      highlight: "Riche en magnésium · Idéal post-réveil",
-    },
-  },
-  {
-    date: "Hier", time: "23:00", type: "day",
-    title: "Bilan de la journée", desc: "Score 91/100 · Récupération optimale",
-    cardClass: "lg-bicolor", dot: "#F5E6A3",
-    performance: {
-      type: "day", title: "Bilan du mardi", date: "Hier",
-      metrics: [
-        { label: "Pas", value: "11.2k", unit: "" },
-        { label: "Sommeil", value: "7h45", unit: "" },
-        { label: "FC repos", value: "62", unit: "bpm" },
-        { label: "Score", value: "91", unit: "/100" },
-      ],
-      highlight: "Récupération optimale",
-    },
-  },
-  {
-    date: "Hier", time: "12:45", type: "meal",
-    title: "Déjeuner équilibré", desc: "612 kcal · 48g protéines",
-    cardClass: "lg-rose", dot: "#A78BFA",
-    performance: {
-      type: "meal", title: "Bowl protéiné", date: "Hier · 12:45",
-      metrics: [
-        { label: "Calories", value: "612", unit: "kcal" },
-        { label: "Protéines", value: "48", unit: "g" },
-        { label: "Glucides", value: "67", unit: "g" },
-        { label: "Lipides", value: "18", unit: "g" },
-      ],
-      highlight: "Idéal pour la récupération musculaire",
-    },
-  },
-];
 
 const eventIcons: Record<PerformanceType, typeof Dumbbell> = {
   workout: Dumbbell, meal: Apple, day: Sun,
@@ -2140,7 +2078,7 @@ export default function ProgressionPage() {
     showToast(`${session.title} démarrée ✓`);
   };
 
-  const displayTimeline = realTimeline.length > 0 ? realTimeline : timelineEvents;
+  const displayTimeline = realTimeline;
 
   const filteredSessions = workoutSessions
     .filter((s) => categoryFilter === "tous" || s.category === categoryFilter)
@@ -2257,6 +2195,17 @@ export default function ProgressionPage() {
           </p>
           <h2 className="text-lg font-light mb-4" style={{ color: "#2D3748" }}>Activité récente</h2>
         </motion.div>
+
+        {displayTimeline.length === 0 && (
+          <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
+              style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3),rgba(245,230,163,0.3))" }}>
+              🏋️
+            </div>
+            <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Aucune activité encore</p>
+            <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Lance ta première séance pour<br/>commencer ton historique !</p>
+          </motion.div>
+        )}
 
         {Object.entries(groups).map(([date, events]) => (
           <div key={date}>
@@ -2821,7 +2770,7 @@ export default function ProgressionPage() {
       <SharePerformanceModal
         open={shareData !== null}
         onClose={() => setShareData(null)}
-        data={shareData ?? (displayTimeline[0]?.performance ?? timelineEvents[0].performance)}
+        data={shareData ?? displayTimeline[0]?.performance ?? { type: "workout", title: "", date: "", metrics: [] }}
       />
 
       {/* ── Guided workout modal ── */}
