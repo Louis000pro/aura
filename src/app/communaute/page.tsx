@@ -1124,6 +1124,8 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    navigator.clipboard.writeText(url).catch(() => {});
     setCopied(true);
     setTimeout(() => { setCopied(false); onClose(); }, 1500);
   };
@@ -1595,6 +1597,140 @@ function postTimeAgo(iso: string) {
   return `${Math.floor(h / 24)}j`;
 }
 
+/* ─── TikTok Video Feed ─────────────────────────────────── */
+function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const bgRef = useRef<HTMLVideoElement>(null);
+  const { user } = useAuth();
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState(post.post_likes?.length ?? 0);
+  const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isActive) {
+      video.currentTime = 0;
+      void video.play().catch(() => {});
+      if (bgRef.current) { bgRef.current.currentTime = 0; void bgRef.current.play().catch(() => {}); }
+    } else {
+      video.pause();
+      bgRef.current?.pause();
+    }
+  }, [isActive]);
+
+  const toggleLike = async () => {
+    if (!user) return;
+    const supabase = createClient();
+    if (liked) {
+      setLiked(false); setLikes(l => l - 1);
+      await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", user.id);
+    } else {
+      setLiked(true); setLikes(l => l + 1);
+      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+    }
+  };
+
+  const authorPseudo = post.author?.pseudo ?? "utilisateur";
+  const authorAvatar = post.author?.avatar_url;
+
+  return (
+    <div className="relative w-full h-full flex-shrink-0 overflow-hidden" style={{ background: "#000" }}>
+      {/* Fond flouté */}
+      {post.media_url && (
+        <video ref={bgRef} src={post.media_url} className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{ filter: "blur(24px) brightness(0.4)", transform: "scale(1.1)" }}
+          muted playsInline preload="metadata" loop />
+      )}
+      {/* Vidéo principale */}
+      {post.media_url && (
+        <video ref={videoRef} src={post.media_url}
+          className="relative z-10 w-full h-full object-contain"
+          muted={muted} playsInline preload="metadata" loop
+          onClick={() => setMuted(m => !m)} />
+      )}
+      {/* Overlay gradient bas */}
+      <div className="absolute bottom-0 inset-x-0 z-20 pointer-events-none"
+        style={{ height: "45%", background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)" }} />
+      {/* Infos auteur + caption */}
+      <div className="absolute bottom-20 left-4 right-16 z-30">
+        <Link href={`/profil/${authorPseudo}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-xs font-bold"
+              style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+              {authorAvatar
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
+                : authorPseudo[0]?.toUpperCase()}
+            </div>
+            <span className="text-white text-sm font-semibold drop-shadow">@{authorPseudo}</span>
+          </div>
+        </Link>
+        {post.caption && (
+          <p className="text-white text-sm font-light leading-snug drop-shadow line-clamp-2">{post.caption}</p>
+        )}
+      </div>
+      {/* Actions droite */}
+      <div className="absolute right-3 bottom-20 z-30 flex flex-col items-center gap-5">
+        {/* Like */}
+        <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.3 }}>
+            <Heart size={28} strokeWidth={1.5} fill={liked ? "#FF4458" : "none"} style={{ color: liked ? "#FF4458" : "#fff", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.6))" }} />
+          </motion.div>
+          <span className="text-white text-xs font-medium drop-shadow">{likes}</span>
+        </button>
+        {/* Mute/Unmute */}
+        <button onClick={() => setMuted(m => !m)} className="cursor-pointer">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)" }}>
+            <span className="text-base">{muted ? "🔇" : "🔊"}</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TikTokFeed({ posts }: { posts: RealPost[] }) {
+  const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Detect which video is in view via scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const h = el.clientHeight;
+      const idx = Math.round(el.scrollTop / h);
+      setActiveIndex(idx);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  if (videoPosts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center">
+        <div className="text-5xl">🎬</div>
+        <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucune vidéo pour le moment</p>
+        <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Publie une vidéo pour qu&apos;elle apparaisse ici</p>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef}
+      className="overflow-y-scroll"
+      style={{ height: "calc(100vh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none" }}>
+      {videoPosts.map((post, i) => (
+        <div key={post.id} style={{ height: "calc(100vh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+          <VideoCard post={post} isActive={i === activeIndex} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CommunautePageInner() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -1625,6 +1761,7 @@ function CommunautePageInner() {
   const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
+  const [feedTab, setFeedTab] = useState<"posts" | "videos">("posts");
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
@@ -2427,8 +2564,26 @@ function CommunautePageInner() {
               );
             })()}
 
-            {/* ── Toggle algorithme / récents ── */}
-            {!feedLoading && (
+            {/* ── Tab Publications / Vidéos ── */}
+            <div className="flex items-center gap-2 px-1">
+              {([
+                { key: "posts" as const, label: "📝 Publications" },
+                { key: "videos" as const, label: "🎬 Vidéos" },
+              ]).map(({ key, label }) => (
+                <motion.button key={key} whileTap={{ scale: 0.94 }}
+                  onClick={() => setFeedTab(key)}
+                  className="px-4 py-2 rounded-2xl text-xs font-semibold transition-all"
+                  style={feedTab === key
+                    ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                    : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
+                  }>
+                  {label}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* ── Toggle algorithme / récents (seulement sur Posts) ── */}
+            {feedTab === "posts" && !feedLoading && (
               <div className="flex items-center gap-2 px-1">
                 {(["algo", "recent"] as const).map((mode) => (
                   <motion.button
@@ -2447,8 +2602,13 @@ function CommunautePageInner() {
               </div>
             )}
 
+            {/* ── Feed Vidéos TikTok ── */}
+            {feedTab === "videos" && (
+              <TikTokFeed posts={sortedFeedPosts} />
+            )}
+
             {/* Posts réels depuis Supabase */}
-            {feedLoading && (
+            {feedTab === "posts" && feedLoading && (
               <div className="flex flex-col gap-4">
                 {[0, 1, 2].map((i) => (
                   <motion.div
@@ -2485,7 +2645,7 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {!feedLoading && sortedFeedPosts.length === 0 && (
+            {feedTab === "posts" && !feedLoading && sortedFeedPosts.length === 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -2502,7 +2662,7 @@ function CommunautePageInner() {
               </motion.div>
             )}
 
-            {!feedLoading && sortedFeedPosts.map((post, postIdx) => {
+            {feedTab === "posts" && !feedLoading && sortedFeedPosts.map((post, postIdx) => {
               const liked = likedRealIds.has(post.id);
               const isMenuOpen = openRealMenu === post.id;
               const isSaved = savedRealIds.has(post.id);

@@ -5,6 +5,7 @@ import { useRef, useEffect } from "react";
 /**
  * VideoPlayer — vidéo avec fond flouté synchronisé (style TikTok/Reels)
  * Le fond suit exactement la vidéo principale : play, pause, seek, time
+ * autoPlayOnScroll : joue automatiquement quand la vidéo est visible (IntersectionObserver)
  */
 
 interface VideoPlayerProps {
@@ -13,6 +14,8 @@ interface VideoPlayerProps {
   controls?: boolean;
   muted?: boolean;
   autoPlay?: boolean;
+  autoPlayOnScroll?: boolean;
+  loop?: boolean;
   className?: string;
 }
 
@@ -22,17 +25,20 @@ export default function VideoPlayer({
   controls = true,
   muted = false,
   autoPlay = false,
+  autoPlayOnScroll = false,
+  loop = false,
   className = "",
 }: VideoPlayerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLVideoElement>(null);
   const bgRef   = useRef<HTMLVideoElement>(null);
 
+  /* ── Sync bg avec main ── */
   useEffect(() => {
     const main = mainRef.current;
     const bg   = bgRef.current;
     if (!main || !bg) return;
 
-    // Sync time toutes les 500ms pour rester aligné
     const syncInterval = setInterval(() => {
       if (!main.paused && Math.abs(bg.currentTime - main.currentTime) > 0.3) {
         bg.currentTime = main.currentTime;
@@ -49,8 +55,7 @@ export default function VideoPlayer({
     main.addEventListener("seeked", onSeeked);
     main.addEventListener("ended",  onEnded);
 
-    // Si autoPlay actif, lancer les deux immédiatement
-    if (autoPlay) {
+    if (autoPlay && !autoPlayOnScroll) {
       void main.play().catch(() => {});
       void bg.play().catch(() => {});
     }
@@ -62,10 +67,38 @@ export default function VideoPlayer({
       main.removeEventListener("seeked", onSeeked);
       main.removeEventListener("ended",  onEnded);
     };
-  }, [src, autoPlay]);
+  }, [src, autoPlay, autoPlayOnScroll]);
+
+  /* ── Autoplay au scroll via IntersectionObserver ── */
+  useEffect(() => {
+    if (!autoPlayOnScroll) return;
+    const container = containerRef.current;
+    const main = mainRef.current;
+    const bg   = bgRef.current;
+    if (!container || !main) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            void main.play().catch(() => {});
+            if (bg) { bg.currentTime = main.currentTime; void bg.play().catch(() => {}); }
+          } else {
+            main.pause();
+            bg?.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [autoPlayOnScroll]);
 
   return (
     <div
+      ref={containerRef}
       className="relative overflow-hidden w-full"
       style={{ maxHeight, background: "#000" }}
     >
@@ -82,6 +115,7 @@ export default function VideoPlayer({
         muted
         playsInline
         preload="metadata"
+        loop={loop}
         aria-hidden="true"
         tabIndex={-1}
       />
@@ -93,9 +127,10 @@ export default function VideoPlayer({
         className={`relative z-10 w-full object-contain block ${className}`}
         style={{ maxHeight }}
         controls={controls}
-        muted={muted}
+        muted={muted || autoPlayOnScroll}
         playsInline
         preload="metadata"
+        loop={loop}
       />
     </div>
   );

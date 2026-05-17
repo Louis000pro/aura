@@ -1905,7 +1905,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
-  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances" | "nutrition" | "mensurations" | "records">("progression");
+  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances" | "nutrition" | "records">("progression");
   const [shareData, setShareData]           = useState<PerformanceData | null>(null);
   const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
   const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
@@ -1984,7 +1984,7 @@ export default function ProgressionPage() {
     if (data) setPrs(data as PR[]);
   }, [user]);
 
-  useEffect(() => { if (activeTab === "mensurations") fetchMeasurements(); }, [activeTab, fetchMeasurements]);
+  useEffect(() => { if (activeTab === "records") fetchMeasurements(); }, []); // kept for possible future use
   useEffect(() => { if (activeTab === "records") fetchPRs(); }, [activeTab, fetchPRs]);
 
   const saveMeasurement = async () => {
@@ -2184,7 +2184,6 @@ export default function ProgressionPage() {
           { key: "progression",    label: "Progression" },
           { key: "mes-seances",    label: "Mes Séances" },
           { key: "nutrition",      label: "Nutrition" },
-          { key: "mensurations",   label: "Mensurations" },
           { key: "records",        label: "Records" },
         ] as const).map(({ key, label }) => (
           <motion.button
@@ -2664,89 +2663,6 @@ export default function ProgressionPage() {
           transition={{ duration: 0.3 }}
         >
           <NutritionTab showBackButton={false} />
-        </motion.div>
-      )}
-
-      {/* ══════════ TAB MENSURATIONS ══════════ */}
-      {activeTab === "mensurations" && (
-        <motion.div key="mensurations-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.3 }} className="flex flex-col gap-6">
-
-          {/* Form */}
-          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
-            <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Ajouter mes mesures d&apos;aujourd&apos;hui</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: "chest",    label: "Poitrine", emoji: "📏" },
-                { key: "waist",    label: "Taille",   emoji: "🎯" },
-                { key: "hips",     label: "Hanches",  emoji: "📐" },
-                { key: "arms",     label: "Bras",     emoji: "💪" },
-                { key: "thighs",   label: "Cuisses",  emoji: "🦵" },
-                { key: "neck",     label: "Cou",      emoji: "📏" },
-                { key: "body_fat", label: "% Gras",   emoji: "⚡" },
-              ].map(({ key, label, emoji }) => (
-                <div key={key} className="flex flex-col gap-1">
-                  <label className="text-xs font-medium" style={{ color: "#718096" }}>{emoji} {label}</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder={key === "body_fat" ? "%" : "cm"}
-                    value={newMeas[key as keyof typeof newMeas]}
-                    onChange={(e) => setNewMeas(p => ({ ...p, [key]: e.target.value }))}
-                    className="px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
-                  />
-                </div>
-              ))}
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={saveMeasurement}
-              disabled={savingMeas}
-              className="w-full mt-4 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
-            >
-              {savingMeas ? "Enregistrement…" : "Enregistrer les mesures"}
-            </motion.button>
-          </div>
-
-          {/* History */}
-          {measurements.length > 0 && (
-            <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>Historique</p>
-              <div className="flex flex-col gap-3">
-                {measurements.map((m, i) => (
-                  <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                    className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                    <p className="text-xs font-semibold mb-2" style={{ color: "#A78BFA" }}>
-                      {new Date(m.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { label: "Poitrine", val: m.chest_cm, unit: "cm" },
-                        { label: "Taille",   val: m.waist_cm, unit: "cm" },
-                        { label: "Hanches",  val: m.hips_cm,  unit: "cm" },
-                        { label: "Bras",     val: m.arms_cm,  unit: "cm" },
-                        { label: "Cuisses",  val: m.thighs_cm,unit: "cm" },
-                        { label: "% Gras",   val: m.body_fat, unit: "%" },
-                      ].filter(x => x.val != null).map(({ label, val, unit }) => (
-                        <div key={label} className="text-center p-2 rounded-xl" style={{ background: "rgba(240,235,255,0.4)" }}>
-                          <p className="text-base font-light" style={{ color: "#2D3748" }}>{val}{unit}</p>
-                          <p className="text-[9px] font-medium" style={{ color: "#A0AEC0" }}>{label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {measurements.length === 0 && (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <div className="text-4xl">📏</div>
-              <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>Aucune mensuration enregistrée.<br/>Ajoute tes premières mesures ci-dessus.</p>
-            </div>
-          )}
         </motion.div>
       )}
 
