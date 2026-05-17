@@ -1430,14 +1430,71 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
   );
 }
 
-// Comments Section (inline)
+// Comments shared type
 type RealComment = {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
+  parent_id: string | null;
   author: { pseudo: string; avatar_url?: string | null } | null;
+  comment_likes: { user_id: string }[];
 };
+
+const COMMENTS_SELECT = "id, content:text, created_at, user_id, parent_id, author:profiles!user_id(pseudo, avatar_url), comment_likes(user_id)";
+
+// Sous-composant ligne commentaire (utilisé dans les deux sections)
+function CommentRow({
+  c, user, dark, onReply, onLikeToggle,
+}: {
+  c: RealComment; user: { id: string } | null; dark?: boolean;
+  onReply: (id: string, pseudo: string) => void;
+  onLikeToggle: (id: string, liked: boolean) => void;
+}) {
+  const pseudo = c.author?.pseudo ?? "inconnu";
+  const avatar = c.author?.avatar_url;
+  const timeStr = postTimeAgo(c.created_at);
+  const liked = c.comment_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false;
+  const likeCount = c.comment_likes?.length ?? 0;
+  const txt = dark ? "rgba(255,255,255,0.88)" : "#2D3748";
+  const sub = dark ? "rgba(255,255,255,0.38)" : "#A0AEC0";
+  return (
+    <div className="flex items-start gap-2">
+      <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
+        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden"
+          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+          {avatar
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+            : pseudo[0]?.toUpperCase()}
+        </div>
+      </Link>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs leading-relaxed" style={{ color: txt }}>
+          <Link href={`/profil/${pseudo}`}>
+            <span className="font-semibold mr-1.5" style={{ color: dark ? "#D4C0FF" : "#A78BFA" }}>{pseudo}</span>
+          </Link>
+          <span className="font-light">{c.content}</span>
+        </p>
+        <div className="flex items-center gap-3 mt-0.5">
+          <span className="text-[10px]" style={{ color: sub }}>{timeStr}</span>
+          {/* Like commentaire */}
+          <button onClick={() => onLikeToggle(c.id, liked)}
+            className="flex items-center gap-0.5 cursor-pointer"
+            style={{ color: liked ? "#FF4458" : sub }}>
+            <Heart size={10} strokeWidth={2} fill={liked ? "#FF4458" : "none"} />
+            {likeCount > 0 && <span className="text-[10px] font-medium">{likeCount}</span>}
+          </button>
+          {/* Répondre */}
+          <button onClick={() => onReply(c.id, pseudo)}
+            className="text-[10px] font-medium cursor-pointer" style={{ color: sub }}>
+            Répondre
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOwnerId }: { postId: string | number; initialCount: number; onClose: () => void; onCommentAdded?: () => void; postOwnerId?: string }) {
   const { user } = useAuth();
@@ -1447,184 +1504,123 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   const [sendError, setSendError] = useState("");
   const [input, setInput]         = useState("");
   const [sending, setSending]     = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; pseudo: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Charger les commentaires
-  useEffect(() => {
-    const load = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("post_comments")
-        .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-        .eq("post_id", String(postId))
-        .order("created_at", { ascending: true })
-        .limit(50);
-      if (error) {
-        console.error("[CommentsSection] load error:", error.message);
-        try {
-          await fetch("/api/setup-db", { method: "POST" });
-          const { data: data2, error: e2 } = await supabase
-            .from("post_comments")
-            .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-            .eq("post_id", String(postId))
-            .order("created_at", { ascending: true })
-            .limit(50);
-          if (e2) setDbError(true);
-          else { setComments((data2 as unknown as RealComment[]) ?? []); setTimeout(() => inputRef.current?.focus(), 100); }
-        } catch { setDbError(true); }
-      } else {
-        setComments((data as unknown as RealComment[]) ?? []);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      }
-      setLoading(false);
-    };
-    void load();
-  }, [postId]);
+  const loadComments = async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("post_comments").select(COMMENTS_SELECT)
+      .eq("post_id", String(postId)).order("created_at", { ascending: true }).limit(80);
+    if (error) {
+      try {
+        await fetch("/api/setup-db", { method: "POST" });
+        const { data: d2, error: e2 } = await supabase
+          .from("post_comments").select(COMMENTS_SELECT)
+          .eq("post_id", String(postId)).order("created_at", { ascending: true }).limit(80);
+        if (e2) setDbError(true);
+        else setComments((d2 as unknown as RealComment[]) ?? []);
+      } catch { setDbError(true); }
+    } else {
+      setComments((data as unknown as RealComment[]) ?? []);
+    }
+    setLoading(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  useEffect(() => { void loadComments(); }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSend = async () => {
     if (!input.trim() || !user || sending) return;
     const content = input.trim();
-    setInput("");
-    setSending(true);
-
-    // Optimiste
+    setInput(""); setReplyingTo(null); setSending(true);
     const tmpId = `tmp-${Date.now()}`;
-    const optimistic: RealComment = {
-      id: tmpId,
-      content,
-      created_at: new Date().toISOString(),
-      user_id: user.id,
+    setComments(prev => [...prev, {
+      id: tmpId, content, created_at: new Date().toISOString(),
+      user_id: user.id, parent_id: replyingTo?.id ?? null,
       author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
-    };
-    setComments((prev) => [...prev, optimistic]);
-
+      comment_likes: [],
+    }]);
     const supabase = createClient();
-    // Insert seul (sans select chainé pour éviter les erreurs de join)
-    const { error } = await supabase
-      .from("post_comments")
-      .insert({ post_id: String(postId), user_id: user.id, text: content });
-
+    const { error } = await supabase.from("post_comments")
+      .insert({ post_id: String(postId), user_id: user.id, text: content, parent_id: replyingTo?.id ?? null });
     setSending(false);
     if (error) {
-      console.error("[CommentsSection] insert error:", error.message, error.code);
-      setComments((prev) => prev.filter((c) => c.id !== tmpId));
+      setComments(prev => prev.filter(c => c.id !== tmpId));
       setInput(content);
-      setSendError(error.code === "42P01" ? "Table manquante — exécute la migration" : error.message);
+      setSendError(error.message);
     } else {
       setSendError("");
       onCommentAdded?.();
-      // Notif au propriétaire du post
       if (postOwnerId && postOwnerId !== user.id) {
-        void supabase.from("notifications").insert({
-          user_id: postOwnerId, from_user_id: user.id,
-          from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
-          type: "comment", post_id: String(postId),
-        });
-        fetch("/api/notifications/comment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ commenter_id: user.id, post_owner_id: postOwnerId, post_id: String(postId), comment_preview: content }),
-        }).catch(() => {});
+        void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: String(postId) });
       }
     }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="overflow-hidden"
-    >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+  const handleLikeToggle = async (commentId: string, liked: boolean) => {
+    if (!user) return;
+    const supabase = createClient();
+    setComments(prev => prev.map(c => c.id !== commentId ? c : {
+      ...c,
+      comment_likes: liked
+        ? c.comment_likes.filter(l => l.user_id !== user.id)
+        : [...c.comment_likes, { user_id: user.id }],
+    }));
+    if (liked) await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id);
+    else await supabase.from("comment_likes").upsert({ comment_id: commentId, user_id: user.id }, { ignoreDuplicates: true });
+  };
 
-        {/* Liste */}
-        <div className="flex flex-col gap-2.5 mb-3 max-h-52 overflow-y-auto">
+  // Grouper : top-level puis replies indentées
+  const topLevel = comments.filter(c => !c.parent_id);
+  const replies  = (parentId: string) => comments.filter(c => c.parent_id === parentId);
+
+  return (
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }} className="overflow-hidden">
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+        <div className="flex flex-col gap-3 mb-3 max-h-56 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           {loading ? (
             <div className="flex justify-center py-3">
-              <motion.div
-                className="w-4 h-4 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-              />
+              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
             </div>
           ) : dbError ? (
-            <p className="text-xs text-center py-2" style={{ color: "#FC8181" }}>
-              ⚠️ Commentaires indisponibles — migration requise
-            </p>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>
-              Sois le premier à commenter
-            </p>
-          ) : (
-            comments.map((c, i) => {
-              const pseudo  = c.author?.pseudo ?? "inconnu";
-              const avatar  = c.author?.avatar_url;
-              const timeStr = postTimeAgo(c.created_at);
-              return (
-                <motion.div
-                  key={c.id}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i < 5 ? i * 0.04 : 0 }}
-                  className="flex items-start gap-2"
-                >
-                  <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
-                    <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden"
-                      style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
-                    >
-                      {avatar
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
-                        : pseudo[0]?.toUpperCase()}
-                    </div>
-                  </Link>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs leading-relaxed" style={{ color: "#2D3748" }}>
-                      <Link href={`/profil/${pseudo}`}>
-                        <span className="font-semibold mr-1.5 hover:underline">{pseudo}</span>
-                      </Link>
-                      <span className="font-light">{c.content}</span>
-                    </p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{timeStr}</p>
-                  </div>
-                </motion.div>
-              );
-            })
-          )}
+            <p className="text-xs text-center py-2" style={{ color: "#FC8181" }}>⚠️ Commentaires indisponibles</p>
+          ) : topLevel.length === 0 ? (
+            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
+          ) : topLevel.map((c, i) => (
+            <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
+              <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+              {/* Replies indentées */}
+              {replies(c.id).map(r => (
+                <div key={r.id} className="ml-8 mt-2">
+                  <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+                </div>
+              ))}
+            </motion.div>
+          ))}
         </div>
 
-        {/* Saisie */}
+        {/* Indicateur réponse */}
+        {replyingTo && (
+          <div className="flex items-center gap-1.5 mb-1.5 px-1">
+            <span className="text-[10px]" style={{ color: "#A78BFA" }}>↩ Répondre à @{replyingTo.pseudo}</span>
+            <button onClick={() => setReplyingTo(null)} className="text-[10px] cursor-pointer" style={{ color: "#A0AEC0" }}>✕</button>
+          </div>
+        )}
+        {sendError && <p className="text-[10px] mb-1" style={{ color: "#FC8181" }}>{sendError}</p>}
+
         <div className="flex items-center gap-2">
-          {sendError && <p className="text-[10px] mb-1" style={{ color: "#FC8181" }}>{sendError}</p>}
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"}
+          <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+            placeholder={user ? (replyingTo ? `Répondre à @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi pour commenter"}
             disabled={!user}
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
-            style={{
-              background: "rgba(240,235,255,0.5)",
-              border: "1px solid rgba(212,192,255,0.5)",
-              color: "#2D3748",
-            }}
+            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
           />
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleSend}
-            disabled={!input.trim() || !user || sending}
+          <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{
-              background: input.trim() && user ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
-              transition: "background 0.2s",
-            }}
-          >
+            style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)" }}>
             <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
           </motion.button>
         </div>
@@ -1681,35 +1677,27 @@ function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onComm
 
 function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: string; postOwnerId: string; onCommentAdded: () => void }) {
   const { user } = useAuth();
-  type RealComment = { id: string; content: string; created_at: string; user_id: string; author: { pseudo: string; avatar_url?: string | null } | null };
   const [comments, setComments] = useState<RealComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  const [replyingTo, setReplyingTo] = useState<{ id: string; pseudo: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const load = async () => {
-      // Essaie de créer les tables si elles n'existent pas
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("post_comments")
-        .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      const { data, error } = await supabase.from("post_comments").select(COMMENTS_SELECT)
         .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
       if (error) {
-        // Table manquante → tente la migration auto
-        console.error("[comments] load error:", error.message);
         try {
           await fetch("/api/setup-db", { method: "POST" });
-          // Réessaie après migration
-          const { data: data2, error: error2 } = await supabase
-            .from("post_comments")
-            .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+          const { data: d2, error: e2 } = await supabase.from("post_comments").select(COMMENTS_SELECT)
             .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
-          if (error2) { setDbError(true); }
-          else { setComments((data2 as unknown as RealComment[]) ?? []); }
+          if (e2) setDbError(true);
+          else setComments((d2 as unknown as RealComment[]) ?? []);
         } catch { setDbError(true); }
       } else {
         setComments((data as unknown as RealComment[]) ?? []);
@@ -1722,17 +1710,22 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
   const handleSend = async () => {
     if (!input.trim() || !user || sending) return;
     const content = input.trim();
-    setSendError(""); setInput(""); setSending(true);
+    setSendError(""); setInput(""); setReplyingTo(null); setSending(true);
     const tmpId = `tmp-${Date.now()}`;
-    setComments(prev => [...prev, { id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id, author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null } }]);
+    setComments(prev => [...prev, {
+      id: tmpId, content, created_at: new Date().toISOString(),
+      user_id: user.id, parent_id: replyingTo?.id ?? null,
+      author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
+      comment_likes: [],
+    }]);
     const supabase = createClient();
-    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text: content });
+    const { error } = await supabase.from("post_comments")
+      .insert({ post_id: postId, user_id: user.id, text: content, parent_id: replyingTo?.id ?? null });
     setSending(false);
     if (error) {
-      console.error("[comments] insert error:", error.message, error.code);
       setComments(prev => prev.filter(c => c.id !== tmpId));
       setInput(content);
-      setSendError(error.code === "42P01" ? "Table manquante — migration requise" : error.message);
+      setSendError(error.message);
     } else {
       onCommentAdded();
       if (postOwnerId && postOwnerId !== user.id) {
@@ -1740,6 +1733,20 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
       }
     }
   };
+
+  const handleLikeToggle = async (commentId: string, liked: boolean) => {
+    if (!user) return;
+    const supabase = createClient();
+    setComments(prev => prev.map(c => c.id !== commentId ? c : {
+      ...c,
+      comment_likes: liked ? c.comment_likes.filter(l => l.user_id !== user.id) : [...c.comment_likes, { user_id: user.id }],
+    }));
+    if (liked) await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id);
+    else await supabase.from("comment_likes").upsert({ comment_id: commentId, user_id: user.id }, { ignoreDuplicates: true });
+  };
+
+  const topLevel = comments.filter(c => !c.parent_id);
+  const replies  = (parentId: string) => comments.filter(c => c.parent_id === parentId);
 
   return (
     <div className="flex flex-col h-full">
@@ -1749,48 +1756,33 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
             <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
           </div>
         ) : dbError ? (
-          <div className="flex flex-col items-center gap-2 py-8 px-4 text-center">
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
             <span className="text-2xl">⚠️</span>
-            <p className="text-xs font-medium" style={{ color: "#FC8181" }}>Table commentaires manquante</p>
-            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>Va dans Supabase Dashboard → SQL Editor et exécute la migration</p>
+            <p className="text-xs" style={{ color: "#FC8181" }}>Commentaires indisponibles</p>
           </div>
-        ) : comments.length === 0 ? (
+        ) : topLevel.length === 0 ? (
           <p className="text-center text-sm py-8" style={{ color: "rgba(255,255,255,0.35)" }}>Sois le premier à commenter</p>
-        ) : (
-          comments.map((c, i) => {
-            const pseudo = c.author?.pseudo ?? "inconnu";
-            const avatar = c.author?.avatar_url;
-            const diff = Date.now() - new Date(c.created_at).getTime();
-            const m = Math.floor(diff / 60000);
-            const timeStr = m < 1 ? "À l'instant" : m < 60 ? `${m}min` : m < 1440 ? `${Math.floor(m/60)}h` : `${Math.floor(m/1440)}j`;
-            return (
-              <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2.5">
-                <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold overflow-hidden"
-                    style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                    {avatar
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
-                      : pseudo[0]?.toUpperCase()}
-                  </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.9)" }}>
-                    <span className="font-semibold mr-1.5" style={{ color: "#D4C0FF" }}>{pseudo}</span>
-                    <span className="font-light">{c.content}</span>
-                  </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{timeStr}</p>
-                </div>
-              </motion.div>
-            );
-          })
-        )}
+        ) : topLevel.map((c, i) => (
+          <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
+            <CommentRow c={c} user={user} dark onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+            {replies(c.id).map(r => (
+              <div key={r.id} className="ml-9 mt-2">
+                <CommentRow c={r} user={user} dark onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+              </div>
+            ))}
+          </motion.div>
+        ))}
       </div>
-      {/* Erreur d'envoi */}
-      {sendError && (
-        <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>
+
+      {/* Indicateur réponse */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 px-4 py-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <span className="text-[11px]" style={{ color: "#A78BFA" }}>↩ Répondre à @{replyingTo.pseudo}</span>
+          <button onClick={() => setReplyingTo(null)} className="text-[11px] cursor-pointer ml-auto" style={{ color: "rgba(255,255,255,0.4)" }}>✕</button>
+        </div>
       )}
-      {/* Input */}
+      {sendError && <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>}
+
       <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
           style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
@@ -1801,7 +1793,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
         </div>
         <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
-          placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"}
+          placeholder={user ? (replyingTo ? `↩ @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi"}
           disabled={!user}
           className="flex-1 text-sm outline-none px-3 py-2.5 rounded-2xl"
           style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />

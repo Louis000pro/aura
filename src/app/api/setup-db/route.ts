@@ -67,11 +67,36 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- parent_id pour les réponses aux commentaires
+ALTER TABLE public.post_comments ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES public.post_comments(id) ON DELETE CASCADE;
+
+-- comment_likes
+CREATE TABLE IF NOT EXISTS public.comment_likes (
+  comment_id UUID NOT NULL REFERENCES public.post_comments(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (comment_id, user_id)
+);
+ALTER TABLE public.comment_likes ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='comment_likes' AND policyname='Comment likes visibles') THEN
+    CREATE POLICY "Comment likes visibles" ON public.comment_likes FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='comment_likes' AND policyname='Utilisateur peut liker commentaire') THEN
+    CREATE POLICY "Utilisateur peut liker commentaire" ON public.comment_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='comment_likes' AND policyname='Utilisateur peut unliker commentaire') THEN
+    CREATE POLICY "Utilisateur peut unliker commentaire" ON public.comment_likes FOR DELETE USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS post_comments_post_id_idx ON public.post_comments(post_id);
+CREATE INDEX IF NOT EXISTS post_comments_parent_id_idx ON public.post_comments(parent_id);
 CREATE INDEX IF NOT EXISTS post_comments_created_at_idx ON public.post_comments(created_at DESC);
 CREATE INDEX IF NOT EXISTS post_likes_post_id_idx ON public.post_likes(post_id);
 CREATE INDEX IF NOT EXISTS post_reposts_post_id_idx ON public.post_reposts(post_id);
+CREATE INDEX IF NOT EXISTS comment_likes_comment_id_idx ON public.comment_likes(comment_id);
 `;
 
 export async function POST() {
