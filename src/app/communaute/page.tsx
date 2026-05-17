@@ -1445,21 +1445,23 @@ const COMMENTS_SELECT = "id, content:text, created_at, user_id, parent_id, autho
 
 // Sous-composant ligne commentaire (utilisé dans les deux sections)
 function CommentRow({
-  c, user, dark, onReply, onLikeToggle,
+  c, user, dark, onReply, onLikeToggle, onDelete,
 }: {
   c: RealComment; user: { id: string } | null; dark?: boolean;
   onReply: (id: string, pseudo: string) => void;
   onLikeToggle: (id: string, liked: boolean) => void;
+  onDelete: (id: string) => void;
 }) {
   const pseudo = c.author?.pseudo ?? "inconnu";
   const avatar = c.author?.avatar_url;
   const timeStr = postTimeAgo(c.created_at);
   const liked = c.comment_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false;
   const likeCount = c.comment_likes?.length ?? 0;
+  const isOwn = user?.id === c.user_id;
   const txt = dark ? "rgba(255,255,255,0.88)" : "#2D3748";
   const sub = dark ? "rgba(255,255,255,0.38)" : "#A0AEC0";
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2 group">
       <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
         <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden"
           style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
@@ -1490,6 +1492,14 @@ function CommentRow({
             className="text-[10px] font-medium cursor-pointer" style={{ color: sub }}>
             Répondre
           </button>
+          {/* Supprimer — uniquement pour l'auteur */}
+          {isOwn && (
+            <motion.button whileTap={{ scale: 0.85 }} onClick={() => onDelete(c.id)}
+              className="text-[10px] cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ color: "#FC8181" }}>
+              Supprimer
+            </motion.button>
+          )}
         </div>
       </div>
     </div>
@@ -1626,6 +1636,31 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/* ── Hashtag-aware caption renderer ───────────────────────── */
+function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (tag: string) => void }) {
+  // Split on #word boundaries (supports accented chars)
+  const parts = text.split(/(#[\wÀ-ɏ]+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith("#") ? (
+          <button
+            key={i}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }}
+            className="font-semibold cursor-pointer transition-opacity hover:opacity-70"
+            style={{ color: "#A78BFA" }}
+          >
+            {part}
+          </button>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
   );
 }
 
@@ -2310,6 +2345,10 @@ function CommunautePageInner() {
   const [realStories, setRealStories] = useState<RealStory[]>([]);
   const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
+  const [hasMoreFeed, setHasMoreFeed] = useState(true);
+  const feedPageRef = useRef(0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
   const [feedTab, setFeedTab] = useState<"posts" | "videos">("videos");
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
@@ -2454,10 +2493,17 @@ function CommunautePageInner() {
 
   useEffect(() => { loadStories(); }, [loadStories]);
 
-  // Charger le feed réel depuis Supabase
-  const loadFeed = useCallback(async () => {
+  // Charger le feed réel depuis Supabase (paginé)
+  const loadFeed = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
+    const PAGE_SIZE = 30;
     if (!user) return;
-    setFeedLoading(true);
+    if (append) {
+      setFeedLoadingMore(true);
+    } else {
+      setFeedLoading(true);
+      feedPageRef.current = 0;
+    }
+    const offset = feedPageRef.current * PAGE_SIZE;
     const supabase = createClient();
     const { data } = await supabase
       .from("posts")
@@ -2469,19 +2515,39 @@ function CommunautePageInner() {
         post_reposts(user_id)
       `)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .range(offset, offset + PAGE_SIZE - 1);
     if (data) {
-      setRealFeedPosts(data as unknown as RealPost[]);
-      const liked = new Set<string>();
-      const reposted = new Set<string>();
-      (data as unknown as RealPost[]).forEach((p) => {
-        if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
-        if (p.post_reposts?.some((r) => r.user_id === user.id)) reposted.add(p.id);
-      });
-      setLikedRealIds(liked);
-      setRepostedRealIds(reposted);
+      const newPosts = data as unknown as RealPost[];
+      if (append) {
+        setRealFeedPosts((prev) => [...prev, ...newPosts]);
+        setLikedRealIds((prev) => {
+          const next = new Set(prev);
+          newPosts.forEach((p) => { if (p.post_likes.some((l) => l.user_id === user.id)) next.add(p.id); });
+          return next;
+        });
+        setRepostedRealIds((prev) => {
+          const next = new Set(prev);
+          newPosts.forEach((p) => { if (p.post_reposts?.some((r) => r.user_id === user.id)) next.add(p.id); });
+          return next;
+        });
+      } else {
+        setRealFeedPosts(newPosts);
+        const liked = new Set<string>();
+        const reposted = new Set<string>();
+        newPosts.forEach((p) => {
+          if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
+          if (p.post_reposts?.some((r) => r.user_id === user.id)) reposted.add(p.id);
+        });
+        setLikedRealIds(liked);
+        setRepostedRealIds(reposted);
+      }
+      const full = newPosts.length === PAGE_SIZE;
+      setHasMoreFeed(full);
+      if (full) feedPageRef.current += 1;
     }
-    setFeedLoading(false);
+    if (append) setFeedLoadingMore(false);
+    else setFeedLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
@@ -2509,6 +2575,22 @@ function CommunautePageInner() {
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [user]);
+
+  // Infinite scroll : charger la page suivante quand le sentinel devient visible
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreFeed && !feedLoading && !feedLoadingMore) {
+          loadFeed({ append: true });
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreFeed, feedLoading, feedLoadingMore, loadFeed]);
 
   // Suivre / ne plus suivre un vrai profil Supabase
   const handleFollowReal = async (profile: { id: string; pseudo: string; avatar_url?: string }) => {
@@ -2764,13 +2846,23 @@ function CommunautePageInner() {
         reactions: reactionsMap[m.id] ?? [],
       })));
 
-      // Marquer comme lus
+      // Marquer comme lus (DB + état local)
+      const now = new Date().toISOString();
       supabase.from("direct_messages")
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: now })
         .eq("receiver_id", user.id)
         .eq("sender_id", partnerId)
         .is("read_at", null)
-        .then(() => {});
+        .then(() => {
+          // Mettre à jour read_at localement pour afficher ✓✓ immédiatement
+          setDmMessages((prev) =>
+            prev.map((m) =>
+              m.sender_id === partnerId && m.receiver_id === user.id && !m.read_at
+                ? { ...m, read_at: now }
+                : m
+            )
+          );
+        });
     }
   }, [user]);
 
@@ -2792,6 +2884,18 @@ function CommunautePageInner() {
         const msg = payload.new as DirectMessage;
         if (msg.sender_id === activeDMPartner.id) {
           setDmMessages((prev) => [...prev, msg]);
+        }
+      })
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "direct_messages",
+        filter: `sender_id=eq.${user?.id}`,
+      }, (payload) => {
+        const updated = payload.new as DirectMessage;
+        if (updated.read_at) {
+          // Le partenaire a lu nos messages → mettre à jour ✓✓
+          setDmMessages((prev) =>
+            prev.map((m) => m.id === updated.id ? { ...m, read_at: updated.read_at } : m)
+          );
         }
       })
       .subscribe();
@@ -2893,13 +2997,40 @@ function CommunautePageInner() {
   }, [search, searchFilter]); // eslint-disable-line
 
   const filteredResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const isHashtag = q.startsWith("#") && q.length > 1;
     return {
       realProfiles: searchFilter !== "seances" ? realProfiles : [],
       sessions:     searchFilter !== "compte"  ? realSessions : [],
       // Suggestions : comptes pas encore suivis (utilisé quand search est vide)
       suggestions:  suggestedProfiles.filter(p => !followingIds.has(p.id)).slice(0, 8),
+      // Posts filtrés par hashtag
+      hashtagPosts: isHashtag
+        ? realFeedPosts.filter(p =>
+            p.caption?.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q)
+          )
+        : [],
     };
-  }, [searchFilter, realProfiles, realSessions, suggestedProfiles, followingIds]);
+  }, [searchFilter, realProfiles, realSessions, suggestedProfiles, followingIds, search, realFeedPosts]);
+
+  // Trending hashtags : extraire les #tags les plus fréquents des posts chargés
+  const trendingHashtags = useMemo(() => {
+    const counts = new Map<string, number>();
+    const tagRe = /#[\wÀ-ɏ]+/g;
+    realFeedPosts.forEach((p) => {
+      const text = `${p.caption ?? ""} ${p.description ?? ""}`;
+      const tags = text.match(tagRe);
+      tags?.forEach((tag) => {
+        const lower = tag.toLowerCase();
+        counts.set(lower, (counts.get(lower) ?? 0) + 1);
+      });
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([tag, count]) => ({ tag, count }));
+  }, [realFeedPosts]);
 
   return (
     <div
@@ -3312,7 +3443,7 @@ function CommunautePageInner() {
                   {/* Titre — affiché en haut avant la photo */}
                   {post.caption && (
                     <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
-                      {post.caption}
+                      <CaptionText text={post.caption} onHashtagClick={(tag) => { setSearch(tag); setView("search"); }} />
                     </p>
                   )}
 
@@ -3330,7 +3461,7 @@ function CommunautePageInner() {
                   {/* Bio / description — affichée après la photo */}
                   {post.description && (
                     <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
-                      {post.description}
+                      <CaptionText text={post.description} onHashtagClick={(tag) => { setSearch(tag); setView("search"); }} />
                     </p>
                   )}
 
@@ -3487,6 +3618,29 @@ function CommunautePageInner() {
               );
             })}
 
+            {/* ── Infinite scroll sentinel ── */}
+            {feedTab === "posts" && !feedLoading && (
+              <>
+                {hasMoreFeed && (
+                  <div ref={sentinelRef} className="h-10 flex items-center justify-center">
+                    {feedLoadingMore && (
+                      <motion.div
+                        className="w-5 h-5 rounded-full border-2"
+                        style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                      />
+                    )}
+                  </div>
+                )}
+                {!hasMoreFeed && sortedFeedPosts.length >= 30 && (
+                  <p className="text-center text-xs py-5 font-light" style={{ color: "#A0AEC0" }}>
+                    🎉 Tu as tout vu !
+                  </p>
+                )}
+              </>
+            )}
+
             {/* ── Floating Action Button : créer un post libre ── */}
             {user && (
               <motion.button
@@ -3554,6 +3708,30 @@ function CommunautePageInner() {
                 </button>
               ))}
             </div>
+
+            {/* ── Trending hashtags (quand search est vide) ── */}
+            {!search.trim() && trendingHashtags.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
+                  Tendances
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {trendingHashtags.map(({ tag, count }) => (
+                    <motion.button
+                      key={tag}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setSearch(tag)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer"
+                      style={{ background: "linear-gradient(135deg,rgba(167,139,250,0.12),rgba(212,192,255,0.18))", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}
+                    >
+                      {tag}
+                      <span className="text-[9px] font-normal opacity-70">{count}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Suggestions — comptes à découvrir (quand search est vide) */}
             {!search.trim() && filteredResults.suggestions.length > 0 && searchFilter !== "seances" && (
@@ -3725,7 +3903,48 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {!searchLoading && search.trim() && filteredResults.realProfiles.length === 0 && filteredResults.sessions.length === 0 && (
+            {/* ── Hashtag posts ── */}
+            {!searchLoading && filteredResults.hashtagPosts.length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A78BFA" }}>
+                  Posts · {filteredResults.hashtagPosts.length} résultat{filteredResults.hashtagPosts.length > 1 ? "s" : ""}
+                </p>
+                <div className="flex flex-col gap-2">
+                  {filteredResults.hashtagPosts.map((p) => {
+                    const pseudo = p.author?.pseudo ?? "utilisateur";
+                    const avatar = p.author?.avatar_url;
+                    return (
+                      <motion.button
+                        key={p.id}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => { setSearch(""); setView("feed"); }}
+                        className="lg-surface lg-highlight relative flex items-start gap-3 px-4 py-3 rounded-2xl text-left cursor-pointer"
+                      >
+                        <div
+                          className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-semibold overflow-hidden mt-0.5"
+                          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                        >
+                          {avatar
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                            : pseudo[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold" style={{ color: "#A78BFA" }}>@{pseudo}</p>
+                          <p className="text-xs font-light line-clamp-2 mt-0.5" style={{ color: "#2D3748" }}>{p.caption || p.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{p.post_likes.length} ❤️</span>
+                            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{p.post_comments.length} 💬</span>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!searchLoading && search.trim() && filteredResults.realProfiles.length === 0 && filteredResults.sessions.length === 0 && filteredResults.hashtagPosts.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
                   Aucun résultat pour « {search} »
@@ -3942,7 +4161,18 @@ function CommunautePageInner() {
                           </div>
                         )}
 
-                        <p className={`text-[9px] mt-1 ${isMe ? "text-right" : ""}`} style={{ color: "#A0AEC0" }}>{timeStr}</p>
+                        <div className={`flex items-center gap-0.5 mt-1 ${isMe ? "justify-end" : ""}`}>
+                          <span className="text-[9px]" style={{ color: "#A0AEC0" }}>{timeStr}</span>
+                          {isMe && (
+                            <span
+                              className="text-[9px] font-bold"
+                              style={{ color: msg.read_at ? "#A78BFA" : "#C4C9D4", lineHeight: 1 }}
+                              title={msg.read_at ? "Lu" : "Envoyé"}
+                            >
+                              {msg.read_at ? "✓✓" : "✓"}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   );
