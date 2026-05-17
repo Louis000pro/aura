@@ -1598,14 +1598,239 @@ function postTimeAgo(iso: string) {
 }
 
 /* ─── TikTok Video Feed ─────────────────────────────────── */
+
+// Panel commentaires style vidéo (overlay sombre slide-up)
+function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onCommentAdded }: {
+  postId: string; postOwnerId: string; commentCount: number;
+  onClose: () => void; onCommentAdded: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 32, stiffness: 320 }}
+      className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
+      style={{ background: "rgba(18,12,30,0.97)", backdropFilter: "blur(20px)", maxHeight: "72%", minHeight: 320 }}
+      onClick={e => e.stopPropagation()}
+    >
+      {/* Poignée */}
+      <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.25)" }} />
+      </div>
+      <div className="px-4 pb-3 flex items-center justify-between flex-shrink-0">
+        <p className="text-white text-sm font-semibold">{commentCount} commentaire{commentCount !== 1 ? "s" : ""}</p>
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="w-7 h-7 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(255,255,255,0.1)" }}>
+          <X size={13} strokeWidth={2} style={{ color: "rgba(255,255,255,0.7)" }} />
+        </motion.button>
+      </div>
+
+      {/* Contenu commentaires */}
+      <div className="flex-1 overflow-hidden">
+        <VideoCommentsList postId={postId} postOwnerId={postOwnerId} onCommentAdded={onCommentAdded} />
+      </div>
+    </motion.div>
+  );
+}
+
+function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: string; postOwnerId: string; onCommentAdded: () => void }) {
+  const { user } = useAuth();
+  type RealComment = { id: string; content: string; created_at: string; user_id: string; author: { pseudo: string; avatar_url?: string | null } | null };
+  const [comments, setComments] = useState<RealComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.from("post_comments")
+      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .eq("post_id", postId).order("created_at", { ascending: true }).limit(80)
+      .then(({ data }) => { setComments((data as unknown as RealComment[]) ?? []); setLoading(false); });
+  }, [postId]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !user || sending) return;
+    const content = input.trim();
+    setInput(""); setSending(true);
+    const tmpId = `tmp-${Date.now()}`;
+    setComments(prev => [...prev, { id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id, author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null } }]);
+    const supabase = createClient();
+    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, content });
+    setSending(false);
+    if (error) { setComments(prev => prev.filter(c => c.id !== tmpId)); setInput(content); }
+    else {
+      onCommentAdded();
+      if (postOwnerId && postOwnerId !== user.id) {
+        void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: postId });
+      }
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+          </div>
+        ) : comments.length === 0 ? (
+          <p className="text-center text-sm py-8" style={{ color: "rgba(255,255,255,0.35)" }}>Sois le premier à commenter</p>
+        ) : (
+          comments.map((c, i) => {
+            const pseudo = c.author?.pseudo ?? "inconnu";
+            const avatar = c.author?.avatar_url;
+            const diff = Date.now() - new Date(c.created_at).getTime();
+            const m = Math.floor(diff / 60000);
+            const timeStr = m < 1 ? "À l'instant" : m < 60 ? `${m}min` : m < 1440 ? `${Math.floor(m/60)}h` : `${Math.floor(m/1440)}j`;
+            return (
+              <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2.5">
+                <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold overflow-hidden"
+                    style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                    {avatar
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                      : pseudo[0]?.toUpperCase()}
+                  </div>
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.9)" }}>
+                    <span className="font-semibold mr-1.5" style={{ color: "#D4C0FF" }}>{pseudo}</span>
+                    <span className="font-light">{c.content}</span>
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{timeStr}</p>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+      {/* Input */}
+      <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
+          style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+          {user?.avatar
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+            : <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>{user?.pseudo?.[0]?.toUpperCase() ?? "?"}</span>}
+        </div>
+        <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+          placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"}
+          disabled={!user}
+          className="flex-1 text-sm outline-none px-3 py-2.5 rounded-2xl"
+          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+        <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
+          style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(255,255,255,0.08)" }}>
+          <Send size={13} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "rgba(255,255,255,0.3)" }} />
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
+// Panel paramètres vidéo (vitesse, sous-titres, signaler)
+function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggleCaptions, onReport }: {
+  onClose: () => void; onSpeedChange: (s: number) => void;
+  speed: number; captionsOn: boolean; onToggleCaptions: () => void; onReport: () => void;
+}) {
+  const speeds = [0.25, 0.5, 1, 1.5, 2];
+  return (
+    <motion.div
+      initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 32, stiffness: 320 }}
+      className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl pb-8"
+      style={{ background: "rgba(18,12,30,0.97)", backdropFilter: "blur(20px)" }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="flex justify-center pt-3 pb-4">
+        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.25)" }} />
+      </div>
+      <div className="px-5">
+        <p className="text-white text-sm font-semibold mb-4">Paramètres vidéo</p>
+        {/* Vitesse */}
+        <div className="mb-5">
+          <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "rgba(212,192,255,0.6)" }}>Vitesse de lecture</p>
+          <div className="flex gap-2">
+            {speeds.map(s => (
+              <motion.button key={s} whileTap={{ scale: 0.93 }} onClick={() => onSpeedChange(s)}
+                className="flex-1 py-2.5 rounded-2xl text-xs font-bold cursor-pointer"
+                style={speed === s
+                  ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 2px 12px rgba(167,139,250,0.4)" }
+                  : { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }}>
+                {s === 1 ? "×1" : `×${s}`}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+        {/* Sous-titres */}
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onToggleCaptions}
+          className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2 cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-center gap-3">
+            <span className="text-lg">CC</span>
+            <div>
+              <p className="text-sm font-medium text-left" style={{ color: "#fff" }}>Sous-titres</p>
+              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)" }}>{captionsOn ? "Activés" : "Désactivés"}</p>
+            </div>
+          </div>
+          <div className="w-11 h-6 rounded-full flex items-center px-1 transition-all" style={{ background: captionsOn ? "linear-gradient(135deg,#D4C0FF,#A78BFA)" : "rgba(255,255,255,0.15)" }}>
+            <motion.div className="w-4 h-4 rounded-full bg-white" animate={{ x: captionsOn ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
+          </div>
+        </motion.button>
+        {/* Signaler */}
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onReport}
+          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-2 cursor-pointer"
+          style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.15)" }}>
+          <Flag size={16} strokeWidth={1.5} style={{ color: "#FC8181" }} />
+          <p className="text-sm font-medium" style={{ color: "#FC8181" }}>Signaler cette vidéo</p>
+        </motion.button>
+        {/* Fermer */}
+        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
+          className="w-full py-3 mt-3 rounded-2xl text-sm font-medium cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}>
+          Fermer
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
 function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(post.post_likes?.length ?? 0);
-  const [muted, setMuted] = useState(true);
 
+  // Interaction state
+  const [liked, setLiked] = useState(() => post.post_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false);
+  const [likes, setLikes] = useState(post.post_likes?.length ?? 0);
+  const [saved, setSaved] = useState(false);
+  const [reposted, setReposted] = useState(() => post.post_reposts?.some(r => r.user_id === (user?.id ?? "")) ?? false);
+  const [reposts, setReposts] = useState(post.post_reposts?.length ?? 0);
+  const [commentCount, setCommentCount] = useState(post.post_comments?.length ?? 0);
+  const [following, setFollowing] = useState(false);
+
+  // UI state
+  const [muted, setMuted] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [doubleTapHeart, setDoubleTapHeart] = useState(false);
+
+  // Double-tap to like
+  const lastTapRef = useRef(0);
+
+  const authorPseudo = post.author?.pseudo ?? "utilisateur";
+  const authorAvatar = post.author?.avatar_url;
+  const authorCertified = post.author?.is_admin === true;
+
+  // Play/pause on isActive
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -1613,11 +1838,55 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
       video.currentTime = 0;
       void video.play().catch(() => {});
       if (bgRef.current) { bgRef.current.currentTime = 0; void bgRef.current.play().catch(() => {}); }
+      setPaused(false);
     } else {
       video.pause();
       bgRef.current?.pause();
     }
   }, [isActive]);
+
+  // Playback rate
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = speed;
+    if (bgRef.current) bgRef.current.playbackRate = speed;
+  }, [speed]);
+
+  // Captions via HTML track (if available)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const tracks = Array.from(video.textTracks);
+    tracks.forEach(t => { t.mode = captionsOn ? "showing" : "hidden"; });
+  }, [captionsOn]);
+
+  const handleVideoTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap → like
+      triggerLike();
+      setDoubleTapHeart(true);
+      setTimeout(() => setDoubleTapHeart(false), 900);
+    } else {
+      // Single tap → play/pause
+      const video = videoRef.current;
+      if (!video) return;
+      if (video.paused) { void video.play().catch(() => {}); setPaused(false); }
+      else { video.pause(); setPaused(true); }
+    }
+    lastTapRef.current = now;
+  };
+
+  const triggerLike = async () => {
+    if (!user) return;
+    if (!liked) {
+      setLiked(true); setLikes(l => l + 1);
+      const supabase = createClient();
+      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      if (post.user_id !== user.id) {
+        void supabase.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "like", post_id: post.id });
+      }
+    }
+  };
 
   const toggleLike = async () => {
     if (!user) return;
@@ -1628,64 +1897,253 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
     } else {
       setLiked(true); setLikes(l => l + 1);
       await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      if (post.user_id !== user.id) {
+        const supabase2 = createClient();
+        void supabase2.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "like", post_id: post.id });
+      }
     }
   };
 
-  const authorPseudo = post.author?.pseudo ?? "utilisateur";
-  const authorAvatar = post.author?.avatar_url;
+  const toggleRepost = async () => {
+    if (!user) return;
+    const supabase = createClient();
+    if (reposted) {
+      setReposted(false); setReposts(r => r - 1);
+      await supabase.from("post_reposts").delete().eq("post_id", post.id).eq("user_id", user.id);
+    } else {
+      setReposted(true); setReposts(r => r + 1);
+      await supabase.from("post_reposts").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      if (post.user_id !== user.id) {
+        void supabase.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "repost", post_id: post.id });
+      }
+    }
+  };
+
+  const toggleFollow = async () => {
+    if (!user || post.user_id === user.id) return;
+    const supabase = createClient();
+    if (following) {
+      setFollowing(false);
+      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", post.user_id);
+    } else {
+      setFollowing(true);
+      await supabase.from("follows").upsert({ follower_id: user.id, following_id: post.user_id }, { ignoreDuplicates: true });
+    }
+  };
+
+  const handleShare = () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    navigator.clipboard.writeText(url).catch(() => {});
+  };
+
+  const handleReport = () => {
+    setReported(true);
+    setShowSettings(false);
+  };
+
+  const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
   return (
-    <div className="relative w-full h-full flex-shrink-0 overflow-hidden" style={{ background: "#000" }}>
-      {/* Fond flouté */}
+    <div className="relative w-full h-full overflow-hidden select-none" style={{ background: "#000" }}>
+      {/* ── Fond flouté ── */}
       {post.media_url && (
-        <video ref={bgRef} src={post.media_url} className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          style={{ filter: "blur(24px) brightness(0.4)", transform: "scale(1.1)" }}
+        <video ref={bgRef} src={post.media_url}
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{ filter: "blur(26px) brightness(0.35)", transform: "scale(1.12)" }}
           muted playsInline preload="metadata" loop />
       )}
-      {/* Vidéo principale */}
+
+      {/* ── Vidéo principale (tappable) ── */}
       {post.media_url && (
         <video ref={videoRef} src={post.media_url}
-          className="relative z-10 w-full h-full object-contain"
+          className="absolute inset-0 z-10 w-full h-full object-contain cursor-pointer"
           muted={muted} playsInline preload="metadata" loop
-          onClick={() => setMuted(m => !m)} />
+          onClick={handleVideoTap} />
       )}
-      {/* Overlay gradient bas */}
-      <div className="absolute bottom-0 inset-x-0 z-20 pointer-events-none"
-        style={{ height: "45%", background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)" }} />
-      {/* Infos auteur + caption */}
-      <div className="absolute bottom-20 left-4 right-16 z-30">
-        <Link href={`/profil/${authorPseudo}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-xs font-bold"
-              style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-              {authorAvatar
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
-                : authorPseudo[0]?.toUpperCase()}
+
+      {/* ── Gradients overlay ── */}
+      <div className="absolute inset-0 z-20 pointer-events-none"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.18) 30%, transparent 60%)" }} />
+      <div className="absolute top-0 inset-x-0 z-20 pointer-events-none"
+        style={{ height: 120, background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)" }} />
+
+      {/* ── Pause indicator ── */}
+      <AnimatePresence>
+        {paused && (
+          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}>
+              <Play size={26} strokeWidth={1.5} style={{ color: "#fff", marginLeft: 3 }} />
             </div>
-            <span className="text-white text-sm font-semibold drop-shadow">@{authorPseudo}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Double-tap heart ── */}
+      <AnimatePresence>
+        {doubleTapHeart && (
+          <motion.div initial={{ opacity: 0, scale: 0.3, y: 0 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.4, 1.2, 0.8], y: -60 }}
+            transition={{ duration: 0.85, ease: "easeOut" }}
+            className="absolute z-40 inset-0 flex items-center justify-center pointer-events-none">
+            <Heart size={90} strokeWidth={1} fill="#FF4458" style={{ color: "#FF4458", filter: "drop-shadow(0 0 24px rgba(255,68,88,0.8))" }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Son indicator (coin haut droit) ── */}
+      <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
+        className="absolute top-12 right-4 z-40 w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+        style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}>
+        <span className="text-base">{muted ? "🔇" : "🔊"}</span>
+      </motion.button>
+
+      {/* ── Infos auteur + caption (bas gauche) ── */}
+      <div className="absolute bottom-20 left-3 right-20 z-30">
+        {/* Auteur */}
+        <div className="flex items-center gap-2.5 mb-2.5">
+          <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-sm font-bold border-2 border-white"
+                style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                {authorAvatar
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
+                  : authorPseudo[0]?.toUpperCase()}
+              </div>
+            </div>
+          </Link>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
+              <span className="text-white text-sm font-semibold drop-shadow">@{authorPseudo}</span>
+            </Link>
+            {authorCertified && (
+              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                  <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            )}
+            {user && post.user_id !== user.id && (
+              <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); toggleFollow(); }}
+                className="ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer flex-shrink-0"
+                style={following
+                  ? { background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.3)" }
+                  : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                {following ? "Suivi" : "+ Suivre"}
+              </motion.button>
+            )}
           </div>
-        </Link>
+        </div>
+        {/* Caption */}
         {post.caption && (
-          <p className="text-white text-sm font-light leading-snug drop-shadow line-clamp-2">{post.caption}</p>
+          <p className="text-white text-[13px] font-light leading-snug drop-shadow line-clamp-3"
+            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
+            {post.caption}
+          </p>
+        )}
+        {/* Vitesse active */}
+        {speed !== 1 && (
+          <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+            ×{speed}
+          </div>
         )}
       </div>
-      {/* Actions droite */}
-      <div className="absolute right-3 bottom-20 z-30 flex flex-col items-center gap-5">
+
+      {/* ── Actions droite (vertical stack) ── */}
+      <div className="absolute right-3 bottom-16 z-30 flex flex-col items-center gap-4">
         {/* Like */}
-        <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
-          <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.35, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Heart size={28} strokeWidth={1.5} fill={liked ? "#FF4458" : "none"} style={{ color: liked ? "#FF4458" : "#fff", filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.6))" }} />
+        <button onClick={e => { e.stopPropagation(); toggleLike(); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
+            <Heart size={30} strokeWidth={1.5} fill={liked ? "#FF4458" : "none"}
+              style={{ color: liked ? "#FF4458" : "#fff", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.7))" }} />
           </motion.div>
-          <span className="text-white text-xs font-medium drop-shadow">{likes}</span>
+          <span className="text-white text-[11px] font-semibold drop-shadow">{fmtCount(likes)}</span>
         </button>
-        {/* Mute/Unmute */}
-        <button onClick={() => setMuted(m => !m)} className="cursor-pointer">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.4)" }}>
-            <span className="text-base">{muted ? "🔇" : "🔊"}</span>
+        {/* Commentaires */}
+        <button onClick={e => { e.stopPropagation(); setShowComments(s => !s); setShowSettings(false); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <div style={{ filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.7))" }}>
+            <MessageCircle size={28} strokeWidth={1.5} fill={showComments ? "rgba(167,139,250,0.4)" : "none"}
+              style={{ color: showComments ? "#D4C0FF" : "#fff" }} />
+          </div>
+          <span className="text-white text-[11px] font-semibold drop-shadow">{fmtCount(commentCount)}</span>
+        </button>
+        {/* Sauvegarder */}
+        <button onClick={e => { e.stopPropagation(); setSaved(s => !s); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.3 }}>
+            <Bookmark size={26} strokeWidth={1.5} fill={saved ? "#F5E6A3" : "none"}
+              style={{ color: saved ? "#F5E6A3" : "#fff", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.7))" }} />
+          </motion.div>
+          <span className="text-white text-[11px] font-semibold drop-shadow" style={{ opacity: saved ? 1 : 0.7 }}>Save</span>
+        </button>
+        {/* Repartager */}
+        <button onClick={e => { e.stopPropagation(); toggleRepost(); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
+            <Repeat2 size={26} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#fff", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.7))" }} />
+          </motion.div>
+          <span className="text-white text-[11px] font-semibold drop-shadow">{fmtCount(reposts)}</span>
+        </button>
+        {/* Partager */}
+        <button onClick={e => { e.stopPropagation(); handleShare(); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <Share2 size={24} strokeWidth={1.5} style={{ color: "#fff", filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.7))" }} />
+          <span className="text-white text-[11px] font-semibold drop-shadow" style={{ opacity: 0.7 }}>Share</span>
+        </button>
+        {/* Paramètres */}
+        <button onClick={e => { e.stopPropagation(); setShowSettings(s => !s); setShowComments(false); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: showSettings ? "rgba(212,192,255,0.3)" : "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)", border: showSettings ? "1px solid rgba(212,192,255,0.5)" : "1px solid rgba(255,255,255,0.15)" }}>
+            <span className="text-base">⚙️</span>
           </div>
         </button>
       </div>
+
+      {/* ── Signalé badge ── */}
+      <AnimatePresence>
+        {reported && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl flex items-center gap-2"
+            style={{ background: "rgba(252,129,129,0.15)", border: "1px solid rgba(252,129,129,0.3)", backdropFilter: "blur(12px)" }}>
+            <Flag size={12} strokeWidth={2} style={{ color: "#FC8181" }} />
+            <span className="text-xs font-medium" style={{ color: "#FC8181" }}>Vidéo signalée</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Panels overlay ── */}
+      <AnimatePresence>
+        {(showComments || showSettings) && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40"
+            style={{ background: "rgba(0,0,0,0.45)" }}
+            onClick={() => { setShowComments(false); setShowSettings(false); }} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showComments && (
+          <VideoCommentsPanel
+            postId={post.id}
+            postOwnerId={post.user_id}
+            commentCount={commentCount}
+            onClose={() => setShowComments(false)}
+            onCommentAdded={() => setCommentCount(c => c + 1)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSettings && (
+          <VideoSettingsPanel
+            speed={speed}
+            onSpeedChange={s => setSpeed(s)}
+            captionsOn={captionsOn}
+            onToggleCaptions={() => setCaptionsOn(c => !c)}
+            onReport={handleReport}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1695,7 +2153,6 @@ function TikTokFeed({ posts }: { posts: RealPost[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Detect which video is in view via scroll
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -1721,7 +2178,7 @@ function TikTokFeed({ posts }: { posts: RealPost[] }) {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll"
-      style={{ height: "calc(100vh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none" }}>
+      style={{ height: "calc(100vh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain" }}>
       {videoPosts.map((post, i) => (
         <div key={post.id} style={{ height: "calc(100vh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
           <VideoCard post={post} isActive={i === activeIndex} />
