@@ -16,6 +16,16 @@ export async function POST(req: NextRequest) {
     const email = body?.email;
     if (!email) return Response.json({ error: "Email requis" }, { status: 400 });
 
+    const gmailUser = cleanEnv(process.env.GMAIL_USER);
+    const gmailPass = cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, "");
+    if (!gmailUser || !gmailPass) {
+      console.error("send-otp: GMAIL_USER ou GMAIL_PASS manquant dans les variables d'environnement");
+      return Response.json(
+        { error: "Le service d'envoi d'email n'est pas configuré. Contacte l'administrateur." },
+        { status: 503 }
+      );
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = Date.now() + 10 * 60 * 1000;
 
@@ -26,8 +36,8 @@ export async function POST(req: NextRequest) {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: cleanEnv(process.env.GMAIL_USER),
-        pass: cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, ""),
+        user: gmailUser,
+        pass: gmailPass,
       },
     });
 
