@@ -6,7 +6,9 @@ function cleanEnv(val: string | undefined): string {
 }
 
 function getSecret(): Buffer {
-  return Buffer.from(cleanEnv(process.env.AUTH_SECRET) || "aura-otp-fallback-2024", "utf8");
+  const secret = cleanEnv(process.env.AUTH_SECRET);
+  if (!secret) throw new Error("AUTH_SECRET manquant — configuration serveur requise");
+  return Buffer.from(secret, "utf8");
 }
 
 export async function POST(req: NextRequest) {

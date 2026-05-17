@@ -465,11 +465,14 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
     } else {
       await supabase.from("followers").insert({ follower_id: userId, following_id: profile.id });
       void Promise.resolve(supabase.from("notifications").insert({ user_id: profile.id, from_user_id: userId, from_pseudo: profile.pseudo, type: "follow" })).then(() => {}).catch(() => {});
-      fetch("/api/notifications/follow", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ follower_id: userId, followed_id: profile.id }),
-      }).catch(() => {});
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return;
+        fetch("/api/notifications/follow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+          body: JSON.stringify({ follower_id: userId, followed_id: profile.id }),
+        }).catch(() => {});
+      });
     }
   };
 

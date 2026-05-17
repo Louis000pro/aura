@@ -423,7 +423,10 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
     if (sess.session) {
       await fetch("/api/account/delete", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${sess.session.access_token}`,
+        },
         body: JSON.stringify({ user_id: sess.session.user.id }),
       }).catch(() => {});
     }

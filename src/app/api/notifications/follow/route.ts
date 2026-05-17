@@ -13,7 +13,21 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
+    // ── Vérification d'authentification ──────────────────────────────────────
+    // L'appelant doit être connecté et ne peut envoyer une notif qu'en son nom.
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "").trim();
+    if (!token) return Response.json({ error: "Non autorisé" }, { status: 401 });
+
     const supabase = createAdminClient();
+    const { data: { user: caller }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !caller) {
+      return Response.json({ error: "Session invalide" }, { status: 401 });
+    }
+    if (caller.id !== follower_id) {
+      return Response.json({ error: "Non autorisé" }, { status: 403 });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Récupérer en parallèle : profil du follower + email du suivi
     const [followerRes, followedUserRes] = await Promise.all([
