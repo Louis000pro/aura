@@ -9,11 +9,12 @@ import { useAuth } from "@/context/AuthContext";
 type Props = {
   onClose: () => void;
   onSuccess: () => void;
+  suggestedTags?: string[];
 };
 
 type Audience = "public" | "friends" | "private";
 
-export default function CreatePostModal({ onClose, onSuccess }: Props) {
+export default function CreatePostModal({ onClose, onSuccess, suggestedTags = [] }: Props) {
   const { user } = useAuth();
   const [caption, setCaption] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -193,6 +194,29 @@ export default function CreatePostModal({ onClose, onSuccess }: Props) {
             {remaining}
           </span>
         </div>
+
+        {/* Suggested hashtags */}
+        {suggestedTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {suggestedTags.slice(0, 8).map((tag) => (
+              <motion.button
+                key={tag}
+                type="button"
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setCaption((prev) => {
+                  const sep = prev && !prev.endsWith(" ") ? " " : "";
+                  // Avoid duplicates
+                  if (prev.toLowerCase().includes(tag.toLowerCase())) return prev;
+                  return `${prev}${sep}${tag}`;
+                })}
+                className="px-2.5 py-1 rounded-full text-[11px] font-medium cursor-pointer"
+                style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}
+              >
+                {tag}
+              </motion.button>
+            ))}
+          </div>
+        )}
 
         {/* Media zone */}
         <AnimatePresence mode="wait">

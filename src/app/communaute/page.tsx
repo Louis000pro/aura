@@ -1151,6 +1151,20 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
     });
   };
 
+  const handleNativeShare = async () => {
+    if (typeof navigator === "undefined" || !("share" in navigator)) { handleCopy(); return; }
+    try {
+      await navigator.share({
+        title: "Aura — Performance partagée",
+        text: postCaption ?? "Découvre cette performance sur Aura !",
+        url: window.location.href,
+      });
+      onClose();
+    } catch {
+      // User cancelled — ignore
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1185,8 +1199,8 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
           {[
             { label: "DM", emoji: "💬", color: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", action: () => { onClose(); onShareDM?.(); } },
             { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", action: onClose },
-            { label: "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", action: handleCopy },
-            { label: "Aura", emoji: "✦", color: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", action: onClose },
+            { label: copied ? "Copié !" : "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", action: handleCopy },
+            { label: "Partager", emoji: "📤", color: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", action: handleNativeShare },
           ].map(({ label, emoji, color, action }) => (
             <motion.button
               key={label}
@@ -4281,6 +4295,7 @@ function CommunautePageInner() {
               loadFeed();
               showToast("Post publié ✓");
             }}
+            suggestedTags={trendingHashtags.map((h) => h.tag)}
           />
         )}
         {storyGroup && <StoryViewer stories={storyGroup} onClose={() => setStoryGroup(null)} />}
