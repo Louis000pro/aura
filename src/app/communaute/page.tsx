@@ -1940,7 +1940,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
   return (
-    <div className="w-full h-full flex items-center justify-center select-none relative overflow-hidden" style={{ background: "#0d0d0d" }}>
+    <div className="w-full h-full flex items-center justify-center select-none relative overflow-hidden" style={{ background: "#0d0d0d", borderRadius: 18 }}>
 
       {/* ── Fond flouté ── */}
       {post.media_url && (
@@ -2186,10 +2186,12 @@ function TikTokFeed({ posts }: { posts: RealPost[] }) {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll"
-      style={{ height: "calc(100vh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain" }}>
+      style={{ height: "calc(100vh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", padding: "8px 0" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100vh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
-          <VideoCard post={post} isActive={i === activeIndex} />
+        <div key={post.id} style={{ height: "calc(100vh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "4px 8px" }}>
+          <div style={{ height: "100%", borderRadius: 18, overflow: "hidden" }}>
+            <VideoCard post={post} isActive={i === activeIndex} />
+          </div>
         </div>
       ))}
     </div>
