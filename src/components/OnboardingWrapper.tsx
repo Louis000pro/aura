@@ -26,9 +26,11 @@ export default function OnboardingWrapper() {
     if (!user) return;
 
     const supabase = createClient();
+    // upsert plutôt que update : si le trigger n'a pas créé le profil, on le crée ici
     await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id:                        user.id,
         onboarding_age:            data.age ? parseInt(data.age) : null,
         onboarding_height:         data.height ? parseInt(data.height) : null,
         onboarding_weight:         data.weight ? parseFloat(data.weight) : null,
@@ -39,8 +41,7 @@ export default function OnboardingWrapper() {
         onboarding_meals_day:      data.mealsPerDay ? parseInt(data.mealsPerDay) : null,
         onboarding_diet:           data.diet || null,
         onboarding_completed:      true,
-      })
-      .eq("id", user.id);
+      }, { onConflict: "id" });
   };
 
   const handleSkip = () => {

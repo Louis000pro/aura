@@ -139,7 +139,8 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
   const handleSave = async () => {
     if (!user?.id) return;
     setSaving(true);
-    await supabase.from("profiles").update({
+    await supabase.from("profiles").upsert({
+      id: user.id,
       onboarding_age: age ? parseInt(age) : null,
       onboarding_height: height ? parseInt(height) : null,
       onboarding_weight: weight ? parseFloat(weight) : null,
@@ -150,7 +151,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
       onboarding_meals_day: meals ? parseInt(meals) : null,
       onboarding_diet: diet,
       onboarding_completed: true,
-    }).eq("id", user.id);
+    }, { onConflict: "id" });
     setSaving(false);
     setSuccess(true);
     setTimeout(() => { onSaved(); onClose(); }, 1200);

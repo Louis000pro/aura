@@ -2208,10 +2208,10 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
     const supabase = createClient();
     if (following) {
       setFollowing(false);
-      await supabase.from("follows").delete().eq("follower_id", user.id).eq("following_id", post.user_id);
+      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", post.user_id);
     } else {
       setFollowing(true);
-      await supabase.from("follows").upsert({ follower_id: user.id, following_id: post.user_id }, { ignoreDuplicates: true });
+      await supabase.from("followers").upsert({ follower_id: user.id, following_id: post.user_id }, { ignoreDuplicates: true });
     }
   };
 
