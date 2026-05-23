@@ -13,20 +13,44 @@ type AnimConfig = {
 };
 
 const FBX_PATTERNS: [RegExp, AnimConfig][] = [
-  [/back.?squat|squat.+barre/i,                                 { path: "/animations/Back_Squat.fbx" }],
-  [/air.?squat|squat sans|squat\s*body|squat (poids du corps|libre)/i, { path: "/animations/Air_Squat.fbx" }],
-  [/snatch|arrach[ée]/i,                                        { path: "/animations/Snatch.fbx" }],
-  [/kettlebell\s*swing|kettle\s*bell/i,                         { path: "/animations/Kettlebell_Swing.fbx" }],
-  [/front\s*raise|[eé]l[eé]vation.+frontal/i,                  { path: "/animations/Front_Raises.fbx" }],
-  [/bicep.?curl|curl\s*biceps?|^curl/i,                         { path: "/animations/Bicep_Curl.fbx" }],
+  // ─── Spécifiques d'abord ────────────────────────────────────
+  [/back.?squat|squat.+barre|squat barre/i,                     { path: "/animations/Back_Squat.fbx" }],
+  [/overhead\s*squat|squat overhead/i,                          { path: "/animations/Overhead_Squat.fbx" }],
+  [/air.?squat (bent|arms)|squat bent arms/i,                  { path: "/animations/Air_Squat.fbx" }],
+
+  // Cardio dynamique
+  [/jump.?push.?up|pompes? explosives?/i,                      { path: "/animations/Jump_Push_Up.fbx", stripRootMotion: true }],
   [/burpee/i,                                                   { path: "/animations/Burpee.fbx", stripRootMotion: true }],
   [/jumping.?jack/i,                                            { path: "/animations/Jumping_Jacks.fbx" }],
-  [/bicycle\s*crunch|crunch\s*v[eé]lo/i,                       { path: "/animations/Bicycle_Crunch.fbx" }],
-  [/^crunch|crunch$/i,                                          { path: "/animations/Bicycle_Crunch.fbx" }],
+  [/box.?jump|jump.*box|jump\s*squats?|saut\s*box/i,           { path: "/animations/Box_Jump.fbx", stripRootMotion: true }],
+  [/cross.?jumps?.?rotation/i,                                  { path: "/animations/Cross_Jumps_Rotation.fbx", stripRootMotion: true }],
+  [/cross.?jumps?/i,                                            { path: "/animations/Cross_Jumps.fbx", stripRootMotion: true }],
+  [/high.?knees?|mont[ée]es? de genoux/i,                      { path: "/animations/High_Knees.fbx", stripRootMotion: true }],
+  [/sprint( sur place| en place)?|sprint$/i,                   { path: "/animations/Sprint.fbx", stripRootMotion: true }],
+  [/^jog|course en place|jog en place|footing|course continue|course z?one?|cardio z?one?/i,
+                                                                { path: "/animations/Jog_In_Circle.fbx", stripRootMotion: true }],
+  [/pike.?walk/i,                                               { path: "/animations/Pike_Walk.fbx", stripRootMotion: true }],
+
+  // Force / haltérophilie
+  [/snatch|arrach[ée]/i,                                        { path: "/animations/Snatch.fbx" }],
+  [/clean.?(and|et)?.?jerk|[eé]paul[ée][ -]?jet[ée]/i,         { path: "/animations/Clean_And_Jerk.fbx" }],
+  [/sumo.?high.?pull|sumo|tirage menton/i,                      { path: "/animations/Sumo_High_Pull.fbx" }],
+  [/kettlebell\s*swing|kettle\s*bell/i,                         { path: "/animations/Kettlebell_Swing.fbx" }],
+  [/front\s*raise|[eé]l[eé]vation.+frontal/i,                  { path: "/animations/Front_Raises.fbx" }],
+  [/bicep.?curl|curl\s*biceps?|curl\s*(barre|marteau)|^curl/i, { path: "/animations/Bicep_Curl.fbx" }],
+
+  // Bodyweight
   [/^pompes?$|push.?up/i,                                       { path: "/animations/Push_Up.fbx" }],
   [/^plank$|planche\s*(frontale|haute)?|^gainage$/i,           { path: "/animations/Plank.fbx", isStatic: true }],
+
+  // Abdos
+  [/circle\s*crunch|crunch.+cercle/i,                          { path: "/animations/Circle_Crunch.fbx" }],
+  [/bicycle\s*crunch|crunch\s*v[eé]lo/i,                       { path: "/animations/Bicycle_Crunch.fbx" }],
+  [/^crunch|crunch$/i,                                          { path: "/animations/Bicycle_Crunch.fbx" }],
   [/^sit.?ups?$|^situps?$|abdominaux|relev[eé] du buste/i,     { path: "/animations/Situps.fbx" }],
-  [/^jog|course en place|jog en place|footing/i,                { path: "/animations/Jog_In_Circle.fbx", stripRootMotion: true }],
+
+  // Squat générique (en dernier pour ne pas écraser Back/Air/Overhead)
+  [/air.?squat|squat sans|squat\s*body|squat (poids du corps|libre)/i, { path: "/animations/Air_Squat.fbx" }],
   [/^squats?$|squat$/i,                                         { path: "/animations/Air_Squat.fbx" }],
 ];
 
