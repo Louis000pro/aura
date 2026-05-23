@@ -23,17 +23,10 @@ const FBX_PATTERNS: [RegExp, AnimConfig][] = [
   [/burpee/i,                                                   { path: "/animations/Burpee.fbx", stripRootMotion: true }],
   [/jumping.?jack/i,                                            { path: "/animations/Jumping_Jacks.fbx" }],
   [/box.?jump|jump.*box|jump\s*squats?|saut\s*box/i,           { path: "/animations/Box_Jump.fbx", stripRootMotion: true }],
-  [/cross.?jumps?.?rotation/i,                                  { path: "/animations/Cross_Jumps_Rotation.fbx", stripRootMotion: true }],
-  [/cross.?jumps?/i,                                            { path: "/animations/Cross_Jumps.fbx", stripRootMotion: true }],
-  [/sprint( sur place| en place)?|sprint$/i,                   { path: "/animations/Sprint.fbx", stripRootMotion: true }],
-  [/^jog|course en place|jog en place|footing|course continue|course z?one?|cardio z?one?/i,
-                                                                { path: "/animations/Jog_In_Circle.fbx", stripRootMotion: true }],
   [/pike.?walk/i,                                               { path: "/animations/Pike_Walk.fbx", stripRootMotion: true }],
 
   // Force / haltérophilie
-  [/snatch|arrach[ée]/i,                                        { path: "/animations/Snatch.fbx" }],
   [/clean.?(and|et)?.?jerk|[eé]paul[ée][ -]?jet[ée]/i,         { path: "/animations/Clean_And_Jerk.fbx" }],
-  [/sumo.?high.?pull|sumo|tirage menton/i,                      { path: "/animations/Sumo_High_Pull.fbx" }],
   [/kettlebell\s*swing|kettle\s*bell/i,                         { path: "/animations/Kettlebell_Swing.fbx" }],
   [/front\s*raise|[eé]l[eé]vation.+frontal/i,                  { path: "/animations/Front_Raises.fbx" }],
   [/bicep.?curl|curl\s*biceps?|curl\s*(barre|marteau)|^curl/i, { path: "/animations/Bicep_Curl.fbx" }],
