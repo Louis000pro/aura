@@ -4,36 +4,64 @@ import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useFBX, useAnimations } from "@react-three/drei";
 import * as THREE from "three";
-import ExerciseAvatar, { resolveExType } from "./ExerciseAvatar";
+// Pas de fallback stick figure : si pas d'animation 3D, on affiche un placeholder neutre
 
-/* ─── Mapping type d'exercice → fichier FBX ───────────────────────────── */
-const FBX_MAP: Record<string, string> = {
-  squat:    "/animations/Back_Squat.fbx",
-  pushup:   "/animations/Push_Up.fbx",
-  plank:    "/animations/Plank.fbx",
-  crunch:   "/animations/Bicycle_Crunch.fbx",
-  run:      "/animations/Jog_In_Circle.fbx",
-  deadlift: "/animations/Burpee.fbx",
-  lunge:    "/animations/Situps.fbx",
-  curl:     "/animations/Jumping_Jacks.fbx",
-  press:    "/animations/Jumping_Jacks.fbx",
-  pullup:   "/animations/Push_Up.fbx",
-  row:      "/animations/Situps.fbx",
-  default:  "/animations/Jumping_Jacks.fbx",
-};
+/* ─── Mapping STRICT nom d'exercice → fichier FBX ─────────────────────── */
+/* Ordre important : patterns spécifiques avant patterns génériques        */
+const FBX_PATTERNS: [RegExp, string][] = [
+  // === Spécifiques en premier (avant les génériques) ===
 
-function getFbxPath(exerciseName: string): string {
-  const type = resolveExType(exerciseName);
-  return FBX_MAP[type] ?? FBX_MAP.default;
+  // Back Squat (avec barre) — avant "Squat" générique
+  [/back.?squat|squat.+barre/i,            "/animations/Back_Squat.fbx"],
+  // Air Squat / Squat sans matériel / Squat bodyweight
+  [/air.?squat|squat sans|squat\s*body|squat bouteille|squat (poids du corps|libre)/i,
+                                            "/animations/Air_Squat.fbx"],
+
+  // Snatch / Arraché (Olympique)
+  [/snatch|arrach[ée]/i,                   "/animations/Snatch.fbx"],
+  // Kettlebell Swing
+  [/kettlebell\s*swing|kettle\s*bell/i,    "/animations/Kettlebell_Swing.fbx"],
+  // Front Raises / Élévations frontales
+  [/front\s*raise|[eé]l[eé]vation.+frontal/i, "/animations/Front_Raises.fbx"],
+  // Bicep Curl / Curl biceps
+  [/bicep.?curl|curl\s*biceps?|^curl/i,    "/animations/Bicep_Curl.fbx"],
+
+  // Burpees — avant "jumping/burpee" du regex run
+  [/burpee/i,                               "/animations/Burpee.fbx"],
+  // Jumping Jacks
+  [/jumping.?jack/i,                        "/animations/Jumping_Jacks.fbx"],
+  // Bicycle Crunch (spécifique avant "crunch" générique)
+  [/bicycle\s*crunch|crunch\s*v[eé]lo/i,   "/animations/Bicycle_Crunch.fbx"],
+  // Crunch générique
+  [/^crunch|crunch$/i,                      "/animations/Bicycle_Crunch.fbx"],
+
+  // Pompes / Push Up
+  [/^pompes?$|push.?up/i,                   "/animations/Push_Up.fbx"],
+  // Plank / Planche / Gainage frontal
+  [/^plank$|planche\s*(frontale|haute)?|^gainage$/i, "/animations/Plank.fbx"],
+  // Sit-ups / Abdominaux classiques (relevé du buste)
+  [/^sit.?ups?$|^situps?$|abdominaux|relev[eé] du buste/i, "/animations/Situps.fbx"],
+
+  // Jog / Course en place
+  [/^jog|course en place|jog en place|footing/i, "/animations/Jog_In_Circle.fbx"],
+
+  // === Squat générique tout en bas (matche après les autres) ===
+  [/^squats?$|squat$/i,                     "/animations/Air_Squat.fbx"],
+];
+
+function getFbxPath(exerciseName: string): string | null {
+  for (const [pattern, path] of FBX_PATTERNS) {
+    if (pattern.test(exerciseName)) return path;
+  }
+  return null;
 }
 
-/* ─── Scène 3D intérieure (doit être dans <Canvas>) ───────────────────── */
+/* ─── Scène 3D ────────────────────────────────────────────────────────── */
 function AnimatedModel({ path, accent }: { path: string; accent: string }) {
   const group = useFBX(path);
   const pivotRef = useRef<THREE.Group>(null);
   const { actions } = useAnimations(group.animations, group);
 
-  // Teinter le personnage avec la couleur accent
   useEffect(() => {
     group.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -50,23 +78,15 @@ function AnimatedModel({ path, accent }: { path: string; accent: string }) {
     });
   }, [group, accent]);
 
-  // Lancer la première animation en boucle
   useEffect(() => {
     const name = Object.keys(actions)[0];
-    if (name) {
-      actions[name]?.reset().fadeIn(0.3).play();
-    }
-    return () => {
-      Object.values(actions).forEach((a) => a?.stop());
-    };
+    if (name) actions[name]?.reset().fadeIn(0.3).play();
+    return () => { Object.values(actions).forEach((a) => a?.stop()); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Légère rotation pour effet "vitrine"
   useFrame((_, delta) => {
-    if (pivotRef.current) {
-      pivotRef.current.rotation.y += delta * 0.35;
-    }
+    if (pivotRef.current) pivotRef.current.rotation.y += delta * 0.35;
   });
 
   return (
@@ -76,20 +96,7 @@ function AnimatedModel({ path, accent }: { path: string; accent: string }) {
   );
 }
 
-/* ─── Fallback SVG pendant le chargement FBX ──────────────────────────── */
-function FbxFallback({
-  exerciseName, accent, size,
-}: {
-  exerciseName: string; accent: string; size: number;
-}) {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <ExerciseAvatar exerciseName={exerciseName} accent={accent} size={size} />
-    </div>
-  );
-}
-
-/* ─── Composant public ─────────────────────────────────────────────────── */
+/* ─── Composant public ────────────────────────────────────────────────── */
 export default function AnimatedAvatar({
   exerciseName,
   accent = "#A78BFA",
@@ -102,6 +109,37 @@ export default function AnimatedAvatar({
   const fbxPath = getFbxPath(exerciseName);
   const height = Math.round(size * 1.4);
 
+  if (!fbxPath) {
+    return (
+      <div
+        className="relative rounded-2xl overflow-hidden flex-shrink-0 flex flex-col items-center justify-center gap-2"
+        style={{
+          width: size,
+          height,
+          background: `linear-gradient(135deg, ${accent}18 0%, ${accent}08 100%)`,
+          border: `1px solid ${accent}25`,
+        }}
+      >
+        <div
+          className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-light"
+          style={{
+            background: `linear-gradient(135deg, ${accent}40 0%, ${accent}20 100%)`,
+            color: "#2D3748",
+          }}
+        >
+          ✦
+        </div>
+        <p className="text-[9px] font-semibold tracking-widest uppercase text-center px-2"
+           style={{ color: `${accent}99` }}>
+          Animation
+        </p>
+        <p className="text-[8px] font-light text-center px-2" style={{ color: "#A0AEC0" }}>
+          bientôt
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative rounded-2xl overflow-hidden flex-shrink-0"
@@ -112,17 +150,24 @@ export default function AnimatedAvatar({
         border: "1px solid rgba(255,255,255,0.08)",
       }}
     >
-      {/* Halo coloré derrière le modèle */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `radial-gradient(ellipse 65% 60% at 50% 48%, ${accent}22 0%, transparent 70%)`,
         }}
       />
-
       <Suspense
         fallback={
-          <FbxFallback exerciseName={exerciseName} accent={accent} size={size} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="w-6 h-6 rounded-full border-2"
+              style={{
+                borderColor: `${accent}33`,
+                borderTopColor: accent,
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
+          </div>
         }
       >
         <Canvas
@@ -133,7 +178,6 @@ export default function AnimatedAvatar({
           <ambientLight intensity={1.6} />
           <directionalLight position={[5, 10, 5]} intensity={2.0} />
           <directionalLight position={[-3, 4, -4]} intensity={0.7} color={accent} />
-
           <AnimatedModel path={fbxPath} accent={accent} />
         </Canvas>
       </Suspense>

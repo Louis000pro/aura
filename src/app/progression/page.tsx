@@ -56,8 +56,8 @@ type WorkoutSession = {
 const workoutSessions: WorkoutSession[] = [
   {
     id: "demo-avatars", category: "fullbody",
-    title: "Démo Avatars 3D ✦", subtitle: "Tous les mouvements Mixamo",
-    duration: 20, difficulty: "Débutant", exercises: 8,
+    title: "Démo Avatars 3D ✦", subtitle: "13 animations 3D — toutes correctes",
+    duration: 30, difficulty: "Débutant", exercises: 13,
     muscles: ["Corps entier"],
     accent: "#A78BFA", icon: Sparkles,
   },
