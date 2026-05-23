@@ -25,7 +25,6 @@ const FBX_PATTERNS: [RegExp, AnimConfig][] = [
   [/box.?jump|jump.*box|jump\s*squats?|saut\s*box/i,           { path: "/animations/Box_Jump.fbx", stripRootMotion: true }],
   [/cross.?jumps?.?rotation/i,                                  { path: "/animations/Cross_Jumps_Rotation.fbx", stripRootMotion: true }],
   [/cross.?jumps?/i,                                            { path: "/animations/Cross_Jumps.fbx", stripRootMotion: true }],
-  [/high.?knees?|mont[ée]es? de genoux/i,                      { path: "/animations/High_Knees.fbx", stripRootMotion: true }],
   [/sprint( sur place| en place)?|sprint$/i,                   { path: "/animations/Sprint.fbx", stripRootMotion: true }],
   [/^jog|course en place|jog en place|footing|course continue|course z?one?|cardio z?one?/i,
                                                                 { path: "/animations/Jog_In_Circle.fbx", stripRootMotion: true }],
