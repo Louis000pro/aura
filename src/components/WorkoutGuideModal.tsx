@@ -6,7 +6,8 @@ import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
   Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck,
 } from "lucide-react";
-import ExerciseAvatar from "@/components/ExerciseAvatar";
+import dynamic from "next/dynamic";
+const AnimatedAvatar = dynamic(() => import("@/components/AnimatedAvatar"), { ssr: false });
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -689,10 +690,14 @@ export default function WorkoutGuideModal({
                       </div>
                     </div>
 
-                    {/* Avatar */}
+                    {/* Avatar animé 3D */}
                     <div className="flex justify-center py-3 rounded-3xl"
                       style={{ background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.08)" }}>
-                      <ExerciseAvatar exerciseName={cur.name} accent={accent} size={148} />
+                      <AnimatedAvatar
+                        exerciseName={cur.name}
+                        accent={accent}
+                        size={148}
+                      />
                     </div>
 
                     {/* Benefit */}
@@ -847,10 +852,14 @@ export default function WorkoutGuideModal({
                       )}
                     </AnimatePresence>
 
-                    {/* Avatar */}
+                    {/* Avatar animé 3D */}
                     <div className="flex justify-center py-3 rounded-3xl"
                       style={{ background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.08)" }}>
-                      <ExerciseAvatar exerciseName={cur.name} accent={accent} size={128} />
+                      <AnimatedAvatar
+                        exerciseName={cur.name}
+                        accent={accent}
+                        size={128}
+                      />
                     </div>
 
                     {/* Muscles */}
