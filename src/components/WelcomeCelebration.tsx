@@ -4,13 +4,17 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/useTheme";
 
-const TWINKLE_STARS = Array.from({ length: 22 }, (_, i) => ({
+const STAR_COLORS_LIGHT = ["#A78BFA","#F472B6","#FBBF24","#60A5FA","#C084FC","#FB923C","#34D399","#F9A8D4"];
+const STAR_COLORS_DARK  = ["#ffffff","#D4C0FF","#F5E6A3","#93C5FD","#F9A8D4","#FDE68A","#C4B5FD"];
+
+const TWINKLE_STARS = Array.from({ length: 28 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: 2 + Math.random() * 4,
-  delay: Math.random() * 2,
+  size: 2 + Math.random() * 5,
+  delay: Math.random() * 2.5,
   duration: 1.2 + Math.random() * 1.5,
+  colorIndex: i % STAR_COLORS_LIGHT.length,
 }));
 
 const RING_R = 110;
@@ -29,20 +33,20 @@ export default function WelcomeCelebration({
 
   // ── Thème clair
   const light = {
-    bg: "linear-gradient(160deg,#F5F0FF 0%,#FFFFFF 50%,#FFF8E7 100%)",
-    starColor: "rgba(167,139,250,0.5)",
-    halo: "radial-gradient(circle,rgba(167,139,250,0.12) 0%,transparent 70%)",
-    ringTrack: "rgba(167,139,250,0.15)",
-    ringGradStart: "#A78BFA",
-    ringGradEnd: "#D4A843",
-    checkBg: "linear-gradient(135deg,#A78BFA,#7C3AED)",
-    checkShadow: "0 0 30px rgba(124,58,237,0.35)",
-    labelColor: "rgba(124,58,237,0.6)",
-    titleGrad: "linear-gradient(135deg,#4C1D95 0%,#7C3AED 45%,#D4A843 100%)",
-    subColor: "rgba(45,55,72,0.5)",
-    btnBg: "linear-gradient(135deg,#A78BFA 0%,#7C3AED 100%)",
+    bg: "linear-gradient(160deg,#F0EBFF 0%,#FFF5FB 35%,#FFFBEB 70%,#EBF5FF 100%)",
+    halo: "radial-gradient(circle,rgba(244,114,182,0.1) 0%,rgba(167,139,250,0.1) 40%,transparent 70%)",
+    ringTrack: "rgba(167,139,250,0.18)",
+    ringGradStart: "#F472B6",
+    ringGradMid: "#A78BFA",
+    ringGradEnd: "#FBBF24",
+    checkBg: "linear-gradient(135deg,#F472B6,#A78BFA,#60A5FA)",
+    checkShadow: "0 0 30px rgba(167,139,250,0.4)",
+    labelColor: "rgba(124,58,237,0.55)",
+    titleGrad: "linear-gradient(135deg,#7C3AED 0%,#EC4899 40%,#F59E0B 80%,#3B82F6 100%)",
+    subColor: "rgba(45,55,72,0.45)",
+    btnBg: "linear-gradient(135deg,#F472B6 0%,#A78BFA 40%,#60A5FA 80%,#FBBF24 100%)",
     btnText: "#FFFFFF",
-    btnShadow: "0 8px 32px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
+    btnShadow: "0 8px 32px rgba(167,139,250,0.4), 0 4px 16px rgba(244,114,182,0.25), inset 0 1px 0 rgba(255,255,255,0.35)",
   };
 
   // ── Thème sombre
@@ -75,13 +79,16 @@ export default function WelcomeCelebration({
       className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
       style={{ background: t.bg, zIndex: 99999 }}
     >
-      {/* Étoiles */}
+      {/* Étoiles colorées */}
       {TWINKLE_STARS.map((s) => (
         <motion.div
           key={s.id}
           className="absolute rounded-full pointer-events-none"
-          style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size, background: t.starColor }}
-          animate={{ opacity: [0.1, 0.8, 0.1], scale: [0.8, 1.3, 0.8] }}
+          style={{
+            left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size,
+            background: isDark ? STAR_COLORS_DARK[s.colorIndex % STAR_COLORS_DARK.length] : STAR_COLORS_LIGHT[s.colorIndex],
+          }}
+          animate={{ opacity: [0.15, 0.85, 0.15], scale: [0.7, 1.4, 0.7] }}
           transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease: "easeInOut" }}
         />
       ))}
@@ -110,7 +117,8 @@ export default function WelcomeCelebration({
             />
             <defs>
               <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor={t.ringGradStart} />
+                <stop offset="0%"   stopColor={t.ringGradStart} />
+                {"ringGradMid" in t && <stop offset="50%"  stopColor={(t as typeof light).ringGradMid} />}
                 <stop offset="100%" stopColor={t.ringGradEnd} />
               </linearGradient>
             </defs>
