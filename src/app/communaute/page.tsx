@@ -2312,6 +2312,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
 
 function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
 
   // Interaction state
@@ -2366,17 +2367,18 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const viewCountedRef = useRef(false);
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const bg = bgVideoRef.current;
     if (isActive) {
-      video.currentTime = 0;
-      void video.play().catch(() => {});
+      if (video) { video.currentTime = 0; void video.play().catch(() => {}); }
+      if (bg)    { bg.currentTime = 0;    void bg.play().catch(() => {}); }
       setPaused(false);
       if (!viewCountedRef.current) {
         viewCountedRef.current = true;
         void createClient().rpc("increment_post_views", { p_post_id: post.id });
       }
     } else {
-      video.pause();
+      if (video) video.pause();
+      if (bg)    bg.pause();
       viewCountedRef.current = false;
     }
   }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2402,11 +2404,19 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
       setDoubleTapHeart(true);
       setTimeout(() => setDoubleTapHeart(false), 900);
     } else {
-      // Single tap → play/pause
+      // Single tap → play/pause (vidéo + fond synchronisés)
       const video = videoRef.current;
+      const bg = bgVideoRef.current;
       if (!video) return;
-      if (video.paused) { void video.play().catch(() => {}); setPaused(false); }
-      else { video.pause(); setPaused(true); }
+      if (video.paused) {
+        void video.play().catch(() => {});
+        void bg?.play().catch(() => {});
+        setPaused(false);
+      } else {
+        video.pause();
+        bg?.pause();
+        setPaused(true);
+      }
     }
     lastTapRef.current = now;
   };
@@ -2480,10 +2490,10 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
 
       {/* ── Fond flouté ── */}
       {post.media_url && (
-        <video src={post.media_url}
+        <video ref={bgVideoRef} src={post.media_url}
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           style={{ filter: "blur(28px) brightness(0.3)", transform: "scale(1.15)", zIndex: 0 }}
-          muted playsInline preload="metadata" loop autoPlay />
+          muted playsInline preload="metadata" loop />
       )}
 
       {/* ── Layout : vidéo centrée + sidebar droite ── */}
