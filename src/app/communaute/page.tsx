@@ -2489,23 +2489,78 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
   return (
-    <div className="w-full h-full flex items-center justify-center select-none relative overflow-hidden" style={{ background: "#0d0d0d", borderRadius: 18 }}>
+    <div className="w-full h-full flex flex-col select-none relative overflow-hidden"
+      style={{ background: "rgba(255,255,255,0.98)", borderRadius: 24 }}>
 
-      {/* ── Fond flouté ── */}
-      {post.media_url && (
-        <video ref={bgVideoRef} src={post.media_url}
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          style={{ filter: "blur(28px) brightness(0.3)", transform: "scale(1.15)", zIndex: 0 }}
-          muted playsInline preload="metadata" loop />
-      )}
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3 flex-shrink-0">
+        <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
+          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-sm font-semibold border-2"
+            style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", borderColor: "rgba(212,192,255,0.5)", color: "#2D3748" }}>
+            {authorAvatar
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
+              : authorPseudo[0]?.toUpperCase()}
+          </div>
+        </Link>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
+            <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{authorPseudo}</span>
+          </Link>
+          {authorCertified && (
+            <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
+              <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
+                <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          )}
+        </div>
+        {/* Suivre */}
+        {user && post.user_id !== user.id && (
+          <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); toggleFollow(); }}
+            className="px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer flex-shrink-0 mr-2"
+            style={following
+              ? { background: "rgba(212,192,255,0.25)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.35)" }
+              : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 2px 8px rgba(167,139,250,0.25)" }}>
+            {following ? "Suivi ✓" : "Suivre"}
+          </motion.button>
+        )}
+        {/* Mute */}
+        <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer"
+          style={{ background: "rgba(240,235,255,0.8)" }}>
+          <span className="text-sm">{muted ? "🔇" : "🔊"}</span>
+        </motion.button>
+        {/* Paramètres */}
+        <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); setShowSettings(s => !s); setShowComments(false); }}
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer ml-1"
+          style={{ background: "rgba(240,235,255,0.8)" }}>
+          <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+        </motion.button>
+      </div>
 
-      {/* ── Layout : vidéo centrée, sidebar en overlay ── */}
-      <div className="flex items-center justify-center h-full relative" style={{ zIndex: 1 }}>
+      {/* ── Vidéo ── */}
+      <div className="flex-1 relative overflow-hidden" style={{ background: "#111", cursor: "pointer" }}
+        onClick={handleVideoTap}>
 
-        {/* Conteneur vidéo 9/16 — centré, sidebar overlaid */}
-        <div className="relative rounded-2xl overflow-hidden flex-shrink-0"
-          style={{ height: "calc(100% - 20px)", aspectRatio: "9/16", background: "#111", cursor: "pointer" }}
-          onClick={handleVideoTap}>
+        {/* Fond flouté */}
+        {post.media_url && (
+          <video ref={bgVideoRef} src={post.media_url}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{ filter: "blur(24px) brightness(0.28)", transform: "scale(1.15)", zIndex: 0 }}
+            muted playsInline preload="metadata" loop />
+        )}
+
+        {/* Vidéo principale */}
+        {post.media_url && (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 1 }}>
+            <video ref={videoRef} src={post.media_url}
+              className="h-full w-full object-contain"
+              muted={muted} playsInline preload="metadata" loop
+              style={{ pointerEvents: "none" }} />
+          </div>
+        )}
 
             {post.media_url && (
               <video ref={videoRef} src={post.media_url}
@@ -2543,120 +2598,58 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
               )}
             </AnimatePresence>
 
-            {/* Bouton mute — coin haut droit */}
-            <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
-              className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
-              <span className="text-sm">{muted ? "🔇" : "🔊"}</span>
-            </motion.button>
-
-            {/* Infos auteur + caption en overlay bas */}
-            <div className="absolute bottom-0 inset-x-0 z-20 px-3 pb-3 pt-8 pointer-events-none">
-              {/* Auteur row */}
-              <div className="flex items-center gap-2 mb-1.5 pointer-events-auto">
-                <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
-                  <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-xs font-bold border-2 border-white"
-                    style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                    {authorAvatar
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
-                      : authorPseudo[0]?.toUpperCase()}
-                  </div>
-                </Link>
-                <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
-                  <span className="text-white text-sm font-semibold drop-shadow">{authorPseudo}</span>
-                </Link>
-                {authorCertified && (
-                  <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
-                    <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                      <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                )}
-                {user && post.user_id !== user.id && (
-                  <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); toggleFollow(); }}
-                    className="px-2.5 py-0.5 rounded-full text-[10px] font-bold cursor-pointer flex-shrink-0"
-                    style={following
-                      ? { background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.3)" }
-                      : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                    {following ? "Suivi" : "• Suivre"}
-                  </motion.button>
-                )}
+            {/* Badge vitesse */}
+            {speed !== 1 && (
+              <div className="absolute bottom-3 left-3 z-20 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold pointer-events-none"
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                ×{speed}
               </div>
-              {/* Caption */}
-              {post.caption && (
-                <p className="text-white text-xs font-light leading-snug line-clamp-2"
-                  style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>
-                  {post.caption}
-                </p>
-              )}
-              {/* Badge vitesse */}
-              {speed !== 1 && (
-                <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                  ×{speed}
-                </div>
-              )}
-            </div>
+            )}
+      </div>{/* fin video flex-1 */}
 
-          {/* ── Sidebar actions — overlay bord droit ── */}
-          <div className="absolute right-3 bottom-20 flex flex-col items-center gap-5 z-20"
-            onClick={e => e.stopPropagation()}>
-          {/* Like */}
-          <button onClick={() => toggleLike()} className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-              <Heart size={28} strokeWidth={1.5} fill={liked ? "#FF4458" : "none"}
-                style={{ color: liked ? "#FF4458" : "#fff" }} />
-            </motion.div>
-            <span className="text-white text-[11px] font-semibold">{fmtCount(likes)}</span>
-          </button>
+      {/* ── Caption ── */}
+      {post.caption && (
+        <div className="px-4 pt-2.5 pb-1 flex-shrink-0">
+          <p className="text-sm leading-snug line-clamp-2" style={{ color: "#2D3748" }}>
+            <span className="font-semibold">@{authorPseudo}</span>{" "}{post.caption}
+          </p>
+        </div>
+      )}
 
-          {/* Commentaires */}
-          <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }} className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <MessageCircle size={26} strokeWidth={1.5} fill={showComments ? "rgba(167,139,250,0.35)" : "none"}
-              style={{ color: showComments ? "#D4C0FF" : "#fff" }} />
-            <span className="text-white text-[11px] font-semibold">{fmtCount(commentCount)}</span>
-          </button>
-
-          {/* Repartager */}
-          <button onClick={() => toggleRepost()} className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
-              <Repeat2 size={26} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#fff" }} />
-            </motion.div>
-            <span className="text-white text-[11px] font-semibold">{fmtCount(reposts)}</span>
-          </button>
-
-          {/* Sauvegarder */}
-          <button onClick={toggleSave} className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <motion.div whileTap={{ scale: 1.3 }}>
-              <Bookmark size={25} strokeWidth={1.5} fill={saved ? "#F5E6A3" : "none"}
-                style={{ color: saved ? "#F5E6A3" : "#fff" }} />
-            </motion.div>
-            <span className="text-white text-[11px] font-semibold" style={{ opacity: saved ? 1 : 0.65 }}>Save</span>
-          </button>
-
-          {/* Partager */}
-          <button onClick={() => handleShare()} className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <motion.div animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-              <Share2 size={24} strokeWidth={1.5} style={{ color: shared ? "#34D399" : "#fff" }} />
-            </motion.div>
-            <span className="text-white text-[11px] font-semibold" style={{ opacity: shared ? 1 : 0.65, color: shared ? "#34D399" : "#fff" }}>
-              {shared ? "Copié ✓" : "Share"}
-            </span>
-          </button>
-
-          {/* Paramètres */}
-          <button onClick={() => { setShowSettings(s => !s); setShowComments(false); }}
-            className="flex flex-col items-center gap-0.5 cursor-pointer">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: showSettings ? "rgba(212,192,255,0.25)" : "rgba(255,255,255,0.1)", border: showSettings ? "1px solid rgba(212,192,255,0.5)" : "1px solid rgba(255,255,255,0.12)" }}>
-              <MoreHorizontal size={18} strokeWidth={2} style={{ color: "#fff" }} />
-            </div>
-          </button>
-          </div>{/* fin sidebar overlay */}
-        </div>{/* fin conteneur vidéo */}
-      </div>{/* fin layout */}
+      {/* ── Actions ── */}
+      <div className="flex items-center px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(212,192,255,0.2)" }}>
+        {/* Like */}
+        <button onClick={() => toggleLike()} className="flex items-center gap-1.5 cursor-pointer mr-5">
+          <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
+            <Heart size={22} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#FF4458" : "none"} style={{ color: liked ? "#FF4458" : "#2D3748" }} />
+          </motion.div>
+          <span className="text-sm font-semibold" style={{ color: liked ? "#FF4458" : "#2D3748" }}>{fmtCount(likes)}</span>
+        </button>
+        {/* Commentaires */}
+        <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }} className="flex items-center gap-1.5 cursor-pointer mr-5">
+          <MessageCircle size={22} strokeWidth={1.5} fill={showComments ? "rgba(167,139,250,0.2)" : "none"} style={{ color: showComments ? "#A78BFA" : "#2D3748" }} />
+          <span className="text-sm" style={{ color: "#2D3748" }}>{fmtCount(commentCount)}</span>
+        </button>
+        {/* Repartager */}
+        <button onClick={() => toggleRepost()} className="flex items-center gap-1.5 cursor-pointer mr-5">
+          <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
+            <Repeat2 size={22} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#2D3748" }} />
+          </motion.div>
+          <span className="text-sm" style={{ color: reposted ? "#34D399" : "#2D3748" }}>{fmtCount(reposts)}</span>
+        </button>
+        {/* Partager */}
+        <button onClick={() => handleShare()} className="flex items-center gap-1.5 cursor-pointer">
+          <motion.div animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
+            <Share2 size={22} strokeWidth={1.5} style={{ color: shared ? "#34D399" : "#2D3748" }} />
+          </motion.div>
+        </button>
+        {/* Bookmark — à droite */}
+        <button onClick={toggleSave} className="ml-auto cursor-pointer">
+          <motion.div whileTap={{ scale: 1.3 }}>
+            <Bookmark size={22} strokeWidth={1.5} fill={saved ? "#F5E6A3" : "none"} style={{ color: saved ? "#D4A843" : "#2D3748" }} />
+          </motion.div>
+        </button>
+      </div>
 
       {/* ── Signalé badge ── */}
       <AnimatePresence>
@@ -2780,11 +2773,11 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
 
   return (
     <div ref={containerRef}
-      className="overflow-y-scroll"
-      style={{ height: "calc(100dvh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", padding: "8px 0", touchAction: "pan-y" }}>
+      className="overflow-y-scroll mx-auto"
+      style={{ height: "calc(100dvh - 120px)", maxWidth: 480, scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "4px 8px" }}>
-          <div style={{ height: "100%", borderRadius: 18, overflow: "hidden" }}>
+        <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "8px 12px" }}>
+          <div style={{ height: "100%", borderRadius: 24, overflow: "hidden", boxShadow: "0 8px 40px rgba(167,139,250,0.15), 0 2px 12px rgba(0,0,0,0.08)" }}>
             <VideoCard post={post} isActive={i === activeIndex} />
           </div>
         </div>
