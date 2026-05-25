@@ -2573,9 +2573,10 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
         )}
 
         {/* Auteur + caption — bas de la vidéo */}
-        <div className="absolute bottom-0 inset-x-0 z-20 px-4 pb-4 pointer-events-none">
-          <div className="flex items-center gap-2 mb-1.5">
+        <div className="absolute bottom-0 inset-x-0 z-20 px-4 pb-4" style={{ pointerEvents: "none" }}>
+          <Link href={`/profil?id=${post.user_id}`} className="flex items-center gap-2 mb-1.5 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
                 className="w-7 h-7 rounded-full object-cover flex-shrink-0"
                 style={{ border: "2px solid rgba(255,255,255,0.8)" }} />
@@ -2587,7 +2588,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
             )}
             <span className="text-white text-sm font-semibold leading-none drop-shadow-sm">@{authorPseudo}</span>
             {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
-          </div>
+          </Link>
           {post.caption && (
             <p className="text-white text-[13px] leading-snug line-clamp-2 drop-shadow-sm" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
               {post.caption}
@@ -2635,19 +2636,22 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
       <div className="flex flex-col items-center justify-end flex-shrink-0 pb-4"
         style={{ height: "calc(100% - 16px)", gap: 20, width: 52 }}>
 
-        {/* Avatar auteur */}
-        <div className="mt-auto mb-2">
-          {authorAvatar ? (
-            <img src={authorAvatar} alt={authorPseudo}
-              className="w-10 h-10 rounded-full object-cover"
-              style={{ border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }} />
-          ) : (
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold"
-              style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }}>
-              {authorPseudo[0]?.toUpperCase()}
-            </div>
-          )}
-        </div>
+        {/* Avatar auteur — cliquable → profil */}
+        <Link href={`/profil?id=${post.user_id}`} className="mt-auto mb-2 cursor-pointer" onClick={e => e.stopPropagation()}>
+          <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.08 }}>
+            {authorAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={authorAvatar} alt={authorPseudo}
+                className="w-10 h-10 rounded-full object-cover"
+                style={{ border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }} />
+            ) : (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold"
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }}>
+                {authorPseudo[0]?.toUpperCase()}
+              </div>
+            )}
+          </motion.div>
+        </Link>
 
         {/* Like */}
         <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
@@ -3770,8 +3774,9 @@ function CommunautePageInner() {
             })()}
 
             {/* ── Tab Publications / Vidéos ── */}
-            {/* Breakout du padding page pour centrage parfait sur le viewport */}
-            <div className="-mx-4 md:-mx-8 flex items-center justify-center gap-2 py-1">
+            {/* Centrage viewport-exact : width 100vw + margin trick ignore tout padding/sidebar parent */}
+            <div className="flex items-center justify-center gap-2 py-1"
+              style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
               {([
                 { key: "videos" as const, label: "🎬 Vidéos" },
                 { key: "posts" as const, label: "📝 Publications" },
@@ -3808,9 +3813,9 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {/* ── Feed Vidéos TikTok — breakout du padding pour centrage viewport ── */}
+            {/* ── Feed Vidéos TikTok — même trick viewport ── */}
             {feedTab === "videos" && (
-              <div className="-mx-4 md:-mx-8">
+              <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
                 <TikTokFeed
                   posts={sortedFeedPosts}
                   initialPostId={highlightVideoId}
