@@ -118,7 +118,7 @@ export default function OnboardingWrapper() {
               <div className="flex items-start gap-2 pr-3">
                 <span className="text-xl leading-none mt-0.5 select-none">🤖</span>
                 <p className="text-[12px] leading-snug" style={{ color: "#4A5568" }}>
-                  Tu n&apos;as pas encore rempli tes{" "}
+                  N&apos;oublie pas de remplir tes{" "}
                   <button
                     onClick={() => { setShowBubble(false); setShowModal(true); }}
                     className="font-bold cursor-pointer underline underline-offset-2"
@@ -126,7 +126,7 @@ export default function OnboardingWrapper() {
                   >
                     objectifs
                   </button>
-                  {" "}pour personnaliser ton coach IA 🎯
+                  {" "}🎯
                 </p>
               </div>
 
