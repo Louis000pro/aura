@@ -3773,56 +3773,63 @@ function CommunautePageInner() {
               );
             })()}
 
-            {/* ── Tab Publications / Vidéos ── */}
-            {/* Centrage viewport-exact : width 100vw + margin trick ignore tout padding/sidebar parent */}
-            <div className="flex items-center justify-center gap-2 py-1"
-              style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
-              {([
-                { key: "videos" as const, label: "🎬 Vidéos" },
-                { key: "posts" as const, label: "📝 Publications" },
-              ]).map(({ key, label }) => (
-                <motion.button key={key} whileTap={{ scale: 0.94 }}
-                  onClick={() => setFeedTab(key)}
-                  className="px-5 py-2 rounded-2xl text-xs font-semibold transition-all"
-                  style={feedTab === key
-                    ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
-                    : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
-                  }>
-                  {label}
-                </motion.button>
-              ))}
-            </div>
+            {/* ══════════════════════════════════════════════════════
+                TABS + FEED — un seul container partagé 100vw
+                Les boutons utilisent paddingRight=66px (sidebar 52 + gap 14)
+                pour que leur centre visuel soit aligné avec le centre de la
+                colonne vidéo (et non le centre vidéo+sidebar).
+            ══════════════════════════════════════════════════════ */}
+            <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
 
-            {/* ── Toggle algorithme / récents (seulement sur Posts) ── */}
-            {feedTab === "posts" && !feedLoading && (
-              <div className="flex items-center justify-center gap-2">
-                {(["algo", "recent"] as const).map((mode) => (
-                  <motion.button
-                    key={mode}
-                    whileTap={{ scale: 0.94 }}
-                    onClick={() => setFeedMode(mode)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all"
-                    style={feedMode === mode
+              {/* ── Tab boutons (centrés sur la colonne vidéo) ── */}
+              <div className="flex items-center justify-center gap-2 py-1"
+                style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
+                {([
+                  { key: "videos" as const, label: "🎬 Vidéos" },
+                  { key: "posts" as const, label: "📝 Publications" },
+                ]).map(({ key, label }) => (
+                  <motion.button key={key} whileTap={{ scale: 0.94 }}
+                    onClick={() => setFeedTab(key)}
+                    className="px-5 py-2 rounded-2xl text-xs font-semibold transition-all"
+                    style={feedTab === key
                       ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
                       : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
-                    }
-                  >
-                    {mode === "algo" ? "🔥 Pour toi" : "🕐 Récents"}
+                    }>
+                    {label}
                   </motion.button>
                 ))}
               </div>
-            )}
 
-            {/* ── Feed Vidéos TikTok — même trick viewport ── */}
-            {feedTab === "videos" && (
-              <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
+              {/* ── Toggle algo / récents (Posts uniquement) ── */}
+              {feedTab === "posts" && !feedLoading && (
+                <div className="flex items-center justify-center gap-2 py-1"
+                  style={{ maxWidth: 560, margin: "0 auto" }}>
+                  {(["algo", "recent"] as const).map((mode) => (
+                    <motion.button
+                      key={mode}
+                      whileTap={{ scale: 0.94 }}
+                      onClick={() => setFeedMode(mode)}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all"
+                      style={feedMode === mode
+                        ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
+                      }
+                    >
+                      {mode === "algo" ? "🔥 Pour toi" : "🕐 Récents"}
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Feed Vidéos TikTok ── */}
+              {feedTab === "videos" && (
                 <TikTokFeed
                   posts={sortedFeedPosts}
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
                 />
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Posts réels depuis Supabase */}
             {feedTab === "posts" && feedLoading && (
