@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/useTheme";
 
-const STAR_COLORS_LIGHT = ["#A78BFA","#F472B6","#FBBF24","#60A5FA","#C084FC","#FB923C","#34D399","#F9A8D4"];
+const STAR_COLORS_LIGHT = ["#C4B5FD","#F472B6","#FBBF24","#E879F9","#C084FC","#FB923C","#F9A8D4","#FDE68A"];
 const STAR_COLORS_DARK  = ["#ffffff","#D4C0FF","#F5E6A3","#93C5FD","#F9A8D4","#FDE68A","#C4B5FD"];
 
 const TWINKLE_STARS = Array.from({ length: 28 }, (_, i) => ({
@@ -33,20 +33,20 @@ export default function WelcomeCelebration({
 
   // ── Thème clair
   const light = {
-    bg: "linear-gradient(160deg,#F0EBFF 0%,#FFF5FB 35%,#FFFBEB 70%,#EBF5FF 100%)",
-    halo: "radial-gradient(circle,rgba(244,114,182,0.1) 0%,rgba(167,139,250,0.1) 40%,transparent 70%)",
-    ringTrack: "rgba(167,139,250,0.18)",
+    bg: "linear-gradient(160deg,#FDF4FF 0%,#FFF0FA 40%,#FFFBEB 100%)",
+    halo: "radial-gradient(circle,rgba(244,114,182,0.12) 0%,rgba(192,132,252,0.08) 50%,transparent 70%)",
+    ringTrack: "rgba(196,181,253,0.25)",
     ringGradStart: "#F472B6",
-    ringGradMid: "#A78BFA",
+    ringGradMid: "#C084FC",
     ringGradEnd: "#FBBF24",
-    checkBg: "linear-gradient(135deg,#F472B6,#A78BFA,#60A5FA)",
-    checkShadow: "0 0 30px rgba(167,139,250,0.4)",
-    labelColor: "rgba(124,58,237,0.55)",
-    titleGrad: "linear-gradient(135deg,#7C3AED 0%,#EC4899 40%,#F59E0B 80%,#3B82F6 100%)",
-    subColor: "rgba(45,55,72,0.45)",
-    btnBg: "linear-gradient(135deg,#F472B6 0%,#A78BFA 40%,#60A5FA 80%,#FBBF24 100%)",
-    btnText: "#FFFFFF",
-    btnShadow: "0 8px 32px rgba(167,139,250,0.4), 0 4px 16px rgba(244,114,182,0.25), inset 0 1px 0 rgba(255,255,255,0.35)",
+    checkBg: "linear-gradient(135deg,#F9A8D4,#C4B5FD)",
+    checkShadow: "0 0 28px rgba(192,132,252,0.35)",
+    labelColor: "rgba(192,132,252,0.75)",
+    titleGrad: "linear-gradient(135deg,#C084FC 0%,#EC4899 50%,#F59E0B 100%)",
+    subColor: "rgba(100,80,120,0.45)",
+    btnBg: "linear-gradient(135deg,#F9A8D4 0%,#C4B5FD 50%,#FDE68A 100%)",
+    btnText: "#5B2D8E",
+    btnShadow: "0 8px 32px rgba(192,132,252,0.35), 0 4px 16px rgba(244,114,182,0.2), inset 0 1px 0 rgba(255,255,255,0.6)",
   };
 
   // ── Thème sombre

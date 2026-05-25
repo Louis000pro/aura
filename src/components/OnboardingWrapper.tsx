@@ -91,8 +91,7 @@ export default function OnboardingWrapper() {
 
   const handleSkip = () => {
     setShowModal(false);
-    // Si l'utilisateur passe, on montre quand même la bulle
-    if (!bubbleDismissed) setShowBubble(true);
+    setShowCelebration(true);
   };
 
   if (!user || !checked) return null;
@@ -115,7 +114,10 @@ export default function OnboardingWrapper() {
         {showCelebration && (
           <WelcomeCelebration
             isFirstTime={!wasAlreadyCompleted}
-            onDone={() => setShowCelebration(false)}
+            onDone={() => {
+              setShowCelebration(false);
+              if (!bubbleDismissed) setShowBubble(true);
+            }}
           />
         )}
       </AnimatePresence>
