@@ -3792,7 +3792,7 @@ function CommunautePageInner() {
                     onClick={() => setFeedTab(key)}
                     className="py-2 rounded-2xl text-xs font-semibold transition-all text-center"
                     style={{
-                      width: 118,
+                      width: 130,
                       ...(feedTab === key
                         ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
                         : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
@@ -3813,7 +3813,7 @@ function CommunautePageInner() {
                       onClick={() => setFeedMode(mode)}
                       className="py-1.5 rounded-2xl text-xs font-semibold transition-all text-center"
                       style={{
-                        width: 132,
+                        width: 105,
                         ...(feedMode === mode
                           ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
                           : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
