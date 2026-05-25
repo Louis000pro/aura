@@ -1315,7 +1315,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages">("performances");
+  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages" | "enregistres">("performances");
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
@@ -1499,11 +1499,12 @@ export default function ProfilPage() {
         }
       });
 
-    // Vidéos enregistrées : posts que l'user a likés
+    // Vidéos enregistrées depuis post_saves (distinct des likes)
     supabase
-      .from("post_likes")
-      .select("post_id, posts!post_id(id, type, caption, performance_data, created_at, user_id)")
+      .from("post_saves")
+      .select("post_id, posts!post_id(id, type, caption, performance_data, created_at, user_id, media_url, media_type)")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) {
           const posts = data.map((d: { posts: UserPost }) => d.posts).filter(Boolean);
@@ -1967,8 +1968,9 @@ export default function ProfilPage() {
           }}
         >
           {([
-            { id: "performances" as const, Icon: Camera,   label: "Publications" },
+            { id: "performances" as const, Icon: Camera,   label: "Posts" },
             { id: "seances"      as const, Icon: Film,     label: "Vidéos" },
+            { id: "enregistres"  as const, Icon: Bookmark, label: "Enregistrés" },
             { id: "reglages"     as const, Icon: Dumbbell, label: "Séances" },
           ]).map(({ id, Icon, label }) => (
             <motion.button
@@ -2267,6 +2269,66 @@ export default function ProfilPage() {
                 </div>
               );
             })()}
+          </motion.div>
+        )}
+
+        {activeTab === "enregistres" && (
+          <motion.div
+            key="enregistres"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-3xl mx-auto"
+          >
+            {savedPosts.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+              >
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  <Bookmark size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucun enregistrement</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les vidéos que tu sauvegardes dans le feed apparaîtront ici.</p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1">
+                {savedPosts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
+                    style={{ background: "#000" }}
+                    whileHover={{ scale: 0.97 }}
+                    onClick={() => setSelectedPost(post)}
+                  >
+                    {post.media_type === "video"
+                      ? <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
+                      // eslint-disable-next-line @next/next/no-img-element
+                      : <img src={post.media_url ?? undefined} alt="" className="w-full h-full object-cover" />
+                    }
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
+                        {post.media_type === "video"
+                          ? <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
+                          : <Bookmark size={12} fill="white" style={{ color: "white" }} />
+                        }
+                      </div>
+                    </div>
+                    {/* Badge bookmark */}
+                    <div className="absolute top-1.5 right-1.5">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.85)" }}>
+                        <Bookmark size={10} fill="white" style={{ color: "white" }} />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 

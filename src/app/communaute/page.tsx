@@ -2094,6 +2094,25 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const [liked, setLiked] = useState(() => post.post_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false);
   const [likes, setLikes] = useState(post.post_likes?.length ?? 0);
   const [saved, setSaved] = useState(false);
+
+  // Charger l'état "sauvegardé" depuis la DB
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase.from("post_saves").select("post_id").eq("post_id", post.id).eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => { if (data) setSaved(true); });
+  }, [post.id, user]);
+
+  const toggleSave = async () => {
+    if (!user) return;
+    const supabase = createClient();
+    setSaved(s => !s); // optimiste
+    if (saved) {
+      await supabase.from("post_saves").delete().eq("post_id", post.id).eq("user_id", user.id);
+    } else {
+      await supabase.from("post_saves").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+    }
+  };
   const [reposted, setReposted] = useState(() => post.post_reposts?.some(r => r.user_id === (user?.id ?? "")) ?? false);
   const [reposts, setReposts] = useState(post.post_reposts?.length ?? 0);
   const [commentCount, setCommentCount] = useState(post.post_comments?.length ?? 0);
@@ -2372,7 +2391,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
           </button>
 
           {/* Sauvegarder */}
-          <button onClick={() => setSaved(s => !s)} className="flex flex-col items-center gap-0.5 cursor-pointer">
+          <button onClick={toggleSave} className="flex flex-col items-center gap-0.5 cursor-pointer">
             <motion.div whileTap={{ scale: 1.3 }}>
               <Bookmark size={25} strokeWidth={1.5} fill={saved ? "#F5E6A3" : "none"}
                 style={{ color: saved ? "#F5E6A3" : "#fff" }} />
@@ -2481,9 +2500,9 @@ function TikTokFeed({ posts }: { posts: RealPost[] }) {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll"
-      style={{ height: "calc(100vh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", padding: "8px 0" }}>
+      style={{ height: "calc(100dvh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", padding: "8px 0" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100vh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "4px 8px" }}>
+        <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "4px 8px" }}>
           <div style={{ height: "100%", borderRadius: 18, overflow: "hidden" }}>
             <VideoCard post={post} isActive={i === activeIndex} />
           </div>
