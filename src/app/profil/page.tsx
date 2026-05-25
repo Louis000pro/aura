@@ -12,6 +12,13 @@ import {
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import VideoPlayer from "@/components/VideoPlayer";
 
+/* ─────────────── Helpers ─────────────── */
+function formatViews(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".0", "")}K`;
+  return String(n);
+}
+
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
   id: string;
@@ -2258,13 +2265,11 @@ export default function ProfilPage() {
                           <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
                         </div>
                       </div>
-                      {(post.views ?? 0) > 0 && (
-                        <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
-                          style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                          <span className="text-[10px] font-semibold text-white">{post.views}</span>
-                        </div>
-                      )}
+                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                        style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <span className="text-[10px] font-semibold text-white">{formatViews(post.views ?? 0)}</span>
+                      </div>
                     </motion.div>
                   ))}
                 </div>

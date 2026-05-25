@@ -54,6 +54,7 @@ type RealPost = {
   performance_data: PerformanceData;
   media_url?: string | null;
   media_type?: string | null;
+  views?: number;
   created_at: string;
   author: { pseudo: string; full_name?: string; avatar_url?: string; is_admin?: boolean } | null;
   post_likes: { user_id: string }[];
@@ -2977,7 +2978,7 @@ function CommunautePageInner() {
     const { data } = await supabase
       .from("posts")
       .select(`
-        id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
+        id, type, caption, description, audience, performance_data, media_url, media_type, views, created_at, user_id,
         author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
         post_likes(user_id),
         post_comments(id),
@@ -3031,7 +3032,7 @@ function CommunautePageInner() {
         const { data } = await supabase
           .from("posts")
           .select(`
-            id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
+            id, type, caption, description, audience, performance_data, media_url, media_type, views, created_at, user_id,
             author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
             post_likes(user_id),
             post_comments(id),
