@@ -2736,17 +2736,26 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // IntersectionObserver : détecte quelle slide est à ≥ 60 % visible → plus fiable que scroll+Math.round
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const onScroll = () => {
-      const h = el.clientHeight;
-      const idx = Math.round(el.scrollTop / h);
-      setActiveIndex(idx);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            const children = Array.from(el.children);
+            const idx = children.indexOf(entry.target as Element);
+            if (idx >= 0) setActiveIndex(idx);
+          }
+        });
+      },
+      { root: el, threshold: 0.6 }
+    );
+    Array.from(el.children).forEach(child => observer.observe(child));
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoPosts.length]);
 
   // Scroller jusqu'au post partagé depuis un DM
   useEffect(() => {
@@ -2777,7 +2786,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll mx-auto"
-      style={{ height: "calc(100dvh - 120px)", maxWidth: 560, scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
+      style={{ height: "calc(100dvh - 120px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
         <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
           <VideoCard post={post} isActive={i === activeIndex} />
@@ -3549,7 +3558,7 @@ function CommunautePageInner() {
 
   return (
     <div
-      className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 max-w-2xl mx-auto md:mx-0 md:max-w-4xl relative"
+      className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 w-full mx-auto max-w-4xl relative"
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
@@ -3761,14 +3770,14 @@ function CommunautePageInner() {
             })()}
 
             {/* ── Tab Publications / Vidéos ── */}
-            <div className="flex items-center gap-2 px-1">
+            <div className="flex items-center justify-center gap-2 px-1">
               {([
                 { key: "videos" as const, label: "🎬 Vidéos" },
                 { key: "posts" as const, label: "📝 Publications" },
               ]).map(({ key, label }) => (
                 <motion.button key={key} whileTap={{ scale: 0.94 }}
                   onClick={() => setFeedTab(key)}
-                  className="px-4 py-2 rounded-2xl text-xs font-semibold transition-all"
+                  className="px-5 py-2 rounded-2xl text-xs font-semibold transition-all"
                   style={feedTab === key
                     ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
                     : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
@@ -3780,7 +3789,7 @@ function CommunautePageInner() {
 
             {/* ── Toggle algorithme / récents (seulement sur Posts) ── */}
             {feedTab === "posts" && !feedLoading && (
-              <div className="flex items-center gap-2 px-1">
+              <div className="flex items-center justify-center gap-2 px-1">
                 {(["algo", "recent"] as const).map((mode) => (
                   <motion.button
                     key={mode}
