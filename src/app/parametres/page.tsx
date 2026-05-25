@@ -303,7 +303,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
             <div className="flex gap-2">
               <motion.button
-                whileTap={{ scale: 0.96 }}
+                whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.01 }}
                 onClick={() => {
                   if (window.confirm("Réinitialiser tous tes objectifs ?")) {
                     setAge(""); setHeight(""); setWeight(""); setGender("homme");
@@ -312,12 +312,12 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                   }
                 }}
                 className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                style={{ background: "rgba(254,226,226,0.8)", border: "1.5px solid rgba(252,129,129,0.35)", color: "#E53E3E" }}
+                style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(167,139,250,0.25)", color: "#7C5CBF" }}
               >
                 🔄 Recommencer
               </motion.button>
               <motion.button
-                whileTap={{ scale: 0.96 }}
+                whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.01 }}
                 onClick={() => {
                   if (window.confirm("Créer un 2ème objectif ? Les données actuelles seront remplacées après sauvegarde.")) {
                     setAge(""); setHeight(""); setWeight(""); setGender("homme");
@@ -326,7 +326,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                   }
                 }}
                 className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                style={{ background: "rgba(254,226,226,0.6)", border: "1.5px solid rgba(252,129,129,0.3)", color: "#C53030" }}
+                style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.5) 0%,rgba(245,230,163,0.5) 100%)", border: "1px solid rgba(167,139,250,0.3)", color: "#5A4A8A" }}
               >
                 ➕ 2ème objectif
               </motion.button>
