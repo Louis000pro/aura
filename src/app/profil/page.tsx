@@ -602,6 +602,7 @@ const DIETS_LIST = [
 ];
 
 function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: () => void; onSave: () => void }) {
+  const { user } = useAuth();
   const storageKey = `aura_onboarding_${pseudo}`;
   const [data, setData] = useState<OnboardingData>(() => {
     try {
@@ -618,8 +619,27 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
       goals: d.goals.includes(id) ? d.goals.filter(g => g !== id) : [...d.goals, id],
     }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     localStorage.setItem(storageKey, JSON.stringify(data));
+    // Sync vers Supabase + mettre à jour onboarding_completed
+    if (user?.id) {
+      const isCompleted = !!(data.age && data.height && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
+      const supabase = createClient();
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        onboarding_age: data.age ? parseInt(data.age) : null,
+        onboarding_height: data.height ? parseInt(data.height) : null,
+        onboarding_weight: data.weight ? parseFloat(data.weight) : null,
+        onboarding_gender: data.gender || null,
+        onboarding_goals: data.goals.length ? data.goals : null,
+        onboarding_level: data.level || null,
+        onboarding_sessions_week: data.sessionsPerWeek ? parseInt(data.sessionsPerWeek) : null,
+        onboarding_meals_day: data.mealsPerDay ? parseInt(data.mealsPerDay) : null,
+        onboarding_diet: data.diet || null,
+        onboarding_completed: isCompleted,
+      }, { onConflict: "id" });
+      if (!isCompleted) window.dispatchEvent(new Event("aura:objectives-reset"));
+    }
     onSave();
     onClose();
   };

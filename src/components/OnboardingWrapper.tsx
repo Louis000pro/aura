@@ -54,9 +54,9 @@ export default function OnboardingWrapper() {
   }, [user?.id]);
 
   const handleComplete = async (data: OnboardingData) => {
-    setShowModal(false);
-    setShowBubble(false);
     if (!user) return;
+
+    const isCompleted = !!(data.age && data.height && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
 
     const supabase = createClient();
     await supabase.from("profiles").upsert({
@@ -70,8 +70,17 @@ export default function OnboardingWrapper() {
       onboarding_sessions_week: data.sessionsPerWeek ? parseInt(data.sessionsPerWeek) : null,
       onboarding_meals_day:     data.mealsPerDay   ? parseInt(data.mealsPerDay)   : null,
       onboarding_diet:          data.diet          || null,
-      onboarding_completed:     true,
+      onboarding_completed:     isCompleted,
     }, { onConflict: "id" });
+
+    setShowModal(false);
+    if (!isCompleted) {
+      // Champs incomplets → bulle visible
+      setBubbleDismissed(false);
+      setShowBubble(true);
+    } else {
+      setShowBubble(false);
+    }
   };
 
   const handleSkip = () => {
