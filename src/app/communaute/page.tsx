@@ -2530,7 +2530,11 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   );
 }
 
-function TikTokFeed({ posts }: { posts: RealPost[] }) {
+function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
+  posts: RealPost[];
+  initialPostId?: string | null;
+  onInitialScrolled?: () => void;
+}) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -2546,6 +2550,22 @@ function TikTokFeed({ posts }: { posts: RealPost[] }) {
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Scroller jusqu'au post partagé depuis un DM
+  useEffect(() => {
+    if (!initialPostId || !containerRef.current || videoPosts.length === 0) return;
+    const idx = videoPosts.findIndex(p => p.id === initialPostId);
+    if (idx < 0) return;
+    // requestAnimationFrame pour attendre que le DOM soit rendu
+    requestAnimationFrame(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const h = el.clientHeight;
+      el.scrollTop = idx * h;
+      setActiveIndex(idx);
+      onInitialScrolled?.();
+    });
+  }, [initialPostId, videoPosts, onInitialScrolled]);
 
   if (videoPosts.length === 0) {
     return (
@@ -2609,6 +2629,7 @@ function CommunautePageInner() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
   const [feedTab, setFeedTab] = useState<"posts" | "videos">("videos");
+  const [highlightVideoId, setHighlightVideoId] = useState<string | null>(null);
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
@@ -3581,7 +3602,11 @@ function CommunautePageInner() {
 
             {/* ── Feed Vidéos TikTok ── */}
             {feedTab === "videos" && (
-              <TikTokFeed posts={sortedFeedPosts} />
+              <TikTokFeed
+                posts={sortedFeedPosts}
+                initialPostId={highlightVideoId}
+                onInitialScrolled={() => setHighlightVideoId(null)}
+              />
             )}
 
             {/* Posts réels depuis Supabase */}
@@ -4439,23 +4464,35 @@ function CommunautePageInner() {
                             {msg.shared_post ? (
                               <div>
                                 {msg.shared_post.media_url && (
-                                  // stopPropagation empêche le menu de s'ouvrir quand on clique sur la vidéo
+                                  // Clic → ouvre l'onglet Vidéos et scrolle sur ce post
                                   <div
-                                    className="relative"
+                                    className="relative cursor-pointer"
                                     style={{ height: 160, background: "#000" }}
-                                    onClick={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (msg.post_id) {
+                                        setHighlightVideoId(msg.post_id);
+                                        setFeedTab("videos");
+                                        setView("feed");
+                                      }
+                                    }}
                                   >
                                     {msg.shared_post.media_type === "video"
                                       ? <video
                                           src={msg.shared_post.media_url}
                                           className="w-full h-full object-cover"
-                                          controls
-                                          playsInline
-                                          style={{ maxHeight: 160 }}
+                                          muted playsInline
+                                          style={{ maxHeight: 160, pointerEvents: "none" }}
                                         />
                                       // eslint-disable-next-line @next/next/no-img-element
                                       : <img src={msg.shared_post.media_url} alt="" className="w-full h-full object-cover" />
                                     }
+                                    {/* Overlay play */}
+                                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.25)" }}>
+                                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(6px)" }}>
+                                        <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                                 {/* Caption — affiché UNE seule fois depuis shared_post */}
