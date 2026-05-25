@@ -8,6 +8,111 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useTheme } from "@/hooks/useTheme";
 
+/* ── Animation plein écran après sauvegarde ─────────────── */
+const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: 4 + Math.random() * 10,
+  delay: Math.random() * 0.6,
+  color: i % 3 === 0 ? "#D4C0FF" : i % 3 === 1 ? "#F5E6A3" : "#A78BFA",
+}));
+
+function WelcomeCelebration({ isFirstTime, onDone }: { isFirstTime: boolean; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3200);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.6, ease: "easeInOut" } }}
+      transition={{ duration: 0.4 }}
+      className="fixed inset-0 z-[999] flex items-center justify-center overflow-hidden"
+      style={{ background: "linear-gradient(135deg, rgba(45,25,90,0.97) 0%, rgba(30,15,60,0.99) 100%)" }}
+    >
+      {/* Particules flottantes */}
+      {PARTICLES.map(p => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full pointer-events-none"
+          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size, background: p.color, opacity: 0.7 }}
+          animate={{ y: [0, -40, 0], opacity: [0, 0.8, 0], scale: [0, 1.2, 0] }}
+          transition={{ duration: 2.4, delay: p.delay, ease: "easeInOut" }}
+        />
+      ))}
+
+      {/* Halo lumineux */}
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{ width: 420, height: 420, background: "radial-gradient(circle, rgba(167,139,250,0.25) 0%, transparent 70%)" }}
+        animate={{ scale: [0.8, 1.15, 0.8], opacity: [0.4, 0.8, 0.4] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* Contenu central */}
+      <div className="relative flex flex-col items-center gap-6 px-8 text-center">
+        {/* Icône check */}
+        <motion.div
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", damping: 14, stiffness: 200, delay: 0.15 }}
+          className="w-20 h-20 rounded-3xl flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", boxShadow: "0 0 40px rgba(167,139,250,0.6)" }}
+        >
+          <motion.svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+            initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+            transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }}>
+            <motion.path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
+              transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }} />
+          </motion.svg>
+        </motion.div>
+
+        {/* Titre */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30, scale: 0.85 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", damping: 18, stiffness: 180, delay: 0.3 }}
+          className="font-black tracking-tight leading-none"
+          style={{
+            fontSize: "clamp(2.4rem, 8vw, 4rem)",
+            background: "linear-gradient(135deg, #FFFFFF 0%, #D4C0FF 40%, #F5E6A3 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
+          {isFirstTime ? "Bienvenue 🎉" : "Bon retour\nparmi nous 👋"}
+        </motion.h1>
+
+        {/* Sous-titre */}
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.55, ease: "easeOut" }}
+          className="text-base font-light leading-relaxed"
+          style={{ color: "rgba(255,255,255,0.65)", maxWidth: 280 }}
+        >
+          Tes informations ont bien été enregistrées ✓
+        </motion.p>
+
+        {/* Barre de progression */}
+        <motion.div className="w-40 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.12)" }}>
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: "linear-gradient(90deg,#D4C0FF,#F5E6A3)" }}
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 3, ease: "linear" }}
+          />
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ── Section header ─────────────────────────────────────── */
 function Section({ title }: { title: string }) {
   return (
@@ -110,11 +215,13 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [wasAlreadyCompleted, setWasAlreadyCompleted] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
     supabase.from("profiles")
-      .select("onboarding_age,onboarding_height,onboarding_weight,onboarding_gender,onboarding_goals,onboarding_level,onboarding_sessions_week,onboarding_meals_day,onboarding_diet")
+      .select("onboarding_age,onboarding_height,onboarding_weight,onboarding_gender,onboarding_goals,onboarding_level,onboarding_sessions_week,onboarding_meals_day,onboarding_diet,onboarding_completed")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -128,6 +235,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
           if (data.onboarding_sessions_week) setSessions(String(data.onboarding_sessions_week));
           if (data.onboarding_meals_day) setMeals(String(data.onboarding_meals_day));
           if (data.onboarding_diet) setDiet(data.onboarding_diet);
+          setWasAlreadyCompleted(data.onboarding_completed === true);
         }
         setLoading(false);
       });
@@ -156,7 +264,12 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
     }, { onConflict: "id" });
     setSaving(false);
     setSuccess(true);
-    setTimeout(() => { onSaved(); onClose(); }, 1200);
+    if (isCompleted) {
+      setShowCelebration(true);
+      setTimeout(() => { setShowCelebration(false); onSaved(); onClose(); }, 3400);
+    } else {
+      setTimeout(() => { onSaved(); onClose(); }, 1200);
+    }
   };
 
   return (
@@ -345,6 +458,16 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
         )}
       </motion.div>
     </motion.div>
+
+    {/* Animation plein écran */}
+    <AnimatePresence>
+      {showCelebration && (
+        <WelcomeCelebration
+          isFirstTime={!wasAlreadyCompleted}
+          onDone={() => { setShowCelebration(false); onSaved(); onClose(); }}
+        />
+      )}
+    </AnimatePresence>
   );
 }
 
