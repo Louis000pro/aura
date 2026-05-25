@@ -3965,7 +3965,7 @@ function CommunautePageInner() {
             )}
 
             {/* ── Floating Action Button : créer un post libre ── */}
-            {user && (
+            {user && feedTab === "posts" && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
