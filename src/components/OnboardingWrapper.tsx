@@ -5,15 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import WelcomeCelebration from "@/components/WelcomeCelebration";
 import { createClient } from "@/lib/supabase";
 
 export default function OnboardingWrapper() {
   const { user, isNewUser, isLoading } = useAuth();
 
-  const [showModal, setShowModal]       = useState(false);
-  const [showBubble, setShowBubble]     = useState(false);
+  const [showModal, setShowModal]             = useState(false);
+  const [showBubble, setShowBubble]           = useState(false);
   const [bubbleDismissed, setBubbleDismissed] = useState(false);
-  const [checked, setChecked]           = useState(false);
+  const [checked, setChecked]                 = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [wasAlreadyCompleted, setWasAlreadyCompleted] = useState(false);
 
   /* ── Vérifier onboarding_completed en DB ── */
   const checkCompleted = async () => {
@@ -26,6 +29,7 @@ export default function OnboardingWrapper() {
       .maybeSingle();
 
     const completed = data?.onboarding_completed === true;
+    setWasAlreadyCompleted(completed);
     setChecked(true);
 
     if (!completed) {
@@ -80,6 +84,8 @@ export default function OnboardingWrapper() {
       setShowBubble(true);
     } else {
       setShowBubble(false);
+      // Déclencher l'animation de célébration
+      setShowCelebration(true);
     }
   };
 
@@ -100,6 +106,16 @@ export default function OnboardingWrapper() {
             pseudo={user.pseudo}
             onComplete={handleComplete}
             onSkip={handleSkip}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Animation plein écran après sauvegarde ── */}
+      <AnimatePresence>
+        {showCelebration && (
+          <WelcomeCelebration
+            isFirstTime={!wasAlreadyCompleted}
+            onDone={() => setShowCelebration(false)}
           />
         )}
       </AnimatePresence>
