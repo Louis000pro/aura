@@ -278,56 +278,61 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                 </select>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer mt-2"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 20px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
-              >
-                {saving ? "Enregistrement…" : "Enregistrer mon profil"}
-              </motion.button>
-
-              {/* Séparateur */}
-              <div className="flex items-center gap-3 mt-1">
-                <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
-                <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>ou</span>
-                <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
-              </div>
-
-              <div className="flex gap-2">
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => {
-                    if (window.confirm("Réinitialiser tous tes objectifs ?")) {
-                      setAge(""); setWeight(""); setGender("homme");
-                      setSessions("3"); setMeals("3"); setDiet("Aucun régime particulier");
-                      setGoals([]);
-                    }
-                  }}
-                  className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                  style={{ background: "rgba(254,226,226,0.8)", border: "1.5px solid rgba(252,129,129,0.35)", color: "#E53E3E" }}
-                >
-                  🔄 Recommencer
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => {
-                    if (window.confirm("Créer un 2ème objectif ? Les données actuelles seront remplacées après sauvegarde.")) {
-                      setAge(""); setWeight(""); setGender("homme");
-                      setSessions("3"); setMeals("3"); setDiet("Aucun régime particulier");
-                      setGoals([]);
-                    }
-                  }}
-                  className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                  style={{ background: "rgba(254,226,226,0.6)", border: "1.5px solid rgba(252,129,129,0.3)", color: "#C53030" }}
-                >
-                  ➕ 2ème objectif
-                </motion.button>
-              </div>
             </div>
           )}
         </div>
+
+        {/* Footer fixe — toujours visible */}
+        {!loading && !success && (
+          <div className="flex-shrink-0 px-6 pb-6 pt-3 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(212,192,255,0.25)" }}>
+            <motion.button
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 20px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+            >
+              {saving ? "Enregistrement…" : "Enregistrer mon profil"}
+            </motion.button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
+              <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>ou</span>
+              <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
+            </div>
+
+            <div className="flex gap-2">
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  if (window.confirm("Réinitialiser tous tes objectifs ?")) {
+                    setAge(""); setHeight(""); setWeight(""); setGender("homme");
+                    setSessions("3"); setMeals("3"); setDiet("Aucun régime particulier");
+                    setGoals([]);
+                  }
+                }}
+                className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                style={{ background: "rgba(254,226,226,0.8)", border: "1.5px solid rgba(252,129,129,0.35)", color: "#E53E3E" }}
+              >
+                🔄 Recommencer
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  if (window.confirm("Créer un 2ème objectif ? Les données actuelles seront remplacées après sauvegarde.")) {
+                    setAge(""); setHeight(""); setWeight(""); setGender("homme");
+                    setSessions("3"); setMeals("3"); setDiet("Aucun régime particulier");
+                    setGoals([]);
+                  }
+                }}
+                className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                style={{ background: "rgba(254,226,226,0.6)", border: "1.5px solid rgba(252,129,129,0.3)", color: "#C53030" }}
+              >
+                ➕ 2ème objectif
+              </motion.button>
+            </div>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );
