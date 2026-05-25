@@ -4,8 +4,8 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { useTheme } from "@/hooks/useTheme";
 
-const STAR_COLORS_LIGHT = ["#C4B5FD","#F472B6","#FBBF24","#E879F9","#C084FC","#FB923C","#F9A8D4","#FDE68A"];
-const STAR_COLORS_DARK  = ["#ffffff","#D4C0FF","#F5E6A3","#93C5FD","#F9A8D4","#FDE68A","#C4B5FD"];
+const STAR_COLORS_LIGHT = ["#D4C0FF","#A78BFA","#F5E6A3","#E9D5FF","#C4B5FD","#FDE68A","#DDD6FE","#F3E8FF"];
+const STAR_COLORS_DARK  = ["#ffffff","#D4C0FF","#F5E6A3","#E9D5FF","#C4B5FD","#FDE68A","#DDD6FE"];
 
 const TWINKLE_STARS = Array.from({ length: 28 }, (_, i) => ({
   id: i,
@@ -31,22 +31,22 @@ export default function WelcomeCelebration({
 
   if (typeof document === "undefined") return null;
 
-  // ── Thème clair
+  // ── Thème clair — couleurs DA du site
   const light = {
-    bg: "linear-gradient(160deg,#FDF4FF 0%,#FFF0FA 40%,#FFFBEB 100%)",
-    halo: "radial-gradient(circle,rgba(244,114,182,0.12) 0%,rgba(192,132,252,0.08) 50%,transparent 70%)",
-    ringTrack: "rgba(196,181,253,0.25)",
-    ringGradStart: "#F472B6",
-    ringGradMid: "#C084FC",
-    ringGradEnd: "#FBBF24",
-    checkBg: "linear-gradient(135deg,#F9A8D4,#C4B5FD)",
-    checkShadow: "0 0 28px rgba(192,132,252,0.35)",
-    labelColor: "rgba(192,132,252,0.75)",
-    titleGrad: "linear-gradient(135deg,#C084FC 0%,#EC4899 50%,#F59E0B 100%)",
-    subColor: "rgba(100,80,120,0.45)",
-    btnBg: "linear-gradient(135deg,#F9A8D4 0%,#C4B5FD 50%,#FDE68A 100%)",
-    btnText: "#5B2D8E",
-    btnShadow: "0 8px 32px rgba(192,132,252,0.35), 0 4px 16px rgba(244,114,182,0.2), inset 0 1px 0 rgba(255,255,255,0.6)",
+    bg: "linear-gradient(160deg,#F5F0FF 0%,#FFFFFF 50%,#FFFDF0 100%)",
+    halo: "radial-gradient(circle,rgba(167,139,250,0.14) 0%,rgba(212,192,255,0.08) 50%,transparent 70%)",
+    ringTrack: "rgba(212,192,255,0.3)",
+    ringGradStart: "#D4C0FF",
+    ringGradMid: "#A78BFA",
+    ringGradEnd: "#F5E6A3",
+    checkBg: "linear-gradient(135deg,#D4C0FF,#A78BFA)",
+    checkShadow: "0 0 28px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.5)",
+    labelColor: "rgba(167,139,250,0.7)",
+    titleGrad: "linear-gradient(135deg,#A78BFA 0%,#7C3AED 45%,#D4A843 100%)",
+    subColor: "rgba(45,55,72,0.45)",
+    btnBg: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+    btnText: "#2D3748",
+    btnShadow: "0 8px 32px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)",
   };
 
   // ── Thème sombre

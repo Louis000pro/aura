@@ -161,7 +161,6 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
     setSaving(false);
     setSuccess(true);
     setShowCelebration(true);
-    setTimeout(() => { setShowCelebration(false); onSaved(); onClose(); }, 3400);
   };
 
   return (
