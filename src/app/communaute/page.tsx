@@ -3802,20 +3802,22 @@ function CommunautePageInner() {
                 ))}
               </div>
 
-              {/* ── Toggle algo / récents (Posts uniquement) ── */}
+              {/* ── Toggle algo / récents (Posts uniquement) — même cadrage que les tabs ── */}
               {feedTab === "posts" && !feedLoading && (
                 <div className="flex items-center justify-center gap-2 py-1"
-                  style={{ maxWidth: 560, margin: "0 auto" }}>
+                  style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
                   {(["algo", "recent"] as const).map((mode) => (
                     <motion.button
                       key={mode}
                       whileTap={{ scale: 0.94 }}
                       onClick={() => setFeedMode(mode)}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-semibold transition-all"
-                      style={feedMode === mode
-                        ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
-                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
-                      }
+                      className="py-1.5 rounded-2xl text-xs font-semibold transition-all text-center"
+                      style={{
+                        width: 132,
+                        ...(feedMode === mode
+                          ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                          : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
+                      }}
                     >
                       {mode === "algo" ? "🔥 Pour toi" : "🕐 Récents"}
                     </motion.button>
