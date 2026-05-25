@@ -4439,27 +4439,33 @@ function CommunautePageInner() {
                             {msg.shared_post ? (
                               <div>
                                 {msg.shared_post.media_url && (
-                                  <div className="relative" style={{ height: 140, background: "#000" }}>
+                                  // stopPropagation empêche le menu de s'ouvrir quand on clique sur la vidéo
+                                  <div
+                                    className="relative"
+                                    style={{ height: 160, background: "#000" }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     {msg.shared_post.media_type === "video"
-                                      ? <video src={msg.shared_post.media_url} className="w-full h-full object-cover" muted playsInline />
+                                      ? <video
+                                          src={msg.shared_post.media_url}
+                                          className="w-full h-full object-cover"
+                                          controls
+                                          playsInline
+                                          style={{ maxHeight: 160 }}
+                                        />
                                       // eslint-disable-next-line @next/next/no-img-element
                                       : <img src={msg.shared_post.media_url} alt="" className="w-full h-full object-cover" />
                                     }
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-                                        <svg width="10" height="12" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
-                                      </div>
-                                    </div>
                                   </div>
                                 )}
-                                <div className="px-3 py-2">
-                                  {msg.shared_post.caption && (
-                                    <p className="text-xs font-light line-clamp-2" style={{ color: "#2D3748" }}>{msg.shared_post.caption}</p>
-                                  )}
-                                  {msg.content && msg.content !== "📎 Post partagé" && (
-                                    <p className="text-xs mt-1 font-light" style={{ color: "#718096" }}>{msg.content.replace(/^📎\s*/, "")}</p>
-                                  )}
-                                </div>
+                                {/* Caption — affiché UNE seule fois depuis shared_post */}
+                                {msg.shared_post.caption && (
+                                  <div className="px-3 py-2">
+                                    <p className="text-xs font-light line-clamp-2" style={{ color: "#2D3748" }}>
+                                      {msg.shared_post.caption}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div className="px-4 py-2.5">{msg.content}</div>
