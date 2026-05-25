@@ -1503,7 +1503,11 @@ function renderMentions(text: string) {
   const parts = text.split(/(@\w+)/g);
   return parts.map((part, i) =>
     /^@\w+$/.test(part)
-      ? <b key={i} style={{ color: "#A78BFA", fontWeight: 600, fontStyle: "normal" }}>{part}</b>
+      ? (
+        <Link key={i} href={`/profil/${part.slice(1)}`} onClick={e => e.stopPropagation()}>
+          <b style={{ color: "#A78BFA", fontWeight: 600, fontStyle: "normal" }}>{part}</b>
+        </Link>
+      )
       : part
   );
 }
