@@ -2311,7 +2311,9 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
             {post.media_url && (
               <video ref={videoRef} src={post.media_url}
                 className="absolute inset-0 w-full h-full object-cover"
-                muted={muted} playsInline preload="metadata" loop />
+                muted={muted} playsInline preload="metadata" loop
+                style={{ pointerEvents: "none" }}
+              />
             )}
 
             {/* Gradient bas pour lisibilité du texte */}
@@ -2580,7 +2582,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll"
-      style={{ height: "calc(100dvh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", padding: "8px 0" }}>
+      style={{ height: "calc(100dvh - 120px)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", padding: "8px 0", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
         <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "4px 8px" }}>
           <div style={{ height: "100%", borderRadius: 18, overflow: "hidden" }}>
