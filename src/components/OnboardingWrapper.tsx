@@ -56,7 +56,7 @@ export default function OnboardingWrapper() {
   const handleComplete = async (data: OnboardingData) => {
     if (!user) return;
 
-    const isCompleted = !!(data.age && data.height && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
+    const isCompleted = !!(data.age && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
 
     const supabase = createClient();
     await supabase.from("profiles").upsert({

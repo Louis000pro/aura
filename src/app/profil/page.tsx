@@ -623,7 +623,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
     localStorage.setItem(storageKey, JSON.stringify(data));
     // Sync vers Supabase + mettre à jour onboarding_completed
     if (user?.id) {
-      const isCompleted = !!(data.age && data.height && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
+      const isCompleted = !!(data.age && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
       const supabase = createClient();
       await supabase.from("profiles").upsert({
         id: user.id,

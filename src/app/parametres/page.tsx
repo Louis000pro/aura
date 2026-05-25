@@ -140,7 +140,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
     if (!user?.id) return;
     setSaving(true);
     // onboarding_completed = true seulement si TOUS les champs sont remplis
-    const isCompleted = !!(age && height && weight && gender && goals.length > 0 && level && sessions && meals && diet);
+    const isCompleted = !!(age && weight && gender && goals.length > 0 && level && sessions && meals && diet);
     await supabase.from("profiles").upsert({
       id: user.id,
       onboarding_age: age ? parseInt(age) : null,
