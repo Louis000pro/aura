@@ -3628,8 +3628,8 @@ function CommunautePageInner() {
             exit={{ opacity: 0 }}
             className="flex flex-col gap-5 pb-4"
           >
-            {/* Stories */}
-            {(() => {
+            {/* Stories — masquées quand on est sur l'onglet vidéos */}
+            {feedTab !== "videos" && (() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
               // Tri : oldest first pour la lecture dans l'ordre
               const byUser: Record<string, RealStory[]> = {};
@@ -3781,7 +3781,7 @@ function CommunautePageInner() {
             ══════════════════════════════════════════════════════ */}
             <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
 
-              {/* ── Tab boutons (centrés sur la colonne vidéo) ── */}
+              {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
               <div className="flex items-center justify-center gap-2 py-1"
                 style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
                 {([
@@ -3790,11 +3790,13 @@ function CommunautePageInner() {
                 ]).map(({ key, label }) => (
                   <motion.button key={key} whileTap={{ scale: 0.94 }}
                     onClick={() => setFeedTab(key)}
-                    className="px-5 py-2 rounded-2xl text-xs font-semibold transition-all"
-                    style={feedTab === key
-                      ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
-                      : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
-                    }>
+                    className="py-2 rounded-2xl text-xs font-semibold transition-all text-center"
+                    style={{
+                      width: 132,
+                      ...(feedTab === key
+                        ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
+                    }}>
                     {label}
                   </motion.button>
                 ))}
