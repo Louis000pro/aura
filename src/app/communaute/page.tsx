@@ -3792,7 +3792,7 @@ function CommunautePageInner() {
                     onClick={() => setFeedTab(key)}
                     className="py-2 rounded-2xl text-xs font-semibold transition-all text-center"
                     style={{
-                      width: 110,
+                      width: 118,
                       ...(feedTab === key
                         ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
                         : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
