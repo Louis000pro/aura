@@ -2361,7 +2361,8 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const authorAvatar = post.author?.avatar_url;
   const authorCertified = post.author?.is_admin === true;
 
-  // Play/pause on isActive
+  // Play/pause on isActive + incrémenter les vues une fois par activation
+  const viewCountedRef = useRef(false);
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -2369,10 +2370,15 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
       video.currentTime = 0;
       void video.play().catch(() => {});
       setPaused(false);
+      if (!viewCountedRef.current) {
+        viewCountedRef.current = true;
+        void createClient().rpc("increment_post_views", { p_post_id: post.id });
+      }
     } else {
       video.pause();
+      viewCountedRef.current = false;
     }
-  }, [isActive]);
+  }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Playback rate
   useEffect(() => {

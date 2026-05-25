@@ -23,6 +23,7 @@ type UserPost = {
   user_id: string;
   media_url?: string | null;
   media_type?: string | null;
+  views?: number;
   likes_count?: number;
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
@@ -1473,7 +1474,7 @@ export default function ProfilPage() {
     // Publications : posts de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, post_likes(user_id), post_comments(id), post_reposts(user_id)")
+      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, views, post_likes(user_id), post_comments(id), post_reposts(user_id)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -2257,11 +2258,11 @@ export default function ProfilPage() {
                           <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
                         </div>
                       </div>
-                      {(post.likes_count ?? 0) > 0 && (
+                      {(post.views ?? 0) > 0 && (
                         <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
                           style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                          <span style={{ color: "#F43F5E", fontSize: 10 }}>♥</span>
-                          <span className="text-[10px] font-semibold text-white">{post.likes_count}</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                          <span className="text-[10px] font-semibold text-white">{post.views}</span>
                         </div>
                       )}
                     </motion.div>
