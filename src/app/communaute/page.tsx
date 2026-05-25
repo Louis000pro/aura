@@ -60,6 +60,7 @@ type RealPost = {
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
   post_reposts: { user_id: string }[];
+  post_saves: { user_id: string }[];
 };
 
 type DmReaction = {
@@ -1814,14 +1815,16 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
         author:profiles!user_id(pseudo, avatar_url, is_admin),
         post_likes(user_id),
         post_comments(id),
-        post_reposts(user_id)
+        post_reposts(user_id),
+        post_saves(user_id)
       `).ilike("caption", `%${tag}%`).order("created_at", { ascending: false }).limit(20),
       supabase.from("posts").select(`
         id, type, caption, description, media_url, media_type, created_at, user_id,
         author:profiles!user_id(pseudo, avatar_url, is_admin),
         post_likes(user_id),
         post_comments(id),
-        post_reposts(user_id)
+        post_reposts(user_id),
+        post_saves(user_id)
       `).ilike("description", `%${tag}%`).order("created_at", { ascending: false }).limit(20),
     ]).then(([capRes, descRes]) => {
       if (cancelled) return;
@@ -2992,7 +2995,8 @@ function CommunautePageInner() {
         author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
         post_likes(user_id),
         post_comments(id),
-        post_reposts(user_id)
+        post_reposts(user_id),
+        post_saves(user_id)
       `)
       .order("created_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
@@ -3046,7 +3050,8 @@ function CommunautePageInner() {
             author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
             post_likes(user_id),
             post_comments(id),
-            post_reposts(user_id)
+            post_reposts(user_id),
+        post_saves(user_id)
           `)
           .eq("id", (payload.new as { id: string }).id)
           .maybeSingle();
@@ -3491,7 +3496,8 @@ function CommunautePageInner() {
                 author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
                 post_likes(user_id),
                 post_comments(id),
-                post_reposts(user_id)
+                post_reposts(user_id),
+        post_saves(user_id)
               `)
               .or(`caption.ilike.%${q}%,description.ilike.%${q}%`)
               .order("created_at", { ascending: false })
@@ -3873,6 +3879,7 @@ function CommunautePageInner() {
               const likesCount = post.post_likes.length;
               const commentsCount = post.post_comments.length;
               const repostsCount = post.post_reposts?.length ?? 0;
+              const savesCount = post.post_saves?.length ?? 0;
               const authorPseudo = post.author?.pseudo ?? "utilisateur";
               const authorAvatar = post.author?.avatar_url;
               const authorCertified = post.author?.is_admin === true;
@@ -4109,20 +4116,60 @@ function CommunautePageInner() {
                   </div>
 
                   {/* Stats */}
-                  <div className="px-4 pt-2 pb-1">
-                    {likesCount > 0 && (
-                      <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                        {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
-                      </p>
+                  <div className="px-4 pt-2 pb-3 flex flex-col gap-1.5">
+                    {/* Compteurs */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {likesCount > 0 && (
+                        <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: liked ? "#F43F5E" : "#718096" }}>
+                          <Heart size={12} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#718096" }} />
+                          {likesCount} j&apos;aime
+                        </span>
+                      )}
+                      {commentsCount > 0 && (
+                        <motion.span
+                          whileHover={{ color: "#2D3748" }}
+                          className="flex items-center gap-1 text-xs cursor-pointer"
+                          style={{ color: "#718096" }}
+                          onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                        >
+                          <MessageCircle size={12} strokeWidth={1.5} />
+                          {commentsCount} commentaire{commentsCount > 1 ? "s" : ""}
+                        </motion.span>
+                      )}
+                      {savesCount > 0 && (
+                        <span className="flex items-center gap-1 text-xs" style={{ color: isSaved ? "#D4A843" : "#718096" }}>
+                          <Bookmark size={12} strokeWidth={1.5} fill={isSaved ? "#F5E6A3" : "none"} style={{ color: isSaved ? "#D4A843" : "#718096" }} />
+                          {savesCount} favori{savesCount > 1 ? "s" : ""}
+                        </span>
+                      )}
+                      {repostsCount > 0 && (
+                        <span className="flex items-center gap-1 text-xs" style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }}>
+                          <Repeat2 size={12} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }} />
+                          {repostsCount} partage{repostsCount > 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                    {/* Lien commentaires */}
+                    {commentsCount === 0 && (
+                      <motion.p
+                        whileHover={{ color: "#2D3748" }}
+                        className="text-[11px] cursor-pointer"
+                        style={{ color: "#A0AEC0" }}
+                        onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                      >
+                        Ajouter un commentaire
+                      </motion.p>
                     )}
-                    <motion.p
-                      whileHover={{ color: "#2D3748" }}
-                      className="text-[11px] mt-1.5 cursor-pointer mb-3"
-                      style={{ color: "#A0AEC0" }}
-                      onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                    >
-                      {isCommentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
-                    </motion.p>
+                    {isCommentsOpen && commentsCount > 0 && (
+                      <motion.p
+                        whileHover={{ color: "#2D3748" }}
+                        className="text-[11px] cursor-pointer"
+                        style={{ color: "#A0AEC0" }}
+                        onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                      >
+                        Masquer les commentaires
+                      </motion.p>
+                    )}
                   </div>
 
                   <AnimatePresence>
