@@ -3770,7 +3770,8 @@ function CommunautePageInner() {
             })()}
 
             {/* ── Tab Publications / Vidéos ── */}
-            <div className="flex items-center justify-center gap-2 px-1">
+            {/* Breakout du padding page pour centrage parfait sur le viewport */}
+            <div className="-mx-4 md:-mx-8 flex items-center justify-center gap-2 py-1">
               {([
                 { key: "videos" as const, label: "🎬 Vidéos" },
                 { key: "posts" as const, label: "📝 Publications" },
@@ -3789,7 +3790,7 @@ function CommunautePageInner() {
 
             {/* ── Toggle algorithme / récents (seulement sur Posts) ── */}
             {feedTab === "posts" && !feedLoading && (
-              <div className="flex items-center justify-center gap-2 px-1">
+              <div className="flex items-center justify-center gap-2">
                 {(["algo", "recent"] as const).map((mode) => (
                   <motion.button
                     key={mode}
@@ -3807,13 +3808,15 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {/* ── Feed Vidéos TikTok ── */}
+            {/* ── Feed Vidéos TikTok — breakout du padding pour centrage viewport ── */}
             {feedTab === "videos" && (
-              <TikTokFeed
-                posts={sortedFeedPosts}
-                initialPostId={highlightVideoId}
-                onInitialScrolled={() => setHighlightVideoId(null)}
-              />
+              <div className="-mx-4 md:-mx-8">
+                <TikTokFeed
+                  posts={sortedFeedPosts}
+                  initialPostId={highlightVideoId}
+                  onInitialScrolled={() => setHighlightVideoId(null)}
+                />
+              </div>
             )}
 
             {/* Posts réels depuis Supabase */}
