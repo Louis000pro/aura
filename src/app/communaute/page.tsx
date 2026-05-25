@@ -1581,6 +1581,9 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   const [sending, setSending]     = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ id: string; pseudo: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // @mention autocomplete
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<{ pseudo: string; avatar_url?: string | null }[]>([]);
 
   const loadComments = async () => {
     const supabase = createClient();
@@ -1605,10 +1608,48 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
 
   useEffect(() => { void loadComments(); }, [postId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch mention suggestions when user types @...
+  useEffect(() => {
+    if (mentionSearch === null) { setMentionResults([]); return; }
+    const search = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("profiles")
+        .select("pseudo, avatar_url")
+        .ilike("pseudo", `${mentionSearch}%`)
+        .limit(5);
+      setMentionResults((data as { pseudo: string; avatar_url?: string | null }[]) ?? []);
+    };
+    void search();
+  }, [mentionSearch]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    const cursor = e.target.selectionStart ?? val.length;
+    const textBeforeCursor = val.slice(0, cursor);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (mentionMatch) {
+      setMentionSearch(mentionMatch[1]);
+    } else {
+      setMentionSearch(null);
+    }
+  };
+
+  const selectMention = (pseudo: string) => {
+    const cursor = inputRef.current?.selectionStart ?? input.length;
+    const before = input.slice(0, cursor).replace(/@\w*$/, `@${pseudo} `);
+    const after = input.slice(cursor);
+    setInput(before + after);
+    setMentionSearch(null);
+    setMentionResults([]);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !user || sending) return;
     const content = input.trim();
     setInput(""); setReplyingTo(null); setSending(true);
+    setMentionSearch(null); setMentionResults([]);
     const tmpId = `tmp-${Date.now()}`;
     setComments(prev => [...prev, {
       id: tmpId, content, created_at: new Date().toISOString(),
@@ -1630,6 +1671,20 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
       if (postOwnerId && postOwnerId !== user.id) {
         void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: String(postId) });
       }
+      // Envoyer notifications mention
+      const mentionedPseudos = [...content.matchAll(/@(\w+)/g)].map(m => m[1]);
+      if (mentionedPseudos.length > 0) {
+        const { data: mentionedProfiles } = await supabase.from("profiles")
+          .select("id, pseudo")
+          .in("pseudo", mentionedPseudos);
+        if (mentionedProfiles) {
+          for (const profile of mentionedProfiles as { id: string; pseudo: string }[]) {
+            if (profile.id !== user.id && profile.id !== postOwnerId) {
+              void supabase.from("notifications").insert({ user_id: profile.id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "mention", post_id: String(postId) });
+            }
+          }
+        }
+      }
     }
   };
 
@@ -1644,6 +1699,13 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
     }));
     if (liked) await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id);
     else await supabase.from("comment_likes").upsert({ comment_id: commentId, user_id: user.id }, { ignoreDuplicates: true });
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    const supabase = createClient();
+    await supabase.from("post_comments").delete().eq("id", commentId).eq("user_id", user.id);
   };
 
   // Grouper : top-level puis replies indentées
@@ -1665,11 +1727,11 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
             <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
           ) : topLevel.map((c, i) => (
             <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
-              <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+              <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
               {/* Replies indentées */}
               {replies(c.id).map(r => (
                 <div key={r.id} className="ml-8 mt-2">
-                  <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+                  <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
                 </div>
               ))}
             </motion.div>
@@ -1685,9 +1747,31 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
         )}
         {sendError && <p className="text-[10px] mb-1" style={{ color: "#FC8181" }}>{sendError}</p>}
 
+        {/* Dropdown @mention */}
+        {mentionResults.length > 0 && (
+          <div className="mb-1.5 rounded-xl overflow-hidden shadow-md" style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(212,192,255,0.6)" }}>
+            {mentionResults.map(profile => (
+              <button key={profile.pseudo} onMouseDown={e => { e.preventDefault(); selectMention(profile.pseudo); }}
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-purple-50 transition-colors cursor-pointer">
+                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[9px] font-semibold"
+                  style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                  {profile.avatar_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                    : profile.pseudo[0]?.toUpperCase()}
+                </div>
+                <span className="text-xs font-medium" style={{ color: "#A78BFA" }}>@{profile.pseudo}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
-          <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+          <input ref={inputRef} type="text" value={input} onChange={handleInputChange}
+            onKeyDown={e => {
+              if (e.key === "Enter" && mentionResults.length === 0) handleSend();
+              if (e.key === "Escape") { setMentionSearch(null); setMentionResults([]); }
+            }}
             placeholder={user ? (replyingTo ? `Répondre à @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi pour commenter"}
             disabled={!user}
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
