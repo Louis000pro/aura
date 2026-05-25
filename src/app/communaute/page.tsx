@@ -2489,216 +2489,219 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
   return (
-    <div className="w-full h-full flex flex-col select-none relative overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.98)", borderRadius: 24 }}>
+    <div className="h-full flex items-center justify-center select-none"
+      style={{ background: "transparent", gap: 14 }}>
 
-      {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3 flex-shrink-0">
-        <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
-          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-sm font-semibold border-2"
-            style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", borderColor: "rgba(212,192,255,0.5)", color: "#2D3748" }}>
-            {authorAvatar
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
-              : authorPseudo[0]?.toUpperCase()}
-          </div>
-        </Link>
-        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          <Link href={`/profil/${authorPseudo}`} onClick={e => e.stopPropagation()}>
-            <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{authorPseudo}</span>
-          </Link>
-          {authorCertified && (
-            <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
-              <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
-                <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          )}
-        </div>
-        {/* Suivre */}
-        {user && post.user_id !== user.id && (
-          <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); toggleFollow(); }}
-            className="px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer flex-shrink-0 mr-2"
-            style={following
-              ? { background: "rgba(212,192,255,0.25)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.35)" }
-              : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 2px 8px rgba(167,139,250,0.25)" }}>
-            {following ? "Suivi ✓" : "Suivre"}
-          </motion.button>
-        )}
-        {/* Mute */}
-        <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer"
-          style={{ background: "rgba(240,235,255,0.8)" }}>
-          <span className="text-sm">{muted ? "🔇" : "🔊"}</span>
-        </motion.button>
-        {/* Paramètres */}
-        <motion.button whileTap={{ scale: 0.9 }} onClick={e => { e.stopPropagation(); setShowSettings(s => !s); setShowComments(false); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer ml-1"
-          style={{ background: "rgba(240,235,255,0.8)" }}>
-          <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-        </motion.button>
-      </div>
-
-      {/* ── Vidéo ── */}
-      <div className="flex-1 relative overflow-hidden" style={{ background: "#111", cursor: "pointer" }}
+      {/* ══════════════════════════════════
+          COLONNE VIDÉO (9:16)
+      ══════════════════════════════════ */}
+      <div className="relative flex-shrink-0 overflow-hidden"
+        style={{ height: "calc(100% - 16px)", aspectRatio: "9/16", background: "#000", borderRadius: 20, cursor: "pointer" }}
         onClick={handleVideoTap}>
-
-        {/* Fond flouté */}
-        {post.media_url && (
-          <video ref={bgVideoRef} src={post.media_url}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ filter: "blur(24px) brightness(0.28)", transform: "scale(1.15)", zIndex: 0 }}
-            muted playsInline preload="metadata" loop />
-        )}
 
         {/* Vidéo principale */}
         {post.media_url && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 1 }}>
-            <video ref={videoRef} src={post.media_url}
-              className="h-full w-full object-contain"
-              muted={muted} playsInline preload="metadata" loop
-              style={{ pointerEvents: "none" }} />
+          <video ref={videoRef} src={post.media_url}
+            className="absolute inset-0 w-full h-full object-cover"
+            muted={muted} playsInline preload="metadata" loop
+            style={{ pointerEvents: "none", zIndex: 0 }} />
+        )}
+        {/* bgVideoRef caché (maintenu pour la sync, pas de flou) */}
+        {post.media_url && (
+          <video ref={bgVideoRef} src={post.media_url}
+            className="hidden" muted playsInline preload="metadata" loop />
+        )}
+
+        {/* Gradient bas */}
+        <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
+          style={{ height: 180, background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)" }} />
+
+        {/* Gradient haut (pour le bouton mute) */}
+        <div className="absolute inset-x-0 top-0 z-10 pointer-events-none"
+          style={{ height: 80, background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%)" }} />
+
+        {/* Bouton mute — coin haut droit */}
+        <button
+          onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
+          <span className="text-white text-sm leading-none select-none">{muted ? "🔇" : "🔊"}</span>
+        </button>
+
+        {/* Signalé badge */}
+        <AnimatePresence>
+          {reported && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-full flex items-center gap-1.5"
+              style={{ background: "rgba(252,129,129,0.2)", border: "1px solid rgba(252,129,129,0.4)", backdropFilter: "blur(8px)" }}>
+              <Flag size={11} strokeWidth={2} style={{ color: "#FC8181" }} />
+              <span className="text-[10px] font-semibold" style={{ color: "#FC8181" }}>Signalé</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Pause indicator */}
+        <AnimatePresence>
+          {paused && (
+            <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(10px)" }}>
+                <Play size={24} strokeWidth={1.5} style={{ color: "#fff", marginLeft: 3 }} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Double-tap heart */}
+        <AnimatePresence>
+          {doubleTapHeart && (
+            <motion.div initial={{ opacity: 0, scale: 0.3, y: 0 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.5, 1.2, 0.8], y: -60 }}
+              transition={{ duration: 0.85, ease: "easeOut" }}
+              className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+              <Heart size={90} strokeWidth={0} fill="#FF4458" style={{ filter: "drop-shadow(0 0 28px rgba(255,68,88,0.9))" }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Badge vitesse */}
+        {speed !== 1 && (
+          <div className="absolute top-3 left-3 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
+            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+            ×{speed}
           </div>
         )}
 
-            {post.media_url && (
-              <video ref={videoRef} src={post.media_url}
-                className="absolute inset-0 w-full h-full object-cover"
-                muted={muted} playsInline preload="metadata" loop
-                style={{ pointerEvents: "none" }}
-              />
-            )}
-
-            {/* Gradient bas pour lisibilité du texte */}
-            <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-              style={{ height: 160, background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)" }} />
-
-            {/* Pause indicator */}
-            <AnimatePresence>
-              {paused && (
-                <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                  className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}>
-                    <Play size={22} strokeWidth={1.5} style={{ color: "#fff", marginLeft: 3 }} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Double-tap heart */}
-            <AnimatePresence>
-              {doubleTapHeart && (
-                <motion.div initial={{ opacity: 0, scale: 0.3, y: 0 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.4, 1.2, 0.8], y: -50 }}
-                  transition={{ duration: 0.85, ease: "easeOut" }}
-                  className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-                  <Heart size={80} strokeWidth={1} fill="#FF4458" style={{ color: "#FF4458", filter: "drop-shadow(0 0 24px rgba(255,68,88,0.8))" }} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Badge vitesse */}
-            {speed !== 1 && (
-              <div className="absolute bottom-3 left-3 z-20 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold pointer-events-none"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
-                ×{speed}
+        {/* Auteur + caption — bas de la vidéo */}
+        <div className="absolute bottom-0 inset-x-0 z-20 px-4 pb-4 pointer-events-none">
+          <div className="flex items-center gap-2 mb-1.5">
+            {authorAvatar ? (
+              <img src={authorAvatar} alt={authorPseudo}
+                className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                style={{ border: "2px solid rgba(255,255,255,0.8)" }} />
+            ) : (
+              <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "2px solid rgba(255,255,255,0.8)" }}>
+                {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
-      </div>{/* fin video flex-1 */}
-
-      {/* ── Caption ── */}
-      {post.caption && (
-        <div className="px-4 pt-2.5 pb-1 flex-shrink-0">
-          <p className="text-sm leading-snug line-clamp-2" style={{ color: "#2D3748" }}>
-            <span className="font-semibold">@{authorPseudo}</span>{" "}{post.caption}
-          </p>
+            <span className="text-white text-sm font-semibold leading-none drop-shadow-sm">@{authorPseudo}</span>
+            {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
+          </div>
+          {post.caption && (
+            <p className="text-white text-[13px] leading-snug line-clamp-2 drop-shadow-sm" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
+              {post.caption}
+            </p>
+          )}
         </div>
-      )}
 
-      {/* ── Actions ── */}
-      <div className="flex items-center px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(212,192,255,0.2)" }}>
+        {/* Panels overlay (commentaires & settings) */}
+        <AnimatePresence>
+          {(showComments || showSettings) && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 z-40"
+              style={{ background: "rgba(0,0,0,0.55)" }}
+              onClick={() => { setShowComments(false); setShowSettings(false); }} />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showComments && (
+            <VideoCommentsPanel
+              postId={post.id}
+              postOwnerId={post.user_id}
+              commentCount={commentCount}
+              onClose={() => setShowComments(false)}
+              onCommentAdded={() => setCommentCount(c => c + 1)}
+            />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showSettings && (
+            <VideoSettingsPanel
+              speed={speed}
+              onSpeedChange={s => setSpeed(s)}
+              captionsOn={captionsOn}
+              onToggleCaptions={() => setCaptionsOn(c => !c)}
+              onReport={handleReport}
+              onClose={() => setShowSettings(false)}
+            />
+          )}
+        </AnimatePresence>
+      </div>{/* ── fin colonne vidéo ── */}
+
+      {/* ══════════════════════════════════
+          SIDEBAR ACTIONS (droite)
+      ══════════════════════════════════ */}
+      <div className="flex flex-col items-center justify-end flex-shrink-0 pb-4"
+        style={{ height: "calc(100% - 16px)", gap: 20, width: 52 }}>
+
+        {/* Avatar auteur */}
+        <div className="mt-auto mb-2">
+          {authorAvatar ? (
+            <img src={authorAvatar} alt={authorPseudo}
+              className="w-10 h-10 rounded-full object-cover"
+              style={{ border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }} />
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold"
+              style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }}>
+              {authorPseudo[0]?.toUpperCase()}
+            </div>
+          )}
+        </div>
+
         {/* Like */}
-        <button onClick={() => toggleLike()} className="flex items-center gap-1.5 cursor-pointer mr-5">
-          <motion.div whileTap={{ scale: 1.4 }} animate={liked ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-            <Heart size={22} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#FF4458" : "none"} style={{ color: liked ? "#FF4458" : "#2D3748" }} />
+        <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.45 }} animate={liked ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
+            <Heart size={28} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#FF4458" : "none"}
+              style={{ color: liked ? "#FF4458" : "#2D3748", filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.5))" : "none" }} />
           </motion.div>
-          <span className="text-sm font-semibold" style={{ color: liked ? "#FF4458" : "#2D3748" }}>{fmtCount(likes)}</span>
+          <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : "#64748B" }}>{fmtCount(likes)}</span>
         </button>
+
         {/* Commentaires */}
-        <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }} className="flex items-center gap-1.5 cursor-pointer mr-5">
-          <MessageCircle size={22} strokeWidth={1.5} fill={showComments ? "rgba(167,139,250,0.2)" : "none"} style={{ color: showComments ? "#A78BFA" : "#2D3748" }} />
-          <span className="text-sm" style={{ color: "#2D3748" }}>{fmtCount(commentCount)}</span>
+        <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }}
+          className="flex flex-col items-center gap-1 cursor-pointer">
+          <MessageCircle size={28} strokeWidth={1.5}
+            fill={showComments ? "rgba(167,139,250,0.15)" : "none"}
+            style={{ color: showComments ? "#A78BFA" : "#2D3748" }} />
+          <span className="text-[11px]" style={{ color: "#64748B" }}>{fmtCount(commentCount)}</span>
         </button>
-        {/* Repartager */}
-        <button onClick={() => toggleRepost()} className="flex items-center gap-1.5 cursor-pointer mr-5">
+
+        {/* Repost */}
+        <button onClick={toggleRepost} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
-            <Repeat2 size={22} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#2D3748" }} />
+            <Repeat2 size={28} strokeWidth={1.5}
+              style={{ color: reposted ? "#34D399" : "#2D3748", filter: reposted ? "drop-shadow(0 0 6px rgba(52,211,153,0.5))" : "none" }} />
           </motion.div>
-          <span className="text-sm" style={{ color: reposted ? "#34D399" : "#2D3748" }}>{fmtCount(reposts)}</span>
+          <span className="text-[11px]" style={{ color: reposted ? "#34D399" : "#64748B" }}>{fmtCount(reposts)}</span>
         </button>
+
         {/* Partager */}
-        <button onClick={() => handleShare()} className="flex items-center gap-1.5 cursor-pointer">
-          <motion.div animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Share2 size={22} strokeWidth={1.5} style={{ color: shared ? "#34D399" : "#2D3748" }} />
+        <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
+            <Share2 size={26} strokeWidth={1.5} style={{ color: shared ? "#34D399" : "#2D3748" }} />
           </motion.div>
+          <span className="text-[11px]" style={{ color: "#64748B" }}>Partager</span>
         </button>
-        {/* Bookmark — à droite */}
-        <button onClick={toggleSave} className="ml-auto cursor-pointer">
+
+        {/* Bookmark */}
+        <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }}>
-            <Bookmark size={22} strokeWidth={1.5} fill={saved ? "#F5E6A3" : "none"} style={{ color: saved ? "#D4A843" : "#2D3748" }} />
+            <Bookmark size={26} strokeWidth={1.5}
+              fill={saved ? "#F5E6A3" : "none"}
+              style={{ color: saved ? "#D4A843" : "#2D3748", filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : "none" }} />
           </motion.div>
+          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : "#64748B" }}>Sauv.</span>
         </button>
-      </div>
 
-      {/* ── Signalé badge ── */}
-      <AnimatePresence>
-        {reported && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl flex items-center gap-2"
-            style={{ background: "rgba(252,129,129,0.15)", border: "1px solid rgba(252,129,129,0.3)", backdropFilter: "blur(12px)" }}>
-            <Flag size={12} strokeWidth={2} style={{ color: "#FC8181" }} />
-            <span className="text-xs font-medium" style={{ color: "#FC8181" }}>Vidéo signalée</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Plus / settings */}
+        <button onClick={() => { setShowSettings(s => !s); setShowComments(false); }}
+          className="flex flex-col items-center gap-1 cursor-pointer">
+          <MoreHorizontal size={26} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+        </button>
+      </div>{/* ── fin sidebar ── */}
 
-      {/* ── Panels overlay ── */}
-      <AnimatePresence>
-        {(showComments || showSettings) && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 z-40"
-            style={{ background: "rgba(0,0,0,0.5)" }}
-            onClick={() => { setShowComments(false); setShowSettings(false); }} />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showComments && (
-          <VideoCommentsPanel
-            postId={post.id}
-            postOwnerId={post.user_id}
-            commentCount={commentCount}
-            onClose={() => setShowComments(false)}
-            onCommentAdded={() => setCommentCount(c => c + 1)}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showSettings && (
-          <VideoSettingsPanel
-            speed={speed}
-            onSpeedChange={s => setSpeed(s)}
-            captionsOn={captionsOn}
-            onToggleCaptions={() => setCaptionsOn(c => !c)}
-            onReport={handleReport}
-            onClose={() => setShowSettings(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Share modal — position:fixed échappe l'overflow:hidden du parent */}
+      {/* Share modals (position:fixed, échappent l'overflow) */}
       <AnimatePresence>
         {showShareModal && (
           <ShareModal
@@ -2774,12 +2777,10 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll mx-auto"
-      style={{ height: "calc(100dvh - 120px)", maxWidth: 480, scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
+      style={{ height: "calc(100dvh - 120px)", maxWidth: 560, scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always", padding: "8px 12px" }}>
-          <div style={{ height: "100%", borderRadius: 24, overflow: "hidden", boxShadow: "0 8px 40px rgba(167,139,250,0.15), 0 2px 12px rgba(0,0,0,0.08)" }}>
-            <VideoCard post={post} isActive={i === activeIndex} />
-          </div>
+        <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+          <VideoCard post={post} isActive={i === activeIndex} />
         </div>
       ))}
     </div>
