@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, UserPlus, Bell, CheckCheck, Repeat2 } from "lucide-react";
+import { Heart, MessageCircle, UserPlus, Bell, CheckCheck, Repeat2, AtSign } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-type NotifType = "follow" | "like" | "comment" | "repost";
+type NotifType = "follow" | "like" | "comment" | "repost" | "mention";
 
 type Notification = {
   id: string;
@@ -61,6 +61,7 @@ function notifText(n: Notification): string {
     case "like":    return `@${n.from_pseudo} a aimé ta publication`;
     case "comment": return `@${n.from_pseudo} a commenté ton post`;
     case "repost":  return `@${n.from_pseudo} a repartagé ta publication`;
+    case "mention": return `@${n.from_pseudo} t'a mentionné dans un commentaire`;
     default:        return `@${n.from_pseudo} a interagi`;
   }
 }
@@ -73,6 +74,7 @@ function TypeBadge({ type }: { type: NotifType }) {
     comment: { icon: <MessageCircle size={9} />,            bg: "#DBEAFE", color: "#3B82F6" },
     follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(212,192,255,0.6)", color: "#A78BFA" },
     repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(52,211,153,0.2)",   color: "#34D399" },
+    mention: { icon: <AtSign size={9} />,                   bg: "rgba(212,192,255,0.6)",  color: "#A78BFA" },
   };
   const cfg = cfgMap[type] ?? cfgMap.like;
 
@@ -363,6 +365,7 @@ export default function NotificationsPage() {
                         {notif.type === "like" && "a aimé ta publication"}
                         {notif.type === "comment" && "a commenté ton post"}
                         {notif.type === "repost" && "a repartagé ta publication"}
+                        {notif.type === "mention" && "t'a mentionné dans un commentaire"}
                       </span>
                     </p>
                     <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>

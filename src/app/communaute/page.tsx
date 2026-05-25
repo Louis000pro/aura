@@ -1498,6 +1498,16 @@ type RealComment = {
 
 const COMMENTS_SELECT = "id, content:text, created_at, user_id, parent_id, author:profiles!user_id(pseudo, avatar_url), comment_likes(user_id)";
 
+// Rend le contenu d'un commentaire avec @mentions en violet
+function renderMentions(text: string) {
+  const parts = text.split(/(@\w+)/g);
+  return parts.map((part, i) =>
+    /^@\w+$/.test(part)
+      ? <b key={i} style={{ color: "#A78BFA", fontWeight: 600, fontStyle: "normal" }}>{part}</b>
+      : part
+  );
+}
+
 // Sous-composant ligne commentaire (utilisé dans les deux sections)
 function CommentRow({
   c, user, dark, onReply, onLikeToggle, onDelete,
@@ -1531,7 +1541,7 @@ function CommentRow({
           <Link href={`/profil/${pseudo}`}>
             <span className="font-semibold mr-1.5" style={{ color: dark ? "#D4C0FF" : "#A78BFA" }}>{pseudo}</span>
           </Link>
-          <span className="font-light">{c.content}</span>
+          <span className="font-light">{renderMentions(c.content)}</span>
         </p>
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-[10px]" style={{ color: sub }}>{timeStr}</span>
@@ -1938,6 +1948,9 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
   const [sendError, setSendError] = useState("");
   const [replyingTo, setReplyingTo] = useState<{ id: string; pseudo: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // @mention autocomplete
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<{ pseudo: string; avatar_url?: string | null }[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -1960,10 +1973,48 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
     void load();
   }, [postId]);
 
+  // Fetch mention suggestions when user types @...
+  useEffect(() => {
+    if (mentionSearch === null) { setMentionResults([]); return; }
+    const search = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("profiles")
+        .select("pseudo, avatar_url")
+        .ilike("pseudo", `${mentionSearch}%`)
+        .limit(5);
+      setMentionResults((data as { pseudo: string; avatar_url?: string | null }[]) ?? []);
+    };
+    void search();
+  }, [mentionSearch]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    const cursor = e.target.selectionStart ?? val.length;
+    const textBeforeCursor = val.slice(0, cursor);
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (mentionMatch) {
+      setMentionSearch(mentionMatch[1]);
+    } else {
+      setMentionSearch(null);
+    }
+  };
+
+  const selectMention = (pseudo: string) => {
+    const cursor = inputRef.current?.selectionStart ?? input.length;
+    const before = input.slice(0, cursor).replace(/@\w*$/, `@${pseudo} `);
+    const after = input.slice(cursor);
+    setInput(before + after);
+    setMentionSearch(null);
+    setMentionResults([]);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !user || sending) return;
     const content = input.trim();
     setSendError(""); setInput(""); setReplyingTo(null); setSending(true);
+    setMentionSearch(null); setMentionResults([]);
     const tmpId = `tmp-${Date.now()}`;
     setComments(prev => [...prev, {
       id: tmpId, content, created_at: new Date().toISOString(),
@@ -1984,6 +2035,20 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
       if (postOwnerId && postOwnerId !== user.id) {
         void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: postId });
       }
+      // Envoyer notifications mention
+      const mentionedPseudos = [...content.matchAll(/@(\w+)/g)].map(m => m[1]);
+      if (mentionedPseudos.length > 0) {
+        const { data: mentionedProfiles } = await supabase.from("profiles")
+          .select("id, pseudo")
+          .in("pseudo", mentionedPseudos);
+        if (mentionedProfiles) {
+          for (const profile of mentionedProfiles as { id: string; pseudo: string }[]) {
+            if (profile.id !== user.id && profile.id !== postOwnerId) {
+              void supabase.from("notifications").insert({ user_id: profile.id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "mention", post_id: postId });
+            }
+          }
+        }
+      }
     }
   };
 
@@ -1996,6 +2061,13 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
     }));
     if (liked) await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id);
     else await supabase.from("comment_likes").upsert({ comment_id: commentId, user_id: user.id }, { ignoreDuplicates: true });
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    const supabase = createClient();
+    await supabase.from("post_comments").delete().eq("id", commentId).eq("user_id", user.id);
   };
 
   const topLevel = comments.filter(c => !c.parent_id);
@@ -2017,10 +2089,10 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
           <p className="text-center text-sm py-8" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
         ) : topLevel.map((c, i) => (
           <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
-            <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+            <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
             {replies(c.id).map(r => (
               <div key={r.id} className="ml-9 mt-2">
-                <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} />
+                <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
               </div>
             ))}
           </motion.div>
@@ -2036,6 +2108,25 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
       )}
       {sendError && <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>}
 
+      {/* Dropdown @mention */}
+      {mentionResults.length > 0 && (
+        <div className="mx-4 mb-1 rounded-xl overflow-hidden shadow-lg" style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(212,192,255,0.6)" }}>
+          {mentionResults.map(profile => (
+            <button key={profile.pseudo} onMouseDown={e => { e.preventDefault(); selectMention(profile.pseudo); }}
+              className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-purple-50 transition-colors cursor-pointer">
+              <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[10px] font-semibold"
+                style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                {profile.avatar_url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                  : profile.pseudo[0]?.toUpperCase()}
+              </div>
+              <span className="text-sm font-medium" style={{ color: "#A78BFA" }}>@{profile.pseudo}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(212,192,255,0.3)" }}>
         <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
           style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
@@ -2044,8 +2135,11 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
             ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
             : <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>{user?.pseudo?.[0]?.toUpperCase() ?? "?"}</span>}
         </div>
-        <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+        <input ref={inputRef} type="text" value={input} onChange={handleInputChange}
+          onKeyDown={e => {
+            if (e.key === "Enter" && mentionResults.length === 0) handleSend();
+            if (e.key === "Escape") { setMentionSearch(null); setMentionResults([]); }
+          }}
           placeholder={user ? (replyingTo ? `↩ @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi"}
           disabled={!user}
           className="flex-1 text-sm outline-none px-3 py-2.5 rounded-2xl"
