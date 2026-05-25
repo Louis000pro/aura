@@ -31,7 +31,49 @@ interface LiveStats {
   recentSessions?: string[];
 }
 
-function buildSystemPrompt(ctx: UserContext | null, pseudo: string, live?: LiveStats | null, programme?: string | null): string {
+interface RichProfile {
+  bio?: string | null;
+  fullName?: string | null;
+  followersCount?: number;
+  followingCount?: number;
+  postsCount?: number;
+  // Derniers posts (max 8)
+  recentPosts?: {
+    type: string;
+    caption?: string | null;
+    createdAt: string;
+    performanceSummary?: string | null;
+  }[];
+  // Nutrition des 7 derniers jours
+  nutritionWeek?: {
+    date: string;
+    calories: number;
+    proteins: number;
+    carbs?: number;
+    fats?: number;
+  }[];
+  // Historique poids (max 10)
+  weightHistory?: { date: string; weight: number }[];
+  // Séances détaillées (max 10)
+  workoutHistory?: {
+    title: string;
+    date: string;
+    durationMinutes?: number;
+    caloriesBurned?: number;
+    exercises?: string[];
+  }[];
+  // Totaux du mois
+  monthWorkouts?: number;
+  monthCaloriesAvg?: number;
+}
+
+function buildSystemPrompt(
+  ctx: UserContext | null,
+  pseudo: string,
+  live?: LiveStats | null,
+  programme?: string | null,
+  rich?: RichProfile | null
+): string {
   const base = `Tu es Aura, un coach de santé IA premium, bienveillant, motivant et expert en nutrition, fitness et bien-être.
 Tu réponds toujours en français, de manière concise et encourageante (2-4 phrases maximum sauf si on te demande un plan détaillé).
 Tu es personnalisé, précis et tu utilises des données réelles de l'utilisateur quand elles sont disponibles.
@@ -71,23 +113,56 @@ Règles du JSON :
 - Pour Repos : type="Repos", titre="", exercices=[], duree=""
 - Génère TOUJOURS 3 à 5 exercices pertinents avec sets×reps${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
+  // ── Bloc stats du jour ──
   const statsBlock = live ? `
 Statistiques du jour :
-- Calories : ${live.calories ?? "—"} kcal / objectif ${live.calorieGoal ?? "—"} kcal
+- Calories : ${live.calories ?? "—"} kcal${live.calorieGoal ? ` / objectif ${live.calorieGoal} kcal` : ""}
 - Protéines : ${live.proteins ?? "—"} g
-- Pas : ${live.steps ?? "—"} / 10 000
+- Pas : ${live.steps ? `${live.steps} / 10 000` : "—"}
 - Sommeil : ${live.sleepHours ? `${Math.floor(live.sleepHours)}h${String(Math.round((live.sleepHours % 1) * 60)).padStart(2, "0")}` : "—"}
 - Score du jour : ${live.score ?? "—"}/100
 - Streak : ${live.streak ?? "—"} jours${live.lastWeight ? `\n- Dernier poids enregistré : ${live.lastWeight} kg` : ""}${live.recentSessions?.length ? `\n- Dernières séances : ${live.recentSessions.join(", ")}` : ""}` : `
 Statistiques du jour :
-- Calories : données non disponibles
-- Remplis ton profil pour des stats en temps réel`;
+- Données non disponibles (profil à compléter)`;
 
-  if (!ctx || ctx.skipped) {
-    return `${base}
+  // ── Bloc profil enrichi ──
+  let richBlock = "";
+  if (rich) {
+    if (rich.bio) richBlock += `\nBio : "${rich.bio}"`;
+    if (rich.followersCount !== undefined) richBlock += `\nCommunauté : ${rich.followersCount} abonnés, ${rich.followingCount ?? 0} abonnements, ${rich.postsCount ?? 0} publications`;
 
-Tu parles à ${pseudo || "un utilisateur"} qui n'a pas encore renseigné son profil sportif complet. Tu peux quand même aider avec les stats ci-dessous. Ne répète pas qu'il doit compléter son profil à chaque message.
-${statsBlock}`;
+    if (rich.weightHistory && rich.weightHistory.length > 1) {
+      const oldest = rich.weightHistory[rich.weightHistory.length - 1];
+      const newest = rich.weightHistory[0];
+      const diff = Math.round((newest.weight - oldest.weight) * 10) / 10;
+      const trend = diff > 0 ? `+${diff} kg` : `${diff} kg`;
+      richBlock += `\nÉvolution du poids : ${oldest.weight} kg → ${newest.weight} kg (${trend} sur ${rich.weightHistory.length} mesures)`;
+    }
+
+    if (rich.nutritionWeek && rich.nutritionWeek.length > 0) {
+      const avgCals = Math.round(rich.nutritionWeek.reduce((s, d) => s + d.calories, 0) / rich.nutritionWeek.length);
+      const avgProt = Math.round(rich.nutritionWeek.reduce((s, d) => s + d.proteins, 0) / rich.nutritionWeek.length);
+      richBlock += `\nMoyenne nutrition (7j) : ${avgCals} kcal/j, ${avgProt}g protéines/j`;
+      const days = rich.nutritionWeek.slice(0, 5).map(d => `${d.date.slice(5)}: ${d.calories}kcal`).join(" | ");
+      richBlock += `\nDétail : ${days}`;
+    }
+
+    if (rich.workoutHistory && rich.workoutHistory.length > 0) {
+      richBlock += `\nSéances récentes (${rich.workoutHistory.length}) :`;
+      rich.workoutHistory.slice(0, 5).forEach(s => {
+        richBlock += `\n  • ${s.date.slice(5)} — ${s.title}${s.durationMinutes ? ` (${s.durationMinutes} min)` : ""}${s.caloriesBurned ? `, ${s.caloriesBurned} kcal` : ""}`;
+        if (s.exercises?.length) richBlock += ` : ${s.exercises.slice(0, 3).join(", ")}`;
+      });
+    }
+
+    if (rich.monthWorkouts !== undefined) richBlock += `\nSéances ce mois-ci : ${rich.monthWorkouts}`;
+
+    if (rich.recentPosts && rich.recentPosts.length > 0) {
+      const workoutPosts = rich.recentPosts.filter(p => p.type === "workout");
+      const mealPosts = rich.recentPosts.filter(p => p.type === "meal");
+      if (workoutPosts.length) richBlock += `\nPublications sport récentes (${workoutPosts.length}) : ${workoutPosts.slice(0, 3).map(p => `"${p.caption?.slice(0, 40) ?? p.performanceSummary ?? p.type}"`).join(", ")}`;
+      if (mealPosts.length) richBlock += `\nPublications repas récentes (${mealPosts.length}) : ${mealPosts.slice(0, 3).map(p => `"${p.caption?.slice(0, 40) ?? p.type}"`).join(", ")}`;
+    }
   }
 
   const goalLabels: Record<string, string> = {
@@ -102,6 +177,13 @@ ${statsBlock}`;
     "souplesse": "souplesse",
   };
 
+  if (!ctx || ctx.skipped) {
+    return `${base}
+
+Tu parles à ${pseudo || "un utilisateur"} qui n'a pas encore renseigné son profil sportif complet.
+${statsBlock}${richBlock}`;
+  }
+
   const goalsText = ctx.goals?.map((g) => goalLabels[g] ?? g).join(", ") || "non précisé";
 
   return `${base}
@@ -111,7 +193,7 @@ Profil de ${ctx.pseudo || pseudo || "l'utilisateur"} :
 - Objectifs : ${goalsText}
 - Niveau : ${ctx.level || "non précisé"} | ${ctx.sessionsPerWeek || "?"} séances/semaine
 - Alimentation : régime ${ctx.diet || "non précisé"}, ${ctx.mealsPerDay || "?"} repas/jour
-${statsBlock}`;
+${statsBlock}${richBlock}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -127,6 +209,7 @@ export async function POST(req: NextRequest) {
   let pseudo = "";
   let liveStats: LiveStats | null = null;
   let programme: string | null = null;
+  let richProfile: RichProfile | null = null;
 
   try {
     const body = await req.json();
@@ -135,11 +218,12 @@ export async function POST(req: NextRequest) {
     pseudo = body.pseudo ?? "";
     liveStats = body.liveStats ?? null;
     programme = body.programme ?? null;
+    richProfile = body.richProfile ?? null;
   } catch {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme);
+  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile);
 
   try {
     const stream = await groq.chat.completions.create({

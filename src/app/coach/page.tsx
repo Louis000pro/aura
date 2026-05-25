@@ -131,6 +131,7 @@ export default function CoachPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [userContext, setUserContext] = useState<UserContext | null>(null);
   const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
+  const [richProfile, setRichProfile] = useState<Record<string, unknown> | null>(null);
 
   /* ── Refs ── */
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -221,66 +222,122 @@ export default function CoachPage() {
         }
       }
 
-      /* Today's nutrition */
-      const { data: nutritionRows } = await supabase
-        .from("nutrition_logs")
-        .select("calories, proteins")
-        .eq("user_id", user.id)
-        .eq("date", todayISODate());
+      // ── Toutes les requêtes en parallèle ──
+      const today = todayISODate();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
-      let totalCalories = 0, totalProteins = 0;
-      if (nutritionRows && nutritionRows.length > 0) {
-        totalCalories = nutritionRows.reduce((sum: number, r: { calories: number }) => sum + (r.calories ?? 0), 0);
-        totalProteins = nutritionRows.reduce((sum: number, r: { proteins: number }) => sum + (r.proteins ?? 0), 0);
+      const [
+        nutritionTodayRes,
+        nutritionWeekRes,
+        sessionsRes,
+        weightHistoryRes,
+        followersRes,
+        followingRes,
+        postsRes,
+        profileBioRes,
+      ] = await Promise.all([
+        // Nutrition aujourd'hui
+        supabase.from("nutrition_logs").select("calories, proteins, carbs, fats").eq("user_id", user.id).eq("date", today),
+        // Nutrition 7 derniers jours
+        supabase.from("nutrition_logs").select("date, calories, proteins, carbs, fats").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }),
+        // Séances (30 derniers jours)
+        supabase.from("workout_sessions").select("title, started_at, duration_minutes, calories_burned, exercises").eq("user_id", user.id).gte("started_at", thirtyDaysAgo).order("started_at", { ascending: false }).limit(15),
+        // Historique poids
+        supabase.from("weight_logs").select("weight_kg, date").eq("user_id", user.id).order("date", { ascending: false }).limit(10),
+        // Nombre d'abonnés
+        supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", user.id),
+        // Nombre d'abonnements
+        supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", user.id),
+        // Posts récents
+        supabase.from("posts").select("type, caption, performance_data, media_type, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
+        // Bio du profil
+        supabase.from("profiles").select("bio, full_name").eq("id", user.id).maybeSingle(),
+      ]);
+
+      // ── Today's nutrition ──
+      const nutritionRows = nutritionTodayRes.data ?? [];
+      const totalCalories = nutritionRows.reduce((s: number, r: { calories: number }) => s + (r.calories ?? 0), 0);
+      const totalProteins = nutritionRows.reduce((s: number, r: { proteins: number }) => s + (r.proteins ?? 0), 0);
+
+      // ── Streak ──
+      const sessionRows = sessionsRes.data ?? [];
+      const sessionDays = new Set((sessionRows as { started_at: string }[]).map(s => s.started_at.slice(0, 10)));
+      let streak = 0;
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        if (sessionDays.has(d.toISOString().slice(0, 10))) streak++;
+        else if (i > 0) break;
       }
 
-      /* Recent workout sessions (last 5) */
-      const { data: sessionRows } = await supabase
-        .from("workout_sessions")
-        .select("title, started_at, duration_minutes, calories_burned")
-        .eq("user_id", user.id)
-        .order("started_at", { ascending: false })
-        .limit(5);
-
-      const recentSessions = (sessionRows ?? []).map((s: { title: string; started_at: string; duration_minutes?: number }) => {
+      // ── LiveStats ──
+      const weightHistory = (weightHistoryRes.data ?? []) as { weight_kg: number; date: string }[];
+      const recentSessions = sessionRows.slice(0, 5).map((s: { title: string; started_at: string; duration_minutes?: number }) => {
         const d = new Date(s.started_at);
         const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
         return `${dayNames[d.getDay()]} : ${s.title}${s.duration_minutes ? ` (${s.duration_minutes} min)` : ""}`;
       });
 
-      /* Last recorded weight */
-      const { data: weightRow } = await supabase
-        .from("weight_logs")
-        .select("weight_kg, date")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      /* Streak */
-      const { data: streakData } = await supabase
-        .from("workout_sessions")
-        .select("started_at")
-        .eq("user_id", user.id)
-        .order("started_at", { ascending: false })
-        .limit(60);
-      let streak = 0;
-      if (streakData && streakData.length > 0) {
-        const days = new Set((streakData as { started_at: string }[]).map(s => s.started_at.slice(0, 10)));
-        const today = new Date();
-        for (let i = 0; i < 60; i++) {
-          const d = new Date(today); d.setDate(d.getDate() - i);
-          if (days.has(d.toISOString().slice(0, 10))) streak++;
-          else if (i > 0) break;
-        }
-      }
-
       setLiveStats({
         calories: Math.round(totalCalories),
         proteins: Math.round(totalProteins),
         streak: streak > 0 ? streak : undefined,
-        lastWeight: weightRow?.weight_kg ?? undefined,
+        lastWeight: weightHistory[0]?.weight_kg ?? undefined,
         recentSessions: recentSessions.length > 0 ? recentSessions : undefined,
+      });
+
+      // ── Nutrition semaine : regrouper par jour ──
+      const nutritionWeekMap: Record<string, { calories: number; proteins: number; carbs: number; fats: number }> = {};
+      for (const row of (nutritionWeekRes.data ?? []) as { date: string; calories: number; proteins: number; carbs?: number; fats?: number }[]) {
+        if (!nutritionWeekMap[row.date]) nutritionWeekMap[row.date] = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+        nutritionWeekMap[row.date].calories += row.calories ?? 0;
+        nutritionWeekMap[row.date].proteins += row.proteins ?? 0;
+        nutritionWeekMap[row.date].carbs += row.carbs ?? 0;
+        nutritionWeekMap[row.date].fats += row.fats ?? 0;
+      }
+      const nutritionWeek = Object.entries(nutritionWeekMap)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(([date, vals]) => ({ date, calories: Math.round(vals.calories), proteins: Math.round(vals.proteins), carbs: Math.round(vals.carbs), fats: Math.round(vals.fats) }));
+
+      // ── Posts récents ──
+      const recentPosts = (postsRes.data ?? []).map((p: { type: string; caption?: string | null; performance_data?: Record<string, unknown> | null; created_at: string }) => {
+        let performanceSummary: string | null = null;
+        if (p.performance_data) {
+          const pd = p.performance_data as Record<string, unknown>;
+          const parts: string[] = [];
+          if (pd.duration) parts.push(`${pd.duration} min`);
+          if (pd.calories) parts.push(`${pd.calories} kcal`);
+          if (pd.exercises && Array.isArray(pd.exercises)) parts.push(`${(pd.exercises as unknown[]).length} exercices`);
+          if (parts.length) performanceSummary = parts.join(", ");
+        }
+        return { type: p.type, caption: p.caption, createdAt: p.created_at.slice(0, 10), performanceSummary };
+      });
+
+      // ── Workout history enrichi ──
+      const workoutHistory = sessionRows.map((s: { title: string; started_at: string; duration_minutes?: number; calories_burned?: number; exercises?: unknown }) => ({
+        title: s.title,
+        date: s.started_at.slice(0, 10),
+        durationMinutes: s.duration_minutes,
+        caloriesBurned: s.calories_burned,
+        exercises: Array.isArray(s.exercises) ? (s.exercises as { name?: string; title?: string }[]).slice(0, 5).map(e => e.name ?? e.title ?? "exercice") : undefined,
+      }));
+
+      // ── Totaux mois ──
+      const monthCalories = nutritionWeek.reduce((s, d) => s + d.calories, 0);
+      const monthCaloriesAvg = nutritionWeek.length > 0 ? Math.round(monthCalories / nutritionWeek.length) : undefined;
+
+      setRichProfile({
+        bio: profileBioRes.data?.bio ?? null,
+        fullName: profileBioRes.data?.full_name ?? null,
+        followersCount: followersRes.count ?? 0,
+        followingCount: followingRes.count ?? 0,
+        postsCount: recentPosts.length,
+        recentPosts,
+        nutritionWeek,
+        weightHistory: weightHistory.map(w => ({ date: w.date, weight: w.weight_kg })),
+        workoutHistory,
+        monthWorkouts: sessionRows.length,
+        monthCaloriesAvg,
       });
     };
 
@@ -323,6 +380,7 @@ export default function CoachPage() {
             userContext,
             pseudo: user?.pseudo,
             liveStats,
+            richProfile,
           }),
           signal: abort.signal,
         });
