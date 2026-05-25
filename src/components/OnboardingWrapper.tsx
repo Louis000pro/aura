@@ -16,34 +16,42 @@ export default function OnboardingWrapper() {
   const [checked, setChecked]           = useState(false);
 
   /* ── Vérifier onboarding_completed en DB ── */
+  const checkCompleted = async () => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const completed = data?.onboarding_completed === true;
+    setChecked(true);
+
+    if (!completed) {
+      if (isNewUser) {
+        setTimeout(() => setShowModal(true), 800);
+      } else {
+        if (!bubbleDismissed) setShowBubble(true);
+      }
+    } else {
+      setShowBubble(false);
+    }
+  };
+
   useEffect(() => {
     if (!user?.id || isLoading) return;
-
-    const check = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("profiles")
-        .select("onboarding_completed")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const completed = data?.onboarding_completed === true;
-      setChecked(true);
-
-      if (!completed) {
-        if (isNewUser) {
-          // Première inscription → modal complet après un court délai
-          setTimeout(() => setShowModal(true), 800);
-        } else {
-          // Connexion classique sans objectifs → juste la bulle
-          if (!bubbleDismissed) setShowBubble(true);
-        }
-      }
-    };
-
-    void check();
+    void checkCompleted();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, isLoading, isNewUser]);
+
+  // Ré-écouter si les objectifs sont réinitialisés depuis parametres
+  useEffect(() => {
+    const handler = () => { setBubbleDismissed(false); void checkCompleted(); };
+    window.addEventListener("aura:objectives-reset", handler);
+    return () => window.removeEventListener("aura:objectives-reset", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleComplete = async (data: OnboardingData) => {
     setShowModal(false);

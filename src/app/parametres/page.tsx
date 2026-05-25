@@ -139,6 +139,8 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
   const handleSave = async () => {
     if (!user?.id) return;
     setSaving(true);
+    // onboarding_completed = true seulement si les données essentielles sont remplies
+    const isCompleted = !!(age && weight && level && goals.length > 0);
     await supabase.from("profiles").upsert({
       id: user.id,
       onboarding_age: age ? parseInt(age) : null,
@@ -150,7 +152,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
       onboarding_sessions_week: sessions ? parseInt(sessions) : null,
       onboarding_meals_day: meals ? parseInt(meals) : null,
       onboarding_diet: diet,
-      onboarding_completed: true,
+      onboarding_completed: isCompleted,
     }, { onConflict: "id" });
     setSaving(false);
     setSuccess(true);
@@ -304,11 +306,15 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
             <div className="flex gap-2">
               <motion.button
                 whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.01 }}
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm("Réinitialiser tous tes objectifs ?")) {
                     setAge(""); setHeight(""); setWeight(""); setGender("homme");
                     setSessions("3"); setMeals("3"); setDiet("Aucun régime particulier");
                     setGoals([]);
+                    if (user?.id) {
+                      await supabase.from("profiles").update({ onboarding_completed: false }).eq("id", user.id);
+                      window.dispatchEvent(new Event("aura:objectives-reset"));
+                    }
                   }
                 }}
                 className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
@@ -318,11 +324,15 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.01 }}
-                onClick={() => {
+                onClick={async () => {
                   if (window.confirm("Créer un 2ème objectif ? Les données actuelles seront remplacées après sauvegarde.")) {
                     setAge(""); setHeight(""); setWeight(""); setGender("homme");
                     setSessions("3"); setMeals("3"); setDiet("Aucun régime particulier");
                     setGoals([]);
+                    if (user?.id) {
+                      await supabase.from("profiles").update({ onboarding_completed: false }).eq("id", user.id);
+                      window.dispatchEvent(new Event("aura:objectives-reset"));
+                    }
                   }
                 }}
                 className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
