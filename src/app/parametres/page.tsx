@@ -297,12 +297,8 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
     }, { onConflict: "id" });
     setSaving(false);
     setSuccess(true);
-    if (isCompleted) {
-      setShowCelebration(true);
-      setTimeout(() => { setShowCelebration(false); onSaved(); onClose(); }, 3400);
-    } else {
-      setTimeout(() => { onSaved(); onClose(); }, 1200);
-    }
+    setShowCelebration(true);
+    setTimeout(() => { setShowCelebration(false); onSaved(); onClose(); }, 3400);
   };
 
   return (
