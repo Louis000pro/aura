@@ -76,6 +76,14 @@ type DirectMessage = {
   read_at: string | null;
   reply_to_id?: string | null;
   reply_to_content?: string | null; // fetched client-side
+  post_id?: string | null;          // post partagé via DM
+  shared_post?: {                   // données du post, fetched client-side
+    id: string;
+    caption?: string | null;
+    media_url?: string | null;
+    media_type?: string | null;
+    type?: string;
+  } | null;
   reactions?: DmReaction[];
 };
 
@@ -1342,35 +1350,65 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<DMPartner[]>([]);
+  const [friends, setFriends] = useState<DMPartner[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 120); }, []);
+  // Charger les amis (personnes que l'user suit) par défaut
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from("followers")
+      .select("following_id, profiles!following_id(id, pseudo, full_name, avatar_url)")
+      .eq("follower_id", user.id)
+      .limit(20)
+      .then(({ data }) => {
+        if (data) {
+          const list = data
+            .map((d: { profiles: DMPartner }) => d.profiles)
+            .filter(Boolean);
+          setFriends(list);
+        }
+      });
+  }, [user]);
 
   useEffect(() => {
     if (!search.trim()) { setResults([]); return; }
     const timer = setTimeout(async () => {
       setLoading(true);
       const supabase = createClient();
-      const { data } = await supabase.from("profiles").select("id, pseudo, full_name, avatar_url").ilike("pseudo", `%${search.trim()}%`).limit(10);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, pseudo, full_name, avatar_url")
+        .ilike("pseudo", `%${search.trim()}%`)
+        .neq("id", user?.id ?? "")
+        .limit(10);
       setResults((data as DMPartner[]) ?? []);
       setLoading(false);
     }, 280);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, user]);
 
   const sendPost = async (partner: DMPartner) => {
     if (!user || sending) return;
     setSending(partner.id);
     const supabase = createClient();
-    const title = post.performance_data?.title ?? "Performance";
-    const msg = `[Post partagé] ${title}${post.caption ? ` — ${post.caption.slice(0, 80)}` : ""}`;
-    await supabase.from("direct_messages").insert({ sender_id: user.id, receiver_id: partner.id, content: msg });
+    const caption = post.caption?.slice(0, 60) ?? "";
+    const msg = caption ? `📎 ${caption}` : "📎 Post partagé";
+    await supabase.from("direct_messages").insert({
+      sender_id: user.id,
+      receiver_id: partner.id,
+      content: msg,
+      post_id: post.id,
+    });
     setSending(null);
     onSent(partner);
     onClose();
   };
+
+  const displayList = search.trim() ? results : friends;
 
   return (
     <motion.div
@@ -1411,13 +1449,16 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
         </div>
 
         <div className="flex flex-col gap-1 max-h-52 overflow-y-auto">
-          {results.length === 0 && !search.trim() && (
-            <p className="text-center text-xs py-5 font-light" style={{ color: "#C4C9D4" }}>Recherche un destinataire par pseudo</p>
+          {!search.trim() && friends.length === 0 && (
+            <p className="text-center text-xs py-5 font-light" style={{ color: "#C4C9D4" }}>Abonne-toi à des gens pour les envoyer en DM</p>
           )}
-          {results.length === 0 && search.trim() && !loading && (
+          {!search.trim() && friends.length > 0 && (
+            <p className="text-[10px] font-semibold px-1 pb-1" style={{ color: "#A0AEC0" }}>Mes abonnements</p>
+          )}
+          {search.trim() && displayList.length === 0 && !loading && (
             <p className="text-center text-xs py-5 font-light" style={{ color: "#A0AEC0" }}>Aucun résultat</p>
           )}
-          {results.map((r) => (
+          {displayList.map((r) => (
             <motion.button
               key={r.id}
               whileHover={{ x: 2 }}
@@ -2128,6 +2169,8 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   const [reported, setReported] = useState(false);
   const [shared, setShared] = useState(false);
   const [doubleTapHeart, setDoubleTapHeart] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showShareToDM, setShowShareToDM] = useState(false);
 
   // Double-tap to like
   const lastTapRef = useRef(0);
@@ -2234,13 +2277,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
     }
   };
 
-  const handleShare = () => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    copyToClipboard(url).finally(() => {
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
-    });
-  };
+  const handleShare = () => setShowShareModal(true);
 
   const handleReport = () => {
     setReported(true);
@@ -2463,6 +2500,29 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
             onToggleCaptions={() => setCaptionsOn(c => !c)}
             onReport={handleReport}
             onClose={() => setShowSettings(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Share modal — position:fixed échappe l'overflow:hidden du parent */}
+      <AnimatePresence>
+        {showShareModal && (
+          <ShareModal
+            postCaption={post.caption}
+            onClose={() => setShowShareModal(false)}
+            onShareDM={() => { setShowShareModal(false); setShowShareToDM(true); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showShareToDM && (
+          <ShareToDMModal
+            post={post}
+            onClose={() => setShowShareToDM(false)}
+            onSent={(_partner) => {
+              setShared(true);
+              setTimeout(() => setShared(false), 2000);
+            }}
           />
         )}
       </AnimatePresence>
@@ -2991,7 +3051,7 @@ function CommunautePageInner() {
     const supabase = createClient();
     const { data } = await supabase
       .from("direct_messages")
-      .select("id, sender_id, receiver_id, content, created_at, read_at, reply_to_id")
+      .select("id, sender_id, receiver_id, content, created_at, read_at, reply_to_id, post_id")
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
       .order("created_at", { ascending: true })
       .limit(100);
@@ -3038,9 +3098,26 @@ function CommunautePageInner() {
         }
       }
 
+      // Fetch shared post data for messages that include a post_id
+      const sharedPostIds = [...new Set(msgs.filter(m => m.post_id).map(m => m.post_id!))];
+      let sharedPostMap: Record<string, DirectMessage["shared_post"]> = {};
+      if (sharedPostIds.length > 0) {
+        const { data: postData } = await supabase
+          .from("posts")
+          .select("id, caption, media_url, media_type, type")
+          .in("id", sharedPostIds);
+        if (postData) {
+          sharedPostMap = Object.fromEntries(
+            (postData as { id: string; caption?: string; media_url?: string; media_type?: string; type?: string }[])
+              .map(p => [p.id, p])
+          );
+        }
+      }
+
       setDmMessages(msgs.map(m => ({
         ...m,
         reply_to_content: m.reply_to_id ? replyMap[m.reply_to_id] ?? null : null,
+        shared_post: m.post_id ? sharedPostMap[m.post_id] ?? null : null,
         reactions: reactionsMap[m.id] ?? [],
       })));
 
@@ -4352,13 +4429,41 @@ function CommunautePageInner() {
                             </div>
                           )}
                           <div
-                            className="px-4 py-2.5 rounded-2xl text-sm font-light max-w-[260px]"
+                            className="rounded-2xl text-sm font-light max-w-[260px] overflow-hidden"
                             style={isMe
                               ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
                               : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
                             }
                           >
-                            {msg.content}
+                            {/* Mini-carte si le message contient un post partagé */}
+                            {msg.shared_post ? (
+                              <div>
+                                {msg.shared_post.media_url && (
+                                  <div className="relative" style={{ height: 140, background: "#000" }}>
+                                    {msg.shared_post.media_type === "video"
+                                      ? <video src={msg.shared_post.media_url} className="w-full h-full object-cover" muted playsInline />
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      : <img src={msg.shared_post.media_url} alt="" className="w-full h-full object-cover" />
+                                    }
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
+                                        <svg width="10" height="12" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="px-3 py-2">
+                                  {msg.shared_post.caption && (
+                                    <p className="text-xs font-light line-clamp-2" style={{ color: "#2D3748" }}>{msg.shared_post.caption}</p>
+                                  )}
+                                  {msg.content && msg.content !== "📎 Post partagé" && (
+                                    <p className="text-xs mt-1 font-light" style={{ color: "#718096" }}>{msg.content.replace(/^📎\s*/, "")}</p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="px-4 py-2.5">{msg.content}</div>
+                            )}
                           </div>
                         </motion.div>
 
