@@ -812,7 +812,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-8 pt-3 flex-shrink-0">
+        <div className="px-6 pb-8 pt-3 flex-shrink-0 flex flex-col gap-3">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
@@ -826,6 +826,51 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
           >
             Sauvegarder
           </motion.button>
+
+          {/* Séparateur */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
+            <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>ou</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
+          </div>
+
+          <div className="flex gap-2">
+            {/* Recommencer */}
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={() => {
+                if (confirm("Réinitialiser tous tes objectifs ?")) {
+                  setData({ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" });
+                }
+              }}
+              className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+              style={{
+                background: "rgba(254,226,226,0.8)",
+                border: "1.5px solid rgba(252,129,129,0.35)",
+                color: "#E53E3E",
+              }}
+            >
+              🔄 Recommencer
+            </motion.button>
+
+            {/* Créer un 2ème objectif */}
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={() => {
+                if (confirm("Créer un 2ème objectif ? Tes données actuelles seront remplacées après sauvegarde.")) {
+                  setData({ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" });
+                }
+              }}
+              className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+              style={{
+                background: "rgba(254,226,226,0.6)",
+                border: "1.5px solid rgba(252,129,129,0.3)",
+                color: "#C53030",
+              }}
+            >
+              ➕ 2ème objectif
+            </motion.button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
