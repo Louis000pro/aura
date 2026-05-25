@@ -112,7 +112,7 @@ export default function OnboardingWrapper() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.88 }}
             transition={{ type: "spring", damping: 22, stiffness: 280 }}
-            className="fixed bottom-6 right-4 z-50 max-w-[220px]"
+            className="fixed bottom-2 right-3 z-50 max-w-[220px]"
           >
             <div
               className="relative rounded-2xl px-4 py-3 shadow-xl"
