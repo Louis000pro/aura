@@ -2260,9 +2260,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
       style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }}
       onClick={e => e.stopPropagation()}
     >
-      <div className="flex justify-center pt-3 pb-4">
-        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
-      </div>
+      <div className="pt-5" />
       <div className="px-5">
         <p className="text-sm font-semibold mb-4" style={{ color: "#2D3748" }}>Paramètres vidéo</p>
         {/* Vitesse */}
@@ -2496,7 +2494,7 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
           COLONNE VIDÉO (9:16)
       ══════════════════════════════════ */}
       <div className="relative flex-shrink-0 overflow-hidden"
-        style={{ height: "calc(100% - 16px)", aspectRatio: "9/16", background: "#000", borderRadius: 20, cursor: "pointer" }}
+        style={{ height: "calc(100% - 4px)", aspectRatio: "9/16", background: "#000", borderRadius: 16, cursor: "pointer" }}
         onClick={handleVideoTap}>
 
         {/* Vidéo principale */}
@@ -2642,11 +2640,10 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
-                className="w-10 h-10 rounded-full object-cover"
-                style={{ border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }} />
+                className="w-10 h-10 rounded-full object-cover" />
             ) : (
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "2.5px solid rgba(167,139,250,0.6)", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }}>
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
                 {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
@@ -2790,9 +2787,9 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
   return (
     <div ref={containerRef}
       className="overflow-y-scroll mx-auto"
-      style={{ height: "calc(100dvh - 120px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
+      style={{ height: "calc(100dvh - 64px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100dvh - 120px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+        <div key={post.id} style={{ height: "calc(100dvh - 64px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
           <VideoCard post={post} isActive={i === activeIndex} />
         </div>
       ))}
