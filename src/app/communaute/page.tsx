@@ -1794,6 +1794,138 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   );
 }
 
+/* ── Hashtag Videos Page (plein écran, grille 3 colonnes) ──── */
+function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
+  tag: string;
+  onClose: () => void;
+  onOpenVideo: (postId: string) => void;
+}) {
+  const [videos, setVideos] = useState<RealPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const supabase = createClient();
+    Promise.all([
+      supabase.from("posts").select(`
+        id, type, caption, description, media_url, media_type, views, created_at, user_id,
+        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
+      `).eq("media_type", "video").ilike("caption", `%${tag}%`).limit(50),
+      supabase.from("posts").select(`
+        id, type, caption, description, media_url, media_type, views, created_at, user_id,
+        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
+      `).eq("media_type", "video").ilike("description", `%${tag}%`).limit(50),
+    ]).then(([capRes, descRes]) => {
+      if (cancelled) return;
+      const all = [...(capRes.data ?? []), ...(descRes.data ?? [])] as unknown as RealPost[];
+      const seen = new Set<string>();
+      const deduped = all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
+      // Tri par vues décroissant
+      deduped.sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
+      setVideos(deduped);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [tag]);
+
+  const fmtViews = (n?: number) => {
+    if (!n) return "0";
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
+    return `${n}`;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: "100%" }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: "100%" }}
+      transition={{ type: "spring", damping: 32, stiffness: 300 }}
+      className="fixed inset-0 z-[9999] flex flex-col overflow-hidden"
+      style={{ background: "#FAFAFA" }}
+    >
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 px-4 pt-5 pb-3 flex-shrink-0"
+        style={{ borderBottom: "1px solid rgba(212,192,255,0.25)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+          style={{ background: "rgba(240,235,255,0.8)" }}>
+          <ArrowLeft size={16} strokeWidth={2} style={{ color: "#2D3748" }} />
+        </motion.button>
+        <div className="flex-1">
+          <h1 className="text-base font-bold" style={{ color: "#A78BFA" }}>{tag}</h1>
+          {!loading && (
+            <p className="text-[11px]" style={{ color: "#A0AEC0" }}>
+              {videos.length} vidéo{videos.length !== 1 ? "s" : ""} · triées par vues
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Grille ── */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="grid grid-cols-3 gap-0.5 p-0.5">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="aspect-[9/16] animate-pulse"
+                style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.2),rgba(212,192,255,0.35))" }} />
+            ))}
+          </div>
+        ) : videos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-24">
+            <span className="text-4xl">🎬</span>
+            <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune vidéo pour {tag}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-0.5 p-0.5">
+            {videos.map(video => (
+              <motion.div
+                key={video.id}
+                whileTap={{ opacity: 0.8 }}
+                className="relative aspect-[9/16] overflow-hidden cursor-pointer bg-black"
+                onClick={() => onOpenVideo(video.id)}
+              >
+                {/* Thumbnail vidéo */}
+                <video
+                  src={video.media_url ?? undefined}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  muted playsInline preload="metadata"
+                  style={{ pointerEvents: "none" }}
+                />
+                {/* Overlay sombre en bas */}
+                <div className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
+                  style={{ background: "linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 100%)" }} />
+                {/* Icône play */}
+                <div className="absolute top-2 right-2">
+                  <Play size={14} strokeWidth={0} fill="rgba(255,255,255,0.9)" />
+                </div>
+                {/* Vues */}
+                {(video.views ?? 0) > 0 && (
+                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-white drop-shadow-sm">{fmtViews(video.views)}</span>
+                  </div>
+                )}
+                {/* Avatar auteur */}
+                <div className="absolute top-1.5 left-1.5">
+                  {video.author?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={video.author.avatar_url} alt=""
+                      className="w-5 h-5 rounded-full object-cover"
+                      style={{ border: "1px solid rgba(255,255,255,0.7)" }} />
+                  ) : null}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 /* ── Hashtag bottom sheet ──────────────────────────────────── */
 function HashtagSheet({ tag, currentUserId, onClose }: {
   tag: string;
@@ -2820,8 +2952,8 @@ function CommunautePageInner() {
   } | null>(null);
 
   const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
-  // Filtre hashtag pour le feed vidéo (onglet Vidéos)
-  const [videoHashtagFilter, setVideoHashtagFilter] = useState<string | null>(null);
+  // Modal plein écran hashtag vidéos
+  const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -2888,14 +3020,6 @@ function CommunautePageInner() {
     return sorted;
   }, [realFeedPosts, hiddenRealIds, feedMode, getScore]);
 
-  // Posts vidéo filtrés par hashtag (si filtre actif)
-  const filteredVideoPosts = useMemo(() => {
-    if (!videoHashtagFilter) return sortedFeedPosts;
-    const tag = videoHashtagFilter.toLowerCase();
-    return sortedFeedPosts.filter(p =>
-      p.caption?.toLowerCase().includes(tag) || p.description?.toLowerCase().includes(tag)
-    );
-  }, [sortedFeedPosts, videoHashtagFilter]);
 
   // Charger les abonnements réels depuis Supabase
   useEffect(() => {
@@ -3834,28 +3958,13 @@ function CommunautePageInner() {
                 </div>
               )}
 
-              {/* ── Bannière filtre hashtag actif ── */}
-              {feedTab === "videos" && videoHashtagFilter && (
-                <div className="flex items-center justify-center gap-2 py-1"
-                  style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
-                    style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B" }}>
-                    <span>{videoHashtagFilter}</span>
-                    <button onClick={() => setVideoHashtagFilter(null)} className="cursor-pointer ml-1 opacity-60 hover:opacity-100">✕</button>
-                  </div>
-                </div>
-              )}
-
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
                 <TikTokFeed
-                  posts={filteredVideoPosts}
+                  posts={sortedFeedPosts}
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
-                  onHashtagClick={(tag) => {
-                    setVideoHashtagFilter(tag);
-                    setHighlightVideoId(null);
-                  }}
+                  onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                 />
               )}
             </div>
@@ -4895,7 +5004,22 @@ function CommunautePageInner() {
         })()}
       </AnimatePresence>
 
-      {/* Hashtag bottom sheet */}
+      {/* Hashtag Videos Modal (plein écran, depuis onglet vidéos) */}
+      <AnimatePresence>
+        {hashtagVideosTag && (
+          <HashtagVideosModal
+            tag={hashtagVideosTag}
+            onClose={() => setHashtagVideosTag(null)}
+            onOpenVideo={(postId) => {
+              setHashtagVideosTag(null);
+              setFeedTab("videos");
+              setHighlightVideoId(postId);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Hashtag bottom sheet (depuis onglet publications) */}
       <AnimatePresence>
         {activeHashtag && (
           <HashtagSheet
