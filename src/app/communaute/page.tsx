@@ -2933,9 +2933,9 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick }:
   return (
     <div ref={containerRef}
       className="overflow-y-scroll mx-auto"
-      style={{ height: "100%", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
+      style={{ height: "calc(100dvh - 256px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "100%", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+        <div key={post.id} style={{ height: "calc(100dvh - 256px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
           <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} />
         </div>
       ))}
@@ -3712,7 +3712,7 @@ function CommunautePageInner() {
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
-      <div className={`relative flex flex-col flex-1 ${feedTab === "videos" ? "overflow-hidden min-h-0" : ""}`}>
+      <div className="relative flex flex-col flex-1">
       {/* Top Bar — masqué sur l'onglet vidéos pour éviter que la page puisse scroller et couper la vidéo */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -3772,7 +3772,7 @@ function CommunautePageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={feedTab === "videos" ? "flex flex-col flex-1 overflow-hidden min-h-0 gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
+            className={feedTab === "videos" ? "flex flex-col gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
           >
             {/* Stories */}
             {(() => {
@@ -3925,7 +3925,7 @@ function CommunautePageInner() {
                 pour que leur centre visuel soit aligné avec le centre de la
                 colonne vidéo (et non le centre vidéo+sidebar).
             ══════════════════════════════════════════════════════ */}
-            <div className={feedTab === "videos" ? "flex flex-col flex-1 overflow-hidden min-h-0" : ""} style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
+            <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
 
               {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
               <div className="flex items-center justify-center gap-2 py-1"
@@ -3973,7 +3973,7 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div className="flex-1 min-h-0 overflow-hidden mt-2">
+                <div className="mt-2">
                 <TikTokFeed
                   posts={sortedFeedPosts}
                   initialPostId={highlightVideoId}
