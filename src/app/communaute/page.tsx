@@ -3721,16 +3721,12 @@ function CommunautePageInner() {
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
 
-      {/* Top Bar — en overlay absolu sur videos tab pour ne pas réduire la vidéo */}
+      {/* Top Bar — masqué par max-height quand headerCollapsed */}
       <div style={feedTab === "videos" ? {
-        position: "absolute",
-        top: 0, left: 0, right: 0,
-        zIndex: 20,
-        background: "rgb(248,247,255)",
-        transition: "opacity 0.35s ease, transform 0.35s ease",
+        maxHeight: headerCollapsed ? 0 : 90,
+        overflow: "hidden",
+        transition: "max-height 0.35s ease, opacity 0.3s ease",
         opacity: headerCollapsed ? 0 : 1,
-        transform: headerCollapsed ? "translateY(-12px)" : "translateY(0)",
-        pointerEvents: headerCollapsed ? "none" : "auto",
       } : {}}>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -3793,15 +3789,12 @@ function CommunautePageInner() {
             exit={{ opacity: 0 }}
             className={feedTab === "videos" ? "flex flex-col gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
           >
-            {/* Stories — absolute sur videos tab pour ne pas réduire la hauteur du feed */}
+            {/* Stories — masquées par max-height quand headerCollapsed */}
             <div style={feedTab === "videos" ? {
-              position: "absolute",
-              top: 56, left: 0, right: 0,
-              zIndex: 18,
-              background: "rgb(248,247,255)",
+              maxHeight: headerCollapsed ? 0 : 150,
+              overflow: "hidden",
+              transition: "max-height 0.35s ease, opacity 0.3s ease",
               opacity: headerCollapsed ? 0 : 1,
-              transition: "opacity 0.3s ease",
-              pointerEvents: headerCollapsed ? "none" : "auto",
             } : {}}>
             {(() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
@@ -4009,7 +4002,7 @@ function CommunautePageInner() {
                   onInitialScrolled={() => setHighlightVideoId(null)}
                   onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                   onActiveIndexChange={(idx) => { setHeaderCollapsed(idx > 0); }}
-                  feedHeight="calc(100dvh - 80px)"
+                  feedHeight={headerCollapsed ? "calc(100dvh - 80px)" : "calc(100dvh - 258px)"}
                 />
                 </div>
               )}
