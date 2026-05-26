@@ -1882,9 +1882,9 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
       {/* ── Grille carrée 3 colonnes ── */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="grid grid-cols-3" style={{ gap: 2 }}>
+          <div className="grid grid-cols-3 p-2" style={{ gap: 6 }}>
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="aspect-[9/16] animate-pulse"
+              <div key={i} className="aspect-[9/16] animate-pulse rounded-xl"
                 style={{ background: "rgba(212,192,255,0.15)" }} />
             ))}
           </div>
@@ -1894,13 +1894,13 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
             <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune vidéo pour {tag}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3" style={{ gap: 2 }}>
+          <div className="grid grid-cols-3 p-2" style={{ gap: 6 }}>
             {videos.map(video => (
               <motion.div
                 key={video.id}
                 whileTap={{ opacity: 0.75, scale: 0.98 }}
                 transition={{ duration: 0.12 }}
-                className="relative aspect-[9/16] overflow-hidden cursor-pointer"
+                className="relative aspect-[9/16] overflow-hidden cursor-pointer rounded-xl"
                 style={{ background: "#111" }}
                 onClick={() => onOpenVideo(video.id)}
               >
