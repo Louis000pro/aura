@@ -1831,7 +1831,7 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
   }, [tag]);
 
   const fmtViews = (n?: number) => {
-    if (!n) return null;
+    if (!n || n === 0) return "0";
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
     return `${n}`;
@@ -1885,8 +1885,8 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="grid grid-cols-3" style={{ gap: 2 }}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="aspect-square animate-pulse"
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="aspect-[9/16] animate-pulse"
                 style={{ background: "rgba(212,192,255,0.15)" }} />
             ))}
           </div>
@@ -1902,11 +1902,11 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
                 key={video.id}
                 whileTap={{ opacity: 0.75, scale: 0.98 }}
                 transition={{ duration: 0.12 }}
-                className="relative aspect-square overflow-hidden cursor-pointer"
-                style={{ background: "#1a1a1a" }}
+                className="relative aspect-[9/16] overflow-hidden cursor-pointer"
+                style={{ background: "#111" }}
                 onClick={() => onOpenVideo(video.id)}
               >
-                {/* Thumbnail — carré centré sur la vidéo */}
+                {/* Thumbnail pleine hauteur — vidéo entière visible */}
                 <video
                   src={video.media_url ?? undefined}
                   className="absolute inset-0 w-full h-full object-cover"
@@ -1915,23 +1915,21 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
                 />
 
                 {/* Gradient bas */}
-                <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
-                  style={{ background: "linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 100%)" }} />
+                <div className="absolute inset-x-0 bottom-0 h-14 pointer-events-none"
+                  style={{ background: "linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%)" }} />
 
-                {/* Icône play — coin haut droit (comme Instagram) */}
-                <div className="absolute top-1.5 right-1.5 pointer-events-none">
-                  <Play size={13} strokeWidth={0} fill="rgba(255,255,255,0.92)" />
+                {/* Icône play — coin haut droit */}
+                <div className="absolute top-2 right-2 pointer-events-none">
+                  <Play size={14} strokeWidth={0} fill="rgba(255,255,255,0.9)" />
                 </div>
 
-                {/* Vues — coin bas gauche */}
-                {fmtViews(video.views) && (
-                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 pointer-events-none">
-                    <Play size={9} strokeWidth={0} fill="white" />
-                    <span className="text-[10px] font-semibold text-white drop-shadow-sm">
-                      {fmtViews(video.views)}
-                    </span>
-                  </div>
-                )}
+                {/* Vues — coin bas gauche, toujours affiché */}
+                <div className="absolute bottom-2 left-2 flex items-center gap-1 pointer-events-none">
+                  <Play size={10} strokeWidth={0} fill="white" />
+                  <span className="text-[11px] font-bold text-white drop-shadow-sm">
+                    {fmtViews(video.views)}
+                  </span>
+                </div>
               </motion.div>
             ))}
           </div>
