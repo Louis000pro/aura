@@ -3720,12 +3720,17 @@ function CommunautePageInner() {
     >
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
-      {/* Top Bar — collapsible quand le header est réduit sur videos tab */}
+
+      {/* Top Bar — en overlay absolu sur videos tab pour ne pas réduire la vidéo */}
       <div style={feedTab === "videos" ? {
-        maxHeight: headerCollapsed ? 0 : 90,
-        overflow: "hidden",
-        transition: "max-height 0.35s ease, opacity 0.3s ease",
+        position: "absolute",
+        top: 0, left: 0, right: 0,
+        zIndex: 20,
+        background: "linear-gradient(to bottom, rgba(248,247,255,0.97) 75%, transparent 100%)",
+        transition: "opacity 0.35s ease, transform 0.35s ease",
         opacity: headerCollapsed ? 0 : 1,
+        transform: headerCollapsed ? "translateY(-12px)" : "translateY(0)",
+        pointerEvents: headerCollapsed ? "none" : "auto",
       } : {}}>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -3788,13 +3793,7 @@ function CommunautePageInner() {
             exit={{ opacity: 0 }}
             className={feedTab === "videos" ? "flex flex-col gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
           >
-            {/* Stories — collapsible sur videos tab */}
-            <div style={feedTab === "videos" ? {
-              maxHeight: headerCollapsed ? 0 : 160,
-              overflow: "hidden",
-              transition: "max-height 0.35s ease, opacity 0.3s ease",
-              opacity: headerCollapsed ? 0 : 1,
-            } : {}}>
+            {/* Stories */}
             {(() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
               // Tri : oldest first pour la lecture dans l'ordre
@@ -3938,7 +3937,6 @@ function CommunautePageInner() {
                 </div>
               );
             })()}
-            </div>{/* end collapsible stories wrapper */}
 
             {/* ══════════════════════════════════════════════════════
                 TABS + FEED — un seul container partagé 100vw
@@ -3947,29 +3945,6 @@ function CommunautePageInner() {
                 colonne vidéo (et non le centre vidéo+sidebar).
             ══════════════════════════════════════════════════════ */}
             <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
-
-              {/* ── Bouton retour (visible quand header collapsed) ── */}
-              <AnimatePresence>
-                {feedTab === "videos" && headerCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    className="flex items-center justify-center py-1"
-                    style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}
-                  >
-                    <motion.button
-                      whileTap={{ scale: 0.93 }}
-                      onClick={() => setHeaderCollapsed(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
-                      style={{ background: "rgba(212,192,255,0.25)", color: "#A78BFA", fontSize: 12, fontWeight: 600 }}
-                    >
-                      <ArrowLeft size={13} strokeWidth={2.2} />
-                      Retour
-                    </motion.button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
               <div className="flex items-center justify-center gap-2 py-1"
@@ -4023,8 +3998,8 @@ function CommunautePageInner() {
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
                   onHashtagClick={(tag) => setHashtagVideosTag(tag)}
-                  onActiveIndexChange={(idx) => { if (idx > 0) setHeaderCollapsed(true); }}
-                  feedHeight={headerCollapsed ? "calc(100dvh - 80px)" : "calc(100dvh - 256px)"}
+                  onActiveIndexChange={(idx) => { setHeaderCollapsed(idx > 0); }}
+                  feedHeight="calc(100dvh - 80px)"
                 />
                 </div>
               )}
