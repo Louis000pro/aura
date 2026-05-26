@@ -1794,7 +1794,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   );
 }
 
-/* ── Hashtag Videos Page (plein écran, grille 3 colonnes) ──── */
+/* ── Hashtag Videos Page — style Instagram ─────────────────── */
 function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
   tag: string;
   onClose: () => void;
@@ -1812,18 +1812,17 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
         id, type, caption, description, media_url, media_type, views, created_at, user_id,
         author:profiles!user_id(pseudo, avatar_url, is_admin),
         post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
-      `).eq("media_type", "video").ilike("caption", `%${tag}%`).limit(50),
+      `).eq("media_type", "video").ilike("caption", `%${tag}%`).limit(60),
       supabase.from("posts").select(`
         id, type, caption, description, media_url, media_type, views, created_at, user_id,
         author:profiles!user_id(pseudo, avatar_url, is_admin),
         post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
-      `).eq("media_type", "video").ilike("description", `%${tag}%`).limit(50),
+      `).eq("media_type", "video").ilike("description", `%${tag}%`).limit(60),
     ]).then(([capRes, descRes]) => {
       if (cancelled) return;
       const all = [...(capRes.data ?? []), ...(descRes.data ?? [])] as unknown as RealPost[];
       const seen = new Set<string>();
       const deduped = all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
-      // Tri par vues décroissant
       deduped.sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
       setVideos(deduped);
       setLoading(false);
@@ -1832,7 +1831,7 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
   }, [tag]);
 
   const fmtViews = (n?: number) => {
-    if (!n) return "0";
+    if (!n) return null;
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
     return `${n}`;
@@ -1840,83 +1839,99 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: "100%" }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: "100%" }}
-      transition={{ type: "spring", damping: 32, stiffness: 300 }}
-      className="fixed inset-0 z-[9999] flex flex-col overflow-hidden"
-      style={{ background: "#FAFAFA" }}
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 40 }}
+      transition={{ type: "spring", damping: 30, stiffness: 280 }}
+      className="fixed inset-0 z-[9999] flex flex-col"
+      style={{ background: "#fff" }}
     >
-      {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-4 pt-5 pb-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid rgba(212,192,255,0.25)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)" }}>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-          className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-          style={{ background: "rgba(240,235,255,0.8)" }}>
-          <ArrowLeft size={16} strokeWidth={2} style={{ color: "#2D3748" }} />
-        </motion.button>
-        <div className="flex-1">
-          <h1 className="text-base font-bold" style={{ color: "#A78BFA" }}>{tag}</h1>
-          {!loading && (
-            <p className="text-[11px]" style={{ color: "#A0AEC0" }}>
-              {videos.length} vidéo{videos.length !== 1 ? "s" : ""} · triées par vues
-            </p>
-          )}
+      {/* ── Header style Instagram ── */}
+      <div className="flex items-center justify-between px-4 pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="cursor-pointer" style={{ color: "#2D3748" }}>
+            <ArrowLeft size={22} strokeWidth={1.8} />
+          </motion.button>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: "#2D3748" }}>{tag}</h1>
+            {!loading && (
+              <p className="text-[12px] font-light" style={{ color: "#A0AEC0" }}>
+                {videos.length} vidéo{videos.length !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
         </div>
+        <button className="cursor-pointer" style={{ color: "#2D3748" }}>
+          <MoreHorizontal size={22} strokeWidth={1.8} />
+        </button>
       </div>
 
-      {/* ── Grille ── */}
+      {/* ── Sous-tabs "Pour vous / Non personnalisé" ── */}
+      <div className="flex flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+        <button className="flex-1 py-2.5 text-[13px] font-semibold relative cursor-default"
+          style={{ color: "#2D3748" }}>
+          Pour vous
+          <div className="absolute bottom-0 inset-x-0 h-0.5 rounded-full"
+            style={{ background: "linear-gradient(90deg,#D4C0FF,#A78BFA)" }} />
+        </button>
+        <button className="flex-1 py-2.5 text-[13px] font-light cursor-default"
+          style={{ color: "#A0AEC0" }}>
+          Non personnalisé
+        </button>
+      </div>
+
+      {/* ── Grille carrée 3 colonnes ── */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="grid grid-cols-3 gap-0.5 p-0.5">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="aspect-[9/16] animate-pulse"
-                style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.2),rgba(212,192,255,0.35))" }} />
+          <div className="grid grid-cols-3" style={{ gap: 2 }}>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="aspect-square animate-pulse"
+                style={{ background: "rgba(212,192,255,0.15)" }} />
             ))}
           </div>
         ) : videos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 py-24">
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
             <span className="text-4xl">🎬</span>
             <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune vidéo pour {tag}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-0.5 p-0.5">
+          <div className="grid grid-cols-3" style={{ gap: 2 }}>
             {videos.map(video => (
               <motion.div
                 key={video.id}
-                whileTap={{ opacity: 0.8 }}
-                className="relative aspect-[9/16] overflow-hidden cursor-pointer bg-black"
+                whileTap={{ opacity: 0.75, scale: 0.98 }}
+                transition={{ duration: 0.12 }}
+                className="relative aspect-square overflow-hidden cursor-pointer"
+                style={{ background: "#1a1a1a" }}
                 onClick={() => onOpenVideo(video.id)}
               >
-                {/* Thumbnail vidéo */}
+                {/* Thumbnail — carré centré sur la vidéo */}
                 <video
                   src={video.media_url ?? undefined}
                   className="absolute inset-0 w-full h-full object-cover"
                   muted playsInline preload="metadata"
                   style={{ pointerEvents: "none" }}
                 />
-                {/* Overlay sombre en bas */}
-                <div className="absolute inset-x-0 bottom-0 h-12 pointer-events-none"
-                  style={{ background: "linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 100%)" }} />
-                {/* Icône play */}
-                <div className="absolute top-2 right-2">
-                  <Play size={14} strokeWidth={0} fill="rgba(255,255,255,0.9)" />
+
+                {/* Gradient bas */}
+                <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
+                  style={{ background: "linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 100%)" }} />
+
+                {/* Icône play — coin haut droit (comme Instagram) */}
+                <div className="absolute top-1.5 right-1.5 pointer-events-none">
+                  <Play size={13} strokeWidth={0} fill="rgba(255,255,255,0.92)" />
                 </div>
-                {/* Vues */}
-                {(video.views ?? 0) > 0 && (
-                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1">
-                    <span className="text-[10px] font-bold text-white drop-shadow-sm">{fmtViews(video.views)}</span>
+
+                {/* Vues — coin bas gauche */}
+                {fmtViews(video.views) && (
+                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 pointer-events-none">
+                    <Play size={9} strokeWidth={0} fill="white" />
+                    <span className="text-[10px] font-semibold text-white drop-shadow-sm">
+                      {fmtViews(video.views)}
+                    </span>
                   </div>
                 )}
-                {/* Avatar auteur */}
-                <div className="absolute top-1.5 left-1.5">
-                  {video.author?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={video.author.avatar_url} alt=""
-                      className="w-5 h-5 rounded-full object-cover"
-                      style={{ border: "1px solid rgba(255,255,255,0.7)" }} />
-                  ) : null}
-                </div>
               </motion.div>
             ))}
           </div>
