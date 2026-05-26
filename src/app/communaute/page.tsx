@@ -2933,9 +2933,9 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick }:
   return (
     <div ref={containerRef}
       className="overflow-y-scroll mx-auto"
-      style={{ height: "calc(100dvh - 64px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
+      style={{ height: "calc(100dvh - 60px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100dvh - 64px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+        <div key={post.id} style={{ height: "calc(100dvh - 60px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
           <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} />
         </div>
       ))}
@@ -3708,17 +3708,17 @@ function CommunautePageInner() {
 
   return (
     <div
-      className="min-h-screen flex flex-col px-4 md:px-8 pt-8 pb-4 w-full mx-auto max-w-4xl relative"
+      className={`flex flex-col px-4 md:px-8 pb-4 w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden pt-0" : "min-h-screen pt-8"}`}
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
-      {/* Top Bar */}
+      {/* Top Bar — masqué sur l'onglet vidéos pour éviter que la page puisse scroller et couper la vidéo */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-center justify-between mb-5"
+        className={`flex items-center justify-between mb-5 ${feedTab === "videos" ? "hidden" : ""}`}
       >
         <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
           {view === "thread" && activeDMPartner ? `@${activeDMPartner.pseudo}` : "Communauté"}
@@ -3973,12 +3973,14 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
+                <div className="mt-2">
                 <TikTokFeed
                   posts={sortedFeedPosts}
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
                   onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                 />
+                </div>
               )}
             </div>
 
