@@ -3793,7 +3793,15 @@ function CommunautePageInner() {
             exit={{ opacity: 0 }}
             className={feedTab === "videos" ? "flex flex-col gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
           >
-            {/* Stories */}
+            {/* Stories — absolute sur videos tab pour ne pas réduire la hauteur du feed */}
+            <div style={feedTab === "videos" ? {
+              position: "absolute",
+              top: 56, left: 0, right: 0,
+              zIndex: 18,
+              opacity: headerCollapsed ? 0 : 1,
+              transition: "opacity 0.3s ease",
+              pointerEvents: headerCollapsed ? "none" : "auto",
+            } : {}}>
             {(() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
               // Tri : oldest first pour la lecture dans l'ordre
@@ -3937,6 +3945,7 @@ function CommunautePageInner() {
                 </div>
               );
             })()}
+            </div>{/* end stories absolute wrapper */}
 
             {/* ══════════════════════════════════════════════════════
                 TABS + FEED — un seul container partagé 100vw
