@@ -2971,8 +2971,6 @@ function CommunautePageInner() {
   const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
   // Header collapse sur scroll vidéo
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  // Reset header quand on quitte l'onglet vidéos
-  useEffect(() => { if (feedTab !== "videos") setHeaderCollapsed(false); }, [feedTab]);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -3131,6 +3129,9 @@ function CommunautePageInner() {
   }, [user]);
 
   useEffect(() => { loadStories(); }, [loadStories]);
+
+  // Reset header collapse quand on quitte l'onglet vidéos
+  useEffect(() => { if (feedTab !== "videos") setHeaderCollapsed(false); }, [feedTab]);
 
   // Charger le feed réel depuis Supabase (paginé)
   const loadFeed = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
