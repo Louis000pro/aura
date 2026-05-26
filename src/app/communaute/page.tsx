@@ -1843,28 +1843,26 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 40 }}
       transition={{ type: "spring", damping: 30, stiffness: 280 }}
-      className="fixed inset-0 z-[9999] flex flex-col"
+      className="fixed inset-y-0 right-0 left-0 md:left-[88px] pb-28 md:pb-0 z-[9999] flex flex-col"
       style={{ background: "#fff" }}
     >
-      {/* ── Header style Instagram ── */}
-      <div className="flex items-center justify-between px-4 pt-6 pb-4 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="cursor-pointer" style={{ color: "#2D3748" }}>
-            <ArrowLeft size={22} strokeWidth={1.8} />
-          </motion.button>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight" style={{ color: "#2D3748" }}>{tag}</h1>
-            {!loading && (
-              <p className="text-[12px] font-light" style={{ color: "#A0AEC0" }}>
-                {videos.length} vidéo{videos.length !== 1 ? "s" : ""}
-              </p>
-            )}
-          </div>
+      {/* Inner — same width as the video feed */}
+      <div className="h-full flex flex-col mx-auto w-full" style={{ maxWidth: 560 }}>
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 px-4 pt-6 pb-4 flex-shrink-0">
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="cursor-pointer" style={{ color: "#2D3748" }}>
+          <ArrowLeft size={22} strokeWidth={1.8} />
+        </motion.button>
+        <div>
+          <h1 className="text-lg font-bold tracking-tight" style={{ color: "#2D3748" }}>{tag}</h1>
+          {!loading && (
+            <p className="text-[12px] font-light" style={{ color: "#A0AEC0" }}>
+              {videos.length} vidéo{videos.length !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
-        <button className="cursor-pointer" style={{ color: "#2D3748" }}>
-          <MoreHorizontal size={22} strokeWidth={1.8} />
-        </button>
       </div>
 
       {/* ── Sous-tabs "Pour vous / Non personnalisé" ── */}
@@ -1935,6 +1933,8 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
           </div>
         )}
       </div>
+
+      </div>{/* end inner 560px */}
     </motion.div>
   );
 }
