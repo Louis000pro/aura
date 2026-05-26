@@ -2873,11 +2873,13 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
   );
 }
 
-function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick }: {
+function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, feedHeight }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
   onHashtagClick?: (tag: string) => void;
+  onActiveIndexChange?: (idx: number) => void;
+  feedHeight?: string;
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2893,7 +2895,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick }:
           if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
             const children = Array.from(el.children);
             const idx = children.indexOf(entry.target as Element);
-            if (idx >= 0) setActiveIndex(idx);
+            if (idx >= 0) { setActiveIndex(idx); onActiveIndexChange?.(idx); }
           }
         });
       },
@@ -2933,9 +2935,9 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick }:
   return (
     <div ref={containerRef}
       className="overflow-y-scroll mx-auto"
-      style={{ height: "calc(100dvh - 256px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
+      style={{ height: feedHeight ?? "calc(100dvh - 256px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y", transition: "height 0.35s ease" }}>
       {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: "calc(100dvh - 256px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+        <div key={post.id} style={{ height: feedHeight ?? "calc(100dvh - 256px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
           <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} />
         </div>
       ))}
@@ -2967,6 +2969,10 @@ function CommunautePageInner() {
   const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
   // Modal plein écran hashtag vidéos
   const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
+  // Header collapse sur scroll vidéo
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  // Reset header quand on quitte l'onglet vidéos
+  useEffect(() => { if (feedTab !== "videos") setHeaderCollapsed(false); }, [feedTab]);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -3713,7 +3719,13 @@ function CommunautePageInner() {
     >
       {/* ── Contenu ── */}
       <div className="relative flex flex-col flex-1">
-      {/* Top Bar — masqué sur l'onglet vidéos pour éviter que la page puisse scroller et couper la vidéo */}
+      {/* Top Bar — collapsible quand le header est réduit sur videos tab */}
+      <div style={feedTab === "videos" ? {
+        maxHeight: headerCollapsed ? 0 : 90,
+        overflow: "hidden",
+        transition: "max-height 0.35s ease, opacity 0.3s ease",
+        opacity: headerCollapsed ? 0 : 1,
+      } : {}}>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -3763,6 +3775,7 @@ function CommunautePageInner() {
           )}
         </div>
       </motion.div>
+      </div>{/* end collapsible title wrapper */}
 
       <AnimatePresence mode="wait">
         {/* ────── FEED ────── */}
@@ -3774,7 +3787,13 @@ function CommunautePageInner() {
             exit={{ opacity: 0 }}
             className={feedTab === "videos" ? "flex flex-col gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
           >
-            {/* Stories */}
+            {/* Stories — collapsible sur videos tab */}
+            <div style={feedTab === "videos" ? {
+              maxHeight: headerCollapsed ? 0 : 160,
+              overflow: "hidden",
+              transition: "max-height 0.35s ease, opacity 0.3s ease",
+              opacity: headerCollapsed ? 0 : 1,
+            } : {}}>
             {(() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
               // Tri : oldest first pour la lecture dans l'ordre
@@ -3918,6 +3937,7 @@ function CommunautePageInner() {
                 </div>
               );
             })()}
+            </div>{/* end collapsible stories wrapper */}
 
             {/* ══════════════════════════════════════════════════════
                 TABS + FEED — un seul container partagé 100vw
@@ -3926,6 +3946,29 @@ function CommunautePageInner() {
                 colonne vidéo (et non le centre vidéo+sidebar).
             ══════════════════════════════════════════════════════ */}
             <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
+
+              {/* ── Bouton retour (visible quand header collapsed) ── */}
+              <AnimatePresence>
+                {feedTab === "videos" && headerCollapsed && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="flex items-center justify-center py-1"
+                    style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}
+                  >
+                    <motion.button
+                      whileTap={{ scale: 0.93 }}
+                      onClick={() => setHeaderCollapsed(false)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl cursor-pointer"
+                      style={{ background: "rgba(212,192,255,0.25)", color: "#A78BFA", fontSize: 12, fontWeight: 600 }}
+                    >
+                      <ArrowLeft size={13} strokeWidth={2.2} />
+                      Retour
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
               <div className="flex items-center justify-center gap-2 py-1"
@@ -3979,6 +4022,8 @@ function CommunautePageInner() {
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
                   onHashtagClick={(tag) => setHashtagVideosTag(tag)}
+                  onActiveIndexChange={(idx) => { if (idx > 0) setHeaderCollapsed(true); }}
+                  feedHeight={headerCollapsed ? "calc(100dvh - 80px)" : "calc(100dvh - 256px)"}
                 />
                 </div>
               )}
