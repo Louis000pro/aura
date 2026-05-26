@@ -2311,7 +2311,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
-function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
+function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActive: boolean; onHashtagClick?: (tag: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
@@ -2588,8 +2588,8 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
             {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
           </Link>
           {post.caption && (
-            <p className="text-white text-[13px] leading-snug line-clamp-2 drop-shadow-sm" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}>
-              {post.caption}
+            <p className="text-white text-[13px] leading-snug line-clamp-2 drop-shadow-sm" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)", pointerEvents: "auto" }}>
+              <CaptionText text={post.caption} onHashtagClick={(tag) => { onHashtagClick?.(tag); }} />
             </p>
           )}
         </div>
@@ -2728,10 +2728,11 @@ function VideoCard({ post, isActive }: { post: RealPost; isActive: boolean }) {
   );
 }
 
-function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
+function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
+  onHashtagClick?: (tag: string) => void;
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2790,7 +2791,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled }: {
       style={{ height: "calc(100dvh - 64px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y" }}>
       {videoPosts.map((post, i) => (
         <div key={post.id} style={{ height: "calc(100dvh - 64px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
-          <VideoCard post={post} isActive={i === activeIndex} />
+          <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} />
         </div>
       ))}
     </div>
@@ -2819,6 +2820,8 @@ function CommunautePageInner() {
   } | null>(null);
 
   const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
+  // Filtre hashtag pour le feed vidéo (onglet Vidéos)
+  const [videoHashtagFilter, setVideoHashtagFilter] = useState<string | null>(null);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -2881,9 +2884,18 @@ function CommunautePageInner() {
 
   const sortedFeedPosts = useMemo(() => {
     const visible = realFeedPosts.filter(p => !hiddenRealIds.has(p.id));
-    if (feedMode === "recent") return visible; // ordre chronologique (déjà trié par Supabase)
-    return [...visible].sort((a, b) => getScore(b) - getScore(a));
+    const sorted = feedMode === "recent" ? visible : [...visible].sort((a, b) => getScore(b) - getScore(a));
+    return sorted;
   }, [realFeedPosts, hiddenRealIds, feedMode, getScore]);
+
+  // Posts vidéo filtrés par hashtag (si filtre actif)
+  const filteredVideoPosts = useMemo(() => {
+    if (!videoHashtagFilter) return sortedFeedPosts;
+    const tag = videoHashtagFilter.toLowerCase();
+    return sortedFeedPosts.filter(p =>
+      p.caption?.toLowerCase().includes(tag) || p.description?.toLowerCase().includes(tag)
+    );
+  }, [sortedFeedPosts, videoHashtagFilter]);
 
   // Charger les abonnements réels depuis Supabase
   useEffect(() => {
@@ -3822,12 +3834,28 @@ function CommunautePageInner() {
                 </div>
               )}
 
+              {/* ── Bannière filtre hashtag actif ── */}
+              {feedTab === "videos" && videoHashtagFilter && (
+                <div className="flex items-center justify-center gap-2 py-1"
+                  style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+                    style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B" }}>
+                    <span>{videoHashtagFilter}</span>
+                    <button onClick={() => setVideoHashtagFilter(null)} className="cursor-pointer ml-1 opacity-60 hover:opacity-100">✕</button>
+                  </div>
+                </div>
+              )}
+
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
                 <TikTokFeed
-                  posts={sortedFeedPosts}
+                  posts={filteredVideoPosts}
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
+                  onHashtagClick={(tag) => {
+                    setVideoHashtagFilter(tag);
+                    setHighlightVideoId(null);
+                  }}
                 />
               )}
             </div>
