@@ -2971,6 +2971,18 @@ function CommunautePageInner() {
   const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
   // Header collapse sur scroll vidéo
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  // Mesure la position top du feed dans le viewport → feedHeight = 100dvh - feedTop px
+  const feedWrapperRef = useRef<HTMLDivElement>(null);
+  const [feedTop, setFeedTop] = useState(258);
+  useEffect(() => {
+    const el = feedWrapperRef.current;
+    if (!el) return;
+    const measure = () => setFeedTop(Math.round(el.getBoundingClientRect().top));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [headerCollapsed]);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -3715,7 +3727,7 @@ function CommunautePageInner() {
 
   return (
     <div
-      className={`flex flex-col px-4 md:px-8 pt-8 pb-4 w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden" : "min-h-screen"}`}
+      className={`flex flex-col px-4 md:px-8 pt-8 w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden pb-0" : "min-h-screen pb-4"}`}
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
@@ -3995,14 +4007,14 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div className="mt-2">
+                <div ref={feedWrapperRef} className="mt-2">
                 <TikTokFeed
                   posts={sortedFeedPosts}
                   initialPostId={highlightVideoId}
                   onInitialScrolled={() => setHighlightVideoId(null)}
                   onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                   onActiveIndexChange={(idx) => { setHeaderCollapsed(idx > 0); }}
-                  feedHeight={headerCollapsed ? "calc(100dvh - 80px)" : "calc(100dvh - 258px)"}
+                  feedHeight={`calc(100dvh - ${feedTop}px)`}
                 />
                 </div>
               )}
