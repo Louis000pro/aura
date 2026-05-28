@@ -36,6 +36,21 @@ const MEAL_LABEL: Record<string, string> = {
   "diner":          "Dîner",
 };
 
+/* Palette de couleurs des aliments par type de repas */
+const MEAL_PALETTE: Record<string, { protein: [string, string]; carbs: [string, string]; veggies: [string, string]; grain: string }> = {
+  "petit-dejeuner": { protein: ["#FFE5A8", "#E8C26A"], carbs: ["#F5D4A8", "#D8A66B"], veggies: ["#FFB088", "#F08660"], grain: "#B8804F" }, // jaune œuf, pain doré, fruit
+  "dejeuner":       { protein: ["#F5C99B", "#D4A05A"], carbs: ["#E8D7FF", "#C4A8E8"], veggies: ["#C9E5C0", "#8FB682"], grain: "#9F84BF" }, // viande, riz, salade
+  "gouter":         { protein: ["#FFE8A8", "#F2C95C"], carbs: ["#FFD4B0", "#E89B5C"], veggies: ["#FFB088", "#D87E5A"], grain: "#9C6839" }, // sucré
+  "diner":          { protein: ["#E8A878", "#C97D5C"], carbs: ["#E0CDFA", "#A88FC9"], veggies: ["#A8C99B", "#7A9F6A"], grain: "#7B5942" }, // chaleureux
+};
+
+/* Calcule combien d'aliments générer selon les calories */
+function plateFillness(calories: number): "light" | "medium" | "full" {
+  if (calories < 200) return "light";
+  if (calories < 500) return "medium";
+  return "full";
+}
+
 /* ─── Composant ──────────────────────────────────────────────────────── */
 export default function StatsDrawer({
   open,
@@ -187,172 +202,13 @@ export default function StatsDrawer({
                   </div>
                 </section>
 
-                {/* ─── ZONE 2 : Plats du jour — Assiette hero ─── */}
-                <section
-                  className="h-full flex flex-col pt-16 pb-6 px-5 gap-3"
-                  style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
-                >
-                  <div className="flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <Utensils size={14} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-                        Plats du jour
-                      </p>
-                    </div>
-                    {meals.length > 0 && (
-                      <p className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>
-                        {totalCals} kcal · {totalProteins}g P
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Assiette SVG hero */}
-                  <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                    <motion.button
-                      type="button"
-                      onClick={onOpenRepas}
-                      whileTap={{ scale: 0.97 }}
-                      whileHover={{ scale: 1.02 }}
-                      className="relative outline-none"
-                      style={{ width: 220, height: 220 }}
-                      aria-label={meals.length === 0 ? "Ajouter un repas" : "Voir les détails du repas"}
-                    >
-                      {/* Ombre portée sous l'assiette */}
-                      <div className="absolute pointer-events-none"
-                        style={{
-                          bottom: -6, left: "50%", transform: "translateX(-50%)",
-                          width: 200, height: 18, borderRadius: "50%",
-                          background: "radial-gradient(ellipse, rgba(45,55,72,0.18) 0%, transparent 70%)",
-                          filter: "blur(8px)",
-                        }} />
-
-                      <svg viewBox="0 0 220 220" width="220" height="220" style={{ overflow: "visible" }}>
-                        <defs>
-                          {/* Gradient principal de l'assiette */}
-                          <radialGradient id="plateBody" cx="40%" cy="35%" r="65%">
-                            <stop offset="0%" stopColor="#FFFFFF" />
-                            <stop offset="55%" stopColor="#F8F4FB" />
-                            <stop offset="100%" stopColor="#E8DEF0" />
-                          </radialGradient>
-                          {/* Gradient de la zone creuse intérieure */}
-                          <radialGradient id="plateInner" cx="45%" cy="40%" r="60%">
-                            <stop offset="0%" stopColor="#FFFFFF" />
-                            <stop offset="100%" stopColor="#F0E8F5" />
-                          </radialGradient>
-                          {/* Reflet brillant en haut */}
-                          <linearGradient id="plateShine" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
-                            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                          </linearGradient>
-                        </defs>
-
-                        {/* Corps de l'assiette */}
-                        <circle cx="110" cy="110" r="105" fill="url(#plateBody)" />
-                        {/* Bord intérieur (creux) */}
-                        <circle cx="110" cy="110" r="82" fill="url(#plateInner)" />
-                        {/* Ligne de séparation entre bord et creux */}
-                        <circle cx="110" cy="110" r="82" fill="none" stroke="rgba(167,139,250,0.18)" strokeWidth="0.5" />
-                        {/* Reflet en haut */}
-                        <ellipse cx="85" cy="55" rx="55" ry="22" fill="url(#plateShine)" opacity="0.6" />
-                        {/* Petite touche de brillance latérale */}
-                        <ellipse cx="170" cy="100" rx="8" ry="35" fill="rgba(255,255,255,0.35)" />
-
-                        {/* ─── Si pleine : aliments stylisés sur l'assiette ─── */}
-                        {meals.length > 0 && (
-                          <>
-                            {/* Blob principal (protéine - or/saumon) */}
-                            <ellipse cx="90" cy="105" rx="32" ry="24"
-                              fill="url(#foodProtein)" opacity="0.92" />
-                            {/* Blob secondaire (féculents - violet pâle) */}
-                            <ellipse cx="135" cy="125" rx="26" ry="20"
-                              fill="url(#foodCarbs)" opacity="0.88" />
-                            {/* Blob veggies (vert pastel) */}
-                            <ellipse cx="125" cy="85" rx="20" ry="15"
-                              fill="url(#foodVeggies)" opacity="0.85" />
-                            <defs>
-                              <radialGradient id="foodProtein" cx="40%" cy="35%">
-                                <stop offset="0%" stopColor="#F5C99B" />
-                                <stop offset="100%" stopColor="#D4A05A" />
-                              </radialGradient>
-                              <radialGradient id="foodCarbs" cx="40%" cy="35%">
-                                <stop offset="0%" stopColor="#E8D7FF" />
-                                <stop offset="100%" stopColor="#C4A8E8" />
-                              </radialGradient>
-                              <radialGradient id="foodVeggies" cx="40%" cy="35%">
-                                <stop offset="0%" stopColor="#C9E5C0" />
-                                <stop offset="100%" stopColor="#8FB682" />
-                              </radialGradient>
-                            </defs>
-                            {/* Petits détails (grains/morceaux) */}
-                            <circle cx="80" cy="95" r="2.5" fill="#B8804F" opacity="0.7" />
-                            <circle cx="98" cy="115" r="2" fill="#B8804F" opacity="0.7" />
-                            <circle cx="142" cy="120" r="2" fill="#9F84BF" opacity="0.7" />
-                            <circle cx="130" cy="135" r="2.5" fill="#9F84BF" opacity="0.7" />
-                            <circle cx="120" cy="90" r="1.8" fill="#6E9C5B" opacity="0.7" />
-                          </>
-                        )}
-                      </svg>
-
-                      {/* Mini overlay icône camera si vide */}
-                      {meals.length === 0 && (
-                        <div className="absolute pointer-events-none"
-                          style={{
-                            top: "50%", left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            width: 48, height: 48,
-                            borderRadius: 16,
-                            background: "rgba(167,139,250,0.15)",
-                            backdropFilter: "blur(4px)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>
-                          <Camera size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                        </div>
-                      )}
-                    </motion.button>
-
-                    {/* Légende sous l'assiette */}
-                    <div className="text-center">
-                      {meals.length === 0 ? (
-                        <>
-                          <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                            Assiette vide
-                          </p>
-                          <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
-                            Tap pour ajouter — photo, code-barres ou saisie
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-                            {meals.length} repas {meals.length > 1 ? "ajoutés" : "ajouté"} aujourd'hui
-                          </p>
-                          <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
-                            Tap pour inspecter ou ajouter
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Si pleine : récap mini en bas */}
-                  {meals.length > 0 && (
-                    <div className="flex gap-2 flex-shrink-0">
-                      {[
-                        { label: "kcal", value: totalCals,        color: "#A78BFA" },
-                        { label: "Prot", value: `${totalProteins}g`, color: "#D4A843" },
-                        { label: "Repas", value: meals.length,    color: "#A78BFA" },
-                      ].map(s => (
-                        <div key={s.label}
-                          className="flex-1 rounded-2xl p-2.5 text-center"
-                          style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.25)" }}>
-                          <p className="text-[8px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
-                          <p className="text-base font-semibold mt-0.5" style={{ color: s.color }}>{s.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-
+                {/* ─── ZONE 2 : Plats du jour — Carousel horizontal d'assiettes ─── */}
+                <PlatsZone
+                  meals={meals}
+                  totalCals={totalCals}
+                  totalProteins={totalProteins}
+                  onOpenRepas={onOpenRepas}
+                />
                 {/* ─── ZONE 3 : Statistiques ─── */}
                 <section
                   className="h-full flex flex-col pt-16 pb-6 px-5 gap-3"
@@ -400,12 +256,313 @@ export default function StatsDrawer({
                     })}
                   </div>
                 </section>
-
               </div>
             </div>
           </motion.div>
         </>
       )}
     </AnimatePresence>
+  );
+}
+/* ═══════════════════════════════════════════════════════════════════════════
+   PLATS ZONE — Carousel horizontal d'assiettes qui s'accumulent au fil du jour
+   ═══════════════════════════════════════════════════════════════════════════ */
+function PlatsZone({
+  meals,
+  totalCals,
+  totalProteins,
+  onOpenRepas,
+}: {
+  meals: Meal[];
+  totalCals: number;
+  totalProteins: number;
+  onOpenRepas: () => void;
+}) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const totalCards = meals.length + 1; // +1 pour la carte "Ajouter"
+
+  const onCarouselScroll = useCallback(() => {
+    if (!carouselRef.current) return;
+    const w = carouselRef.current.clientWidth;
+    const t = carouselRef.current.scrollLeft;
+    setActiveIdx(Math.round(t / w));
+  }, []);
+
+  return (
+    <section
+      className="h-full flex flex-col pt-16 pb-6 gap-3"
+      style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between flex-shrink-0 px-5">
+        <div className="flex items-center gap-2">
+          <Utensils size={14} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+            Plats du jour
+          </p>
+        </div>
+        {meals.length > 0 && (
+          <p className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>
+            {totalCals} kcal · {totalProteins}g P
+          </p>
+        )}
+      </div>
+
+      {/* Carousel horizontal */}
+      <div
+        ref={carouselRef}
+        onScroll={onCarouselScroll}
+        className="flex-1 overflow-x-scroll overflow-y-hidden flex items-center"
+        style={{
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+        }}
+      >
+        {/* Une carte par repas */}
+        {meals.map((meal, idx) => (
+          <PlateCard
+            key={meal.id}
+            meal={meal}
+            index={idx}
+            onTap={onOpenRepas}
+          />
+        ))}
+
+        {/* Carte finale "Ajouter" — toujours présente */}
+        <PlateCard
+          key="add-new"
+          meal={null}
+          index={meals.length}
+          onTap={onOpenRepas}
+        />
+      </div>
+
+      {/* Dots indicateur — affichés que si plusieurs cartes */}
+      {totalCards > 1 && (
+        <div className="flex items-center justify-center gap-1.5 flex-shrink-0">
+          {Array.from({ length: totalCards }).map((_, i) => (
+            <div key={i}
+              className="rounded-full transition-all"
+              style={{
+                width: activeIdx === i ? 18 : 5,
+                height: 5,
+                background: activeIdx === i
+                  ? "linear-gradient(90deg, #A78BFA, #D4A843)"
+                  : "rgba(167,139,250,0.25)",
+              }} />
+          ))}
+        </div>
+      )}
+
+      {/* Récap en bas */}
+      {meals.length > 0 ? (
+        <div className="flex gap-2 flex-shrink-0 px-5">
+          {[
+            { label: "kcal", value: totalCals,           color: "#A78BFA" },
+            { label: "Prot", value: `${totalProteins}g`, color: "#D4A843" },
+            { label: "Repas", value: meals.length,       color: "#A78BFA" },
+          ].map(s => (
+            <div key={s.label}
+              className="flex-1 rounded-2xl p-2.5 text-center"
+              style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.25)" }}>
+              <p className="text-[8px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+              <p className="text-base font-semibold mt-0.5" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex-shrink-0 px-5 text-center">
+          <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
+            Tap l'assiette pour ajouter — photo, code-barres ou saisie
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PLATE CARD — Une assiette SVG individuelle avec contenu varié selon repas
+   ═══════════════════════════════════════════════════════════════════════════ */
+function PlateCard({
+  meal,
+  index,
+  onTap,
+}: {
+  meal: Meal | null; // null = carte "Ajouter"
+  index: number;
+  onTap: () => void;
+}) {
+  const isAddCard = meal === null;
+  const fillness = meal ? plateFillness(meal.calories) : "light";
+  const palette = meal ? (MEAL_PALETTE[meal.mealType] ?? MEAL_PALETTE.dejeuner) : null;
+  const plateId = `plate-${index}`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      className="flex-shrink-0 w-full flex flex-col items-center justify-center px-5 gap-3"
+      style={{ scrollSnapAlign: "center", scrollSnapStop: "always" }}
+    >
+      <motion.button
+        type="button"
+        onClick={onTap}
+        whileTap={{ scale: 0.97 }}
+        whileHover={{ scale: 1.02 }}
+        className="relative outline-none"
+        style={{ width: 220, height: 220 }}
+        aria-label={isAddCard ? "Ajouter un repas" : `Voir le détail de ${meal?.name}`}
+      >
+        {/* Ombre portée */}
+        <div className="absolute pointer-events-none"
+          style={{
+            bottom: -6, left: "50%", transform: "translateX(-50%)",
+            width: 200, height: 18, borderRadius: "50%",
+            background: "radial-gradient(ellipse, rgba(45,55,72,0.18) 0%, transparent 70%)",
+            filter: "blur(8px)",
+          }} />
+
+        <svg viewBox="0 0 220 220" width="220" height="220" style={{ overflow: "visible" }}>
+          <defs>
+            <radialGradient id={`${plateId}-body`} cx="40%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="55%" stopColor="#F8F4FB" />
+              <stop offset="100%" stopColor="#E8DEF0" />
+            </radialGradient>
+            <radialGradient id={`${plateId}-inner`} cx="45%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="100%" stopColor="#F0E8F5" />
+            </radialGradient>
+            <linearGradient id={`${plateId}-shine`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+            </linearGradient>
+            {palette && (
+              <>
+                <radialGradient id={`${plateId}-protein`} cx="40%" cy="35%">
+                  <stop offset="0%" stopColor={palette.protein[0]} />
+                  <stop offset="100%" stopColor={palette.protein[1]} />
+                </radialGradient>
+                <radialGradient id={`${plateId}-carbs`} cx="40%" cy="35%">
+                  <stop offset="0%" stopColor={palette.carbs[0]} />
+                  <stop offset="100%" stopColor={palette.carbs[1]} />
+                </radialGradient>
+                <radialGradient id={`${plateId}-veggies`} cx="40%" cy="35%">
+                  <stop offset="0%" stopColor={palette.veggies[0]} />
+                  <stop offset="100%" stopColor={palette.veggies[1]} />
+                </radialGradient>
+              </>
+            )}
+          </defs>
+
+          {/* Corps de l'assiette */}
+          <circle cx="110" cy="110" r="105" fill={`url(#${plateId}-body)`} />
+          <circle cx="110" cy="110" r="82" fill={`url(#${plateId}-inner)`} />
+          <circle cx="110" cy="110" r="82" fill="none" stroke="rgba(167,139,250,0.18)" strokeWidth="0.5" />
+          <ellipse cx="85" cy="55" rx="55" ry="22" fill={`url(#${plateId}-shine)`} opacity="0.6" />
+          <ellipse cx="170" cy="100" rx="8" ry="35" fill="rgba(255,255,255,0.35)" />
+
+          {/* ─── Aliments si l'assiette est pleine ─── */}
+          {!isAddCard && palette && (
+            <>
+              {/* Toujours présent : protéine grosse */}
+              <ellipse cx="85" cy="100" rx={fillness === "full" ? 38 : fillness === "medium" ? 32 : 24}
+                       ry={fillness === "full" ? 30 : fillness === "medium" ? 25 : 20}
+                       fill={`url(#${plateId}-protein)`} opacity="0.94" />
+
+              {/* Medium + Full : féculents */}
+              {fillness !== "light" && (
+                <ellipse cx="140" cy="125" rx={fillness === "full" ? 32 : 26}
+                         ry={fillness === "full" ? 26 : 20}
+                         fill={`url(#${plateId}-carbs)`} opacity="0.9" />
+              )}
+
+              {/* Medium + Full : veggies */}
+              {fillness !== "light" && (
+                <ellipse cx="130" cy="85" rx={fillness === "full" ? 26 : 20}
+                         ry={fillness === "full" ? 20 : 15}
+                         fill={`url(#${plateId}-veggies)`} opacity="0.87" />
+              )}
+
+              {/* Full uniquement : un blob supplémentaire (sauce/extra) */}
+              {fillness === "full" && (
+                <ellipse cx="75" cy="145" rx="22" ry="16"
+                         fill={`url(#${plateId}-veggies)`} opacity="0.82" />
+              )}
+              {fillness === "full" && (
+                <ellipse cx="155" cy="80" rx="18" ry="13"
+                         fill={`url(#${plateId}-protein)`} opacity="0.78" />
+              )}
+
+              {/* Grains/morceaux — quantité varie selon fillness */}
+              <circle cx="80" cy="92" r="2.6" fill={palette.grain} opacity="0.75" />
+              <circle cx="98" cy="113" r="2.1" fill={palette.grain} opacity="0.75" />
+              {fillness !== "light" && <>
+                <circle cx="142" cy="120" r="2.3" fill={palette.grain} opacity="0.75" />
+                <circle cx="130" cy="135" r="2.6" fill={palette.grain} opacity="0.7" />
+                <circle cx="122" cy="92" r="2" fill={palette.veggies[1]} opacity="0.7" />
+                <circle cx="138" cy="78" r="1.7" fill={palette.veggies[1]} opacity="0.7" />
+              </>}
+              {fillness === "full" && <>
+                <circle cx="92" cy="148" r="2.4" fill={palette.veggies[1]} opacity="0.7" />
+                <circle cx="68" cy="138" r="1.9" fill={palette.grain} opacity="0.7" />
+                <circle cx="148" cy="145" r="2.1" fill={palette.carbs[1]} opacity="0.65" />
+                <circle cx="115" cy="110" r="1.6" fill={palette.protein[1]} opacity="0.65" />
+                <circle cx="160" cy="115" r="1.8" fill={palette.veggies[1]} opacity="0.65" />
+              </>}
+            </>
+          )}
+        </svg>
+
+        {/* Icône camera + plus pour la carte "Ajouter" */}
+        {isAddCard && (
+          <div className="absolute pointer-events-none"
+            style={{
+              top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 56, height: 56,
+              borderRadius: 18,
+              background: "linear-gradient(135deg, rgba(212,192,255,0.35), rgba(245,230,163,0.35))",
+              backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 4px 16px rgba(167,139,250,0.18)",
+            }}>
+            <Camera size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          </div>
+        )}
+      </motion.button>
+
+      {/* Légende sous l'assiette */}
+      <div className="text-center">
+        {isAddCard ? (
+          <>
+            <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+              Nouvelle assiette
+            </p>
+            <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+              Tap pour ajouter un repas
+            </p>
+          </>
+        ) : meal && (
+          <>
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="text-base">{MEAL_EMOJI[meal.mealType] ?? "🍽️"}</span>
+              <p className="text-sm font-semibold truncate max-w-[200px]" style={{ color: "#2D3748" }}>
+                {meal.name}
+              </p>
+            </div>
+            <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+              {MEAL_LABEL[meal.mealType] ?? "Repas"}
+              {meal.time && ` · ${meal.time.substring(0, 5)}`}
+              {` · ${meal.calories} kcal · ${meal.proteins}g prot`}
+            </p>
+          </>
+        )}
+      </div>
+    </motion.div>
   );
 }
