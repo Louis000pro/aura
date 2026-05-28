@@ -58,18 +58,20 @@ export default function StatsDrawer({
   user,
   onOpenStat,
   onOpenRepas,
+  mealsRefreshKey = 0,
 }: {
   open: boolean;
   onClose: () => void;
   user: User | null;
   onOpenStat: (stat: StatData) => void;
   onOpenRepas: () => void;
+  mealsRefreshKey?: number;
 }) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [activeIdx, setActiveIdx] = useState(0); // 0=séance, 1=plats, 2=stats
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  /* ─ Fetch meals du jour ─ */
+  /* ─ Fetch meals du jour (re-fetch quand mealsRefreshKey change) ─ */
   useEffect(() => {
     if (!open || !user) return;
     const supabase = createClient();
@@ -95,7 +97,7 @@ export default function StatsDrawer({
           })));
         }
       });
-  }, [open, user]);
+  }, [open, user, mealsRefreshKey]);
 
   /* ─ Détection scroll pour mettre à jour les dots ─ */
   const onScroll = useCallback(() => {
