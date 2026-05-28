@@ -974,7 +974,7 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[180px] md:pb-[80px]">
+      <div className="flex-1 flex items-center justify-center px-6 relative pb-[180px] md:pb-[200px]">
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
