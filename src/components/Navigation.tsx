@@ -234,8 +234,8 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* ══ Desktop Sidebar ══ */}
-      <aside className="hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      {/* ══ Desktop Sidebar ══ — cachée sur la home (mobile-only) */}
+      <aside className={`fixed left-4 top-4 bottom-4 z-50 flex-col ${pathname === "/" ? "hidden" : "hidden md:flex"}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
