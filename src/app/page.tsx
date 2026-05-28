@@ -617,6 +617,7 @@ function Dashboard() {
   const [showChat, setShowChat] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
+  const [dailyVideoUrl, setDailyVideoUrl] = useState<string | null>(null);
   void mobilePanel; void setMobilePanel; void logout; void router; // legacy refs, unused dans la nouvelle layout
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
@@ -684,6 +685,29 @@ function Dashboard() {
         }
       });
   }, [user]);
+
+  // Fetch la vidéo du jour (la plus vue 24h, fallback semaine) pour mini-aperçu sur la chip
+  useEffect(() => {
+    const supabase = createClient();
+    const since = new Date(Date.now() - 86400000).toISOString();
+    supabase.from("posts").select("media_url, views, created_at")
+      .eq("media_type", "video")
+      .gte("created_at", since)
+      .order("views", { ascending: false, nullsFirst: false })
+      .limit(1).maybeSingle()
+      .then(({ data }) => {
+        if (data?.media_url) { setDailyVideoUrl(data.media_url as string); return; }
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        supabase.from("posts").select("media_url, views, created_at")
+          .eq("media_type", "video")
+          .gte("created_at", weekAgo)
+          .order("views", { ascending: false, nullsFirst: false })
+          .limit(1).maybeSingle()
+          .then(({ data: fb }) => {
+            if (fb?.media_url) setDailyVideoUrl(fb.media_url as string);
+          });
+      });
+  }, []);
 
   // Charge le contexte onboarding depuis localStorage (essaie plusieurs clés)
   useEffect(() => {
@@ -981,15 +1005,38 @@ function Dashboard() {
           <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
         </div>
 
-        {/* VOTD chip centré dans le bloc */}
+        {/* VOTD chip centré dans le bloc — mini-aperçu vidéo + texte */}
         <div className="absolute inset-x-0 bottom-3 flex justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.35 }}
-            className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl pointer-events-none"
+            className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl pointer-events-none"
             style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", border: "1px solid rgba(212,192,255,0.4)", boxShadow: "0 4px 16px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }}>
-              <Play size={12} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 1.5 }} fill="#2D3748" />
+            <div className="relative overflow-hidden rounded-xl flex-shrink-0"
+              style={{
+                width: 36, height: 50,
+                background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
+              }}>
+              {dailyVideoUrl ? (
+                <video
+                  src={dailyVideoUrl}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  muted
+                  loop
+                  autoPlay
+                  playsInline
+                  preload="auto"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Play size={14} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 1.5 }} fill="#2D3748" />
+                </div>
+              )}
+              {/* Petit indicateur "LIVE" / point qui pulse */}
+              {dailyVideoUrl && (
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
+                  style={{ background: "#FC8181", boxShadow: "0 0 4px rgba(252,129,129,0.8)" }} />
+              )}
             </div>
             <div className="text-left">
               <p className="text-[9px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>Du jour</p>

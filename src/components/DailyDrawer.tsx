@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Dumbbell, Trophy, Clock, Flame, ChevronRight, Volume2, VolumeX, BadgeCheck } from "lucide-react";
+import { X, Play, Dumbbell, Trophy, Clock, Flame, ChevronRight, Volume2, VolumeX, BadgeCheck, Eye } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -285,16 +285,15 @@ export default function DailyDrawer({
                 }}
               >
 
-                {/* ─── VOTD : Vidéo du jour — player TikTok 9:16 ─── */}
+                {/* ─── VOTD : Vidéo du jour — player TikTok plein hauteur ─── */}
                 <section
-                  className="flex-shrink-0 w-full h-full flex flex-col items-center justify-center px-4 pb-3"
+                  className="flex-shrink-0 w-full h-full flex flex-col items-stretch px-3 pb-3"
                   style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
                 >
                   {dailyVideo ? (
-                    <div className="relative rounded-3xl overflow-hidden h-full"
+                    <div className="relative rounded-3xl overflow-hidden flex-1 mx-auto w-full"
                       style={{
-                        aspectRatio: "9/16",
-                        maxHeight: "100%",
+                        maxWidth: "min(calc((100dvh - 230px) * 9/16), 100%)",
                         background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                         boxShadow: "0 16px 56px rgba(45,42,78,0.4), 0 0 0 1px rgba(167,139,250,0.25)",
                       }}>
@@ -311,18 +310,32 @@ export default function DailyDrawer({
 
                       {/* Overlay haut : badge VIDÉO DU JOUR + mute */}
                       <div className="absolute top-3 left-3 right-3 flex items-start justify-between pointer-events-none z-10">
-                        <div
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full pointer-events-auto"
-                          style={{
-                            background: "linear-gradient(135deg, rgba(167,139,250,0.95), rgba(124,92,250,0.95))",
-                            backdropFilter: "blur(8px)",
-                            boxShadow: "0 4px 12px rgba(124,92,250,0.4)",
-                          }}>
-                          <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#fff" }} />
-                          <span className="text-[10px] font-bold tracking-widest text-white uppercase">
-                            Vidéo du jour
-                          </span>
-                          <span className="text-sm leading-none">🔥</span>
+                        <div className="flex flex-col gap-2 items-start">
+                          <div
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full pointer-events-auto"
+                            style={{
+                              background: "linear-gradient(135deg, rgba(167,139,250,0.95), rgba(124,92,250,0.95))",
+                              backdropFilter: "blur(8px)",
+                              boxShadow: "0 4px 12px rgba(124,92,250,0.4)",
+                            }}>
+                            <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#fff" }} />
+                            <span className="text-[10px] font-bold tracking-widest text-white uppercase">
+                              Vidéo du jour
+                            </span>
+                            <span className="text-sm leading-none">🔥</span>
+                          </div>
+                          {dailyVideo.views > 0 && (
+                            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full pointer-events-none"
+                              style={{
+                                background: "rgba(0,0,0,0.45)",
+                                backdropFilter: "blur(8px)",
+                              }}>
+                              <Eye size={11} strokeWidth={2} color="#fff" />
+                              <span className="text-[10px] font-semibold text-white">
+                                {dailyVideo.views >= 1000 ? `${(dailyVideo.views / 1000).toFixed(1)}k` : dailyVideo.views} vues
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <motion.button
                           type="button"
@@ -396,10 +409,9 @@ export default function DailyDrawer({
                     </div>
                   ) : (
                     /* Empty / loading state */
-                    <div className="relative rounded-3xl overflow-hidden h-full flex items-center justify-center"
+                    <div className="relative rounded-3xl overflow-hidden flex-1 mx-auto w-full flex items-center justify-center"
                       style={{
-                        aspectRatio: "9/16",
-                        maxHeight: "100%",
+                        maxWidth: "min(calc((100dvh - 230px) * 9/16), 100%)",
                         background: "linear-gradient(135deg, rgba(212,192,255,0.18), rgba(245,230,163,0.12))",
                         border: "1px solid rgba(212,192,255,0.3)",
                       }}>
