@@ -974,19 +974,19 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative" style={{ paddingBottom: "222px" }}>
+      <div className="flex-1 flex items-center justify-center px-6 relative" style={{ paddingBottom: "290px" }}>
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
         />
       </div>
 
-      {/* ────────────────── BOTTOM : VOTD chip + croissant — AU-DESSUS de la nav ─ */}
+      {/* ────────────────── BOTTOM : VOTD carte large + croissant — AU-DESSUS de la nav ─ */}
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
         className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity"
-        style={{ bottom: "112px", height: "110px" }}
+        style={{ bottom: "112px", height: "180px" }}
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
@@ -1005,17 +1005,24 @@ function Dashboard() {
           <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
         </div>
 
-        {/* VOTD chip centré dans le bloc — mini-aperçu vidéo + texte */}
-        <div className="absolute inset-x-0 bottom-3 flex justify-center">
-          <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, type: "spring", bounce: 0.35 }}
-            className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl pointer-events-none"
-            style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", border: "1px solid rgba(212,192,255,0.4)", boxShadow: "0 4px 16px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
-            <div className="relative overflow-hidden rounded-xl flex-shrink-0"
+        {/* VOTD carte horizontale large — vidéo à gauche + texte à droite */}
+        <div className="absolute inset-x-4 bottom-3 flex justify-center">
+          <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
+            className="flex items-stretch gap-3 p-2 rounded-3xl pointer-events-none w-full"
+            style={{
+              maxWidth: 460,
+              background: "rgba(255,255,255,0.92)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(212,192,255,0.4)",
+              boxShadow: "0 8px 28px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
+            }}>
+            {/* Vidéo verticale à gauche */}
+            <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
-                width: 36, height: 50,
-                background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
+                width: 78, height: 132,
+                background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}>
               {dailyVideoUrl ? (
                 <video
@@ -1029,18 +1036,41 @@ function Dashboard() {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Play size={14} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 1.5 }} fill="#2D3748" />
+                  <Play size={20} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 2 }} fill="#FFFFFF" />
                 </div>
               )}
-              {/* Petit indicateur "LIVE" / point qui pulse */}
+              {/* Indicateur LIVE en haut */}
               {dailyVideoUrl && (
-                <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
-                  style={{ background: "#FC8181", boxShadow: "0 0 4px rgba(252,129,129,0.8)" }} />
+                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                  style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
+                  <div className="w-1 h-1 rounded-full" style={{ background: "#FC8181", boxShadow: "0 0 4px rgba(252,129,129,0.9)" }} />
+                  <span className="text-[7px] font-bold tracking-widest text-white">LIVE</span>
+                </div>
               )}
+              {/* Gradient noir bas pour lisibilité éventuelle */}
+              <div className="absolute inset-x-0 bottom-0 h-8 pointer-events-none"
+                style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.45))" }} />
             </div>
-            <div className="text-left">
-              <p className="text-[9px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>Du jour</p>
-              <p className="text-sm font-semibold leading-none mt-0.5" style={{ color: "#2D3748" }}>Vidéo · Séance · Perf</p>
+
+            {/* Texte à droite */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center py-1 pr-2">
+              <p className="text-[9px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#A78BFA" }}>
+                Du jour
+              </p>
+              <p className="text-lg font-extralight leading-tight" style={{ color: "#2D3748" }}>
+                Vidéo · Séance · Perf
+              </p>
+              <p className="text-[11px] font-light mt-1.5" style={{ color: "#A0AEC0" }}>
+                Tap pour explorer ton contenu personnalisé
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
+                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.5), rgba(245,230,163,0.5))" }}>
+                  <Play size={9} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 0.5 }} fill="#2D3748" />
+                  <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>Voir</span>
+                </div>
+                <ChevronUp size={11} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
+              </div>
             </div>
           </motion.div>
         </div>

@@ -231,8 +231,7 @@ export default function DailyDrawer({
           <motion.div
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            className="fixed inset-x-0 md:left-[88px] top-0 z-[60]"
-            style={{ height: "calc(100dvh - 112px)" }}
+            className="fixed inset-x-0 md:left-[88px] top-0 z-[60] h-[calc(100dvh-112px)] md:h-[100dvh]"
           >
             <div className="relative h-full m-2 rounded-3xl overflow-hidden flex flex-col"
               style={{
@@ -287,13 +286,13 @@ export default function DailyDrawer({
 
                 {/* ─── VOTD : Vidéo du jour — player TikTok plein hauteur ─── */}
                 <section
-                  className="flex-shrink-0 w-full h-full flex flex-col items-stretch px-3 pb-3"
+                  className="flex-shrink-0 w-full h-full flex flex-col items-center px-3 pb-3"
                   style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
                 >
                   {dailyVideo ? (
-                    <div className="relative rounded-3xl overflow-hidden flex-1 mx-auto w-full"
+                    <div className="relative rounded-3xl overflow-hidden h-full max-w-full"
                       style={{
-                        maxWidth: "min(calc((100dvh - 230px) * 9/16), 100%)",
+                        aspectRatio: "9 / 16",
                         background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                         boxShadow: "0 16px 56px rgba(45,42,78,0.4), 0 0 0 1px rgba(167,139,250,0.25)",
                       }}>
@@ -409,9 +408,9 @@ export default function DailyDrawer({
                     </div>
                   ) : (
                     /* Empty / loading state */
-                    <div className="relative rounded-3xl overflow-hidden flex-1 mx-auto w-full flex items-center justify-center"
+                    <div className="relative rounded-3xl overflow-hidden h-full max-w-full flex items-center justify-center"
                       style={{
-                        maxWidth: "min(calc((100dvh - 230px) * 9/16), 100%)",
+                        aspectRatio: "9 / 16",
                         background: "linear-gradient(135deg, rgba(212,192,255,0.18), rgba(245,230,163,0.12))",
                         border: "1px solid rgba(212,192,255,0.3)",
                       }}>
