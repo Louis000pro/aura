@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, Dumbbell, Trophy, Clock, Flame, ChevronRight } from "lucide-react";
+import { X, Play, Dumbbell, Trophy, Clock, Flame, ChevronRight, Volume2, VolumeX, BadgeCheck } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { User } from "@/context/AuthContext";
 
@@ -23,6 +24,16 @@ type DailyPerf = {
   context?: string;
 };
 
+type DailyVideo = {
+  id: string;
+  media_url: string;
+  caption: string;
+  views: number;
+  pseudo: string;
+  avatar_url?: string | null;
+  is_admin: boolean;
+};
+
 /* ─── Composant ──────────────────────────────────────────────────────── */
 export default function DailyDrawer({
   open,
@@ -36,7 +47,74 @@ export default function DailyDrawer({
   const [activeIdx, setActiveIdx] = useState(0); // 0=VOTD, 1=SOTD, 2=POTD
   const [todayWorkout, setTodayWorkout] = useState<WorkoutSummary | null>(null);
   const [perfs, setPerfs] = useState<DailyPerf[]>([]);
+  const [dailyVideo, setDailyVideo] = useState<DailyVideo | null>(null);
+  const [videoMuted, setVideoMuted] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const videoElRef = useRef<HTMLVideoElement>(null);
+  const router = useRouter();
+
+  /* ─ Charge la VIDÉO DU JOUR : la plus vue des dernières 24h ─ */
+  useEffect(() => {
+    if (!open) return;
+    const supabase = createClient();
+    const since = new Date(Date.now() - 86400000).toISOString();
+    supabase
+      .from("posts")
+      .select(`id, media_url, caption, views, user_id, created_at,
+               author:profiles!user_id(pseudo, avatar_url, is_admin)`)
+      .eq("media_type", "video")
+      .gte("created_at", since)
+      .order("views", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && data.media_url) {
+          const author = Array.isArray(data.author) ? data.author[0] : data.author;
+          setDailyVideo({
+            id:        String(data.id),
+            media_url: data.media_url as string,
+            caption:   (data.caption as string) ?? "",
+            views:     (data.views as number) ?? 0,
+            pseudo:    (author?.pseudo as string) ?? "aura",
+            avatar_url: author?.avatar_url ?? null,
+            is_admin:  Boolean(author?.is_admin),
+          });
+          return;
+        }
+        // Fallback : la plus vue de la semaine si rien dans les 24h
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        supabase
+          .from("posts")
+          .select(`id, media_url, caption, views, user_id, created_at,
+                   author:profiles!user_id(pseudo, avatar_url, is_admin)`)
+          .eq("media_type", "video")
+          .gte("created_at", weekAgo)
+          .order("views", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle()
+          .then(({ data: fb }) => {
+            if (fb && fb.media_url) {
+              const author = Array.isArray(fb.author) ? fb.author[0] : fb.author;
+              setDailyVideo({
+                id:        String(fb.id),
+                media_url: fb.media_url as string,
+                caption:   (fb.caption as string) ?? "",
+                views:     (fb.views as number) ?? 0,
+                pseudo:    (author?.pseudo as string) ?? "aura",
+                avatar_url: author?.avatar_url ?? null,
+                is_admin:  Boolean(author?.is_admin),
+              });
+            }
+          });
+      });
+  }, [open]);
+
+  /* ─ Pause/play vidéo selon visibilité de la tab ─ */
+  useEffect(() => {
+    if (!videoElRef.current) return;
+    if (activeIdx === 0 && open) videoElRef.current.play().catch(() => {});
+    else videoElRef.current.pause();
+  }, [activeIdx, open]);
 
   /* ─ Charge séance du jour depuis le programme localStorage ─ */
   useEffect(() => {
@@ -207,67 +285,138 @@ export default function DailyDrawer({
                 }}
               >
 
-                {/* ─── VOTD : Vidéo du jour ─── */}
+                {/* ─── VOTD : Vidéo du jour — player TikTok 9:16 ─── */}
                 <section
-                  className="flex-shrink-0 w-full h-full flex flex-col"
+                  className="flex-shrink-0 w-full h-full flex flex-col items-center justify-center px-4 pb-3"
                   style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
                 >
-                  <div className="flex-1 px-5 pb-4 flex flex-col gap-3 overflow-y-auto">
-                    {/* Mock vidéo card */}
-                    <div className="relative rounded-3xl overflow-hidden flex-shrink-0"
+                  {dailyVideo ? (
+                    <div className="relative rounded-3xl overflow-hidden h-full"
                       style={{
-                        aspectRatio: "16/9",
-                        background: "linear-gradient(135deg, #2D2A4E 0%, #4C3A6C 50%, #6B4E8C 100%)",
-                        boxShadow: "0 12px 36px rgba(45,42,78,0.35)",
+                        aspectRatio: "9/16",
+                        maxHeight: "100%",
+                        background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
+                        boxShadow: "0 16px 56px rgba(45,42,78,0.4), 0 0 0 1px rgba(167,139,250,0.25)",
                       }}>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
+                      {/* La vraie vidéo */}
+                      <video
+                        ref={videoElRef}
+                        src={dailyVideo.media_url}
+                        muted={videoMuted}
+                        loop
+                        playsInline
+                        autoPlay
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+
+                      {/* Overlay haut : badge VIDÉO DU JOUR + mute */}
+                      <div className="absolute top-3 left-3 right-3 flex items-start justify-between pointer-events-none z-10">
+                        <div
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full pointer-events-auto"
                           style={{
-                            background: "linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,230,163,0.9) 100%)",
-                            boxShadow: "0 8px 24px rgba(167,139,250,0.4)",
+                            background: "linear-gradient(135deg, rgba(167,139,250,0.95), rgba(124,92,250,0.95))",
+                            backdropFilter: "blur(8px)",
+                            boxShadow: "0 4px 12px rgba(124,92,250,0.4)",
                           }}>
-                          <Play size={22} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 3 }} fill="#2D3748" />
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#fff" }} />
+                          <span className="text-[10px] font-bold tracking-widest text-white uppercase">
+                            Vidéo du jour
+                          </span>
+                          <span className="text-sm leading-none">🔥</span>
+                        </div>
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setVideoMuted(v => !v)}
+                          className="w-9 h-9 rounded-full flex items-center justify-center pointer-events-auto"
+                          style={{
+                            background: "rgba(0,0,0,0.45)",
+                            backdropFilter: "blur(8px)",
+                            border: "1px solid rgba(255,255,255,0.18)",
+                          }}
+                          aria-label={videoMuted ? "Activer le son" : "Couper le son"}
+                        >
+                          {videoMuted
+                            ? <VolumeX size={15} strokeWidth={2} color="#fff" />
+                            : <Volume2 size={15} strokeWidth={2} color="#fff" />}
                         </motion.button>
                       </div>
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.7)" }}>
-                            Aujourd'hui · 8 min
-                          </p>
-                          <p className="text-sm font-semibold mt-0.5" style={{ color: "#fff" }}>
-                            Routine mobilité matinale
-                          </p>
-                        </div>
-                        <div className="px-2 py-1 rounded-lg text-[10px] font-semibold"
-                          style={{ background: "rgba(255,255,255,0.18)", color: "#fff", backdropFilter: "blur(8px)" }}>
-                          NEW
-                        </div>
+
+                      {/* Overlay bas : auteur + bouton Voir */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3 flex items-end justify-between gap-2 z-10"
+                        style={{
+                          background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.8))",
+                        }}>
+                        <Link
+                          href={`/profil/${dailyVideo.pseudo}`}
+                          className="flex items-center gap-2 min-w-0 flex-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"
+                            style={{ border: "2px solid rgba(255,255,255,0.85)" }}>
+                            {dailyVideo.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={dailyVideo.avatar_url} alt={dailyVideo.pseudo} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm font-bold"
+                                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                                {dailyVideo.pseudo[0]?.toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-bold truncate text-white">@{dailyVideo.pseudo}</p>
+                              {dailyVideo.is_admin && (
+                                <BadgeCheck size={13} strokeWidth={2} className="flex-shrink-0" style={{ color: "#A78BFA", fill: "rgba(255,255,255,0.95)" }} />
+                              )}
+                            </div>
+                            {dailyVideo.caption && (
+                              <p className="text-xs font-medium truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
+                                {dailyVideo.caption}
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => router.push(`/communaute?video=${dailyVideo.id}`)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full flex-shrink-0"
+                          style={{
+                            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                            boxShadow: "0 4px 14px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.6)",
+                          }}>
+                          <Play size={12} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 1 }} fill="#2D3748" />
+                          <span className="text-xs font-bold" style={{ color: "#2D3748" }}>Voir</span>
+                        </motion.button>
                       </div>
                     </div>
-
-                    {/* Description */}
-                    <div>
-                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "#A0AEC0" }}>
-                        À retenir
-                      </p>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#2D3748" }}>
-                        8 minutes de mouvements ciblés pour débloquer hanches et épaules. Idéal pour préparer ton corps avant n'importe quel effort ✦
-                      </p>
+                  ) : (
+                    /* Empty / loading state */
+                    <div className="relative rounded-3xl overflow-hidden h-full flex items-center justify-center"
+                      style={{
+                        aspectRatio: "9/16",
+                        maxHeight: "100%",
+                        background: "linear-gradient(135deg, rgba(212,192,255,0.18), rgba(245,230,163,0.12))",
+                        border: "1px solid rgba(212,192,255,0.3)",
+                      }}>
+                      <div className="text-center px-6">
+                        <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3"
+                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                          <Play size={22} strokeWidth={1.5} style={{ color: "#2D3748" }} fill="#2D3748" />
+                        </div>
+                        <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
+                          Vidéo du jour
+                        </p>
+                        <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                          Aucune vidéo populaire récente
+                        </p>
+                      </div>
                     </div>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {["Mobilité", "Matin", "5 min", "Débutant"].map(tag => (
-                        <span key={tag} className="px-2.5 py-1 rounded-full text-[10px] font-medium"
-                          style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  )}
                 </section>
 
                 {/* ─── SOTD : Séance du jour ─── */}
