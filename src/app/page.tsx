@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HomeOrb from "@/components/HomeOrb";
 import StatsDrawer from "@/components/StatsDrawer";
+import DailyDrawer from "@/components/DailyDrawer";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
@@ -604,7 +605,6 @@ function Dashboard() {
   const [showChat, setShowChat] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
-  const [dailyTab, setDailyTab] = useState<"votd"|"sotd"|"potd">("votd");
   void mobilePanel; void setMobilePanel; void logout; void router; // legacy refs, unused dans la nouvelle layout
   const [showRepas, setShowRepas] = useState(false);
   const [showObjectif, setShowObjectif] = useState(false);
@@ -997,64 +997,12 @@ function Dashboard() {
         onOpenRepas={() => setShowRepas(true)}
       />
 
-      {/* ────────────────── DRAWER DAILY (bottom → up) ──────────────────── */}
-      <AnimatePresence>
-        {showDailyDrawer && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowDailyDrawer(false)}
-              className="fixed inset-0 z-40" style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed inset-x-0 top-0 z-50"
-              style={{ height: "calc(100dvh - 112px)" }}>
-              <div className="h-full m-2 rounded-3xl p-5 flex flex-col gap-4"
-                style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 -20px 60px rgba(167,139,250,0.2)" }}>
-                <div className="flex items-center justify-between flex-shrink-0">
-                  <h2 className="text-lg font-extralight" style={{ color: "#2D3748" }}>Du jour</h2>
-                  <button type="button" onClick={() => setShowDailyDrawer(false)} className="w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(167,139,250,0.1)" }}>
-                    <X size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                  </button>
-                </div>
-
-                {/* Tabs VOTD / SOTD / POTD */}
-                <div className="flex gap-2 flex-shrink-0">
-                  {[
-                    { key: "votd" as const, label: "Vidéo" },
-                    { key: "sotd" as const, label: "Séance" },
-                    { key: "potd" as const, label: "Perf" },
-                  ].map(t => (
-                    <button type="button" key={t.key} onClick={() => setDailyTab(t.key)}
-                      className="flex-1 py-2.5 rounded-2xl text-xs font-semibold transition-all"
-                      style={
-                        dailyTab === t.key
-                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }
-                          : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.25)" }
-                      }>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Contenu placeholder Phase 3 */}
-                <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
-                    <Play size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} fill="#A78BFA" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
-                      {dailyTab === "votd" ? "Vidéo du jour" : dailyTab === "sotd" ? "Séance du jour" : "Perf du jour"}
-                    </p>
-                    <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Bientôt disponible — Phase 3</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* ────────────────── DRAWER DAILY (bottom → up) — 3 cards swipables */}
+      <DailyDrawer
+        open={showDailyDrawer}
+        onClose={() => setShowDailyDrawer(false)}
+        user={user}
+      />
 
       {/* ────────────────── CHAT PANEL (overlay) ─────────────────────── */}
       <AnimatePresence>
