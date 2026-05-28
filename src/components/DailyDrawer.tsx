@@ -146,14 +146,14 @@ export default function DailyDrawer({
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[55]"
             style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }}
           />
 
           <motion.div
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            className="fixed inset-x-0 top-0 z-50"
+            className="fixed inset-x-0 top-0 z-[60]"
             style={{ height: "calc(100dvh - 112px)" }}
           >
             <div className="relative h-full m-2 rounded-3xl overflow-hidden flex flex-col"
