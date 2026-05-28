@@ -974,7 +974,7 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative" style={{ paddingBottom: "290px" }}>
+      <div className="flex-1 flex items-center justify-center px-6 relative" style={{ paddingBottom: "180px" }}>
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
@@ -986,7 +986,7 @@ function Dashboard() {
         type="button"
         onClick={() => setShowDailyDrawer(true)}
         className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity"
-        style={{ bottom: "112px", height: "180px" }}
+        style={{ bottom: "112px", height: "138px" }}
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
@@ -1020,7 +1020,7 @@ function Dashboard() {
             {/* Vidéo verticale à gauche */}
             <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
-                width: 78, height: 132,
+                width: 64, height: 104,
                 background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                 boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}>
@@ -1053,17 +1053,17 @@ function Dashboard() {
             </div>
 
             {/* Texte à droite */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center py-1 pr-2">
-              <p className="text-[9px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#A78BFA" }}>
+            <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 pr-2">
+              <p className="text-[9px] font-bold tracking-widest uppercase leading-none mb-0.5" style={{ color: "#A78BFA" }}>
                 Du jour
               </p>
-              <p className="text-lg font-extralight leading-tight" style={{ color: "#2D3748" }}>
+              <p className="text-base font-extralight leading-tight" style={{ color: "#2D3748" }}>
                 Vidéo · Séance · Perf
               </p>
-              <p className="text-[11px] font-light mt-1.5" style={{ color: "#A0AEC0" }}>
-                Tap pour explorer ton contenu personnalisé
+              <p className="text-[10px] font-light mt-1 leading-snug" style={{ color: "#A0AEC0" }}>
+                Tap pour explorer ton contenu
               </p>
-              <div className="flex items-center gap-1.5 mt-2">
+              <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
                   style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.5), rgba(245,230,163,0.5))" }}>
                   <Play size={9} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 0.5 }} fill="#2D3748" />
