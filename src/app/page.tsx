@@ -3,16 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Brain, Activity, ChevronRight, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
+import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Brain, Activity, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HomeOrb from "@/components/HomeOrb";
+import StatsDrawer from "@/components/StatsDrawer";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
-import WeeklyProgramme from "@/components/WeeklyProgramme";
-import { stats } from "@/data/statsData";
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 
@@ -989,69 +988,14 @@ function Dashboard() {
         </div>
       </button>
 
-      {/* ────────────────── DRAWER STATS (top → down) ──────────────────── */}
-      <AnimatePresence>
-        {showStatsDrawer && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowStatsDrawer(false)}
-              className="fixed inset-0 z-40" style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }} />
-            <motion.div initial={{ y: "-100%" }} animate={{ y: 0 }} exit={{ y: "-100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed inset-x-0 top-0 z-50"
-              style={{ height: "calc(100dvh - 112px)" }}>
-              <div className="h-full m-2 rounded-3xl overflow-y-auto p-5 flex flex-col gap-4"
-                style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 20px 60px rgba(167,139,250,0.2)" }}>
-                <div className="flex items-center justify-between flex-shrink-0">
-                  <h2 className="text-lg font-extralight" style={{ color: "#2D3748" }}>Aujourd'hui</h2>
-                  <button type="button" onClick={() => setShowStatsDrawer(false)} className="w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(167,139,250,0.1)" }}>
-                    <X size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                  </button>
-                </div>
-
-                {/* Séance recommandée */}
-                <p className="text-[10px] font-semibold tracking-widest uppercase flex-shrink-0" style={{ color: "#A0AEC0" }}>Séance recommandée</p>
-                {user && <WeeklyProgramme />}
-
-                {/* Repas du jour */}
-                <p className="text-[10px] font-semibold tracking-widest uppercase mt-2 flex-shrink-0" style={{ color: "#A0AEC0" }}>Repas du jour</p>
-                <button type="button" onClick={() => setShowRepas(true)}
-                  className="rounded-2xl p-4 flex items-center justify-between cursor-pointer flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, rgba(255,251,240,0.95) 0%, rgba(245,230,163,0.4) 100%)", border: "1px solid rgba(212,168,67,0.2)" }}>
-                  <div className="flex items-center gap-3">
-                    <Utensils size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-                    <span className="text-sm font-medium" style={{ color: "#2D3748" }}>Ajouter un repas / photo</span>
-                  </div>
-                  <ChevronRight size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                </button>
-
-                {/* Mes statistiques */}
-                <p className="text-[10px] font-semibold tracking-widest uppercase mt-2 flex-shrink-0" style={{ color: "#A0AEC0" }}>Mes statistiques</p>
-                <div className="grid grid-cols-2 gap-2.5 flex-shrink-0">
-                  {stats.slice(0, 4).map((stat) => {
-                    const Icon = stat.icon;
-                    return (
-                      <button type="button" key={stat.label} onClick={() => setSelectedStat(stat)}
-                        className="rounded-2xl p-3 flex flex-col items-start gap-1.5 cursor-pointer text-left"
-                        style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.25)" }}>
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                          style={{ background: "rgba(167,139,250,0.1)" }}>
-                          <Icon size={14} strokeWidth={1.5} style={{ color: stat.iconColor }} />
-                        </div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{stat.label}</p>
-                        <p className="text-base font-semibold" style={{ color: "#2D3748" }}>
-                          {stat.value}<span className="text-[10px] font-normal ml-1" style={{ color: "#A0AEC0" }}>{stat.unit}</span>
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* ────────────────── DRAWER STATS (top → down) — carousel 3 zones ── */}
+      <StatsDrawer
+        open={showStatsDrawer}
+        onClose={() => setShowStatsDrawer(false)}
+        user={user}
+        onOpenStat={(s) => setSelectedStat(s)}
+        onOpenRepas={() => setShowRepas(true)}
+      />
 
       {/* ────────────────── DRAWER DAILY (bottom → up) ──────────────────── */}
       <AnimatePresence>
