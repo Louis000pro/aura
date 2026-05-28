@@ -283,13 +283,55 @@ function PlatsZone({
   const carouselRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const totalCards = meals.length + 1; // +1 pour la carte "Ajouter"
+  const prevLenRef = useRef(-1);
 
+  /* Détection de la carte centrée par sa proximité au centre du viewport */
   const onCarouselScroll = useCallback(() => {
     if (!carouselRef.current) return;
-    const w = carouselRef.current.clientWidth;
-    const t = carouselRef.current.scrollLeft;
-    setActiveIdx(Math.round(t / w));
+    const container = carouselRef.current;
+    const containerCenter = container.scrollLeft + container.clientWidth / 2;
+    let closestIdx = 0;
+    let closestDist = Infinity;
+    Array.from(container.children).forEach((child, idx) => {
+      const el = child as HTMLElement;
+      const childCenter = el.offsetLeft + el.clientWidth / 2;
+      const dist = Math.abs(childCenter - containerCenter);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = idx;
+      }
+    });
+    setActiveIdx(closestIdx);
   }, []);
+
+  /* Centrer une carte donnée par index */
+  const scrollToCard = useCallback((idx: number) => {
+    if (!carouselRef.current) return;
+    const el = carouselRef.current.children[idx] as HTMLElement | undefined;
+    if (el) el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }, []);
+
+  /* Auto-scroll vers la carte "Ajouter" au mount initial + après un ajout */
+  useEffect(() => {
+    if (!carouselRef.current) return;
+    const prev = prevLenRef.current;
+    prevLenRef.current = meals.length;
+    // Initial render (prev === -1) ou meals a grandi (nouveau repas ajouté)
+    if (prev === -1 || meals.length > prev) {
+      // Petit délai pour s'assurer que les enfants sont rendus
+      requestAnimationFrame(() => {
+        const el = carouselRef.current?.children[meals.length] as HTMLElement | undefined;
+        if (el) {
+          el.scrollIntoView({
+            inline: "center",
+            block: "nearest",
+            behavior: prev === -1 ? "auto" : "smooth",
+          });
+          setActiveIdx(meals.length);
+        }
+      });
+    }
+  }, [meals.length]);
 
   return (
     <section
@@ -311,7 +353,7 @@ function PlatsZone({
         )}
       </div>
 
-      {/* Carousel horizontal */}
+      {/* Carousel horizontal avec peek */}
       <div
         ref={carouselRef}
         onScroll={onCarouselScroll}
@@ -320,6 +362,9 @@ function PlatsZone({
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
+          // Padding pour que la 1re et la dernière carte puissent se centrer
+          paddingLeft: "12.5%",
+          paddingRight: "12.5%",
         }}
       >
         {/* Une carte par repas */}
@@ -328,6 +373,8 @@ function PlatsZone({
             key={meal.id}
             meal={meal}
             index={idx}
+            isActive={activeIdx === idx}
+            onActivate={() => scrollToCard(idx)}
             onTap={onOpenRepas}
           />
         ))}
@@ -337,6 +384,8 @@ function PlatsZone({
           key="add-new"
           meal={null}
           index={meals.length}
+          isActive={activeIdx === meals.length}
+          onActivate={() => scrollToCard(meals.length)}
           onTap={onOpenRepas}
         />
       </div>
@@ -391,10 +440,14 @@ function PlatsZone({
 function PlateCard({
   meal,
   index,
+  isActive,
+  onActivate,
   onTap,
 }: {
   meal: Meal | null; // null = carte "Ajouter"
   index: number;
+  isActive: boolean;
+  onActivate: () => void;
   onTap: () => void;
 }) {
   const isAddCard = meal === null;
@@ -402,17 +455,30 @@ function PlateCard({
   const palette = meal ? (MEAL_PALETTE[meal.mealType] ?? MEAL_PALETTE.dejeuner) : null;
   const plateId = `plate-${index}`;
 
+  // Tap : si la carte est centrée → ouvre le modal. Sinon → scroll au centre.
+  const handleClick = () => {
+    if (isActive) onTap();
+    else onActivate();
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.92 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.05, duration: 0.3 }}
-      className="flex-shrink-0 w-full flex flex-col items-center justify-center px-5 gap-3"
-      style={{ scrollSnapAlign: "center", scrollSnapStop: "always" }}
+      animate={{
+        opacity: isActive ? 1 : 0.55,
+        scale: isActive ? 1 : 0.82,
+      }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="flex-shrink-0 flex flex-col items-center justify-center px-3 gap-3"
+      style={{
+        width: "75%",
+        scrollSnapAlign: "center",
+        scrollSnapStop: "always",
+        filter: isActive ? "none" : "saturate(0.85)",
+      }}
     >
       <motion.button
         type="button"
-        onClick={onTap}
+        onClick={handleClick}
         whileTap={{ scale: 0.97 }}
         whileHover={{ scale: 1.02 }}
         className="relative outline-none"
