@@ -207,7 +207,8 @@ export default function Navigation() {
       </AnimatePresence>
 
       {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      {/* Visible sur la home (mobile-only) à toutes tailles d'écran, sinon mobile-only */}
+      <nav className={`fixed bottom-0 left-0 right-0 z-50 ${pathname === "/" ? "" : "md:hidden"}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <div className="lg-strong lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
             {/* 1. Accueil */}
