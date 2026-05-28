@@ -206,16 +206,17 @@ export default function Navigation() {
         {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
       </AnimatePresence>
 
-      {/* ══ Mobile Bottom Bar ══ */}
+      {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <div className="lg-strong lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
-            {TABS.map(({ href, label, icon, sub }) => (
-              <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} mobile />
-            ))}
+            {/* 1. Accueil */}
+            <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile />
+            {/* 2. Progression */}
+            <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile />
 
-            {/* Bouton + */}
-            {user && (
+            {/* 3. Bouton + (centre) */}
+            {user ? (
               <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowPublish(true)}
                 className="flex-1 flex items-center justify-center" aria-label="Publier">
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
@@ -223,14 +224,12 @@ export default function Navigation() {
                   <Plus size={20} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
                 </div>
               </motion.button>
-            )}
+            ) : <div className="flex-1" />}
 
-            {/* Cloche */}
-            {user && (
-              <div className="flex-1 flex items-center justify-center py-2">
-                <NotificationBell side="bottom" />
-              </div>
-            )}
+            {/* 4. Communauté */}
+            <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile />
+            {/* 5. Profil */}
+            <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile />
           </div>
         </div>
       </nav>

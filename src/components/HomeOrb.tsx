@@ -196,23 +196,79 @@ export default function HomeOrb({
   }, [state]);
 
   /* ─── Rendu ────────────────────────────────────────────────────────── */
-  const isActive = state === "recording" || state === "pressing";
+  const ringSize = size + 90; // diamètre des liserés rotatifs
 
   return (
     <div className="relative flex flex-col items-center justify-center gap-3 select-none touch-none">
-      {/* Halo de fond — lévitation idle */}
-      {state === "idle" && (
-        <motion.div
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: size + 60,
-            height: size + 60,
-            background: "radial-gradient(circle, rgba(212,192,255,0.18) 0%, transparent 70%)",
-          }}
-          animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.25, 0.5] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      {/* Halo de fond doux */}
+      <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: size + 80,
+          height: size + 80,
+          background: "radial-gradient(circle, rgba(212,192,255,0.16) 0%, rgba(245,230,163,0.08) 50%, transparent 75%)",
+        }}
+        animate={{ scale: [1, 1.05, 1], opacity: [0.6, 0.4, 0.6] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* ─── Liserés Siri-style : 4 cercles thin rotatifs ─── */}
+      <svg
+        className="absolute pointer-events-none"
+        width={ringSize}
+        height={ringSize}
+        viewBox={`0 0 ${ringSize} ${ringSize}`}
+        style={{ overflow: "visible" }}
+      >
+        {/* Anneau 1 — violet pâle, rotation horaire 18s, arc 80% */}
+        <motion.circle
+          cx={ringSize / 2} cy={ringSize / 2} r={(ringSize / 2) - 4}
+          fill="none"
+          stroke="rgba(167,139,250,0.45)"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeDasharray="240 80"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          style={{ transformOrigin: `${ringSize / 2}px ${ringSize / 2}px` }}
         />
-      )}
+        {/* Anneau 2 — or pâle, rotation anti-horaire 24s, arc différent */}
+        <motion.circle
+          cx={ringSize / 2} cy={ringSize / 2} r={(ringSize / 2) - 12}
+          fill="none"
+          stroke="rgba(245,230,163,0.55)"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeDasharray="180 120"
+          animate={{ rotate: -360 }}
+          transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+          style={{ transformOrigin: `${ringSize / 2}px ${ringSize / 2}px` }}
+        />
+        {/* Anneau 3 — lavande, rotation horaire 14s, arc fin */}
+        <motion.circle
+          cx={ringSize / 2} cy={ringSize / 2} r={(ringSize / 2) - 20}
+          fill="none"
+          stroke="rgba(212,192,255,0.4)"
+          strokeWidth="0.8"
+          strokeLinecap="round"
+          strokeDasharray="60 280"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 14, repeat: Infinity, ease: "linear" }}
+          style={{ transformOrigin: `${ringSize / 2}px ${ringSize / 2}px` }}
+        />
+        {/* Anneau 4 — pêche/or, rotation anti-horaire 20s, arc mi-long */}
+        <motion.circle
+          cx={ringSize / 2} cy={ringSize / 2} r={(ringSize / 2) - 28}
+          fill="none"
+          stroke="rgba(255,212,163,0.5)"
+          strokeWidth="0.9"
+          strokeLinecap="round"
+          strokeDasharray="100 200"
+          animate={{ rotate: -360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          style={{ transformOrigin: `${ringSize / 2}px ${ringSize / 2}px` }}
+        />
+      </svg>
 
       {/* Pulses pendant recording */}
       <AnimatePresence>

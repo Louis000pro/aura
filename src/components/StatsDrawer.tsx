@@ -187,7 +187,7 @@ export default function StatsDrawer({
                   </div>
                 </section>
 
-                {/* ─── ZONE 2 : Plats du jour ─── */}
+                {/* ─── ZONE 2 : Plats du jour — Assiette hero ─── */}
                 <section
                   className="h-full flex flex-col pt-16 pb-6 px-5 gap-3"
                   style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
@@ -206,67 +206,151 @@ export default function StatsDrawer({
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 -mx-1 px-1">
-                    {meals.length === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                          style={{ background: "linear-gradient(135deg, rgba(255,251,240,0.95) 0%, rgba(245,230,163,0.4) 100%)" }}>
-                          <Utensils size={22} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-                        </div>
-                        <p className="text-sm font-light px-4" style={{ color: "#A0AEC0" }}>
-                          Pas encore de repas aujourd'hui
-                        </p>
-                      </div>
-                    ) : (
-                      meals.map((m) => (
-                        <motion.div key={m.id}
-                          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                          className="rounded-2xl p-3 flex items-center gap-3"
+                  {/* Assiette SVG hero */}
+                  <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                    <motion.button
+                      type="button"
+                      onClick={onOpenRepas}
+                      whileTap={{ scale: 0.97 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="relative outline-none"
+                      style={{ width: 220, height: 220 }}
+                      aria-label={meals.length === 0 ? "Ajouter un repas" : "Voir les détails du repas"}
+                    >
+                      {/* Ombre portée sous l'assiette */}
+                      <div className="absolute pointer-events-none"
+                        style={{
+                          bottom: -6, left: "50%", transform: "translateX(-50%)",
+                          width: 200, height: 18, borderRadius: "50%",
+                          background: "radial-gradient(ellipse, rgba(45,55,72,0.18) 0%, transparent 70%)",
+                          filter: "blur(8px)",
+                        }} />
+
+                      <svg viewBox="0 0 220 220" width="220" height="220" style={{ overflow: "visible" }}>
+                        <defs>
+                          {/* Gradient principal de l'assiette */}
+                          <radialGradient id="plateBody" cx="40%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="55%" stopColor="#F8F4FB" />
+                            <stop offset="100%" stopColor="#E8DEF0" />
+                          </radialGradient>
+                          {/* Gradient de la zone creuse intérieure */}
+                          <radialGradient id="plateInner" cx="45%" cy="40%" r="60%">
+                            <stop offset="0%" stopColor="#FFFFFF" />
+                            <stop offset="100%" stopColor="#F0E8F5" />
+                          </radialGradient>
+                          {/* Reflet brillant en haut */}
+                          <linearGradient id="plateShine" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+                            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Corps de l'assiette */}
+                        <circle cx="110" cy="110" r="105" fill="url(#plateBody)" />
+                        {/* Bord intérieur (creux) */}
+                        <circle cx="110" cy="110" r="82" fill="url(#plateInner)" />
+                        {/* Ligne de séparation entre bord et creux */}
+                        <circle cx="110" cy="110" r="82" fill="none" stroke="rgba(167,139,250,0.18)" strokeWidth="0.5" />
+                        {/* Reflet en haut */}
+                        <ellipse cx="85" cy="55" rx="55" ry="22" fill="url(#plateShine)" opacity="0.6" />
+                        {/* Petite touche de brillance latérale */}
+                        <ellipse cx="170" cy="100" rx="8" ry="35" fill="rgba(255,255,255,0.35)" />
+
+                        {/* ─── Si pleine : aliments stylisés sur l'assiette ─── */}
+                        {meals.length > 0 && (
+                          <>
+                            {/* Blob principal (protéine - or/saumon) */}
+                            <ellipse cx="90" cy="105" rx="32" ry="24"
+                              fill="url(#foodProtein)" opacity="0.92" />
+                            {/* Blob secondaire (féculents - violet pâle) */}
+                            <ellipse cx="135" cy="125" rx="26" ry="20"
+                              fill="url(#foodCarbs)" opacity="0.88" />
+                            {/* Blob veggies (vert pastel) */}
+                            <ellipse cx="125" cy="85" rx="20" ry="15"
+                              fill="url(#foodVeggies)" opacity="0.85" />
+                            <defs>
+                              <radialGradient id="foodProtein" cx="40%" cy="35%">
+                                <stop offset="0%" stopColor="#F5C99B" />
+                                <stop offset="100%" stopColor="#D4A05A" />
+                              </radialGradient>
+                              <radialGradient id="foodCarbs" cx="40%" cy="35%">
+                                <stop offset="0%" stopColor="#E8D7FF" />
+                                <stop offset="100%" stopColor="#C4A8E8" />
+                              </radialGradient>
+                              <radialGradient id="foodVeggies" cx="40%" cy="35%">
+                                <stop offset="0%" stopColor="#C9E5C0" />
+                                <stop offset="100%" stopColor="#8FB682" />
+                              </radialGradient>
+                            </defs>
+                            {/* Petits détails (grains/morceaux) */}
+                            <circle cx="80" cy="95" r="2.5" fill="#B8804F" opacity="0.7" />
+                            <circle cx="98" cy="115" r="2" fill="#B8804F" opacity="0.7" />
+                            <circle cx="142" cy="120" r="2" fill="#9F84BF" opacity="0.7" />
+                            <circle cx="130" cy="135" r="2.5" fill="#9F84BF" opacity="0.7" />
+                            <circle cx="120" cy="90" r="1.8" fill="#6E9C5B" opacity="0.7" />
+                          </>
+                        )}
+                      </svg>
+
+                      {/* Mini overlay icône camera si vide */}
+                      {meals.length === 0 && (
+                        <div className="absolute pointer-events-none"
                           style={{
-                            background: "rgba(255,255,255,0.85)",
-                            border: "1px solid rgba(212,168,67,0.18)",
-                            boxShadow: "0 2px 8px rgba(167,139,250,0.04)",
+                            top: "50%", left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: 48, height: 48,
+                            borderRadius: 16,
+                            background: "rgba(167,139,250,0.15)",
+                            backdropFilter: "blur(4px)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
                           }}>
-                          <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
-                            style={{ background: "linear-gradient(135deg, rgba(255,251,240,0.95) 0%, rgba(245,230,163,0.55) 100%)" }}>
-                            {MEAL_EMOJI[m.mealType] ?? "🍽️"}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{m.name}</p>
-                              <p className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{m.time?.substring(0,5) ?? ""}</p>
-                            </div>
-                            <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>
-                              {MEAL_LABEL[m.mealType] ?? ""} · {m.calories} kcal · {m.proteins}g prot
-                            </p>
-                          </div>
-                          {m.hasPhoto && (
-                            <Camera size={12} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                          )}
-                        </motion.div>
-                      ))
-                    )}
+                          <Camera size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                        </div>
+                      )}
+                    </motion.button>
+
+                    {/* Légende sous l'assiette */}
+                    <div className="text-center">
+                      {meals.length === 0 ? (
+                        <>
+                          <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                            Assiette vide
+                          </p>
+                          <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                            Tap pour ajouter — photo, code-barres ou saisie
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                            {meals.length} repas {meals.length > 1 ? "ajoutés" : "ajouté"} aujourd'hui
+                          </p>
+                          <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                            Tap pour inspecter ou ajouter
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  <button type="button" onClick={onOpenRepas}
-                    className="rounded-2xl p-3.5 flex items-center justify-between cursor-pointer flex-shrink-0"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(255,251,240,0.95) 0%, rgba(245,230,163,0.45) 100%)",
-                      border: "1px solid rgba(212,168,67,0.25)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
-                    }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                        style={{ background: "rgba(212,168,67,0.18)" }}>
-                        <Camera size={15} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>Ajouter un repas</p>
-                        <p className="text-[10px]" style={{ color: "#A0AEC0" }}>Photo · code-barres · texte</p>
-                      </div>
+                  {/* Si pleine : récap mini en bas */}
+                  {meals.length > 0 && (
+                    <div className="flex gap-2 flex-shrink-0">
+                      {[
+                        { label: "kcal", value: totalCals,        color: "#A78BFA" },
+                        { label: "Prot", value: `${totalProteins}g`, color: "#D4A843" },
+                        { label: "Repas", value: meals.length,    color: "#A78BFA" },
+                      ].map(s => (
+                        <div key={s.label}
+                          className="flex-1 rounded-2xl p-2.5 text-center"
+                          style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.25)" }}>
+                          <p className="text-[8px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                          <p className="text-base font-semibold mt-0.5" style={{ color: s.color }}>{s.value}</p>
+                        </div>
+                      ))}
                     </div>
-                    <ChevronRight size={15} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                  </button>
+                  )}
                 </section>
 
                 {/* ─── ZONE 3 : Statistiques ─── */}

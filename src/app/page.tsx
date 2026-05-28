@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import HomeOrb from "@/components/HomeOrb";
 import StatsDrawer from "@/components/StatsDrawer";
 import DailyDrawer from "@/components/DailyDrawer";
+import NotificationBell from "@/components/NotificationBell";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
@@ -868,7 +869,7 @@ function Dashboard() {
   void quickActionHandlers;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)" }}>
+    <div className="fixed inset-0 flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", touchAction: "none", height: "100dvh" }}>
 
       {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
       <button
@@ -885,12 +886,9 @@ function Dashboard() {
               {user?.pseudo ?? user?.name ?? ""}
             </h1>
           </div>
-          <Link href={user?.pseudo ? `/profil/${user.pseudo}` : "/profil"} onClick={(e) => e.stopPropagation()}>
-            <motion.div whileTap={{ scale: 0.92 }} className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 3px 12px rgba(167,139,250,0.25)" }}>
-              <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase()}</span>
-            </motion.div>
-          </Link>
+          <div onClick={(e) => e.stopPropagation()}>
+            <NotificationBell side="bottom" />
+          </div>
         </div>
 
         {/* 4 mini-cadrans */}
@@ -940,22 +938,23 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative">
+      <div className="flex-1 flex items-center justify-center px-6 relative" style={{ paddingBottom: "222px" }}>
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
         />
       </div>
 
-      {/* ────────────────── BOTTOM : VOTD chip + croissant ───────────── */}
+      {/* ────────────────── BOTTOM : VOTD chip + croissant — AU-DESSUS de la nav ─ */}
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="relative w-full flex-shrink-0 outline-none active:opacity-95 transition-opacity"
-        style={{ height: "14%", paddingBottom: "112px" }}
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity"
+        style={{ bottom: "112px", height: "110px" }}
+        aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
-        <svg className="absolute -top-px left-0 w-full pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
+        <svg className="absolute -top-px left-0 w-full pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
           <defs>
             <linearGradient id="bottomCrescentGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="rgba(245,230,163,0.0)" />
@@ -966,16 +965,16 @@ function Dashboard() {
         </svg>
 
         {/* Hint chevron */}
-        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 pointer-events-none">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
           <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
         </div>
 
-        {/* VOTD chip */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center" style={{ marginTop: "-32px" }}>
+        {/* VOTD chip centré dans le bloc */}
+        <div className="absolute inset-x-0 bottom-3 flex justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.35 }}
             className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl pointer-events-none"
-            style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(212,192,255,0.4)", boxShadow: "0 4px 16px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+            style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", border: "1px solid rgba(212,192,255,0.4)", boxShadow: "0 4px 16px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
             <div className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }}>
               <Play size={12} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 1.5 }} fill="#2D3748" />
