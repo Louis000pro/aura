@@ -974,7 +974,7 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative" style={{ paddingBottom: "180px" }}>
+      <div className="flex-1 flex items-center justify-center px-6 relative pb-[180px] md:pb-[80px]">
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
@@ -985,8 +985,7 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity"
-        style={{ bottom: "112px", height: "138px" }}
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity bottom-[112px] md:bottom-6 h-[138px]"
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
