@@ -207,8 +207,7 @@ export default function Navigation() {
       </AnimatePresence>
 
       {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
-      {/* Visible sur la home (mobile-only) à toutes tailles d'écran, sinon mobile-only */}
-      <nav className={`fixed bottom-0 left-0 right-0 z-50 ${pathname === "/" ? "" : "md:hidden"}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <div className="lg-strong lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
             {/* 1. Accueil */}
@@ -235,8 +234,8 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* ══ Desktop Sidebar ══ — cachée sur la home (mobile-only) */}
-      <aside className={`fixed left-4 top-4 bottom-4 z-50 flex-col ${pathname === "/" ? "hidden" : "hidden md:flex"}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      {/* ══ Desktop Sidebar ══ */}
+      <aside className="hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col" style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}

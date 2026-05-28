@@ -881,7 +881,7 @@ function Dashboard() {
   void quickActionHandlers;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", touchAction: "none", height: "100dvh" }}>
+    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", touchAction: "none", height: "100dvh" }}>
 
       {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
       <button
@@ -1022,10 +1022,10 @@ function Dashboard() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowChat(false)}
-              className="fixed inset-0 z-[55]" style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }} />
+              className="fixed inset-0 md:left-[88px] z-[55]" style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }} />
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="fixed inset-x-2 bottom-2 z-[60] overflow-hidden rounded-3xl"
+              className="fixed inset-x-2 md:left-[96px] bottom-2 z-[60] overflow-hidden rounded-3xl"
               style={{ top: "40px" }}>
               <button type="button" onClick={() => setShowChat(false)} aria-label="Fermer"
                 className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center"
