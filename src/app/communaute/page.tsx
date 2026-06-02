@@ -3783,7 +3783,7 @@ function CommunautePageInner() {
 
   return (
     <div
-      className={`flex flex-col w-full relative ${feedTab === "videos" ? "h-dvh overflow-hidden p-0" : "px-4 md:px-8 pt-8 mx-auto max-w-4xl min-h-screen pb-4"}`}
+      className={`flex flex-col px-4 md:px-8 pt-8 w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden pb-0" : "min-h-screen pb-4"}`}
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
