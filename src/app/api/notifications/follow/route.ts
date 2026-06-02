@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import nodemailer from "nodemailer";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { sendPushToUser } from "@/lib/sendPushToUser";
 
 function cleanEnv(val: string | undefined): string {
   return (val ?? "").replace(/[^\x20-\x7E]/g, "").trim();
@@ -114,6 +115,14 @@ export async function POST(req: NextRequest) {
   </div>
 </body>
 </html>`,
+    });
+
+    // ── Push notification (fire-and-forget) ──────────────────────────────────
+    void sendPushToUser({
+      user_id: followed_id,
+      title: "Aura · Nouvel abonné",
+      body:  `${followerName} te suit maintenant !`,
+      url:   `/profil/${follower?.pseudo ?? ""}`,
     });
 
     return Response.json({ ok: true });

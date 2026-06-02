@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useTheme } from "@/hooks/useTheme";
+import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/push";
 
 /* ── Section header ─────────────────────────────────────── */
 function Section({ title }: { title: string }) {
@@ -583,10 +584,44 @@ export default function ParametresPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [pushLoading, setPushLoading]             = useState(false);
+  const [pushEnabled, setPushEnabled]             = useState(false);
+
+  // Initialise push status on mount
+  useEffect(() => {
+    const perm = getPushPermission();
+    setPushEnabled(perm === "granted");
+  }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
+  };
+
+  const handlePushToggle = async () => {
+    if (!user?.id) { showToast("Connecte-toi d'abord"); return; }
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribeFromPush(user.id);
+        setPushEnabled(false);
+        showToast("Notifications push désactivées");
+      } else {
+        const result = await subscribeToPush(user.id);
+        if (result === "granted") {
+          setPushEnabled(true);
+          showToast("Notifications push activées !");
+        } else if (result === "denied") {
+          showToast("Permission refusée — autorise dans les réglages du navigateur");
+        } else if (result === "unsupported") {
+          showToast("Non supporté sur ce navigateur");
+        } else {
+          showToast("Erreur lors de l'activation");
+        }
+      }
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -642,17 +677,54 @@ export default function ParametresPage() {
             onClick={() => showToast("Bientôt disponible !")}
             iconBg="linear-gradient(135deg, rgba(245,230,163,0.4), rgba(212,168,67,0.2))"
           />
-          <Row
-            icon={Shield}
-            label="Notifications push"
-            sublabel="Sur cet appareil"
-            onClick={async () => {
-              if (!("Notification" in window)) { showToast("Non supporté sur ce navigateur"); return; }
-              const perm = await Notification.requestPermission();
-              showToast(perm === "granted" ? "Notifications activées !" : "Permission refusée");
+          <motion.button
+            whileHover={{ x: 2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handlePushToggle}
+            disabled={pushLoading}
+            className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left cursor-pointer"
+            style={{
+              background: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(255,255,255,0.8)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+              opacity: pushLoading ? 0.7 : 1,
             }}
-            iconBg="linear-gradient(135deg, rgba(212,192,255,0.4), rgba(167,139,250,0.2))"
-          />
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.4), rgba(167,139,250,0.2))" }}
+            >
+              <Shield size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>
+                Notifications push
+              </p>
+              <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>
+                {pushLoading ? "Traitement…" : pushEnabled ? "Activées sur cet appareil" : "Désactivées sur cet appareil"}
+              </p>
+            </div>
+            {/* Toggle pill */}
+            <div
+              className="relative flex-shrink-0 rounded-full transition-colors duration-300"
+              style={{
+                width: 44,
+                height: 26,
+                background: pushEnabled
+                  ? "linear-gradient(135deg, #A78BFA, #7C3AED)"
+                  : "rgba(200,195,215,0.5)",
+              }}
+            >
+              <motion.div
+                layout
+                animate={{ x: pushEnabled ? 20 : 2 }}
+                transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                className="absolute top-[3px] rounded-full"
+                style={{ width: 20, height: 20, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.18)" }}
+              />
+            </div>
+          </motion.button>
         </div>
 
         {/* Apparence */}

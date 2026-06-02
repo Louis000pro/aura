@@ -142,7 +142,7 @@ function StoryCard({ story }: { story: RealStory }) {
         style={{ background: "#000" }}
       >
         {story.content_type === "video"
-          ? <video src={story.media_url} className="w-full h-full object-cover" muted playsInline autoPlay loop />
+          ? <video src={story.media_url} className="w-full h-full object-cover" muted playsInline autoPlay loop preload="auto" />
           // eslint-disable-next-line @next/next/no-img-element
           : <img src={story.media_url} alt="" className="w-full h-full object-cover" />}
         {story.caption && (
@@ -336,7 +336,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col select-none"
+      className="fixed inset-0 z-[60] flex flex-col select-none"
       style={{ background: "rgba(0,0,0,0.92)", backdropFilter: "blur(10px)", cursor: paused ? "default" : "pointer" }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -555,7 +555,8 @@ function AddStoryModal({ onClose, userId, onPublished }: {
     const isVid = file.type.startsWith("video/");
     setMediaFile(file);
     setMediaType(isVid ? "video" : "image");
-    setMediaPreview(URL.createObjectURL(file));
+    const objUrl = URL.createObjectURL(file);
+    setMediaPreview(prev => { if (prev) URL.revokeObjectURL(prev); return objUrl; });
     setStep("photo-preview");
   };
 
@@ -915,7 +916,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "photo-preview" && mediaPreview && (
             <motion.div key="photo-preview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-4">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setStep("pick"); setMediaPreview(null); setMediaFile(null); }} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setStep("pick"); if (mediaPreview) URL.revokeObjectURL(mediaPreview); setMediaPreview(null); setMediaFile(null); }} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
                   <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 </motion.button>
                 <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Aperçu de ta story</h2>
@@ -2456,7 +2457,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
-function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActive: boolean; onHashtagClick?: (tag: string) => void }) {
+function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: RealPost; isActive: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean> }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
@@ -2513,10 +2514,14 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
   const viewCountedRef = useRef(false);
   useEffect(() => {
     const video = videoRef.current;
-    const bg = bgVideoRef.current;
     if (isActive) {
-      if (video) { video.currentTime = 0; void video.play().catch(() => {}); }
-      if (bg)    { bg.currentTime = 0;    void bg.play().catch(() => {}); }
+      if (video) {
+        // play() triggers loading if needed — no load() to avoid reset issues
+        if (video.readyState >= 1) {
+          try { video.currentTime = 0; } catch (_) {}
+        }
+        void video.play().catch(() => {});
+      }
       setPaused(false);
       if (!viewCountedRef.current) {
         viewCountedRef.current = true;
@@ -2524,7 +2529,6 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
       }
     } else {
       if (video) video.pause();
-      if (bg)    bg.pause();
       viewCountedRef.current = false;
     }
   }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2543,6 +2547,8 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
   }, [captionsOn]);
 
   const handleVideoTap = () => {
+    // Ignorer les taps déclenchés par le scroll (swipe → click accidentel)
+    if (isScrollingRef?.current) return;
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       // Double tap → like
@@ -2633,35 +2639,32 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
 
   return (
     <div className="h-full flex items-center justify-center select-none"
-      style={{ background: "transparent", gap: 14 }}>
+      style={{ gap: 16, willChange: "transform", transform: "translateZ(0)" }}>
 
       {/* ══════════════════════════════════
           COLONNE VIDÉO (9:16)
       ══════════════════════════════════ */}
       <div className="relative flex-shrink-0 overflow-hidden"
-        style={{ height: "calc(100% - 4px)", aspectRatio: "9/16", background: "#000", borderRadius: 16, cursor: "pointer" }}
+        style={{ height: "calc(100% - 8px)", aspectRatio: "9/16", maxWidth: "calc(100% - 80px)", background: "#111", borderRadius: 18, boxShadow: "0 6px 28px rgba(0,0,0,0.22)", cursor: "pointer", willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
         onClick={handleVideoTap}>
 
         {/* Vidéo principale */}
         {post.media_url && (
           <video ref={videoRef} src={post.media_url}
             className="absolute inset-0 w-full h-full object-cover"
-            muted={muted} playsInline preload="metadata" loop
-            style={{ pointerEvents: "none", zIndex: 0 }} />
+            muted={muted} playsInline preload={isActive ? "auto" : "metadata"} loop
+            style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"] }} />
         )}
-        {/* bgVideoRef caché (maintenu pour la sync, pas de flou) */}
+        {/* bgVideoRef — preload none, on économise la bande passante */}
         {post.media_url && (
           <video ref={bgVideoRef} src={post.media_url}
-            className="hidden" muted playsInline preload="metadata" loop />
+            className="hidden" muted playsInline preload="none" loop />
         )}
 
-        {/* Gradient bas */}
+        {/* Gradient bas — couvre caption + boutons */}
         <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-          style={{ height: 180, background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 100%)" }} />
+          style={{ height: 320, background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.15) 75%, transparent 100%)" }} />
 
-        {/* Gradient haut (pour le bouton mute) */}
-        <div className="absolute inset-x-0 top-0 z-10 pointer-events-none"
-          style={{ height: 80, background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%)" }} />
 
         {/* Bouton mute — coin haut droit */}
         <button
@@ -2715,17 +2718,17 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
           </div>
         )}
 
-        {/* Auteur + caption — bas de la vidéo */}
-        <div className="absolute bottom-0 inset-x-0 z-20 px-4 pb-4" style={{ pointerEvents: "none" }}>
-          <Link href={`/profil?id=${post.user_id}`} className="flex items-center gap-2 mb-1.5 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
+        {/* ══ AUTEUR + CAPTION (bas gauche) ══ */}
+        <div className="absolute bottom-5 left-4 z-20 right-4" style={{ pointerEvents: "none" }}>
+          <Link href={`/profil?id=${post.user_id}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
                 className="w-7 h-7 rounded-full object-cover flex-shrink-0"
-                style={{ border: "2px solid rgba(255,255,255,0.8)" }} />
+                style={{ border: "1.5px solid rgba(255,255,255,0.85)" }} />
             ) : (
               <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "2px solid rgba(255,255,255,0.8)" }}>
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.85)" }}>
                 {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
@@ -2733,7 +2736,7 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
             {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
           </Link>
           {post.caption && (
-            <p className="text-white text-[13px] leading-snug line-clamp-2 drop-shadow-sm" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)", pointerEvents: "auto" }}>
+            <p className="text-white text-[13px] leading-snug line-clamp-2" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.85)", pointerEvents: "auto" }}>
               <CaptionText text={post.caption} onHashtagClick={(tag) => { onHashtagClick?.(tag); }} />
             </p>
           )}
@@ -2771,23 +2774,24 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
             />
           )}
         </AnimatePresence>
-      </div>{/* ── fin colonne vidéo ── */}
+      </div>{/* ── fin carte vidéo ── */}
 
       {/* ══════════════════════════════════
-          SIDEBAR ACTIONS (droite)
+          COLONNE ACTIONS (droite, fond clair)
       ══════════════════════════════════ */}
-      <div className="flex flex-col items-center justify-end flex-shrink-0 pb-4"
-        style={{ height: "calc(100% - 16px)", gap: 20, width: 52 }}>
+      <div className="flex flex-col items-center flex-shrink-0"
+        style={{ gap: 22, width: 52, paddingBottom: 8 }}>
 
-        {/* Avatar auteur — cliquable → profil */}
-        <Link href={`/profil?id=${post.user_id}`} className="mt-auto mb-2 cursor-pointer" onClick={e => e.stopPropagation()}>
-          <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.08 }}>
+        {/* Avatar auteur */}
+        <Link href={`/profil?id=${post.user_id}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
+          <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.06 }}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
-                className="w-10 h-10 rounded-full object-cover" />
+                className="w-11 h-11 rounded-full object-cover"
+                style={{ border: "2px solid rgba(167,139,250,0.5)", boxShadow: "0 2px 10px rgba(0,0,0,0.12)" }} />
             ) : (
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold"
+              <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-bold"
                 style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
                 {authorPseudo[0]?.toUpperCase()}
               </div>
@@ -2798,54 +2802,53 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
         {/* Like */}
         <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.45 }} animate={liked ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-            <Heart size={28} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#FF4458" : "none"}
-              style={{ color: liked ? "#FF4458" : "#2D3748", filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.5))" : "none" }} />
+            <Heart size={27} strokeWidth={liked ? 0 : 1.6} fill={liked ? "#FF4458" : "none"}
+              style={{ color: liked ? "#FF4458" : "#374151", filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.4))" : "none" }} />
           </motion.div>
-          <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : "#64748B" }}>{fmtCount(likes)}</span>
+          <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : "#6B7280" }}>{fmtCount(likes)}</span>
         </button>
 
         {/* Commentaires */}
         <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }}
           className="flex flex-col items-center gap-1 cursor-pointer">
-          <MessageCircle size={28} strokeWidth={1.5}
-            fill={showComments ? "rgba(167,139,250,0.15)" : "none"}
-            style={{ color: showComments ? "#A78BFA" : "#2D3748" }} />
-          <span className="text-[11px]" style={{ color: "#64748B" }}>{fmtCount(commentCount)}</span>
+          <MessageCircle size={27} strokeWidth={1.6}
+            style={{ color: showComments ? "#A78BFA" : "#374151" }} />
+          <span className="text-[11px]" style={{ color: "#6B7280" }}>{fmtCount(commentCount)}</span>
         </button>
 
         {/* Repost */}
         <button onClick={toggleRepost} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
-            <Repeat2 size={28} strokeWidth={1.5}
-              style={{ color: reposted ? "#34D399" : "#2D3748", filter: reposted ? "drop-shadow(0 0 6px rgba(52,211,153,0.5))" : "none" }} />
+            <Repeat2 size={27} strokeWidth={1.6}
+              style={{ color: reposted ? "#34D399" : "#374151", filter: reposted ? "drop-shadow(0 0 6px rgba(52,211,153,0.4))" : "none" }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: reposted ? "#34D399" : "#64748B" }}>{fmtCount(reposts)}</span>
+          <span className="text-[11px]" style={{ color: reposted ? "#34D399" : "#6B7280" }}>{fmtCount(reposts)}</span>
         </button>
 
         {/* Partager */}
         <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Share2 size={26} strokeWidth={1.5} style={{ color: shared ? "#34D399" : "#2D3748" }} />
+            <Share2 size={25} strokeWidth={1.6} style={{ color: shared ? "#34D399" : "#374151" }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: "#64748B" }}>Partager</span>
+          <span className="text-[11px]" style={{ color: "#6B7280" }}>Partager</span>
         </button>
 
         {/* Bookmark */}
         <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }}>
-            <Bookmark size={26} strokeWidth={1.5}
+            <Bookmark size={25} strokeWidth={1.6}
               fill={saved ? "#F5E6A3" : "none"}
-              style={{ color: saved ? "#D4A843" : "#2D3748", filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : "none" }} />
+              style={{ color: saved ? "#D4A843" : "#374151", filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.4))" : "none" }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : "#64748B" }}>Sauv.</span>
+          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : "#6B7280" }}>Sauv.</span>
         </button>
 
         {/* Plus / settings */}
         <button onClick={() => { setShowSettings(s => !s); setShowComments(false); }}
           className="flex flex-col items-center gap-1 cursor-pointer">
-          <MoreHorizontal size={26} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+          <MoreHorizontal size={25} strokeWidth={1.6} style={{ color: "#374151" }} />
         </button>
-      </div>{/* ── fin sidebar ── */}
+      </div>{/* ── fin colonne actions ── */}
 
       {/* Share modals (position:fixed, échappent l'overflow) */}
       <AnimatePresence>
@@ -2873,59 +2876,111 @@ function VideoCard({ post, isActive, onHashtagClick }: { post: RealPost; isActiv
   );
 }
 
-function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, feedHeight }: {
+function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
   onHashtagClick?: (tag: string) => void;
   onActiveIndexChange?: (idx: number) => void;
-  feedHeight?: string;
+  onScrollCollapse?: (collapsed: boolean) => void;
+  feedHeight?: string; // kept for API compat, unused
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef   = useRef<HTMLDivElement>(null);  // mesure la hauteur réelle disponible
+  const containerRef = useRef<HTMLDivElement>(null);  // élément scrollable
+  const isScrollingRef = useRef(false);               // true pendant le scroll → bloque handleVideoTap
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // IntersectionObserver : détecte quelle slide est à ≥ 60 % visible → plus fiable que scroll+Math.round
+  // ── Hauteur exacte en pixels via ResizeObserver ──────────────────
+  // Évite les bugs de `height:100%` dans les flex children imbriqués
+  const [slotH, setSlotH] = useState(0);
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const measure = () => { const h = el.clientHeight; if (h > 0) setSlotH(h); };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const H = slotH > 0 ? `${slotH}px` : "100%";
+
+  // ── Scroll : collapse header (RAF, immediate) + activeIndex (scrollend / debounce) ──
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-            const children = Array.from(el.children);
-            const idx = children.indexOf(entry.target as Element);
-            if (idx >= 0) { setActiveIndex(idx); onActiveIndexChange?.(idx); }
-          }
-        });
-      },
-      { root: el, threshold: 0.6 }
-    );
-    Array.from(el.children).forEach(child => observer.observe(child));
-    return () => observer.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoPosts.length]);
+    if (!el || slotH === 0) return;
+    let rafId = 0;
+    let lastCollapsed = false;
+    let lastIdx = 0;
 
-  // Scroller jusqu'au post partagé depuis un DM
+    // scrollend debounce fallback timer
+    let scrollEndTimer: ReturnType<typeof setTimeout>;
+
+    const updateActiveIndex = () => {
+      const idx = Math.max(0, Math.min(Math.round(el.scrollTop / slotH), videoPosts.length - 1));
+      if (idx !== lastIdx) {
+        lastIdx = idx;
+        setActiveIndex(idx);
+        onActiveIndexChange?.(idx);
+      }
+      isScrollingRef.current = false;
+    };
+
+    const handleScroll = () => {
+      // Mark as scrolling → blocks accidental tap-on-swipe
+      isScrollingRef.current = true;
+
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const st = el.scrollTop;
+        // Collapse header immediately on scroll (no snap needed)
+        const collapsed = st > 20;
+        if (collapsed !== lastCollapsed) { lastCollapsed = collapsed; onScrollCollapse?.(collapsed); }
+      });
+
+      // Fallback debounce for browsers without scrollend
+      if (!("onscrollend" in el)) {
+        clearTimeout(scrollEndTimer);
+        scrollEndTimer = setTimeout(updateActiveIndex, 150);
+      }
+    };
+
+    // scrollend fires once after CSS scroll-snap settles — no oscillation
+    const handleScrollEnd = () => {
+      clearTimeout(scrollEndTimer);
+      updateActiveIndex();
+    };
+
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    el.addEventListener("scrollend", handleScrollEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener("scroll", handleScroll);
+      el.removeEventListener("scrollend", handleScrollEnd);
+      cancelAnimationFrame(rafId);
+      clearTimeout(scrollEndTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoPosts.length, slotH]);
+
+  // ── Scroll vers le post partagé depuis un DM ────────────────────
   useEffect(() => {
-    if (!initialPostId || !containerRef.current || videoPosts.length === 0) return;
+    if (!initialPostId || !containerRef.current || videoPosts.length === 0 || slotH === 0) return;
     const idx = videoPosts.findIndex(p => p.id === initialPostId);
     if (idx < 0) return;
-    // requestAnimationFrame pour attendre que le DOM soit rendu
     requestAnimationFrame(() => {
       const el = containerRef.current;
       if (!el) return;
-      const h = el.clientHeight;
-      el.scrollTop = idx * h;
+      el.scrollTop = idx * slotH;
       setActiveIndex(idx);
       onInitialScrolled?.();
     });
-  }, [initialPostId, videoPosts, onInitialScrolled]);
+  }, [initialPostId, videoPosts, onInitialScrolled, slotH]);
 
   if (videoPosts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center">
-        <div className="text-5xl">🎬</div>
+      <div className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center h-full">
         <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucune vidéo pour le moment</p>
         <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Publie une vidéo pour qu&apos;elle apparaisse ici</p>
       </div>
@@ -2933,14 +2988,27 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   }
 
   return (
-    <div ref={containerRef}
-      className="overflow-y-scroll mx-auto"
-      style={{ height: feedHeight ?? "calc(100dvh - 256px)", width: "min(560px, 100%)", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain", touchAction: "pan-y", transition: "height 0.35s ease" }}>
-      {videoPosts.map((post, i) => (
-        <div key={post.id} style={{ height: feedHeight ?? "calc(100dvh - 256px)", scrollSnapAlign: "start", scrollSnapStop: "always" }}>
-          <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} />
-        </div>
-      ))}
+    /* Wrapper — mesure la hauteur réelle disponible sans fond parasite */
+    <div ref={wrapperRef} className="w-full h-full">
+      <div ref={containerRef}
+        className="overflow-y-scroll mx-auto"
+        style={{
+          height: H,
+          width: "100%",
+          scrollSnapType: "y mandatory",
+          scrollbarWidth: "none",
+          overscrollBehavior: "contain",
+          touchAction: "pan-y",
+          WebkitOverflowScrolling: "touch" as never,
+          willChange: "scroll-position",
+          transform: "translateZ(0)",
+        }}>
+        {videoPosts.map((post, i) => (
+          <div key={post.id} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+            <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} isScrollingRef={isScrollingRef} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -2969,20 +3037,8 @@ function CommunautePageInner() {
   const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
   // Modal plein écran hashtag vidéos
   const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
-  // Header collapse sur scroll vidéo
+  // Header toujours visible (titre + stories + tabs), la vidéo prend le reste via flex
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  // Mesure la position top du feed dans le viewport → feedHeight = 100dvh - feedTop px
-  const feedWrapperRef = useRef<HTMLDivElement>(null);
-  const [feedTop, setFeedTop] = useState(258);
-  useEffect(() => {
-    const el = feedWrapperRef.current;
-    if (!el) return;
-    const measure = () => setFeedTop(Math.round(el.getBoundingClientRect().top));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [headerCollapsed]);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -3143,7 +3199,7 @@ function CommunautePageInner() {
   useEffect(() => { loadStories(); }, [loadStories]);
 
   // Reset header collapse quand on quitte l'onglet vidéos
-  useEffect(() => { if (feedTab !== "videos") setHeaderCollapsed(false); }, [feedTab]);
+  useEffect(() => { setHeaderCollapsed(false); }, [feedTab]);
 
   // Charger le feed réel depuis Supabase (paginé)
   const loadFeed = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
@@ -3731,14 +3787,16 @@ function CommunautePageInner() {
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
-      <div className="relative flex flex-col flex-1">
+      <div className={`relative flex flex-col flex-1${feedTab === "videos" ? " min-h-0 overflow-hidden" : ""}`}>
 
       {/* Top Bar — masqué par max-height quand headerCollapsed */}
       <div style={feedTab === "videos" ? {
         maxHeight: headerCollapsed ? 0 : 90,
         overflow: "hidden",
-        transition: "max-height 0.35s ease, opacity 0.3s ease",
+        transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s cubic-bezier(0.4,0,0.2,1)",
         opacity: headerCollapsed ? 0 : 1,
+        flexShrink: 0,
+        willChange: "max-height, opacity",
       } : {}}>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -3799,14 +3857,16 @@ function CommunautePageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={feedTab === "videos" ? "flex flex-col gap-2 pb-0" : "flex flex-col gap-5 pb-4"}
+            className={feedTab === "videos" ? "flex flex-col flex-1 min-h-0 overflow-hidden" : "flex flex-col gap-5 pb-4"}
           >
             {/* Stories — masquées par max-height quand headerCollapsed */}
             <div style={feedTab === "videos" ? {
               maxHeight: headerCollapsed ? 0 : 150,
               overflow: "hidden",
-              transition: "max-height 0.35s ease, opacity 0.3s ease",
+              transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s cubic-bezier(0.4,0,0.2,1)",
               opacity: headerCollapsed ? 0 : 1,
+              flexShrink: 0,
+              willChange: "max-height, opacity",
             } : {}}>
             {(() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
@@ -3959,11 +4019,11 @@ function CommunautePageInner() {
                 pour que leur centre visuel soit aligné avec le centre de la
                 colonne vidéo (et non le centre vidéo+sidebar).
             ══════════════════════════════════════════════════════ */}
-            <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
+            <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)", ...(feedTab === "videos" ? { flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" } : {}) }}>
 
               {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
               <div className="flex items-center justify-center gap-2 py-1"
-                style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
+                style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66, ...(feedTab === "videos" ? { flexShrink: 0, maxHeight: headerCollapsed ? 0 : 52, overflow: "hidden", opacity: headerCollapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" } : {}) }}>
                 {([
                   { key: "videos" as const, label: "🎬 Vidéos" },
                   { key: "posts" as const, label: "📝 Publications" },
@@ -3995,11 +4055,13 @@ function CommunautePageInner() {
                       style={{
                         width: 105,
                         ...(feedMode === mode
-                          ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                          ? mode === "algo"
+                            ? { background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "#fff", boxShadow: "0 2px 12px rgba(99,102,241,0.35)" }
+                            : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
                           : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
                       }}
                     >
-                      {mode === "algo" ? "🔥 Pour toi" : "🕐 Récents"}
+                      {mode === "algo" ? "Pour toi" : "Récents"}
                     </motion.button>
                   ))}
                 </div>
@@ -4007,15 +4069,14 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div ref={feedWrapperRef} className="mt-2">
-                <TikTokFeed
-                  posts={sortedFeedPosts}
-                  initialPostId={highlightVideoId}
-                  onInitialScrolled={() => setHighlightVideoId(null)}
-                  onHashtagClick={(tag) => setHashtagVideosTag(tag)}
-                  onActiveIndexChange={(idx) => { setHeaderCollapsed(idx > 0); }}
-                  feedHeight={`calc(100dvh - ${feedTop}px)`}
-                />
+                <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
+                  <TikTokFeed
+                    posts={sortedFeedPosts}
+                    initialPostId={highlightVideoId}
+                    onInitialScrolled={() => setHighlightVideoId(null)}
+                    onHashtagClick={(tag) => setHashtagVideosTag(tag)}
+                    onScrollCollapse={(collapsed) => setHeaderCollapsed(collapsed)}
+                  />
                 </div>
               )}
             </div>

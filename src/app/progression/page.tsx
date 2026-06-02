@@ -6,10 +6,12 @@ import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
   Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
   X, CameraOff, Square, RefreshCw, Plus, Trash2, Pencil,
-  Globe, Lock, Users,
+  Globe, Lock, Users, TrendingUp, Zap,
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import NutritionTab from "@/components/NutritionTab";
+import ExerciseAnalyzer from "@/components/ExerciseAnalyzer";
+import Badges from "@/components/Badges";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
@@ -25,6 +27,7 @@ type DbWorkoutSession = {
 
 /* ─── Timeline data ─────────────────────────────────────── */
 type TimelineEvent = {
+  id?: string;
   date: string; time: string; type: PerformanceType;
   title: string; desc: string; cardClass: string; dot: string;
   performance: PerformanceData;
@@ -158,6 +161,344 @@ const CHART_CARD = {
   boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
 };
 
+/* ─── PRChart ────────────────────────────────────────────── */
+function PRChart({
+  prs,
+  onAdd,
+  onDelete,
+}: {
+  prs: Array<{ id: string; exercise: string; value: number; unit: string; date: string }>;
+  onAdd: (exercise: string, value: number, unit: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const exercises = [...new Set(prs.map(p => p.exercise))].sort();
+  const [selected, setSelected] = useState(exercises[0] ?? "");
+  const [adding, setAdding] = useState(false);
+  const [newEx, setNewEx] = useState("");
+  const [newVal, setNewVal] = useState("");
+  const [newUnit, setNewUnit] = useState("kg");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!selected && exercises.length > 0) setSelected(exercises[0]);
+  }, [exercises, selected]);
+
+  const pts = prs
+    .filter(p => p.exercise === selected)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-20);
+
+  const W = 320, H = 110, PX = 36, PY = 14;
+  const vals = pts.map(p => p.value);
+  const minV = vals.length > 0 ? Math.min(...vals) - Math.max(1, (Math.max(...vals) - Math.min(...vals)) * 0.1) : 0;
+  const maxV = vals.length > 0 ? Math.max(...vals) + Math.max(1, (Math.max(...vals) - Math.min(...vals)) * 0.1) : 10;
+  const ty = (v: number) => PY + ((maxV - v) / (maxV - minV || 1)) * (H - 2 * PY);
+  const tx = (i: number) => pts.length < 2 ? W / 2 : PX + (i / (pts.length - 1)) * (W - 2 * PX);
+
+  let linePath = "", areaPath = "";
+  if (pts.length >= 2) {
+    const sp = pts.map((p, i) => ({ x: tx(i), y: ty(p.value) }));
+    linePath = `M ${sp[0].x} ${sp[0].y}`;
+    areaPath = `M ${sp[0].x} ${H} L ${sp[0].x} ${sp[0].y}`;
+    for (let i = 1; i < sp.length; i++) {
+      const cx = (sp[i-1].x + sp[i].x) / 2;
+      linePath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
+      areaPath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
+    }
+    areaPath += ` L ${sp.at(-1)!.x} ${H} Z`;
+  } else if (pts.length === 1) {
+    const x = W/2, y = ty(pts[0].value);
+    linePath = `M ${x-1} ${y} L ${x+1} ${y}`;
+  }
+
+  const best = pts.length > 0 ? pts.reduce((a, b) => a.value >= b.value ? a : b) : null;
+  const unit = prs.find(p => p.exercise === selected)?.unit ?? "kg";
+  const delta = pts.length >= 2 ? pts.at(-1)!.value - pts[0].value : null;
+  const commonExercisesPR = ["Développé couché", "Squat", "Soulevé de terre", "Développé militaire", "Rowing barre", "Tractions", "Dips", "Curl biceps", "Extension triceps", "Leg press"];
+
+  const handleAdd = async () => {
+    const ex = newEx.trim() || selected;
+    const v = parseFloat(newVal.replace(",", "."));
+    if (!ex || isNaN(v) || v <= 0) return;
+    setSaving(true);
+    await onAdd(ex, v, newUnit);
+    setSaving(false);
+    setAdding(false);
+    setNewEx(""); setNewVal("");
+    if (!selected) setSelected(ex);
+  };
+
+  return (
+    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
+      {/* Header */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>RECORDS PERSO</p>
+            <div className="flex items-end gap-1.5">
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
+                {best ? best.value : "—"}
+              </span>
+              {best && <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>{unit}</span>}
+              {delta !== null && (
+                <span className="text-xs font-semibold mb-1 ml-1 px-1.5 py-0.5 rounded-lg"
+                  style={{
+                    background: delta >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
+                    color: delta >= 0 ? "#059669" : "#DC2626",
+                  }}>
+                  {delta >= 0 ? "+" : ""}{delta.toFixed(1)}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1">
+            {exercises.length > 0 && (
+              <select
+                value={selected}
+                onChange={e => setSelected(e.target.value)}
+                className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold outline-none cursor-pointer max-w-[120px]"
+                style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(212,192,255,0.4)", color: "#2D3748" }}
+              >
+                {exercises.map(ex => <option key={ex} value={ex}>{ex}</option>)}
+              </select>
+            )}
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
+              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+              style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <span className="text-sm font-bold leading-none" style={{ color: "#34D399" }}>+</span>
+            </motion.button>
+          </div>
+        </div>
+      </div>
+
+      {/* Add form */}
+      <AnimatePresence>
+        {adding && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }} className="px-5 pb-3 overflow-hidden">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input type="text" placeholder="Exercice (ex: Squat)" value={newEx}
+                  onChange={e => setNewEx(e.target.value)} list="pr-exercise-list"
+                  className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                <datalist id="pr-exercise-list">
+                  {commonExercisesPR.map(e => <option key={e} value={e} />)}
+                </datalist>
+              </div>
+              <div className="flex gap-2">
+                <input type="number" step="0.5" placeholder="Valeur" value={newVal}
+                  onChange={e => setNewVal(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleAdd()}
+                  className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                <select value={newUnit} onChange={e => setNewUnit(e.target.value)}
+                  className="px-2.5 py-2 rounded-xl text-xs outline-none cursor-pointer"
+                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}>
+                  <option value="kg">kg</option>
+                  <option value="reps">reps</option>
+                  <option value="km">km</option>
+                  <option value="s">sec</option>
+                </select>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd} disabled={saving}
+                  className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,#6EE7B7,#34D399)", color: "white" }}>
+                  {saving ? "…" : "OK"}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chart */}
+      {pts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 gap-3 px-4">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(52,211,153,0.08)" }}>
+            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#34D399" }} />
+          </div>
+          <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
+            {exercises.length === 0
+              ? "Aucun record encore.\nClique sur + pour ajouter ton premier PR !"
+              : "Clique sur + pour ajouter\nun record pour cet exercice."}
+          </p>
+        </div>
+      ) : (
+        <div className="px-2 pb-2">
+          <svg width="100%" viewBox={`0 0 ${W} ${H + 16}`} style={{ overflow: "visible" }}>
+            <defs>
+              <linearGradient id="prAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#34D399" stopOpacity="0.28" />
+                <stop offset="60%" stopColor="#34D399" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#34D399" stopOpacity="0" />
+              </linearGradient>
+              <filter id="prGlow">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            {[0.2, 0.5, 0.8].map((p, i) => {
+              const y = PY + p * (H - 2 * PY);
+              const v = minV + (1 - p) * (maxV - minV);
+              return (
+                <g key={i}>
+                  <line x1={PX} y1={y} x2={W - PX/2} y2={y} stroke="rgba(52,211,153,0.08)" strokeWidth="1" strokeDasharray="3,5" />
+                  <text x={PX - 6} y={y + 3.5} textAnchor="end" fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">{v.toFixed(0)}</text>
+                </g>
+              );
+            })}
+            {areaPath && <path d={areaPath} fill="url(#prAreaGrad)" />}
+            {linePath && pts.length >= 2 && (
+              <path d={linePath} fill="none" stroke="#34D399" strokeWidth="2.8"
+                strokeLinecap="round" strokeLinejoin="round" filter="url(#prGlow)" />
+            )}
+            {pts.map((p, i) => {
+              const isLast = i === pts.length - 1;
+              const cx = tx(i), cy = ty(p.value);
+              return isLast ? (
+                <g key={i}>
+                  <circle cx={cx} cy={cy} r={11} fill="#34D399" fillOpacity="0.1" />
+                  <circle cx={cx} cy={cy} r={6} fill="#34D399"
+                    style={{ filter: "drop-shadow(0 0 6px rgba(52,211,153,0.7))" }} />
+                  <circle cx={cx} cy={cy} r={2.5} fill="white" />
+                </g>
+              ) : (
+                <circle key={i} cx={cx} cy={cy} r={3} fill="white" stroke="#34D399" strokeWidth="1.8" />
+              );
+            })}
+            {pts.length >= 2 && [0, pts.length - 1].map(i => {
+              const d = new Date(pts[i].date + "T00:00:00");
+              const lbl = `${d.getDate()}/${d.getMonth() + 1}`;
+              return (
+                <text key={i} x={i === 0 ? PX : W - PX/2} y={H + 13} textAnchor={i === 0 ? "start" : "end"}
+                  fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">{lbl}</text>
+              );
+            })}
+          </svg>
+        </div>
+      )}
+
+      {/* Last 3 entries */}
+      {pts.length > 0 && (
+        <div className="px-4 pb-4">
+          <div style={{ height: 1, background: "rgba(52,211,153,0.08)", marginBottom: 10 }} />
+          <div className="flex flex-col gap-1">
+            {[...pts].reverse().slice(0, 3).map(entry => {
+              const d = new Date(entry.date + "T00:00:00");
+              const label = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+              return (
+                <div key={entry.id} className="flex items-center gap-2 px-2 py-1 rounded-xl"
+                  style={{ background: "transparent" }}>
+                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "#A0AEC0" }}>{label}</span>
+                  <span className="flex-1 text-xs font-semibold" style={{ color: "#2D3748" }}>{entry.value} {unit}</span>
+                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(entry.id)}
+                    className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
+                    style={{ background: "rgba(252,129,129,0.1)" }}>
+                    <Trash2 size={10} strokeWidth={2} style={{ color: "#FC8181" }} />
+                  </motion.button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── VolumeChart ────────────────────────────────────────── */
+function VolumeChart({ data }: { data: Array<{ label: string; cals: number; sessions: number }> }) {
+  const maxCals = Math.max(...data.map(d => d.cals), 1);
+  const W = 320, H = 100, PX = 10, PY = 10;
+  const slotW = (W - 2 * PX) / Math.max(data.length, 1);
+  const barW = Math.max(6, slotW * 0.55);
+  const totalSessions = data.reduce((s, d) => s + d.sessions, 0);
+  const totalCals = data.reduce((s, d) => s + d.cals, 0);
+  const currentWeekSessions = data.at(-1)?.sessions ?? 0;
+
+  return (
+    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>VOLUME · 8 SEMAINES</p>
+            <div className="flex items-end gap-2">
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>{totalSessions}</span>
+              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>séance{totalSessions > 1 ? "s" : ""}</span>
+            </div>
+          </div>
+          <div className="text-right mt-1">
+            {totalCals > 0 && (
+              <p className="text-xs font-semibold" style={{ color: "#D4A843" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
+            )}
+            <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+              Cette sem. : {currentWeekSessions} séance{currentWeekSessions > 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {data.every(d => d.cals === 0) ? (
+        <div className="flex flex-col items-center justify-center py-10 px-4 gap-3">
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(167,139,250,0.08)" }}>
+            <Zap size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          </div>
+          <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>Lance des séances pour voir<br/>ton volume d&apos;entraînement !</p>
+        </div>
+      ) : (
+        <div className="px-3 pb-4">
+          <svg width="100%" viewBox={`0 0 ${W} ${H + 22}`} style={{ overflow: "visible" }}>
+            <defs>
+              {data.map((_, i) => (
+                <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={i === data.length - 1 ? "#A78BFA" : "#C4B5FD"} stopOpacity="1" />
+                  <stop offset="100%" stopColor={i === data.length - 1 ? "#818CF8" : "#A78BFA"} stopOpacity={i === data.length - 1 ? "0.9" : "0.5"} />
+                </linearGradient>
+              ))}
+            </defs>
+            {/* Grid lines */}
+            {[0.33, 0.66, 1].map((p, i) => (
+              <line key={i} x1={PX} y1={H - PY - p * (H - 2*PY)} x2={W - PX} y2={H - PY - p * (H - 2*PY)}
+                stroke="rgba(167,139,250,0.06)" strokeWidth="1" strokeDasharray="3,5" />
+            ))}
+            {data.map((d, i) => {
+              const barH = d.cals > 0 ? Math.max(5, (d.cals / maxCals) * (H - PY * 2)) : 0;
+              const x = PX + i * slotW + (slotW - barW) / 2;
+              const y = H - PY - barH;
+              const isLast = i === data.length - 1;
+              return (
+                <g key={i}>
+                  {/* Background track */}
+                  <rect x={x} y={PY} width={barW} height={H - 2*PY} rx="4" fill="rgba(167,139,250,0.05)" />
+                  {/* Actual bar */}
+                  {d.cals > 0 && (
+                    <rect x={x} y={y} width={barW} height={barH} rx="4"
+                      fill={`url(#barGrad${i})`}
+                      style={isLast ? { filter: "drop-shadow(0 3px 8px rgba(167,139,250,0.45))" } : {}} />
+                  )}
+                  {/* Session count dot */}
+                  {d.sessions > 0 && (
+                    <g>
+                      <circle cx={x + barW/2} cy={y - 6} r={5} fill={isLast ? "#A78BFA" : "#C4B5FD"} fillOpacity={isLast ? 1 : 0.7} />
+                      <text x={x + barW/2} y={y - 2.5} textAnchor="middle" fontSize="5.5" fill="white" fontWeight="700">{d.sessions}</text>
+                    </g>
+                  )}
+                  <text x={x + barW/2} y={H + 14} textAnchor="middle"
+                    fontSize="7.5" fill={isLast ? "#A78BFA" : "rgba(160,174,192,0.8)"} fontWeight={isLast ? "700" : "500"}>
+                    {d.label.split(" ")[0]}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── WeightChart ────────────────────────────────────────── */
 function WeightChart({
   data, range, onRangeChange, onAdd, onDelete, onUpdate, goalType,
@@ -215,7 +556,7 @@ function WeightChart({
     onAdd(kg); setInputVal(""); setAdding(false);
   };
 
-  const goalLabel = goalType === "masse" ? "🏋️ Prise de masse" : goalType === "poids" ? "🔥 Perte de poids" : null;
+  const goalLabel = goalType === "masse" ? "Prise de masse" : goalType === "poids" ? "Perte de poids" : null;
 
   return (
     <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
@@ -287,7 +628,7 @@ function WeightChart({
         <div className="flex flex-col items-center justify-center py-10 gap-2">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
             style={{ background: "rgba(167,139,250,0.08)" }}>
-            <span style={{ color: "#C4A8FF", fontSize: 18 }}>⚖️</span>
+            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#C4A8FF" }} />
           </div>
           <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
             Ajoute ton premier poids<br />pour suivre ta progression
@@ -480,7 +821,7 @@ function WorkoutWeekCard({ sessions }: { sessions: TimelineEvent[] }) {
 
         {weekSessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 gap-2">
-            <span style={{ fontSize: 28 }}>🏋️</span>
+            <Dumbbell size={24} strokeWidth={1.4} style={{ color: "#D4C0FF" }} />
             <p className="text-xs font-light text-center" style={{ color: "#A0AEC0" }}>Aucune séance cette semaine<br/>Lance-toi !</p>
           </div>
         ) : (
@@ -1287,6 +1628,7 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
   const date = isToday ? "Aujourd'hui" : isYesterday ? "Hier" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
   const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   return {
+    id: s.id,
     date, time, type: "workout", title: s.title,
     desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
     cardClass: "lg-turquoise", dot: "#D4A843",
@@ -1850,7 +2192,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
 /* ─── Page ──────────────────────────────────────────────── */
 export default function ProgressionPage() {
-  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances" | "nutrition" | "records">("progression");
+  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances" | "nutrition" | "analyse" | "badges">("progression");
   const [shareData, setShareData]           = useState<PerformanceData | null>(null);
   const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
   const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
@@ -1861,6 +2203,8 @@ export default function ProgressionPage() {
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
+  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const [eventExercises, setEventExercises] = useState<Record<string, Array<{ name: string; sets?: number; reps?: number; weight?: number }>>>({});
   const [libraryFilter, setLibraryFilter] = useState<"tous" | WorkoutCategory>("tous");
   const { settings } = useProfileSettings();
   const { user } = useAuth();
@@ -1913,6 +2257,23 @@ export default function ProgressionPage() {
   const [savingPR, setSavingPR] = useState(false);
   const [prFilter, setPrFilter] = useState("");
 
+  // ── Session history ──────────────────────────────────────
+  type HistorySession = {
+    id: string; title: string; category: string;
+    duration_minutes: number; calories_burned: number; elapsed_seconds: number;
+    started_at: string;
+    exercises: Array<{ name: string; sets?: number; reps?: number; weight?: number }>;
+  };
+  const [historySessions, setHistorySessions] = useState<HistorySession[]>([]);
+  const [historyLoading,  setHistoryLoading]  = useState(false);
+  const [historyPage,     setHistoryPage]     = useState(0);
+  const [historyHasMore,  setHistoryHasMore]  = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState<string | null>(null);
+
+  // ── Weekly volume (for chart) ────────────────────────────
+  type WeekVolume = { label: string; cals: number; sessions: number };
+  const [weeklyVolume, setWeeklyVolume] = useState<WeekVolume[]>([]);
+
   const commonExercises = ["Développé couché", "Squat", "Soulevé de terre", "Développé militaire", "Rowing barre", "Tractions", "Dips", "Curl biceps", "Extension triceps", "Leg press"];
 
   const fetchMeasurements = useCallback(async () => {
@@ -1929,8 +2290,7 @@ export default function ProgressionPage() {
     if (data) setPrs(data as PR[]);
   }, [user]);
 
-  useEffect(() => { if (activeTab === "records") fetchMeasurements(); }, []); // kept for possible future use
-  useEffect(() => { if (activeTab === "records") fetchPRs(); }, [activeTab, fetchPRs]);
+  useEffect(() => { fetchPRs(); }, [fetchPRs]);
 
   const saveMeasurement = async () => {
     if (!user) return;
@@ -1967,19 +2327,97 @@ export default function ProgressionPage() {
     else showToast("Erreur : " + error.message);
   };
 
+  const fetchHistory = useCallback(async (page = 0, append = false) => {
+    if (!user) return;
+    setHistoryLoading(true);
+    const supabase = createClient();
+    const PAGE = 20;
+    const { data, error } = await supabase
+      .from("workout_sessions")
+      .select("id, title, category, duration_minutes, calories_burned, elapsed_seconds, started_at, exercises")
+      .eq("user_id", user.id)
+      .order("started_at", { ascending: false })
+      .range(page * PAGE, page * PAGE + PAGE - 1);
+    setHistoryLoading(false);
+    if (error || !data) return;
+    const mapped = data.map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      title: r.title as string,
+      category: r.category as string,
+      duration_minutes: (r.duration_minutes as number) ?? 0,
+      calories_burned: (r.calories_burned as number) ?? 0,
+      elapsed_seconds: (r.elapsed_seconds as number) ?? 0,
+      started_at: r.started_at as string,
+      exercises: (r.exercises as Array<{ name: string; sets?: number; reps?: number; weight?: number }>) ?? [],
+    }));
+    setHistorySessions(prev => append ? [...prev, ...mapped] : mapped);
+    setHistoryHasMore(data.length === PAGE);
+    setHistoryPage(page);
+  }, [user]);
+
+  const fetchWeeklyVolume = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const eightWeeksAgo = new Date();
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 55);
+    const { data } = await supabase
+      .from("workout_sessions")
+      .select("started_at, calories_burned")
+      .eq("user_id", user.id)
+      .gte("started_at", eightWeeksAgo.toISOString())
+      .order("started_at", { ascending: true });
+    if (!data) return;
+    // Group by week (Mon-Sun)
+    const weekMap = new Map<string, { cals: number; sessions: number }>();
+    data.forEach((r: { started_at: string; calories_burned: number }) => {
+      const d = new Date(r.started_at);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d);
+      monday.setDate(diff);
+      const key = monday.toISOString().slice(0, 10);
+      const cur = weekMap.get(key) ?? { cals: 0, sessions: 0 };
+      weekMap.set(key, { cals: cur.cals + (r.calories_burned ?? 0), sessions: cur.sessions + 1 });
+    });
+    const now = new Date();
+    const result: WeekVolume[] = [];
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i * 7);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d);
+      monday.setDate(diff);
+      const key = monday.toISOString().slice(0, 10);
+      const month = monday.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      const w = weekMap.get(key) ?? { cals: 0, sessions: 0 };
+      result.push({ label: month, ...w });
+    }
+    setWeeklyVolume(result);
+  }, [user]);
+
   const fetchSessions = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
     const { data, error } = await supabase
       .from("workout_sessions")
-      .select("id, user_id, title, category, duration_minutes, calories_burned, started_at")
+      .select("id, user_id, title, category, duration_minutes, calories_burned, started_at, exercises, elapsed_seconds")
       .eq("user_id", user.id)
       .order("started_at", { ascending: false })
       .limit(15);
-    if (!error && data && data.length > 0) setRealTimeline(data.map(dbSessionToEvent));
+    if (!error && data && data.length > 0) {
+      setRealTimeline(data.map(dbSessionToEvent));
+      const exMap: Record<string, Array<{ name: string; sets?: number; reps?: number; weight?: number }>> = {};
+      data.forEach((r: Record<string, unknown>) => {
+        exMap[r.id as string] = (r.exercises as Array<{ name: string; sets?: number; reps?: number; weight?: number }>) ?? [];
+      });
+      setEventExercises(exMap);
+    }
   }, [user]);
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
+  useEffect(() => { fetchHistory(0); }, [fetchHistory]);
+  useEffect(() => { fetchWeeklyVolume(); }, [fetchWeeklyVolume]);
 
   // ── Charger les séances personnalisées depuis Supabase ──
   const fetchCustomSessions = useCallback(async () => {
@@ -2129,7 +2567,8 @@ export default function ProgressionPage() {
           { key: "progression",    label: "Progression" },
           { key: "mes-seances",    label: "Mes Séances" },
           { key: "nutrition",      label: "Nutrition" },
-          { key: "records",        label: "Records" },
+          { key: "analyse",        label: "Analyse" },
+          { key: "badges",         label: "🏆 Badges" },
         ] as const).map(({ key, label }) => (
           <motion.button
             key={key}
@@ -2185,6 +2624,25 @@ export default function ProgressionPage() {
             goalType={fitnessGoal}
           />
           <WorkoutWeekCard sessions={displayTimeline} />
+          <PRChart
+            prs={prs}
+            onAdd={async (exercise, value, unit) => {
+              if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+              const supabase = createClient();
+              const { error } = await supabase.from("personal_records").insert({
+                user_id: user.id, exercise, value, unit, date: toDateStr(new Date()),
+              });
+              if (!error) { showToast("Record enregistré !"); fetchPRs(); }
+              else showToast("Erreur : " + error.message);
+            }}
+            onDelete={async (id) => {
+              if (!user) return;
+              const supabase = createClient();
+              const { error } = await supabase.from("personal_records").delete().eq("id", id).eq("user_id", user.id);
+              if (!error) { showToast("Record supprimé"); fetchPRs(); }
+            }}
+          />
+          <VolumeChart data={weeklyVolume} />
         </div>
       </motion.div>
 
@@ -2237,32 +2695,75 @@ export default function ProgressionPage() {
                         <EvIcon size={14} strokeWidth={1.5} style={{ color: event.dot }} />
                       </div>
                     </div>
-                    <div className="lg-surface lg-highlight relative flex-1 rounded-2xl p-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{event.title}</p>
-                        <motion.button
-                          whileTap={{ scale: 0.92 }}
-                          onClick={() => setShareData(event.performance)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg cursor-pointer flex-shrink-0"
-                          style={{
-                            background: "linear-gradient(135deg, rgba(255,240,245,0.95) 0%, rgba(224,255,255,0.95) 100%)",
-                            border: "1px solid rgba(255,255,255,0.8)",
-                            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                          }}
-                          aria-label="Partager cette performance"
-                        >
-                          <Share2 size={11} strokeWidth={1.7} style={{ color: "#2D3748" }} />
-                          <span className="text-[10px] font-semibold" style={{ color: "#2D3748" }}>Partager</span>
-                        </motion.button>
-                      </div>
-                      <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{event.desc}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-1">
-                          <Clock size={10} style={{ color: "#A0AEC0" }} />
-                          <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{event.time}</span>
+                    <div className="lg-surface lg-highlight relative flex-1 rounded-2xl overflow-hidden">
+                      {/* Header row */}
+                      <div className="flex items-center justify-between gap-2 p-4 pb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{event.title}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Clock size={9} style={{ color: "#A0AEC0" }} />
+                            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{event.time}</span>
+                          </div>
                         </div>
-                        <ChevronRight size={14} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <motion.button
+                            whileTap={{ scale: 0.92 }}
+                            onClick={() => setShareData(event.performance)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer"
+                            style={{
+                              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 8px rgba(167,139,250,0.15)",
+                            }}
+                          >
+                            <Share2 size={10} strokeWidth={2} style={{ color: "#2D3748" }} />
+                            <span className="text-[10px] font-semibold" style={{ color: "#2D3748" }}>Partager</span>
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setExpandedEvent(expandedEvent === (event.id ?? event.title + event.date) ? null : (event.id ?? event.title + event.date))}
+                            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
+                            style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}
+                          >
+                            <motion.div animate={{ rotate: expandedEvent === (event.id ?? event.title + event.date) ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                              <ChevronRight size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                            </motion.div>
+                          </motion.button>
+                        </div>
                       </div>
+                      {/* Desc */}
+                      <p className="text-xs px-4 pb-3 font-light" style={{ color: "#718096" }}>{event.desc}</p>
+                      {/* Expandable exercises */}
+                      <AnimatePresence initial={false}>
+                        {expandedEvent === (event.id ?? event.title + event.date) && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.22 }}
+                            style={{ overflow: "hidden", borderTop: "1px solid rgba(212,192,255,0.15)" }}
+                          >
+                            <div className="px-4 py-3 flex flex-col gap-1.5">
+                              {(() => {
+                                const exs = event.id ? (eventExercises[event.id] ?? []) : [];
+                                if (exs.length === 0) {
+                                  return <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Aucun exercice enregistré pour cette séance.</p>;
+                                }
+                                return exs.map((ex, j) => (
+                                  <div key={j} className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: event.dot }} />
+                                    <p className="text-xs font-medium flex-1" style={{ color: "#2D3748" }}>{ex.name}</p>
+                                    {(ex.sets || ex.reps || ex.weight) && (
+                                      <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                                        {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
+                                      </p>
+                                    )}
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </motion.div>
                 );
@@ -2606,6 +3107,127 @@ export default function ProgressionPage() {
             );
           })()}
 
+          {/* ── Historique des séances ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="max-w-5xl mt-2"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>Toutes les séances</p>
+                <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Historique</h2>
+              </div>
+            </div>
+
+            {historySessions.length === 0 && !historyLoading && (
+              <div className="flex flex-col items-center py-10 gap-2 rounded-2xl"
+                style={{ background: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.6)" }}>
+                <Dumbbell size={24} strokeWidth={1.4} style={{ color: "#D4C0FF" }} />
+                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune séance enregistrée encore.</p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {historySessions.map((s, i) => {
+                const isExpanded = historyExpanded === s.id;
+                const date = new Date(s.started_at);
+                const dateLabel = date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+                const timeLabel = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+                const dur = s.elapsed_seconds > 0
+                  ? `${Math.floor(s.elapsed_seconds / 60)} min`
+                  : s.duration_minutes > 0 ? `${s.duration_minutes} min` : null;
+                const catColors: Record<string, string> = {
+                  force: "#A78BFA", cardio: "#34D399", mobilite: "#FBBF24", yoga: "#F9A8D4", hiit: "#F87171", sport: "#60A5FA",
+                };
+                const catColor = catColors[s.category] ?? "#A0AEC0";
+
+                return (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    className="rounded-2xl overflow-hidden cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.18)", boxShadow: "0 2px 8px rgba(167,139,250,0.06)" }}
+                    onClick={() => setHistoryExpanded(isExpanded ? null : s.id)}
+                  >
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: `${catColor}18` }}>
+                        <Dumbbell size={13} strokeWidth={1.8} style={{ color: catColor }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{s.title}</p>
+                        <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{dateLabel} · {timeLabel}</p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {dur && <span className="text-[11px] font-medium" style={{ color: "#718096" }}>{dur}</span>}
+                        {s.calories_burned > 0 && (
+                          <span className="text-[11px] font-medium" style={{ color: "#D4A843" }}>{s.calories_burned} kcal</span>
+                        )}
+                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                          <ChevronRight size={13} strokeWidth={2} style={{ color: "#A0AEC0", transform: "rotate(90deg)" }} />
+                        </motion.div>
+                      </div>
+                    </div>
+
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.22 }}
+                          style={{ overflow: "hidden", borderTop: "1px solid rgba(212,192,255,0.15)" }}
+                        >
+                          <div className="px-4 py-3 flex flex-col gap-1.5">
+                            {s.exercises.length === 0 ? (
+                              <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Aucun détail d&apos;exercice enregistré.</p>
+                            ) : (
+                              s.exercises.map((ex, j) => (
+                                <div key={j} className="flex items-center gap-2">
+                                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: catColor }} />
+                                  <p className="text-xs font-medium flex-1" style={{ color: "#2D3748" }}>{ex.name}</p>
+                                  {(ex.sets || ex.reps || ex.weight) && (
+                                    <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                                      {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
+                                    </p>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {historyLoading && (
+              <div className="flex items-center justify-center gap-2 py-4">
+                <motion.div className="w-4 h-4 rounded-full border-2"
+                  style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                  animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
+                <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Chargement…</span>
+              </div>
+            )}
+
+            {historyHasMore && !historyLoading && historySessions.length > 0 && (
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => fetchHistory(historyPage + 1, true)}
+                className="w-full mt-3 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
+                style={{ background: "rgba(240,235,255,0.6)", color: "#A78BFA", border: "1px solid rgba(212,192,255,0.3)" }}
+              >
+                Voir plus
+              </motion.button>
+            )}
+          </motion.div>
+
         </motion.div>
       )}
 
@@ -2622,153 +3244,30 @@ export default function ProgressionPage() {
         </motion.div>
       )}
 
-      {/* ══════════ TAB RECORDS ══════════ */}
-      {activeTab === "records" && (
-        <motion.div key="records-tab" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.3 }} className="flex flex-col gap-6">
 
-          {/* Form */}
-          <div className="rounded-3xl p-5" style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.1)" }}>
-            <p className="text-[10px] font-semibold tracking-widest uppercase mb-4" style={{ color: "#A0AEC0" }}>Nouveau record personnel 🏆</p>
-            <div className="flex flex-col gap-3">
-              {/* Exercice */}
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Exercice</label>
-                <input
-                  type="text"
-                  placeholder="Ex: Développé couché"
-                  value={newPR.exercise}
-                  onChange={(e) => setNewPR(p => ({ ...p, exercise: e.target.value }))}
-                  list="exercise-suggestions"
-                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
-                />
-                <datalist id="exercise-suggestions">
-                  {commonExercises.map(e => <option key={e} value={e} />)}
-                </datalist>
-              </div>
-              {/* Value + unit */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Valeur</label>
-                  <input
-                    type="number" step="0.5" placeholder="100"
-                    value={newPR.value}
-                    onChange={(e) => setNewPR(p => ({ ...p, value: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Unité</label>
-                  <select
-                    value={newPR.unit}
-                    onChange={(e) => setNewPR(p => ({ ...p, unit: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
-                  >
-                    <option value="kg">kg</option>
-                    <option value="km">km</option>
-                    <option value="min">min</option>
-                    <option value="reps">reps</option>
-                    <option value="s">sec</option>
-                  </select>
-                </div>
-              </div>
-              {/* Reps + note */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Répétitions (optionnel)</label>
-                  <input
-                    type="number" placeholder="Ex: 3"
-                    value={newPR.reps}
-                    onChange={(e) => setNewPR(p => ({ ...p, reps: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "#718096" }}>Note (optionnel)</label>
-                  <input
-                    type="text" placeholder="Ex: PR absolu !"
-                    value={newPR.note}
-                    onChange={(e) => setNewPR(p => ({ ...p, note: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.2)", color: "#2D3748" }}
-                  />
-                </div>
-              </div>
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={savePR}
-              disabled={savingPR || !newPR.exercise || !newPR.value}
-              className="w-full mt-4 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-              style={{
-                background: newPR.exercise && newPR.value ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
-                color: newPR.exercise && newPR.value ? "#2D3748" : "#A0AEC0",
-                boxShadow: newPR.exercise && newPR.value ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
-              }}
-            >
-              {savingPR ? "Enregistrement…" : "Ajouter le record 🏆"}
-            </motion.button>
-          </div>
+      {/* ══════════ TAB ANALYSE ══════════ */}
+      {activeTab === "analyse" && (
+        <motion.div
+          key="analyse-tab"
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 16 }}
+          transition={{ duration: 0.3 }}
+        >
+          <ExerciseAnalyzer />
+        </motion.div>
+      )}
 
-          {/* Filter + list */}
-          {prs.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Mes records</p>
-                <input
-                  type="text" placeholder="Filtrer…" value={prFilter}
-                  onChange={(e) => setPrFilter(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl text-xs outline-none"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748", width: 120 }}
-                />
-              </div>
-              {/* Group PRs by exercise and show best */}
-              {(() => {
-                const grouped = prs
-                  .filter(p => !prFilter || p.exercise.toLowerCase().includes(prFilter.toLowerCase()))
-                  .reduce<Record<string, PR[]>>((acc, p) => { (acc[p.exercise] ??= []).push(p); return acc; }, {});
-                return Object.entries(grouped).map(([exercise, records], gi) => {
-                  const best = records.reduce((a, b) => a.value >= b.value ? a : b);
-                  return (
-                    <motion.div key={exercise} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: gi * 0.06 }}
-                      className="rounded-2xl p-4 mb-3 relative overflow-hidden"
-                      style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.15) 0%, rgba(245,230,163,0.1) 100%)", border: "1px solid rgba(167,139,250,0.15)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{exercise}</p>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
-                          <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{best.value} {best.unit}</span>
-                          {best.reps && <span className="text-[10px] font-medium" style={{ color: "#4A5568" }}>× {best.reps}</span>}
-                        </div>
-                      </div>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
-                        {records.length} entrée{records.length > 1 ? "s" : ""} · Dernier : {new Date(best.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                        {best.note && ` · ${best.note}`}
-                      </p>
-                      {records.length > 1 && (
-                        <div className="flex gap-1.5 mt-2 flex-wrap">
-                          {records.slice(0, 5).map((r, ri) => (
-                            <span key={ri} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(167,139,250,0.12)", color: "#7C5CFA" }}>
-                              {new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} : {r.value}{r.unit}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                });
-              })()}
-            </div>
-          )}
-
-          {prs.length === 0 && (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <div className="text-4xl">🏆</div>
-              <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>Aucun record enregistré.<br/>Ajoute ton premier PR ci-dessus !</p>
-            </div>
-          )}
+      {/* ══════════ TAB BADGES ══════════ */}
+      {activeTab === "badges" && (
+        <motion.div
+          key="badges-tab"
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 16 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Badges />
         </motion.div>
       )}
 
