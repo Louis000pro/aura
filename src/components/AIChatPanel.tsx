@@ -30,8 +30,14 @@ function ChatUI({
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Scroll en bas seulement si l'utilisateur est déjà proche du bas
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (isNearBottom) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
   }, [messages, aiTyping]);
 
   const handleSend = (text: string) => {
@@ -41,13 +47,13 @@ function ChatUI({
   };
 
   return (
-    <div className={`relative flex flex-col overflow-hidden ${isFullscreen ? "h-full" : "h-full"}`}
+    <div className="relative flex flex-col overflow-hidden h-full"
       style={isFullscreen ? {} : { borderRadius: "1.5rem" }}>
 
       {/* Solid background (only for inline) */}
       {!isFullscreen && (
         <div className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{ background: "rgba(255,255,255,0.92)", border: "1px solid rgba(212,192,255,0.25)", boxShadow: "0 8px 32px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)" }} />
+          style={{ background: "rgba(255,255,255,1)", border: "1.5px solid rgba(212,192,255,0.55)", boxShadow: "0 12px 48px rgba(167,139,250,0.2), 0 2px 8px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,1)" }} />
       )}
 
       {/* Header */}
@@ -78,7 +84,7 @@ function ChatUI({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0" style={{ scrollbarWidth: "none" }}>
+      <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 min-h-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none" }}>
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div

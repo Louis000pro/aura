@@ -114,7 +114,7 @@ export default function VideoPlayer({
         }}
         muted
         playsInline
-        preload="metadata"
+        preload="none"
         loop={loop}
         aria-hidden="true"
         tabIndex={-1}
@@ -129,7 +129,7 @@ export default function VideoPlayer({
         controls={controls}
         muted={muted || autoPlayOnScroll}
         playsInline
-        preload="metadata"
+        preload="auto"
         loop={loop}
       />
     </div>

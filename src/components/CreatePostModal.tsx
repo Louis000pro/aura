@@ -36,7 +36,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
     const isVideo = file.type.startsWith("video/");
     const isImage = file.type.startsWith("image/");
     if (!isVideo && !isImage) { setError("Seules les images et vidéos sont acceptées"); return; }
-    if (file.size > 50 * 1024 * 1024) { setError("Fichier trop lourd (max 50 Mo)"); return; }
+    if (file.size > 500 * 1024 * 1024) { setError("Fichier trop lourd (max 500 Mo)"); return; }
     setError(null);
     setMediaFile(file);
     setMediaKind(isVideo ? "video" : "image");
@@ -265,7 +265,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
                   {dragging ? "Dépose ici !" : "Ajoute une photo ou vidéo"}
                 </p>
                 <p className="text-xs mt-0.5 font-light" style={{ color: "#A0AEC0" }}>
-                  Glisse-dépose ou clique · JPG, PNG, MP4, MOV · max 50 Mo
+                  Glisse-dépose ou clique · JPG, PNG, MP4, MOV · max 500 Mo
                 </p>
               </div>
               <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl" style={{ background: "rgba(167,139,250,0.12)" }}>

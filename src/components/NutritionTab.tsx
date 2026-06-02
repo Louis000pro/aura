@@ -1550,6 +1550,16 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   const [loading, setLoading]   = useState(true);
   const [regDate, setRegDate]   = useState<Date | null>(null);
 
+  /* Onboarding profile + calculated goals */
+  const [onboardingProfile, setOnboardingProfile] = useState<Parameters<typeof calculateGoals>[0]>(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`aura_onboarding_${user?.pseudo}`);
+      if (raw) setOnboardingProfile(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, [user?.pseudo]);
+  const goals = useMemo(() => calculateGoals(onboardingProfile), [onboardingProfile]);
+
   /* Registration date */
   useEffect(() => {
     if (!user) return;
@@ -1596,61 +1606,72 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
     });
   }, [user]);
 
-  /* Calendar grid */
-  const firstOfMonth = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
-  const dow0 = firstOfMonth.getDay(); // 0=Sun … 6=Sat
-  const offset = dow0 === 0 ? -6 : 1 - dow0; // shift to Monday-first
-  const gridStart = new Date(firstOfMonth);
-  gridStart.setDate(firstOfMonth.getDate() + offset);
+  /* Calendar grid — mémorisé pour éviter les recalculs à chaque render */
+  const { weeks, canPrev, canNext } = useMemo(() => {
+    const firstOfMonth = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
+    const dow0 = firstOfMonth.getDay();
+    const offset = dow0 === 0 ? -6 : 1 - dow0;
+    const gridStart = new Date(firstOfMonth);
+    gridStart.setDate(firstOfMonth.getDate() + offset);
+    const allDays = Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(gridStart);
+      d.setDate(gridStart.getDate() + i);
+      return d;
+    });
+    const ws: Date[][] = [];
+    for (let i = 0; i < allDays.length; i += 7) {
+      const w = allDays.slice(i, i+7);
+      if (w.some(d => d.getMonth() === calMonth.getMonth())) ws.push(w);
+    }
+    const regMonth = regDate ? new Date(regDate.getFullYear(), regDate.getMonth(), 1) : null;
+    const todayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    return {
+      weeks: ws,
+      canPrev: regMonth ? calMonth > regMonth : true,
+      canNext: calMonth < todayMonth,
+    };
+  }, [calMonth, regDate, today]);
 
-  const allDays = Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(gridStart);
-    d.setDate(gridStart.getDate() + i);
-    return d;
-  });
-  const weeks = [] as Date[][];
-  for (let i = 0; i < allDays.length; i += 7) {
-    const w = allDays.slice(i, i+7);
-    if (w.some(d => d.getMonth() === calMonth.getMonth())) weeks.push(w);
-  }
+  /* Monthly stats — mémorisé */
+  const { trackedThisMonth, daysInMonth, avgCal, avgWater } = useMemo(() => {
+    const mk = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}`;
+    const monthEntries = [...allData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
+    const tracked = monthEntries.filter(d => d.meal_count > 0);
+    const waterArr = monthEntries.filter(d => d.water_ml > 0);
+    return {
+      trackedThisMonth: tracked.length,
+      daysInMonth: new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate(),
+      avgCal: tracked.length > 0 ? Math.round(tracked.reduce((s,d) => s + d.total_calories,0) / tracked.length) : 0,
+      avgWater: waterArr.length > 0 ? Math.round(waterArr.reduce((s,d) => s + d.water_ml,0) / waterArr.length) : 0,
+    };
+  }, [allData, calMonth]);
 
-  /* Navigation constraints */
-  const regMonth = regDate ? new Date(regDate.getFullYear(), regDate.getMonth(), 1) : null;
-  const todayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const canPrev = regMonth ? calMonth > regMonth : true;
-  const canNext = calMonth < todayMonth;
+  /* Streak calculation — mémorisé */
+  const { streak, bestStreak } = useMemo(() => {
+    const sorted = [...allData.entries()].filter(([,v]) => v.meal_count > 0).map(([k]) => k).sort();
+    let best = 0, cur = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      cur = i === 0 ? 1
+        : (new Date(sorted[i]).getTime() - new Date(sorted[i-1]).getTime()) / 86400000 === 1 ? cur+1 : 1;
+      best = Math.max(best, cur);
+    }
+    let current = 0;
+    for (let i = sorted.length-1; i >= 0; i--) {
+      const diff = Math.round((today.getTime() - new Date(sorted[i]).getTime()) / 86400000);
+      if (i === sorted.length-1 && diff > 1) break;
+      if (i < sorted.length-1 && Math.round((new Date(sorted[i+1]).getTime() - new Date(sorted[i]).getTime()) / 86400000) !== 1) break;
+      current++;
+    }
+    return { streak: current, bestStreak: best };
+  }, [allData, today]);
 
-  /* Monthly stats */
-  const mk = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}`;
-  const monthEntries = [...allData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
-  const trackedThisMonth = monthEntries.filter(d => d.meal_count > 0).length;
-  const daysInMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate();
-  const hasTrack = monthEntries.filter(d => d.meal_count > 0);
-  const avgCal   = hasTrack.length > 0 ? Math.round(hasTrack.reduce((s,d) => s + d.total_calories,0) / hasTrack.length) : 0;
-  const waterArr = monthEntries.filter(d => d.water_ml > 0);
-  const avgWater = waterArr.length > 0 ? Math.round(waterArr.reduce((s,d) => s + d.water_ml,0) / waterArr.length) : 0;
-
-  /* Streak calculation (all-time) */
-  const sorted = [...allData.entries()].filter(([,v]) => v.meal_count > 0).map(([k]) => k).sort();
-  let streak = 0, bestStreak = 0, cur = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    cur = i === 0 ? 1
-      : (new Date(sorted[i]).getTime() - new Date(sorted[i-1]).getTime()) / 86400000 === 1 ? cur+1 : 1;
-    bestStreak = Math.max(bestStreak, cur);
-  }
-  /* Current streak: count backward from today (or yesterday) */
-  for (let i = sorted.length-1; i >= 0; i--) {
-    const diff = Math.round((today.getTime() - new Date(sorted[i]).getTime()) / 86400000);
-    if (i === sorted.length-1 && diff > 1) break;
-    if (i < sorted.length-1 && Math.round((new Date(sorted[i+1]).getTime() - new Date(sorted[i]).getTime()) / 86400000) !== 1) break;
-    streak++;
-  }
-
-  /* All-time aggregates */
-  const allTracked = [...allData.values()].filter(d => d.meal_count > 0);
-  const globalAvgCal = allTracked.length > 0
-    ? Math.round(allTracked.reduce((s,d) => s + d.total_calories,0) / allTracked.length)
-    : 0;
+  /* All-time aggregates — mémorisé */
+  const globalAvgCal = useMemo(() => {
+    const allTracked = [...allData.values()].filter(d => d.meal_count > 0);
+    return allTracked.length > 0
+      ? Math.round(allTracked.reduce((s,d) => s + d.total_calories,0) / allTracked.length)
+      : 0;
+  }, [allData]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}

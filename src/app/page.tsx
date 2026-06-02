@@ -3,17 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Brain, Activity, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
+import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity, User2, Settings, LogOut, ChevronRight, Play, Heart, Eye, BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import HomeOrb from "@/components/HomeOrb";
-import StatsDrawer from "@/components/StatsDrawer";
-import DailyDrawer from "@/components/DailyDrawer";
-import NotificationBell from "@/components/NotificationBell";
+import VocalOrb from "@/components/VocalOrb";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
+import WeeklyProgramme from "@/components/WeeklyProgramme";
+import { stats } from "@/data/statsData";
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 
@@ -238,28 +237,17 @@ function HomeToast({ message }: { message: string }) {
 }
 
 /* ─── Repas Modal ─── */
-type MealType = "petit-dejeuner" | "dejeuner" | "diner" | "gouter";
+type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 const mealTypesList: { id: MealType; label: string; emoji: string }[] = [
-  { id: "petit-dejeuner", label: "Petit-déj", emoji: "☀️" },
-  { id: "dejeuner",       label: "Déjeuner",  emoji: "🍽️" },
-  { id: "diner",          label: "Dîner",     emoji: "🌙" },
-  { id: "gouter",         label: "Goûter",    emoji: "🍎" },
+  { id: "breakfast", label: "Petit-déj", emoji: "☀️" },
+  { id: "lunch",     label: "Déjeuner",  emoji: "🍽️" },
+  { id: "dinner",    label: "Dîner",     emoji: "🌙" },
+  { id: "snack",     label: "Collation", emoji: "🍎" },
 ];
-type RepasModalSaveArgs = { name: string; calories: number; type: MealType };
-function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: RepasModalSaveArgs) => Promise<void> | void }) {
+function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (name: string) => void }) {
   const [name, setName] = useState("");
   const [calories, setCalories] = useState("");
-  const [type, setType] = useState<MealType>("dejeuner");
-  const [saving, setSaving] = useState(false);
-  const handleSubmit = async () => {
-    if (!name.trim() || saving) return;
-    setSaving(true);
-    try {
-      await onSave({ name: name.trim(), calories: parseInt(calories) || 0, type });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const [type, setType] = useState<MealType>("lunch");
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
@@ -291,10 +279,10 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
           <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Calories (kcal)</label>
           <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="Ex : 450" className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }} />
         </div>
-        <motion.button whileHover={{ scale: saving ? 1 : 1.02 }} whileTap={{ scale: saving ? 1 : 0.97 }} disabled={saving} onClick={handleSubmit}
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => { if (name.trim()) onSave(name.trim()); }}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer transition-all duration-200"
-          style={{ background: name.trim() && !saving ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.45)", color: name.trim() && !saving ? "#2D3748" : "#A0AEC0", boxShadow: name.trim() && !saving ? "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px rgba(167,139,250,0.2)" : "none" }}>
-          {saving ? "Enregistrement…" : "Enregistrer le repas"}
+          style={{ background: name.trim() ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.45)", color: name.trim() ? "#2D3748" : "#A0AEC0", boxShadow: name.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px rgba(167,139,250,0.2)" : "none" }}>
+          Enregistrer le repas
         </motion.button>
       </motion.div>
     </motion.div>
@@ -613,14 +601,7 @@ function Dashboard() {
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   const [mobilePanel, setMobilePanel] = useState<"chat"|"stats"|null>(null);
-  // Nouveaux états pour la refonte mobile portrait
-  const [showChat, setShowChat] = useState(false);
-  const [showStatsDrawer, setShowStatsDrawer] = useState(false);
-  const [showDailyDrawer, setShowDailyDrawer] = useState(false);
-  const [dailyVideoUrl, setDailyVideoUrl] = useState<string | null>(null);
-  void mobilePanel; void setMobilePanel; void logout; void router; // legacy refs, unused dans la nouvelle layout
   const [showRepas, setShowRepas] = useState(false);
-  const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
   const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string|null>(null);
   const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
@@ -632,6 +613,13 @@ function Dashboard() {
   const [liveStats, setLiveStats] = useState({ score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false });
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [topVideo, setTopVideo] = useState<{
+    id: string; media_url: string; caption?: string;
+    views?: number; likes: number; comments: number;
+    author: { pseudo: string; avatar_url?: string | null; is_admin?: boolean } | null;
+  } | null>(null);
+  const topVideoRef = useRef<HTMLVideoElement>(null);
+  const [topVideoMuted, setTopVideoMuted] = useState(true);
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
@@ -686,26 +674,33 @@ function Dashboard() {
       });
   }, [user]);
 
-  // Fetch la vidéo du jour (la plus vue 24h, fallback semaine) pour mini-aperçu sur la chip
+  // Charge la vidéo du jour (meilleure vidéo de la semaine : vues + likes)
   useEffect(() => {
     const supabase = createClient();
-    const since = new Date(Date.now() - 86400000).toISOString();
-    supabase.from("posts").select("media_url, views, created_at")
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    supabase
+      .from("posts")
+      .select("id, media_url, caption, views, post_likes(user_id), post_comments(id), author:profiles!posts_user_id_fkey(pseudo, avatar_url, is_admin)")
       .eq("media_type", "video")
-      .gte("created_at", since)
-      .order("views", { ascending: false, nullsFirst: false })
-      .limit(1).maybeSingle()
+      .not("media_url", "is", null)
+      .gte("created_at", weekAgo)
+      .limit(30)
       .then(({ data }) => {
-        if (data?.media_url) { setDailyVideoUrl(data.media_url as string); return; }
-        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-        supabase.from("posts").select("media_url, views, created_at")
-          .eq("media_type", "video")
-          .gte("created_at", weekAgo)
-          .order("views", { ascending: false, nullsFirst: false })
-          .limit(1).maybeSingle()
-          .then(({ data: fb }) => {
-            if (fb?.media_url) setDailyVideoUrl(fb.media_url as string);
-          });
+        if (!data || data.length === 0) return;
+        const scored = data.map((p: { id: string; media_url: string | null; caption: string | null; views?: number; post_likes: { user_id: string }[]; post_comments: { id: string }[]; author: { pseudo: string; avatar_url?: string | null; is_admin?: boolean } | null }) => ({
+          ...p,
+          _score: (p.views ?? 0) + (p.post_likes?.length ?? 0) * 3,
+        })).sort((a, b) => b._score - a._score);
+        const top = scored[0];
+        setTopVideo({
+          id: top.id,
+          media_url: top.media_url ?? "",
+          caption: top.caption ?? undefined,
+          views: top.views,
+          likes: top.post_likes?.length ?? 0,
+          comments: top.post_comments?.length ?? 0,
+          author: top.author,
+        });
       });
   }, []);
 
@@ -892,255 +887,377 @@ function Dashboard() {
 
   const handleVoiceTranscript = useCallback((text: string) => {
     sendMessage(text);
-    setShowChat(true);
+    if (typeof window !== "undefined" && window.innerWidth < 768) setMobilePanel("chat");
   }, [sendMessage]);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const quickActionHandlers = [
-    () => { setShowChat(true); sendMessage("Génère-moi une séance d'entraînement pour aujourd'hui selon mon profil et mes objectifs"); },
-    () => { setShowChat(true); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
-    () => { setShowChat(true); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
+    () => { setMobilePanel("chat"); sendMessage("Génère-moi une séance d'entraînement pour aujourd'hui selon mon profil et mes objectifs"); },
+    () => { setMobilePanel("chat"); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
+    () => { setMobilePanel("chat"); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
   ];
-  void quickActionHandlers;
 
   return (
-    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", touchAction: "none", height: "100dvh" }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
 
-      {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
-      <button
-        type="button"
-        onClick={() => setShowStatsDrawer(true)}
-        className="relative w-full flex-shrink-0 outline-none active:opacity-95 transition-opacity"
-        style={{ height: "28%" }}
-      >
-        {/* Header en haut : greeting + avatar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 pt-6">
-          <div className="text-left">
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }}>{greeting}</p>
-            <h1 className="text-xl font-extralight mt-0.5" style={{ color: "#2D3748" }}>
-              {user?.pseudo ?? user?.name ?? ""}
-            </h1>
-          </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <NotificationBell side="bottom" />
-          </div>
+      {/* ── Header ── */}
+      <motion.header className="relative z-10 flex items-center justify-between px-5 pt-7 pb-2 md:px-8 md:pt-9 flex-shrink-0"
+        initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: "easeOut" }}>
+        <div>
+          <motion.p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>{greeting}</motion.p>
+          <motion.h1 className="text-2xl md:text-3xl font-extralight mt-0.5" style={{ color: "#2D3748" }}
+            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
+            {user ? `${user.pseudo ?? user.name}, prêt aujourd'hui ?` : "Comment vous sentez-vous ?"}
+          </motion.h1>
         </div>
-
-        {/* 4 mini-cadrans */}
-        <div className="absolute bottom-8 left-0 right-0 px-5 grid grid-cols-4 gap-2">
-          {[
-            { label: "Score",   icon: Sparkles,   value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—", unit: liveStats.score > 0 ? "/100" : "" },
-            { label: "Cal",     icon: Flame,      value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.calories > 0 ? "kcal" : "" },
-            { label: "Pas",     icon: Footprints, value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "" },
-            { label: "Sommeil", icon: Moon,       value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h` : "—", unit: "" },
-          ].map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <motion.div key={s.label}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.3 }}
-                className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1"
-                style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
-                  <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                </div>
-                <p className="text-[8px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{s.label}</p>
-                <div className="flex items-baseline gap-0.5">
-                  <span className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>{s.value}</span>
-                  {s.unit && <span className="text-[8px] font-medium" style={{ color: "#A0AEC0" }}>{s.unit}</span>}
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Croissant SVG (courbe douce qui s'incurve vers le bas) */}
-        <svg className="absolute -bottom-px left-0 w-full pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
-          <defs>
-            <linearGradient id="topCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(212,192,255,0.5)" />
-              <stop offset="100%" stopColor="rgba(245,230,163,0.0)" />
-            </linearGradient>
-          </defs>
-          <path d="M 0 0 Q 50 10 100 0 L 100 6 L 0 6 Z" fill="url(#topCrescentGrad)" />
-        </svg>
-
-        {/* Hint chevron */}
-        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 pointer-events-none">
-          <ChevronDown size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
-        </div>
-      </button>
-
-      {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[180px] md:pb-[200px]">
-        <HomeOrb
-          onTap={() => setShowChat(true)}
-          onTranscript={handleVoiceTranscript}
-        />
-      </div>
-
-      {/* ────────────────── BOTTOM : VOTD carte large + croissant — AU-DESSUS de la nav ─ */}
-      <button
-        type="button"
-        onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity bottom-[112px] md:bottom-6 h-[138px]"
-        aria-label="Ouvrir Du Jour"
-      >
-        {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
-        <svg className="absolute -top-px left-0 w-full pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
-          <defs>
-            <linearGradient id="bottomCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(245,230,163,0.0)" />
-              <stop offset="100%" stopColor="rgba(212,192,255,0.5)" />
-            </linearGradient>
-          </defs>
-          <path d="M 0 6 Q 50 -4 100 6 L 100 0 L 0 0 Z" fill="url(#bottomCrescentGrad)" />
-        </svg>
-
-        {/* Hint chevron */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
-          <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
-        </div>
-
-        {/* VOTD carte horizontale large — vidéo à gauche + texte à droite */}
-        <div className="absolute inset-x-4 bottom-3 flex justify-center">
-          <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
-            className="flex items-stretch gap-3 p-2 rounded-3xl pointer-events-none w-full"
-            style={{
-              maxWidth: 460,
-              background: "rgba(255,255,255,0.92)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(212,192,255,0.4)",
-              boxShadow: "0 8px 28px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
-            }}>
-            {/* Vidéo verticale à gauche */}
-            <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
-              style={{
-                width: 64, height: 104,
-                background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
-              }}>
-              {dailyVideoUrl ? (
-                <video
-                  src={dailyVideoUrl}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  muted
-                  loop
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Play size={20} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 2 }} fill="#FFFFFF" />
-                </div>
-              )}
-              {/* Indicateur LIVE en haut */}
-              {dailyVideoUrl && (
-                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
-                  style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-                  <div className="w-1 h-1 rounded-full" style={{ background: "#FC8181", boxShadow: "0 0 4px rgba(252,129,129,0.9)" }} />
-                  <span className="text-[7px] font-bold tracking-widest text-white">LIVE</span>
-                </div>
-              )}
-              {/* Gradient noir bas pour lisibilité éventuelle */}
-              <div className="absolute inset-x-0 bottom-0 h-8 pointer-events-none"
-                style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.45))" }} />
-            </div>
-
-            {/* Texte à droite */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 pr-2">
-              <p className="text-[9px] font-bold tracking-widest uppercase leading-none mb-0.5" style={{ color: "#A78BFA" }}>
-                Du jour
-              </p>
-              <p className="text-base font-extralight leading-tight" style={{ color: "#2D3748" }}>
-                Vidéo · Séance · Perf
-              </p>
-              <p className="text-[10px] font-light mt-1 leading-snug" style={{ color: "#A0AEC0" }}>
-                Tap pour explorer ton contenu
-              </p>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
-                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.5), rgba(245,230,163,0.5))" }}>
-                  <Play size={9} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 0.5 }} fill="#2D3748" />
-                  <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>Voir</span>
-                </div>
-                <ChevronUp size={11} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
-              </div>
-            </div>
+        <div className="flex items-center gap-2.5">
+          {/* Avatar + menu */}
+          <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, type: "spring", bounce: 0.4 }} ref={menuRef} style={{ position: "relative" }}>
+            {user ? (
+              <>
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                  onClick={() => setShowMenu(v => !v)}
+                  className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer select-none"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: showMenu ? "0 0 0 2.5px rgba(167,139,250,0.5),0 4px 16px rgba(167,139,250,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px 0 rgba(167,139,250,0.3)", transition: "box-shadow 0.2s" }}>
+                  <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
+                </motion.div>
+                {typeof window !== "undefined" && createPortal(
+                  <AnimatePresence>
+                    {showMenu && (
+                      <motion.div ref={dropdownRef} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        style={{ position: "fixed", right: 16, top: 70, zIndex: 99999, minWidth: 210 }}>
+                        <div style={{ backgroundColor: "#fff", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(167,139,250,0.2)", boxShadow: "0 16px 56px rgba(167,139,250,0.25),0 4px 16px rgba(0,0,0,0.12)" }}>
+                          <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(167,139,250,0.1)" }}>
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                                <span className="text-sm font-bold" style={{ color: "#2D3748" }}>{(user.pseudo ?? user.name ?? "?")[0]?.toUpperCase()}</span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{user.pseudo ?? user.name}</p>
+                                <p className="text-[11px] truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
+                              </div>
+                            </div>
+                          </div>
+                          {[
+                            { icon: User2,    label: "Mon profil", action: () => { router.push(user?.pseudo ? `/profil/${user.pseudo}` : "/profil"); setShowMenu(false); } },
+                            { icon: Settings, label: "Réglages",   action: () => { router.push("/profil"); setShowMenu(false); } },
+                          ].map(({ icon: Icon, label, action }) => (
+                            <button key={label} onClick={action}
+                              className="w-full flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-purple-50"
+                              style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.1)" }}>
+                                  <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                                </div>
+                                <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</span>
+                              </div>
+                              <ChevronRight size={12} strokeWidth={2} style={{ color: "#D1D5DB" }} />
+                            </button>
+                          ))}
+                          <div style={{ height: 1, margin: "4px 12px", backgroundColor: "rgba(167,139,250,0.1)" }} />
+                          <button onClick={async () => { setShowMenu(false); await logout(); router.push("/auth"); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 mb-1 transition-colors hover:bg-red-50"
+                            style={{ display: "flex", width: "100%", background: "none", border: "none", outline: "none", cursor: "pointer" }}>
+                            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(252,129,129,0.1)" }}>
+                              <LogOut size={13} strokeWidth={1.5} style={{ color: "#FC8181" }} />
+                            </div>
+                            <span className="text-sm font-medium" style={{ color: "#FC8181" }}>Déconnexion</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>,
+                  document.body
+                )}
+              </>
+            ) : (
+              <Link href="/auth">
+                <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                  className="lg-bicolor lg-highlight relative flex items-center gap-1.5 px-3 py-2 rounded-full cursor-pointer">
+                  <LogIn size={12} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                  <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>Connexion</span>
+                </motion.div>
+              </Link>
+            )}
           </motion.div>
         </div>
-      </button>
+      </motion.header>
 
-      {/* ────────────────── DRAWER STATS (top → down) — carousel 3 zones ── */}
-      <StatsDrawer
-        open={showStatsDrawer}
-        onClose={() => setShowStatsDrawer(false)}
-        user={user}
-        onOpenStat={(s) => setSelectedStat(s)}
-        onOpenRepas={() => setShowRepas(true)}
-        mealsRefreshKey={mealsRefreshKey}
-      />
+      {/* ── DESKTOP : 3 colonnes ── */}
+      <div className="hidden md:grid relative z-10 grid-cols-[300px_1fr_300px] gap-4 px-5 pb-5 pt-3" style={{ height: "calc(100vh - 90px)" }}>
 
-      {/* ────────────────── DRAWER DAILY (bottom → up) — 3 cards swipables */}
-      <DailyDrawer
-        open={showDailyDrawer}
-        onClose={() => setShowDailyDrawer(false)}
-        user={user}
-      />
+        {/* ─ Gauche : Chat IA ─ */}
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="min-h-0" style={{ height: "100%" }}>
+          <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
+        </motion.div>
 
-      {/* ────────────────── CHAT PANEL (overlay) ─────────────────────── */}
+        {/* ─ Centre : Vidéo du Jour ─ */}
+        <motion.div initial={{ opacity: 0, scale: 0.93 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex items-center justify-center h-full overflow-hidden py-3">
+          {topVideo ? (
+            /* ── Card premium portrait 9/16 ── */
+            <div className="relative flex-shrink-0" style={{
+              height: "min(calc(100vh - 120px), 100%)",
+              aspectRatio: "9 / 16",
+              maxHeight: "calc(100vh - 120px)",
+            }}>
+              {/* Glow ambiant derrière la card */}
+              <div className="absolute pointer-events-none" style={{ inset: -32, background: "radial-gradient(ellipse at 50% 60%, rgba(167,139,250,0.45) 0%, rgba(212,192,255,0.2) 40%, transparent 70%)", filter: "blur(24px)", zIndex: 0 }} />
+              {/* Bordure animée conic-gradient */}
+              <div className="relative w-full h-full rounded-[28px] overflow-hidden" style={{ padding: 2, zIndex: 1 }}>
+                <motion.div className="absolute" style={{ inset: -120, background: "conic-gradient(from 0deg, #D4C0FF, #F5E6A3, #A78BFA, #FFB3C6, #D4C0FF)" }}
+                  animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+                {/* Inner card */}
+                <div className="relative w-full h-full rounded-[26px] overflow-hidden bg-black cursor-pointer" onClick={() => setTopVideoMuted(m => !m)}>
+                  {/* Vidéo */}
+                  <video src={topVideo.media_url} className="absolute inset-0 w-full h-full object-cover" style={{ pointerEvents: "none" }}
+                    autoPlay muted={topVideoMuted} playsInline loop preload="auto" />
+                  {/* Vignette globale */}
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, transparent 28%, transparent 52%, rgba(0,0,0,0.88) 100%)", zIndex: 1 }} />
+                  {/* ── TOP overlay ── */}
+                  <div className="absolute top-0 inset-x-0 flex items-center justify-between px-4 pt-4 z-20">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(167,139,250,0.82)", backdropFilter: "blur(14px)", boxShadow: "0 2px 12px rgba(167,139,250,0.5)" }}>
+                      <motion.span className="w-1.5 h-1.5 rounded-full bg-white block" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.4, repeat: Infinity }} />
+                      <span className="text-[10px] font-extrabold tracking-[0.2em] uppercase text-white">Vidéo du jour</span>
+                      <span className="text-sm leading-none">🔥</span>
+                    </div>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }}>
+                      <span className="text-sm leading-none pointer-events-none">{topVideoMuted ? "🔇" : "🔊"}</span>
+                    </div>
+                  </div>
+                  {/* ── BOTTOM overlay ── */}
+                  <div className="absolute bottom-0 inset-x-0 z-20 px-4 pb-6">
+                    <div className="flex items-end justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="relative w-10 h-10 rounded-full flex-shrink-0" style={{ padding: 2, background: "linear-gradient(135deg, #D4C0FF, #F5E6A3, #A78BFA)" }}>
+                          {topVideo.author?.avatar_url
+                            ? <img src={topVideo.author.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
+                            : <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#A78BFA,#7C3AED)" }}><span className="text-sm font-bold text-white">{topVideo.author?.pseudo?.[0]?.toUpperCase() ?? "?"}</span></div>
+                          }
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[13px] font-bold text-white leading-none">@{topVideo.author?.pseudo ?? "—"}</p>
+                            {topVideo.author?.is_admin && <BadgeCheck size={12} style={{ color: "#C4B5FD" }} />}
+                          </div>
+                          {topVideo.caption && <p className="text-[11px] mt-1 leading-tight truncate" style={{ color: "rgba(255,255,255,0.62)" }}>{topVideo.caption}</p>}
+                        </div>
+                      </div>
+                      <Link href="/communaute" onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-bold flex-shrink-0"
+                        style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#3D2F6B", boxShadow: "0 4px 18px rgba(167,139,250,0.55)" }}>
+                        <Play size={9} fill="currentColor" /> Voir
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Skeleton */
+            <div className="relative flex-shrink-0" style={{ height: "min(calc(100vh - 120px), 100%)", aspectRatio: "9 / 16", maxHeight: "calc(100vh - 120px)" }}>
+              <div className="w-full h-full rounded-[28px] animate-pulse" style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.2), rgba(245,230,163,0.1))", border: "1px solid rgba(212,192,255,0.2)" }} />
+            </div>
+          )}
+        </motion.div>
+
+        {/* ─ Droite : Stats + Programme ─ */}
+        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+          className="flex flex-col min-h-0 overflow-y-auto rounded-3xl p-4 gap-3"
+          style={{ height: "100%", background: "rgba(255,255,255,1)", border: "1.5px solid rgba(212,192,255,0.55)", boxShadow: "0 12px 48px rgba(167,139,250,0.2), 0 2px 8px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,1)" }}>
+
+          {/* ── Aujourd'hui ── */}
+          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase flex-shrink-0" style={{ color: "#A0AEC0" }}>Aujourd'hui</p>
+
+          <div className="grid grid-cols-3 gap-2 flex-shrink-0">
+            {[
+              { label: "Calories", value: liveStats.loaded && liveStats.calories > 0 ? `${liveStats.calories}` : "—",  unit: "kcal",     accent: "#A78BFA", icon: "🔥" },
+              { label: "Pas",      value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "/10k", accent: "#D4A843", icon: "👟" },
+              { label: "Sommeil",  value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit: "", accent: "#A78BFA", icon: "😴" },
+            ].map((s, i) => {
+              const matchStat = stats.find((st) => st.label === s.label);
+              return (
+                <motion.div key={s.label}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 + i * 0.07, type: "spring", bounce: 0.3 }}
+                  whileHover={{ y: -2 }} whileTap={matchStat ? { scale: 0.96 } : {}}
+                  onClick={() => matchStat && setSelectedStat(matchStat)}
+                  className={`rounded-2xl p-3 flex flex-col gap-1.5 ${matchStat ? "cursor-pointer" : "cursor-default"}`}
+                  style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))`, border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 8px rgba(167,139,250,0.06)" }}>
+                  <span className="text-base leading-none">{s.icon}</span>
+                  <p className="text-[8px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                  <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>
+                    {s.value}
+                    {s.unit && <span className="text-[9px] font-normal ml-0.5" style={{ color: "#A0AEC0" }}>{s.unit}</span>}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Séparateur */}
+          <div className="h-px flex-shrink-0" style={{ background: "rgba(167,139,250,0.1)" }} />
+
+          {/* ── Programme ── */}
+          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase flex-shrink-0" style={{ color: "#A0AEC0" }}>Programme</p>
+          {user && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <WeeklyProgramme />
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* ── MOBILE ── */}
+      <div className="md:hidden flex flex-col relative z-10">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="px-5 pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            {[
+              { label: "Score",     value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—",  unit: liveStats.score > 0 ? "/100" : "", bg: "lg-bicolor",   statKey: "Score" },
+              { label: "Calories",  value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.calories > 0 ? "kcal" : "", bg: "lg-rose", statKey: "Calories" },
+              { label: "Pas",       value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "", bg: "lg-turquoise", statKey: "Pas" },
+              { label: "Sommeil",   value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit: "", bg: "lg-bicolor", statKey: "Sommeil" },
+            ].map((s, i) => {
+              const matchStat = stats.find((st) => st.label === s.statKey);
+              return (
+                <motion.div key={s.label} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + i * 0.06, type: "spring", bounce: 0.35 }}
+                  whileHover={{ scale: 1.04, y: -2 }} whileTap={matchStat ? { scale: 0.97 } : {}}
+                  onClick={() => matchStat && setSelectedStat(matchStat)}
+                  className={`${s.bg} lg-highlight relative rounded-2xl px-4 py-3 flex-shrink-0 min-w-[100px] ${matchStat ? "cursor-pointer" : "cursor-default"}`}>
+                  <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                  <div className="flex items-baseline gap-0.5 mt-0.5">
+                    <span className="text-xl font-semibold" style={{ color: "#2D3748" }}>{s.value}</span>
+                    {s.unit && <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{s.unit}</span>}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+        {/* VIDEO DU JOUR — Mobile premium */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.25 }} className="px-5 py-3">
+          {topVideo ? (
+            <div className="relative rounded-[24px] overflow-hidden" style={{ padding: 2 }}>
+              {/* Bordure animée */}
+              <motion.div className="absolute" style={{ inset: -80, background: "conic-gradient(from 0deg, #D4C0FF, #F5E6A3, #A78BFA, #FFB3C6, #D4C0FF)" }}
+                animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+              {/* Glow */}
+              <div className="absolute pointer-events-none" style={{ inset: -16, background: "radial-gradient(ellipse, rgba(167,139,250,0.35) 0%, transparent 70%)", filter: "blur(12px)", zIndex: 0 }} />
+              {/* Inner card */}
+              <div className="relative rounded-[22px] overflow-hidden bg-black cursor-pointer z-10" style={{ aspectRatio: "16/9" }}
+                onClick={() => setTopVideoMuted(m => !m)}>
+                <video src={topVideo.media_url} className="absolute inset-0 w-full h-full object-cover" style={{ pointerEvents: "none" }}
+                  autoPlay muted={topVideoMuted} playsInline loop preload="auto" />
+                {/* Vignette */}
+                <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 35%, transparent 50%, rgba(0,0,0,0.82) 100%)", zIndex: 1 }} />
+                {/* Top */}
+                <div className="absolute top-3 left-3 z-20">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(167,139,250,0.82)", backdropFilter: "blur(12px)" }}>
+                    <motion.span className="w-1.5 h-1.5 rounded-full bg-white block" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.4, repeat: Infinity }} />
+                    <span className="text-[9px] font-extrabold tracking-widest uppercase text-white">Vidéo du jour</span>
+                    <span className="text-xs">🔥</span>
+                  </div>
+                </div>
+                {/* Bottom */}
+                <div className="absolute bottom-0 inset-x-0 z-20 px-3 pb-4">
+                  <div className="flex items-end justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="relative w-8 h-8 rounded-full flex-shrink-0" style={{ padding: 1.5, background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                        {topVideo.author?.avatar_url
+                          ? <img src={topVideo.author.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
+                          : <div className="w-full h-full rounded-full flex items-center justify-center bg-purple-500"><span className="text-[9px] text-white font-bold">{topVideo.author?.pseudo?.[0]?.toUpperCase() ?? "?"}</span></div>
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <p className="text-[12px] font-bold text-white leading-none">@{topVideo.author?.pseudo ?? "—"}</p>
+                          {topVideo.author?.is_admin && <BadgeCheck size={10} style={{ color: "#C4B5FD" }} />}
+                        </div>
+                        {topVideo.caption && <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{topVideo.caption}</p>}
+                      </div>
+                    </div>
+                    <Link href="/communaute" onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-bold flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 3px 12px rgba(167,139,250,0.5)" }}>
+                      <Play size={8} fill="currentColor" /> Voir
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[24px] animate-pulse" style={{ aspectRatio: "16/9", background: "linear-gradient(135deg, rgba(212,192,255,0.2), rgba(245,230,163,0.1))" }} />
+          )}
+        </motion.div>
+        <div className="px-5 pb-4 grid grid-cols-2 gap-3">
+          {[
+            { key: "chat" as const, icon: MessageCircle, label: "Chat IA",   color: "#A78BFA", bg: "lg-rose" },
+            { key: "stats" as const, icon: BarChart3,    label: "Stats & Programme", color: "#D4A843", bg: "lg-turquoise" },
+          ].map(({ key, icon: Icon, label, color, bg }, i) => (
+            <motion.button key={key} onClick={() => setMobilePanel(key)}
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
+              whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.96 }}
+              className={`${bg} lg-highlight relative rounded-2xl py-3 px-4 flex items-center justify-center gap-2 cursor-pointer`}>
+              <Icon size={15} strokeWidth={1.5} style={{ color }} />
+              <span className="text-xs font-medium" style={{ color: "#2D3748" }}>{label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mobile drawer */}
       <AnimatePresence>
-        {showChat && (
+        {mobilePanel && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowChat(false)}
-              className="fixed inset-0 md:left-[88px] z-[55]" style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="fixed inset-x-2 md:left-[96px] bottom-2 z-[60] overflow-hidden rounded-3xl"
-              style={{ top: "40px" }}>
-              <button type="button" onClick={() => setShowChat(false)} aria-label="Fermer"
-                className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(167,139,250,0.15)", backdropFilter: "blur(8px)" }}>
-                <X size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
-              </button>
-              <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobilePanel(null)}
+              className="fixed inset-0 z-40 md:hidden" style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(8px)" }} />
+            <motion.div initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed inset-x-2 bottom-2 top-20 z-50 md:hidden overflow-y-auto">
+              {mobilePanel === "chat" ? (
+                <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
+              ) : (
+                <div className="h-full rounded-3xl overflow-y-auto p-4 flex flex-col gap-3"
+                  style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15)" }}>
+                  <p className="text-[10px] font-semibold tracking-[0.18em] uppercase px-1 pt-1" style={{ color: "#A0AEC0" }}>Aujourd'hui</p>
+                  {[
+                    { label: "Calories",   value: liveStats.loaded && liveStats.calories > 0 ? `${liveStats.calories}` : "—",  unit: "kcal",     bg: "lg-rose",      statKey: "Calories" },
+                    { label: "Pas",        value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "/ 10 000", bg: "lg-bicolor", statKey: "Pas" },
+                    { label: "Sommeil",    value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h${String(Math.round((liveStats.sleepHours%1)*60)).padStart(2,"0")}` : "—", unit: "", bg: "lg-turquoise", statKey: "Sommeil" },
+                  ].map((s) => {
+                    const matchStat = stats.find((st) => st.label === s.statKey);
+                    return (
+                      <div key={s.label}
+                        onClick={() => matchStat && setSelectedStat(matchStat)}
+                        className={`${s.bg} lg-highlight rounded-2xl px-4 py-3 flex items-center justify-between ${matchStat ? "cursor-pointer" : ""}`}>
+                        <div>
+                          <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                          <p className="text-base font-semibold mt-0.5" style={{ color: "#2D3748" }}>{s.value}
+                            {s.unit && <span className="text-[11px] font-normal ml-1" style={{ color: "#718096" }}>{s.unit}</span>}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="h-px mx-1 rounded-full" style={{ background: "rgba(167,139,250,0.12)" }} />
+                  <p className="text-[10px] font-semibold tracking-[0.18em] uppercase px-1" style={{ color: "#A0AEC0" }}>Programme</p>
+                  {user && <WeeklyProgramme />}
+                </div>
+              )}
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-
       <AnimatePresence>
-        {showRepas && <RepasModal key="repas" onClose={() => setShowRepas(false)} onSave={async (meal) => {
-          if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-          const supabase = createClient();
-          const now = new Date();
-          const date = now.toISOString().slice(0, 10);
-          const time = now.toTimeString().slice(0, 8);
-          const { error } = await supabase.from("nutrition_logs").insert({
-            user_id: user.id,
-            date,
-            meal_type: meal.type,
-            food_name: meal.name,
-            description: null,
-            calories: meal.calories,
-            proteins: 0, carbs: 0, fats: 0,
-            has_photo: false,
-            time,
-          });
-          if (error) {
-            showToast("Erreur lors de l'ajout 🙏");
-          } else {
-            setShowRepas(false);
-            setMealsRefreshKey(k => k + 1);
-            showToast(`${meal.name} enregistré ✓`);
-          }
-        }} />}
+        {showRepas && <RepasModal key="repas" onClose={() => setShowRepas(false)} onSave={(n) => { setShowRepas(false); showToast(`${n} enregistré ✓`); }} />}
         {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
         {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}

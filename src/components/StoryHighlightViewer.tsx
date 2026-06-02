@@ -195,6 +195,7 @@ export default function StoryHighlightViewer({
                 muted={muted}
                 playsInline
                 autoPlay
+                preload="auto"
                 onEnded={goNext}
                 onTimeUpdate={(e) => {
                   const v = e.currentTarget;

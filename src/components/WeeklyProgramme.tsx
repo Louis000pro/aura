@@ -262,6 +262,11 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     return () => window.removeEventListener("programme-updated", handler);
   }, [user]);
 
+  /* ── Refs (must be before any conditional return — Rules of Hooks) ── */
+  const trackRef = useRef<HTMLDivElement>(null);
+  const namesRef = useRef<HTMLDivElement>(null);
+  const nameRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   /* ── No profile data ── */
   const hasOnboardingData =
     profile &&
@@ -323,9 +328,6 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
   }
 
   const currentDay = programme?.semaine?.[selectedDay];
-  const trackRef = useRef<HTMLDivElement>(null);
-  const namesRef = useRef<HTMLDivElement>(null);
-  const nameRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const getDayFromX = (clientX: number): number => {
     const rect = trackRef.current?.getBoundingClientRect();

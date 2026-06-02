@@ -56,20 +56,21 @@ export default function Navigation() {
     return () => { supabase.removeChannel(ch).catch(() => {}); };
   }, [user]);
 
-  /* ── Fermer le menu user si clic extérieur ── */
+  /* ── Fermer le menu user si clic extérieur (conditionné à l'ouverture) ── */
   useEffect(() => {
+    if (!userMenu) return;
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
         setUserMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [userMenu]);
 
   if (pathname === "/auth") return null;
   if (!user && pathname === "/") return null;
 
-  const handleLogout = () => { logout(); router.push("/"); };
+  const handleLogout = async () => { await logout(); router.push("/"); };
 
   const isProgActive = pathname === "/progression" || pathname === "/nutrition";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
@@ -206,30 +207,35 @@ export default function Navigation() {
         {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
       </AnimatePresence>
 
-      {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
+      {/* ══ Mobile Bottom Bar ══ */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <div className="lg-strong lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
-            {/* 1. Accueil */}
-            <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile />
-            {/* 2. Progression */}
-            <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile />
 
-            {/* 3. Bouton + (centre) */}
-            {user ? (
-              <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowPublish(true)}
-                className="flex-1 flex items-center justify-center" aria-label="Publier">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#F5E6A3,#D4A843)", boxShadow: "0 4px 16px rgba(212,168,67,0.45)" }}>
-                  <Plus size={20} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
-                </div>
-              </motion.button>
-            ) : <div className="flex-1" />}
+            {/* 1 — Accueil */}
+            <NavIcon href="/"           label="Accueil"     icon={Home}       mobile />
+            {/* 2 — Progression */}
+            <NavIcon href="/progression" label="Progression" icon={TrendingUp} mobile />
 
-            {/* 4. Communauté */}
-            <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile />
-            {/* 5. Profil */}
-            <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile />
+            {/* 3 — Bouton + (centre) */}
+            <motion.button
+              whileTap={{ scale: 0.82 }}
+              whileHover={{ scale: 1.08 }}
+              onClick={() => setShowPublish(true)}
+              className="flex-1 flex items-center justify-center"
+              aria-label="Publier"
+            >
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg,#F5E6A3,#D4A843)", boxShadow: "0 6px 20px rgba(212,168,67,0.5)" }}>
+                <Plus size={22} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
+              </div>
+            </motion.button>
+
+            {/* 4 — Communauté */}
+            <NavIcon href="/communaute" label="Communauté"  icon={Users} mobile />
+            {/* 5 — Profil */}
+            <NavIcon href="/profil"     label="Profil"      icon={User}  mobile />
+
           </div>
         </div>
       </nav>
