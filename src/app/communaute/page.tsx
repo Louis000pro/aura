@@ -4023,7 +4023,7 @@ function CommunautePageInner() {
 
               {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
               <div className="flex items-center justify-center gap-2 py-1"
-                style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66, ...(feedTab === "videos" ? { flexShrink: 0, maxHeight: headerCollapsed ? 0 : 52, overflow: "hidden", opacity: headerCollapsed ? 0 : 1, transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease" } : {}) }}>
+                style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66, ...(feedTab === "videos" ? { flexShrink: 0 } : {}) }}>
                 {([
                   { key: "videos" as const, label: "🎬 Vidéos" },
                   { key: "posts" as const, label: "📝 Publications" },
