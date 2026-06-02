@@ -3198,8 +3198,8 @@ function CommunautePageInner() {
 
   useEffect(() => { loadStories(); }, [loadStories]);
 
-  // Collapse immédiatement en mode vidéos, reset sinon
-  useEffect(() => { setHeaderCollapsed(feedTab === "videos"); }, [feedTab]);
+  // Reset header collapse quand on change d'onglet
+  useEffect(() => { setHeaderCollapsed(false); }, [feedTab]);
 
   // Charger le feed réel depuis Supabase (paginé)
   const loadFeed = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
