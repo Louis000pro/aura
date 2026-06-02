@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity, User2, Settings, LogOut, ChevronRight, Play, Heart, Eye, BadgeCheck } from "lucide-react";
+import { MessageCircle, BarChart3, Flame, Zap, Utensils, Sparkles, X, LogIn, Check, Moon, ArrowRight, Dumbbell, Brain, Target, Activity, User2, Settings, LogOut, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VocalOrb from "@/components/VocalOrb";
@@ -613,13 +613,6 @@ function Dashboard() {
   const [liveStats, setLiveStats] = useState({ score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false });
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [topVideo, setTopVideo] = useState<{
-    id: string; media_url: string; caption?: string;
-    views?: number; likes: number; comments: number;
-    author: { pseudo: string; avatar_url?: string | null; is_admin?: boolean } | null;
-  } | null>(null);
-  const topVideoRef = useRef<HTMLVideoElement>(null);
-  const [topVideoMuted, setTopVideoMuted] = useState(true);
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
@@ -673,36 +666,6 @@ function Dashboard() {
         }
       });
   }, [user]);
-
-  // Charge la vidéo du jour (meilleure vidéo de la semaine : vues + likes)
-  useEffect(() => {
-    const supabase = createClient();
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    supabase
-      .from("posts")
-      .select("id, media_url, caption, views, post_likes(user_id), post_comments(id), author:profiles!posts_user_id_fkey(pseudo, avatar_url, is_admin)")
-      .eq("media_type", "video")
-      .not("media_url", "is", null)
-      .gte("created_at", weekAgo)
-      .limit(30)
-      .then(({ data }) => {
-        if (!data || data.length === 0) return;
-        const scored = data.map((p: { id: string; media_url: string | null; caption: string | null; views?: number; post_likes: { user_id: string }[]; post_comments: { id: string }[]; author: { pseudo: string; avatar_url?: string | null; is_admin?: boolean } | null }) => ({
-          ...p,
-          _score: (p.views ?? 0) + (p.post_likes?.length ?? 0) * 3,
-        })).sort((a, b) => b._score - a._score);
-        const top = scored[0];
-        setTopVideo({
-          id: top.id,
-          media_url: top.media_url ?? "",
-          caption: top.caption ?? undefined,
-          views: top.views,
-          likes: top.post_likes?.length ?? 0,
-          comments: top.post_comments?.length ?? 0,
-          author: top.author,
-        });
-      });
-  }, []);
 
   // Charge le contexte onboarding depuis localStorage (essaie plusieurs clés)
   useEffect(() => {
@@ -995,80 +958,19 @@ function Dashboard() {
           <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
         </motion.div>
 
-        {/* ─ Centre : Vidéo du Jour ─ */}
-        <motion.div initial={{ opacity: 0, scale: 0.93 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex items-center justify-center h-full overflow-hidden py-3">
-          {topVideo ? (
-            /* ── Card premium portrait 9/16 ── */
-            <div className="relative flex-shrink-0" style={{
-              height: "min(calc(100vh - 120px), 100%)",
-              aspectRatio: "9 / 16",
-              maxHeight: "calc(100vh - 120px)",
-            }}>
-              {/* Glow ambiant derrière la card */}
-              <div className="absolute pointer-events-none" style={{ inset: -32, background: "radial-gradient(ellipse at 50% 60%, rgba(167,139,250,0.45) 0%, rgba(212,192,255,0.2) 40%, transparent 70%)", filter: "blur(24px)", zIndex: 0 }} />
-              {/* Bordure animée conic-gradient */}
-              <div className="relative w-full h-full rounded-[28px] overflow-hidden" style={{ padding: 2, zIndex: 1 }}>
-                <motion.div className="absolute" style={{ inset: -120, background: "conic-gradient(from 0deg, #D4C0FF, #F5E6A3, #A78BFA, #FFB3C6, #D4C0FF)" }}
-                  animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
-                {/* Inner card */}
-                <div className="relative w-full h-full rounded-[26px] overflow-hidden bg-black cursor-pointer" onClick={() => setTopVideoMuted(m => !m)}>
-                  {/* Vidéo */}
-                  <video src={topVideo.media_url} className="absolute inset-0 w-full h-full object-cover" style={{ pointerEvents: "none" }}
-                    autoPlay muted={topVideoMuted} playsInline loop preload="auto" />
-                  {/* Vignette globale */}
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, transparent 28%, transparent 52%, rgba(0,0,0,0.88) 100%)", zIndex: 1 }} />
-                  {/* ── TOP overlay ── */}
-                  <div className="absolute top-0 inset-x-0 flex items-center justify-between px-4 pt-4 z-20">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(167,139,250,0.82)", backdropFilter: "blur(14px)", boxShadow: "0 2px 12px rgba(167,139,250,0.5)" }}>
-                      <motion.span className="w-1.5 h-1.5 rounded-full bg-white block" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.4, repeat: Infinity }} />
-                      <span className="text-[10px] font-extrabold tracking-[0.2em] uppercase text-white">Vidéo du jour</span>
-                      <span className="text-sm leading-none">🔥</span>
-                    </div>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }}>
-                      <span className="text-sm leading-none pointer-events-none">{topVideoMuted ? "🔇" : "🔊"}</span>
-                    </div>
-                  </div>
-                  {/* ── BOTTOM overlay ── */}
-                  <div className="absolute bottom-0 inset-x-0 z-20 px-4 pb-6">
-                    <div className="flex items-end justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="relative w-10 h-10 rounded-full flex-shrink-0" style={{ padding: 2, background: "linear-gradient(135deg, #D4C0FF, #F5E6A3, #A78BFA)" }}>
-                          {topVideo.author?.avatar_url
-                            ? <img src={topVideo.author.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
-                            : <div className="w-full h-full rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#A78BFA,#7C3AED)" }}><span className="text-sm font-bold text-white">{topVideo.author?.pseudo?.[0]?.toUpperCase() ?? "?"}</span></div>
-                          }
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[13px] font-bold text-white leading-none">@{topVideo.author?.pseudo ?? "—"}</p>
-                            {topVideo.author?.is_admin && <BadgeCheck size={12} style={{ color: "#C4B5FD" }} />}
-                          </div>
-                          {topVideo.caption && <p className="text-[11px] mt-1 leading-tight truncate" style={{ color: "rgba(255,255,255,0.62)" }}>{topVideo.caption}</p>}
-                        </div>
-                      </div>
-                      <Link href="/communaute" onClick={e => e.stopPropagation()}
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-bold flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#3D2F6B", boxShadow: "0 4px 18px rgba(167,139,250,0.55)" }}>
-                        <Play size={9} fill="currentColor" /> Voir
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Skeleton */
-            <div className="relative flex-shrink-0" style={{ height: "min(calc(100vh - 120px), 100%)", aspectRatio: "9 / 16", maxHeight: "calc(100vh - 120px)" }}>
-              <div className="w-full h-full rounded-[28px] animate-pulse" style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.2), rgba(245,230,163,0.1))", border: "1px solid rgba(212,192,255,0.2)" }} />
-            </div>
-          )}
+        {/* ─ Centre : VocalOrb + Score + Quick actions ─ */}
+        <motion.div initial={{ opacity: 0, scale: 0.93 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex flex-col items-center justify-center gap-5 py-4" style={{ overflow: "visible" }}>
+
+          {/* VocalOrb — héros de la page */}
+          <VocalOrb onTranscript={handleVoiceTranscript} />
+
         </motion.div>
 
         {/* ─ Droite : Stats + Programme ─ */}
         <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
           className="flex flex-col min-h-0 overflow-y-auto rounded-3xl p-4 gap-3"
-          style={{ height: "100%", background: "rgba(255,255,255,1)", border: "1.5px solid rgba(212,192,255,0.55)", boxShadow: "0 12px 48px rgba(167,139,250,0.2), 0 2px 8px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,1)" }}>
+          style={{ height: "100%", background: "rgba(255,255,255,0.92)", border: "1px solid rgba(212,192,255,0.25)", boxShadow: "0 8px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,1)" }}>
 
           {/* ── Aujourd'hui ── */}
           <p className="text-[10px] font-semibold tracking-[0.18em] uppercase flex-shrink-0" style={{ color: "#A0AEC0" }}>Aujourd'hui</p>
@@ -1139,61 +1041,9 @@ function Dashboard() {
             })}
           </div>
         </motion.div>
-        {/* VIDEO DU JOUR — Mobile premium */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.25 }} className="px-5 py-3">
-          {topVideo ? (
-            <div className="relative rounded-[24px] overflow-hidden" style={{ padding: 2 }}>
-              {/* Bordure animée */}
-              <motion.div className="absolute" style={{ inset: -80, background: "conic-gradient(from 0deg, #D4C0FF, #F5E6A3, #A78BFA, #FFB3C6, #D4C0FF)" }}
-                animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
-              {/* Glow */}
-              <div className="absolute pointer-events-none" style={{ inset: -16, background: "radial-gradient(ellipse, rgba(167,139,250,0.35) 0%, transparent 70%)", filter: "blur(12px)", zIndex: 0 }} />
-              {/* Inner card */}
-              <div className="relative rounded-[22px] overflow-hidden bg-black cursor-pointer z-10" style={{ aspectRatio: "16/9" }}
-                onClick={() => setTopVideoMuted(m => !m)}>
-                <video src={topVideo.media_url} className="absolute inset-0 w-full h-full object-cover" style={{ pointerEvents: "none" }}
-                  autoPlay muted={topVideoMuted} playsInline loop preload="auto" />
-                {/* Vignette */}
-                <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 35%, transparent 50%, rgba(0,0,0,0.82) 100%)", zIndex: 1 }} />
-                {/* Top */}
-                <div className="absolute top-3 left-3 z-20">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(167,139,250,0.82)", backdropFilter: "blur(12px)" }}>
-                    <motion.span className="w-1.5 h-1.5 rounded-full bg-white block" animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1.4, repeat: Infinity }} />
-                    <span className="text-[9px] font-extrabold tracking-widest uppercase text-white">Vidéo du jour</span>
-                    <span className="text-xs">🔥</span>
-                  </div>
-                </div>
-                {/* Bottom */}
-                <div className="absolute bottom-0 inset-x-0 z-20 px-3 pb-4">
-                  <div className="flex items-end justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="relative w-8 h-8 rounded-full flex-shrink-0" style={{ padding: 1.5, background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
-                        {topVideo.author?.avatar_url
-                          ? <img src={topVideo.author.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
-                          : <div className="w-full h-full rounded-full flex items-center justify-center bg-purple-500"><span className="text-[9px] text-white font-bold">{topVideo.author?.pseudo?.[0]?.toUpperCase() ?? "?"}</span></div>
-                        }
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1">
-                          <p className="text-[12px] font-bold text-white leading-none">@{topVideo.author?.pseudo ?? "—"}</p>
-                          {topVideo.author?.is_admin && <BadgeCheck size={10} style={{ color: "#C4B5FD" }} />}
-                        </div>
-                        {topVideo.caption && <p className="text-[10px] mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{topVideo.caption}</p>}
-                      </div>
-                    </div>
-                    <Link href="/communaute" onClick={e => e.stopPropagation()}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-bold flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 3px 12px rgba(167,139,250,0.5)" }}>
-                      <Play size={8} fill="currentColor" /> Voir
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[24px] animate-pulse" style={{ aspectRatio: "16/9", background: "linear-gradient(135deg, rgba(212,192,255,0.2), rgba(245,230,163,0.1))" }} />
-          )}
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.25 }} className="flex-1 flex items-center justify-center px-6 py-6">
+          <VocalOrb onTranscript={handleVoiceTranscript} />
         </motion.div>
         <div className="px-5 pb-4 grid grid-cols-2 gap-3">
           {[
