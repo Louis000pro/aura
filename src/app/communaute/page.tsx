@@ -3784,13 +3784,10 @@ function CommunautePageInner() {
 
   return (
     <div
-      className={`flex flex-col w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden pb-0" : "px-4 md:px-8 pt-8 min-h-screen pb-4"}`}
+      className={`flex flex-col px-4 md:px-8 w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden pb-0" : "pt-8 min-h-screen pb-4"}`}
       style={feedTab === "videos" ? {
         paddingTop: headerCollapsed ? 0 : 32,
-        paddingLeft: headerCollapsed ? 0 : undefined,
-        paddingRight: headerCollapsed ? 0 : undefined,
-        maxWidth: headerCollapsed ? "100%" : undefined,
-        transition: "padding-top 0.35s cubic-bezier(0.4,0,0.2,1), max-width 0.35s cubic-bezier(0.4,0,0.2,1)",
+        transition: "padding-top 0.3s cubic-bezier(0.4,0,0.2,1)",
       } : {}}
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
@@ -4033,10 +4030,11 @@ function CommunautePageInner() {
               <div className="flex items-center justify-center gap-2 py-1"
                 style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66, ...(feedTab === "videos" ? {
                   flexShrink: 0,
-                  maxHeight: headerCollapsed ? 0 : 52,
+                  maxHeight: headerCollapsed ? 0 : 60,
                   overflow: "hidden",
                   opacity: headerCollapsed ? 0 : 1,
-                  transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease",
+                  pointerEvents: headerCollapsed ? "none" : "auto",
+                  transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease",
                 } : {}) }}>
                 {([
                   { key: "videos" as const, label: "🎬 Vidéos" },
@@ -4083,10 +4081,7 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div
-                  className={headerCollapsed ? "fixed inset-0 md:left-[88px] z-30" : ""}
-                  style={headerCollapsed ? {} : { flex: "1 1 0", minHeight: 0, overflow: "hidden" }}
-                >
+                <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
                   <TikTokFeed
                     posts={sortedFeedPosts}
                     initialPostId={highlightVideoId}
