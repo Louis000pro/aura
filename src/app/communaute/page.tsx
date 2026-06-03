@@ -2924,30 +2924,26 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
         setActiveIndex(idx);
         onActiveIndexChange?.(idx);
       }
-      // Délai pour éviter que le tap post-scroll déclenche un pause
-      setTimeout(() => { isScrollingRef.current = false; }, 200);
+      // 500ms de délai — bloque tout tap accidentel post-scroll
+      setTimeout(() => { isScrollingRef.current = false; }, 500);
     };
 
     const handleScroll = () => {
-      // Mark as scrolling → blocks accidental tap-on-swipe
       isScrollingRef.current = true;
 
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         const st = el.scrollTop;
-        // Collapse header immediately on scroll (no snap needed)
-        const collapsed = st > 20;
+        const collapsed = st > 10;
         if (collapsed !== lastCollapsed) { lastCollapsed = collapsed; onScrollCollapse?.(collapsed); }
       });
 
-      // Fallback debounce for browsers without scrollend
-      if (!("onscrollend" in el)) {
-        clearTimeout(scrollEndTimer);
-        scrollEndTimer = setTimeout(updateActiveIndex, 150);
-      }
+      // Debounce 300ms — toujours actif, annulé si scrollend arrive avant
+      clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(updateActiveIndex, 300);
     };
 
-    // scrollend fires once after CSS scroll-snap settles — no oscillation
+    // scrollend annule le debounce et met à jour immédiatement
     const handleScrollEnd = () => {
       clearTimeout(scrollEndTimer);
       updateActiveIndex();
