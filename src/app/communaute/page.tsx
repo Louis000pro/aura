@@ -2897,11 +2897,16 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
-    const measure = () => { const h = el.clientHeight; if (h > 0) setSlotH(h); };
-    measure();
+    const measure = () => {
+      // getBoundingClientRect plus fiable que clientHeight dans un flex container
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) setSlotH(Math.floor(h));
+    };
+    // Délai pour laisser le layout flex se calculer
+    const t = setTimeout(measure, 50);
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { clearTimeout(t); ro.disconnect(); };
   }, []);
 
   const H = slotH > 0 ? `${slotH}px` : "100%";
@@ -2985,8 +2990,8 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   }
 
   return (
-    /* Wrapper — mesure la hauteur réelle disponible sans fond parasite */
-    <div ref={wrapperRef} className="w-full h-full">
+    /* Wrapper — flex:1 au lieu de h-full pour que clientHeight soit > 0 */
+    <div ref={wrapperRef} style={{ flex: "1 1 0", minHeight: 0, width: "100%", display: "flex", flexDirection: "column" }}>
       <div ref={containerRef}
         className="overflow-y-scroll mx-auto"
         style={{
