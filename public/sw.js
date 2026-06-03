@@ -1,12 +1,12 @@
-// Aura Service Worker — v3
+// Aura Service Worker — v4
 // Strategy:
 //   - Navigation (HTML) → Network-first (toujours la version fraîche)
 //   - _next/static/ (chunks JS/CSS hachés) → Cache-first (immutables)
 //   - Images/assets → Stale-while-revalidate
 //   - API / Supabase → Bypass (pas de cache)
 
-const STATIC_CACHE  = "aura-static-v3";   // chunks Next.js (immutables par hash)
-const DYNAMIC_CACHE = "aura-dynamic-v3";  // images, fonts, etc.
+const STATIC_CACHE  = "aura-static-v4";   // chunks Next.js (immutables par hash)
+const DYNAMIC_CACHE = "aura-dynamic-v4";  // images, fonts, etc.
 
 // ── Install ──────────────────────────────────────────────────
 self.addEventListener("install", () => {
