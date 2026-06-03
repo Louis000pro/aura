@@ -4083,21 +4083,10 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div style={headerCollapsed ? {
-                  // Plein écran quand scrollé — couvre tout sauf sidebar
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  zIndex: 30,
-                  // Sur desktop, la sidebar fait 88px (appliqué via le layout parent md:left-[88px])
-                  // Le fixed part de 0 et le layout du parent gère l'offset
-                } : {
-                  flex: "1 1 0",
-                  minHeight: 0,
-                  overflow: "hidden",
-                }}>
+                <div
+                  className={headerCollapsed ? "fixed inset-0 md:left-[88px] z-30" : ""}
+                  style={headerCollapsed ? {} : { flex: "1 1 0", minHeight: 0, overflow: "hidden" }}
+                >
                   <TikTokFeed
                     posts={sortedFeedPosts}
                     initialPostId={highlightVideoId}
