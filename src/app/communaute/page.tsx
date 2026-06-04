@@ -3935,7 +3935,7 @@ function CommunautePageInner() {
                 .map(([, arr]) => arr);
 
               return (
-                <div className="flex gap-3 overflow-x-auto pb-3 pt-2 -mx-4 md:-mx-8 px-4 md:px-8" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+                <div className="flex gap-3 overflow-x-auto pb-3 pt-3 -mx-4 md:-mx-8 px-4 md:px-8" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
 
                   {/* Bulle « Moi » — ouvre mes stories ou le modal ajout */}
                   <motion.div
@@ -3950,7 +3950,7 @@ function CommunautePageInner() {
                       whileTap={{ scale: 0.92 }}
                       className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden relative"
                       style={myGroup
-                        ? { outline: "2px solid #D4C0FF", outlineOffset: 2, background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }
+                        ? { boxShadow: "0 0 0 2.5px white, 0 0 0 4.5px #D4C0FF", background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }
                         : { background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(167,139,250,0.5)" }
                       }
                     >
@@ -4026,9 +4026,7 @@ function CommunautePageInner() {
                             className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden font-semibold text-lg"
                             style={{
                               background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                              outline: "2.5px solid",
-                              outlineColor: (group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) ? "#A78BFA" : "#D4C0FF",
-                              outlineOffset: 2,
+                              boxShadow: `0 0 0 2px white, 0 0 0 4px ${(group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) ? "#A78BFA" : "#D4C0FF"}`,
                               color: "#2D3748",
                             }}
                           >
