@@ -2876,30 +2876,32 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
   );
 }
 
-function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse }: {
+function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
   onHashtagClick?: (tag: string) => void;
   onActiveIndexChange?: (idx: number) => void;
   onScrollCollapse?: (collapsed: boolean) => void;
-  feedHeight?: string; // kept for API compat, unused
+  feedHeight?: number; // hauteur exacte mesurée depuis le parent
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
-  const wrapperRef   = useRef<HTMLDivElement>(null);  // mesure la hauteur réelle disponible
+  const wrapperRef   = useRef<HTMLDivElement>(null);  // fallback measurement
   const containerRef = useRef<HTMLDivElement>(null);  // élément scrollable
   const isScrollingRef = useRef(false);               // true pendant le scroll → bloque handleVideoTap
   const [activeIndex, setActiveIndex] = useState(0);
 
   // ── Hauteur exacte en pixels via ResizeObserver ──────────────────
   // Évite les bugs de `height:100%` dans les flex children imbriqués
-  const [slotH, setSlotH] = useState(0);
+  // Priorité : hauteur mesurée depuis le parent (prop feedHeight)
+  // Fallback : ResizeObserver local sur wrapperRef
+  const [localSlotH, setLocalSlotH] = useState(0);
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
     const measure = () => {
       const h = el.getBoundingClientRect().height || el.clientHeight;
-      if (h > 0) setSlotH(Math.floor(h));
+      if (h > 0) setLocalSlotH(Math.floor(h));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -2907,7 +2909,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
     return () => ro.disconnect();
   }, []);
 
-  // Fallback: 100dvh si la mesure échoue (layout flex pas encore résolu)
+  const slotH = (feedHeight && feedHeight > 0) ? feedHeight : localSlotH;
   const H = slotH > 0 ? `${slotH}px` : "100dvh";
 
   // ── Scroll : collapse header (RAF, immediate) + activeIndex (scrollend / debounce) ──
@@ -3041,6 +3043,18 @@ function CommunautePageInner() {
   const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
   // Header toujours visible (titre + stories + tabs), la vidéo prend le reste via flex
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  // Hauteur du feed container mesurée depuis le parent → passée à TikTokFeed
+  const feedContainerRef = useRef<HTMLDivElement>(null);
+  const [feedContainerH, setFeedContainerH] = useState(0);
+  useEffect(() => {
+    const el = feedContainerRef.current;
+    if (!el) return;
+    const measure = () => { const h = el.getBoundingClientRect().height; if (h > 0) setFeedContainerH(Math.floor(h)); };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -4082,13 +4096,14 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
+                <div ref={feedContainerRef} style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
                   <TikTokFeed
                     posts={sortedFeedPosts}
                     initialPostId={highlightVideoId}
                     onInitialScrolled={() => setHighlightVideoId(null)}
                     onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                     onScrollCollapse={(collapsed) => setHeaderCollapsed(collapsed)}
+                    feedHeight={feedContainerH}
                   />
                 </div>
               )}
