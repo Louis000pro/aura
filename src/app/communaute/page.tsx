@@ -2991,7 +2991,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   }
 
   return (
-    <div ref={wrapperRef} className="w-full" style={{ flex: "1 1 0", minHeight: 0 }}>
+    <div ref={wrapperRef} style={{ position: "absolute", inset: 0 }}>
       <div ref={containerRef}
         className="overflow-y-scroll mx-auto"
         style={{
@@ -4082,7 +4082,7 @@ function CommunautePageInner() {
 
               {/* ── Feed Vidéos TikTok ── */}
               {feedTab === "videos" && (
-                <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
+                <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
                   <TikTokFeed
                     posts={sortedFeedPosts}
                     initialPostId={highlightVideoId}
