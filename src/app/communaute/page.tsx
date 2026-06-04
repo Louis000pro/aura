@@ -2898,18 +2898,17 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
     const el = wrapperRef.current;
     if (!el) return;
     const measure = () => {
-      // getBoundingClientRect plus fiable que clientHeight dans un flex container
-      const h = el.getBoundingClientRect().height;
+      const h = el.getBoundingClientRect().height || el.clientHeight;
       if (h > 0) setSlotH(Math.floor(h));
     };
-    // Délai pour laisser le layout flex se calculer
-    const t = setTimeout(measure, 50);
+    measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => { clearTimeout(t); ro.disconnect(); };
+    return () => ro.disconnect();
   }, []);
 
-  const H = slotH > 0 ? `${slotH}px` : "100%";
+  // Fallback: 100dvh si la mesure échoue (layout flex pas encore résolu)
+  const H = slotH > 0 ? `${slotH}px` : "100dvh";
 
   // ── Scroll : collapse header (RAF, immediate) + activeIndex (scrollend / debounce) ──
   useEffect(() => {
@@ -2923,7 +2922,8 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
     let scrollEndTimer: ReturnType<typeof setTimeout>;
 
     const updateActiveIndex = () => {
-      const idx = Math.max(0, Math.min(Math.round(el.scrollTop / slotH), videoPosts.length - 1));
+      const h = slotH > 0 ? slotH : window.innerHeight;
+      const idx = Math.max(0, Math.min(Math.round(el.scrollTop / h), videoPosts.length - 1));
       if (idx !== lastIdx) {
         lastIdx = idx;
         setActiveIndex(idx);
@@ -2939,7 +2939,8 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         const st = el.scrollTop;
-        const collapsed = st > 10;
+        const h = slotH > 0 ? slotH : window.innerHeight;
+        const collapsed = st > h * 0.05; // 5% de scroll = collapse header
         if (collapsed !== lastCollapsed) { lastCollapsed = collapsed; onScrollCollapse?.(collapsed); }
       });
 
@@ -2990,8 +2991,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   }
 
   return (
-    /* Wrapper — flex:1 au lieu de h-full pour que clientHeight soit > 0 */
-    <div ref={wrapperRef} style={{ flex: "1 1 0", minHeight: 0, width: "100%", display: "flex", flexDirection: "column" }}>
+    <div ref={wrapperRef} className="w-full" style={{ flex: "1 1 0", minHeight: 0 }}>
       <div ref={containerRef}
         className="overflow-y-scroll mx-auto"
         style={{
