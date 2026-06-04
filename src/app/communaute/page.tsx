@@ -132,7 +132,8 @@ function StoryCard({ story }: { story: RealStory }) {
   const d = story.content_data ?? {};
 
   // Photo ou vidéo — full screen dans le viewer
-  if ((story.content_type === "photo" || story.content_type === "video") && story.media_url) {
+  // "image" = ancien bug (content_type mal défini), accepté en fallback
+  if ((story.content_type === "photo" || story.content_type === "video" || story.content_type === ("image" as string)) && story.media_url) {
     return (
       <motion.div
         key={story.id}
@@ -574,7 +575,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       const mediaUrl = urlData.publicUrl + "?t=" + Date.now();
       const { data: inserted, error: e } = await supabase.from("stories").insert({
         user_id:      userId,
-        content_type: mediaType,
+        content_type: mediaType === "image" ? "photo" : "video", // Fix: "photo" pas "image"
         content_data: null,
         caption:      caption.trim() || null,
         media_url:    mediaUrl,
@@ -4026,13 +4027,13 @@ function CommunautePageInner() {
                             style={{
                               background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
                               outline: "2.5px solid",
-                              outlineColor: (group[0]?.content_type === "photo" || group[0]?.content_type === "video") ? "#A78BFA" : "#D4C0FF",
+                              outlineColor: (group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) ? "#A78BFA" : "#D4C0FF",
                               outlineOffset: 2,
                               color: "#2D3748",
                             }}
                           >
                             {/* Show photo thumbnail if first story is a photo */}
-                            {(group[0]?.content_type === "photo" || group[0]?.content_type === "video") && group[0]?.media_url
+                            {(group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) && group[0]?.media_url
                               // eslint-disable-next-line @next/next/no-img-element
                               ? <img src={group[0].media_url} alt={name} className="w-full h-full object-cover" />
                               : p?.avatar_url
