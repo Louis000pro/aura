@@ -2915,7 +2915,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   // ── Scroll : collapse header (RAF, immediate) + activeIndex (scrollend / debounce) ──
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || slotH === 0) return;
+    if (!el) return;
     let rafId = 0;
     let lastCollapsed = false;
     let lastIdx = 0;
