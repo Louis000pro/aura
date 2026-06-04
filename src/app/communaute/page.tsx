@@ -3013,6 +3013,34 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
           </div>
         ))}
       </div>
+
+      {/* Bouton retour en haut — visible dès la 2ème vidéo */}
+      <AnimatePresence>
+        {activeIndex > 0 && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.7, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.7, y: 10 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            onClick={() => {
+              if (containerRef.current) {
+                containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            className="absolute bottom-6 right-6 z-50 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+            style={{
+              background: "rgba(255,255,255,0.92)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+              border: "1px solid rgba(212,192,255,0.3)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 14V4M9 4L4 9M9 4L14 9" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
