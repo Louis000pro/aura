@@ -2994,6 +2994,10 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
 
   return (
     <div ref={wrapperRef} style={{ position: "absolute", inset: 0 }}>
+    {/* DEBUG TEMP */}
+    <div style={{ position: "fixed", top: 8, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", color: "#fff", padding: "4px 12px", zIndex: 9999, borderRadius: 20, fontSize: 11, fontFamily: "monospace", pointerEvents: "none" }}>
+      idx:{activeIndex} slotH:{slotH} feedH:{feedHeight ?? 0}
+    </div>
       <div ref={containerRef}
         className="overflow-y-scroll mx-auto"
         style={{
