@@ -14,7 +14,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Aura ✦",
+  title: "Vaiiya ✦",
   description: "Un accompagnement de santé premium piloté par l'IA multimodale.",
   icons: {
     icon: "/favicon.ico",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Aura",
+    title: "Vaiiya",
   },
 };
 

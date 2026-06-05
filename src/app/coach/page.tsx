@@ -556,7 +556,7 @@ export default function CoachPage() {
             className="text-base font-semibold leading-tight tracking-tight"
             style={{ color: "#2D3748" }}
           >
-            Coach Aura ✦
+            Coach Vaiiya ✦
           </h1>
           <p className="text-[11px] font-medium" style={{ color: "#A78BFA" }}>
             IA · Nutrition · Fitness

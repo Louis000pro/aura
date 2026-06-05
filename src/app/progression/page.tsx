@@ -2798,7 +2798,7 @@ export default function ProgressionPage() {
               <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
                 Catalogue
               </p>
-              <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances Aura</h2>
+              <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances Vaiiya</h2>
             </div>
             <span
               className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"

@@ -26,7 +26,7 @@ export const GRADIENT_PRESETS: { key: string; bg: string; name: string }[] = [
 ];
 
 export const PHOTO_FILTER_PRESETS: { key: string; name: string; filter: string }[] = [
-  { key: "aura",    name: "Aura",    filter: "brightness(1.05) contrast(1.08) saturate(1.15)" },
+  { key: "aura",    name: "Vaiiya",    filter: "brightness(1.05) contrast(1.08) saturate(1.15)" },
   { key: "golden",  name: "Golden",  filter: "brightness(1.1) sepia(0.45) saturate(1.5) hue-rotate(-5deg)" },
   { key: "bloom",   name: "Bloom",   filter: "brightness(1.18) contrast(0.85) saturate(0.88)" },
   { key: "core",    name: "Core",    filter: "contrast(1.28) saturate(1.2) brightness(0.98)" },

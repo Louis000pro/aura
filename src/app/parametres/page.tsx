@@ -754,7 +754,7 @@ export default function ParametresPage() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate" style={{ color: isDark ? "#E2E0EA" : "#2D3748" }}>Mode sombre</p>
               <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>
-                {isDark ? "Sombre · Aura Night" : "Lumineux · Aura Classic"}
+                {isDark ? "Sombre · Vaiiya Night" : "Lumineux · Vaiiya Classic"}
               </p>
             </div>
             {/* Toggle pill */}
@@ -821,7 +821,7 @@ export default function ParametresPage() {
         </div>
 
         <p className="text-center text-[10px] font-light mt-8" style={{ color: "#C4C9D4" }}>
-          Aura v1.0 · Fait avec ✦ pour ta santé
+          Vaiiya v1.0 · Fait avec ✦ pour ta santé
         </p>
       </motion.div>
 

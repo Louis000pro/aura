@@ -50,9 +50,9 @@ export async function POST(req: NextRequest) {
     const postUrl = post_id ? `${appUrl}/communaute` : appUrl;
 
     await transporter.sendMail({
-      from: `"Aura" <${cleanEnv(process.env.GMAIL_USER)}>`,
+      from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
       to: ownerEmail,
-      subject: `${reposterName} a boosté ton post sur Aura`,
+      subject: `${reposterName} a boosté ton post sur Vaiiya`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:32px">
       <div style="display:inline-block;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);line-height:56px;font-size:22px;color:#2D3748;text-align:center;font-weight:600">A</div>
-      <h1 style="margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748">Aura</h1>
+      <h1 style="margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748">Vaiiya</h1>
       <p style="margin:0;font-size:11px;color:#A0AEC0;letter-spacing:0.05em">COACH IA · MUSCULATION · NUTRITION</p>
     </div>
 
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     <hr style="border:none;border-top:1px solid rgba(212,192,255,0.3);margin:0 0 20px" />
 
     <p style="text-align:center;font-size:11px;color:#A0AEC0;margin:0">
-      Tu reçois cet email car tu as un compte Aura (@${ownerPseudo}).<br/>
+      Tu reçois cet email car tu as un compte Vaiiya (@${ownerPseudo}).<br/>
       <a href="${appUrl}/profil" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
     </p>
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
     // ── Push notification (fire-and-forget) ──────────────────────────────────
     void sendPushToUser({
       user_id: post_owner_id,
-      title: "Aura · Repost",
+      title: "Vaiiya · Repost",
       body:  `${reposterName} a reposté ton post !`,
       url:   post_id ? `/communaute` : "/",
     });

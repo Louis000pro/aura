@@ -328,7 +328,7 @@ export default function SharePerformanceModal({
                     <Pill label="Badge"   active={showBadge}    onClick={() => setShowBadge(v => !v)} />
                     <Pill label="Date"    active={showDate}     onClick={() => setShowDate(v => !v)} />
                     <Pill label="Titre"   active={showTitle}    onClick={() => setShowTitle(v => !v)} />
-                    <Pill label="✦ Aura"  active={showBranding} onClick={() => setShowBranding(v => !v)} />
+                    <Pill label="✦ Vaiiya"  active={showBranding} onClick={() => setShowBranding(v => !v)} />
                   </div>
 
                   {/* Font style */}

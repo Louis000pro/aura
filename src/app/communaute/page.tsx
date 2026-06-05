@@ -243,10 +243,13 @@ function StoryCard({ story }: { story: RealStory }) {
 
 // Story Viewer — plusieurs stories d'un même utilisateur, navigation gauche/droite
 function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () => void }) {
+  const { user } = useAuth();
   const [idx, setIdx]       = useState(0);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
   const [reply, setReply]   = useState("");
+  const [replySending, setReplySending] = useState(false);
+  const [replySent, setReplySent] = useState(false);
 
   // Refs pour distinguer tap court (navigation) vs hold (pause)
   const holdTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -275,6 +278,40 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
   const goPrev = useCallback(() => {
     if (idx > 0) { setIdx(idx - 1); setProgress(0); }
   }, [idx]);
+
+  // L'auteur de la story = destinataire de la réponse (envoyée en DM)
+  const isOwnStory = user?.id === story?.user_id;
+
+  const sendReply = useCallback(async () => {
+    const text = reply.trim();
+    if (!text || !user || !story || isOwnStory || replySending) return;
+    setReplySending(true);
+    try {
+      const supabase = createClient();
+      const ownerName = story.profiles?.pseudo ?? "story";
+      await supabase.from("direct_messages").insert({
+        sender_id: user.id,
+        receiver_id: story.user_id,
+        content: `↩️ Réponse à ta story : ${text}`,
+      });
+      // Notification au propriétaire de la story
+      void supabase.from("notifications").insert({
+        user_id: story.user_id,
+        from_user_id: user.id,
+        from_pseudo: user.pseudo,
+        from_avatar_url: user.avatar ?? null,
+        type: "story_reply",
+      });
+      setReply("");
+      setReplySent(true);
+      setTimeout(() => setReplySent(false), 2200);
+      void ownerName;
+    } catch {
+      /* silencieux */
+    } finally {
+      setReplySending(false);
+    }
+  }, [reply, user, story, isOwnStory, replySending]);
 
   // Barre de progression auto (80 ms × 50 = 4 s par story)
   useEffect(() => {
@@ -414,22 +451,40 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
         </div>
       )}
 
-      {/* Reply bar */}
-      <div className="px-5 pb-10 z-10" data-no-hold>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
-          <input
-            type="text"
-            value={reply}
-            onChange={(e) => { setReply(e.target.value); }}
-            onFocus={() => setPaused(true)}
-            onBlur={() => setPaused(false)}
-            placeholder={`Répondre à ${displayName.split(" ")[0]}…`}
-            className="flex-1 bg-transparent text-sm outline-none"
-            style={{ color: "white" }}
-          />
-          <Send size={16} strokeWidth={1.5} style={{ color: reply ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)" }} />
+      {/* Reply bar — masquée sur sa propre story */}
+      {!isOwnStory && (
+        <div className="px-5 pb-10 z-10" data-no-hold>
+          {replySent ? (
+            <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl"
+              style={{ background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.35)" }}>
+              <Check size={16} strokeWidth={2} style={{ color: "#6EE7B7" }} />
+              <span className="text-sm font-medium" style={{ color: "#6EE7B7" }}>Réponse envoyée</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <input
+                type="text"
+                value={reply}
+                onChange={(e) => { setReply(e.target.value); }}
+                onFocus={() => setPaused(true)}
+                onBlur={() => setPaused(false)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void sendReply(); } }}
+                placeholder={`Répondre à ${displayName.split(" ")[0]}…`}
+                className="flex-1 bg-transparent text-sm outline-none"
+                style={{ color: "white" }}
+              />
+              <button
+                onClick={() => void sendReply()}
+                disabled={!reply.trim() || replySending}
+                className="flex-shrink-0 cursor-pointer disabled:cursor-default"
+                aria-label="Envoyer la réponse"
+              >
+                <Send size={18} strokeWidth={1.8} style={{ color: reply.trim() ? "#fff" : "rgba(255,255,255,0.3)" }} />
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </motion.div>
   );
 }
@@ -1167,8 +1222,8 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
     if (typeof navigator === "undefined" || !("share" in navigator)) { handleCopy(); return; }
     try {
       await navigator.share({
-        title: "Aura — Performance partagée",
-        text: postCaption ?? "Découvre cette performance sur Aura !",
+        title: "Vaiiya — Performance partagée",
+        text: postCaption ?? "Découvre cette performance sur Vaiiya !",
         url: window.location.href,
       });
       onClose();

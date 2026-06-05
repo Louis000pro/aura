@@ -162,7 +162,7 @@ export default function DailyDrawer({
       if (t.score && t.score > 0) {
         const delta = y?.score ? t.score - y.score : 0;
         list.push({
-          label: "Score Aura",
+          label: "Score Vaiiya",
           value: `${t.score}/100`,
           delta: delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : "stable",
           context: t.score >= 80 ? "Excellent" : t.score >= 60 ? "Bien" : "À améliorer",
@@ -609,7 +609,7 @@ export default function DailyDrawer({
                             Aucune perf encore
                           </p>
                           <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
-                            Bouge un peu et reviens — Aura aime célébrer les progrès ✦
+                            Bouge un peu et reviens — Vaiiya aime célébrer les progrès ✦
                           </p>
                         </div>
                       </div>

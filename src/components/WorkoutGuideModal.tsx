@@ -961,7 +961,7 @@ export default function WorkoutGuideModal({
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
                           style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>A</div>
                         <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
-                          Conseil Aura
+                          Conseil Vaiiya
                         </p>
                       </div>
                       <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>{cur.tip}</p>

@@ -65,9 +65,9 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
 
     await transporter.sendMail({
-      from: `"Aura" <${cleanEnv(process.env.GMAIL_USER)}>`,
+      from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
       to: followedEmail,
-      subject: `${followerName} te suit maintenant sur Aura`,
+      subject: `${followerName} te suit maintenant sur Vaiiya`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:32px">
       <div style="display:inline-block;width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);line-height:56px;font-size:22px;color:#2D3748;text-align:center;font-weight:600">A</div>
-      <h1 style="margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748">Aura</h1>
+      <h1 style="margin:12px 0 2px;font-size:18px;font-weight:300;letter-spacing:0.2em;color:#2D3748">Vaiiya</h1>
       <p style="margin:0;font-size:11px;color:#A0AEC0;letter-spacing:0.05em">COACH IA · MUSCULATION · NUTRITION</p>
     </div>
 
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       <p style="margin:0 0 6px;font-size:17px;font-weight:600;color:#2D3748">${followerName}</p>
       ${followerHandle ? `<p style="margin:0 0 16px;font-size:13px;color:#A78BFA">${followerHandle}</p>` : ""}
       <p style="margin:0;font-size:15px;font-weight:300;color:#4A5568;line-height:1.6">
-        te suit maintenant sur Aura !
+        te suit maintenant sur Vaiiya !
       </p>
     </div>
 
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     <hr style="border:none;border-top:1px solid rgba(212,192,255,0.3);margin:0 0 20px" />
 
     <p style="text-align:center;font-size:11px;color:#A0AEC0;margin:0">
-      Tu reçois cet email car tu as un compte Aura (@${followedPseudo}).<br/>
+      Tu reçois cet email car tu as un compte Vaiiya (@${followedPseudo}).<br/>
       <a href="${appUrl}/profil" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
     </p>
 
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     // ── Push notification (fire-and-forget) ──────────────────────────────────
     void sendPushToUser({
       user_id: followed_id,
-      title: "Aura · Nouvel abonné",
+      title: "Vaiiya · Nouvel abonné",
       body:  `${followerName} te suit maintenant !`,
       url:   `/profil/${follower?.pseudo ?? ""}`,
     });

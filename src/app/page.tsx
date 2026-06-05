@@ -442,7 +442,7 @@ function LandingPage() {
         className="relative z-20 flex items-center justify-between px-6 md:px-10 py-5"
       >
         <span className="text-2xl font-extralight tracking-[0.15em]" style={{ color: "#2D3748" }}>
-          Aura
+          Vaiiya
         </span>
         <div className="flex items-center gap-3">
           <Link href="/auth?mode=login">

@@ -84,7 +84,7 @@ self.addEventListener("fetch", (e) => {
 // ── Push Notifications ──────────────────────────────────────
 self.addEventListener("push", (e) => {
   const data  = e.data?.json() ?? {};
-  const title = data.title ?? "Aura";
+  const title = data.title ?? "Vaiiya";
   const body  = data.body  ?? "Nouvelle notification";
   const icon  = data.icon  ?? "/icons/icon-192.png";
   const url   = data.url   ?? "/";

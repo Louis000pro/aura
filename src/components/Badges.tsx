@@ -158,7 +158,7 @@ const BADGES: BadgeDef[] = [
   {
     id: "hundred-followers",
     name: "Populaire",
-    description: "100 abonnés sur Aura. La communauté t'apprécie.",
+    description: "100 abonnés sur Vaiiya. La communauté t'apprécie.",
     icon: Users,
     conditionLabel: "100 abonnés",
     category: "social",

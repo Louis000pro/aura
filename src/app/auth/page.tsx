@@ -445,7 +445,7 @@ export default function AuthPage() {
                 animate={{ scale:[1,1.35,1],opacity:[0.6,0,0.6] }} transition={{ duration:2,repeat:Infinity }} />
               <span className="text-xl font-light relative z-10" style={{ color:"#2D3748" }}>A</span>
             </motion.div>
-            <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"#2D3748" }}>Aura</h1>
+            <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"#2D3748" }}>Vaiiya</h1>
             <p className="text-[11px] font-light mt-0.5" style={{ color:"#A0AEC0" }}>Coach IA · Musculation · Nutrition</p>
           </div>
 

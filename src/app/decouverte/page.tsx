@@ -675,8 +675,8 @@ export default function DecouvertePage() {
             <>
               <p className="text-[11px] font-light px-1 mb-1" style={{ color: "#A0AEC0" }}>
                 {activeTab === "populaires"
-                  ? "Les comptes les plus suivis sur Aura"
-                  : "Membres qui ont rejoint Aura récemment"}
+                  ? "Les comptes les plus suivis sur Vaiiya"
+                  : "Membres qui ont rejoint Vaiiya récemment"}
               </p>
 
               {loading ? (

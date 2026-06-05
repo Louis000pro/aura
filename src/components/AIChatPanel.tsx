@@ -64,7 +64,7 @@ function ChatUI({
           <Sparkles size={15} strokeWidth={1.5} style={{ color: "#2D3748" }} />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>Aura</p>
+          <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>Vaiiya</p>
           <p className="text-[10px] font-medium" style={{ color: "#D4A843" }}>● En ligne</p>
         </div>
         {/* Fullscreen toggle */}
@@ -152,7 +152,7 @@ function ChatUI({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Demandez à Aura…"
+            placeholder="Demandez à Vaiiya…"
             className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#A0AEC0]"
             style={{ color: "#2D3748" }}
           />
