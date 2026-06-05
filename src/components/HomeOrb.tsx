@@ -36,7 +36,7 @@ function extFromMime(mime: string) {
 export default function HomeOrb({
   onTap,
   onTranscript,
-  size = 156,
+  size = 176,
 }: {
   onTap: () => void;
   onTranscript?: (text: string) => void;
@@ -291,24 +291,24 @@ export default function HomeOrb({
         style={{
           width: size,
           height: size,
-          // Fond crème profond pour la profondeur
-          background: "radial-gradient(circle at 50% 50%, #FAF6FF 0%, #ECE4F5 100%)",
+          // Fond légèrement plus profond → les blobs ressortent mieux
+          background: "radial-gradient(circle at 50% 45%, #FBF7FF 0%, #E7DCF5 70%, #DCCFEF 100%)",
           boxShadow:
             state === "recording"
               ? "0 0 72px 18px rgba(167,139,250,0.38), 0 0 140px 36px rgba(212,168,67,0.22), inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -2px 8px rgba(167,139,250,0.15)"
               : "0 16px 64px 0 rgba(167,139,250,0.3), 0 4px 16px rgba(212,168,67,0.12), inset 0 2px 4px rgba(255,255,255,0.95), inset 0 -2px 8px rgba(167,139,250,0.1)",
         }}
         animate={
-          state === "recording" ? { scale: [1, 1.04, 1] } :
-          state === "pressing"  ? { scale: 0.95 } :
-          state === "processing"? { scale: [1, 0.97, 1] } :
-          { scale: [1, 1.012, 1] } // micro-respiration idle
+          state === "recording" ? { scale: [1, 1.05, 1], y: 0 } :
+          state === "pressing"  ? { scale: 0.95, y: 0 } :
+          state === "processing"? { scale: [1, 0.97, 1], y: 0 } :
+          { scale: [1, 1.025, 0.99, 1], y: [0, -6, 0, -3, 0] } // respiration + flottement idle
         }
         transition={
           state === "recording"  ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } :
           state === "processing" ? { duration: 1, repeat: Infinity, ease: "easeInOut" } :
           state === "pressing"   ? { duration: 0.2 } :
-          { duration: 4, repeat: Infinity, ease: "easeInOut" } // respiration lente idle
+          { duration: 6, repeat: Infinity, ease: "easeInOut" } // respiration + flottement lent idle
         }
       >
         {/* ═══ BLOBS FLUIDES INTÉRIEURS (Siri-style) ═══ */}
@@ -318,21 +318,21 @@ export default function HomeOrb({
         <motion.div
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: size * 0.7,
-            height: size * 0.7,
+            width: size * 0.78,
+            height: size * 0.78,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #8B5CF6 0%, rgba(139,92,246,0.7) 50%, transparent 80%)",
-            filter: `blur(${size * 0.13}px)`,
+            background: "radial-gradient(circle, #7C3AED 0%, rgba(124,58,237,0.85) 45%, transparent 78%)",
+            filter: `blur(${size * 0.11}px)`,
             mixBlendMode: "multiply",
             x: "-50%", y: "-50%",
           }}
           animate={{
-            x: ["-65%", "-30%", "-55%", "-65%"],
-            y: ["-55%", "-65%", "-30%", "-55%"],
-            scale: [1, 1.15, 0.95, 1],
+            x: ["-65%", "-28%", "-58%", "-40%", "-65%"],
+            y: ["-55%", "-68%", "-28%", "-50%", "-55%"],
+            scale: [1, 1.2, 0.92, 1.1, 1],
           }}
           transition={{
-            duration: 5 * speedMult,
+            duration: 4.2 * speedMult,
             repeat: Infinity,
             ease: [0.45, 0.05, 0.55, 0.95],
           }}
@@ -342,24 +342,24 @@ export default function HomeOrb({
         <motion.div
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: size * 0.65,
-            height: size * 0.65,
+            width: size * 0.7,
+            height: size * 0.7,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #D4A843 0%, rgba(212,168,67,0.65) 50%, transparent 80%)",
-            filter: `blur(${size * 0.13}px)`,
+            background: "radial-gradient(circle, #E0AE3A 0%, rgba(224,174,58,0.8) 48%, transparent 80%)",
+            filter: `blur(${size * 0.11}px)`,
             mixBlendMode: "multiply",
             x: "-50%", y: "-50%",
           }}
           animate={{
-            x: ["-35%", "-55%", "-30%", "-35%"],
-            y: ["-30%", "-55%", "-60%", "-30%"],
-            scale: [1.05, 0.95, 1.1, 1.05],
+            x: ["-35%", "-58%", "-28%", "-48%", "-35%"],
+            y: ["-30%", "-52%", "-62%", "-38%", "-30%"],
+            scale: [1.05, 0.92, 1.14, 1, 1.05],
           }}
           transition={{
-            duration: 6 * speedMult,
+            duration: 5 * speedMult,
             repeat: Infinity,
             ease: [0.45, 0.05, 0.55, 0.95],
-            delay: 0.6,
+            delay: 0.5,
           }}
         />
 
@@ -367,24 +367,24 @@ export default function HomeOrb({
         <motion.div
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: size * 0.55,
-            height: size * 0.55,
+            width: size * 0.6,
+            height: size * 0.6,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #FF9580 0%, rgba(255,149,128,0.6) 50%, transparent 80%)",
-            filter: `blur(${size * 0.12}px)`,
+            background: "radial-gradient(circle, #FF8A72 0%, rgba(255,138,114,0.75) 48%, transparent 80%)",
+            filter: `blur(${size * 0.1}px)`,
             mixBlendMode: "screen",
             x: "-50%", y: "-50%",
           }}
           animate={{
-            x: ["-45%", "-65%", "-50%", "-45%"],
-            y: ["-65%", "-40%", "-55%", "-65%"],
-            scale: [0.9, 1.1, 1, 0.9],
+            x: ["-45%", "-68%", "-48%", "-58%", "-45%"],
+            y: ["-65%", "-38%", "-58%", "-45%", "-65%"],
+            scale: [0.9, 1.15, 1, 1.08, 0.9],
           }}
           transition={{
-            duration: 5.5 * speedMult,
+            duration: 4.6 * speedMult,
             repeat: Infinity,
             ease: [0.45, 0.05, 0.55, 0.95],
-            delay: 1.2,
+            delay: 1,
           }}
         />
 
@@ -392,25 +392,61 @@ export default function HomeOrb({
         <motion.div
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: size * 0.6,
-            height: size * 0.6,
+            width: size * 0.64,
+            height: size * 0.64,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #C4A8FF 0%, rgba(196,168,255,0.55) 50%, transparent 80%)",
-            filter: `blur(${size * 0.14}px)`,
+            background: "radial-gradient(circle, #C4A8FF 0%, rgba(196,168,255,0.65) 50%, transparent 80%)",
+            filter: `blur(${size * 0.12}px)`,
             mixBlendMode: "screen",
             x: "-50%", y: "-50%",
           }}
           animate={{
-            x: ["-55%", "-35%", "-65%", "-55%"],
-            y: ["-40%", "-60%", "-45%", "-40%"],
-            scale: [1, 0.92, 1.08, 1],
+            x: ["-55%", "-32%", "-68%", "-45%", "-55%"],
+            y: ["-40%", "-62%", "-42%", "-58%", "-40%"],
+            scale: [1, 0.9, 1.12, 1.02, 1],
           }}
           transition={{
-            duration: 6.5 * speedMult,
+            duration: 5.4 * speedMult,
             repeat: Infinity,
             ease: [0.45, 0.05, 0.55, 0.95],
             delay: 0.3,
           }}
+        />
+
+        {/* Blob 5 — Rose magenta (profondeur supplémentaire) */}
+        <motion.div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            width: size * 0.5,
+            height: size * 0.5,
+            top: "50%", left: "50%",
+            background: "radial-gradient(circle, #F472B6 0%, rgba(244,114,182,0.6) 48%, transparent 80%)",
+            filter: `blur(${size * 0.12}px)`,
+            mixBlendMode: "screen",
+            x: "-50%", y: "-50%",
+          }}
+          animate={{
+            x: ["-48%", "-62%", "-38%", "-52%", "-48%"],
+            y: ["-52%", "-42%", "-60%", "-48%", "-52%"],
+            scale: [0.95, 1.1, 0.88, 1.05, 0.95],
+          }}
+          transition={{
+            duration: 6 * speedMult,
+            repeat: Infinity,
+            ease: [0.45, 0.05, 0.55, 0.95],
+            delay: 1.5,
+          }}
+        />
+
+        {/* ═══ SHEEN ROTATIF (conic) — donne de la vie/fluidité ═══ */}
+        <motion.div
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{
+            background: "conic-gradient(from 0deg, transparent 0deg, rgba(167,139,250,0.18) 70deg, transparent 140deg, rgba(245,230,163,0.14) 220deg, transparent 300deg)",
+            mixBlendMode: "screen",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 14 * speedMult, repeat: Infinity, ease: "linear" }}
         />
 
         {/* ═══ GLASS HIGHLIGHT (effet 3D verre) ═══ */}
@@ -511,8 +547,8 @@ export default function HomeOrb({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25 }}
-          className="text-[11px] font-light tracking-[0.18em] uppercase text-center"
-          style={{ color: "#A0AEC0" }}
+          className="text-[11px] font-medium tracking-[0.18em] uppercase text-center"
+          style={{ color: "#8B7FB0" }}
         >
           {state === "idle" && "Appuie pour écrire · Maintiens pour parler"}
           {state === "pressing" && "Maintiens pour parler…"}

@@ -917,8 +917,8 @@ function Dashboard() {
         {/* Header en haut : greeting + avatar */}
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 pt-6">
           <div className="text-left">
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "#A0AEC0" }}>{greeting}</p>
-            <h1 className="text-xl font-extralight mt-0.5" style={{ color: "#2D3748" }}>
+            <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "#7C6BAA" }}>{greeting}</p>
+            <h1 className="text-xl font-light mt-0.5" style={{ color: "#1A1535" }}>
               {user?.pseudo ?? user?.name ?? ""}
             </h1>
           </div>
@@ -974,7 +974,7 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[180px] md:pb-[200px]">
+      <div className="flex-1 flex items-center justify-center px-6 relative pb-[230px] md:pb-[240px]">
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
@@ -985,7 +985,7 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity bottom-[112px] md:bottom-6 h-[138px]"
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity bottom-[112px] md:bottom-6 h-[188px]"
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
@@ -1008,18 +1008,18 @@ function Dashboard() {
         <div className="absolute inset-x-4 bottom-3 flex justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
-            className="flex items-stretch gap-3 p-2 rounded-3xl pointer-events-none w-full"
+            className="flex items-stretch gap-4 p-2.5 rounded-[28px] pointer-events-none w-full"
             style={{
-              maxWidth: 460,
-              background: "rgba(255,255,255,0.92)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(212,192,255,0.4)",
-              boxShadow: "0 8px 28px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
+              maxWidth: 540,
+              background: "rgba(255,255,255,0.94)",
+              backdropFilter: "blur(14px)",
+              border: "1px solid rgba(212,192,255,0.45)",
+              boxShadow: "0 12px 36px rgba(167,139,250,0.22), inset 0 1px 0 rgba(255,255,255,0.95)",
             }}>
-            {/* Vidéo verticale à gauche */}
+            {/* Vidéo verticale à gauche — plus grande */}
             <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
-                width: 64, height: 104,
+                width: 102, height: 158,
                 background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                 boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}>
@@ -1035,40 +1035,50 @@ function Dashboard() {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Play size={20} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 2 }} fill="#FFFFFF" />
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(4px)" }}>
+                    <Play size={24} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 3 }} fill="#FFFFFF" />
+                  </div>
                 </div>
               )}
               {/* Indicateur LIVE en haut */}
               {dailyVideoUrl && (
-                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full"
                   style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-                  <div className="w-1 h-1 rounded-full" style={{ background: "#FC8181", boxShadow: "0 0 4px rgba(252,129,129,0.9)" }} />
-                  <span className="text-[7px] font-bold tracking-widest text-white">LIVE</span>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#FC8181", boxShadow: "0 0 5px rgba(252,129,129,0.9)" }} />
+                  <span className="text-[8px] font-bold tracking-widest text-white">LIVE</span>
+                </div>
+              )}
+              {/* Petit bouton play overlay quand vidéo */}
+              {dailyVideoUrl && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.32)", backdropFilter: "blur(2px)" }}>
+                    <Play size={18} strokeWidth={2} style={{ color: "#fff", marginLeft: 2 }} fill="#fff" />
+                  </div>
                 </div>
               )}
               {/* Gradient noir bas pour lisibilité éventuelle */}
-              <div className="absolute inset-x-0 bottom-0 h-8 pointer-events-none"
+              <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
                 style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.45))" }} />
             </div>
 
             {/* Texte à droite */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 pr-2">
-              <p className="text-[9px] font-bold tracking-widest uppercase leading-none mb-0.5" style={{ color: "#A78BFA" }}>
+            <div className="flex-1 min-w-0 flex flex-col justify-center py-1 pr-2">
+              <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#A78BFA" }}>
                 Du jour
               </p>
-              <p className="text-base font-extralight leading-tight" style={{ color: "#2D3748" }}>
+              <p className="text-xl font-light leading-tight" style={{ color: "#1A1535" }}>
                 Vidéo · Séance · Perf
               </p>
-              <p className="text-[10px] font-light mt-1 leading-snug" style={{ color: "#A0AEC0" }}>
+              <p className="text-[11px] font-light mt-1.5 leading-snug" style={{ color: "#8B82A8" }}>
                 Tap pour explorer ton contenu
               </p>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full"
-                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.5), rgba(245,230,163,0.5))" }}>
-                  <Play size={9} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 0.5 }} fill="#2D3748" />
-                  <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>Voir</span>
+              <div className="flex items-center gap-2 mt-2.5">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                  style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", boxShadow: "0 2px 8px rgba(167,139,250,0.25)" }}>
+                  <Play size={11} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 0.5 }} fill="#2D3748" />
+                  <span className="text-[12px] font-bold" style={{ color: "#2D3748" }}>Voir</span>
                 </div>
-                <ChevronUp size={11} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
+                <ChevronUp size={13} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
               </div>
             </div>
           </motion.div>
