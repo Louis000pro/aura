@@ -1024,27 +1024,25 @@ function Dashboard() {
                 maskComposite: "exclude",
               } as React.CSSProperties}
             >
-              {/* contour de base discret */}
-              <div className="absolute inset-0" style={{ background: "rgba(212,192,255,0.22)" }} />
-              {/* comète 1 — multicolore qui court */}
+              {/* Dégradé de marque tout autour du rectangle (tourne lentement) */}
               <motion.div
                 className="absolute"
                 style={{
                   top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 280deg, #A78BFA 312deg, #FF9580 338deg, #F5E6A3 356deg, transparent 360deg)",
+                  background: "conic-gradient(from 0deg, #A78BFA, #C4A8FF, #D4C0FF, #F5E6A3, #FFB088, #D4A843, #C4A8FF, #A78BFA)",
                 }}
                 animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
               />
-              {/* comète 2 — opposée, autres couleurs */}
+              {/* LED brillante qui court le long du bord */}
               <motion.div
                 className="absolute"
                 style={{
                   top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 280deg, #C4A8FF 312deg, #67E8F9 340deg, #A78BFA 356deg, transparent 360deg)",
+                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 312deg, rgba(255,255,255,0.95) 344deg, rgba(255,255,255,0.4) 354deg, transparent 360deg)",
                 }}
-                animate={{ rotate: [180, 540] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
               />
             </div>
 
