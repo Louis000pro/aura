@@ -1011,26 +1011,30 @@ function Dashboard() {
             className="relative w-full pointer-events-none"
             style={{ maxWidth: 540 }}>
 
-            {/* Halo lumineux rotatif derrière (glow flou) */}
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                inset: -5, borderRadius: 33,
-                background: "conic-gradient(from 0deg, #A78BFA, #F5E6A3, #FF9580, #C4A8FF, #A78BFA)",
-                filter: "blur(12px)", opacity: 0.55,
-              }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
-            />
-            {/* Bord net dégradé rotatif (anneau fin) */}
+            {/* Bord statique très fin (définit le contour) */}
+            <div className="absolute pointer-events-none" style={{ inset: -1.5, borderRadius: 30, background: "rgba(212,192,255,0.25)" }} />
+
+            {/* ✦ LED 1 — comète lumineuse qui court autour du bord (multicolore) */}
             <motion.div
               className="absolute pointer-events-none"
               style={{
                 inset: -1.5, borderRadius: 30,
-                background: "conic-gradient(from 0deg, #A78BFA, #F5E6A3, #FF9580, #C4A8FF, #A78BFA)",
+                background: "conic-gradient(from 0deg, transparent 0deg, transparent 268deg, rgba(167,139,250,0.0) 270deg, #A78BFA 300deg, #FF9580 330deg, #F5E6A3 352deg, transparent 360deg)",
+                filter: "blur(1.2px)",
               }}
               animate={{ rotate: 360 }}
-              transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
+            />
+            {/* ✦ LED 2 — deuxième comète opposée (couleurs différentes) */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                inset: -1.5, borderRadius: 30,
+                background: "conic-gradient(from 0deg, transparent 0deg, transparent 268deg, rgba(196,168,255,0.0) 270deg, #C4A8FF 300deg, #67E8F9 332deg, #A78BFA 352deg, transparent 360deg)",
+                filter: "blur(1.2px)",
+              }}
+              animate={{ rotate: [180, 540] }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
             />
 
             {/* La carte (au-dessus de l'anneau) */}
