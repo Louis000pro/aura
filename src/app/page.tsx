@@ -1008,14 +1008,51 @@ function Dashboard() {
         <div className="absolute inset-x-4 bottom-3 flex justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
-            className="flex items-stretch gap-4 p-2.5 rounded-[28px] pointer-events-none w-full"
+            className="relative w-full pointer-events-none"
+            style={{ maxWidth: 540 }}>
+
+            {/* Halo lumineux rotatif derrière (glow flou) */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                inset: -5, borderRadius: 33,
+                background: "conic-gradient(from 0deg, #A78BFA, #F5E6A3, #FF9580, #C4A8FF, #A78BFA)",
+                filter: "blur(12px)", opacity: 0.55,
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+            />
+            {/* Bord net dégradé rotatif (anneau fin) */}
+            <motion.div
+              className="absolute pointer-events-none"
+              style={{
+                inset: -1.5, borderRadius: 30,
+                background: "conic-gradient(from 0deg, #A78BFA, #F5E6A3, #FF9580, #C4A8FF, #A78BFA)",
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* La carte (au-dessus de l'anneau) */}
+            <div
+            className="relative flex items-stretch gap-4 p-2.5 rounded-[28px] w-full overflow-hidden"
             style={{
-              maxWidth: 540,
-              background: "rgba(255,255,255,0.94)",
+              background: "rgba(255,255,255,0.96)",
               backdropFilter: "blur(14px)",
-              border: "1px solid rgba(212,192,255,0.45)",
               boxShadow: "0 12px 36px rgba(167,139,250,0.22), inset 0 1px 0 rgba(255,255,255,0.95)",
             }}>
+
+            {/* Reflet brillant qui balaie la carte (shimmer) */}
+            <motion.div
+              className="absolute top-0 bottom-0 pointer-events-none"
+              style={{
+                width: "45%",
+                background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%)",
+                filter: "blur(2px)",
+              }}
+              animate={{ left: ["-50%", "140%"] }}
+              transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
+            />
             {/* Vidéo verticale à gauche — plus grande */}
             <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
@@ -1081,6 +1118,7 @@ function Dashboard() {
                 <ChevronUp size={13} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
               </div>
             </div>
+            </div>{/* fin carte intérieure */}
           </motion.div>
         </div>
       </button>
