@@ -1011,31 +1011,42 @@ function Dashboard() {
             className="relative w-full pointer-events-none"
             style={{ maxWidth: 540 }}>
 
-            {/* Bord statique très fin (définit le contour) */}
-            <div className="absolute pointer-events-none" style={{ inset: -1.5, borderRadius: 30, background: "rgba(212,192,255,0.25)" }} />
-
-            {/* ✦ LED 1 — comète lumineuse qui court autour du bord (multicolore) */}
-            <motion.div
-              className="absolute pointer-events-none"
+            {/* ✦ Barre LED le long du contour — masque "border-only", aucun débordement */}
+            <div
+              className="absolute inset-0 pointer-events-none overflow-hidden"
               style={{
-                inset: -1.5, borderRadius: 30,
-                background: "conic-gradient(from 0deg, transparent 0deg, transparent 268deg, rgba(167,139,250,0.0) 270deg, #A78BFA 300deg, #FF9580 330deg, #F5E6A3 352deg, transparent 360deg)",
-                filter: "blur(1.2px)",
-              }}
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
-            />
-            {/* ✦ LED 2 — deuxième comète opposée (couleurs différentes) */}
-            <motion.div
-              className="absolute pointer-events-none"
-              style={{
-                inset: -1.5, borderRadius: 30,
-                background: "conic-gradient(from 0deg, transparent 0deg, transparent 268deg, rgba(196,168,255,0.0) 270deg, #C4A8FF 300deg, #67E8F9 332deg, #A78BFA 352deg, transparent 360deg)",
-                filter: "blur(1.2px)",
-              }}
-              animate={{ rotate: [180, 540] }}
-              transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
-            />
+                zIndex: 5,
+                borderRadius: 28,
+                padding: 2, // épaisseur de la barre lumineuse
+                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                WebkitMaskComposite: "xor",
+                mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                maskComposite: "exclude",
+              } as React.CSSProperties}
+            >
+              {/* contour de base discret */}
+              <div className="absolute inset-0" style={{ background: "rgba(212,192,255,0.22)" }} />
+              {/* comète 1 — multicolore qui court */}
+              <motion.div
+                className="absolute"
+                style={{
+                  top: "-50%", left: "-50%", width: "200%", height: "200%",
+                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 280deg, #A78BFA 312deg, #FF9580 338deg, #F5E6A3 356deg, transparent 360deg)",
+                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              />
+              {/* comète 2 — opposée, autres couleurs */}
+              <motion.div
+                className="absolute"
+                style={{
+                  top: "-50%", left: "-50%", width: "200%", height: "200%",
+                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 280deg, #C4A8FF 312deg, #67E8F9 340deg, #A78BFA 356deg, transparent 360deg)",
+                }}
+                animate={{ rotate: [180, 540] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              />
+            </div>
 
             {/* La carte (au-dessus de l'anneau) */}
             <div
