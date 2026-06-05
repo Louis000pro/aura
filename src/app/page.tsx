@@ -1024,25 +1024,20 @@ function Dashboard() {
                 maskComposite: "exclude",
               } as React.CSSProperties}
             >
-              {/* Dégradé de marque tout autour du rectangle (tourne lentement) */}
-              <motion.div
-                className="absolute"
-                style={{
-                  top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, #A78BFA, #C4A8FF, #D4C0FF, #F5E6A3, #FFB088, #D4A843, #C4A8FF, #A78BFA)",
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
+              {/* Contour de marque FIXE (dégradé doux, couvre tout le rectangle) */}
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(120deg, #A78BFA 0%, #C4A8FF 30%, #F5E6A3 65%, #FFB088 100%)", opacity: 0.55 }}
               />
-              {/* LED brillante qui court le long du bord */}
+              {/* UN seul reflet lumineux qui glisse autour, doucement */}
               <motion.div
                 className="absolute"
                 style={{
                   top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 312deg, rgba(255,255,255,0.95) 344deg, rgba(255,255,255,0.4) 354deg, transparent 360deg)",
+                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(255,255,255,0.85) 340deg, rgba(212,192,255,0.5) 352deg, transparent 360deg)",
                 }}
                 animate={{ rotate: 360 }}
-                transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
               />
             </div>
 
