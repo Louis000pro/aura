@@ -291,8 +291,8 @@ export default function HomeOrb({
         style={{
           width: size,
           height: size,
-          // Fond légèrement plus profond → les blobs ressortent mieux
-          background: "radial-gradient(circle at 50% 45%, #FBF7FF 0%, #E7DCF5 70%, #DCCFEF 100%)",
+          // Fond clair et lumineux
+          background: "radial-gradient(circle at 50% 42%, #FFFFFF 0%, #F6F1FE 65%, #EFE8FA 100%)",
           boxShadow:
             state === "recording"
               ? "0 0 72px 18px rgba(167,139,250,0.38), 0 0 140px 36px rgba(212,168,67,0.22), inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -2px 8px rgba(167,139,250,0.15)"
@@ -321,8 +321,8 @@ export default function HomeOrb({
             width: size * 0.78,
             height: size * 0.78,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #7C3AED 0%, rgba(124,58,237,0.85) 45%, transparent 78%)",
-            filter: `blur(${size * 0.11}px)`,
+            background: "radial-gradient(circle, rgba(139,92,246,0.6) 0%, rgba(139,92,246,0.4) 48%, transparent 78%)",
+            filter: `blur(${size * 0.13}px)`,
             mixBlendMode: "multiply",
             x: "-50%", y: "-50%",
           }}
@@ -345,8 +345,8 @@ export default function HomeOrb({
             width: size * 0.7,
             height: size * 0.7,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #E0AE3A 0%, rgba(224,174,58,0.8) 48%, transparent 80%)",
-            filter: `blur(${size * 0.11}px)`,
+            background: "radial-gradient(circle, rgba(224,174,58,0.5) 0%, rgba(224,174,58,0.35) 50%, transparent 80%)",
+            filter: `blur(${size * 0.13}px)`,
             mixBlendMode: "multiply",
             x: "-50%", y: "-50%",
           }}
@@ -370,8 +370,8 @@ export default function HomeOrb({
             width: size * 0.6,
             height: size * 0.6,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #FF8A72 0%, rgba(255,138,114,0.75) 48%, transparent 80%)",
-            filter: `blur(${size * 0.1}px)`,
+            background: "radial-gradient(circle, rgba(255,149,128,0.55) 0%, rgba(255,149,128,0.4) 50%, transparent 80%)",
+            filter: `blur(${size * 0.12}px)`,
             mixBlendMode: "screen",
             x: "-50%", y: "-50%",
           }}
@@ -420,8 +420,8 @@ export default function HomeOrb({
             width: size * 0.5,
             height: size * 0.5,
             top: "50%", left: "50%",
-            background: "radial-gradient(circle, #F472B6 0%, rgba(244,114,182,0.6) 48%, transparent 80%)",
-            filter: `blur(${size * 0.12}px)`,
+            background: "radial-gradient(circle, rgba(244,114,182,0.45) 0%, rgba(244,114,182,0.3) 50%, transparent 80%)",
+            filter: `blur(${size * 0.13}px)`,
             mixBlendMode: "screen",
             x: "-50%", y: "-50%",
           }}

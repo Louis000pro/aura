@@ -686,27 +686,27 @@ function Dashboard() {
       });
   }, [user]);
 
-  // Fetch la vidéo du jour (la plus vue 24h, fallback semaine) pour mini-aperçu sur la chip
+  // Fetch la vidéo du jour : 24h → 7j → la plus vue de tous les temps (garantit un aperçu)
   useEffect(() => {
     const supabase = createClient();
-    const since = new Date(Date.now() - 86400000).toISOString();
-    supabase.from("posts").select("media_url, views, created_at")
-      .eq("media_type", "video")
-      .gte("created_at", since)
-      .order("views", { ascending: false, nullsFirst: false })
-      .limit(1).maybeSingle()
-      .then(({ data }) => {
-        if (data?.media_url) { setDailyVideoUrl(data.media_url as string); return; }
-        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-        supabase.from("posts").select("media_url, views, created_at")
+    const pickVideo = async () => {
+      const tryWindow = async (sinceIso: string | null) => {
+        let q = supabase.from("posts").select("media_url, views, created_at")
           .eq("media_type", "video")
-          .gte("created_at", weekAgo)
+          .not("media_url", "is", null);
+        if (sinceIso) q = q.gte("created_at", sinceIso);
+        const { data } = await q
           .order("views", { ascending: false, nullsFirst: false })
-          .limit(1).maybeSingle()
-          .then(({ data: fb }) => {
-            if (fb?.media_url) setDailyVideoUrl(fb.media_url as string);
-          });
-      });
+          .order("created_at", { ascending: false })
+          .limit(1).maybeSingle();
+        return (data?.media_url as string | undefined) ?? null;
+      };
+      const day  = new Date(Date.now() - 86400000).toISOString();
+      const week = new Date(Date.now() - 7 * 86400000).toISOString();
+      const url = (await tryWindow(day)) ?? (await tryWindow(week)) ?? (await tryWindow(null));
+      if (url) setDailyVideoUrl(url);
+    };
+    void pickVideo();
   }, []);
 
   // Charge le contexte onboarding depuis localStorage (essaie plusieurs clés)
