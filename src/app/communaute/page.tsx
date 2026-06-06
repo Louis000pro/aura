@@ -3465,7 +3465,14 @@ function CommunautePageInner() {
     if (!isLiked) {
       setBurstRealId(postId);
       setTimeout(() => setBurstRealId(null), 700);
-      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      const { error: likeErr } = await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      if (likeErr) {
+        console.error("[LIKE] Supabase error:", likeErr);
+        // Rollback optimistic state
+        setLikedRealIds((prev) => { const n = new Set(prev); n.delete(postId); return n; });
+        setRealFeedPosts((prev) => prev.map((p) => p.id !== postId ? p : { ...p, post_likes: p.post_likes.filter((l) => l.user_id !== user.id) }));
+        return;
+      }
       // Notif au propriétaire du post
       const post = realFeedPosts.find((p) => p.id === postId);
       if (post && post.user_id !== user.id) {
