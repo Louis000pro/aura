@@ -956,8 +956,8 @@ function Dashboard() {
           })}
         </div>
 
-        {/* Croissant SVG (courbe douce qui s'incurve vers le bas) */}
-        <svg className="absolute -bottom-px left-0 w-full pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
+        {/* Croissant SVG (courbe douce qui s'incurve vers le bas) — étendu jusqu'à la sidebar sur desktop */}
+        <svg className="absolute -bottom-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
           <defs>
             <linearGradient id="topCrescentGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="rgba(212,192,255,0.5)" />
@@ -989,8 +989,8 @@ function Dashboard() {
         style={{ bottom: "calc(112px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
-        {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}
-        <svg className="absolute -top-px left-0 w-full pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
+        {/* Croissant SVG (courbe douce qui s'incurve vers le haut) — étendu jusqu'à la sidebar sur desktop */}
+        <svg className="absolute -top-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
           <defs>
             <linearGradient id="bottomCrescentGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="rgba(245,230,163,0.0)" />

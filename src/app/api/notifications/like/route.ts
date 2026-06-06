@@ -38,6 +38,18 @@ export async function POST(req: NextRequest) {
     const likerHandle = liker?.pseudo ? `@${liker.pseudo}` : "";
     const ownerPseudo = ownerProfile?.pseudo ?? "toi";
 
+    // ── Insertion notification in-app (admin client = bypass RLS) ────────────
+    if (liker_id !== post_owner_id) {
+      void supabase.from("notifications").insert({
+        user_id: post_owner_id,
+        from_user_id: liker_id,
+        from_pseudo: liker?.pseudo ?? null,
+        from_avatar_url: liker?.avatar_url ?? null,
+        type: "like",
+        post_id: post_id ?? null,
+      });
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {

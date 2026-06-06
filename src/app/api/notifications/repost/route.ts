@@ -38,6 +38,18 @@ export async function POST(req: NextRequest) {
     const reposterHandle = reposter?.pseudo ? `@${reposter.pseudo}` : "";
     const ownerPseudo = ownerProfile?.pseudo ?? "toi";
 
+    // ── Insertion notification in-app (admin client = bypass RLS) ────────────
+    if (reposter_id !== post_owner_id) {
+      void supabase.from("notifications").insert({
+        user_id: post_owner_id,
+        from_user_id: reposter_id,
+        from_pseudo: reposter?.pseudo ?? null,
+        from_avatar_url: reposter?.avatar_url ?? null,
+        type: "repost",
+        post_id: post_id ?? null,
+      });
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {

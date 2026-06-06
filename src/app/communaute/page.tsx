@@ -1732,21 +1732,12 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
       setSendError("");
       onCommentAdded?.();
       if (postOwnerId && postOwnerId !== user.id) {
-        void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: String(postId) });
-      }
-      // Envoyer notifications mention
-      const mentionedPseudos = [...content.matchAll(/@(\w+)/g)].map(m => m[1]);
-      if (mentionedPseudos.length > 0) {
-        const { data: mentionedProfiles } = await supabase.from("profiles")
-          .select("id, pseudo")
-          .in("pseudo", mentionedPseudos);
-        if (mentionedProfiles) {
-          for (const profile of mentionedProfiles as { id: string; pseudo: string }[]) {
-            if (profile.id !== user.id && profile.id !== postOwnerId) {
-              void supabase.from("notifications").insert({ user_id: profile.id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "mention", post_id: String(postId) });
-            }
-          }
-        }
+        // Notif in-app + email + push via la route admin (bypass RLS)
+        void fetch("/api/notifications/comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ commenter_id: user.id, post_owner_id: postOwnerId, post_id: String(postId), comment_preview: content }),
+        }).catch(() => {});
       }
     }
   };
@@ -2327,21 +2318,11 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
     } else {
       onCommentAdded();
       if (postOwnerId && postOwnerId !== user.id) {
-        void supabase.from("notifications").insert({ user_id: postOwnerId, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "comment", post_id: postId });
-      }
-      // Envoyer notifications mention
-      const mentionedPseudos = [...content.matchAll(/@(\w+)/g)].map(m => m[1]);
-      if (mentionedPseudos.length > 0) {
-        const { data: mentionedProfiles } = await supabase.from("profiles")
-          .select("id, pseudo")
-          .in("pseudo", mentionedPseudos);
-        if (mentionedProfiles) {
-          for (const profile of mentionedProfiles as { id: string; pseudo: string }[]) {
-            if (profile.id !== user.id && profile.id !== postOwnerId) {
-              void supabase.from("notifications").insert({ user_id: profile.id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "mention", post_id: postId });
-            }
-          }
-        }
+        void fetch("/api/notifications/comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ commenter_id: user.id, post_owner_id: postOwnerId, post_id: postId, comment_preview: content }),
+        }).catch(() => {});
       }
     }
   };

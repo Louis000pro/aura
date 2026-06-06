@@ -38,6 +38,18 @@ export async function POST(req: NextRequest) {
     const commenterHandle = commenter?.pseudo ? `@${commenter.pseudo}` : "";
     const ownerPseudo = ownerProfile?.pseudo ?? "toi";
 
+    // ── Insertion notification in-app (admin client = bypass RLS) ────────────
+    if (commenter_id !== post_owner_id) {
+      void supabase.from("notifications").insert({
+        user_id: post_owner_id,
+        from_user_id: commenter_id,
+        from_pseudo: commenter?.pseudo ?? null,
+        from_avatar_url: commenter?.avatar_url ?? null,
+        type: "comment",
+        post_id: post_id ?? null,
+      });
+    }
+
     // Truncate comment preview to 80 chars
     const preview = comment_preview
       ? comment_preview.length > 80

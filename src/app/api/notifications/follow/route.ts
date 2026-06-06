@@ -54,6 +54,17 @@ export async function POST(req: NextRequest) {
     const followerHandle = follower?.pseudo ? `@${follower.pseudo}` : "";
     const followedPseudo = followedProfile?.pseudo ?? "toi";
 
+    // ── Insertion notification in-app (admin client = bypass RLS) ────────────
+    if (follower_id !== followed_id) {
+      void supabase.from("notifications").insert({
+        user_id: followed_id,
+        from_user_id: follower_id,
+        from_pseudo: follower?.pseudo ?? null,
+        from_avatar_url: follower?.avatar_url ?? null,
+        type: "follow",
+      });
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
