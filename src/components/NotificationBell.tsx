@@ -138,6 +138,12 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
       if (left + PANEL_W > window.innerWidth - MARGIN) {
         left = rect.left - PANEL_W - GAP;
       }
+      // Si toujours hors écran à gauche (sidebar étroite sur mobile) → coller à gauche
+      if (left < MARGIN) left = MARGIN;
+      // Et clamp à droite au cas où
+      if (left + PANEL_W > window.innerWidth - MARGIN) {
+        left = window.innerWidth - PANEL_W - MARGIN;
+      }
       if (top < MARGIN) top = MARGIN;
 
     } else if (side === "top") {

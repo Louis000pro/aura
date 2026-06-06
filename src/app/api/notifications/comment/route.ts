@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // ── Insertion notification in-app (admin client = bypass RLS) ────────────
     if (commenter_id !== post_owner_id) {
-      void supabase.from("notifications").insert({
+      const { error: insErr } = await supabase.from("notifications").insert({
         user_id: post_owner_id,
         from_user_id: commenter_id,
         from_pseudo: commenter?.pseudo ?? null,
@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
         type: "comment",
         post_id: post_id ?? null,
       });
+      if (insErr) console.error("[notify-comment] insert failed:", insErr);
     }
 
     // Truncate comment preview to 80 chars
@@ -57,16 +58,28 @@ export async function POST(req: NextRequest) {
         : comment_preview
       : null;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: cleanEnv(process.env.GMAIL_USER),
-        pass: cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, ""),
-      },
-    });
-
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
     const postUrl = post_id ? `${appUrl}/communaute` : appUrl;
+
+    // ── Push notification (fire-and-forget) ──────────────────────────────────
+    void sendPushToUser({
+      user_id: post_owner_id,
+      title: "Vaiiya · Nouveau commentaire",
+      body:  preview ? `${commenterName} : ${preview}` : `${commenterName} a commenté ton post`,
+      url:   post_id ? `/communaute` : "/",
+    });
+
+    // ── Envoi email (non-bloquant : si GMAIL non configuré, on sort) ─────────
+    const gmailUser = cleanEnv(process.env.GMAIL_USER);
+    const gmailPass = cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, "");
+    if (!gmailUser || !gmailPass) {
+      return Response.json({ ok: true, notif: true, email: false });
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: gmailUser, pass: gmailPass },
+    });
 
     await transporter.sendMail({
       from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
@@ -125,17 +138,7 @@ export async function POST(req: NextRequest) {
 </html>`,
     });
 
-    // ── Push notification (fire-and-forget) ──────────────────────────────────
-    void sendPushToUser({
-      user_id: post_owner_id,
-      title: "Vaiiya · Nouveau commentaire",
-      body:  preview
-        ? `${commenterName} : ${preview}`
-        : `${commenterName} a commenté ton post !`,
-      url:   post_id ? `/communaute` : "/",
-    });
-
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, notif: true, email: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("notify-comment error:", msg);

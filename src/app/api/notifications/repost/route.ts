@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     // ── Insertion notification in-app (admin client = bypass RLS) ────────────
     if (reposter_id !== post_owner_id) {
-      void supabase.from("notifications").insert({
+      const { error: insErr } = await supabase.from("notifications").insert({
         user_id: post_owner_id,
         from_user_id: reposter_id,
         from_pseudo: reposter?.pseudo ?? null,
@@ -48,18 +48,31 @@ export async function POST(req: NextRequest) {
         type: "repost",
         post_id: post_id ?? null,
       });
+      if (insErr) console.error("[notify-repost] insert failed:", insErr);
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
+    const postUrl = post_id ? `${appUrl}/communaute` : appUrl;
+
+    // ── Push notification (fire-and-forget) ──────────────────────────────────
+    void sendPushToUser({
+      user_id: post_owner_id,
+      title: "Vaiiya · Nouveau repost",
+      body:  `${reposterName} a reposté ton post !`,
+      url:   post_id ? `/communaute` : "/",
+    });
+
+    // ── Envoi email (non-bloquant : si GMAIL non configuré, on sort) ─────────
+    const gmailUser = cleanEnv(process.env.GMAIL_USER);
+    const gmailPass = cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, "");
+    if (!gmailUser || !gmailPass) {
+      return Response.json({ ok: true, notif: true, email: false });
     }
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: {
-        user: cleanEnv(process.env.GMAIL_USER),
-        pass: cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, ""),
-      },
+      auth: { user: gmailUser, pass: gmailPass },
     });
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
-    const postUrl = post_id ? `${appUrl}/communaute` : appUrl;
 
     await transporter.sendMail({
       from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
@@ -115,15 +128,7 @@ export async function POST(req: NextRequest) {
 </html>`,
     });
 
-    // ── Push notification (fire-and-forget) ──────────────────────────────────
-    void sendPushToUser({
-      user_id: post_owner_id,
-      title: "Vaiiya · Repost",
-      body:  `${reposterName} a reposté ton post !`,
-      url:   post_id ? `/communaute` : "/",
-    });
-
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, notif: true, email: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("notify-repost error:", msg);

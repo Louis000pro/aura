@@ -56,24 +56,36 @@ export async function POST(req: NextRequest) {
 
     // ── Insertion notification in-app (admin client = bypass RLS) ────────────
     if (follower_id !== followed_id) {
-      void supabase.from("notifications").insert({
+      const { error: insErr } = await supabase.from("notifications").insert({
         user_id: followed_id,
         from_user_id: follower_id,
         from_pseudo: follower?.pseudo ?? null,
         from_avatar_url: follower?.avatar_url ?? null,
         type: "follow",
       });
+      if (insErr) console.error("[notify-follow] insert failed:", insErr);
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
+
+    // ── Envoi email (non-bloquant : si GMAIL non configuré, on skip) ─────────
+    const gmailUser = cleanEnv(process.env.GMAIL_USER);
+    const gmailPass = cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, "");
+    if (!gmailUser || !gmailPass) {
+      // ── Push notification puis on sort proprement ──
+      void sendPushToUser({
+        user_id: followed_id,
+        title: "Vaiiya · Nouvel abonné",
+        body:  `${followerName} te suit maintenant !`,
+        url:   `/profil/${follower?.pseudo ?? ""}`,
+      });
+      return Response.json({ ok: true, notif: true, email: false });
     }
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: {
-        user: cleanEnv(process.env.GMAIL_USER),
-        pass: cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, ""),
-      },
+      auth: { user: gmailUser, pass: gmailPass },
     });
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
 
     await transporter.sendMail({
       from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
@@ -128,7 +140,7 @@ export async function POST(req: NextRequest) {
 </html>`,
     });
 
-    // ── Push notification (fire-and-forget) ──────────────────────────────────
+    // Push déjà envoyé plus haut si GMAIL non configuré, sinon on l'envoie ici
     void sendPushToUser({
       user_id: followed_id,
       title: "Vaiiya · Nouvel abonné",
@@ -136,7 +148,7 @@ export async function POST(req: NextRequest) {
       url:   `/profil/${follower?.pseudo ?? ""}`,
     });
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, notif: true, email: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("notify-follow error:", msg);
