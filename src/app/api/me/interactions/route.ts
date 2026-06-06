@@ -20,11 +20,20 @@ export async function GET(req: NextRequest) {
       supabase.from("followers").select("following_id").eq("follower_id", user_id),
     ]);
 
+    // DEBUG : voir TOUS les likes pour comprendre ce qui est stocké
+    const allLikes = await supabase.from("post_likes").select("user_id, post_id").limit(20);
+    const profile  = await supabase.from("profiles").select("id, pseudo").eq("id", user_id).maybeSingle();
+
     return Response.json({
       likes:    (likesRes.data    ?? []).map((r) => r.post_id),
       reposts:  (repostsRes.data  ?? []).map((r) => r.post_id),
       saves:    (savesRes.data    ?? []).map((r) => r.post_id),
       follows:  (followsRes.data  ?? []).map((r) => r.following_id),
+      debug: {
+        requested_user_id: user_id,
+        profile_found: profile.data,
+        all_post_likes_in_db: allLikes.data,
+      },
       errors: {
         likes:   likesRes.error?.message ?? null,
         reposts: repostsRes.error?.message ?? null,
