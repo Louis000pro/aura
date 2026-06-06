@@ -905,7 +905,7 @@ function Dashboard() {
   void quickActionHandlers;
 
   return (
-    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", height: "100dvh" }}>
+    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-y-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", height: "100dvh" }}>
 
       {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
       <button
