@@ -423,16 +423,13 @@ export default function PublicProfilePage() {
       setTimeout(() => setBurstId(null), 700);
       await supabase
         .from("post_likes")
-        .upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+        .upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       if (profile.id !== user.id) {
-        void supabase.from("notifications").insert({
-          user_id: profile.id,
-          from_user_id: user.id,
-          from_pseudo: user.pseudo,
-          from_avatar_url: user.avatar ?? null,
-          type: "like",
-          post_id: postId,
-        });
+        void fetch("/api/notifications/like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ liker_id: user.id, post_owner_id: profile.id, post_id: postId }),
+        }).catch(() => {});
       }
     } else {
       await supabase

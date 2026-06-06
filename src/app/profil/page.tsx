@@ -1671,7 +1671,16 @@ export default function ProfilPage() {
     if (!isLiked) {
       setBurstPostId(postId);
       setTimeout(() => setBurstPostId(null), 700);
-      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
+      // ── Notification au propriétaire du post ──
+      const post = userPosts.find((p) => p.id === postId) ?? savedPosts.find((p) => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        void fetch("/api/notifications/like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: postId }),
+        }).catch(() => {});
+      }
     } else {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
     }
@@ -1687,8 +1696,17 @@ export default function ProfilPage() {
       post_reposts: isReposted ? p.post_reposts.filter((r) => r.user_id !== user.id) : [...p.post_reposts, { user_id: user.id }],
     }));
     if (!isReposted) {
-      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       showToast("Post boosté ! 🔄");
+      // ── Notification au propriétaire du post ──
+      const post = userPosts.find((p) => p.id === postId) ?? savedPosts.find((p) => p.id === postId);
+      if (post && post.user_id !== user.id) {
+        void fetch("/api/notifications/repost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: postId }),
+        }).catch(() => {});
+      }
     } else {
       await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
     }
