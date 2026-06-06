@@ -69,7 +69,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("id", sbUser.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setUser(mapUser(sbUser, data));
+        if (data) {
+          setUser(mapUser(sbUser, data));
+        } else {
+          // Profil manquant → on le crée via l'endpoint admin (le trigger n'a pas tourné)
+          void fetch("/api/me/ensure-profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: sbUser.id,
+              email: sbUser.email,
+              pseudo: (sbUser.user_metadata?.pseudo as string | undefined) ?? null,
+              full_name: (sbUser.user_metadata?.full_name as string | undefined) ?? (sbUser.user_metadata?.name as string | undefined) ?? null,
+              avatar_url: (sbUser.user_metadata?.avatar_url as string | undefined) ?? null,
+            }),
+          }).then((r) => r.json()).then((res) => {
+            if (res?.profile) setUser(mapUser(sbUser, res.profile));
+          }).catch(() => {});
+        }
       });
   };
 
