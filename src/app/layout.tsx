@@ -40,12 +40,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" className={`${geist.variable} h-full antialiased`}>
+    <html lang="fr" translate="no" className={`${geist.variable} h-full antialiased notranslate`}>
       {/* Inline script runs before first paint — prevents dark mode flash */}
       <head>
+        {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}
+        <meta name="google" content="notranslate" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('aura-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();` }} />
       </head>
-      <body className="min-h-full">
+      <body className="min-h-full notranslate" translate="no">
         <AuthProvider>
           <Navigation />
           <MainWrapper>{children}</MainWrapper>
