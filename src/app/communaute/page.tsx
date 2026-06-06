@@ -3315,29 +3315,35 @@ function CommunautePageInner() {
       .range(offset, offset + PAGE_SIZE - 1);
     if (data) {
       const newPosts = data as unknown as RealPost[];
+      // ── Récup séparée de MES interactions (toujours visible via RLS auth.uid()=user_id) ──
+      const postIds = newPosts.map(p => p.id);
+      const [myLikesRes, myRepostsRes, mySavesRes] = await Promise.all([
+        supabase.from("post_likes").select("post_id").eq("user_id", user.id).in("post_id", postIds),
+        supabase.from("post_reposts").select("post_id").eq("user_id", user.id).in("post_id", postIds),
+        supabase.from("post_saves").select("post_id").eq("user_id", user.id).in("post_id", postIds),
+      ]);
+      const myLikes    = new Set<string>((myLikesRes.data ?? []).map((r) => r.post_id as string));
+      const myReposts  = new Set<string>((myRepostsRes.data ?? []).map((r) => r.post_id as string));
+      const mySaves    = new Set<string>((mySavesRes.data ?? []).map((r) => r.post_id as string));
+
       if (append) {
         setRealFeedPosts((prev) => [...prev, ...newPosts]);
         setLikedRealIds((prev) => {
           const next = new Set(prev);
-          newPosts.forEach((p) => { if (p.post_likes.some((l) => l.user_id === user.id)) next.add(p.id); });
+          myLikes.forEach((id) => next.add(id));
           return next;
         });
         setRepostedRealIds((prev) => {
           const next = new Set(prev);
-          newPosts.forEach((p) => { if (p.post_reposts?.some((r) => r.user_id === user.id)) next.add(p.id); });
+          myReposts.forEach((id) => next.add(id));
           return next;
         });
       } else {
         setRealFeedPosts(newPosts);
-        const liked = new Set<string>();
-        const reposted = new Set<string>();
-        newPosts.forEach((p) => {
-          if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
-          if (p.post_reposts?.some((r) => r.user_id === user.id)) reposted.add(p.id);
-        });
-        setLikedRealIds(liked);
-        setRepostedRealIds(reposted);
+        setLikedRealIds(myLikes);
+        setRepostedRealIds(myReposts);
       }
+      void mySaves; // available pour usages futurs
       const full = newPosts.length === PAGE_SIZE;
       setHasMoreFeed(full);
       if (full) feedPageRef.current += 1;
