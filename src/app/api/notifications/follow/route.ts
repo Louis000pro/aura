@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import nodemailer from "nodemailer";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendPushToUser } from "@/lib/sendPushToUser";
+import { ensureProfileForUser } from "@/lib/ensureProfile";
 
 function cleanEnv(val: string | undefined): string {
   return (val ?? "").replace(/[^\x20-\x7E]/g, "").trim();
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
     const followerName = follower?.full_name || `@${follower?.pseudo}` || "Quelqu'un";
     const followerHandle = follower?.pseudo ? `@${follower.pseudo}` : "";
     const followedPseudo = followedProfile?.pseudo ?? "toi";
+
+    // ── Assurer les profils des 2 users avant la notif (FK constraint) ──────
+    await Promise.all([ensureProfileForUser(follower_id), ensureProfileForUser(followed_id)]);
 
     // ── Insertion notification in-app (admin client = bypass RLS) ────────────
     if (follower_id !== followed_id) {
