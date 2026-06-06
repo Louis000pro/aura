@@ -3316,7 +3316,8 @@ function CommunautePageInner() {
     if (data) {
       const newPosts = data as unknown as RealPost[];
       // ── Récup MES interactions via endpoint admin (bypass RLS, garanti retourner les vraies données) ──
-      const meRes = await fetch(`/api/me/interactions?user_id=${user.id}`).then((r) => r.json()).catch(() => ({ likes: [], reposts: [], saves: [] }));
+      const meRes = await fetch(`/api/me/interactions?user_id=${user.id}`).then((r) => r.json()).catch((e) => ({ likes: [], reposts: [], saves: [], err: String(e) }));
+      console.log("[INTERACTIONS DEBUG] user.id=", user.id, "response=", meRes);
       const myLikes    = new Set<string>(Array.isArray(meRes.likes)   ? meRes.likes   : []);
       const myReposts  = new Set<string>(Array.isArray(meRes.reposts) ? meRes.reposts : []);
       const mySaves    = new Set<string>(Array.isArray(meRes.saves)   ? meRes.saves   : []);
