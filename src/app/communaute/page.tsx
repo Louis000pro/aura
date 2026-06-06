@@ -3315,16 +3315,12 @@ function CommunautePageInner() {
       .range(offset, offset + PAGE_SIZE - 1);
     if (data) {
       const newPosts = data as unknown as RealPost[];
-      // ── Récup séparée de MES interactions (toujours visible via RLS auth.uid()=user_id) ──
-      const postIds = newPosts.map(p => p.id);
-      const [myLikesRes, myRepostsRes, mySavesRes] = await Promise.all([
-        supabase.from("post_likes").select("post_id").eq("user_id", user.id).in("post_id", postIds),
-        supabase.from("post_reposts").select("post_id").eq("user_id", user.id).in("post_id", postIds),
-        supabase.from("post_saves").select("post_id").eq("user_id", user.id).in("post_id", postIds),
-      ]);
-      const myLikes    = new Set<string>((myLikesRes.data ?? []).map((r) => r.post_id as string));
-      const myReposts  = new Set<string>((myRepostsRes.data ?? []).map((r) => r.post_id as string));
-      const mySaves    = new Set<string>((mySavesRes.data ?? []).map((r) => r.post_id as string));
+      // ── Récup MES interactions via endpoint admin (bypass RLS, garanti retourner les vraies données) ──
+      const meRes = await fetch(`/api/me/interactions?user_id=${user.id}`).then((r) => r.json()).catch(() => ({ likes: [], reposts: [], saves: [] }));
+      const myLikes    = new Set<string>(Array.isArray(meRes.likes)   ? meRes.likes   : []);
+      const myReposts  = new Set<string>(Array.isArray(meRes.reposts) ? meRes.reposts : []);
+      const mySaves    = new Set<string>(Array.isArray(meRes.saves)   ? meRes.saves   : []);
+      if (meRes.errors) console.warn("[interactions] errors:", meRes.errors);
 
       if (append) {
         setRealFeedPosts((prev) => [...prev, ...newPosts]);
