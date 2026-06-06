@@ -20,11 +20,22 @@ export async function GET(req: NextRequest) {
       supabase.from("followers").select("following_id").eq("follower_id", user_id),
     ]);
 
+    // Notifications du user (admin = bypass RLS pour debug)
+    const notifsRes = await supabase
+      .from("notifications")
+      .select("id, type, from_pseudo, post_id, read, created_at")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
     return Response.json({
       likes:    (likesRes.data    ?? []).map((r) => r.post_id),
       reposts:  (repostsRes.data  ?? []).map((r) => r.post_id),
       saves:    (savesRes.data    ?? []).map((r) => r.post_id),
       follows:  (followsRes.data  ?? []).map((r) => r.following_id),
+      notifs_count: notifsRes.data?.length ?? 0,
+      notifs:       notifsRes.data ?? [],
+      notifs_error: notifsRes.error?.message ?? null,
     });
   } catch (e) {
     return Response.json({ error: String(e) }, { status: 500 });
