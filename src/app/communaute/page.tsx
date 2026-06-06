@@ -2519,7 +2519,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
     if (saved) {
       await supabase.from("post_saves").delete().eq("post_id", post.id).eq("user_id", user.id);
     } else {
-      await supabase.from("post_saves").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_saves").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
     }
   };
   const [reposted, setReposted] = useState(() => post.post_reposts?.some(r => r.user_id === (user?.id ?? "")) ?? false);
@@ -2615,9 +2615,13 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
     if (!liked) {
       setLiked(true); setLikes(l => l + 1);
       const supabase = createClient();
-      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       if (post.user_id !== user.id) {
-        void supabase.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "like", post_id: post.id });
+        void fetch("/api/notifications/like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: post.id }),
+        }).catch(() => {});
       }
     }
   };
@@ -2630,10 +2634,13 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
       await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", user.id);
     } else {
       setLiked(true); setLikes(l => l + 1);
-      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       if (post.user_id !== user.id) {
-        const supabase2 = createClient();
-        void supabase2.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "like", post_id: post.id });
+        void fetch("/api/notifications/like", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: post.id }),
+        }).catch(() => {});
       }
     }
   };
@@ -2646,7 +2653,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
       await supabase.from("post_reposts").delete().eq("post_id", post.id).eq("user_id", user.id);
     } else {
       setReposted(true); setReposts(r => r + 1);
-      await supabase.from("post_reposts").upsert({ post_id: post.id, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_reposts").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       if (post.user_id !== user.id) {
         void supabase.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "repost", post_id: post.id });
       }
@@ -3465,10 +3472,11 @@ function CommunautePageInner() {
     if (!isLiked) {
       setBurstRealId(postId);
       setTimeout(() => setBurstRealId(null), 700);
-      const { error: likeErr } = await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
-      if (likeErr) {
+      const { error: likeErr } = await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
+      // 409/23505 = doublon = like déjà existant → on garde l'état liké
+      const isDupErr = likeErr && (likeErr.code === "23505" || (likeErr as { status?: number }).status === 409 || likeErr.message?.includes("duplicate"));
+      if (likeErr && !isDupErr) {
         console.error("[LIKE] Supabase error:", likeErr);
-        // Rollback optimistic state
         setLikedRealIds((prev) => { const n = new Set(prev); n.delete(postId); return n; });
         setRealFeedPosts((prev) => prev.map((p) => p.id !== postId ? p : { ...p, post_likes: p.post_likes.filter((l) => l.user_id !== user.id) }));
         return;
@@ -3508,7 +3516,7 @@ function CommunautePageInner() {
         : [...p.post_reposts, { user_id: user.id }],
     }));
     if (!isReposted) {
-      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       showToast("Post boosté ! 🔄");
       // Notif au propriétaire du post
       const post = realFeedPosts.find((p) => p.id === postId);
