@@ -176,7 +176,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
         initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)", maxHeight: "90vh" }}
+        style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)", maxHeight: "90dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

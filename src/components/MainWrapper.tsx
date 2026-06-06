@@ -12,7 +12,10 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   const noNav = isAuth || isLanding;
 
   return (
-    <main className={noNav ? "min-h-screen" : "pb-28 md:pb-0 md:pl-[88px] min-h-screen"}>
+    <main
+      className={noNav ? "min-h-screen" : "md:pb-0 md:pl-[88px] min-h-screen"}
+      style={noNav ? {} : { paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
+    >
       {children}
     </main>
   );

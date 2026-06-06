@@ -45,6 +45,13 @@
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background-color: rgba(212, 192, 255, 0.6); border-radius: 99px; }
+
+  /* ─── iOS : empêche le zoom auto sur focus d'un input (font-size >= 16px requis) ─── */
+  @media (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
 }
 
 /* ─────────────────────────── LIQUID GLASS ─────────────────────────── */

@@ -231,7 +231,8 @@ export default function DailyDrawer({
           <motion.div
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            className="fixed inset-x-0 md:left-[88px] top-0 z-[60] h-[calc(100dvh-112px)] md:h-[100dvh]"
+            className="fixed inset-x-0 md:left-[88px] top-0 z-[60] md:h-[100dvh]"
+            style={{ height: "calc(100dvh - 112px - env(safe-area-inset-bottom))" }}
           >
             <div className="relative h-full m-2 rounded-3xl overflow-hidden flex flex-col"
               style={{

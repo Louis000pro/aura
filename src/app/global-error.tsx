@@ -9,7 +9,7 @@ export default function GlobalError({
 }) {
   return (
     <html>
-      <body style={{ margin: 0, padding: 0, background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
+      <body style={{ margin: 0, padding: 0, background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)", minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "sans-serif" }}>
         <div style={{ textAlign: "center", padding: "40px 24px", maxWidth: 480 }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
           <h1 style={{ fontSize: 24, fontWeight: 300, color: "#2D3748", marginBottom: 8 }}>

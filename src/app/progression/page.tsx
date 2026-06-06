@@ -2561,7 +2561,8 @@ export default function ProgressionPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
-        className="flex gap-2 mb-8"
+        className="flex gap-2 mb-8 overflow-x-auto whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0"
+        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
       >
         {([
           { key: "progression",    label: "Progression" },
@@ -2574,7 +2575,7 @@ export default function ProgressionPage() {
             key={key}
             whileTap={{ scale: 0.95 }}
             onClick={() => setActiveTab(key)}
-            className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200"
+            className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex-shrink-0"
             style={activeTab === key
               ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 12px rgba(167,139,250,0.2)" }
               : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.7)" }

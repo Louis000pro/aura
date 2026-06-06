@@ -136,7 +136,7 @@ export default function StatsDrawer({
             initial={{ y: "-100%" }} animate={{ y: 0 }} exit={{ y: "-100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 280 }}
             className="fixed inset-x-0 md:left-[88px] top-0 z-[60]"
-            style={{ height: "calc(100dvh - 112px)" }}
+            style={{ height: "calc(100dvh - 112px - env(safe-area-inset-bottom))" }}
           >
             <div className="relative h-full m-2 rounded-3xl overflow-hidden"
               style={{

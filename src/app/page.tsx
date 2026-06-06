@@ -905,7 +905,7 @@ function Dashboard() {
   void quickActionHandlers;
 
   return (
-    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", touchAction: "none", height: "100dvh" }}>
+    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", height: "100dvh" }}>
 
       {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
       <button
@@ -946,10 +946,10 @@ function Dashboard() {
                   style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
                   <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
                 </div>
-                <p className="text-[8px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                <p className="text-[10px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{s.label}</p>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>{s.value}</span>
-                  {s.unit && <span className="text-[8px] font-medium" style={{ color: "#A0AEC0" }}>{s.unit}</span>}
+                  <span className="text-base font-semibold leading-none" style={{ color: "#2D3748" }}>{s.value}</span>
+                  {s.unit && <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{s.unit}</span>}
                 </div>
               </motion.div>
             );
@@ -985,7 +985,8 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity bottom-[112px] md:bottom-6 h-[188px]"
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-6 h-[188px]"
+        style={{ bottom: "calc(112px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) */}

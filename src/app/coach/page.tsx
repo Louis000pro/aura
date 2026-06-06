@@ -516,8 +516,9 @@ export default function CoachPage() {
 
       {/* ── Header ── */}
       <header
-        className="relative flex-shrink-0 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3"
+        className="relative flex-shrink-0 flex items-center gap-3 px-4 pb-3"
         style={{
+          paddingTop: "calc(0.75rem + env(safe-area-inset-top))",
           borderBottom: "1px solid rgba(212,192,255,0.2)",
           background: "rgba(255,255,255,0.7)",
           backdropFilter: "blur(10px)",
