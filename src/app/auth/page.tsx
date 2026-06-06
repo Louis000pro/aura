@@ -258,9 +258,22 @@ export default function AuthPage() {
 
     // Étape 3 : créer le compte Supabase (email confirmé = vrai)
     const err = await signUp({ pseudo, name, lastName, email, password });
-    setOtpLoading(false);
     if (err && err.message !== "User already registered") {
+      setOtpLoading(false);
       setOtpError(err.message);
+      return;
+    }
+
+    // Étape 4 : forcer la connexion immédiatement pour créer la session
+    // (sinon l'utilisateur est rebouclé sur /auth car la confirmation
+    // Supabase peut être encore active)
+    const signInErr = await signIn({ email, password });
+    setOtpLoading(false);
+    if (signInErr) {
+      // L'inscription a fonctionné mais la connexion auto a échoué :
+      // demander à l'utilisateur de se reconnecter manuellement.
+      setOtpError("Compte créé. Connecte-toi avec ton email et ton mot de passe.");
+      setSignupSent(false);
       return;
     }
 
