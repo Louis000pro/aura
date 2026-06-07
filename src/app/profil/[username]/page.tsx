@@ -5,13 +5,19 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check,
-  MessageCircle, Grid3X3, LayoutList,
-  Heart, Share2, Repeat2, X, Send, Play,
+  MessageCircle, Camera, Film, LayoutList,
+  Heart, Share2, Repeat2, X, Send, MoreHorizontal,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import VideoPlayer from "@/components/VideoPlayer";
 import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
+
+function formatViews(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".0", "")}K`;
+  return String(n);
+}
 
 type Profile = {
   id: string;
@@ -35,10 +41,12 @@ type DbPost = {
   id: string;
   type: string;
   caption: string | null;
+  description?: string | null;
   media_url: string | null;
   media_type: string | null;
   performance_data: Record<string, unknown> | null;
   created_at: string;
+  views?: number;
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
   post_reposts: { user_id: string }[];
@@ -52,7 +60,7 @@ type ProfilComment = {
   author: { pseudo: string; avatar_url?: string | null } | null;
 };
 
-function InlineComments({ postId, postOwnerId }: { postId: string; postOwnerId?: string }) {
+function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: string; postOwnerId?: string; onCommentAdded?: () => void }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<ProfilComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,15 +107,28 @@ function InlineComments({ postId, postOwnerId }: { postId: string; postOwnerId?:
     if (error) {
       setComments((prev) => prev.filter((c) => c.id !== tmpId));
       setInput(content);
-    } else if (postOwnerId && postOwnerId !== user.id) {
-      void supabase.from("notifications").insert({
-        user_id: postOwnerId,
-        from_user_id: user.id,
-        from_pseudo: user.pseudo,
-        from_avatar_url: user.avatar ?? null,
-        type: "comment",
-        post_id: postId,
-      });
+    } else {
+      onCommentAdded?.();
+      if (postOwnerId && postOwnerId !== user.id) {
+        void supabase.from("notifications").insert({
+          user_id: postOwnerId,
+          from_user_id: user.id,
+          from_pseudo: user.pseudo,
+          from_avatar_url: user.avatar ?? null,
+          type: "comment",
+          post_id: postId,
+        });
+        void fetch("/api/notifications/comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            commenter_id: user.id,
+            post_owner_id: postOwnerId,
+            post_id: postId,
+            comment_preview: content.slice(0, 100),
+          }),
+        }).catch(() => {});
+      }
     }
   };
 
@@ -224,7 +245,7 @@ export default function PublicProfilePage() {
   const [userPosts, setUserPosts] = useState<DbPost[]>([]);
   const [postCount, setPostCount] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [profileTab, setProfileTab] = useState<"posts" | "sessions">("posts");
+  const [profileTab, setProfileTab] = useState<"posts" | "videos" | "sessions">("posts");
 
   // Sticky mini-header
   const [showStickyHeader, setShowStickyHeader] = useState(false);
@@ -284,7 +305,7 @@ export default function PublicProfilePage() {
         // ── Posts de l'utilisateur ──
         const { data: postsData, count: postsCount } = await supabase
           .from("posts")
-          .select("id, type, caption, media_url, media_type, performance_data, created_at, post_likes(user_id), post_comments(id), post_reposts(user_id)", { count: "exact" })
+          .select("id, type, caption, description, media_url, media_type, performance_data, created_at, views, post_likes(user_id), post_comments(id), post_reposts(user_id)", { count: "exact" })
           .eq("user_id", data.id)
           .order("created_at", { ascending: false })
           .limit(20);
@@ -688,9 +709,9 @@ export default function PublicProfilePage() {
 
           {/* Pseudo + badge certifié */}
           <div className="flex items-center gap-2 justify-center">
-            <p className="text-xl font-semibold leading-tight" style={{ color: "#2D3748" }}>
-              @{displayPseudo}
-            </p>
+            <h1 className="text-[28px] font-black tracking-[-0.03em] leading-none" style={{ color: "#1A202C" }}>
+              {displayPseudo}
+            </h1>
             {isCertified && (
               <motion.div
                 initial={{ scale: 0, rotate: -20 }}
@@ -724,8 +745,8 @@ export default function PublicProfilePage() {
           {/* Level badge */}
           {profile?.level && (
             <span
-              className="inline-block mt-2 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+              className="inline-block mt-2 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(212,192,255,0.3)", color: "#7C5CFA", border: "1px solid rgba(167,139,250,0.25)" }}
             >
               {profile.level}
             </span>
@@ -890,7 +911,8 @@ export default function PublicProfilePage() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 mb-4">
         <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.12)" }}>
           {([
-            { key: "posts", label: "Posts", icon: Grid3X3 },
+            { key: "posts", label: "Posts", icon: Camera },
+            { key: "videos", label: "Vidéos", icon: Film },
             { key: "sessions", label: "Séances", icon: LayoutList },
           ] as const).map(({ key, label, icon: Icon }) => (
             <motion.button key={key} whileTap={{ scale: 0.96 }} onClick={() => setProfileTab(key)}
@@ -909,54 +931,228 @@ export default function PublicProfilePage() {
 
       <AnimatePresence mode="wait">
 
-      {/* ── Posts grid ── */}
+      {/* ── Posts feed (style profil) ── */}
       {profileTab === "posts" && (
         <motion.div key="posts-tab" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.25 }}>
           {userPosts.length === 0 ? (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <div className="text-4xl">📸</div>
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucun post partagé</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+              style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+            >
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+              </div>
+              <div className="text-center px-8">
+                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
+                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les publications apparaîtront ici dès qu&apos;il y en aura une.</p>
+              </div>
+            </motion.div>
           ) : (
-            <div className="grid grid-cols-3 gap-1.5">
-              {userPosts.map((post, i) => (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="relative rounded-2xl overflow-hidden aspect-square cursor-pointer"
-                  style={{ background: post.type === "workout" ? "linear-gradient(135deg,#F0EBFF,#D4C0FF)" : post.type === "meal" ? "linear-gradient(135deg,#ECFDF5,#A7F3D0)" : "linear-gradient(135deg,#FFFBF0,#FDE68A)" }}
-                  whileHover={{ scale: 1.03 }}
-                  onClick={() => setSelectedPost(post)}
-                >
-                  {post.media_url && (post.media_type === "video" || post.media_type?.startsWith("video"))
-                    ? <video src={post.media_url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
-                    : post.media_url && (post.media_type === "image" || post.media_type?.startsWith("image"))
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={post.media_url} alt="" className="w-full h-full object-cover" />
-                    : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-2 gap-1">
-                        <span className="text-2xl">{post.type === "workout" ? "🏋️" : post.type === "meal" ? "🥗" : "📊"}</span>
-                        {post.caption && <p className="text-[9px] text-center leading-tight font-medium line-clamp-2" style={{ color: "#4A5568" }}>{post.caption}</p>}
+            <div className="flex flex-col gap-4">
+              {userPosts.map((post, idx) => {
+                const liked = likedIds.has(post.id);
+                const reposted = repostedIds.has(post.id);
+                const commentsOpen = openComments.has(post.id);
+                const likesCount = post.post_likes?.length ?? 0;
+                const commentsCount = post.post_comments?.length ?? 0;
+                const repostsCount = post.post_reposts?.length ?? 0;
+                return (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, delay: idx * 0.06 }}
+                    className="rounded-3xl overflow-hidden"
+                    style={{
+                      background: "rgba(255,255,255,0.85)",
+                      border: "1px solid rgba(255,255,255,0.9)",
+                      boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+                    }}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                          style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                          {displayAvatar
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                            : initial}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                            {isCertified && (
+                              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                                <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                            {(() => {
+                              const diff = Date.now() - new Date(post.created_at).getTime();
+                              const h = Math.floor(diff / 3600000);
+                              const d = Math.floor(h / 24);
+                              if (h < 1) return "À l'instant";
+                              if (h < 24) return `${h}h`;
+                              if (d < 7) return `${d}j`;
+                              return new Date(post.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+                            })()}
+                          </p>
+                        </div>
                       </div>
-                    )
-                  }
-                  {/* Indicateur vidéo */}
-                  {post.media_url && (post.media_type === "video" || post.media_type?.startsWith("video")) && (
-                    <div className="absolute top-1.5 right-1.5">
-                      <Play size={12} strokeWidth={2} fill="#fff" style={{ color: "#fff", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }} />
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setSelectedPost(post)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                        style={{ background: "rgba(167,139,250,0.1)" }}
+                      >
+                        <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#7C5CFA" }} />
+                      </motion.button>
                     </div>
-                  )}
-                  {/* Likes overlay */}
-                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.35)" }}>
-                    <span style={{ fontSize: 8 }}>❤️</span>
-                    <span className="text-[9px] font-semibold text-white">{post.post_likes.length}</span>
-                  </div>
-                </motion.div>
-              ))}
+
+                    {/* Caption */}
+                    {post.caption && (
+                      <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                        {post.caption}
+                      </p>
+                    )}
+
+                    {/* Media */}
+                    {post.media_url && (
+                      <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
+                        {post.media_type === "video"
+                          ? <VideoPlayer src={post.media_url} maxHeight={380} controls />
+                          // eslint-disable-next-line @next/next/no-img-element
+                          : <img src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
+                        }
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {post.description && (
+                      <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                        {post.description}
+                      </p>
+                    )}
+
+                    {/* Action bar */}
+                    <div className="flex items-center gap-4 px-4 pt-3">
+                      {/* Like */}
+                      <motion.button whileTap={{ scale: 0.7 }} onClick={() => toggleLike(post.id)} className="relative flex items-center cursor-pointer">
+                        {burstId === post.id && [0,1,2,3,4].map((i) => (
+                          <motion.div key={`b-${post.id}-${i}`} className="absolute pointer-events-none"
+                            style={{ width: 5, height: 5, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
+                            initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
+                            animate={{ scale: [0,1.2,0], x: [0,(i-2)*18], y: [0,-20-i*4], opacity: [1,1,0] }}
+                            transition={{ duration: 0.55, delay: i*0.04 }} />
+                        ))}
+                        <motion.div animate={liked ? { scale: [1,1.5,0.9,1.15,1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
+                          <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
+                        </motion.div>
+                      </motion.button>
+
+                      {/* Commentaire */}
+                      <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85, rotate: -15 }}
+                        onClick={() => setOpenComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
+                        className="flex items-center cursor-pointer">
+                        <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(167,139,250,0.2)" : "none"} style={{ color: commentsOpen ? "#A78BFA" : "#2D3748" }} />
+                      </motion.button>
+
+                      {/* Repost */}
+                      <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
+                        onClick={() => toggleRepost(post.id)} className="flex items-center cursor-pointer">
+                        <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
+                          <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#2D3748" }} />
+                        </motion.div>
+                      </motion.button>
+
+                      {/* Partager */}
+                      <motion.button whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.85 }} className="flex items-center cursor-pointer">
+                        <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                      </motion.button>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="px-4 pt-2 pb-1">
+                      {likesCount > 0 && (
+                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                          {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
+                        </p>
+                      )}
+                      <motion.p whileHover={{ color: "#2D3748" }}
+                        className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "#A0AEC0" }}
+                        onClick={() => setOpenComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}>
+                        {commentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
+                      </motion.p>
+                    </div>
+
+                    {/* Section commentaires */}
+                    <AnimatePresence>
+                      {commentsOpen && (
+                        <InlineComments
+                          postId={post.id}
+                          postOwnerId={profile?.id}
+                          onCommentAdded={() => setUserPosts((prev) => prev.map((pp) => pp.id !== post.id ? pp : { ...pp, post_comments: [...pp.post_comments, { id: `opt-${Date.now()}` }] }))}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
+        </motion.div>
+      )}
+
+      {/* ── Vidéos grid ── */}
+      {profileTab === "videos" && (
+        <motion.div key="videos-tab" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.25 }}>
+          {(() => {
+            const videoPosts = userPosts.filter((p) => p.media_type === "video");
+            return videoPosts.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+              >
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  <Film size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les publications vidéo apparaîtront ici automatiquement.</p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1">
+                {videoPosts.map((post) => (
+                  <motion.div
+                    key={post.id}
+                    className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
+                    style={{ background: "#000" }}
+                    whileHover={{ scale: 0.97 }}
+                    onClick={() => setSelectedPost(post)}
+                  >
+                    <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
+                        <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
+                      </div>
+                    </div>
+                    <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
+                      style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <span className="text-[10px] font-semibold text-white">{formatViews(post.views ?? 0)}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            );
+          })()}
         </motion.div>
       )}
 
