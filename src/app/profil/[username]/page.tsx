@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check,
   MessageCircle, Grid3X3, LayoutList,
-  Heart, Share2, Repeat2, X, Send,
+  Heart, Share2, Repeat2, X, Send, Play,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -930,7 +930,9 @@ export default function PublicProfilePage() {
                   whileHover={{ scale: 1.03 }}
                   onClick={() => setSelectedPost(post)}
                 >
-                  {post.media_url && (post.media_type === "image" || post.media_type?.startsWith("image"))
+                  {post.media_url && (post.media_type === "video" || post.media_type?.startsWith("video"))
+                    ? <video src={post.media_url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                    : post.media_url && (post.media_type === "image" || post.media_type?.startsWith("image"))
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={post.media_url} alt="" className="w-full h-full object-cover" />
                     : (
@@ -940,6 +942,12 @@ export default function PublicProfilePage() {
                       </div>
                     )
                   }
+                  {/* Indicateur vidéo */}
+                  {post.media_url && (post.media_type === "video" || post.media_type?.startsWith("video")) && (
+                    <div className="absolute top-1.5 right-1.5">
+                      <Play size={12} strokeWidth={2} fill="#fff" style={{ color: "#fff", filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))" }} />
+                    </div>
+                  )}
                   {/* Likes overlay */}
                   <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.35)" }}>
                     <span style={{ fontSize: 8 }}>❤️</span>

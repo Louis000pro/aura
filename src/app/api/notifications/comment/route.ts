@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
         from_pseudo: commenter?.pseudo ?? null,
         from_avatar_url: commenter?.avatar_url ?? null,
         type: "comment",
-        post_id: post_id ?? null,
       });
       if (insErr) console.error("[notify-comment] insert failed:", insErr);
     }

@@ -2655,7 +2655,11 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
       setReposted(true); setReposts(r => r + 1);
       await supabase.from("post_reposts").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       if (post.user_id !== user.id) {
-        void supabase.from("notifications").insert({ user_id: post.user_id, from_user_id: user.id, from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "repost", post_id: post.id });
+        void fetch("/api/notifications/repost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: post.id }),
+        }).catch(() => {});
       }
     }
   };
@@ -3483,15 +3487,10 @@ function CommunautePageInner() {
         setRealFeedPosts((prev) => prev.map((p) => p.id !== postId ? p : { ...p, post_likes: p.post_likes.filter((l) => l.user_id !== user.id) }));
         return;
       }
-      // Notif au propriétaire du post
+      // Notif au propriétaire du post (via route admin)
       const post = realFeedPosts.find((p) => p.id === postId);
       if (post && post.user_id !== user.id) {
-        void supabase.from("notifications").insert({
-          user_id: post.user_id, from_user_id: user.id,
-          from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
-          type: "like", post_id: postId,
-        });
-        fetch("/api/notifications/like", {
+        void fetch("/api/notifications/like", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: postId }),
@@ -3520,15 +3519,10 @@ function CommunautePageInner() {
     if (!isReposted) {
       await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       showToast("Post boosté ! 🔄");
-      // Notif au propriétaire du post
+      // Notif au propriétaire du post (via route admin)
       const post = realFeedPosts.find((p) => p.id === postId);
       if (post && post.user_id !== user.id) {
-        void supabase.from("notifications").insert({
-          user_id: post.user_id, from_user_id: user.id,
-          from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null,
-          type: "repost", post_id: postId,
-        });
-        fetch("/api/notifications/repost", {
+        void fetch("/api/notifications/repost", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: postId }),

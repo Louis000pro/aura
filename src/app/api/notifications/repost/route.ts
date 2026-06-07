@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
         from_pseudo: reposter?.pseudo ?? null,
         from_avatar_url: reposter?.avatar_url ?? null,
         type: "repost",
-        post_id: post_id ?? null,
       });
       if (insErr) console.error("[notify-repost] insert failed:", insErr);
     }

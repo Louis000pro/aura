@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
         from_pseudo: liker?.pseudo ?? null,
         from_avatar_url: liker?.avatar_url ?? null,
         type: "like",
-        post_id: post_id ?? null,
       });
       if (insErr) console.error("[notify-like] insert failed:", insErr);
     }
