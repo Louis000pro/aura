@@ -3882,9 +3882,28 @@ function CommunautePageInner() {
         transition={{ duration: 0.4 }}
         className="flex items-center justify-between mb-5"
       >
-        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
-          {view === "thread" && activeDMPartner ? `@${activeDMPartner.pseudo}` : "Communauté"}
-        </h1>
+        {view === "thread" && activeDMPartner ? (
+          <Link href={`/profil/${activeDMPartner.pseudo}`} className="flex items-center gap-2.5 cursor-pointer group">
+            {activeDMPartner.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={activeDMPartner.avatar_url} alt={activeDMPartner.pseudo}
+                className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                style={{ border: "1.5px solid rgba(167,139,250,0.4)" }} />
+            ) : (
+              <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
+                {activeDMPartner.pseudo[0]?.toUpperCase()}
+              </div>
+            )}
+            <h1 className="text-xl font-light tracking-tight group-hover:underline" style={{ color: "#2D3748" }}>
+              @{activeDMPartner.pseudo}
+            </h1>
+          </Link>
+        ) : (
+          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
+            Communauté
+          </h1>
+        )}
         <div className="flex items-center gap-2">
           {view === "thread" ? (
             <motion.button
