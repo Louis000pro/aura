@@ -522,7 +522,7 @@ export default function DecouvertePage() {
   const displayed = currentProfiles;
 
   return (
-    <div className="min-h-screen px-4 md:px-8 pt-8 pb-28 max-w-2xl mx-auto md:mx-0 md:max-w-xl relative">
+    <div className="min-h-screen px-4 md:px-8 pt-8 pb-28 w-full max-w-3xl mx-auto relative">
 
       {/* Header */}
       <motion.div

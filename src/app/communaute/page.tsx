@@ -1248,15 +1248,14 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: "rgba(255,255,255,0.9)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          background: "#FFFFFF",
+          border: "1px solid rgba(212,192,255,0.3)",
+          boxShadow: "0 24px 70px rgba(0,0,0,0.25), 0 4px 16px rgba(167,139,250,0.2)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Partager</h2>
+          <h2 className="text-lg font-semibold" style={{ color: "#2D3748" }}>Partager</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
           </motion.button>
@@ -2194,20 +2193,41 @@ function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onComm
   postId: string; postOwnerId: string; commentCount: number;
   onClose: () => void; onCommentAdded: () => void;
 }) {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   return (
     <motion.div
-      initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+      initial={isDesktop ? { x: "100%" } : { y: "100%" }}
+      animate={isDesktop ? { x: 0 } : { y: 0 }}
+      exit={isDesktop ? { x: "100%" } : { y: "100%" }}
       transition={{ type: "spring", damping: 32, stiffness: 320 }}
-      className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
-      style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }}
+      className={
+        isDesktop
+          ? "fixed top-0 right-0 bottom-0 z-50 w-[400px] rounded-l-3xl overflow-hidden flex flex-col"
+          : "absolute inset-x-0 bottom-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
+      }
+      style={
+        isDesktop
+          ? { background: "#FFFFFF", boxShadow: "-12px 0 48px rgba(0,0,0,0.18)" }
+          : { background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }
+      }
       onClick={e => e.stopPropagation()}
     >
-      {/* Poignée */}
-      <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-        <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
-      </div>
-      <div className="px-4 pb-3 flex items-center justify-between flex-shrink-0" style={{ borderBottom: "1px solid rgba(212,192,255,0.3)" }}>
-        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{commentCount} commentaire{commentCount !== 1 ? "s" : ""}</p>
+      {/* Poignée (mobile uniquement) */}
+      {!isDesktop && (
+        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
+        </div>
+      )}
+      <div className={`px-4 ${isDesktop ? "pt-5" : ""} pb-3 flex items-center justify-between flex-shrink-0`} style={{ borderBottom: "1px solid rgba(212,192,255,0.3)" }}>
+        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{isDesktop ? "Commentaires" : `${commentCount} commentaire${commentCount !== 1 ? "s" : ""}`}</p>
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
           className="w-7 h-7 rounded-full flex items-center justify-center"
           style={{ background: "rgba(240,235,255,0.8)" }}>
@@ -2794,7 +2814,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
         <AnimatePresence>
           {(showComments || showSettings) && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-40"
+              className={`absolute inset-0 z-40 ${showComments && !showSettings ? "md:hidden" : ""}`}
               style={{ background: "rgba(0,0,0,0.55)" }}
               onClick={() => { setShowComments(false); setShowSettings(false); }} />
           )}
