@@ -2764,7 +2764,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
 
         {/* ══ AUTEUR + CAPTION (bas gauche) ══ */}
         <div className="absolute bottom-5 left-4 z-20 right-4" style={{ pointerEvents: "none" }}>
-          <Link href={`/profil?id=${post.user_id}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
+          <Link href={post.user_id === user?.id ? "/profil" : `/profil/${authorPseudo}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
@@ -2827,7 +2827,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
         style={{ gap: 22, width: 52, paddingBottom: 8 }}>
 
         {/* Avatar auteur */}
-        <Link href={`/profil?id=${post.user_id}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
+        <Link href={post.user_id === user?.id ? "/profil" : `/profil/${authorPseudo}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
           <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.06 }}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
