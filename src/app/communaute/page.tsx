@@ -2968,20 +2968,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
     let lastCollapsed = false;
     let lastIdx = 0;
 
-    // scrollend debounce fallback timer
-    let scrollEndTimer: ReturnType<typeof setTimeout>;
-
-    const updateActiveIndex = () => {
-      const h = slotH > 0 ? slotH : window.innerHeight;
-      const idx = Math.max(0, Math.min(Math.round(el.scrollTop / h), videoPosts.length - 1));
-      if (idx !== lastIdx) {
-        lastIdx = idx;
-        setActiveIndex(idx);
-        onActiveIndexChange?.(idx);
-      }
-      // 500ms de délai — bloque tout tap accidentel post-scroll
-      setTimeout(() => { isScrollingRef.current = false; }, 500);
-    };
+    let scrollStopTimer: ReturnType<typeof setTimeout>;
 
     const handleScroll = () => {
       isScrollingRef.current = true;
@@ -2990,29 +2977,32 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
       rafId = requestAnimationFrame(() => {
         const st = el.scrollTop;
         const h = slotH > 0 ? slotH : window.innerHeight;
-        const collapsed = st > h * 0.05; // 5% de scroll = collapse header
+
+        // Collapse header dès 5% de scroll
+        const collapsed = st > h * 0.05;
         if (collapsed !== lastCollapsed) { lastCollapsed = collapsed; onScrollCollapse?.(collapsed); }
+
+        // ── Index actif calculé IMMÉDIATEMENT (pas de debounce) ──
+        // On bascule la vidéo dès qu'elle dépasse 50% de visibilité
+        const idx = Math.max(0, Math.min(Math.round(st / h), videoPosts.length - 1));
+        if (idx !== lastIdx) {
+          lastIdx = idx;
+          setActiveIndex(idx);
+          onActiveIndexChange?.(idx);
+        }
       });
 
-      // Debounce 300ms — toujours actif, annulé si scrollend arrive avant
-      clearTimeout(scrollEndTimer);
-      scrollEndTimer = setTimeout(updateActiveIndex, 300);
-    };
-
-    // scrollend annule le debounce et met à jour immédiatement
-    const handleScrollEnd = () => {
-      clearTimeout(scrollEndTimer);
-      updateActiveIndex();
+      // Reset du flag "scrolling" après l'arrêt du scroll (bloque le tap accidentel)
+      clearTimeout(scrollStopTimer);
+      scrollStopTimer = setTimeout(() => { isScrollingRef.current = false; }, 150);
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
-    el.addEventListener("scrollend", handleScrollEnd, { passive: true });
 
     return () => {
       el.removeEventListener("scroll", handleScroll);
-      el.removeEventListener("scrollend", handleScrollEnd);
       cancelAnimationFrame(rafId);
-      clearTimeout(scrollEndTimer);
+      clearTimeout(scrollStopTimer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoPosts.length, slotH]);
@@ -3422,15 +3412,7 @@ function CommunautePageInner() {
         showToast(`Erreur : ${error.message}`);
         return;
       }
-      // Notification in-app (silencieuse)
-      void Promise.resolve(supabase.from("notifications").insert({
-        user_id: profile.id,
-        from_user_id: user.id,
-        from_pseudo: user.pseudo,
-        from_avatar_url: user.avatar ?? null,
-        type: "follow",
-      })).then(() => {}).catch(() => {});
-      // Email de notification (silencieux, authentifié)
+      // Notification in-app + email via route admin (insertion unique)
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch("/api/notifications/follow", {

@@ -122,8 +122,8 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
     if (!buttonRef.current) return;
     // getBoundingClientRect retourne les coords VIEWPORT — indépendant de tout transform parent
     const rect = buttonRef.current.getBoundingClientRect();
-    const PANEL_W = 288;
-    const PANEL_H = 400;
+    const PANEL_W = Math.min(360, window.innerWidth - 24);
+    const PANEL_H = 440;
     const GAP = 12;
     const MARGIN = 8;
 
@@ -195,15 +195,15 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             position: "fixed",
             top: panelPos.top,
             left: panelPos.left,
-            width: 288,
+            width: Math.min(360, (typeof window !== "undefined" ? window.innerWidth : 360) - 24),
             maxHeight: panelPos.maxH,
             overflow: "hidden",
             zIndex: 99999,
-            background: "rgba(255,255,255,0.97)",
-            backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.9)",
-            boxShadow: "0 16px 56px rgba(167,139,250,0.18), 0 2px 8px rgba(0,0,0,0.08)",
-            borderRadius: 20,
+            background: "rgba(255,255,255,0.98)",
+            backdropFilter: "blur(16px)",
+            border: "1px solid rgba(212,192,255,0.4)",
+            boxShadow: "0 20px 64px rgba(167,139,250,0.22), 0 4px 12px rgba(0,0,0,0.06)",
+            borderRadius: 24,
           }}
         >
           {/* Header */}
@@ -263,9 +263,9 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
 
                     {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] leading-snug" style={{ color: "#2D3748" }}>
+                      <p className="text-[13px] leading-snug break-words" style={{ color: "#2D3748" }}>
                         <span className="font-semibold">@{n.from_pseudo}</span>
-                        {" "}{notifLabel(n)}
+                        {" "}<span style={{ color: "#4A5568" }}>{notifLabel(n)}</span>
                       </p>
                       <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>
                         {formatRelative(n.created_at)}

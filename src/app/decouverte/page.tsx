@@ -501,10 +501,6 @@ export default function DecouvertePage() {
         showToast("Erreur");
         return;
       }
-      void supabase.from("notifications").insert({
-        user_id: profile.id, from_user_id: user.id,
-        from_pseudo: user.pseudo, from_avatar_url: user.avatar ?? null, type: "follow",
-      });
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch("/api/notifications/follow", {

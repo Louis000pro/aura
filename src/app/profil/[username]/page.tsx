@@ -72,7 +72,7 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
     const supabase = createClient();
     supabase
       .from("post_comments")
-      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
       .eq("post_id", postId)
       .order("created_at", { ascending: true })
       .limit(50)
@@ -102,7 +102,7 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
     const supabase = createClient();
     const { error } = await supabase
       .from("post_comments")
-      .insert({ post_id: postId, user_id: user.id, content });
+      .insert({ post_id: postId, user_id: user.id, text: content });
     setSending(false);
     if (error) {
       setComments((prev) => prev.filter((c) => c.id !== tmpId));
@@ -110,14 +110,6 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
     } else {
       onCommentAdded?.();
       if (postOwnerId && postOwnerId !== user.id) {
-        void supabase.from("notifications").insert({
-          user_id: postOwnerId,
-          from_user_id: user.id,
-          from_pseudo: user.pseudo,
-          from_avatar_url: user.avatar ?? null,
-          type: "comment",
-          post_id: postId,
-        });
         void fetch("/api/notifications/comment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -389,14 +381,7 @@ export default function PublicProfilePage() {
           { onConflict: "follower_id,following_id", ignoreDuplicates: true }
         );
       if (error) { showToast(`Erreur : ${error.message}`); setFollowLoading(false); return; }
-      void Promise.resolve(supabase.from("notifications").insert({
-        user_id: profile.id,
-        from_user_id: user.id,
-        from_pseudo: user.pseudo,
-        from_avatar_url: user.avatar ?? null,
-        type: "follow",
-      })).then(() => {}).catch(() => {});
-      // Email de notification (silencieux, authentifié)
+      // Notification in-app + email via route admin (insertion unique)
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch("/api/notifications/follow", {
@@ -485,16 +470,13 @@ export default function PublicProfilePage() {
     if (!isReposted) {
       await supabase
         .from("post_reposts")
-        .upsert({ post_id: postId, user_id: user.id }, { ignoreDuplicates: true });
+        .upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
       if (profile.id !== user.id) {
-        void supabase.from("notifications").insert({
-          user_id: profile.id,
-          from_user_id: user.id,
-          from_pseudo: user.pseudo,
-          from_avatar_url: user.avatar ?? null,
-          type: "repost",
-          post_id: postId,
-        });
+        void fetch("/api/notifications/repost", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reposter_id: user.id, post_owner_id: profile.id, post_id: postId }),
+        }).catch(() => {});
       }
       showToast("Post boosté ! 🔄");
     } else {

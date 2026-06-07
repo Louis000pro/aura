@@ -68,7 +68,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
     const supabase = createClient();
     supabase
       .from("post_comments")
-      .select("id, content, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
+      .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
       .eq("post_id", postId)
       .order("created_at", { ascending: true })
       .limit(50)
@@ -91,7 +91,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
     };
     setComments((prev) => [...prev, optimistic]);
     const supabase = createClient();
-    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, content });
+    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text: content });
     setSending(false);
     if (error) { setComments((prev) => prev.filter((c) => c.id !== tmpId)); setInput(content); }
     else { onCommentAdded?.(); }
@@ -472,7 +472,6 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
       await supabase.from("followers").delete().eq("follower_id", userId).eq("following_id", profile.id);
     } else {
       await supabase.from("followers").insert({ follower_id: userId, following_id: profile.id });
-      void Promise.resolve(supabase.from("notifications").insert({ user_id: profile.id, from_user_id: userId, from_pseudo: profile.pseudo, type: "follow" })).then(() => {}).catch(() => {});
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
         fetch("/api/notifications/follow", {
