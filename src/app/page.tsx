@@ -995,8 +995,8 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[196px] md:h-[250px]"
-        style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[168px] md:h-[250px]"
+        style={{ bottom: "calc(72px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) — étendu jusqu'à la sidebar sur desktop */}
@@ -1075,7 +1075,7 @@ function Dashboard() {
             {/* Vidéo verticale à gauche — plus grande */}
             <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
-                width: isMobile ? 92 : 118, height: isMobile ? 144 : 182,
+                width: isMobile ? 76 : 118, height: isMobile ? 116 : 182,
                 background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                 boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}>
