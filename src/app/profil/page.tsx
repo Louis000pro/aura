@@ -2106,8 +2106,16 @@ export default function ProfilPage() {
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Partage ta première publication pour lancer ton feed 💜</p>
                 </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push("/communaute")}
+                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                >
+                  Publier maintenant
+                </motion.button>
               </motion.div>
             ) : (() => {
                 const allPosts = userPosts;
@@ -2800,7 +2808,8 @@ export default function ProfilPage() {
                           .eq("id", selectedPost.id);
 
                         if (error) {
-                          showToast("Erreur : " + error.message);
+                          console.error("update caption:", error);
+                          showToast("Modification non enregistrée, réessaie");
                           setEditSaving(false);
                           return;
                         }

@@ -84,7 +84,8 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
         .upload(path, mediaFile, { upsert: false, contentType: mediaFile.type });
 
       if (uploadErr) {
-        setError(`Erreur upload : ${uploadErr.message}`);
+        console.error("post media upload:", uploadErr);
+        setError("L'envoi du média a échoué, réessaie 💜");
         setSubmitting(false);
         return;
       }
@@ -112,7 +113,8 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
     setSubmitting(false);
 
     if (insertError) {
-      setError(insertError.message);
+      console.error("post insert:", insertError);
+      setError("La publication a échoué, réessaie 💜");
       return;
     }
 

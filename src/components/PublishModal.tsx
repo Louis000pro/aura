@@ -52,7 +52,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: false });
     if (upErr) {
       console.error("[PublishModal] upload error:", upErr);
-      setError("Erreur upload : " + upErr.message);
+      setError("L'envoi du média a échoué, réessaie 💜");
       return null;
     }
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -76,7 +76,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
       expires_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
     });
     setPublishing(false);
-    if (err) { setError(err.message); return; }
+    if (err) { console.error("publishStory:", err); setError("La publication a échoué, réessaie 💜"); return; }
     setSuccessType("story");
     setStep("success");
   };
@@ -100,7 +100,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
       performance_data: {},
     });
     setPublishing(false);
-    if (err) { setError(err.message); return; }
+    if (err) { console.error("publishPost:", err); setError("La publication a échoué, réessaie 💜"); return; }
     setSuccessType("post");
     setStep("success");
   };

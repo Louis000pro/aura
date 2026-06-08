@@ -566,7 +566,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       },
       caption: caption.trim() || null,
     });
-    if (e) { setError(e.message); setStep("workout-preview"); return; }
+    if (e) { console.error("publishWorkout:", e); setError("La publication a échoué, réessaie 💜"); setStep("workout-preview"); return; }
     setStep("success");
     onPublished();
   };
@@ -581,7 +581,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       content_data: { text: textContent.trim(), emoji: selectedEmoji },
       caption:      null,
     });
-    if (e) { setError(e.message); setStep("text-input"); return; }
+    if (e) { console.error("publishText:", e); setError("La publication a échoué, réessaie 💜"); setStep("text-input"); return; }
     setStep("success");
     onPublished();
   };
@@ -600,7 +600,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       },
       caption: caption.trim() || null,
     });
-    if (e) { setError(e.message); setStep("meal-input"); return; }
+    if (e) { console.error("publishMeal:", e); setError("La publication a échoué, réessaie 💜"); setStep("meal-input"); return; }
     setStep("success");
     onPublished();
   };
@@ -626,7 +626,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       const ext  = mediaFile.name.split(".").pop();
       const path = `${userId}/story_${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, mediaFile, { upsert: true });
-      if (uploadErr) { setError(uploadErr.message); setStep("photo-preview"); return; }
+      if (uploadErr) { console.error("publishMedia upload:", uploadErr); setError("L'envoi du média a échoué, réessaie 💜"); setStep("photo-preview"); return; }
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const mediaUrl = urlData.publicUrl + "?t=" + Date.now();
       const { data: inserted, error: e } = await supabase.from("stories").insert({
@@ -637,13 +637,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
         media_url:    mediaUrl,
         media_type:   mediaType,
       }).select("id").single();
-      if (e) { setError(e.message); setStep("photo-preview"); return; }
+      if (e) { console.error("publishMedia insert:", e); setError("La publication a échoué, réessaie 💜"); setStep("photo-preview"); return; }
       setPublishedStoryId(inserted?.id ?? null);
       setPublishedMediaUrl(mediaUrl);
       setStep("success");
       onPublished();
     } catch (err) {
-      setError(String(err));
+      console.error("publishMedia:", err);
+      setError("Une erreur est survenue, réessaie 💜");
       setStep("photo-preview");
     }
   };
@@ -1732,7 +1733,8 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
     if (error) {
       setComments(prev => prev.filter(c => c.id !== tmpId));
       setInput(content);
-      setSendError(error.message);
+      console.error("comment send:", error);
+      setSendError("Commentaire non envoyé, réessaie");
     } else {
       setSendError("");
       onCommentAdded?.();
@@ -2355,7 +2357,8 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
     if (error) {
       setComments(prev => prev.filter(c => c.id !== tmpId));
       setInput(content);
-      setSendError(error.message);
+      console.error("comment send:", error);
+      setSendError("Commentaire non envoyé, réessaie");
     } else {
       onCommentAdded();
       if (postOwnerId && postOwnerId !== user.id) {
@@ -2965,7 +2968,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
   );
 }
 
-function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight }: {
+function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight, onCreatePost }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
@@ -2973,6 +2976,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   onActiveIndexChange?: (idx: number) => void;
   onScrollCollapse?: (collapsed: boolean) => void;
   feedHeight?: number; // hauteur exacte mesurée depuis le parent
+  onCreatePost?: () => void;
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
   const wrapperRef   = useRef<HTMLDivElement>(null);  // fallback measurement
@@ -3065,8 +3069,26 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   if (videoPosts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center h-full">
-        <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucune vidéo pour le moment</p>
-        <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Publie une vidéo pour qu&apos;elle apparaisse ici</p>
+        <div
+          className="w-20 h-20 rounded-3xl flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.35) 0%, rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(167,139,250,0.2)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)" }}
+        >
+          <Plus size={30} strokeWidth={1.4} style={{ color: "#A78BFA" }} />
+        </div>
+        <div>
+          <p className="text-base font-medium" style={{ color: "#2D3748" }}>Aucune vidéo pour le moment</p>
+          <p className="text-sm font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>Publie ta première vidéo et lance la communauté 🎬</p>
+        </div>
+        {onCreatePost && (
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={onCreatePost}
+            className="mt-1 px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+            style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+          >
+            Publier ma première vidéo
+          </motion.button>
+        )}
       </div>
     );
   }
@@ -3465,7 +3487,8 @@ function CommunautePageInner() {
       if (error) {
         // Rollback optimiste
         setFollowingIds((prev) => { const n = new Set(prev); n.delete(profile.id); return n; });
-        showToast(`Erreur : ${error.message}`);
+        console.error("follow:", error);
+        showToast("Impossible de suivre, réessaie");
         return;
       }
       // Notification in-app + email via route admin (insertion unique)
@@ -3487,7 +3510,8 @@ function CommunautePageInner() {
       if (error) {
         // Rollback optimiste
         setFollowingIds((prev) => { const n = new Set(prev); n.add(profile.id); return n; });
-        showToast(`Erreur : ${error.message}`);
+        console.error("unfollow:", error);
+        showToast("Impossible de se désabonner, réessaie");
         return;
       }
       showToast("Abonnement annulé");
@@ -4235,6 +4259,7 @@ function CommunautePageInner() {
                     onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                     onScrollCollapse={(collapsed) => setHeaderCollapsed(collapsed)}
                     feedHeight={feedContainerH}
+                    onCreatePost={() => setShowCreatePost(true)}
                   />
                 </div>
               )}
@@ -4289,9 +4314,17 @@ function CommunautePageInner() {
                 <div className="text-center px-6">
                   <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucun post pour l&apos;instant</p>
                   <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
-                    Suis des personnes et partage tes performances depuis ton profil.
+                    Sois le premier à partager une performance et inspire la communauté 💪
                   </p>
                 </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCreatePost(true)}
+                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                >
+                  Créer un post
+                </motion.button>
               </motion.div>
             )}
 

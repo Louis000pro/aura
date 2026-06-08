@@ -372,6 +372,18 @@ export default function RecherchePage() {
                   </div>
                 )}
 
+                {!suggestedLoading && suggested.length === 0 && (
+                  <div className="flex flex-col items-center py-10 gap-3">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)", boxShadow: "0 4px 16px rgba(167,139,250,0.15)" }}>
+                      🌱
+                    </div>
+                    <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>
+                      La communauté grandit 💜<br />Reviens bientôt pour découvrir de nouveaux membres
+                    </p>
+                  </div>
+                )}
+
                 {!suggestedLoading && suggested.map((profile, i) => (
                   <motion.div
                     key={profile.id}

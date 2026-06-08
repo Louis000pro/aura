@@ -2310,7 +2310,7 @@ export default function ProgressionPage() {
     const { error } = await supabase.from("body_measurements").upsert(payload, { onConflict: "user_id,date" });
     setSavingMeas(false);
     if (!error) { showToast("Mensurations enregistrées ✓"); setNewMeas({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" }); fetchMeasurements(); }
-    else showToast("Erreur : " + error.message);
+    else { console.error("save measurements:", error); showToast("Enregistrement impossible, réessaie"); }
   };
 
   const savePR = async () => {
@@ -2324,7 +2324,7 @@ export default function ProgressionPage() {
     });
     setSavingPR(false);
     if (!error) { showToast("Record enregistré 🏆"); setNewPR({ exercise: "", value: "", unit: "kg", reps: "", note: "" }); fetchPRs(); }
-    else showToast("Erreur : " + error.message);
+    else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
   };
 
   const fetchHistory = useCallback(async (page = 0, append = false) => {
@@ -2634,7 +2634,7 @@ export default function ProgressionPage() {
                 user_id: user.id, exercise, value, unit, date: toDateStr(new Date()),
               });
               if (!error) { showToast("Record enregistré !"); fetchPRs(); }
-              else showToast("Erreur : " + error.message);
+              else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
             }}
             onDelete={async (id) => {
               if (!user) return;

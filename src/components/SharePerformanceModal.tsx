@@ -142,7 +142,7 @@ export default function SharePerformanceModal({
       performance_data: { ...data, metrics: mergedMetrics },
     });
     setPosting(false);
-    if (err) { setError(err.message); return; }
+    if (err) { console.error("share performance:", err); setError("Le partage a échoué, réessaie 💜"); return; }
     setPosted(true);
     setTimeout(() => {
       setPosted(false);

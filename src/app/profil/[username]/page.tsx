@@ -369,7 +369,7 @@ export default function PublicProfilePage() {
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", profile.id);
-      if (error) { showToast(`Erreur : ${error.message}`); setFollowLoading(false); return; }
+      if (error) { console.error("unfollow:", error); showToast("Impossible de se désabonner, réessaie"); setFollowLoading(false); return; }
       setIsFollowing(false);
       setFollowerCount((c) => Math.max(0, c - 1));
       showToast("Abonnement annulé");
@@ -380,7 +380,7 @@ export default function PublicProfilePage() {
           { follower_id: user.id, following_id: profile.id },
           { onConflict: "follower_id,following_id", ignoreDuplicates: true }
         );
-      if (error) { showToast(`Erreur : ${error.message}`); setFollowLoading(false); return; }
+      if (error) { console.error("follow:", error); showToast("Impossible de suivre, réessaie"); setFollowLoading(false); return; }
       // Notification in-app + email via route admin (insertion unique)
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
