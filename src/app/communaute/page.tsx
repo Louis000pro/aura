@@ -3173,7 +3173,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
                 containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
               }
             }}
-            className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-50 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+            className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-50 w-11 h-11 rounded-full hidden md:flex items-center justify-center cursor-pointer"
             style={{
               background: "rgba(255,255,255,0.92)",
               backdropFilter: "blur(12px)",
