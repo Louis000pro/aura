@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play } from "lucide-react";
@@ -1209,6 +1210,8 @@ function copyToClipboard(text: string): Promise<void> {
 // Share Modal
 function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string; onClose: () => void; onShareDM?: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const handleCopy = () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -1232,13 +1235,15 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
+      className="fixed inset-0 z-[9999] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+      style={{ background: "rgba(0,0,0,0.35)" }}
       onClick={onClose}
     >
       <motion.div
@@ -1297,7 +1302,8 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
           )}
         </AnimatePresence>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body
   );
 }
 
@@ -2194,7 +2200,9 @@ function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onComm
   onClose: () => void; onCommentAdded: () => void;
 }) {
   const [isDesktop, setIsDesktop] = useState(false);
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
     const mq = window.matchMedia("(min-width: 768px)");
     const update = () => setIsDesktop(mq.matches);
     update();
@@ -2202,45 +2210,58 @@ function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onComm
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  return (
-    <motion.div
-      initial={isDesktop ? { x: "100%" } : { y: "100%" }}
-      animate={isDesktop ? { x: 0 } : { y: 0 }}
-      exit={isDesktop ? { x: "100%" } : { y: "100%" }}
-      transition={{ type: "spring", damping: 32, stiffness: 320 }}
-      className={
-        isDesktop
-          ? "fixed top-0 right-0 bottom-0 z-50 w-[400px] rounded-l-3xl overflow-hidden flex flex-col"
-          : "absolute inset-x-0 bottom-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
-      }
-      style={
-        isDesktop
-          ? { background: "#FFFFFF", boxShadow: "-12px 0 48px rgba(0,0,0,0.18)" }
-          : { background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }
-      }
-      onClick={e => e.stopPropagation()}
-    >
-      {/* Poignée (mobile uniquement) */}
-      {!isDesktop && (
-        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
-        </div>
-      )}
-      <div className={`px-4 ${isDesktop ? "pt-5" : ""} pb-3 flex items-center justify-between flex-shrink-0`} style={{ borderBottom: "1px solid rgba(212,192,255,0.3)" }}>
-        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{isDesktop ? "Commentaires" : `${commentCount} commentaire${commentCount !== 1 ? "s" : ""}`}</p>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-          className="w-7 h-7 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(240,235,255,0.8)" }}>
-          <X size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-        </motion.button>
-      </div>
+  if (!mounted) return null;
 
-      {/* Contenu commentaires */}
-      <div className="flex-1 overflow-hidden">
-        <VideoCommentsList postId={postId} postOwnerId={postOwnerId} onCommentAdded={onCommentAdded} />
-      </div>
-    </motion.div>
+  const panel = (
+    <>
+      {/* Voile cliquable pour fermer — léger sur desktop, sombre sur mobile */}
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9998]"
+        style={{ background: isDesktop ? "transparent" : "rgba(0,0,0,0.5)" }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={isDesktop ? { x: "100%" } : { y: "100%" }}
+        animate={isDesktop ? { x: 0 } : { y: 0 }}
+        exit={isDesktop ? { x: "100%" } : { y: "100%" }}
+        transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        className={
+          isDesktop
+            ? "fixed top-0 right-0 bottom-0 z-[9999] w-[400px] rounded-l-3xl overflow-hidden flex flex-col"
+            : "fixed inset-x-0 bottom-0 z-[9999] rounded-t-3xl overflow-hidden flex flex-col"
+        }
+        style={
+          isDesktop
+            ? { background: "#FFFFFF", boxShadow: "-12px 0 48px rgba(0,0,0,0.18)" }
+            : { background: "rgba(255,255,255,0.98)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }
+        }
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Poignée (mobile uniquement) */}
+        {!isDesktop && (
+          <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
+            <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
+          </div>
+        )}
+        <div className={`px-4 ${isDesktop ? "pt-5" : ""} pb-3 flex items-center justify-between flex-shrink-0`} style={{ borderBottom: "1px solid rgba(212,192,255,0.3)" }}>
+          <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{isDesktop ? "Commentaires" : `${commentCount} commentaire${commentCount !== 1 ? "s" : ""}`}</p>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Contenu commentaires */}
+        <div className="flex-1 overflow-hidden">
+          <VideoCommentsList postId={postId} postOwnerId={postOwnerId} onCommentAdded={onCommentAdded} />
+        </div>
+      </motion.div>
+    </>
   );
+
+  return createPortal(panel, document.body);
 }
 
 function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: string; postOwnerId: string; onCommentAdded: () => void }) {
@@ -2812,11 +2833,11 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
 
         {/* Panels overlay (commentaires & settings) */}
         <AnimatePresence>
-          {(showComments || showSettings) && (
+          {showSettings && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className={`absolute inset-0 z-40 ${showComments && !showSettings ? "md:hidden" : ""}`}
+              className="absolute inset-0 z-40"
               style={{ background: "rgba(0,0,0,0.55)" }}
-              onClick={() => { setShowComments(false); setShowSettings(false); }} />
+              onClick={() => { setShowSettings(false); }} />
           )}
         </AnimatePresence>
         <AnimatePresence>
