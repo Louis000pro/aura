@@ -3191,6 +3191,16 @@ function CommunautePageInner() {
   const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
   // Header toujours visible (titre + stories + tabs), la vidéo prend le reste via flex
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  // Mobile = feed vidéo immersif plein écran (style Instagram Reels)
+  const [isMobileView, setIsMobileView] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobileView(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
   // Hauteur du feed container mesurée depuis le parent → passée à TikTokFeed
   const feedContainerRef = useRef<HTMLDivElement>(null);
   const [feedContainerH, setFeedContainerH] = useState(0);
@@ -3956,8 +3966,14 @@ function CommunautePageInner() {
 
   return (
     <div
-      className={`flex flex-col px-4 md:px-8 w-full mx-auto max-w-4xl relative ${feedTab === "videos" ? "h-dvh overflow-hidden pb-0" : "pt-8 min-h-screen pb-4"}`}
-      style={feedTab === "videos" ? {
+      className={`flex flex-col w-full mx-auto max-w-4xl relative ${
+        immersiveVideo
+          ? "fixed inset-0 z-20 h-dvh overflow-hidden px-0"
+          : feedTab === "videos"
+            ? "px-4 md:px-8 h-dvh overflow-hidden pb-0"
+            : "px-4 md:px-8 pt-8 min-h-screen pb-4"
+      }`}
+      style={feedTab === "videos" && !immersiveVideo ? {
         paddingTop: headerCollapsed ? 0 : 32,
         transition: "padding-top 0.3s cubic-bezier(0.4,0,0.2,1)",
       } : {}}
@@ -3966,8 +3982,8 @@ function CommunautePageInner() {
       {/* ── Contenu ── */}
       <div className={`relative flex flex-col flex-1${feedTab === "videos" ? " min-h-0 overflow-hidden" : ""}`}>
 
-      {/* Top Bar — masqué par max-height quand headerCollapsed */}
-      <div style={feedTab === "videos" ? {
+      {/* Top Bar — caché en mode immersif mobile (vidéos) */}
+      <div className={immersiveVideo ? "hidden" : ""} style={feedTab === "videos" && !immersiveVideo ? {
         maxHeight: headerCollapsed ? 0 : 90,
         overflow: "hidden",
         transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s cubic-bezier(0.4,0,0.2,1)",
@@ -4055,8 +4071,8 @@ function CommunautePageInner() {
             exit={{ opacity: 0 }}
             className={feedTab === "videos" ? "flex flex-col flex-1 min-h-0 overflow-hidden" : "flex flex-col gap-5 pb-4"}
           >
-            {/* Stories — masquées par max-height quand headerCollapsed */}
-            <div style={feedTab === "videos" ? {
+            {/* Stories — cachées en mode immersif mobile */}
+            <div className={immersiveVideo ? "hidden" : ""} style={feedTab === "videos" && !immersiveVideo ? {
               maxHeight: headerCollapsed ? 0 : 150,
               overflow: "hidden",
               transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s cubic-bezier(0.4,0,0.2,1)",
@@ -4215,9 +4231,11 @@ function CommunautePageInner() {
             ══════════════════════════════════════════════════════ */}
             <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)", ...(feedTab === "videos" ? { flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" } : {}) }}>
 
-              {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
-              <div className="flex items-center justify-center gap-2 py-1 pr-0 md:pr-[66px]"
-                style={{ maxWidth: 560, margin: "0 auto", ...(feedTab === "videos" ? {
+              {/* ── Tab boutons (overlay flottant en haut sur mobile immersif) ── */}
+              <div className={`flex items-center justify-center gap-2 py-1 ${immersiveVideo ? "absolute left-1/2 -translate-x-1/2 z-30" : "pr-0 md:pr-[66px]"}`}
+                style={immersiveVideo
+                  ? { top: "calc(env(safe-area-inset-top) + 10px)" }
+                  : { maxWidth: 560, margin: "0 auto", ...(feedTab === "videos" ? {
                   flexShrink: 0,
                   maxHeight: headerCollapsed ? 0 : 60,
                   overflow: "hidden",

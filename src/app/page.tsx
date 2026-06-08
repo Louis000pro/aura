@@ -613,6 +613,15 @@ function Dashboard() {
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   const [mobilePanel, setMobilePanel] = useState<"chat"|"stats"|null>(null);
+  // Détection mobile pour adapter les tailles (orbe, carte Du Jour)
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
   // Nouveaux états pour la refonte mobile portrait
   const [showChat, setShowChat] = useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
@@ -974,10 +983,11 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[300px] md:pb-[330px]">
+      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[330px]">
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
+          size={isMobile ? 138 : 176}
         />
       </div>
 
@@ -985,8 +995,8 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[250px]"
-        style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[196px] md:h-[250px]"
+        style={{ bottom: "calc(92px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
         {/* Croissant SVG (courbe douce qui s'incurve vers le haut) — étendu jusqu'à la sidebar sur desktop */}
@@ -1065,7 +1075,7 @@ function Dashboard() {
             {/* Vidéo verticale à gauche — plus grande */}
             <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
-                width: 118, height: 182,
+                width: isMobile ? 92 : 118, height: isMobile ? 144 : 182,
                 background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                 boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}>
