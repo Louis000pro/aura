@@ -3200,7 +3200,6 @@ function CommunautePageInner() {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-  const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
   // Hauteur du feed container mesurée depuis le parent → passée à TikTokFeed
   const feedContainerRef = useRef<HTMLDivElement>(null);
   const [feedContainerH, setFeedContainerH] = useState(0);
@@ -3228,6 +3227,8 @@ function CommunautePageInner() {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
   const [feedTab, setFeedTab] = useState<"posts" | "videos">("videos");
+  // Mode vidéo immersif plein écran sur mobile (dépend de feedTab/view déclarés au-dessus)
+  const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
   const [highlightVideoId, setHighlightVideoId] = useState<string | null>(null);
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
