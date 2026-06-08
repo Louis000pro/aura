@@ -2593,26 +2593,46 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
 
   // Play/pause on isActive + incrémenter les vues une fois par activation
   const viewCountedRef = useRef(false);
+  const userPausedRef = useRef(false);   // true uniquement si l'user tape pour pause
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
+
   useEffect(() => {
     const video = videoRef.current;
+    if (!video) return;
     if (isActive) {
-      if (video) {
-        // play() triggers loading if needed — no load() to avoid reset issues
-        if (video.readyState >= 1) {
-          try { video.currentTime = 0; } catch (_) {}
-        }
-        void video.play().catch(() => {});
-      }
+      userPausedRef.current = false;
       setPaused(false);
+      // Pas de reset currentTime (évite la frame noire au scroll)
+      const p = video.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
       if (!viewCountedRef.current) {
         viewCountedRef.current = true;
         void createClient().rpc("increment_post_views", { p_post_id: post.id });
       }
     } else {
-      if (video) video.pause();
+      video.pause();
       viewCountedRef.current = false;
     }
   }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Anti-pause involontaire : pendant le scroll mobile, le navigateur met
+  // parfois la vidéo active en pause. On la relance (sauf pause volontaire).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onPause = () => {
+      if (!isActiveRef.current || userPausedRef.current) return;
+      requestAnimationFrame(() => {
+        if (isActiveRef.current && !userPausedRef.current && video.paused) {
+          const p = video.play();
+          if (p && typeof p.catch === "function") p.catch(() => {});
+        }
+      });
+    };
+    video.addEventListener("pause", onPause);
+    return () => video.removeEventListener("pause", onPause);
+  }, []);
 
   // Playback rate
   useEffect(() => {
@@ -2642,10 +2662,12 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       const bg = bgVideoRef.current;
       if (!video) return;
       if (video.paused) {
+        userPausedRef.current = false;
         void video.play().catch(() => {});
         void bg?.play().catch(() => {});
         setPaused(false);
       } else {
+        userPausedRef.current = true;
         video.pause();
         bg?.pause();
         setPaused(true);
