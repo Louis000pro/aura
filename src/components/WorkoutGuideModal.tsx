@@ -618,7 +618,7 @@ export default function WorkoutGuideModal({
           background: "rgba(255,255,255,0.98)",
           backdropFilter: "blur(24px)",
           boxShadow: "0 -4px 60px rgba(167,139,250,0.12), 0 0 0 1px rgba(255,255,255,0.9)",
-          maxHeight: "92vh",
+          maxHeight: "92dvh",
         }}
       >
         {/* ── Progress bar ── */}

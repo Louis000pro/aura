@@ -133,7 +133,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
       style={{ background: "rgba(240,235,255,0.85)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
@@ -142,14 +142,15 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
-        className="w-full max-w-md rounded-3xl p-6 flex flex-col gap-4"
+        className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 flex flex-col gap-4"
         style={{
           background: "rgba(255,255,255,0.96)",
           backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 24px 64px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-          maxHeight: "90vh",
+          maxHeight: "90dvh",
           overflowY: "auto",
+          paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
         }}
         onClick={(e) => e.stopPropagation()}
       >

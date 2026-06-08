@@ -418,7 +418,7 @@ function PlatsZone({
             <div key={s.label}
               className="flex-1 rounded-2xl p-2.5 text-center"
               style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.25)" }}>
-              <p className="text-[8px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
               <p className="text-base font-semibold mt-0.5" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}

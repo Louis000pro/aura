@@ -672,7 +672,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
           background: "rgba(255,255,255,0.98)",
           backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
-          maxHeight: "90vh",
+          maxHeight: "90dvh",
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -1958,7 +1958,7 @@ export default function ProfilPage() {
                 <span className="text-[24px] font-black leading-none" style={{ color: "#1A202C", letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
-                <span className="text-[9px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "#A78BFA" : "#B0BBCA" }}>
+                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "#A78BFA" : "#B0BBCA" }}>
                   {label}
                 </span>
               </motion.button>
@@ -2588,7 +2588,7 @@ export default function ProfilPage() {
               style={{
                 background: "rgba(255,255,255,0.97)",
                 boxShadow: "0 -12px 48px rgba(167,139,250,0.2)",
-                maxHeight: "92vh",
+                maxHeight: "92dvh",
                 overflowY: "auto",
               }}
               onClick={(e) => e.stopPropagation()}

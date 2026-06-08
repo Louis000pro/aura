@@ -1314,7 +1314,7 @@ function WorkoutCard({
           style={{ background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.35)" }}
         >
           <CheckCircle size={9} strokeWidth={2.5} style={{ color: "#34D399" }} />
-          <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: "#34D399" }}>Faite</span>
+          <span className="text-[9px] font-bold tracking-wider uppercase" style={{ color: "#34D399" }}>Faite</span>
         </div>
       )}
       {/* Header */}

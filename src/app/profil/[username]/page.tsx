@@ -831,7 +831,7 @@ export default function PublicProfilePage() {
                   {value}
                 </span>
                 <span
-                  className="text-[9px] font-semibold tracking-wider uppercase mt-0.5"
+                  className="text-[10px] font-semibold tracking-wider uppercase mt-0.5"
                   style={{ color: "#A0AEC0" }}
                 >
                   {label}
@@ -1190,7 +1190,7 @@ export default function PublicProfilePage() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="w-full max-w-lg rounded-t-3xl overflow-hidden overflow-y-auto"
-              style={{ background: "rgba(255,255,255,0.97)", maxHeight: "90vh" }}
+              style={{ background: "rgba(255,255,255,0.97)", maxHeight: "90dvh" }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Drag handle */}

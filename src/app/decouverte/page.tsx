@@ -246,7 +246,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
       {/* Gradient header */}
       <div
         className="px-4 pt-4 pb-3 flex items-start gap-3"
-        style={{ background: challenge.gradient.replace("100%)", "100%, transparent 100%)") + ", rgba(255,255,255,0.0)", backgroundImage: challenge.gradient, opacity: 1 }}
+        style={{ backgroundImage: challenge.gradient }}
       >
         <div
           className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl leading-none"

@@ -429,6 +429,8 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
     backdropFilter: "blur(12px)",
     border: "1px solid rgba(255,255,255,0.9)",
     boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+    maxHeight: "90dvh",
+    overflowY: "auto" as const,
   };
 
   return (
@@ -443,7 +445,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30 }}
         transition={{ type: "spring", damping: 26, stiffness: 280 }}
-        className="w-full max-w-sm rounded-3xl overflow-hidden"
+        className="w-full max-w-sm rounded-3xl overflow-x-hidden"
         style={CARD_STYLE}
         onClick={e => e.stopPropagation()}>
 
@@ -892,6 +894,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     backdropFilter: "blur(12px)",
     border: "1px solid rgba(255,255,255,0.9)",
     boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+    maxHeight: "90dvh",
+    overflowY: "auto" as const,
   };
 
   const adjustGrams = (delta: number) => {
@@ -910,7 +914,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30 }}
         transition={{ type: "spring", damping: 26, stiffness: 280 }}
-        className="w-full max-w-sm rounded-3xl overflow-hidden"
+        className="w-full max-w-sm rounded-3xl overflow-x-hidden"
         style={CARD_STYLE}
         onClick={e => e.stopPropagation()}>
 
@@ -1240,7 +1244,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(212,192,255,0.15)" }}>
                       <p className="text-sm font-semibold" style={{ color }}>{val}</p>
                       <p className="text-[9px] mt-0.5" style={{ color: "#A0AEC0" }}>{unit}</p>
-                      <p className="text-[8px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
+                      <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
                     </div>
                   ))}
                 </div>
@@ -1362,12 +1366,14 @@ function ManualModal({ onClose, onAdd }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20 }}
         transition={{ type: "spring", damping: 26, stiffness: 280 }}
-        className="w-full max-w-sm rounded-3xl p-5"
+        className="w-full max-w-sm rounded-3xl p-5 overflow-x-hidden"
         style={{
           background: "rgba(255,255,255,0.96)",
           backdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15)",
+          maxHeight: "90dvh",
+          overflowY: "auto",
         }}
         onClick={e => e.stopPropagation()}>
 
@@ -2216,7 +2222,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                   { label: "OBJECTIF",val: goals.calories, color: "#2D3748" },
                 ].map(({ label, val, color }) => (
                   <div key={label}>
-                    <p className="text-[8px] font-semibold tracking-widest uppercase mb-0.5"
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5"
                       style={{ color: "#A0AEC0" }}>{label}</p>
                     <p className="text-lg font-light leading-tight" style={{ color }}>
                       {val.toLocaleString("fr-FR")}
