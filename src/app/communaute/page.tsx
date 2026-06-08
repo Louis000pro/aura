@@ -2774,13 +2774,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
           style={{ height: 320, background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.15) 75%, transparent 100%)" }} />
 
 
-        {/* Bouton mute — coin haut droit */}
-        <button
-          onClick={e => { e.stopPropagation(); setMuted(m => !m); }}
-          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(6px)" }}>
-          <span className="text-white text-sm leading-none select-none">{muted ? "🔇" : "🔊"}</span>
-        </button>
+        {/* Tap sur la vidéo = activer/couper le son (pas de bouton visible) */}
 
         {/* Signalé badge */}
         <AnimatePresence>
