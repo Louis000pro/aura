@@ -3324,6 +3324,21 @@ function CommunautePageInner() {
   // Reset header collapse quand on change d'onglet
   useEffect(() => { setHeaderCollapsed(false); }, [feedTab]);
 
+  // ── Lock du scroll de la page en mode Vidéos (seul le feed scrolle) ──
+  useEffect(() => {
+    const lock = feedTab === "videos" && view === "feed";
+    if (lock) {
+      const prevBody = document.body.style.overflow;
+      const prevHtml = document.documentElement.style.overflow;
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevBody;
+        document.documentElement.style.overflow = prevHtml;
+      };
+    }
+  }, [feedTab, view]);
+
   // Charger le feed réel depuis Supabase (paginé)
   const loadFeed = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
     const PAGE_SIZE = 30;
