@@ -14,7 +14,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://aura-weld-kappa.vercel.app"),
+  metadataBase: new URL("https://vaiiya.fr"),
   title: "Vaiiya ✦",
   description: "Coach IA · Musculation · Nutrition — ton accompagnement de santé premium piloté par l'IA.",
   icons: {
