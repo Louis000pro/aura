@@ -2761,8 +2761,8 @@ function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { 
           <video ref={videoRef} src={post.media_url}
             poster={(post.performance_data as { poster?: string } | null)?.poster ?? undefined}
             className="absolute inset-0 w-full h-full object-cover"
-            muted={muted} playsInline preload={isActive || eager ? "auto" : "metadata"} loop
-            style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"] }} />
+            muted={muted} playsInline autoPlay={isActive} preload={isActive || eager ? "auto" : "metadata"} loop
+            style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"], backgroundColor: "#000" }} />
         )}
         {/* bgVideoRef — preload none, on économise la bande passante */}
         {post.media_url && (

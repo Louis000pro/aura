@@ -6,9 +6,9 @@ const nextConfig: NextConfig = {
   },
 
   // ── Performance ──────────────────────────────────────────────
-  // React Compiler : auto-mémoïsation des composants → bien moins de
-  // re-renders, feed/likes/commentaires plus fluides.
-  reactCompiler: true,
+  // NB: React Compiler désactivé — il cassait le timing de lecture des
+  // vidéos et la réactivité de l'auth sur mobile. À ré-évaluer plus tard
+  // avec des tests ciblés.
 
   // Retire les console.* en production (sauf erreurs/avertissements)
   // → bundle plus léger + moins de bruit runtime.

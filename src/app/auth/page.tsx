@@ -169,6 +169,7 @@ export default function AuthPage() {
   const [signupSent, setSignupSent] = useState(false);
   const [error, setError]           = useState<string|null>(null);
   const [particles, setParticles]   = useState<PData[]>([]);
+  const [isMobile, setIsMobile]     = useState(false);
 
   /* OTP */
   const [otpCode, setOtpCode]           = useState("");
@@ -187,7 +188,11 @@ export default function AuthPage() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if (p.get("mode") === "signup") setMode("signup");
-    setParticles(Array.from({ length: 20 }, (_, i) => ({
+    // Mobile : on coupe les animations lourdes (orbes blur(80px) + particules)
+    // qui font ramer le GPU. Desktop : effet complet.
+    const mobile = window.matchMedia("(max-width: 767px)").matches;
+    setIsMobile(mobile);
+    setParticles(Array.from({ length: mobile ? 0 : 20 }, (_, i) => ({
       id: i, x: Math.random()*100, y: Math.random()*100,
       size: 4+Math.random()*10, delay: Math.random()*3, duration: 3+Math.random()*3,
       color: i%3===0 ? "rgba(167,139,250,0.5)" : i%3===1 ? "rgba(212,168,67,0.4)" : "rgba(240,235,255,0.65)",
@@ -320,19 +325,21 @@ export default function AuthPage() {
       style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)" }}>
 
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top:"-10%",left:"-5%",width:500,height:500,background:"rgba(212,192,255,0.45)",filter:"blur(80px)" }}
-        animate={{ scale:[1,1.25,1],x:[-20,30,-20],y:[-15,20,-15] }}
-        transition={{ duration:9,repeat:Infinity,ease:"easeInOut" }} />
+        style={{ top:"-10%",left:"-5%",width:500,height:500,background:"rgba(212,192,255,0.45)",filter: isMobile ? "blur(60px)" : "blur(80px)" }}
+        animate={isMobile ? undefined : { scale:[1,1.25,1],x:[-20,30,-20],y:[-15,20,-15] }}
+        transition={isMobile ? undefined : { duration:9,repeat:Infinity,ease:"easeInOut" }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom:"-10%",right:"-5%",width:450,height:450,background:"rgba(245,230,163,0.4)",filter:"blur(80px)" }}
-        animate={{ scale:[1,1.2,1],x:[20,-25,20] }}
-        transition={{ duration:8,repeat:Infinity,ease:"easeInOut",delay:1 }} />
+        style={{ bottom:"-10%",right:"-5%",width:450,height:450,background:"rgba(245,230,163,0.4)",filter: isMobile ? "blur(60px)" : "blur(80px)" }}
+        animate={isMobile ? undefined : { scale:[1,1.2,1],x:[20,-25,20] }}
+        transition={isMobile ? undefined : { duration:8,repeat:Infinity,ease:"easeInOut",delay:1 }} />
 
       {particles.map(({ id, ...r }) => <Particle key={id} {...r} />)}
 
-      <motion.div className="absolute pointer-events-none rounded-full"
-        style={{ width:520,height:520,border:"1px solid rgba(167,139,250,0.12)" }}
-        animate={{ rotate:360 }} transition={{ duration:30,repeat:Infinity,ease:"linear" }} />
+      {!isMobile && (
+        <motion.div className="absolute pointer-events-none rounded-full"
+          style={{ width:520,height:520,border:"1px solid rgba(167,139,250,0.12)" }}
+          animate={{ rotate:360 }} transition={{ duration:30,repeat:Infinity,ease:"linear" }} />
+      )}
 
       <motion.div initial={{ opacity:0,y:36,scale:0.93 }} animate={{ opacity:1,y:0,scale:1 }}
         transition={{ duration:0.6,ease:[0.25,0.46,0.45,0.94] }}
