@@ -2730,7 +2730,10 @@ function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { 
   const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
   // ── Mobile = plein écran TikTok (boutons overlay), Desktop = carte + colonne ──
-  const [isMobile, setIsMobile] = useState(false);
+  // Init synchrone (pas de flash gris au montage de chaque vidéo au scroll)
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
+  );
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
     const update = () => setIsMobile(mq.matches);
@@ -3019,52 +3022,65 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
   const slotH = (feedHeight && feedHeight > 0) ? feedHeight : localSlotH;
   const H = slotH > 0 ? `${slotH}px` : "100dvh";
 
-  // ── Scroll : collapse header (RAF, immediate) + activeIndex (scrollend / debounce) ──
+  // ── Scroll léger : collapse header + flag "scrolling" (anti-tap accidentel) ──
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     let rafId = 0;
     let lastCollapsed = false;
-    let lastIdx = 0;
-
     let scrollStopTimer: ReturnType<typeof setTimeout>;
 
     const handleScroll = () => {
       isScrollingRef.current = true;
-
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        const st = el.scrollTop;
-        const h = slotH > 0 ? slotH : window.innerHeight;
-
-        // Collapse header dès 5% de scroll
-        const collapsed = st > h * 0.05;
+        const collapsed = el.scrollTop > 40;
         if (collapsed !== lastCollapsed) { lastCollapsed = collapsed; onScrollCollapse?.(collapsed); }
-
-        // ── Index actif calculé IMMÉDIATEMENT (pas de debounce) ──
-        // On bascule la vidéo dès qu'elle dépasse 50% de visibilité
-        const idx = Math.max(0, Math.min(Math.round(st / h), videoPosts.length - 1));
-        if (idx !== lastIdx) {
-          lastIdx = idx;
-          setActiveIndex(idx);
-          onActiveIndexChange?.(idx);
-        }
       });
-
-      // Reset du flag "scrolling" après l'arrêt du scroll (bloque le tap accidentel)
       clearTimeout(scrollStopTimer);
       scrollStopTimer = setTimeout(() => { isScrollingRef.current = false; }, 150);
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       el.removeEventListener("scroll", handleScroll);
       cancelAnimationFrame(rafId);
       clearTimeout(scrollStopTimer);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoPosts.length, slotH]);
+  }, [onScrollCollapse]);
+
+  // ── Vidéo active via IntersectionObserver (FIABLE sur mobile) ──────
+  // Robuste aux changements de hauteur (barre d'URL qui se masque, dvh
+  // variable) : on se base sur la VISIBILITÉ réelle, pas sur un calcul de
+  // pixels qui dérape. La vidéo la plus visible (>50%) devient active.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || videoPosts.length === 0) return;
+    const slots = Array.from(el.querySelectorAll("[data-slot]"));
+    if (!slots.length) return;
+
+    const ratios = new Map<number, number>();
+    let lastIdx = -1;
+
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        const idx = Number((e.target as HTMLElement).dataset.slot);
+        ratios.set(idx, e.intersectionRatio);
+      }
+      let bestIdx = lastIdx, bestRatio = 0;
+      ratios.forEach((r, i) => { if (r > bestRatio) { bestRatio = r; bestIdx = i; } });
+      if (bestRatio >= 0.5 && bestIdx !== lastIdx && bestIdx >= 0) {
+        lastIdx = bestIdx;
+        setActiveIndex(bestIdx);
+        onActiveIndexChange?.(bestIdx);
+      }
+    }, { root: el, threshold: [0, 0.25, 0.5, 0.75, 1] });
+
+    slots.forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoPosts.length]);
 
   // ── Scroll vers le post partagé depuis un DM ────────────────────
   useEffect(() => {
@@ -3129,7 +3145,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
           const dist = i - activeIndex;
           const inWindow = dist >= -1 && dist <= 2;
           return (
-            <div key={post.id} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+            <div key={post.id} data-slot={i} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always" }}>
               {inWindow ? (
                 <VideoCard
                   post={post}

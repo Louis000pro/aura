@@ -31,7 +31,7 @@ function Field({
   const [focused, setFocused] = useState(false);
   return (
     <motion.div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-      style={{ background: "rgba(255,255,255,0.8)", backdropFilter: "blur(10px)" }}
+      style={{ background: "rgba(248,246,255,0.95)" }}
       animate={{
         border: focused ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(220,215,235,0.6)",
         boxShadow: focused ? "0 4px 20px rgba(167,139,250,0.10)" : "0 2px 8px rgba(167,139,250,0.04)",
@@ -346,7 +346,7 @@ export default function AuthPage() {
         className="relative z-10 w-full max-w-md mx-4"
       >
         <div className="relative rounded-3xl px-8 py-10 overflow-hidden"
-          style={{ background:"rgba(255,255,255,0.85)",backdropFilter:"blur(12px) saturate(200%)",border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
+          style={{ background: isMobile ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.85)", backdropFilter: isMobile ? "none" : "blur(12px) saturate(200%)", border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
 
           <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
             style={{ background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.95),transparent)" }} />
