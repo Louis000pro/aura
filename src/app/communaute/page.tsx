@@ -2729,15 +2729,31 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
 
   const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
 
+  // ── Mobile = plein écran TikTok (boutons overlay), Desktop = carte + colonne ──
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Couleurs des icônes : blanc (overlay) sur mobile, sombre sur desktop
+  const icoColor = isMobile ? "#fff" : "#374151";
+  const icoShadow = isMobile ? "drop-shadow(0 1px 3px rgba(0,0,0,0.6))" : "none";
+  const labelColor = isMobile ? "rgba(255,255,255,0.95)" : "#6B7280";
+  const labelShadow = isMobile ? { textShadow: "0 1px 3px rgba(0,0,0,0.6)" } : {};
+
   return (
-    <div className="h-full flex items-center justify-center select-none"
-      style={{ gap: 16, willChange: "transform", transform: "translateZ(0)" }}>
+    <div className="h-full flex items-center justify-center select-none relative"
+      style={{ gap: isMobile ? 0 : 16, willChange: "transform", transform: "translateZ(0)" }}>
 
       {/* ══════════════════════════════════
           COLONNE VIDÉO (9:16)
       ══════════════════════════════════ */}
       <div className="relative flex-shrink-0 overflow-hidden"
-        style={{ height: "100%", aspectRatio: "9/16", maxWidth: "calc(100% - 80px)", background: "#111", borderRadius: 18, boxShadow: "0 6px 28px rgba(0,0,0,0.22)", cursor: "pointer", willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
+        style={{ height: "100%", aspectRatio: isMobile ? undefined : "9/16", width: isMobile ? "100%" : undefined, maxWidth: isMobile ? "100%" : "calc(100% - 80px)", background: "#111", borderRadius: isMobile ? 0 : 18, boxShadow: isMobile ? "none" : "0 6px 28px rgba(0,0,0,0.22)", cursor: "pointer", willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
         onClick={handleVideoTap}>
 
         {/* Vidéo principale */}
@@ -2811,7 +2827,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
         )}
 
         {/* ══ AUTEUR + CAPTION (bas gauche) ══ */}
-        <div className="absolute bottom-5 left-4 z-20 right-4" style={{ pointerEvents: "none" }}>
+        <div className="absolute bottom-5 left-4 z-20" style={{ right: isMobile ? 72 : 16, pointerEvents: "none" }}>
           <Link href={post.user_id === user?.id ? "/profil" : `/profil/${authorPseudo}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -2869,10 +2885,13 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
       </div>{/* ── fin carte vidéo ── */}
 
       {/* ══════════════════════════════════
-          COLONNE ACTIONS (droite, fond clair)
+          COLONNE ACTIONS — overlay sur mobile, colonne à droite sur desktop
       ══════════════════════════════════ */}
-      <div className="flex flex-col items-center flex-shrink-0"
-        style={{ gap: 22, width: 52, paddingBottom: 8 }}>
+      <div className={isMobile ? "absolute z-30 flex flex-col items-center" : "flex flex-col items-center flex-shrink-0"}
+        style={isMobile
+          ? { gap: 18, width: 52, right: 8, bottom: 90 }
+          : { gap: 22, width: 52, paddingBottom: 8 }}
+        onClick={e => e.stopPropagation()}>
 
         {/* Avatar auteur */}
         <Link href={post.user_id === user?.id ? "/profil" : `/profil/${authorPseudo}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
@@ -2881,10 +2900,10 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
               // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
                 className="w-11 h-11 rounded-full object-cover"
-                style={{ border: "2px solid rgba(167,139,250,0.5)", boxShadow: "0 2px 10px rgba(0,0,0,0.12)" }} />
+                style={{ border: isMobile ? "2px solid #fff" : "2px solid rgba(167,139,250,0.5)", boxShadow: "0 2px 10px rgba(0,0,0,0.25)" }} />
             ) : (
               <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: isMobile ? "2px solid #fff" : "none" }}>
                 {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
@@ -2894,51 +2913,51 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
         {/* Like */}
         <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.45 }} animate={liked ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-            <Heart size={27} strokeWidth={liked ? 0 : 1.6} fill={liked ? "#FF4458" : "none"}
-              style={{ color: liked ? "#FF4458" : "#374151", filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.4))" : "none" }} />
+            <Heart size={29} strokeWidth={liked ? 0 : 1.8} fill={liked ? "#FF4458" : "none"}
+              style={{ color: liked ? "#FF4458" : icoColor, filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.5))" : icoShadow }} />
           </motion.div>
-          <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : "#6B7280" }}>{fmtCount(likes)}</span>
+          <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : labelColor, ...labelShadow }}>{fmtCount(likes)}</span>
         </button>
 
         {/* Commentaires */}
         <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }}
           className="flex flex-col items-center gap-1 cursor-pointer">
-          <MessageCircle size={27} strokeWidth={1.6}
-            style={{ color: showComments ? "#A78BFA" : "#374151" }} />
-          <span className="text-[11px]" style={{ color: "#6B7280" }}>{fmtCount(commentCount)}</span>
+          <MessageCircle size={29} strokeWidth={1.8}
+            style={{ color: showComments ? "#A78BFA" : icoColor, filter: icoShadow }} />
+          <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(commentCount)}</span>
         </button>
 
         {/* Repost */}
         <button onClick={toggleRepost} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
-            <Repeat2 size={27} strokeWidth={1.6}
-              style={{ color: reposted ? "#34D399" : "#374151", filter: reposted ? "drop-shadow(0 0 6px rgba(52,211,153,0.4))" : "none" }} />
+            <Repeat2 size={29} strokeWidth={1.8}
+              style={{ color: reposted ? "#34D399" : icoColor, filter: reposted ? "drop-shadow(0 0 6px rgba(52,211,153,0.5))" : icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: reposted ? "#34D399" : "#6B7280" }}>{fmtCount(reposts)}</span>
+          <span className="text-[11px]" style={{ color: reposted ? "#34D399" : labelColor, ...labelShadow }}>{fmtCount(reposts)}</span>
         </button>
 
         {/* Partager */}
         <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Share2 size={25} strokeWidth={1.6} style={{ color: shared ? "#34D399" : "#374151" }} />
+            <Share2 size={27} strokeWidth={1.8} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: "#6B7280" }}>Partager</span>
+          <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>Partager</span>
         </button>
 
         {/* Bookmark */}
         <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }}>
-            <Bookmark size={25} strokeWidth={1.6}
+            <Bookmark size={27} strokeWidth={1.8}
               fill={saved ? "#F5E6A3" : "none"}
-              style={{ color: saved ? "#D4A843" : "#374151", filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.4))" : "none" }} />
+              style={{ color: saved ? "#D4A843" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : "#6B7280" }}>Sauv.</span>
+          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>Sauv.</span>
         </button>
 
         {/* Plus / settings */}
         <button onClick={() => { setShowSettings(s => !s); setShowComments(false); }}
           className="flex flex-col items-center gap-1 cursor-pointer">
-          <MoreHorizontal size={25} strokeWidth={1.6} style={{ color: "#374151" }} />
+          <MoreHorizontal size={27} strokeWidth={1.8} style={{ color: icoColor, filter: icoShadow }} />
         </button>
       </div>{/* ── fin colonne actions ── */}
 
@@ -4197,8 +4216,8 @@ function CommunautePageInner() {
             <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)", ...(feedTab === "videos" ? { flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" } : {}) }}>
 
               {/* ── Tab boutons (centrés sur la colonne vidéo, même largeur) ── */}
-              <div className="flex items-center justify-center gap-2 py-1"
-                style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66, ...(feedTab === "videos" ? {
+              <div className="flex items-center justify-center gap-2 py-1 pr-0 md:pr-[66px]"
+                style={{ maxWidth: 560, margin: "0 auto", ...(feedTab === "videos" ? {
                   flexShrink: 0,
                   maxHeight: headerCollapsed ? 0 : 60,
                   overflow: "hidden",
