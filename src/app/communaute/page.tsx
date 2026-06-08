@@ -2734,7 +2734,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
           COLONNE VIDÉO (9:16)
       ══════════════════════════════════ */}
       <div className="relative flex-shrink-0 overflow-hidden"
-        style={{ height: "calc(100% - 8px)", aspectRatio: "9/16", maxWidth: "calc(100% - 80px)", background: "#111", borderRadius: 18, boxShadow: "0 6px 28px rgba(0,0,0,0.22)", cursor: "pointer", willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
+        style={{ height: "100%", aspectRatio: "9/16", maxWidth: "calc(100% - 80px)", background: "#111", borderRadius: 18, boxShadow: "0 6px 28px rgba(0,0,0,0.22)", cursor: "pointer", willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
         onClick={handleVideoTap}>
 
         {/* Vidéo principale */}
