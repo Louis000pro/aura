@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, memo, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -2538,7 +2538,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
-function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean> }) {
+const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean> }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
@@ -2983,9 +2983,9 @@ function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { 
       </AnimatePresence>
     </div>
   );
-}
+});
 
-function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight, onCreatePost }: {
+const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight, onCreatePost }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
@@ -3189,7 +3189,7 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
       </AnimatePresence>
     </div>
   );
-}
+});
 
 function CommunautePageInner() {
   const { user } = useAuth();
@@ -3478,6 +3478,18 @@ function CommunautePageInner() {
   }, [user]);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
+
+  // Callbacks stables passés à TikTokFeed → préserve sa mémoïsation (memo)
+  const handleHashtagClick    = useCallback((tag: string) => setHashtagVideosTag(tag), []);
+  const handleScrollCollapse  = useCallback((collapsed: boolean) => setHeaderCollapsed(collapsed), []);
+  const handleInitialScrolled = useCallback(() => setHighlightVideoId(null), []);
+  const handleCreatePost      = useCallback(() => setShowCreatePost(true), []);
+  const handleActiveIndexChange = useCallback((idx: number) => {
+    const total = sortedFeedPosts.filter((p) => p.media_type === "video" && p.media_url).length;
+    if (idx >= total - 3 && hasMoreFeed && !feedLoading && !feedLoadingMore) {
+      void loadFeed({ append: true });
+    }
+  }, [sortedFeedPosts, hasMoreFeed, feedLoading, feedLoadingMore, loadFeed]);
 
   // Realtime : nouveau post dans le feed
   useEffect(() => {
@@ -4325,18 +4337,12 @@ function CommunautePageInner() {
                   <TikTokFeed
                     posts={sortedFeedPosts}
                     initialPostId={highlightVideoId}
-                    onInitialScrolled={() => setHighlightVideoId(null)}
-                    onHashtagClick={(tag) => setHashtagVideosTag(tag)}
-                    onScrollCollapse={(collapsed) => setHeaderCollapsed(collapsed)}
-                    onActiveIndexChange={(idx) => {
-                      // Chargement progressif : précharge la page suivante 3 vidéos avant la fin
-                      const total = sortedFeedPosts.filter((p) => p.media_type === "video" && p.media_url).length;
-                      if (idx >= total - 3 && hasMoreFeed && !feedLoading && !feedLoadingMore) {
-                        void loadFeed({ append: true });
-                      }
-                    }}
+                    onInitialScrolled={handleInitialScrolled}
+                    onHashtagClick={handleHashtagClick}
+                    onScrollCollapse={handleScrollCollapse}
+                    onActiveIndexChange={handleActiveIndexChange}
                     feedHeight={feedContainerH}
-                    onCreatePost={() => setShowCreatePost(true)}
+                    onCreatePost={handleCreatePost}
                   />
                 </div>
               )}
