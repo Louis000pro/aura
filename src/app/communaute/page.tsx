@@ -2538,7 +2538,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
-function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: RealPost; isActive: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean> }) {
+function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean> }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
@@ -2760,7 +2760,7 @@ function VideoCard({ post, isActive, onHashtagClick, isScrollingRef }: { post: R
         {post.media_url && (
           <video ref={videoRef} src={post.media_url}
             className="absolute inset-0 w-full h-full object-cover"
-            muted={muted} playsInline preload={isActive ? "auto" : "metadata"} loop
+            muted={muted} playsInline preload={isActive || eager ? "auto" : "metadata"} loop
             style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"] }} />
         )}
         {/* bgVideoRef — preload none, on économise la bande passante */}
@@ -3121,11 +3121,26 @@ function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, o
           willChange: "scroll-position",
           transform: "translateZ(0)",
         }}>
-        {videoPosts.map((post, i) => (
-          <div key={post.id} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always" }}>
-            <VideoCard post={post} isActive={i === activeIndex} onHashtagClick={onHashtagClick} isScrollingRef={isScrollingRef} />
-          </div>
-        ))}
+        {videoPosts.map((post, i) => {
+          // ── Virtualisation : ne monter que les vidéos proches de l'écran ──
+          // Fenêtre : précédente (1), active, et 2 suivantes (préchargées).
+          // Hors fenêtre → placeholder vide (même hauteur) pour préserver scroll + snap.
+          const dist = i - activeIndex;
+          const inWindow = dist >= -1 && dist <= 2;
+          return (
+            <div key={post.id} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+              {inWindow ? (
+                <VideoCard
+                  post={post}
+                  isActive={i === activeIndex}
+                  eager={dist === 1}
+                  onHashtagClick={onHashtagClick}
+                  isScrollingRef={isScrollingRef}
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       {/* Bouton retour en haut — visible dès la 2ème vidéo */}
@@ -4296,6 +4311,13 @@ function CommunautePageInner() {
                     onInitialScrolled={() => setHighlightVideoId(null)}
                     onHashtagClick={(tag) => setHashtagVideosTag(tag)}
                     onScrollCollapse={(collapsed) => setHeaderCollapsed(collapsed)}
+                    onActiveIndexChange={(idx) => {
+                      // Chargement progressif : précharge la page suivante 3 vidéos avant la fin
+                      const total = sortedFeedPosts.filter((p) => p.media_type === "video" && p.media_url).length;
+                      if (idx >= total - 3 && hasMoreFeed && !feedLoading && !feedLoadingMore) {
+                        void loadFeed({ append: true });
+                      }
+                    }}
                     feedHeight={feedContainerH}
                     onCreatePost={() => setShowCreatePost(true)}
                   />
