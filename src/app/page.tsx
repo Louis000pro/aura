@@ -985,7 +985,7 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[214px]"
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[250px]"
         style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
@@ -1005,8 +1005,8 @@ function Dashboard() {
           <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
         </div>
 
-        {/* VOTD carte horizontale large — vidéo à gauche + texte à droite */}
-        <div className="absolute inset-x-4 bottom-3 flex justify-center">
+        {/* VOTD carte horizontale large — vidéo à gauche + texte à droite (centrée verticalement) */}
+        <div className="absolute inset-x-4 inset-y-0 flex items-center justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
             className="relative w-full pointer-events-none"
