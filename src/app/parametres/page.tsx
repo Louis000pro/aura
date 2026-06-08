@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
 import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useTheme } from "@/hooks/useTheme";
@@ -783,8 +784,8 @@ export default function ParametresPage() {
         <Section title="Légal & confidentialité" />
         <div className="flex flex-col gap-2">
           {[
-            { label: "Conditions d'utilisation", href: "/legal/cgu" },
-            { label: "Politique de confidentialité", href: "/legal/privacy" },
+            { label: "Mentions légales", href: "/mentions-legales" },
+            { label: "Politique de confidentialité", href: "/confidentialite" },
           ].map(({ label, href }) => (
             <Row
               key={label}
@@ -820,7 +821,12 @@ export default function ParametresPage() {
           />
         </div>
 
-        <p className="text-center text-[10px] font-light mt-8" style={{ color: "#C4C9D4" }}>
+        <div className="flex items-center justify-center gap-2 mt-8 text-[11px] font-light" style={{ color: "#A0AEC0" }}>
+          <Link href="/mentions-legales" className="hover:underline" style={{ color: "#A78BFA" }}>Mentions légales</Link>
+          <span style={{ color: "#C4C9D4" }}>·</span>
+          <Link href="/confidentialite" className="hover:underline" style={{ color: "#A78BFA" }}>Politique de confidentialité</Link>
+        </div>
+        <p className="text-center text-[10px] font-light mt-3" style={{ color: "#C4C9D4" }}>
           Vaiiya v1.0 · Fait avec ✦ pour ta santé
         </p>
       </motion.div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff, ArrowRight, Sparkles,
@@ -624,6 +625,13 @@ export default function AuthPage() {
             </button>
             {mode==="login" && <>{" · "}<button onClick={() => setForgotMode(v=>!v)}
               className="font-medium cursor-pointer hover:underline" style={{ color:"#A78BFA" }}>Mot de passe oublié ?</button></>}
+          </p>
+
+          <p className="text-center text-[10px] mt-4 font-light leading-relaxed" style={{ color:"#A0AEC0" }}>
+            En continuant, tu acceptes nos{" "}
+            <Link href="/mentions-legales" className="font-medium hover:underline" style={{ color:"#A78BFA" }}>Mentions légales</Link>
+            {" "}et notre{" "}
+            <Link href="/confidentialite" className="font-medium hover:underline" style={{ color:"#A78BFA" }}>Politique de confidentialité</Link>.
           </p>
         </div>
       </motion.div>

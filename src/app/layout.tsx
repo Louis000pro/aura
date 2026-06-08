@@ -14,8 +14,9 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://aura-weld-kappa.vercel.app"),
   title: "Vaiiya ✦",
-  description: "Un accompagnement de santé premium piloté par l'IA multimodale.",
+  description: "Coach IA · Musculation · Nutrition — ton accompagnement de santé premium piloté par l'IA.",
   icons: {
     icon: "/favicon.ico",
     apple: "/icons/icon-192.png",
@@ -25,6 +26,27 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Vaiiya",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Vaiiya",
+    title: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    description: "Rejoins Vaiiya : ton coach fitness & nutrition piloté par l'IA. Partage tes performances, suis ta progression, et progresse avec ta communauté.",
+    locale: "fr_FR",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Vaiiya — Coach IA · Musculation · Nutrition",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    description: "Ton coach fitness & nutrition piloté par l'IA. Rejoins la communauté Vaiiya.",
+    images: ["/og-image.png"],
   },
 };
 

@@ -1,0 +1,160 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+
+/* ── Section block ──────────────────────────────────────── */
+function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-7">
+      <h2 className="text-base font-semibold mb-2.5" style={{ color: "#2D3748" }}>{title}</h2>
+      <div
+        className="rounded-3xl px-5 py-5 text-sm font-light leading-relaxed space-y-2.5"
+        style={{
+          background: "rgba(255,255,255,0.7)",
+          border: "1px solid rgba(255,255,255,0.85)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "0 2px 12px rgba(167,139,250,0.05), inset 0 1px 0 rgba(255,255,255,0.9)",
+          color: "#4A5568",
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
+export default function MentionsLegalesPage() {
+  return (
+    <div className="min-h-screen px-4 md:px-8 pt-8 pb-28 max-w-3xl mx-auto">
+      {/* Back button */}
+      <Link href="/parametres">
+        <motion.div
+          whileHover={{ x: -2 }}
+          whileTap={{ scale: 0.96 }}
+          className="inline-flex items-center gap-2 mb-6 px-4 py-2.5 rounded-2xl cursor-pointer"
+          style={{
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(255,255,255,0.85)",
+            backdropFilter: "blur(12px)",
+            boxShadow: "0 2px 8px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+            color: "#718096",
+          }}
+        >
+          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "#A78BFA" }} />
+          <span className="text-sm font-medium">Retour</span>
+        </motion.div>
+      </Link>
+
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
+        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Mentions légales</h1>
+        <p className="text-sm font-light mt-1.5" style={{ color: "#A0AEC0" }}>
+          Informations légales relatives au site et à l&apos;application Vaiiya.
+        </p>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+
+        <LegalSection title="Éditeur du site">
+          <p>
+            Le site et l&apos;application <strong>Vaiiya</strong> sont édités par une micro-entreprise
+            immatriculée en France.
+          </p>
+          <ul className="list-none space-y-1.5 mt-2">
+            <li><strong>Dénomination :</strong> Vaiiya — Micro-entreprise</li>
+            {/* À COMPLÉTER : nom et prénom du dirigeant (auto-entrepreneur) */}
+            <li><strong>Dirigeant :</strong> [NOM PRÉNOM DU DIRIGEANT]</li>
+            {/* À COMPLÉTER : numéro SIRET de la micro-entreprise une fois immatriculée */}
+            <li><strong>SIRET :</strong> [NUMÉRO SIRET]</li>
+            {/* À COMPLÉTER : adresse complète du siège / de l'entrepreneur */}
+            <li><strong>Adresse :</strong> [ADRESSE]</li>
+            {/* À COMPLÉTER : adresse email de contact officielle */}
+            <li><strong>Contact :</strong> [EMAIL DE CONTACT]</li>
+          </ul>
+          <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>
+            En tant que micro-entreprise, l&apos;éditeur n&apos;est pas assujetti à la TVA (article 293 B du CGI),
+            sauf mention contraire sur les factures.
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Directeur de la publication">
+          {/* À COMPLÉTER : nom et prénom du directeur de la publication (généralement le dirigeant) */}
+          <p>Le directeur de la publication est <strong>[NOM PRÉNOM]</strong>.</p>
+        </LegalSection>
+
+        <LegalSection title="Hébergement">
+          <p>Le site est hébergé par :</p>
+          <ul className="list-none space-y-1.5 mt-2">
+            <li><strong>Vercel Inc.</strong></li>
+            <li>340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis</li>
+            <li>
+              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "#A78BFA" }} className="hover:underline">
+                vercel.com
+              </a>
+            </li>
+          </ul>
+        </LegalSection>
+
+        <LegalSection title="Propriété intellectuelle">
+          <p>
+            L&apos;ensemble des contenus présents sur le site et l&apos;application Vaiiya (structure, textes,
+            graphismes, interface, logo, ainsi que la marque <strong>Vaiiya</strong>) sont la propriété
+            exclusive de l&apos;éditeur ou de ses partenaires et sont protégés par les lois françaises et
+            internationales relatives à la propriété intellectuelle.
+          </p>
+          <p>
+            Toute reproduction, représentation, modification ou exploitation, totale ou partielle, de ces
+            éléments, sans l&apos;autorisation écrite préalable de l&apos;éditeur, est strictement interdite et
+            constitue une contrefaçon.
+          </p>
+          <p>
+            Les utilisateurs <strong>conservent l&apos;intégralité des droits</strong> sur les contenus qu&apos;ils
+            publient (posts, commentaires, photos, stories, etc.). En publiant un contenu sur Vaiiya,
+            l&apos;utilisateur accorde toutefois à l&apos;éditeur une licence non exclusive et gratuite d&apos;affichage
+            et de diffusion de ce contenu, dans le seul but de faire fonctionner le service (affichage du
+            feed social, des profils et des fonctionnalités associées).
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Responsabilité">
+          <p>
+            L&apos;éditeur s&apos;efforce d&apos;assurer l&apos;exactitude et la mise à jour des informations diffusées sur
+            le site, mais ne saurait garantir l&apos;absence totale d&apos;erreurs ou d&apos;omissions.
+          </p>
+          <p>
+            Les contenus, conseils sportifs et nutritionnels générés par l&apos;intelligence artificielle sont
+            fournis à titre informatif et ne constituent en aucun cas un avis médical. Ils ne sauraient se
+            substituer à l&apos;avis d&apos;un professionnel de santé. L&apos;utilisateur reste seul responsable de
+            l&apos;usage qu&apos;il fait de ces informations.
+          </p>
+          <p>
+            L&apos;éditeur ne saurait être tenu responsable des dommages directs ou indirects résultant de
+            l&apos;utilisation du service, d&apos;une indisponibilité temporaire, ou des contenus publiés par les
+            utilisateurs.
+          </p>
+        </LegalSection>
+
+        <LegalSection title="Contact">
+          <p>
+            Pour toute question relative au site, à son fonctionnement ou aux présentes mentions légales,
+            vous pouvez nous écrire à l&apos;adresse suivante :
+            {/* À COMPLÉTER : adresse email de contact officielle */}
+            {" "}<strong>[EMAIL DE CONTACT]</strong>.
+          </p>
+          <p>
+            Pour les questions relatives à vos données personnelles, consultez notre{" "}
+            <Link href="/confidentialite" style={{ color: "#A78BFA" }} className="hover:underline">
+              Politique de confidentialité
+            </Link>.
+          </p>
+        </LegalSection>
+
+        <p className="text-center text-[11px] font-light mt-8" style={{ color: "#C4C9D4" }}>
+          Dernière mise à jour : Juin 2026 · Vaiiya
+        </p>
+      </motion.div>
+    </div>
+  );
+}
