@@ -2759,6 +2759,7 @@ function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { 
         {/* Vidéo principale */}
         {post.media_url && (
           <video ref={videoRef} src={post.media_url}
+            poster={(post.performance_data as { poster?: string } | null)?.poster ?? undefined}
             className="absolute inset-0 w-full h-full object-cover"
             muted={muted} playsInline preload={isActive || eager ? "auto" : "metadata"} loop
             style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"] }} />
