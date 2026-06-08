@@ -3976,7 +3976,7 @@ function CommunautePageInner() {
       }`}
       style={
         immersiveVideo
-          ? { bottom: "calc(84px + env(safe-area-inset-bottom))" }
+          ? { height: "calc(100dvh - 84px - env(safe-area-inset-bottom))" }
           : feedTab === "videos" && !immersiveVideo
             ? {
                 paddingTop: headerCollapsed ? 0 : 32,
