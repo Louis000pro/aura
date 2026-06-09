@@ -11,6 +11,67 @@ const AnimatedAvatar = dynamic(() => import("@/components/AnimatedAvatar"), { ss
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
+/* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
+function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "none">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    setState("loading"); setVideoId(null);
+    fetch(`/api/exercise-video?q=${encodeURIComponent(exerciseName)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d.videoId) { setVideoId(d.videoId); setState("ready"); }
+        else setState("none");
+      })
+      .catch(() => { if (!cancelled) setState("none"); });
+    return () => { cancelled = true; };
+  }, [exerciseName]);
+
+  const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(exerciseName + " technique")}`;
+
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.12)" }}>
+      <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-md" style={{ background: "#FF0000" }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
+        </span>
+        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Référence humaine</p>
+      </div>
+      {state === "loading" && (
+        <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.06)" }}>
+          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} />
+        </div>
+      )}
+      {state === "ready" && videoId && (
+        <div className="aspect-video w-full">
+          <iframe
+            className="w-full h-full"
+            src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
+            title={`Démo ${exerciseName}`}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
+      {state === "none" && (
+        <a href={ytSearch} target="_blank" rel="noopener noreferrer"
+          className="aspect-video w-full flex flex-col items-center justify-center gap-2 text-center px-4"
+          style={{ background: "rgba(167,139,250,0.06)", color: "#A78BFA" }}>
+          <span className="inline-flex items-center justify-center w-10 h-10 rounded-full" style={{ background: "#FF0000" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
+          </span>
+          <span className="text-xs font-semibold">Voir la démo sur YouTube</span>
+        </a>
+      )}
+    </div>
+  );
+}
+
 /* ─── Types ──────────────────────────────────────────────── */
 export interface Exercise {
   name: string;
@@ -783,6 +844,9 @@ export default function WorkoutGuideModal({
                         size={148}
                       />
                     </div>
+
+                    {/* Référence humaine — vidéo YouTube de démo */}
+                    <ExerciseVideo exerciseName={cur.name} />
 
                     {/* Benefit */}
                     <div className="rounded-2xl p-4"
