@@ -53,9 +53,9 @@ export default function SplashIntro() {
           <div className="relative flex flex-col items-center">
             {/* Logo */}
             <motion.img
-              src="/icons/icon-512.png"
+              src="/logo-vaiiya.png"
               alt="Vaiiya"
-              className="w-28 h-28 object-contain"
+              className="w-40 h-40 object-contain"
               initial={{ scale: 0.55, opacity: 0, y: 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ type: "spring", damping: 12, stiffness: 180, delay: 0.05 }}
