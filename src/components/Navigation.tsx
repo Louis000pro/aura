@@ -66,6 +66,13 @@ export default function Navigation() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  /* ── Préchargement des routes principales → navigation instantanée ── */
+  useEffect(() => {
+    ["/", "/communaute", "/progression", "/nutrition", "/profil", "/decouverte"].forEach((r) => {
+      try { router.prefetch(r); } catch { /* ignore */ }
+    });
+  }, [router]);
+
   if (pathname === "/auth") return null;
   if (!user && pathname === "/") return null;
 
@@ -208,7 +215,7 @@ export default function Navigation() {
 
       {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="lg-strong lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
+        <div className="nav-glass lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
             {/* 1. Accueil */}
             <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile />
@@ -239,7 +246,7 @@ export default function Navigation() {
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="lg-strong lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
+          className="nav-glass lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
         >
           {/* Icônes de navigation */}
           {TABS.map(({ href, label, icon, sub }) => (
