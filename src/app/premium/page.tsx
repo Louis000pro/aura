@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Sparkles, Crown, Star } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, formatPrice, type PlanId } from "@/lib/plans";
+import PremiumCelebration from "@/components/PremiumCelebration";
 
 const ICONS: Record<PlanId, React.ReactNode> = {
   free: <Sparkles size={20} strokeWidth={1.8} />,
@@ -171,42 +172,7 @@ function PremiumInner() {
       {/* ── Célébration au retour de paiement ── */}
       <AnimatePresence>
         {celebrate && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center px-6"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ background: "rgba(45,33,80,0.45)", backdropFilter: "blur(8px)" }}
-            onClick={() => { setCelebrate(false); router.replace("/premium"); }}>
-            <motion.div onClick={(e) => e.stopPropagation()}
-              initial={{ scale: 0.8, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }} transition={{ type: "spring", damping: 18, stiffness: 260 }}
-              className="relative w-full max-w-sm rounded-[28px] px-8 py-10 text-center overflow-hidden"
-              style={{ background: "linear-gradient(160deg,#fff,#f6f1ff)", boxShadow: "0 30px 80px -16px rgba(124,92,250,0.5)" }}>
-
-              {/* sparkles */}
-              {!isMobile && [...Array(10)].map((_, i) => (
-                <motion.div key={i} className="absolute rounded-full"
-                  style={{ width: 6, height: 6, top: "50%", left: "50%", background: ["#A78BFA","#F5E6A3","#FFB088","#C4A8FF"][i % 4] }}
-                  initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-                  animate={{ scale: [0, 1, 0], x: Math.cos((i / 10) * 6.28) * 120, y: Math.sin((i / 10) * 6.28) * 120, opacity: [1, 1, 0] }}
-                  transition={{ duration: 1.1, delay: 0.15, ease: "easeOut" }} />
-              ))}
-
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 12, delay: 0.1 }}
-                className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-5"
-                style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 12px 30px rgba(124,92,250,0.45)" }}>
-                <Crown size={38} strokeWidth={1.8} color="#fff" />
-              </motion.div>
-
-              <h2 className="text-2xl font-black mb-2" style={{ color: "#2D2150" }}>Bienvenue dans Premium ✦</h2>
-              <p className="text-sm font-light mb-6" style={{ color: "#7C6BAA" }}>
-                Ton essai de 7 jours est lancé. Coach IA illimité, contenus exclusifs, zéro pub — tout est débloqué. 🎉
-              </p>
-              <motion.button whileTap={{ scale: 0.96 }} onClick={() => { setCelebrate(false); router.replace("/"); }}
-                className="w-full py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 8px 24px rgba(167,139,250,0.35)" }}>
-                C'est parti 🚀
-              </motion.button>
-            </motion.div>
-          </motion.div>
+          <PremiumCelebration onClose={() => { setCelebrate(false); router.replace("/"); }} />
         )}
       </AnimatePresence>
     </div>
