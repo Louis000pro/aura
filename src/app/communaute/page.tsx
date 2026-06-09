@@ -2860,7 +2860,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         )}
 
         {/* ══ AUTEUR + CAPTION (bas gauche) ══ */}
-        <div className="absolute bottom-5 left-4 z-20" style={{ right: isMobile ? 72 : 16, pointerEvents: "none" }}>
+        <div className="absolute left-4 z-20" style={{ right: isMobile ? 72 : 16, bottom: isMobile ? "calc(96px + env(safe-area-inset-bottom))" : 20, pointerEvents: "none" }}>
           <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -2922,7 +2922,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       ══════════════════════════════════ */}
       <div className={isMobile ? "absolute z-30 flex flex-col items-center" : "flex flex-col items-center flex-shrink-0"}
         style={isMobile
-          ? { gap: 18, width: 52, right: 8, bottom: 90 }
+          ? { gap: 18, width: 52, right: 8, bottom: "calc(108px + env(safe-area-inset-bottom))" }
           : { gap: 22, width: 52, paddingBottom: 8 }}
         onClick={e => e.stopPropagation()}>
 
@@ -4074,7 +4074,7 @@ function CommunautePageInner() {
       }`}
       style={
         immersiveVideo
-          ? { height: "calc(100dvh - 84px - env(safe-area-inset-bottom))" }
+          ? { height: "100dvh" }
           : feedTab === "videos" && !immersiveVideo
             ? {
                 paddingTop: headerCollapsed ? 0 : 32,
