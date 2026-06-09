@@ -32,6 +32,9 @@ export async function ensureProfileForUser(userId: string): Promise<void> {
   } catch { /* ignore */ }
 
   if (!pseudo) pseudo = `user_${userId.slice(0, 6)}`;
+  // Normalise les espaces (pas de pseudo avec espaces parasites)
+  pseudo = pseudo.replace(/\s+/g, " ").trim();
+  if (fullName) fullName = fullName.replace(/\s+/g, " ").trim();
 
   // Insert avec gestion du conflit de pseudo (suffixer)
   let insertPseudo = pseudo;

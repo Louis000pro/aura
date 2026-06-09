@@ -140,6 +140,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp: AuthCtx["signUp"] = async ({ pseudo, name, lastName, email, password }) => {
+    // Normalise les espaces (évite les pseudos "  La France  " qui cassent les URLs/profils)
+    const clean = (s: string) => s.replace(/\s+/g, " ").trim();
+    pseudo = clean(pseudo); name = clean(name); lastName = clean(lastName);
     const { data, error } = await supabase.auth.signUp({
       email, password,
       options: {
