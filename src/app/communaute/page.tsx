@@ -4385,7 +4385,7 @@ function CommunautePageInner() {
               {/* ── Toggle algo / récents (Posts uniquement) — même cadrage que les tabs ── */}
               {feedTab === "posts" && !feedLoading && (
                 <div className="flex items-center justify-center gap-2 py-1"
-                  style={{ maxWidth: 560, margin: "0 auto", paddingRight: 66 }}>
+                  style={{ maxWidth: 560, margin: "0 auto" }}>
                   {(["algo", "recent"] as const).map((mode) => (
                     <motion.button
                       key={mode}
@@ -4395,9 +4395,7 @@ function CommunautePageInner() {
                       style={{
                         width: 105,
                         ...(feedMode === mode
-                          ? mode === "algo"
-                            ? { background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "#fff", boxShadow: "0 2px 12px rgba(99,102,241,0.35)" }
-                            : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
+                          ? { background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", color: "#fff", boxShadow: "0 2px 12px rgba(124,92,250,0.35)" }
                           : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
                       }}
                     >

@@ -28,6 +28,7 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    background-color: #F5F3FF; /* évite le flash blanc au lancement (PWA) */
   }
 
   body {

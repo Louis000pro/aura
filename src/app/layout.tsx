@@ -65,7 +65,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr" translate="no" className={`${geist.variable} h-full antialiased notranslate`}>
+    <html lang="fr" translate="no" className={`${geist.variable} h-full antialiased notranslate`} style={{ backgroundColor: "#F5F3FF" }}>
       {/* Inline script runs before first paint — prevents dark mode flash */}
       <head>
         {/* Empêche les extensions de traduction (Google Translate, Opera) de casser React */}
