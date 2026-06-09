@@ -2630,8 +2630,21 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         }
       });
     };
+    // Joue dès que la vidéo a des données si elle est active (montage / swipe d'onglet)
+    const tryPlayWhenReady = () => {
+      if (isActiveRef.current && !userPausedRef.current && video.paused) {
+        const p = video.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+    };
     video.addEventListener("pause", onPause);
-    return () => video.removeEventListener("pause", onPause);
+    video.addEventListener("loadeddata", tryPlayWhenReady);
+    video.addEventListener("canplay", tryPlayWhenReady);
+    return () => {
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("loadeddata", tryPlayWhenReady);
+      video.removeEventListener("canplay", tryPlayWhenReady);
+    };
   }, []);
 
   // Playback rate
@@ -4594,7 +4607,7 @@ function CommunautePageInner() {
                   {post.media_url && (
                     <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
                       {post.media_type === "video"
-                        ? <VideoPlayer src={post.media_url} maxHeight={380} controls muted />
+                        ? <VideoPlayer src={post.media_url} maxHeight={380} autoPlayOnScroll loop controls={false} />
                         // eslint-disable-next-line @next/next/no-img-element
                         : <img loading="lazy" decoding="async" src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
                       }

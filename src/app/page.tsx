@@ -924,7 +924,7 @@ function Dashboard() {
         style={{ height: "28%" }}
       >
         {/* Header en haut : greeting + avatar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 pt-6">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5" style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}>
           <div className="text-left">
             <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "#7C6BAA" }}>{greeting}</p>
             <h1 className="text-xl font-light mt-0.5" style={{ color: "#1A1535" }}>

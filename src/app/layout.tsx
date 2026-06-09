@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent", // contenu plein écran sous la barre d'état
     title: "Vaiiya",
   },
   openGraph: {
@@ -83,6 +83,8 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('aura-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();` }} />
       </head>
       <body className="min-h-full notranslate" translate="no">
+        {/* Voile léger derrière la barre d'état (lisibilité de l'horloge en mode plein écran) */}
+        <div aria-hidden style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(45,33,80,0.18), transparent)" }} />
         <SplashIntro />
         <AuthProvider>
           <Navigation />

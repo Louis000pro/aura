@@ -14,7 +14,7 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   return (
     <main
       className={noNav ? "min-h-screen" : "md:pb-0 md:pl-[88px] min-h-screen"}
-      style={noNav ? {} : { paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
+      style={noNav ? {} : { paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
     >
       {children}
     </main>
