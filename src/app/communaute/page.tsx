@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect, useCallback, memo, Suspense } fro
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
@@ -3274,9 +3274,27 @@ function CommunautePageInner() {
   const feedPageRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
-  const [feedTab, setFeedTab] = useState<"posts" | "videos">("videos");
+  const [feedTab, setFeedTab] = useState<"posts" | "videos">("posts");
   // Mode vidéo immersif plein écran sur mobile (dépend de feedTab/view déclarés au-dessus)
   const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
+
+  // ── Swipe horizontal entre Publications (gauche) et Vidéos (droite) ──
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const onFeedTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    swipeStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onFeedTouchEnd = (e: React.TouchEvent) => {
+    if (!swipeStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStart.current.x;
+    const dy = t.clientY - swipeStart.current.y;
+    swipeStart.current = null;
+    // Swipe clairement horizontal uniquement (ne gêne pas le scroll vertical)
+    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    if (dx < 0 && feedTab === "posts") setFeedTab("videos");      // doigt vers la gauche → Vidéos
+    else if (dx > 0 && feedTab === "videos") setFeedTab("posts"); // doigt vers la droite → Publications
+  };
   const [highlightVideoId, setHighlightVideoId] = useState<string | null>(null);
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
@@ -4136,8 +4154,39 @@ function CommunautePageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onTouchStart={onFeedTouchStart}
+            onTouchEnd={onFeedTouchEnd}
             className={feedTab === "videos" ? "flex flex-col flex-1 min-h-0 overflow-hidden" : "flex flex-col gap-5 pb-4"}
           >
+            {/* ── Indicateur swipe vers Vidéos (sur Publications) ── */}
+            {feedTab === "posts" && (
+              <motion.button
+                onClick={() => setFeedTab("videos")}
+                aria-label="Voir les vidéos"
+                className="fixed top-1/2 -translate-y-1/2 right-2 z-40 flex items-center gap-1 pl-3 pr-2 py-2 rounded-full cursor-pointer"
+                style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 6px 20px rgba(124,92,250,0.4)" }}
+                initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: [6, 0, 6] }}
+                transition={{ opacity: { duration: 0.4 }, x: { duration: 1.6, repeat: Infinity, ease: "easeInOut" } }}
+              >
+                <span className="text-[11px] font-bold text-white">Vidéos</span>
+                <ChevronRight size={16} strokeWidth={2.4} color="#fff" />
+              </motion.button>
+            )}
+            {/* ── Retour vers Publications (sur Vidéos) ── */}
+            {feedTab === "videos" && view === "feed" && (
+              <motion.button
+                onClick={() => setFeedTab("posts")}
+                aria-label="Voir les publications"
+                className="fixed top-1/2 -translate-y-1/2 left-2 md:left-[96px] z-40 flex items-center gap-1 pl-2 pr-3 py-2 rounded-full cursor-pointer"
+                style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}
+                initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <ChevronLeft size={16} strokeWidth={2.4} color="#fff" />
+                <span className="text-[11px] font-bold text-white">Publications</span>
+              </motion.button>
+            )}
+
             {/* Stories — cachées en mode immersif mobile */}
             <div className={immersiveVideo ? "hidden" : ""} style={feedTab === "videos" && !immersiveVideo ? {
               maxHeight: headerCollapsed ? 0 : 150,
@@ -4321,35 +4370,6 @@ function CommunautePageInner() {
                 </div>
               )}
 
-              {/* ── Tab boutons (overlay flottant en haut sur mobile immersif) ── */}
-              <div className={`flex items-center justify-center gap-2 py-1 ${immersiveVideo ? "absolute left-1/2 -translate-x-1/2 z-30" : "pr-0 md:pr-[66px]"}`}
-                style={immersiveVideo
-                  ? { top: "calc(env(safe-area-inset-top) + 10px)" }
-                  : { maxWidth: 560, margin: "0 auto", ...(feedTab === "videos" ? {
-                  flexShrink: 0,
-                  maxHeight: headerCollapsed ? 0 : 60,
-                  overflow: "hidden",
-                  opacity: headerCollapsed ? 0 : 1,
-                  pointerEvents: headerCollapsed ? "none" : "auto",
-                  transition: "max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease",
-                } : {}) }}>
-                {([
-                  { key: "videos" as const, label: "🎬 Vidéos" },
-                  { key: "posts" as const, label: "📝 Publications" },
-                ]).map(({ key, label }) => (
-                  <motion.button key={key} whileTap={{ scale: 0.94 }}
-                    onClick={() => setFeedTab(key)}
-                    className="py-2 rounded-2xl text-xs font-semibold transition-all text-center"
-                    style={{
-                      width: 130,
-                      ...(feedTab === key
-                        ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#3D2F6B", boxShadow: "0 2px 10px rgba(167,139,250,0.25)" }
-                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
-                    }}>
-                    {label}
-                  </motion.button>
-                ))}
-              </div>
 
               {/* ── Toggle algo / récents (Posts uniquement) — même cadrage que les tabs ── */}
               {feedTab === "posts" && !feedLoading && (
