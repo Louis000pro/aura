@@ -10,11 +10,13 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   const isAuth = pathname === "/auth";
   const isLanding = pathname === "/" && !user && !isLoading;
   const noNav = isAuth || isLanding;
+  // Communauté gère son propre plein écran (feed vidéo immersif) → aucun padding global
+  const fullBleed = noNav || pathname === "/communaute";
 
   return (
     <main
       className={noNav ? "min-h-screen" : "md:pb-0 md:pl-[88px] min-h-screen"}
-      style={noNav ? {} : { paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
+      style={fullBleed ? {} : { paddingTop: "env(safe-area-inset-top)", paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}
     >
       {children}
     </main>
