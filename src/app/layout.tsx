@@ -6,6 +6,8 @@ import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
 import PWARegister from "@/components/PWARegister";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +78,8 @@ export default function RootLayout({
           <OnboardingWrapper />
           <PWARegister />
         </AuthProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

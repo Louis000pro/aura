@@ -30,3 +30,5 @@ desktop.ini
 # Vercel
 .vercel
 seed_videos/
+.vidtmp/
+.vidtmp2/

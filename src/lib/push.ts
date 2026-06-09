@@ -31,13 +31,28 @@ export async function subscribeToPush(userId: string): Promise<"granted" | "deni
     if (perm !== "granted") return "denied";
 
     const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    let sub = existing;
+    const currentKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    let sub = await reg.pushManager.getSubscription();
+
+    // Si une souscription existe mais avec une ANCIENNE clé VAPID (rotation),
+    // elle est invalide → on la révoque et on re-souscrit.
+    if (sub) {
+      const raw = sub.options?.applicationServerKey;
+      const subKey = raw ? new Uint8Array(raw as ArrayBuffer) : null;
+      const matches =
+        subKey &&
+        subKey.length === currentKey.length &&
+        subKey.every((b, i) => b === currentKey[i]);
+      if (!matches) {
+        try { await sub.unsubscribe(); } catch { /* ignore */ }
+        sub = null;
+      }
+    }
 
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+        applicationServerKey: currentKey as BufferSource,
       });
     }
 
