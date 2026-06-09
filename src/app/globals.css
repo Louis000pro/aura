@@ -48,14 +48,14 @@
 
   /* Liquid glass — barres de navigation (frosté translucide, style iOS/Instagram) */
   .nav-glass {
-    /* Verre sombre frosté (style TikTok) : icônes blanches visibles sur TOUT fond */
-    background: linear-gradient(135deg, rgba(28,24,48,0.46) 0%, rgba(18,14,36,0.34) 100%);
-    backdrop-filter: blur(30px) saturate(170%);
-    -webkit-backdrop-filter: blur(30px) saturate(170%);
-    border: 1px solid rgba(255,255,255,0.16);
+    /* Verre blanc transparent frosté ; icônes blanches + ombre portée pour le contraste */
+    background: linear-gradient(135deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.24) 100%);
+    backdrop-filter: blur(26px) saturate(180%);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.5);
     box-shadow:
-      0 1px 0 0 rgba(255,255,255,0.14) inset,
-      0 10px 36px -10px rgba(0,0,0,0.42);
+      0 1px 0 0 rgba(255,255,255,0.6) inset,
+      0 10px 36px -10px rgba(0,0,0,0.20);
   }
 
   /* Liquid glass jaune — bouton "+" (Publier) */

@@ -102,11 +102,11 @@ export default function Navigation() {
           >
             {isActive && (
               <motion.div layoutId="mobile-pill" className="absolute inset-0 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.20)" }}
+                style={{ background: "rgba(255,255,255,0.32)" }}
                 transition={{ type: "spring", stiffness: 500, damping: 35 }} />
             )}
             <div className="relative z-10">
-              <Icon size={22} strokeWidth={isActive ? 2.2 : 1.7} style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.72)", transition: "color 0.2s ease" }} />
+              <Icon size={22} strokeWidth={isActive ? 2.4 : 2} style={{ color: "#fff", filter: isActive ? "drop-shadow(0 1px 3px rgba(0,0,0,0.55))" : "drop-shadow(0 1px 3px rgba(0,0,0,0.4))", transition: "all 0.2s ease" }} />
               {badge && !isActive && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
@@ -134,10 +134,10 @@ export default function Navigation() {
             >
               {isActive && (
                 <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-                  style={{ background: "rgba(255,255,255,0.18)" }}
+                  style={{ background: "rgba(255,255,255,0.30)" }}
                   transition={{ type: "spring", stiffness: 500, damping: 35 }} />
               )}
-              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.72)", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
+              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: "#fff", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.45))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
             </motion.div>
           </Link>
 
@@ -192,7 +192,7 @@ export default function Navigation() {
               transition={{ type: "spring", stiffness: 500, damping: 35 }} />
           )}
           <div className="relative z-10">
-            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#fff" : "rgba(255,255,255,0.72)" }} />
+            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: "#fff", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.45))" }} />
             {badge && !isActive && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                 transition={{ type: "spring", bounce: 0.6 }}
