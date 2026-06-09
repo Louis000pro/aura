@@ -124,7 +124,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                     {avatar
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                      ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
                       : pseudo[0]?.toUpperCase()}
                   </div>
                 </Link>
@@ -302,7 +302,7 @@ function EditProfileModal({
           >
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt="avatar" className="w-full h-full object-cover" />
+              <img loading="lazy" decoding="async" src={previewUrl} alt="avatar" className="w-full h-full object-cover" />
             ) : (
               <span>{editPseudo.charAt(0).toUpperCase() || "?"}</span>
             )}
@@ -546,7 +546,7 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
                       style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                       {u.avatar_url
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={u.avatar_url} alt={u.pseudo} className="w-full h-full object-cover" />
+                        ? <img loading="lazy" decoding="async" src={u.avatar_url} alt={u.pseudo} className="w-full h-full object-cover" />
                         : (u.pseudo[0] ?? "?").toUpperCase()}
                     </div>
                   </Link>
@@ -1068,7 +1068,7 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
             style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.4),rgba(245,230,163,0.4))" }}>
             {coverUrl
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={coverUrl} alt="cover" className="w-full h-full object-cover" />
+              ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
               : uploading
               ? <div className="text-xs font-medium" style={{ color: "#A78BFA" }}>Upload…</div>
               : <div className="flex flex-col items-center gap-1">
@@ -1265,7 +1265,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
               style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.4),rgba(245,230,163,0.4))" }}>
               {coverUrl
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={coverUrl} alt="cover" className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
                 : <Camera size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />}
             </motion.div>
             <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
@@ -1315,7 +1315,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
                   {item.media_type === "video"
                     ? <video src={item.media_url} className="w-full h-full object-cover" muted playsInline />
                     // eslint-disable-next-line @next/next/no-img-element
-                    : <img src={item.media_url} alt="" className="w-full h-full object-cover" />}
+                    : <img loading="lazy" decoding="async" src={item.media_url} alt="" className="w-full h-full object-cover" />}
                   <motion.button
                     onClick={() => handleDeleteItem(item.id)}
                     className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer"
@@ -1858,7 +1858,7 @@ export default function ProfilPage() {
               >
                 {displayAvatar
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                  ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                   : <span>{displayPseudo.charAt(0).toUpperCase() || "?"}</span>}
               </div>
             </motion.div>
@@ -2031,7 +2031,7 @@ export default function ProfilPage() {
                     >
                       {h.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={h.cover_url} alt={h.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <img loading="lazy" decoding="async" src={h.cover_url} alt={h.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : h.name.charAt(0).toUpperCase()}
                     </div>
                   </div>
@@ -2169,7 +2169,7 @@ export default function ProfilPage() {
                               style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                               {displayAvatar
                                 // eslint-disable-next-line @next/next/no-img-element
-                                ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                                 : displayPseudo.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -2218,7 +2218,7 @@ export default function ProfilPage() {
                             {post.media_type === "video"
                               ? <VideoPlayer src={post.media_url} maxHeight={380} controls />
                               // eslint-disable-next-line @next/next/no-img-element
-                              : <img src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
+                              : <img loading="lazy" decoding="async" src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
                             }
                           </div>
                         )}
@@ -2418,7 +2418,7 @@ export default function ProfilPage() {
                     {post.media_type === "video"
                       ? <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
                       // eslint-disable-next-line @next/next/no-img-element
-                      : <img src={post.media_url ?? undefined} alt="" className="w-full h-full object-cover" />
+                      : <img loading="lazy" decoding="async" src={post.media_url ?? undefined} alt="" className="w-full h-full object-cover" />
                     }
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
@@ -2615,7 +2615,7 @@ export default function ProfilPage() {
                   >
                     {displayAvatar
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                      ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                       : displayPseudo.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -2676,7 +2676,7 @@ export default function ProfilPage() {
                       {selectedPost.media_type === "video"
                         ? <VideoPlayer src={selectedPost.media_url} maxHeight={380} controls />
                         // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={selectedPost.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
+                        : <img loading="lazy" decoding="async" src={selectedPost.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
                       }
                     </div>
                   )}
@@ -2760,7 +2760,7 @@ export default function ProfilPage() {
                       {selectedPost.media_type === "video"
                         ? <VideoPlayer src={selectedPost.media_url} maxHeight={200} muted autoPlay />
                         // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
+                        : <img loading="lazy" decoding="async" src={selectedPost.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
                       }
                     </div>
                   )}

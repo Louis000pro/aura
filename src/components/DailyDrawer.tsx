@@ -369,7 +369,7 @@ export default function DailyDrawer({
                             style={{ border: "2px solid rgba(255,255,255,0.85)" }}>
                             {dailyVideo.avatar_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={dailyVideo.avatar_url} alt={dailyVideo.pseudo} className="w-full h-full object-cover" />
+                              <img loading="lazy" decoding="async" src={dailyVideo.avatar_url} alt={dailyVideo.pseudo} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-sm font-bold"
                                 style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>

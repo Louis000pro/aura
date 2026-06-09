@@ -1051,7 +1051,7 @@ function CameraCapture({
           {/* Captured photo preview */}
           {phase === "captured" && capturedUrl && mode === "photo" && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={capturedUrl} alt="Capture" className="w-full h-full object-cover" />
+            <img loading="lazy" decoding="async" src={capturedUrl} alt="Capture" className="w-full h-full object-cover" />
           )}
           {/* Captured video preview */}
           {phase === "captured" && capturedUrl && mode === "video" && (

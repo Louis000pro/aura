@@ -154,7 +154,7 @@ export default function PerformanceCard({
       {/* Photo background */}
       {customBgImage && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={customBgImage} alt="" className="absolute inset-0 w-full h-full object-cover"
+        <img loading="lazy" decoding="async" src={customBgImage} alt="" className="absolute inset-0 w-full h-full object-cover"
           style={{ zIndex: 0, filter: photoFilter ?? "none" }} />
       )}
 

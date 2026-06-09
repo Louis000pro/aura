@@ -255,7 +255,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                       >
                         {n.from_avatar_url
                           // eslint-disable-next-line @next/next/no-img-element
-                          ? <img src={n.from_avatar_url} alt={n.from_pseudo} className="w-full h-full object-cover" />
+                          ? <img loading="lazy" decoding="async" src={n.from_avatar_url} alt={n.from_pseudo} className="w-full h-full object-cover" />
                           : (n.from_pseudo[0] ?? "?").toUpperCase()}
                       </div>
                       <NotifIcon type={n.type} />

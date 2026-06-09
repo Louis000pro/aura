@@ -412,7 +412,7 @@ export default function SharePerformanceModal({
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
                         <div className="relative overflow-hidden" style={{ width: 52, height: 52, borderRadius: 11, boxShadow: !photoFilterKey ? "0 0 0 2.5px #A78BFA" : "0 1px 6px rgba(0,0,0,0.16)" }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={customBgImage} alt="" className="w-full h-full object-cover" />
+                          <img loading="lazy" decoding="async" src={customBgImage} alt="" className="w-full h-full object-cover" />
                           {!photoFilterKey && <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(167,139,250,0.22)" }}><Check size={13} strokeWidth={3} style={{ color: "#fff" }} /></div>}
                         </div>
                         <span style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", color: !photoFilterKey ? "#A78BFA" : "#A0AEC0" }}>Aucun</span>
@@ -425,7 +425,7 @@ export default function SharePerformanceModal({
                             className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
                             <div className="relative overflow-hidden" style={{ width: 52, height: 52, borderRadius: 11, boxShadow: sel ? "0 0 0 2.5px #A78BFA" : "0 1px 6px rgba(0,0,0,0.16)" }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={customBgImage} alt={name} className="w-full h-full object-cover" style={{ filter }} />
+                              <img loading="lazy" decoding="async" src={customBgImage} alt={name} className="w-full h-full object-cover" style={{ filter }} />
                               {sel && <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.15)" }}><Check size={13} strokeWidth={3} style={{ color: "#fff" }} /></div>}
                             </div>
                             <span style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", color: sel ? "#A78BFA" : "#A0AEC0" }}>{name}</span>

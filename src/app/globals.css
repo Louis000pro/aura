@@ -43,6 +43,9 @@
 
   ::selection { background-color: #F0EBFF; color: #2D3748; }
 
+  /* Perf scroll : le navigateur saute le rendu des cartes hors écran */
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: 0 480px; }
+
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background-color: rgba(212, 192, 255, 0.6); border-radius: 99px; }

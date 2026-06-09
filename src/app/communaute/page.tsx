@@ -122,7 +122,7 @@ function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: numb
     >
       {partner.avatar_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={partner.avatar_url} alt={partner.pseudo} style={{ width: size, height: size, objectFit: "cover" }} />
+        <img loading="lazy" decoding="async" src={partner.avatar_url} alt={partner.pseudo} style={{ width: size, height: size, objectFit: "cover" }} />
       ) : initial}
     </div>
   );
@@ -146,7 +146,7 @@ function StoryCard({ story }: { story: RealStory }) {
         {story.content_type === "video"
           ? <video src={story.media_url} className="w-full h-full object-cover" muted playsInline autoPlay loop preload="auto" />
           // eslint-disable-next-line @next/next/no-img-element
-          : <img src={story.media_url} alt="" className="w-full h-full object-cover" />}
+          : <img loading="lazy" decoding="async" src={story.media_url} alt="" className="w-full h-full object-cover" />}
         {story.caption && (
           <div className="absolute bottom-0 inset-x-0 px-6 pb-10 pt-16"
             style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75), transparent)" }}>
@@ -410,7 +410,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
         >
           {profile?.avatar_url
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+            ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
             : initial}
         </div>
         <div className="flex-1 min-w-0">
@@ -984,7 +984,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 {mediaType === "video"
                   ? <video src={mediaPreview} className="w-full h-full object-cover" muted playsInline autoPlay loop />
                   // eslint-disable-next-line @next/next/no-img-element
-                  : <img src={mediaPreview} alt="" className="w-full h-full object-cover" />}
+                  : <img loading="lazy" decoding="async" src={mediaPreview} alt="" className="w-full h-full object-cover" />}
               </div>
 
               <input
@@ -1601,7 +1601,7 @@ function CommentRow({
           style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
           {avatar
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+            ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
             : pseudo[0]?.toUpperCase()}
         </div>
       </Link>
@@ -1818,7 +1818,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
                   style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                   {profile.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                    ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
                     : profile.pseudo[0]?.toUpperCase()}
                 </div>
                 <span className="text-xs font-medium" style={{ color: "#A78BFA" }}>@{profile.pseudo}</span>
@@ -2118,7 +2118,7 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
                       >
                         {avatar
                           // eslint-disable-next-line @next/next/no-img-element
-                          ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                          ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
                           : pseudo[0]?.toUpperCase()}
                       </div>
                       <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>@{pseudo}</span>
@@ -2135,7 +2135,7 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
                     {/* Media thumbnail */}
                     {p.media_url && p.media_type === "image" && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
+                      <img loading="lazy" decoding="async" src={p.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 200 }} />
                     )}
 
                     {/* Stats */}
@@ -2437,7 +2437,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
                 style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                 {profile.avatar_url
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                  ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
                   : profile.pseudo[0]?.toUpperCase()}
               </div>
               <span className="text-sm font-medium" style={{ color: "#A78BFA" }}>@{profile.pseudo}</span>
@@ -2451,7 +2451,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
           style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
           {user?.avatar
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+            ? <img loading="lazy" decoding="async" src={user.avatar} alt="" className="w-full h-full object-cover" />
             : <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>{user?.pseudo?.[0]?.toUpperCase() ?? "?"}</span>}
         </div>
         <input ref={inputRef} type="text" value={input} onChange={handleInputChange}
@@ -2851,7 +2851,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={authorAvatar} alt={authorPseudo}
+              <img loading="lazy" decoding="async" src={authorAvatar} alt={authorPseudo}
                 className="w-7 h-7 rounded-full object-cover flex-shrink-0"
                 style={{ border: "1.5px solid rgba(255,255,255,0.85)" }} />
             ) : (
@@ -2918,7 +2918,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.06 }}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={authorAvatar} alt={authorPseudo}
+              <img loading="lazy" decoding="async" src={authorAvatar} alt={authorPseudo}
                 className="w-11 h-11 rounded-full object-cover"
                 style={{ border: isMobile ? "2px solid #fff" : "2px solid rgba(167,139,250,0.5)", boxShadow: "0 2px 10px rgba(0,0,0,0.25)" }} />
             ) : (
@@ -4093,7 +4093,7 @@ function CommunautePageInner() {
           <Link href={`/profil/${encodeURIComponent(activeDMPartner.pseudo)}`} className="flex items-center gap-2.5 cursor-pointer group">
             {activeDMPartner.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={activeDMPartner.avatar_url} alt={activeDMPartner.pseudo}
+              <img loading="lazy" decoding="async" src={activeDMPartner.avatar_url} alt={activeDMPartner.pseudo}
                 className="w-9 h-9 rounded-full object-cover flex-shrink-0"
                 style={{ border: "1.5px solid rgba(167,139,250,0.4)" }} />
             ) : (
@@ -4247,7 +4247,7 @@ function CommunautePageInner() {
                       {user?.avatar ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={user.avatar} alt="moi" className="w-full h-full object-cover rounded-full" />
+                          <img loading="lazy" decoding="async" src={user.avatar} alt="moi" className="w-full h-full object-cover rounded-full" />
                           {/* Overlay "+" quand pas encore de story */}
                           {!myGroup && (
                             <div className="absolute inset-0 rounded-full flex items-center justify-center"
@@ -4323,10 +4323,10 @@ function CommunautePageInner() {
                             {/* Show photo thumbnail if first story is a photo */}
                             {(group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) && group[0]?.media_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={group[0].media_url} alt={name} className="w-full h-full object-cover" />
+                              ? <img loading="lazy" decoding="async" src={group[0].media_url} alt={name} className="w-full h-full object-cover" />
                               : p?.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" />
+                              ? <img loading="lazy" decoding="async" src={p.avatar_url} alt={name} className="w-full h-full object-cover" />
                               : initial
                             }
                           </div>
@@ -4508,7 +4508,7 @@ function CommunautePageInner() {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.4, delay: postIdx * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
                   whileHover={{ y: -2, transition: { duration: 0.18 } }}
-                  className="lg-surface lg-highlight relative rounded-3xl overflow-visible"
+                  className="lg-surface lg-highlight relative rounded-3xl overflow-visible cv-auto"
                 >
                   {/* Header */}
                   <div className="flex items-center gap-3 px-4 pt-4 pb-3 relative">
@@ -4521,7 +4521,7 @@ function CommunautePageInner() {
                       >
                         {authorAvatar
                           // eslint-disable-next-line @next/next/no-img-element
-                          ? <img src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
+                          ? <img loading="lazy" decoding="async" src={authorAvatar} alt={authorPseudo} className="w-full h-full object-cover" />
                           : authorPseudo[0]?.toUpperCase()}
                       </motion.div>
                     </Link>
@@ -4596,7 +4596,7 @@ function CommunautePageInner() {
                       {post.media_type === "video"
                         ? <VideoPlayer src={post.media_url} maxHeight={380} controls muted />
                         // eslint-disable-next-line @next/next/no-img-element
-                        : <img src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
+                        : <img loading="lazy" decoding="async" src={post.media_url} alt="" className="w-full object-cover" style={{ maxHeight: 380 }} />
                       }
                     </div>
                   )}
@@ -4932,7 +4932,7 @@ function CommunautePageInner() {
                             style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                             {profile.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                              ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
                               : (profile.pseudo?.[0] ?? "?").toUpperCase()}
                           </div>
                         </Link>
@@ -4985,7 +4985,7 @@ function CommunautePageInner() {
                             style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                             {profile.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+                              ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
                               : (profile.pseudo?.[0] ?? "?").toUpperCase()}
                           </div>
                         </Link>
@@ -5109,7 +5109,7 @@ function CommunautePageInner() {
                         >
                           {avatar
                             // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={avatar} alt={pseudo} className="w-full h-full object-cover" />
+                            ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
                             : pseudo[0]?.toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -5347,7 +5347,7 @@ function CommunautePageInner() {
                                           style={{ maxHeight: 160, pointerEvents: "none" }}
                                         />
                                       // eslint-disable-next-line @next/next/no-img-element
-                                      : <img src={msg.shared_post.media_url} alt="" className="w-full h-full object-cover" />
+                                      : <img loading="lazy" decoding="async" src={msg.shared_post.media_url} alt="" className="w-full h-full object-cover" />
                                     }
                                     {/* Overlay play */}
                                     <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.25)" }}>

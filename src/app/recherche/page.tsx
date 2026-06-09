@@ -75,7 +75,7 @@ function ProfileAvatar({ profile }: { profile: Profile }) {
     >
       {profile.avatar_url
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
+        ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
         : (profile.pseudo?.[0] ?? "?").toUpperCase()}
     </div>
   );

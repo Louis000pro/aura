@@ -345,7 +345,7 @@ export default function Navigation() {
               >
                 {user.avatar
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                  ? <img loading="lazy" decoding="async" src={user.avatar} alt="" className="w-full h-full object-cover" />
                   : <span style={{ color: userMenu ? "white" : "#3D2F6B" }}>{avatarLetter}</span>}
               </motion.button>
             </div>

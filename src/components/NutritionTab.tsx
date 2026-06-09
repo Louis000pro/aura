@@ -529,7 +529,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 {photoUrl && (
                   <div className="w-full h-44 rounded-2xl overflow-hidden relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photoUrl} alt="repas" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={photoUrl} alt="repas" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
                       style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(6px)" }}>
                       <motion.div
@@ -564,7 +564,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 {photoUrl && (
                   <div className="w-full h-36 rounded-2xl overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photoUrl} alt="repas" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={photoUrl} alt="repas" className="w-full h-full object-cover" />
                   </div>
                 )}
 
@@ -1181,7 +1181,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
                   {product.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.image} alt={product.name}
+                    <img loading="lazy" decoding="async" src={product.image} alt={product.name}
                       className="w-14 h-14 rounded-xl object-contain flex-shrink-0"
                       style={{ background: "#fff" }} />
                   ) : (

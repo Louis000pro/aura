@@ -161,7 +161,7 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
                 >
                   {c.author?.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={c.author.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     (c.author?.pseudo?.[0] ?? "?").toUpperCase()
                   )}
@@ -595,7 +595,7 @@ export default function PublicProfilePage() {
             >
               {displayAvatar
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="" className="w-full h-full object-cover" />
                 : initial}
             </div>
             <p className="text-sm font-semibold flex-1" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
@@ -680,7 +680,7 @@ export default function PublicProfilePage() {
             >
               {displayAvatar
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                 : <span>{initial}</span>}
             </div>
             {/* Indicateur story */}
@@ -963,7 +963,7 @@ export default function PublicProfilePage() {
                           style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                           {displayAvatar
                             // eslint-disable-next-line @next/next/no-img-element
-                            ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                            ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                             : initial}
                         </div>
                         <div>
@@ -1011,7 +1011,7 @@ export default function PublicProfilePage() {
                         {post.media_type === "video"
                           ? <VideoPlayer src={post.media_url} maxHeight={380} controls />
                           // eslint-disable-next-line @next/next/no-img-element
-                          : <img src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
+                          : <img loading="lazy" decoding="async" src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
                         }
                       </div>
                     )}
@@ -1215,7 +1215,7 @@ export default function PublicProfilePage() {
                   >
                     {displayAvatar
                       // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                      ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                       : initial}
                   </div>
                   <div>
@@ -1257,7 +1257,7 @@ export default function PublicProfilePage() {
                     ? <VideoPlayer src={selectedPost.media_url} maxHeight={380} controls />
                     : (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={selectedPost.media_url}
                         alt=""
                         className="w-full object-cover rounded-2xl"

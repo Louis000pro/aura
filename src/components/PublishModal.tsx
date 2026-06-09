@@ -255,7 +255,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                     mediaType === "video"
                       ? <video src={preview} className="w-full h-full object-cover" muted playsInline />
                       // eslint-disable-next-line @next/next/no-img-element
-                      : <img src={preview} alt="" className="w-full h-full object-cover" />
+                      : <img loading="lazy" decoding="async" src={preview} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex flex-col items-center gap-4 p-6 w-full">
                       <div className="flex gap-3 w-full">
@@ -353,7 +353,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                     mediaType === "video"
                       ? <video src={preview} className="w-full h-full object-cover" muted playsInline />
                       // eslint-disable-next-line @next/next/no-img-element
-                      : <img src={preview} alt="" className="w-full h-full object-cover" />
+                      : <img loading="lazy" decoding="async" src={preview} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex flex-col items-center gap-4 p-6 w-full">
                       <div className="flex gap-3 w-full">

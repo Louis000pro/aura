@@ -101,7 +101,7 @@ function Avatar({ pseudo, avatarUrl, type }: { pseudo: string; avatarUrl: string
       >
         {avatarUrl
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={avatarUrl} alt={pseudo} className="w-full h-full object-cover" />
+          ? <img loading="lazy" decoding="async" src={avatarUrl} alt={pseudo} className="w-full h-full object-cover" />
           : (pseudo?.[0] ?? "?").toUpperCase()}
       </div>
       <TypeBadge type={type} />

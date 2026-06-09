@@ -171,7 +171,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
               style={{ background: user.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
               {user.avatar
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={user.avatar} alt={user.pseudo} className="w-full h-full object-cover" />
+                ? <img loading="lazy" decoding="async" src={user.avatar} alt={user.pseudo} className="w-full h-full object-cover" />
                 : user.pseudo?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div>
@@ -284,7 +284,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
               {mediaKind === "video"
                 ? <video src={mediaPreview} className="w-full object-cover" style={{ maxHeight: 280 }} controls muted playsInline />
                 // eslint-disable-next-line @next/next/no-img-element
-                : <img src={mediaPreview} alt="aperçu" className="w-full object-cover" style={{ maxHeight: 280 }} />
+                : <img loading="lazy" decoding="async" src={mediaPreview} alt="aperçu" className="w-full object-cover" style={{ maxHeight: 280 }} />
               }
               {/* Remove button */}
               <motion.button
