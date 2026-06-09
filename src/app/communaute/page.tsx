@@ -3279,6 +3279,13 @@ function CommunautePageInner() {
   const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
 
   // ── Swipe horizontal entre Publications (gauche) et Vidéos (droite) ──
+  // Indicateur flèche : visible 5 s puis se cache (ne gêne pas les vidéos)
+  const [swipeHint, setSwipeHint] = useState(true);
+  useEffect(() => {
+    setSwipeHint(true);
+    const t = setTimeout(() => setSwipeHint(false), 5000);
+    return () => clearTimeout(t);
+  }, [feedTab, view]);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onFeedTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
@@ -4158,34 +4165,38 @@ function CommunautePageInner() {
             onTouchEnd={onFeedTouchEnd}
             className={feedTab === "videos" ? "flex flex-col flex-1 min-h-0 overflow-hidden" : "flex flex-col gap-5 pb-4"}
           >
-            {/* ── Indicateur swipe vers Vidéos (sur Publications) ── */}
-            {feedTab === "posts" && (
-              <motion.button
-                onClick={() => setFeedTab("videos")}
-                aria-label="Voir les vidéos"
-                className="fixed top-1/2 -translate-y-1/2 right-2 z-40 flex items-center gap-1 pl-3 pr-2 py-2 rounded-full cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 6px 20px rgba(124,92,250,0.4)" }}
-                initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: [6, 0, 6] }}
-                transition={{ opacity: { duration: 0.4 }, x: { duration: 1.6, repeat: Infinity, ease: "easeInOut" } }}
-              >
-                <span className="text-[11px] font-bold text-white">Vidéos</span>
-                <ChevronRight size={16} strokeWidth={2.4} color="#fff" />
-              </motion.button>
-            )}
-            {/* ── Retour vers Publications (sur Vidéos) ── */}
-            {feedTab === "videos" && view === "feed" && (
-              <motion.button
-                onClick={() => setFeedTab("posts")}
-                aria-label="Voir les publications"
-                className="fixed top-1/2 -translate-y-1/2 left-2 md:left-[96px] z-40 flex items-center gap-1 pl-2 pr-3 py-2 rounded-full cursor-pointer"
-                style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}
-                initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <ChevronLeft size={16} strokeWidth={2.4} color="#fff" />
-                <span className="text-[11px] font-bold text-white">Publications</span>
-              </motion.button>
-            )}
+            {/* ── Indicateur swipe vers Vidéos (sur Publications) — blanc, auto-masqué 5s ── */}
+            <AnimatePresence>
+              {feedTab === "posts" && swipeHint && (
+                <motion.button
+                  onClick={() => setFeedTab("videos")}
+                  aria-label="Voir les vidéos"
+                  className="fixed top-1/2 -translate-y-1/2 right-2 z-40 flex items-center gap-1 pl-3 pr-2 py-2 rounded-full cursor-pointer"
+                  style={{ background: "#fff", boxShadow: "0 6px 20px rgba(124,92,250,0.28)", border: "1px solid rgba(167,139,250,0.25)" }}
+                  initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: [6, 0, 6] }} exit={{ opacity: 0, x: 18 }}
+                  transition={{ opacity: { duration: 0.4 }, x: { duration: 1.6, repeat: Infinity, ease: "easeInOut" } }}
+                >
+                  <span className="text-[11px] font-bold" style={{ color: "#7C5CFA" }}>Vidéos</span>
+                  <ChevronRight size={16} strokeWidth={2.6} color="#7C5CFA" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+            {/* ── Retour vers Publications (sur Vidéos) — blanc, auto-masqué 5s ── */}
+            <AnimatePresence>
+              {feedTab === "videos" && view === "feed" && swipeHint && (
+                <motion.button
+                  onClick={() => setFeedTab("posts")}
+                  aria-label="Voir les publications"
+                  className="fixed top-1/2 -translate-y-1/2 left-2 md:left-[96px] z-40 flex items-center gap-1 pl-2 pr-3 py-2 rounded-full cursor-pointer"
+                  style={{ background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,0.3)" }}
+                  initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <ChevronLeft size={16} strokeWidth={2.6} color="#7C5CFA" />
+                  <span className="text-[11px] font-bold" style={{ color: "#7C5CFA" }}>Publications</span>
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             {/* Stories — cachées en mode immersif mobile */}
             <div className={immersiveVideo ? "hidden" : ""} style={feedTab === "videos" && !immersiveVideo ? {
