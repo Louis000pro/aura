@@ -1,81 +1,91 @@
-// Aura Service Worker — v5
-// Strategy:
-//   - Navigation (HTML) → Network-first (toujours la version fraîche)
-//   - _next/static/ (chunks JS/CSS hachés) → Cache-first (immutables)
-//   - Images/assets → Stale-while-revalidate
-//   - API / Supabase → Bypass (pas de cache)
+// Vaiiya Service Worker — v6 (lancement instantané : app-shell)
+// Stratégie :
+//   - Navigation (HTML) → Stale-While-Revalidate : on sert la page en CACHE
+//     immédiatement (lancement instantané), puis on rafraîchit en arrière-plan.
+//   - _next/static/ (chunks hashés, immuables) → Cache-first, cache PERMANENT
+//     (jamais purgé → une page en cache trouve toujours ses chunks).
+//   - Images/fonts → Stale-While-Revalidate.
+//   - API / Supabase / auth → réseau direct (pas de cache).
 
-const STATIC_CACHE  = "aura-static-v5";   // chunks Next.js (immutables par hash)
-const DYNAMIC_CACHE = "aura-dynamic-v5";  // images, fonts, etc.
+const STATIC_CACHE  = "vaiiya-static";   // chunks immuables — jamais purgés
+const HTML_CACHE    = "vaiiya-html";     // pages (SWR)
+const DYNAMIC_CACHE = "vaiiya-dynamic";  // images, fonts, etc.
+const KEEP = [STATIC_CACHE, HTML_CACHE, DYNAMIC_CACHE];
 
-// ── Install ──────────────────────────────────────────────────
-self.addEventListener("install", () => {
+// ── Install : pré-cache l'app-shell ("/") pour un 1er lancement instantané ──
+self.addEventListener("install", (e) => {
+  e.waitUntil(
+    caches.open(HTML_CACHE).then((c) => c.add("/")).catch(() => {})
+  );
   self.skipWaiting();
 });
 
-// ── Activate : supprime tous les anciens caches ──────────────
+// ── Activate : supprime les anciens caches (aura-*, versions précédentes) ──
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== STATIC_CACHE && k !== DYNAMIC_CACHE)
-          .map((k) => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => !KEEP.includes(k)).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 // ── Fetch ────────────────────────────────────────────────────
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
-
   const url = new URL(e.request.url);
 
-  // 1. API / Supabase / auth → réseau direct, pas de cache
+  // 1. API / Supabase / auth → réseau direct
   if (
     url.hostname.includes("supabase") ||
     url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/auth/")
   ) return;
 
-  // 2. Chunks Next.js (_next/static/) → Cache-first
-  //    Ces fichiers ont un hash dans leur nom → immutables
+  // 2. Chunks Next.js (immuables par hash) → Cache-first PERMANENT
   if (url.pathname.startsWith("/_next/static/")) {
     e.respondWith(
       caches.open(STATIC_CACHE).then((cache) =>
-        cache.match(e.request).then((cached) => {
-          if (cached) return cached;
-          return fetch(e.request).then((res) => {
+        cache.match(e.request).then((cached) =>
+          cached ||
+          fetch(e.request).then((res) => {
             if (res.ok) cache.put(e.request, res.clone());
             return res;
-          });
-        })
+          })
+        )
       )
     );
     return;
   }
 
-  // 3. Navigations HTML (pages) → Network-first
-  //    On va TOUJOURS chercher la version fraîche en priorité
+  // 3. Navigations HTML → Stale-While-Revalidate (lancement INSTANTANÉ)
   if (e.request.mode === "navigate") {
     e.respondWith(
-      fetch(e.request).catch(() =>
-        caches.match(e.request).then((c) => c ?? caches.match("/"))
-      )
+      caches.open(HTML_CACHE).then(async (cache) => {
+        const cached = (await cache.match(e.request)) || (await cache.match("/"));
+        const network = fetch(e.request)
+          .then((res) => {
+            if (res && res.ok) cache.put(e.request, res.clone());
+            return res;
+          })
+          .catch(() => cached);
+        // Cache d'abord (instantané), réseau en arrière-plan
+        return cached || network;
+      })
     );
     return;
   }
 
-  // 4. Autres assets (images, fonts, icons) → Stale-while-revalidate
+  // 4. Autres assets (images, fonts, icons) → Stale-While-Revalidate
   e.respondWith(
     caches.open(DYNAMIC_CACHE).then((cache) =>
       cache.match(e.request).then((cached) => {
-        const fresh = fetch(e.request).then((res) => {
-          if (res.ok) cache.put(e.request, res.clone());
-          return res;
-        }).catch(() => cached);
-        return cached ?? fresh;
+        const fresh = fetch(e.request)
+          .then((res) => {
+            if (res.ok) cache.put(e.request, res.clone());
+            return res;
+          })
+          .catch(() => cached);
+        return cached || fresh;
       })
     )
   );
