@@ -219,6 +219,7 @@ export default function ExerciseAnalyzer() {
   const [messages,   setMessages]    = useState<FeedMsg[]>([]);
   const [phase,      setPhase]       = useState<"up" | "down">("up");
   const [camError,   setCamError]    = useState<string | null>(null);
+  const [showPlacement, setShowPlacement] = useState(false); // écran "placement du téléphone"
 
   const phaseRef    = useRef<"up" | "down">("up");
   const repsRef     = useRef(0);
@@ -237,12 +238,16 @@ export default function ExerciseAnalyzer() {
         );
         const pl = await PoseLandmarker.createFromOptions(fs, {
           baseOptions: {
+            // Modèle "full" : détecte tout le corps (tête → pieds) avec plus de précision que "lite"
             modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
             delegate: "GPU",
           },
           runningMode: "VIDEO",
           numPoses: 1,
+          minPoseDetectionConfidence: 0.4,
+          minPosePresenceConfidence: 0.4,
+          minTrackingConfidence: 0.4,
         });
         if (!cancelled) {
           landmarkerRef.current    = pl;
@@ -571,7 +576,7 @@ export default function ExerciseAnalyzer() {
       {/* Contrôles */}
       <div className="flex gap-3">
         {!running ? (
-          <motion.button whileTap={{ scale: 0.96 }} onClick={startAnalysis}
+          <motion.button whileTap={{ scale: 0.96 }} onClick={() => setShowPlacement(true)}
             disabled={!mpReady || loading || mpError}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold cursor-pointer"
             style={(mpReady && !loading && !mpError)
@@ -596,6 +601,80 @@ export default function ExerciseAnalyzer() {
           </motion.button>
         )}
       </div>
+
+      {/* ── Écran de placement du téléphone (avant chaque analyse) ── */}
+      <AnimatePresence>
+        {showPlacement && (
+          <motion.div
+            className="fixed inset-0 z-[9998] flex items-center justify-center px-5"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ background: "rgba(30,24,60,0.55)", backdropFilter: "blur(8px)" }}
+            onClick={() => setShowPlacement(false)}
+          >
+            <motion.div onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.9, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }} transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              className="w-full max-w-sm rounded-[26px] p-6 text-center"
+              style={{ background: "linear-gradient(160deg,#fff,#f6f1ff)", boxShadow: "0 30px 70px -16px rgba(99,102,241,0.45)" }}
+            >
+              <h3 className="text-xl font-black mb-1" style={{ color: "#2D2150" }}>Place ton téléphone 📱</h3>
+              <p className="text-xs font-light mb-4" style={{ color: "#7C6BAA" }}>
+                Pour détecter tout ton corps, de la tête aux pieds.
+              </p>
+
+              {/* Schéma : téléphone + silhouette entière dans le cadre */}
+              <div className="flex justify-center mb-4">
+                <svg width="150" height="120" viewBox="0 0 150 120" fill="none">
+                  {/* cadre téléphone */}
+                  <rect x="8" y="8" width="134" height="104" rx="12" fill="rgba(167,139,250,0.08)" stroke="#A78BFA" strokeWidth="2" />
+                  {/* silhouette entière */}
+                  <g stroke="#6366F1" strokeWidth="3" strokeLinecap="round" fill="none">
+                    <circle cx="75" cy="28" r="8" fill="#6366F1" />
+                    <line x1="75" y1="36" x2="75" y2="68" />
+                    <line x1="75" y1="44" x2="58" y2="58" />
+                    <line x1="75" y1="44" x2="92" y2="58" />
+                    <line x1="75" y1="68" x2="63" y2="98" />
+                    <line x1="75" y1="68" x2="87" y2="98" />
+                  </g>
+                  {/* flèches "corps entier visible" */}
+                  <g stroke="#A78BFA" strokeWidth="1.5">
+                    <line x1="20" y1="18" x2="20" y2="102" strokeDasharray="3 3" />
+                  </g>
+                </svg>
+              </div>
+
+              {/* Conseils */}
+              <div className="flex flex-col gap-2.5 mb-5 text-left">
+                {[
+                  { e: "📱", t: "Pose le téléphone à la verticale, appuyé (mur, support…)" },
+                  { e: "↔️", t: "Recule à 2-3 m : tout ton corps visible, tête → pieds" },
+                  { e: "💡", t: "Mets-toi dans un endroit bien éclairé" },
+                  { e: "🧱", t: "Garde un fond dégagé derrière toi" },
+                ].map((c, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <span className="text-base leading-none mt-0.5">{c.e}</span>
+                    <span className="text-[13px] font-light leading-snug" style={{ color: "#4A4060" }}>{c.t}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2.5">
+                <button onClick={() => setShowPlacement(false)}
+                  className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+                  style={{ background: "rgba(240,235,255,0.7)", color: "#7C6BAA" }}>
+                  Annuler
+                </button>
+                <motion.button whileTap={{ scale: 0.96 }}
+                  onClick={() => { setShowPlacement(false); void startAnalysis(); }}
+                  className="flex-[1.4] py-3 rounded-2xl text-sm font-bold text-white cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,#818CF8,#6366F1)", boxShadow: "0 6px 20px rgba(99,102,241,0.4)" }}>
+                  Démarrer l'analyse
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
