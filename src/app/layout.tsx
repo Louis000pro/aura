@@ -6,6 +6,7 @@ import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
 import PWARegister from "@/components/PWARegister";
+import SplashIntro from "@/components/SplashIntro";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -72,6 +73,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('aura-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();` }} />
       </head>
       <body className="min-h-full notranslate" translate="no">
+        <SplashIntro />
         <AuthProvider>
           <Navigation />
           <MainWrapper>{children}</MainWrapper>

@@ -1238,13 +1238,10 @@ export default function HomePage() {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
   // Affiche un spinner pendant le chargement de la session (évite la page blanche)
   if (isLoading) return <LoadingSpinner />;
+  // Le popup animé "Bonsoir" est retiré au profit de l'intro logo (SplashIntro).
+  void justLoggedIn; void isNewUser; void clearWelcome;
   return (
     <>
-      <AnimatePresence>
-        {justLoggedIn && user && (
-          <WelcomeBanner key="welcome" pseudo={user.pseudo} isNew={isNewUser} onDismiss={clearWelcome} />
-        )}
-      </AnimatePresence>
       {user ? <Dashboard /> : <LandingPage />}
     </>
   );
