@@ -102,7 +102,7 @@ export default function Navigation() {
           >
             {isActive && (
               <motion.div layoutId="mobile-pill" className="absolute inset-0 rounded-xl"
-                style={{ background: "rgba(255,255,255,0.32)" }}
+                style={{ background: "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
                 transition={{ type: "spring", stiffness: 500, damping: 35 }} />
             )}
             <div className="relative z-10">
@@ -134,7 +134,7 @@ export default function Navigation() {
             >
               {isActive && (
                 <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-                  style={{ background: "rgba(255,255,255,0.30)" }}
+                  style={{ background: "rgba(255,255,255,0.92)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
                   transition={{ type: "spring", stiffness: 500, damping: 35 }} />
               )}
               <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#1A1535" : "#2D2150", filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.55))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
