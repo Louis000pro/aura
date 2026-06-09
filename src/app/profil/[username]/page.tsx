@@ -218,7 +218,10 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
 
 export default function PublicProfilePage() {
   const params = useParams();
-  const username = params?.username as string;
+  // Décode l'URL (les pseudos avec espaces/accents arrivent encodés : "La%20France" → "La France")
+  const rawUsername = (params?.username as string) ?? "";
+  let username = rawUsername;
+  try { username = decodeURIComponent(rawUsername); } catch { /* déjà décodé */ }
   const router = useRouter();
   const { user } = useAuth();
 
