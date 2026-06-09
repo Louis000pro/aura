@@ -21,22 +21,6 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
   }, []);
 
-  // Confettis qui pleuvent
-  const confetti = useMemo(() => {
-    const n = isMobile ? 28 : 50;
-    return Array.from({ length: n }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,             // %
-      size: 7 + Math.random() * 9,
-      color: COLORS[i % COLORS.length],
-      delay: Math.random() * 0.5,
-      duration: 1.8 + Math.random() * 1.6,
-      drift: (Math.random() - 0.5) * 160,    // px
-      rounded: Math.random() > 0.5,
-      spin: 180 + Math.random() * 540,
-    }));
-  }, [isMobile]);
-
   // Étincelles qui explosent autour de la couronne
   const sparks = useMemo(() => {
     const n = isMobile ? 12 : 18;
@@ -69,19 +53,6 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
           initial={{ scaleY: 0, opacity: 0 }}
           animate={{ scaleY: [0, 1, 0.9], opacity: [0, 0.6, 0] }}
           transition={{ duration: 1.6, delay: 0.15, ease: "easeOut" }} />
-      ))}
-
-      {/* Confettis (pluie) */}
-      {confetti.map((c) => (
-        <motion.div key={`c-${c.id}`} className="absolute pointer-events-none"
-          style={{
-            top: -20, left: `${c.left}%`, width: c.size, height: c.size * 1.4,
-            background: c.color, borderRadius: c.rounded ? "50%" : 2,
-            boxShadow: `0 0 6px ${c.color}55`,
-          }}
-          initial={{ y: -30, x: 0, opacity: 0, rotate: 0 }}
-          animate={{ y: vh + 60, x: c.drift, opacity: [0, 1, 1, 0.9], rotate: c.spin }}
-          transition={{ duration: c.duration, delay: c.delay, ease: "easeIn" }} />
       ))}
 
       {/* Carte centrale */}
