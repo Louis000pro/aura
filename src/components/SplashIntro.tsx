@@ -26,7 +26,7 @@ export default function SplashIntro() {
       {show && (
         <motion.div
           key="splash"
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          className="fixed top-0 right-0 bottom-0 left-0 md:left-[88px] z-[9999] flex items-center justify-center"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.55, ease: "easeInOut" }}
