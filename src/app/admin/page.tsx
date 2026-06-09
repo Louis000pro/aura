@@ -476,7 +476,7 @@ export default function AdminPage() {
                   >
                     <div className="flex items-center gap-3 px-4 py-3">
                       {/* Avatar */}
-                      <Link href={`/profil/${u.pseudo}`} className="flex-shrink-0">
+                      <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} className="flex-shrink-0">
                         <div
                           className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
                           style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
@@ -513,7 +513,7 @@ export default function AdminPage() {
                       {/* Actions */}
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         {/* Profile link */}
-                        <Link href={`/profil/${u.pseudo}`}>
+                        <Link href={`/profil/${encodeURIComponent(u.pseudo)}`}>
                           <motion.div
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}

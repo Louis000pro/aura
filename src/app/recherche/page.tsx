@@ -391,7 +391,7 @@ export default function RecherchePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                   >
-                    <Link href={`/profil/${profile.pseudo}`}>
+                    <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`}>
                       <motion.div
                         whileHover={{ y: -2, transition: { duration: 0.15 } }}
                         whileTap={{ scale: 0.98 }}
@@ -469,7 +469,7 @@ export default function RecherchePage() {
                       exit={{ opacity: 0, y: -6 }}
                       transition={{ delay: i * 0.04, duration: 0.25 }}
                     >
-                      <Link href={`/profil/${profile.pseudo}`}>
+                      <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`}>
                         <motion.div
                           whileHover={{ y: -2, transition: { duration: 0.15 } }}
                           whileTap={{ scale: 0.98 }}

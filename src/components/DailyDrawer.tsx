@@ -361,7 +361,7 @@ export default function DailyDrawer({
                           background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.8))",
                         }}>
                         <Link
-                          href={`/profil/${dailyVideo.pseudo}`}
+                          href={`/profil/${encodeURIComponent(dailyVideo.pseudo)}`}
                           className="flex items-center gap-2 min-w-0 flex-1"
                           onClick={(e) => e.stopPropagation()}
                         >

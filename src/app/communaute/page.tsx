@@ -1569,7 +1569,7 @@ function renderMentions(text: string) {
   return parts.map((part, i) =>
     /^@\w+$/.test(part)
       ? (
-        <Link key={i} href={`/profil/${part.slice(1)}`} onClick={e => e.stopPropagation()}>
+        <Link key={i} href={`/profil/${encodeURIComponent(part.slice(1))}`} onClick={e => e.stopPropagation()}>
           <b style={{ color: "#A78BFA", fontWeight: 600, fontStyle: "normal" }}>{part}</b>
         </Link>
       )
@@ -1596,7 +1596,7 @@ function CommentRow({
   const sub = dark ? "rgba(255,255,255,0.38)" : "#A0AEC0";
   return (
     <div className="flex items-start gap-2 group">
-      <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
+      <Link href={`/profil/${encodeURIComponent(pseudo)}`} className="flex-shrink-0">
         <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden"
           style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
           {avatar
@@ -1607,7 +1607,7 @@ function CommentRow({
       </Link>
       <div className="flex-1 min-w-0">
         <p className="text-xs leading-relaxed" style={{ color: txt }}>
-          <Link href={`/profil/${pseudo}`}>
+          <Link href={`/profil/${encodeURIComponent(pseudo)}`}>
             <span className="font-semibold mr-1.5" style={{ color: dark ? "#D4C0FF" : "#A78BFA" }}>{pseudo}</span>
           </Link>
           <span className="font-light">{renderMentions(c.content)}</span>
@@ -2848,7 +2848,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
 
         {/* ══ AUTEUR + CAPTION (bas gauche) ══ */}
         <div className="absolute bottom-5 left-4 z-20" style={{ right: isMobile ? 72 : 16, pointerEvents: "none" }}>
-          <Link href={post.user_id === user?.id ? "/profil" : `/profil/${authorPseudo}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
+          <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={authorAvatar} alt={authorPseudo}
@@ -2914,7 +2914,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         onClick={e => e.stopPropagation()}>
 
         {/* Avatar auteur */}
-        <Link href={post.user_id === user?.id ? "/profil" : `/profil/${authorPseudo}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
+        <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
           <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.06 }}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -4065,7 +4065,7 @@ function CommunautePageInner() {
         className="flex items-center justify-between mb-5"
       >
         {view === "thread" && activeDMPartner ? (
-          <Link href={`/profil/${activeDMPartner.pseudo}`} className="flex items-center gap-2.5 cursor-pointer group">
+          <Link href={`/profil/${encodeURIComponent(activeDMPartner.pseudo)}`} className="flex items-center gap-2.5 cursor-pointer group">
             {activeDMPartner.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={activeDMPartner.avatar_url} alt={activeDMPartner.pseudo}
@@ -4460,7 +4460,7 @@ function CommunautePageInner() {
                 >
                   {/* Header */}
                   <div className="flex items-center gap-3 px-4 pt-4 pb-3 relative">
-                    <Link href={`/profil/${authorPseudo}`} className="flex-shrink-0">
+                    <Link href={`/profil/${encodeURIComponent(authorPseudo)}`} className="flex-shrink-0">
                       <motion.div
                         whileHover={{ scale: 1.1 }}
                         transition={{ type: "spring", bounce: 0.4 }}
@@ -4473,7 +4473,7 @@ function CommunautePageInner() {
                           : authorPseudo[0]?.toUpperCase()}
                       </motion.div>
                     </Link>
-                    <Link href={`/profil/${authorPseudo}`} className="flex-1 min-w-0">
+                    <Link href={`/profil/${encodeURIComponent(authorPseudo)}`} className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
                         {isHot && (
@@ -4875,7 +4875,7 @@ function CommunautePageInner() {
                     const isF = followingIds.has(profile.id);
                     return (
                       <div key={profile.id} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
-                        <Link href={`/profil/${profile.pseudo}`} className="flex-shrink-0">
+                        <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-shrink-0">
                           <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold overflow-hidden"
                             style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                             {profile.avatar_url
@@ -4884,7 +4884,7 @@ function CommunautePageInner() {
                               : (profile.pseudo?.[0] ?? "?").toUpperCase()}
                           </div>
                         </Link>
-                        <Link href={`/profil/${profile.pseudo}`} className="flex-1 min-w-0">
+                        <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
                           <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
                           {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
@@ -4928,7 +4928,7 @@ function CommunautePageInner() {
                     return (
                       <div key={profile.id} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
                         {/* Avatar cliquable → profil */}
-                        <Link href={`/profil/${profile.pseudo}`} className="flex-shrink-0">
+                        <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-shrink-0">
                           <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold overflow-hidden"
                             style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                             {profile.avatar_url
@@ -4938,7 +4938,7 @@ function CommunautePageInner() {
                           </div>
                         </Link>
                         {/* Infos cliquables */}
-                        <Link href={`/profil/${profile.pseudo}`} className="flex-1 min-w-0">
+                        <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
                           <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
                           {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
@@ -5202,7 +5202,7 @@ function CommunautePageInner() {
                       style={{ marginBottom: hasReactions ? 8 : 0 }}
                     >
                       {!isMe && (
-                        <Link href={`/profil/${activeDMPartner.pseudo}`} className="flex-shrink-0">
+                        <Link href={`/profil/${encodeURIComponent(activeDMPartner.pseudo)}`} className="flex-shrink-0">
                           <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}>
                             <ProfileAvatar partner={activeDMPartner} size={28} />
                           </motion.div>

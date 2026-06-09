@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         user_id: followed_id,
         title: "Vaiiya · Nouvel abonné",
         body:  `${followerName} te suit maintenant !`,
-        url:   `/profil/${follower?.pseudo ?? ""}`,
+        url:   `/profil/${encodeURIComponent(follower?.pseudo ?? "")}`,
       });
       return Response.json({ ok: true, notif: true, email: false });
     }
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:28px">
-      <a href="${appUrl}/profil/${follower?.pseudo ?? ""}"
+      <a href="${appUrl}/profil/${encodeURIComponent(follower?.pseudo ?? "")}"
          style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);color:#2D3748;text-decoration:none;border-radius:16px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(167,139,250,0.25)">
         Voir le profil
       </a>
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
       user_id: followed_id,
       title: "Vaiiya · Nouvel abonné",
       body:  `${followerName} te suit maintenant !`,
-      url:   `/profil/${follower?.pseudo ?? ""}`,
+      url:   `/profil/${encodeURIComponent(follower?.pseudo ?? "")}`,
     });
 
     return Response.json({ ok: true, notif: true, email: true });

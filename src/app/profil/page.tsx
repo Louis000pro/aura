@@ -120,7 +120,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
             const avatar = c.author?.avatar_url;
             return (
               <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2">
-                <Link href={`/profil/${pseudo}`} className="flex-shrink-0">
+                <Link href={`/profil/${encodeURIComponent(pseudo)}`} className="flex-shrink-0">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                     {avatar
                       // eslint-disable-next-line @next/next/no-img-element
@@ -130,7 +130,7 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
                 </Link>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs leading-relaxed" style={{ color: "#2D3748" }}>
-                    <Link href={`/profil/${pseudo}`}><span className="font-semibold mr-1.5 hover:underline">{pseudo}</span></Link>
+                    <Link href={`/profil/${encodeURIComponent(pseudo)}`}><span className="font-semibold mr-1.5 hover:underline">{pseudo}</span></Link>
                     <span className="font-light">{c.content}</span>
                   </p>
                   <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{postTimeAgo(c.created_at)}</p>
@@ -541,7 +541,7 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
               const isOwn = u.id === userId;
               return (
                 <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-4 py-2.5">
-                  <Link href={`/profil/${u.pseudo}`} onClick={onClose} className="flex-shrink-0">
+                  <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-shrink-0">
                     <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
                       style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
                       {u.avatar_url
@@ -550,7 +550,7 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
                         : (u.pseudo[0] ?? "?").toUpperCase()}
                     </div>
                   </Link>
-                  <Link href={`/profil/${u.pseudo}`} onClick={onClose} className="flex-1 min-w-0">
+                  <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{u.full_name || u.pseudo}</p>
                     <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>@{u.pseudo}</p>
                   </Link>

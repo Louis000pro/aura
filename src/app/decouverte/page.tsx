@@ -173,7 +173,7 @@ function ProfileCard({
       animate={{ opacity: 1, y: 0 }}
       className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl"
     >
-      <Link href={`/profil/${profile.pseudo}`} className="flex-shrink-0">
+      <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-shrink-0">
         <div
           className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base overflow-hidden"
           style={{ background: profile.avatar_url ? "transparent" : avatarGradient(profile.id), color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
@@ -187,7 +187,7 @@ function ProfileCard({
         </div>
       </Link>
 
-      <Link href={`/profil/${profile.pseudo}`} className="flex-1 min-w-0">
+      <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
           {profile.full_name || profile.pseudo}
         </p>
