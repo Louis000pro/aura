@@ -4298,6 +4298,29 @@ function CommunautePageInner() {
             ══════════════════════════════════════════════════════ */}
             <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)", ...(feedTab === "videos" ? { flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" } : {}) }}>
 
+              {/* ── Accès flottant (mobile immersif) : Découverte · Recherche · Messages ── */}
+              {immersiveVideo && (
+                <div className="absolute right-3 z-40 flex items-center gap-2"
+                  style={{ top: "calc(env(safe-area-inset-top) + 10px)" }}>
+                  <Link href="/decouverte" aria-label="Découvrir des comptes">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)" }}>
+                      <Compass size={18} strokeWidth={1.9} color="#fff" />
+                    </div>
+                  </Link>
+                  <button onClick={() => setView("search")} aria-label="Rechercher"
+                    className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+                    style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)" }}>
+                    <Search size={18} strokeWidth={1.9} color="#fff" />
+                  </button>
+                  <button onClick={() => setView("dms")} aria-label="Messages"
+                    className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+                    style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)" }}>
+                    <Send size={17} strokeWidth={1.9} color="#fff" />
+                  </button>
+                </div>
+              )}
+
               {/* ── Tab boutons (overlay flottant en haut sur mobile immersif) ── */}
               <div className={`flex items-center justify-center gap-2 py-1 ${immersiveVideo ? "absolute left-1/2 -translate-x-1/2 z-30" : "pr-0 md:pr-[66px]"}`}
                 style={immersiveVideo
