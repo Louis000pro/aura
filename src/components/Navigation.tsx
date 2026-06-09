@@ -226,8 +226,7 @@ export default function Navigation() {
             {user ? (
               <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowPublish(true)}
                 className="flex-1 flex items-center justify-center" aria-label="Publier">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#F5E6A3,#D4A843)", boxShadow: "0 4px 16px rgba(212,168,67,0.45)" }}>
+                <div className="nav-glass-yellow w-10 h-10 rounded-2xl flex items-center justify-center">
                   <Plus size={20} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
                 </div>
               </motion.button>
@@ -259,8 +258,7 @@ export default function Navigation() {
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
               onClick={() => setShowPublish(true)}
               aria-label="Publier" title="Publier"
-              className="w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mt-1"
-              style={{ background: "linear-gradient(135deg,#F5E6A3,#D4A843)", boxShadow: "0 4px 16px rgba(212,168,67,0.45)" }}
+              className="nav-glass-yellow w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mt-1"
             >
               <Plus size={18} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
             </motion.button>
