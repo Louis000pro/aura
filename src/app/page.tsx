@@ -605,6 +605,9 @@ function LandingPage() {
 }
 
 /* ─── Dashboard ─── */
+// Cache module : les stats de l'accueil s'affichent instantanément au retour
+let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false };
+
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
@@ -638,7 +641,14 @@ function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userContext, setUserContext] = useState<OnboardingData | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [liveStats, setLiveStats] = useState({ score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false });
+  const [liveStats, setLiveStatsRaw] = useState(() => __statsCache);
+  const setLiveStats: typeof setLiveStatsRaw = (v) => {
+    setLiveStatsRaw((prev) => {
+      const next = typeof v === "function" ? (v as (p: typeof prev) => typeof prev)(prev) : v;
+      __statsCache = next; // garde le cache à jour
+      return next;
+    });
+  };
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

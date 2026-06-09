@@ -3226,6 +3226,11 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
   );
 });
 
+// ── Cache module : le feed s'affiche INSTANTANÉMENT au retour sur Communauté ──
+let __feedCache: RealPost[] = [];
+let __likedCache = new Set<string>();
+let __repostedCache = new Set<string>();
+
 function CommunautePageInner() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -3280,7 +3285,7 @@ function CommunautePageInner() {
   const [showAddStory, setShowAddStory] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [realStories, setRealStories] = useState<RealStory[]>([]);
-  const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>([]);
+  const [realFeedPosts, setRealFeedPosts] = useState<RealPost[]>(() => __feedCache);
   const [feedLoading, setFeedLoading] = useState(false);
   const [feedLoadingMore, setFeedLoadingMore] = useState(false);
   const [hasMoreFeed, setHasMoreFeed] = useState(true);
@@ -3316,11 +3321,11 @@ function CommunautePageInner() {
     else if (dx > 0 && feedTab === "videos") setFeedTab("posts"); // doigt vers la droite → Publications
   };
   const [highlightVideoId, setHighlightVideoId] = useState<string | null>(null);
-  const [likedRealIds, setLikedRealIds] = useState<Set<string>>(new Set());
+  const [likedRealIds, setLikedRealIds] = useState<Set<string>>(() => new Set(__likedCache));
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
   const [savedRealIds, setSavedRealIds] = useState<Set<string>>(new Set());
-  const [repostedRealIds, setRepostedRealIds] = useState<Set<string>>(new Set());
+  const [repostedRealIds, setRepostedRealIds] = useState<Set<string>>(() => new Set(__repostedCache));
   const [openRealMenu, setOpenRealMenu] = useState<string | null>(null);
   const [burstRealId, setBurstRealId] = useState<string | null>(null);
   const [dmConversations, setDmConversations] = useState<DMConversation[]>([]);
@@ -3484,7 +3489,8 @@ function CommunautePageInner() {
     if (append) {
       setFeedLoadingMore(true);
     } else {
-      setFeedLoading(true);
+      // Skeleton seulement si rien en cache (sinon refresh silencieux → affichage instantané)
+      if (__feedCache.length === 0) setFeedLoading(true);
       feedPageRef.current = 0;
     }
     const offset = feedPageRef.current * PAGE_SIZE;
@@ -3526,6 +3532,10 @@ function CommunautePageInner() {
         setRealFeedPosts(newPosts);
         setLikedRealIds(myLikes);
         setRepostedRealIds(myReposts);
+        // Mise en cache pour un affichage instantané au prochain retour
+        __feedCache = newPosts;
+        __likedCache = myLikes;
+        __repostedCache = myReposts;
       }
       void mySaves; // available pour usages futurs
       const full = newPosts.length === PAGE_SIZE;
