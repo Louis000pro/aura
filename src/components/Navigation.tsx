@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Users, User, LogIn, LogOut,
-  Settings, Shield, Plus, ChevronRight,
+  Settings, Shield, Plus, ChevronRight, Crown,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -288,6 +288,14 @@ export default function Navigation() {
                       </p>
                       <p className="text-xs mt-0.5 truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
                     </div>
+
+                    {/* Vaiiya Premium */}
+                    <Link href="/premium" onClick={() => setUserMenu(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-purple-50 transition-colors"
+                      style={{ color: "#7C5CFA" }}>
+                      <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
+                      Vaiiya Premium ✦
+                    </Link>
 
                     {/* Paramètres */}
                     <Link href="/parametres" onClick={() => setUserMenu(false)}

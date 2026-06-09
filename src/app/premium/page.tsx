@@ -60,7 +60,7 @@ function PremiumInner() {
   const order: PlanId[] = ["free", "premium", "creator"];
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-12 md:py-16"
+    <div className="relative h-dvh overflow-hidden px-4 py-4 md:py-10 flex flex-col"
       style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
@@ -73,10 +73,10 @@ function PremiumInner() {
         animate={isMobile ? undefined : { scale: [1, 1.12, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
 
-      <div className="relative z-10 max-w-5xl mx-auto">
+      <div className="relative z-10 max-w-5xl mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          className="text-center mb-10">
+          className="text-center mb-4 md:mb-8 flex-shrink-0">
           <span className="inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full"
             style={{ color: "#7C5CFA", background: "rgba(167,139,250,0.12)" }}>VAIIYA PREMIUM ✦</span>
           <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "#2D2150" }}>
@@ -96,7 +96,7 @@ function PremiumInner() {
         )}
 
         {/* Tiers */}
-        <div className="grid md:grid-cols-3 gap-5 items-stretch">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-2.5 md:gap-5 items-stretch flex-1 min-h-0">
           {order.map((id) => {
             const p = PLANS[id];
             const highlight = id === "premium";
@@ -104,14 +104,14 @@ function PremiumInner() {
               <motion.div key={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px]"
+                className="relative rounded-[26px] p-[1.5px] flex-1 md:flex-none min-h-0"
                 style={{
                   background: highlight
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
                     : "rgba(220,215,235,0.7)",
                   boxShadow: highlight ? "0 24px 60px -16px rgba(167,139,250,0.45)" : "0 10px 30px rgba(167,139,250,0.10)",
                 }}>
-                <div className="relative rounded-[24px] p-6 h-full flex flex-col overflow-hidden"
+                <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
                   style={{ background: "rgba(255,255,255,0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
 
                   {highlight && (
@@ -123,16 +123,16 @@ function PremiumInner() {
                     {ICONS[id]}
                     <span className="text-lg font-extrabold" style={{ color: "#2D2150" }}>{p.name}</span>
                   </div>
-                  <p className="text-xs font-light mb-5 min-h-[32px]" style={{ color: "#9488B5" }}>{p.tagline}</p>
+                  <p className="text-xs font-light mb-2.5 md:mb-5 md:min-h-[32px]" style={{ color: "#9488B5" }}>{p.tagline}</p>
 
-                  <div className="mb-5 flex items-end gap-1">
-                    <span className="text-4xl font-black" style={{ color: "#2D2150" }}>
+                  <div className="mb-3 md:mb-5 flex items-end gap-1">
+                    <span className="text-3xl md:text-4xl font-black" style={{ color: "#2D2150" }}>
                       {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                     </span>
                     {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "#9488B5" }}>/mois</span>}
                   </div>
 
-                  <ul className="flex flex-col gap-2.5 mb-6 flex-1">
+                  <ul className="flex flex-col gap-1.5 md:gap-2.5 mb-3 md:mb-6 flex-1 overflow-hidden">
                     {p.features.map((f, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "#4A4060" }}>
                         <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
@@ -149,7 +149,7 @@ function PremiumInner() {
                       style={{ background: "rgba(240,235,255,0.7)", color: "#9488B5" }}>Ton offre actuelle</div>
                   ) : (
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id}
-                      className="py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60"
+                      className="py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60"
                       style={{
                         background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "linear-gradient(135deg,#C4A8FF,#A78BFA)",
                         boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
@@ -163,7 +163,7 @@ function PremiumInner() {
           })}
         </div>
 
-        <p className="text-center text-xs font-light mt-8" style={{ color: "#9488B5" }}>
+        <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "#9488B5" }}>
           Sans engagement · annulable à tout moment · paiement sécurisé par Stripe 🔒
         </p>
       </div>

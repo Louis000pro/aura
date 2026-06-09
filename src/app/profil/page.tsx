@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock,
+  CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
   MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2,
@@ -1781,9 +1781,22 @@ export default function ProfilPage() {
         }}
       />
 
-      {/* ─── Notifs + Settings — top RIGHT ─── */}
+      {/* ─── Notifs + Premium + Settings — top RIGHT ─── */}
       <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
         <NotificationBell side="top" />
+        <Link href="/premium">
+          <motion.div
+            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
+            style={{
+              background: "linear-gradient(135deg,#A78BFA,#7C5CFA)",
+              boxShadow: "0 2px 14px rgba(124,92,250,0.35)",
+            }}
+            aria-label="Vaiiya Premium"
+          >
+            <Crown size={15} strokeWidth={2} style={{ color: "#fff" }} />
+          </motion.div>
+        </Link>
         <Link href="/parametres">
           <motion.div
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
