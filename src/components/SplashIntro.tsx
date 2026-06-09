@@ -35,7 +35,7 @@ export default function SplashIntro() {
           style={{ background: "linear-gradient(150deg,#faf8ff 0%,#fdfaff 45%,#fffdf6 100%)" }}
         >
           {/* Logo + wordmark — remontés sur mobile pour s'aligner sur l'orbe */}
-          <div className="flex flex-col items-center" style={{ transform: isMobile ? "translateY(-9vh)" : "none" }}>
+          <div className="flex flex-col items-center" style={{ transform: isMobile ? "translateY(-4vh)" : "none" }}>
             <motion.img
               src="/logo-vaiiya.png"
               alt="Vaiiya"
