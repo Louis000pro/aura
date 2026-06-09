@@ -215,7 +215,7 @@ export default function Navigation() {
 
       {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="nav-glass lg-highlight relative mx-4 mb-4 rounded-2xl px-2 py-2">
+        <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
             {/* 1. Accueil */}
             <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile />
