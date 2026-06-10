@@ -718,28 +718,24 @@ export default function DecouvertePage() {
             </>
           )}
 
-          {/* ── Défis tab ── */}
+          {/* ── Défis tab (en maintenance) ── */}
           {activeTab === "defis" && (
-            <>
-              <p className="text-[11px] font-light px-1 mb-2" style={{ color: "#A0AEC0" }}>
-                Rejoins un défi communautaire et progresse ensemble
-              </p>
-              <div className="flex flex-col gap-3">
-                {CHALLENGES.map((challenge, i) => (
-                  <motion.div
-                    key={challenge.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04, type: "spring", bounce: 0.2 }}
-                  >
-                    <ChallengeCard challenge={challenge} />
-                  </motion.div>
-                ))}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center text-center py-16 px-6 gap-4"
+            >
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, rgba(245,230,163,0.45), rgba(212,168,67,0.25))", border: "1px solid rgba(212,168,67,0.25)" }}>
+                <Swords size={26} strokeWidth={1.4} style={{ color: "#D4A843" }} />
               </div>
-              <p className="text-[10px] text-center font-light pt-2 pb-1" style={{ color: "#C0C0C0" }}>
-                Nouveaux défis ajoutés chaque semaine
-              </p>
-            </>
+              <div>
+                <p className="text-lg font-light" style={{ color: "#2D3748" }}>Défis en maintenance</p>
+                <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                  On peaufine cette section pour te proposer des défis au top.<br />Reviens très vite ✨
+                </p>
+              </div>
+            </motion.div>
           )}
         </motion.div>
       </AnimatePresence>

@@ -231,12 +231,12 @@ function StoryCard({ story }: { story: RealStory }) {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
       className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center"
-      style={{ background: "linear-gradient(160deg, #1A0A35 0%, #3D2F6B 60%, #2D1F50 100%)" }}
+      style={{ background: "radial-gradient(circle at 50% 34%, #FBF0C8 0%, #ECC766 46%, #CE9F38 100%)" }}
     >
       <div className="text-7xl mb-5">{(d.emoji as string) ?? "✨"}</div>
-      <p className="text-2xl font-semibold leading-snug text-white">{(d.text as string) ?? (story.caption ?? "")}</p>
+      <p className="text-2xl font-semibold leading-snug" style={{ color: "#4A3712" }}>{(d.text as string) ?? (story.caption ?? "")}</p>
       {story.caption && story.caption !== (d.text as string) && (
-        <p className="text-sm font-light mt-4" style={{ color: "rgba(212,192,255,0.7)" }}>{story.caption}</p>
+        <p className="text-sm font-light mt-4" style={{ color: "rgba(74,55,18,0.7)" }}>{story.caption}</p>
       )}
     </motion.div>
   );
@@ -2874,7 +2874,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
               </div>
             )}
             <span className="text-white text-sm font-semibold leading-none drop-shadow-sm">@{authorPseudo}</span>
-            {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
+            {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#D4A843", flexShrink: 0 }} />}
           </Link>
           {post.caption && (
             <p className="text-white text-[13px] leading-snug line-clamp-2" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.85)", pointerEvents: "auto" }}>
@@ -4437,8 +4437,8 @@ function CommunautePageInner() {
                       style={{
                         width: 105,
                         ...(feedMode === mode
-                          ? { background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", color: "#fff", boxShadow: "0 2px 12px rgba(124,92,250,0.35)" }
-                          : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
+                          ? { background: "linear-gradient(135deg,#F5D98A,#D4A843)", color: "#fff", boxShadow: "0 2px 12px rgba(212,168,67,0.4)" }
+                          : { background: "rgba(245,240,225,0.6)", color: "#A0AEC0" })
                       }}
                     >
                       {mode === "algo" ? "Pour toi" : "Amis"}
@@ -4513,7 +4513,7 @@ function CommunautePageInner() {
                 <div className="text-center px-6">
                   <p className="text-base font-light" style={{ color: "#2D3748" }}>Pas encore de posts d&apos;amis</p>
                   <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
-                    Tu verras ici les posts des personnes que tu suis et qui te suivent en retour. Abonne-toi et reste connecté pour remplir ton fil 💜
+                    Tu verras ici les posts des personnes que tu suis et qui te suivent en retour. Abonne-toi et reste connecté pour remplir ton fil
                   </p>
                 </div>
                 <motion.button
@@ -4597,7 +4597,7 @@ function CommunautePageInner() {
                         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
                         {authorCertified && (
                           <div className="flex-shrink-0 flex items-center justify-center rounded-full"
-                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
+                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,#F5D98A,#D4A843)", boxShadow: "0 1px 6px rgba(212,168,67,0.45)" }}>
                             <svg width="9" height="9" viewBox="0 0 13 13" fill="none">
                               <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>

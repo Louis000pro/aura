@@ -3255,7 +3255,16 @@ export default function ProgressionPage() {
           exit={{ opacity: 0, x: 16 }}
           transition={{ duration: 0.3 }}
         >
-          <ExerciseAnalyzer />
+          {/* DA jaune-beige rayonnante */}
+          <div
+            className="rounded-3xl p-3"
+            style={{
+              background: "radial-gradient(circle at 50% 0%, rgba(245,230,163,0.55) 0%, rgba(232,196,106,0.22) 42%, rgba(212,168,67,0.06) 70%, transparent 100%)",
+              border: "1px solid rgba(212,168,67,0.18)",
+            }}
+          >
+            <ExerciseAnalyzer />
+          </div>
         </motion.div>
       )}
 
