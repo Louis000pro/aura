@@ -219,6 +219,7 @@ export async function POST(req: NextRequest) {
   let programme: string | null = null;
   let richProfile: RichProfile | null = null;
   let lieu: string | null = null;
+  let maxTokens = 800;
 
   try {
     const body = await req.json();
@@ -229,6 +230,9 @@ export async function POST(req: NextRequest) {
     programme = body.programme ?? null;
     richProfile = body.richProfile ?? null;
     lieu = body.lieu ?? null;
+    // Les tâches de génération (programme, plan repas) peuvent demander plus de tokens
+    // pour éviter un JSON tronqué. Plafonné pour rester raisonnable.
+    if (body.maxTokens) maxTokens = Math.min(Math.max(Number(body.maxTokens) || 800, 800), 4000);
   } catch {
     return new Response("Invalid request body", { status: 400 });
   }
@@ -243,7 +247,7 @@ export async function POST(req: NextRequest) {
         ...messages,
       ],
       stream: true,
-      max_tokens: 800,
+      max_tokens: maxTokens,
       temperature: 0.4,
     });
 

@@ -387,6 +387,7 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: [{ role: "user", content: prompt }],
+            maxTokens: 2500,
           }),
         });
 

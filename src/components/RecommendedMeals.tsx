@@ -186,6 +186,7 @@ export default function RecommendedMeals() {
 - Poids: ${weight}
 - Âge: ${age}
 Pour chaque jour, propose 4 repas (petit-dejeuner, dejeuner, gouter, diner) avec des plats CONCRETS, équilibrés et adaptés à l'objectif, et une estimation de calories réaliste.
+IMPORTANT : noms de plats COURTS (4-6 mots max, sans détails superflus) pour garder une réponse compacte.
 Réponds UNIQUEMENT avec un JSON valide de cette forme:
 { "semaine": [ { "jour": "Lundi", "repas": [ { "type": "petit-dejeuner", "nom": "Flocons d'avoine, banane, amandes", "calories": 420 }, { "type": "dejeuner", "nom": "Poulet grillé, riz complet, brocolis", "calories": 650 }, { "type": "gouter", "nom": "Yaourt grec, fruits rouges", "calories": 180 }, { "type": "diner", "nom": "Saumon, patate douce, épinards", "calories": 550 } ] } ] }
 Exactement 7 jours (Lundi à Dimanche), 4 repas par jour. Varie les plats d'un jour à l'autre.`;
@@ -194,7 +195,8 @@ Exactement 7 jours (Lundi à Dimanche), 4 repas par jour. Varie les plats d'un j
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+          // Plan 7 jours × 4 repas → besoin de plus de tokens pour un JSON complet
+          body: JSON.stringify({ messages: [{ role: "user", content: prompt }], maxTokens: 4000 }),
         });
         if (!response.ok || !response.body) throw new Error("API error");
 
