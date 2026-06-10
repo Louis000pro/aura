@@ -1,11 +1,12 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, UserCheck, Dumbbell, Activity, Shield, Search,
   X, RefreshCw, Crown, Trash2, ChevronRight, TrendingUp,
+  Pencil, Camera, BadgeCheck, Ban, Check,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +20,8 @@ type AdminUser = {
   email?: string;
   avatar_url?: string;
   is_admin?: boolean;
+  is_certified?: boolean;
+  is_banned?: boolean;
   created_at: string;
   follower_count?: number;
   following_count?: number;
@@ -205,6 +208,178 @@ function StatCard({ icon: Icon, label, value, color }: { icon: typeof Users; lab
   );
 }
 
+/* ─── Helper : fichier image → JPEG carré 512px en base64 (center-crop) ─── */
+function fileToSquareBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = (img.naturalWidth - size) / 2;
+      const sy = (img.naturalHeight - size) / 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("canvas"));
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 512, 512);
+      resolve(canvas.toDataURL("image/jpeg", 0.9).split(",")[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("image")); };
+    img.src = url;
+  });
+}
+
+/* ─── Modal de gestion d'un utilisateur (admin) ─── */
+function ManageUserModal({
+  target, onClose, callApi, onUpdated, showToast,
+}: {
+  target: AdminUser;
+  onClose: () => void;
+  callApi: (action: string, targetId: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
+  onUpdated: (id: string, patch: Partial<AdminUser>) => void;
+  showToast: (m: string) => void;
+}) {
+  const [pseudoInput, setPseudoInput] = useState(target.pseudo);
+  const [savingPseudo, setSavingPseudo] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [busyCert, setBusyCert] = useState(false);
+  const [busyBan, setBusyBan] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const savePseudo = async () => {
+    const p = pseudoInput.trim();
+    if (!p || p === target.pseudo) return;
+    setSavingPseudo(true);
+    const r = await callApi("set_pseudo", target.id, { pseudo: p });
+    setSavingPseudo(false);
+    if (r) { onUpdated(target.id, { pseudo: p }); showToast(`Pseudo → @${p}`); }
+  };
+
+  const changeAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const b64 = await fileToSquareBase64(file);
+      const r = await callApi("set_avatar", target.id, { image_base64: b64 });
+      if (r?.avatar_url) { onUpdated(target.id, { avatar_url: r.avatar_url as string }); showToast("Photo mise à jour"); }
+    } catch { showToast("Image illisible"); }
+    finally { setUploadingAvatar(false); }
+  };
+
+  const toggleCert = async () => {
+    setBusyCert(true);
+    const next = !target.is_certified;
+    const r = await callApi("set_certified", target.id, { value: next });
+    setBusyCert(false);
+    if (r) { onUpdated(target.id, { is_certified: next }); showToast(next ? "Compte certifié ✓" : "Certification retirée"); }
+  };
+
+  const toggleBan = async () => {
+    setBusyBan(true);
+    const next = !target.is_banned;
+    const r = await callApi("set_banned", target.id, { value: next });
+    setBusyBan(false);
+    if (r) { onUpdated(target.id, { is_banned: next }); showToast(next ? "Utilisateur banni" : "Bannissement levé"); }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-0 md:px-5"
+      style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
+        className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-8 md:pb-6"
+        style={{ background: "rgba(255,255,255,0.98)", boxShadow: "0 -12px 60px rgba(167,139,250,0.18)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center mb-4 md:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+        </div>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-semibold" style={{ color: "#2D3748" }}>Gérer @{target.pseudo}</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          </motion.button>
+        </div>
+
+        {/* Avatar */}
+        <div className="flex flex-col items-center mb-6">
+          <motion.div whileTap={{ scale: 0.96 }} onClick={() => fileRef.current?.click()}
+            className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-light cursor-pointer relative overflow-hidden"
+            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 4px 20px rgba(167,139,250,0.3)" }}>
+            {target.avatar_url
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img loading="lazy" decoding="async" src={target.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+              : <span>{(target.pseudo[0] ?? "?").toUpperCase()}</span>}
+            {uploadingAvatar && (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(255,255,255,0.75)" }}>
+                <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              </div>
+            )}
+            <div className="absolute bottom-0 inset-x-0 h-8 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.32)" }}>
+              <Camera size={14} strokeWidth={2} style={{ color: "white" }} />
+            </div>
+          </motion.div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={changeAvatar} />
+          <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>Appuie pour changer la photo</p>
+        </div>
+
+        {/* Pseudo */}
+        <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Pseudo</label>
+        <div className="flex gap-2 mb-5">
+          <input type="text" value={pseudoInput}
+            onChange={(e) => setPseudoInput(e.target.value.replace(/[^\p{L}\p{N}\p{Emoji}\p{Extended_Pictographic}‍️ ._-]/gu, "").slice(0, 30))}
+            className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none"
+            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }} />
+          <motion.button whileTap={{ scale: 0.96 }} onClick={savePseudo}
+            disabled={savingPseudo || !pseudoInput.trim() || pseudoInput.trim() === target.pseudo}
+            className="px-4 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center"
+            style={{ background: (!pseudoInput.trim() || pseudoInput.trim() === target.pseudo) ? "rgba(220,220,220,0.5)" : "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: (!pseudoInput.trim() || pseudoInput.trim() === target.pseudo) ? "#A0AEC0" : "#fff" }}>
+            {savingPseudo ? "…" : <Check size={16} strokeWidth={2.5} />}
+          </motion.button>
+        </div>
+
+        {/* Certifier + Bannir */}
+        <div className="flex flex-col gap-2.5">
+          <button onClick={toggleCert} disabled={busyCert}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer text-left"
+            style={{ background: target.is_certified ? "rgba(59,158,255,0.1)" : "rgba(240,235,255,0.5)", border: `1px solid ${target.is_certified ? "rgba(59,158,255,0.3)" : "rgba(212,192,255,0.3)"}` }}>
+            <BadgeCheck size={18} strokeWidth={1.8} style={{ color: target.is_certified ? "#3B9EFF" : "#A0AEC0" }} />
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{target.is_certified ? "Certifié" : "Certifier le compte"}</p>
+              <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>Badge vérifié bleu</p>
+            </div>
+            <div className="w-10 h-6 rounded-full flex items-center px-0.5 transition-all" style={{ background: target.is_certified ? "#3B9EFF" : "rgba(160,174,192,0.35)", justifyContent: target.is_certified ? "flex-end" : "flex-start" }}>
+              <div className="w-5 h-5 rounded-full bg-white" />
+            </div>
+          </button>
+
+          <button onClick={toggleBan} disabled={busyBan}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer text-left"
+            style={{ background: target.is_banned ? "rgba(252,129,129,0.12)" : "rgba(240,235,255,0.5)", border: `1px solid ${target.is_banned ? "rgba(252,129,129,0.35)" : "rgba(212,192,255,0.3)"}` }}>
+            <Ban size={18} strokeWidth={1.8} style={{ color: target.is_banned ? "#E53E3E" : "#A0AEC0" }} />
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{target.is_banned ? "Banni" : "Bannir l'utilisateur"}</p>
+              <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>Bloque l'accès à l'app</p>
+            </div>
+            <div className="w-10 h-6 rounded-full flex items-center px-0.5 transition-all" style={{ background: target.is_banned ? "#E53E3E" : "rgba(160,174,192,0.35)", justifyContent: target.is_banned ? "flex-end" : "flex-start" }}>
+              <div className="w-5 h-5 rounded-full bg-white" />
+            </div>
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── Main ─── */
 export default function AdminPage() {
   const { user, isLoading } = useAuth();
@@ -217,6 +392,7 @@ export default function AdminPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AdminUser | null>(null);
+  const [manageUser, setManageUser] = useState<AdminUser | null>(null);
   const [tab, setTab] = useState<"users" | "stats">("users");
 
   const showToast = (msg: string) => {
@@ -239,8 +415,19 @@ export default function AdminPage() {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-      const [usersRes, followsRes, sessionsRes, notifsRes, postsRes, postAudienceRes] = await Promise.all([
-        supabase.from("profiles").select("id, pseudo, full_name, avatar_url, is_admin, created_at").order("created_at", { ascending: false }),
+      // Fetch users défensif : tente avec is_certified/is_banned, sinon fallback
+      let usersRes = await supabase
+        .from("profiles")
+        .select("id, pseudo, full_name, avatar_url, is_admin, is_certified, is_banned, created_at")
+        .order("created_at", { ascending: false });
+      if (usersRes.error) {
+        usersRes = await supabase
+          .from("profiles")
+          .select("id, pseudo, full_name, avatar_url, is_admin, created_at")
+          .order("created_at", { ascending: false });
+      }
+
+      const [followsRes, sessionsRes, notifsRes, postsRes, postAudienceRes] = await Promise.all([
         supabase.from("followers").select("follower_id", { count: "exact", head: true }),
         supabase.from("workout_sessions").select("id", { count: "exact", head: true }),
         supabase.from("notifications").select("id", { count: "exact", head: true }),
@@ -339,6 +526,27 @@ export default function AdminPage() {
     setUsers((prev) => prev.filter((u) => u.id !== target.id));
     setConfirmDelete(null);
     showToast(`@${target.pseudo} supprimé`);
+  };
+
+  // Appel sécurisé de la route admin (avec le token de l'admin)
+  const callAdminApi = async (action: string, targetId: string, extra: Record<string, unknown> = {}) => {
+    const supabase = createClient();
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) { showToast("Session expirée, reconnecte-toi"); return null; }
+    const res = await fetch("/api/admin/user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action, target_id: targetId, ...extra }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(`Erreur : ${json.error ?? res.status}`); return null; }
+    return json;
+  };
+
+  const updateUserLocal = (id: string, patch: Partial<AdminUser>) => {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+    setManageUser((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
   };
 
   const filtered = search.trim()
@@ -494,8 +702,14 @@ export default function AdminPage() {
                           <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
                             {u.full_name || u.pseudo}
                           </p>
+                          {u.is_certified && (
+                            <BadgeCheck size={12} strokeWidth={2} style={{ color: "#3B9EFF", flexShrink: 0 }} />
+                          )}
                           {u.is_admin && (
                             <Crown size={11} strokeWidth={2} style={{ color: "#D4A843", flexShrink: 0 }} />
+                          )}
+                          {u.is_banned && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ background: "rgba(252,129,129,0.15)", color: "#E53E3E" }}>BANNI</span>
                           )}
                         </div>
                         <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{u.pseudo}</p>
@@ -524,6 +738,20 @@ export default function AdminPage() {
                             <ChevronRight size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
                           </motion.div>
                         </Link>
+
+                        {/* Gérer (pseudo, photo, certif, ban) */}
+                        {u.id !== user.id && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setManageUser(u)}
+                            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                            style={{ background: "rgba(240,235,255,0.7)" }}
+                            title="Gérer l'utilisateur"
+                          >
+                            <Pencil size={12} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                          </motion.button>
+                        )}
 
                         {/* Toggle admin (pas sur soi-même) */}
                         {u.id !== user.id && (
@@ -692,6 +920,20 @@ export default function AdminPage() {
             </div>
 
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Manage user modal */}
+      <AnimatePresence>
+        {manageUser && (
+          <ManageUserModal
+            key={manageUser.id}
+            target={manageUser}
+            onClose={() => setManageUser(null)}
+            callApi={callAdminApi}
+            onUpdated={updateUserLocal}
+            showToast={showToast}
+          />
         )}
       </AnimatePresence>
 

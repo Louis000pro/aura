@@ -63,12 +63,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // D'abord on set avec les metadata (immédiat, sans attendre la DB)
     setUser(mapUser(sbUser));
     // Puis on fetch le profil DB et on met à jour (async, non-bloquant)
-    supabase
-      .from("profiles")
-      .select("pseudo, avatar_url, is_admin")
-      .eq("id", sbUser.id)
-      .maybeSingle()
-      .then(({ data }) => {
+    // Sélection défensive : si la colonne is_banned n'existe pas encore, on refetch sans.
+    (async () => {
+      let res = await supabase
+        .from("profiles")
+        .select("pseudo, avatar_url, is_admin, is_banned")
+        .eq("id", sbUser.id)
+        .maybeSingle();
+      if (res.error) {
+        res = await supabase
+          .from("profiles")
+          .select("pseudo, avatar_url, is_admin")
+          .eq("id", sbUser.id)
+          .maybeSingle();
+      }
+      const data = res.data as ({ pseudo?: string; avatar_url?: string; is_admin?: boolean; is_banned?: boolean } | null);
+
+      // Compte banni → déconnexion immédiate
+      if (data && (data as { is_banned?: boolean }).is_banned) {
+        try { await supabase.auth.signOut(); } catch { /* ignore */ }
+        setUser(null);
+        if (typeof window !== "undefined") {
+          window.alert("Ton compte a été suspendu. Si tu penses que c'est une erreur, contacte le support.");
+        }
+        return;
+      }
+
+      {
         if (data && data.pseudo && String(data.pseudo).trim()) {
           setUser(mapUser(sbUser, data));
         } else {
@@ -88,7 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (res?.profile) setUser(mapUser(sbUser, res.profile));
           }).catch(() => {});
         }
-      });
+      }
+    })();
   };
 
   useEffect(() => {

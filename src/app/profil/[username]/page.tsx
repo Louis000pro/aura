@@ -240,6 +240,7 @@ export default function PublicProfilePage() {
   // Stories à la une (highlights permanents) du profil visité
   const [profileHighlights, setProfileHighlights] = useState<{ id: string; name: string; cover_url: string | null }[]>([]);
   const [viewerLoading, setViewerLoading] = useState(false);
+  const [certified, setCertified] = useState(false); // is_certified (fetch défensif)
   const [userPosts, setUserPosts] = useState<DbPost[]>([]);
   const [postCount, setPostCount] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -287,6 +288,10 @@ export default function PublicProfilePage() {
           return;
         }
         setProfile(data);
+
+        // Certification (fetch défensif : la colonne is_certified peut ne pas exister)
+        supabase.from("profiles").select("is_certified").eq("id", data.id).maybeSingle()
+          .then(({ data: c }) => { if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true); });
 
         const [followersRes, followingRes, sessionsRes, recentRes] = await Promise.all([
           supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", data.id),
@@ -571,7 +576,7 @@ export default function PublicProfilePage() {
   const displayPseudo = profile?.pseudo ?? username;
   const displayAvatar = profile?.avatar_url ?? "";
   const initial = displayPseudo[0]?.toUpperCase() ?? "?";
-  const isCertified = profile?.is_admin === true;
+  const isCertified = certified || profile?.is_admin === true;
 
   return (
     <div className="min-h-screen px-6 pt-10 pb-12 max-w-2xl mx-auto relative overflow-x-hidden">
