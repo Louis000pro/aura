@@ -464,7 +464,8 @@ export default function AuthPage() {
               transition={{ duration:3,repeat:Infinity }}>
               <motion.div className="absolute inset-0 rounded-2xl" style={{ border:"1px solid rgba(167,139,250,0.5)" }}
                 animate={{ scale:[1,1.35,1],opacity:[0.6,0,0.6] }} transition={{ duration:2,repeat:Infinity }} />
-              <span className="text-xl font-light relative z-10" style={{ color:"#2D3748" }}>A</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-10 h-10 object-contain relative z-10" />
             </motion.div>
             <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"#2D3748" }}>Vaiiya</h1>
             <p className="text-[11px] font-light mt-0.5" style={{ color:"#A0AEC0" }}>Coach IA · Musculation · Nutrition</p>

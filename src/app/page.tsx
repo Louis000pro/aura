@@ -439,28 +439,28 @@ function LandingPage() {
       {/* ── Nav bar ── */}
       <motion.nav
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-        className="relative z-20 flex items-center justify-between px-6 md:px-10 py-5"
+        className="relative z-20 flex items-center justify-between gap-2 px-4 md:px-10 py-4"
       >
-        <span className="text-2xl font-extralight tracking-[0.15em]" style={{ color: "#2D3748" }}>
+        <span className="text-xl md:text-2xl font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "#2D3748" }}>
           Vaiiya
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link href="/auth?mode=login">
             <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
-              className="px-4 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
+              className="px-3.5 py-2 rounded-2xl text-[13px] font-medium cursor-pointer whitespace-nowrap"
               style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4A5568", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
               Se connecter
             </motion.div>
           </Link>
           <Link href="/auth?mode=signup">
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}
-              className="relative px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
+              className="relative px-3.5 py-2 rounded-2xl text-[13px] font-semibold cursor-pointer overflow-hidden whitespace-nowrap"
               style={{ background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
               <motion.div className="absolute inset-0 pointer-events-none"
                 style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.3) 50%,transparent 65%)" }}
                 animate={{ x: ["-120%","120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }} />
               <span className="relative z-10 flex items-center gap-1.5">
-                Commencer gratuitement
+                Commencer
                 <ArrowRight size={14} strokeWidth={2.5} />
               </span>
             </motion.div>
