@@ -38,17 +38,23 @@ function PremiumInner() {
     else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux 💜");
   }, [params]);
 
-  // À l'arrivée sur mobile : centrer le carrousel sur la carte Premium (8,99 €)
+  // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.
+  // Plusieurs passes pour gérer le layout/polices qui se stabilisent (PWA & web).
   useEffect(() => {
-    const c = carouselRef.current;
-    if (!c || !window.matchMedia("(max-width: 767px)").matches) return;
-    requestAnimationFrame(() => {
-      const card = c.querySelector('[data-tier="premium"]') as HTMLElement | null;
-      if (card) {
-        const left = card.offsetLeft - (c.clientWidth - card.clientWidth) / 2;
-        c.scrollTo({ left: Math.max(0, left), behavior: "auto" });
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    const center = () => {
+      const c = carouselRef.current;
+      const card = c?.querySelector('[data-tier="premium"]') as HTMLElement | null;
+      if (c && card) {
+        c.scrollLeft = Math.max(0, card.offsetLeft + card.offsetWidth / 2 - c.clientWidth / 2);
       }
-    });
+    };
+    center();
+    const r = requestAnimationFrame(center);
+    const t1 = setTimeout(center, 120);
+    const t2 = setTimeout(center, 350);
+    const t3 = setTimeout(center, 700);
+    return () => { cancelAnimationFrame(r); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   const subscribe = async (plan: PlanId) => {
@@ -114,7 +120,7 @@ function PremiumInner() {
         <div
           ref={carouselRef}
           className="flex md:grid md:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch flex-1 min-h-0"
-          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never, scrollPaddingLeft: 16 }}
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never }}
         >
           {order.map((id) => {
             const p = PLANS[id];
