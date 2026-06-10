@@ -69,10 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq("id", sbUser.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) {
+        if (data && data.pseudo && String(data.pseudo).trim()) {
           setUser(mapUser(sbUser, data));
         } else {
-          // Profil manquant → on le crée via l'endpoint admin (le trigger n'a pas tourné)
+          // Profil manquant OU pseudo vide (compte Google) → création / réparation
+          if (data) setUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
           void fetch("/api/me/ensure-profile", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

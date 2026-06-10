@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -195,6 +196,131 @@ function Toast({ message }: { message: string }) {
 }
 
 /* ─────────────── Edit Profile Modal ─────────────── */
+/* ─────────────── Avatar Cropper (recadrage circulaire : drag + zoom) ─────────────── */
+function AvatarCropper({ src, onCancel, onCropped }: {
+  src: string;
+  onCancel: () => void;
+  onCropped: (blob: Blob) => void;
+}) {
+  const V = 280;   // taille du viewport à l'écran
+  const OUT = 512; // taille de sortie (px)
+  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const drag = useRef<{ x: number; y: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  const baseScale = natural ? V / Math.min(natural.w, natural.h) : 1;
+  const dispScale = baseScale * zoom;
+  const imgW = natural ? natural.w * dispScale : V;
+  const imgH = natural ? natural.h * dispScale : V;
+
+  const clamp = (o: { x: number; y: number }) => {
+    const maxX = Math.max(0, (imgW - V) / 2);
+    const maxY = Math.max(0, (imgH - V) / 2);
+    return { x: Math.max(-maxX, Math.min(maxX, o.x)), y: Math.max(-maxY, Math.min(maxY, o.y)) };
+  };
+
+  // Re-clamp l'offset quand le zoom change
+  useEffect(() => { setOffset((o) => clamp(o)); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [zoom, natural]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    drag.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!drag.current) return;
+    setOffset(clamp({ x: e.clientX - drag.current.x, y: e.clientY - drag.current.y }));
+  };
+  const onPointerUp = () => { drag.current = null; };
+
+  const confirm = () => {
+    if (!natural || !imgRef.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = OUT; canvas.height = OUT;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const imgLeft = V / 2 + offset.x - imgW / 2;
+    const imgTop = V / 2 + offset.y - imgH / 2;
+    const sx = (0 - imgLeft) / dispScale;
+    const sy = (0 - imgTop) / dispScale;
+    const sSize = V / dispScale;
+    ctx.drawImage(imgRef.current, sx, sy, sSize, sSize, 0, 0, OUT, OUT);
+    canvas.toBlob((b) => { if (b) onCropped(b); }, "image/jpeg", 0.9);
+  };
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[80] flex items-center justify-center px-4"
+      style={{ background: "rgba(30,22,55,0.7)", backdropFilter: "blur(8px)" }}
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 16, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }}
+        transition={{ type: "spring", damping: 28, stiffness: 280 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-3xl p-6 flex flex-col items-center"
+        style={{ background: "rgba(255,255,255,0.98)", boxShadow: "0 24px 70px rgba(167,139,250,0.3)" }}
+      >
+        <p className="text-base font-semibold mb-1" style={{ color: "#2D3748" }}>Recadre ta photo</p>
+        <p className="text-[11px] mb-4" style={{ color: "#A0AEC0" }}>Glisse pour déplacer · zoome avec le curseur</p>
+
+        {/* Viewport circulaire */}
+        <div
+          className="relative overflow-hidden select-none"
+          style={{ width: V, height: V, borderRadius: "50%", touchAction: "none", cursor: "grab", background: "#EEE" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imgRef}
+            src={src}
+            alt=""
+            draggable={false}
+            onLoad={(e) => { const t = e.currentTarget; setNatural({ w: t.naturalWidth, h: t.naturalHeight }); }}
+            style={{
+              position: "absolute", left: "50%", top: "50%",
+              width: imgW, height: imgH, maxWidth: "none",
+              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
+              userSelect: "none", pointerEvents: "none",
+            }}
+          />
+          {/* Anneau de cadrage */}
+          <div className="absolute inset-0 pointer-events-none rounded-full" style={{ boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.9)" }} />
+        </div>
+
+        {/* Zoom */}
+        <input
+          type="range" min={1} max={3} step={0.01} value={zoom}
+          onChange={(e) => setZoom(parseFloat(e.target.value))}
+          className="w-full mt-5 accent-[#A78BFA]"
+        />
+
+        {/* Actions */}
+        <div className="flex gap-3 w-full mt-5">
+          <motion.button whileTap={{ scale: 0.96 }} onClick={onCancel}
+            className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
+            style={{ background: "rgba(240,235,255,0.8)", color: "#718096" }}>
+            Annuler
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.96 }} onClick={confirm}
+            className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+            style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}>
+            <Check size={15} strokeWidth={2.5} /> Valider
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  );
+}
+
 function EditProfileModal({
   pseudo, fullName, bio, avatarUrl, userId, onSave, onClose,
 }: {
@@ -208,17 +334,25 @@ function EditProfileModal({
   const [previewUrl, setPreviewUrl] = useState(avatarUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Sélection d'un fichier → ouvre le recadrage (au lieu d'uploader directement)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCropSrc(URL.createObjectURL(file));
+    e.target.value = ""; // permet de re-sélectionner le même fichier
+  };
+
+  // Upload de l'image recadrée (JPEG)
+  const handleCropped = async (blob: Blob) => {
+    setCropSrc(null);
     setUploading(true);
     try {
       const supabase = createClient();
-      const ext = file.name.split(".").pop();
-      const path = `${userId}/avatar.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      const path = `${userId}/avatar.jpg`;
+      const { error } = await supabase.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (!error) {
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
         setPreviewUrl(urlData.publicUrl + "?t=" + Date.now());
@@ -326,6 +460,17 @@ function EditProfileModal({
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>Appuie pour changer la photo</p>
         </div>
+
+        {/* Recadrage de la photo sélectionnée */}
+        <AnimatePresence>
+          {cropSrc && (
+            <AvatarCropper
+              src={cropSrc}
+              onCancel={() => setCropSrc(null)}
+              onCropped={handleCropped}
+            />
+          )}
+        </AnimatePresence>
 
         <div className="flex flex-col gap-3">
           {/* Full name */}
