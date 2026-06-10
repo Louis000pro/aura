@@ -345,6 +345,12 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
   const namesRef = useRef<HTMLDivElement>(null);
   const nameRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Scroll le nom sélectionné dans la vue quand le slider bouge
+  // ⚠️ Doit rester AVANT tout return conditionnel (Rules of Hooks)
+  useEffect(() => {
+    nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [selectedDay]);
+
   /* ── No profile data ── */
   const hasOnboardingData =
     profile &&
@@ -429,11 +435,6 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
     setSelectedDay(getDayFromX(e.clientX));
   };
-
-  // Scroll le nom sélectionné dans la vue quand le slider bouge
-  useEffect(() => {
-    nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [selectedDay]);
 
   // Centre de chaque segment sur une grille de 7 (ex: jour 0 → 7.1%, jour 6 → 92.9%)
   const pct = ((selectedDay + 0.5) / 7) * 100;

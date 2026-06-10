@@ -238,6 +238,11 @@ Exactement 7 jours (Lundi à Dimanche), 4 repas par jour. Varie les plats d'un j
   const trackRef = useRef<HTMLDivElement>(null);
   const nameRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // ⚠️ Tous les hooks AVANT tout return conditionnel (Rules of Hooks)
+  useEffect(() => {
+    nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [selectedDay]);
+
   const hasOnboardingData =
     profile &&
     (profile.onboarding_level ||
@@ -288,10 +293,6 @@ Exactement 7 jours (Lundi à Dimanche), 4 repas par jour. Varie les plats d'un j
     if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
     setSelectedDay(getDayFromX(e.clientX));
   };
-
-  useEffect(() => {
-    nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [selectedDay]);
 
   const pct = ((selectedDay + 0.5) / 7) * 100;
 
