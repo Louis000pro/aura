@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Dumbbell, Settings, Home, MapPin } from "lucide-react";
+import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -97,8 +98,104 @@ function SkeletonDetail() {
   );
 }
 
+/* ─── Nettoie le nom d'un exercice pour une recherche vidéo propre ─── */
+function cleanExerciseName(raw: string): string {
+  return raw
+    .replace(/\s*\d+\s*[x×]\s*\d+.*$/i, "") // "4x8", "3 x 12 …"
+    .replace(/\s*[-–:]\s*\d+.*$/, "")        // "- 30s", ": 12 reps"
+    .replace(/\s*\d+\s*(reps?|répétitions?|sec|s|min|kg)\b.*$/i, "")
+    .replace(/\(.*?\)/g, "")                  // parenthèses
+    .trim() || raw.trim();
+}
+
+/* ─── Modal tuto vidéo d'un exercice (référence YouTube) ─── */
+function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: () => void }) {
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "none">("loading");
+  const clean = cleanExerciseName(exercise);
+
+  useEffect(() => {
+    let cancelled = false;
+    setState("loading"); setVideoId(null);
+    fetch(`/api/exercise-video?q=${encodeURIComponent(clean)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d.videoId) { setVideoId(d.videoId); setState("ready"); }
+        else setState("none");
+      })
+      .catch(() => { if (!cancelled) setState("none"); });
+    return () => { cancelled = true; };
+  }, [clean]);
+
+  const ytSearch = `https://www.youtube.com/results?search_query=${encodeURIComponent(clean + " technique musculation")}`;
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[120] flex items-center justify-center px-4"
+      style={{ background: "rgba(40,30,70,0.55)", backdropFilter: "blur(8px)" }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.97 }}
+        transition={{ type: "spring", damping: 28, stiffness: 280 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-3xl overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 24px 70px rgba(167,139,250,0.3)" }}
+      >
+        <div className="flex items-center justify-between px-5 pt-4 pb-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Tuto · démo</p>
+            <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{clean}</p>
+          </div>
+          <button type="button" onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
+            style={{ background: "rgba(167,139,250,0.12)" }}>
+            <X size={15} strokeWidth={2} style={{ color: "#A78BFA" }} />
+          </button>
+        </div>
+
+        {state === "loading" && (
+          <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.06)" }}>
+            <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} />
+          </div>
+        )}
+        {state === "ready" && videoId && (
+          <div className="aspect-video w-full">
+            <iframe
+              className="w-full h-full"
+              src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=1`}
+              title={`Démo ${clean}`}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
+        {state === "none" && (
+          <a href={ytSearch} target="_blank" rel="noopener noreferrer"
+            className="aspect-video w-full flex flex-col items-center justify-center gap-2 text-center px-4"
+            style={{ background: "rgba(167,139,250,0.06)", color: "#A78BFA" }}>
+            <span className="inline-flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "#FF0000" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+            <span className="text-sm font-semibold">Voir la démo sur YouTube</span>
+          </a>
+        )}
+        <p className="text-[11px] font-light text-center px-5 py-3" style={{ color: "#A0AEC0" }}>
+          Inspire-toi de la technique, adapte à ton niveau 💪
+        </p>
+      </motion.div>
+    </motion.div>,
+    document.body
+  );
+}
+
 /* ─── Day detail panel ─── */
-function DayDetail({ day }: { day: WorkoutDay }) {
+function DayDetail({ day, onTuto }: { day: WorkoutDay; onTuto: (ex: string) => void }) {
   const isRest = day.type.toLowerCase() === "repos";
   return (
     <motion.div key={day.jour}
@@ -120,10 +217,22 @@ function DayDetail({ day }: { day: WorkoutDay }) {
       {!isRest && day.exercices && day.exercices.length > 0 && (
         <div className="flex flex-col gap-1.5 mt-0.5">
           {day.exercices.map((ex, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <div className="rounded-full flex-shrink-0 mt-1.5" style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.8 }} />
-              <p className="text-[11px] leading-snug" style={{ color: "#4A5568" }}>{ex}</p>
-            </div>
+            <button
+              key={i}
+              type="button"
+              onClick={() => onTuto(ex)}
+              className="flex items-center gap-2 w-full text-left rounded-xl px-2 py-1.5 -mx-1 cursor-pointer transition-colors"
+              style={{ background: "rgba(167,139,250,0.05)" }}
+              aria-label={`Voir le tuto : ${ex}`}
+            >
+              <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.8 }} />
+              <p className="text-[11px] leading-snug flex-1" style={{ color: "#4A5568" }}>{ex}</p>
+              <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
+                style={{ background: "rgba(167,139,250,0.12)" }}>
+                <Play size={9} strokeWidth={2.5} style={{ color: "#A78BFA" }} fill="#A78BFA" />
+                <span className="text-[9px] font-semibold" style={{ color: "#A78BFA" }}>Tuto</span>
+              </span>
+            </button>
           ))}
         </div>
       )}
@@ -179,6 +288,8 @@ export default function WeeklyProgramme() {
   // Lieu d'entraînement (salle / maison) — demandé par le coach avant génération
   const [location, setLocation] = useState<"salle" | "maison" | null>(null);
   const forceNextRef = useRef(false);
+  // Exercice dont on affiche le tuto vidéo (null = fermé)
+  const [tuto, setTuto] = useState<string | null>(null);
 
   /* ── Charge le lieu enregistré ── */
   useEffect(() => {
@@ -501,7 +612,7 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
           <div className="rounded-2xl p-3 flex items-center justify-between"
             style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.18)" }}>
             <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(true)}
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(location, true)}
               className="text-[10px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
               style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}>
               Réessayer
@@ -514,9 +625,14 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
 
         {/* Contenu */}
         <AnimatePresence mode="wait">
-          {!loading && currentDay && <DayDetail key={selectedDay} day={currentDay} />}
+          {!loading && currentDay && <DayDetail key={selectedDay} day={currentDay} onTuto={setTuto} />}
         </AnimatePresence>
       </div>
+
+      {/* Modal tuto vidéo de l'exercice sélectionné */}
+      <AnimatePresence>
+        {tuto && <ExerciseTutorial exercise={tuto} onClose={() => setTuto(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
