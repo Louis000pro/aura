@@ -1,4 +1,4 @@
-// Vaiiya Service Worker — v7 (cache des images Supabase storage)
+// Vaiiya Service Worker — v8 (réseau-d abord + auto-reload)
 // Stratégie :
 //   - Navigation (HTML) → Stale-While-Revalidate : on sert la page en CACHE
 //     immédiatement (lancement instantané), puis on rafraîchit en arrière-plan.
@@ -62,21 +62,23 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // 3. Navigations HTML → Stale-While-Revalidate (lancement INSTANTANÉ)
+  // 3. Navigations HTML → Réseau d'abord (timeout 2,5s), secours cache.
+  //    → les déploiements apparaissent immédiatement quand il y a du réseau,
+  //      et l'app reste instantanée hors-ligne / réseau lent.
   if (e.request.mode === "navigate") {
-    e.respondWith(
-      caches.open(HTML_CACHE).then(async (cache) => {
-        const cached = (await cache.match(e.request)) || (await cache.match("/"));
-        const network = fetch(e.request)
-          .then((res) => {
-            if (res && res.ok) cache.put(e.request, res.clone());
-            return res;
-          })
-          .catch(() => cached);
-        // Cache d'abord (instantané), réseau en arrière-plan
-        return cached || network;
-      })
-    );
+    e.respondWith((async () => {
+      const cache = await caches.open(HTML_CACHE);
+      try {
+        const net = await Promise.race([
+          fetch(e.request),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 2500)),
+        ]);
+        if (net && net.ok) cache.put(e.request, net.clone());
+        return net;
+      } catch {
+        return (await cache.match(e.request)) || (await cache.match("/")) || fetch(e.request);
+      }
+    })());
     return;
   }
 
