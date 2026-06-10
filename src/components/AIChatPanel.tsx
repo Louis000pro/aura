@@ -67,20 +67,22 @@ function ChatUI({
           <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>Vaiiya</p>
           <p className="text-[10px] font-medium" style={{ color: "#D4A843" }}>● En ligne</p>
         </div>
-        {/* Fullscreen toggle */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onToggleFullscreen}
-          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-          style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}
-          aria-label={isFullscreen ? "Réduire" : "Agrandir"}
-        >
-          {isFullscreen
-            ? <Minimize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
-            : <Maximize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
-          }
-        </motion.button>
+        {/* Fullscreen toggle — uniquement si un handler est fourni (évite le doublon avec le X) */}
+        {onToggleFullscreen && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={onToggleFullscreen}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}
+            aria-label={isFullscreen ? "Réduire" : "Agrandir"}
+          >
+            {isFullscreen
+              ? <Minimize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+              : <Maximize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+            }
+          </motion.button>
+        )}
       </div>
 
       {/* Messages */}
