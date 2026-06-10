@@ -4555,9 +4555,6 @@ function CommunautePageInner() {
                     <Link href={`/profil/${encodeURIComponent(authorPseudo)}`} className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
-                        {isHot && (
-                          <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "linear-gradient(120deg,#FBCB3B 0%,#F5E6A3 50%,#C4A8FF 100%)", color: "#5A4500", boxShadow: "0 1px 10px rgba(245,200,75,0.6)" }}>🔥 Trending</span>
-                        )}
                         {authorCertified && (
                           <div className="flex-shrink-0 flex items-center justify-center rounded-full"
                             style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>

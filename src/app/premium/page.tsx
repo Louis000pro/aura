@@ -96,8 +96,11 @@ function PremiumInner() {
           </div>
         )}
 
-        {/* Tiers */}
-        <div className="flex flex-col md:grid md:grid-cols-3 gap-2.5 md:gap-5 items-stretch flex-1 min-h-0">
+        {/* Tiers — carrousel horizontal sur mobile, grille sur desktop */}
+        <div
+          className="flex md:grid md:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch flex-1 min-h-0"
+          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never, scrollPaddingLeft: 16 }}
+        >
           {order.map((id) => {
             const p = PLANS[id];
             const highlight = id === "premium";
@@ -105,7 +108,7 @@ function PremiumInner() {
               <motion.div key={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px] flex-1 md:flex-none min-h-0"
+                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0"
                 style={{
                   background: highlight
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
