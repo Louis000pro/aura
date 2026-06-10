@@ -2569,7 +2569,7 @@ export default function ProgressionPage() {
           { key: "mes-seances",    label: "Mes Séances" },
           { key: "nutrition",      label: "Nutrition" },
           { key: "analyse",        label: "Analyse" },
-          { key: "badges",         label: "🏆 Badges" },
+          { key: "badges",         label: "Badges" },
         ] as const).map(({ key, label }) => (
           <motion.button
             key={key}

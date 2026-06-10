@@ -606,7 +606,7 @@ function LandingPage() {
 
 /* ─── Dashboard ─── */
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
-let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, loaded: false };
+let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
 
 function Dashboard() {
   const now = new Date();
@@ -683,31 +683,49 @@ function Dashboard() {
       .then(async ({ data, error }) => {
         if (!error && data && data.score > 0) {
           // Données existantes avec un score valide — on les utilise directement
-          setLiveStats({
+          setLiveStats(prev => ({
+            ...prev,
             score:      data.score       ?? 0,
             calories:   data.calories    ?? 0,
             steps:      data.steps       ?? 0,
             sleepHours: data.sleep_hours ?? 0,
             streak:     data.streak      ?? 0,
             loaded:     true,
-          });
+          }));
         } else {
           // Score absent ou nul — calcul dynamique
           try {
             const computed = await computeAndSaveScore(user.id, supabase);
-            setLiveStats({
+            setLiveStats(prev => ({
+              ...prev,
               score:      computed.score,
               calories:   computed.calories,
               steps:      computed.steps,
               sleepHours: computed.sleepHours,
               streak:     computed.streak,
               loaded:     true,
-            });
+            }));
           } catch {
             setLiveStats(prev => ({ ...prev, loaded: true }));
           }
         }
       });
+  }, [user]);
+
+  // Fetch le nombre de séances de la semaine (lundi → maintenant)
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // lundi de la semaine en cours
+    monday.setHours(0, 0, 0, 0);
+    supabase
+      .from("workout_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("started_at", monday.toISOString())
+      .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
   }, [user]);
 
   // Fetch la vidéo du jour : 24h → 7j → la plus vue de tous les temps (garantit un aperçu)
@@ -972,13 +990,12 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* 4 mini-cadrans */}
-        <div className="absolute bottom-8 left-0 right-0 px-5 grid grid-cols-4 gap-2">
+        {/* 3 mini-cadrans : Score · Série · Séances */}
+        <div className="absolute bottom-8 left-0 right-0 px-5 grid grid-cols-3 gap-2">
           {[
-            { label: "Score",   icon: Sparkles,   value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—", unit: liveStats.score > 0 ? "/100" : "" },
-            { label: "Cal",     icon: Flame,      value: liveStats.loaded && liveStats.calories > 0 ? (liveStats.calories >= 1000 ? `${(liveStats.calories/1000).toFixed(1)}k` : `${liveStats.calories}`) : "—", unit: liveStats.calories > 0 ? "kcal" : "" },
-            { label: "Pas",     icon: Footprints, value: liveStats.loaded && liveStats.steps > 0 ? (liveStats.steps >= 1000 ? `${(liveStats.steps/1000).toFixed(1)}k` : `${liveStats.steps}`) : "—", unit: "" },
-            { label: "Sommeil", icon: Moon,       value: liveStats.loaded && liveStats.sleepHours > 0 ? `${Math.floor(liveStats.sleepHours)}h` : "—", unit: "" },
+            { label: "Score",   icon: Sparkles, value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—", unit: liveStats.score > 0 ? "/100" : "" },
+            { label: "Série",   icon: Flame,    value: liveStats.loaded && liveStats.streak > 0 ? `${liveStats.streak}` : "—", unit: liveStats.streak > 0 ? (liveStats.streak > 1 ? "jours" : "jour") : "" },
+            { label: "Séances", icon: Dumbbell, value: liveStats.loaded ? `${liveStats.sessionsWeek}` : "—", unit: "/ sem" },
           ].map((s, i) => {
             const Icon = s.icon;
             return (
