@@ -29,6 +29,7 @@ type ProfileData = {
   onboarding_goals: string[] | null;
   onboarding_age: number | null;
   onboarding_weight: number | null;
+  onboarding_meals_day: number | null;
 };
 
 /* ─── Meal type meta ─── */
@@ -37,13 +38,27 @@ const MEAL_EMOJI: Record<string, string> = {
   "dejeuner": "🍽️",
   "gouter": "🍪",
   "diner": "🍲",
+  "collation": "🥤",
 };
 const MEAL_LABEL: Record<string, string> = {
   "petit-dejeuner": "Petit-déj",
   "dejeuner": "Déjeuner",
   "gouter": "Goûter",
   "diner": "Dîner",
+  "collation": "Collation",
 };
+
+/* ─── Quels repas proposer selon le nombre choisi par l'utilisateur ─── */
+function mealTypesForCount(n: number): string[] {
+  switch (n) {
+    case 2:  return ["dejeuner", "diner"];
+    case 3:  return ["petit-dejeuner", "dejeuner", "diner"];
+    case 5:  return ["petit-dejeuner", "collation", "dejeuner", "gouter", "diner"];
+    case 6:  return ["petit-dejeuner", "collation", "dejeuner", "gouter", "diner", "collation"];
+    case 4:
+    default: return ["petit-dejeuner", "dejeuner", "gouter", "diner"];
+  }
+}
 
 /* ─── Goal labels ─── */
 const goalLabels: Record<string, string> = {
@@ -59,11 +74,12 @@ const goalLabels: Record<string, string> = {
 };
 
 /* ─── Cache helpers (clé hebdomadaire, comme le programme) ─── */
-function getCacheKey(userId: string): string {
+function getCacheKey(userId: string, mealsCount: number): string {
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-  return `aura_repas_${userId}_w${week}_${now.getFullYear()}`;
+  // mealsCount dans la clé → un changement du nb de repas régénère le plan
+  return `aura_repas_${userId}_m${mealsCount}_w${week}_${now.getFullYear()}`;
 }
 function loadFromCache(key: string): MealPlan | null {
   if (typeof window === "undefined") return null;
@@ -150,7 +166,7 @@ export default function RecommendedMeals() {
     const supabase = createClient();
     supabase
       .from("profiles")
-      .select("onboarding_level, onboarding_sessions_week, onboarding_goals, onboarding_age, onboarding_weight")
+      .select("onboarding_level, onboarding_sessions_week, onboarding_goals, onboarding_age, onboarding_weight, onboarding_meals_day")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data, error: err }) => {
@@ -164,7 +180,12 @@ export default function RecommendedMeals() {
     async (force = false) => {
       if (!user || !profile) return;
 
-      const cacheKey = getCacheKey(user.id);
+      // Nombre de repas/jour choisi par l'utilisateur (défaut 4)
+      const mealsCount = profile.onboarding_meals_day && profile.onboarding_meals_day >= 2
+        ? Math.min(6, profile.onboarding_meals_day)
+        : 4;
+
+      const cacheKey = getCacheKey(user.id, mealsCount);
       if (!force) {
         const cached = loadFromCache(cacheKey);
         if (cached) { setPlan(cached); return; }
@@ -180,16 +201,22 @@ export default function RecommendedMeals() {
         .map((g) => goalLabels[g] ?? g)
         .join(", ") || "forme générale";
 
+      const mealTypes = mealTypesForCount(mealsCount);
+      const exampleRepas = mealTypes
+        .map((t) => `{ "type": "${t}", "nom": "Plat exemple", "calories": 400 }`)
+        .join(", ");
+
       const prompt = `Tu es un nutritionniste sportif expert. Génère un plan alimentaire hebdomadaire personnalisé en JSON pour cet utilisateur:
 - Niveau sportif: ${level}
 - Objectifs: ${goals}
 - Poids: ${weight}
 - Âge: ${age}
-Pour chaque jour, propose 4 repas (petit-dejeuner, dejeuner, gouter, diner) avec des plats CONCRETS, équilibrés et adaptés à l'objectif, et une estimation de calories réaliste.
+- Nombre de repas par jour: ${mealsCount}
+Pour chaque jour, propose EXACTEMENT ${mealsCount} repas, dans cet ordre et avec ces types exacts : ${mealTypes.join(", ")}. Des plats CONCRETS, équilibrés et adaptés à l'objectif, avec une estimation de calories réaliste.
 IMPORTANT : noms de plats COURTS (4-6 mots max, sans détails superflus) pour garder une réponse compacte.
 Réponds UNIQUEMENT avec un JSON valide de cette forme:
-{ "semaine": [ { "jour": "Lundi", "repas": [ { "type": "petit-dejeuner", "nom": "Flocons d'avoine, banane, amandes", "calories": 420 }, { "type": "dejeuner", "nom": "Poulet grillé, riz complet, brocolis", "calories": 650 }, { "type": "gouter", "nom": "Yaourt grec, fruits rouges", "calories": 180 }, { "type": "diner", "nom": "Saumon, patate douce, épinards", "calories": 550 } ] } ] }
-Exactement 7 jours (Lundi à Dimanche), 4 repas par jour. Varie les plats d'un jour à l'autre.`;
+{ "semaine": [ { "jour": "Lundi", "repas": [ ${exampleRepas} ] } ] }
+Exactement 7 jours (Lundi à Dimanche), ${mealsCount} repas par jour. Varie les plats d'un jour à l'autre.`;
 
       try {
         const response = await fetch("/api/chat", {
