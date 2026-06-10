@@ -733,46 +733,46 @@ function Dashboard() {
     void pickVideo();
   }, []);
 
-  // Charge le contexte onboarding depuis localStorage (essaie plusieurs clés)
+  // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
+  // Une fois le compte créé / l'onboarding fermé, il ne réapparaît plus jamais
+  // automatiquement (on peut le rouvrir via Paramètres → ?ob=1).
   useEffect(() => {
     if (!user) return;
-    const keys = [
+    const seenKey = `vaiiya_ob_seen_${user.id}`;
+    // Charge le contexte (nouvelle clé stable + anciennes clés pour compat)
+    const ctxKeys = [
+      `vaiiya_ob_${user.id}`,
       `aura_onboarding_${user.pseudo}`,
       `aura_onboarding_${user.name}`,
       `aura_onboarding_${user.email?.split("@")[0]}`,
     ].filter(Boolean);
-    let found = false;
-    for (const key of keys) {
+    for (const key of ctxKeys) {
       const stored = localStorage.getItem(key);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setUserContext(parsed);
-          found = true;
-          break;
-        } catch { /* ignore */ }
-      }
+      if (stored) { try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ } break; }
     }
-    if (!found) {
-      const t = setTimeout(() => setShowOnboarding(true), 500);
+    // Ouverture forcée depuis les Paramètres (?ob=1)
+    const forced = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ob") === "1";
+    // N'auto-affiche QUE si jamais vu (ou si forcé)
+    if (forced || !localStorage.getItem(seenKey)) {
+      const t = setTimeout(() => setShowOnboarding(true), forced ? 0 : 500);
       return () => clearTimeout(t);
     }
   }, [user]);
 
+  const markOnboardingSeen = () => {
+    if (user) localStorage.setItem(`vaiiya_ob_seen_${user.id}`, "1");
+  };
+
   const handleOnboardingComplete = (data: OnboardingData) => {
     if (!user) return;
-    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(`vaiiya_ob_${user.id}`, JSON.stringify(data));
+    markOnboardingSeen();
     setUserContext(data);
     setShowOnboarding(false);
   };
 
   const handleOnboardingSkip = () => {
-    if (!user) return;
-    const key = `aura_onboarding_${user.pseudo ?? user.name}`;
-    const skipped = { skipped: true };
-    localStorage.setItem(key, JSON.stringify(skipped));
-    setUserContext(skipped as unknown as OnboardingData);
+    markOnboardingSeen();
     setShowOnboarding(false);
   };
 

@@ -660,6 +660,13 @@ export default function ParametresPage() {
         <Section title="Compte" />
         <div className="flex flex-col gap-2">
           <Row
+            icon={Target}
+            label="Mon profil (Ton corps)"
+            sublabel="Âge, taille, poids, objectifs — pour calibrer tes programmes"
+            onClick={() => router.push("/?ob=1")}
+            iconBg="linear-gradient(135deg, rgba(212,192,255,0.3), rgba(245,230,163,0.25))"
+          />
+          <Row
             icon={Lock}
             label="Changer le mot de passe"
             sublabel="Mets à jour ta sécurité"
