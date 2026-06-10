@@ -4556,7 +4556,7 @@ function CommunautePageInner() {
                       <div className="flex items-center gap-1.5 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
                         {isHot && (
-                          <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "linear-gradient(135deg,#FF6B35,#FF8C42)", color: "#fff", boxShadow: "0 1px 6px rgba(255,107,53,0.4)" }}>🔥 Trending</span>
+                          <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "linear-gradient(120deg,#7C5CFA 0%,#A78BFA 45%,#F5E6A3 100%)", color: "#fff", boxShadow: "0 1px 10px rgba(167,139,250,0.55)", textShadow: "0 1px 2px rgba(70,35,130,0.45)" }}>🔥 Trending</span>
                         )}
                         {authorCertified && (
                           <div className="flex-shrink-0 flex items-center justify-center rounded-full"
