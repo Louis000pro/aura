@@ -2155,7 +2155,7 @@ export default function ProfilPage() {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.35, delay: idx * 0.06 }}
-                        className="rounded-3xl overflow-hidden"
+                        className="rounded-3xl overflow-hidden cv-auto"
                         style={{
                           background: "rgba(255,255,255,0.85)",
                           border: "1px solid rgba(255,255,255,0.9)",

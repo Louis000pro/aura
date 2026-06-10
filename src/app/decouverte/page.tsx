@@ -235,7 +235,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl overflow-hidden flex flex-col"
+      className="rounded-3xl overflow-hidden flex flex-col cv-auto"
       style={{
         background: "rgba(255,255,255,0.8)",
         backdropFilter: "blur(10px)",
