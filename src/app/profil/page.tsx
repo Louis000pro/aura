@@ -497,11 +497,13 @@ function EditProfileModal({
               type="text"
               value={editPseudo}
               onChange={(e) =>
-                setEditPseudo(e.target.value.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""))
+                // Espaces autorisés. On garde lettres (accents inclus), chiffres,
+                // espace et séparateurs courants ; on retire emojis/symboles.
+                setEditPseudo(e.target.value.replace(/[^\p{L}\p{N} ._-]/gu, "").slice(0, 30))
               }
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
               style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
-              placeholder="ton_pseudo"
+              placeholder="Ton pseudo (espaces autorisés)"
             />
           </div>
 
