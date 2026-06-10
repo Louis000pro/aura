@@ -1,4 +1,4 @@
-// Vaiiya Service Worker — v8 (réseau-d abord + auto-reload)
+// Vaiiya Service Worker — v9 (icônes agrandies)
 // Stratégie :
 //   - Navigation (HTML) → Stale-While-Revalidate : on sert la page en CACHE
 //     immédiatement (lancement instantané), puis on rafraîchit en arrière-plan.

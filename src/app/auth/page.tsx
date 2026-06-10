@@ -458,14 +458,14 @@ export default function AuthPage() {
 
           {/* Logo */}
           <div className="flex flex-col items-center mb-7">
-            <motion.div className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
-              style={{ background:"linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" }}
+            <motion.div className="relative w-24 h-24 rounded-3xl flex items-center justify-center mb-3"
+              style={{ background:"#ffffff", border:"1px solid rgba(212,192,255,0.4)" }}
               animate={{ boxShadow:["0 8px 28px rgba(167,139,250,0.4)","0 8px 36px rgba(212,168,67,0.45)","0 8px 28px rgba(167,139,250,0.4)"] }}
               transition={{ duration:3,repeat:Infinity }}>
-              <motion.div className="absolute inset-0 rounded-2xl" style={{ border:"1px solid rgba(167,139,250,0.5)" }}
-                animate={{ scale:[1,1.35,1],opacity:[0.6,0,0.6] }} transition={{ duration:2,repeat:Infinity }} />
+              <motion.div className="absolute inset-0 rounded-3xl" style={{ border:"1px solid rgba(167,139,250,0.5)" }}
+                animate={{ scale:[1,1.3,1],opacity:[0.6,0,0.6] }} transition={{ duration:2,repeat:Infinity }} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-10 h-10 object-contain relative z-10" />
+              <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-20 h-20 object-contain relative z-10" />
             </motion.div>
             <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"#2D3748" }}>Vaiiya</h1>
             <p className="text-[11px] font-light mt-0.5" style={{ color:"#A0AEC0" }}>Coach IA · Musculation · Nutrition</p>

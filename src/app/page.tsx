@@ -611,7 +611,7 @@ let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, 
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
-  const { user, logout } = useAuth();
+  const { user, logout, isNewUser } = useAuth();
   const router = useRouter();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
@@ -752,12 +752,13 @@ function Dashboard() {
     }
     // Ouverture forcée depuis les Paramètres (?ob=1)
     const forced = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ob") === "1";
-    // N'auto-affiche QUE si jamais vu (ou si forcé)
-    if (forced || !localStorage.getItem(seenKey)) {
-      const t = setTimeout(() => setShowOnboarding(true), forced ? 0 : 500);
+    // N'auto-affiche QUE pour un compte tout juste créé (inscription) — jamais à la reconnexion.
+    // (Si l'user n'a pas rempli ses objectifs, le coach IA le lui rappellera.)
+    if (forced || (isNewUser && !localStorage.getItem(seenKey))) {
+      const t = setTimeout(() => setShowOnboarding(true), forced ? 0 : 600);
       return () => clearTimeout(t);
     }
-  }, [user]);
+  }, [user, isNewUser]);
 
   const markOnboardingSeen = () => {
     if (user) localStorage.setItem(`vaiiya_ob_seen_${user.id}`, "1");
