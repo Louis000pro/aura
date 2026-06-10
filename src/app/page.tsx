@@ -864,6 +864,7 @@ function Dashboard() {
             streak: liveStats.streak || undefined,
           } : null,
           programme: programmeText,
+          lieu: user ? (localStorage.getItem(`vaiiya_lieu_${user.id}`) || null) : null,
         }),
       });
 
@@ -901,6 +902,25 @@ function Dashboard() {
           const updated = m.map((msg) =>
             msg.id === aiMsgId
               ? { ...msg, text: msg.text.replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "").trim() }
+              : msg
+          );
+          chatMessagesRef.current = updated;
+          return updated;
+        });
+      }
+
+      // Détecte le lieu d'entraînement indiqué par l'utilisateur (salle / maison)
+      const lieuMatch = fullText.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
+      if (lieuMatch && user) {
+        const lieu = lieuMatch[1].toLowerCase();
+        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, lieu); } catch { /* ignore */ }
+        window.dispatchEvent(new CustomEvent("lieu-updated"));
+        showToast(lieu === "maison" ? "🏠 Séances adaptées à la maison" : "🏋️ Séances adaptées à la salle");
+        // Nettoie le tag du message affiché
+        setChatMessages((m) => {
+          const updated = m.map((msg) =>
+            msg.id === aiMsgId
+              ? { ...msg, text: msg.text.replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "").trim() }
               : msg
           );
           chatMessagesRef.current = updated;

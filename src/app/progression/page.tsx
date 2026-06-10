@@ -13,6 +13,8 @@ import NutritionTab from "@/components/NutritionTab";
 import ExerciseAnalyzer from "@/components/ExerciseAnalyzer";
 import Badges from "@/components/Badges";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import WeeklyProgramme from "@/components/WeeklyProgramme";
+import RecommendedMeals from "@/components/RecommendedMeals";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
 import { useProfileSettings } from "@/hooks/useProfileSettings";
@@ -2599,7 +2601,7 @@ export default function ProgressionPage() {
           className="flex flex-col gap-0"
         >
 
-      {/* ── Graphiques ── */}
+      {/* ── Recommandations IA : Séances + Plats ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -2609,41 +2611,35 @@ export default function ProgressionPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
-              Analyse
+              Pour toi
             </p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Statistiques</h2>
+            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Recommandations</h2>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <WeightChart
-            data={weights}
-            range={weightRange}
-            onRangeChange={setWeightRange}
-            onAdd={addWeight}
-            onDelete={deleteWeight}
-            onUpdate={updateWeight}
-            goalType={fitnessGoal}
-          />
-          <WorkoutWeekCard sessions={displayTimeline} />
-          <PRChart
-            prs={prs}
-            onAdd={async (exercise, value, unit) => {
-              if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-              const supabase = createClient();
-              const { error } = await supabase.from("personal_records").insert({
-                user_id: user.id, exercise, value, unit, date: toDateStr(new Date()),
-              });
-              if (!error) { showToast("Record enregistré !"); fetchPRs(); }
-              else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
-            }}
-            onDelete={async (id) => {
-              if (!user) return;
-              const supabase = createClient();
-              const { error } = await supabase.from("personal_records").delete().eq("id", id).eq("user_id", user.id);
-              if (!error) { showToast("Record supprimé"); fetchPRs(); }
-            }}
-          />
-          <VolumeChart data={weeklyVolume} />
+          {/* Séances recommandées */}
+          <div className="rounded-3xl p-5"
+            style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 4px 24px rgba(167,139,250,0.08)" }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Dumbbell size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                Séances recommandées
+              </p>
+            </div>
+            <WeeklyProgramme />
+          </div>
+
+          {/* Plats recommandés */}
+          <div className="rounded-3xl p-5"
+            style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "0 4px 24px rgba(212,168,67,0.08)" }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Apple size={14} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                Plats recommandés
+              </p>
+            </div>
+            <RecommendedMeals />
+          </div>
         </div>
       </motion.div>
 

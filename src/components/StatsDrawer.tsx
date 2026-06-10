@@ -6,6 +6,7 @@ import { X, ChevronRight, Utensils, Camera, Dumbbell, BarChart3 } from "lucide-r
 import { createClient } from "@/lib/supabase";
 import type { User } from "@/context/AuthContext";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
+import RecommendedMeals from "@/components/RecommendedMeals";
 import { stats } from "@/data/statsData";
 import type { StatData } from "@/data/statsData";
 
@@ -197,8 +198,22 @@ export default function StatsDrawer({
                       Séance recommandée
                     </p>
                   </div>
-                  <div className="flex-1 overflow-y-auto -mx-1 px-1">
-                    {user ? <WeeklyProgramme /> : (
+                  <div className="flex-1 overflow-y-auto -mx-1 px-1 flex flex-col gap-5">
+                    {user ? (
+                      <>
+                        <WeeklyProgramme />
+                        {/* Plats recommandés — plan nutrition IA */}
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Utensils size={14} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+                            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                              Plats recommandés
+                            </p>
+                          </div>
+                          <RecommendedMeals />
+                        </div>
+                      </>
+                    ) : (
                       <p className="text-sm font-light text-center mt-8" style={{ color: "#A0AEC0" }}>Connecte-toi pour voir ton programme</p>
                     )}
                   </div>

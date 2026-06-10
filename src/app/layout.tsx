@@ -18,8 +18,36 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://vaiiya.fr"),
-  title: "Vaiiya ✦",
-  description: "Coach IA · Musculation · Nutrition — ton accompagnement de santé premium piloté par l'IA.",
+  title: {
+    default: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    template: "%s · Vaiiya",
+  },
+  description: "Coach IA · Musculation · Nutrition — ton accompagnement de santé premium piloté par l'IA. Programmes personnalisés, suivi de progression et communauté fitness.",
+  applicationName: "Vaiiya",
+  keywords: [
+    "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
+    "programme d'entraînement personnalisé", "suivi progression", "perte de poids",
+    "prise de masse", "application fitness", "coach nutrition", "salle de sport",
+    "entraînement maison", "Vaiiya",
+  ],
+  authors: [{ name: "Vaiiya" }],
+  creator: "Vaiiya",
+  publisher: "Vaiiya",
+  category: "health",
+  alternates: {
+    canonical: "https://vaiiya.fr",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   icons: {
     icon: "/favicon.ico",
     apple: "/icons/apple-touch-icon.png",
@@ -81,6 +109,49 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="screen and (device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1179x2556.png" />
         <link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1290x2796.png" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('aura-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();` }} />
+
+        {/* Données structurées JSON-LD — aide Google à comprendre Vaiiya */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://vaiiya.fr/#organization",
+                  name: "Vaiiya",
+                  url: "https://vaiiya.fr",
+                  logo: "https://vaiiya.fr/icons/apple-touch-icon.png",
+                  description: "Coach IA, musculation et nutrition — accompagnement de santé premium piloté par l'IA.",
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://vaiiya.fr/#website",
+                  url: "https://vaiiya.fr",
+                  name: "Vaiiya",
+                  inLanguage: "fr-FR",
+                  publisher: { "@id": "https://vaiiya.fr/#organization" },
+                },
+                {
+                  "@type": "WebApplication",
+                  name: "Vaiiya",
+                  url: "https://vaiiya.fr",
+                  applicationCategory: "HealthApplication",
+                  operatingSystem: "Web, iOS, Android",
+                  inLanguage: "fr-FR",
+                  description: "Coach IA fitness & nutrition : programmes personnalisés, suivi de progression et communauté.",
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "EUR",
+                    description: "Inscription gratuite — abonnements Premium et Créateur disponibles.",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
       </head>
       <body className="min-h-full notranslate" translate="no">
         {/* Voile léger derrière la barre d'état (lisibilité de l'horloge en mode plein écran) */}

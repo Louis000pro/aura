@@ -3244,6 +3244,8 @@ function CommunautePageInner() {
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   // followingIds = ensemble des IDs Supabase que l'utilisateur suit réellement
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  // mutualIds = amis réciproques (je les suis ET ils me suivent) → onglet "Amis"
+  const [mutualIds, setMutualIds] = useState<Set<string>>(new Set());
   const [suggestedProfiles, setSuggestedProfiles] = useState<{ id: string; pseudo: string; full_name?: string; avatar_url?: string; bio?: string }[]>([]);
 
   /* Workout guide modal launched from a community post */
@@ -3291,7 +3293,7 @@ function CommunautePageInner() {
   const [hasMoreFeed, setHasMoreFeed] = useState(true);
   const feedPageRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const [feedMode, setFeedMode] = useState<"algo" | "recent">("algo");
+  const [feedMode, setFeedMode] = useState<"algo" | "amis">("algo");
   const [feedTab, setFeedTab] = useState<"posts" | "videos">("posts");
   // Mode vidéo immersif plein écran sur mobile (dépend de feedTab/view déclarés au-dessus)
   const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
@@ -3366,23 +3368,36 @@ function CommunautePageInner() {
   }, [followingIds, hiddenRealIds]);
 
   const sortedFeedPosts = useMemo(() => {
-    const visible = realFeedPosts.filter(p => !hiddenRealIds.has(p.id));
-    const sorted = feedMode === "recent" ? visible : [...visible].sort((a, b) => getScore(b) - getScore(a));
-    return sorted;
-  }, [realFeedPosts, hiddenRealIds, feedMode, getScore]);
+    let visible = realFeedPosts.filter(p => !hiddenRealIds.has(p.id));
+    // Onglet "Amis" : uniquement les posts des follows mutuels (réciproques)
+    if (feedMode === "amis") {
+      visible = visible.filter(p => mutualIds.has(p.user_id));
+      // Tri par récence (les plus récents d'abord)
+      return [...visible].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return [...visible].sort((a, b) => getScore(b) - getScore(a));
+  }, [realFeedPosts, hiddenRealIds, feedMode, getScore, mutualIds]);
 
 
-  // Charger les abonnements réels depuis Supabase
+  // Charger les abonnements réels depuis Supabase + calculer les amis mutuels
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
-    supabase
-      .from("followers")
-      .select("following_id")
-      .eq("follower_id", user.id)
-      .then(({ data }) => {
-        if (data) setFollowingIds(new Set(data.map((r) => r.following_id as string)));
-      });
+    (async () => {
+      const [{ data: following }, { data: followers }] = await Promise.all([
+        // Les gens que JE suis
+        supabase.from("followers").select("following_id").eq("follower_id", user.id),
+        // Les gens qui ME suivent
+        supabase.from("followers").select("follower_id").eq("following_id", user.id),
+      ]);
+      const followingSet = new Set((following ?? []).map((r) => r.following_id as string));
+      const followerSet = new Set((followers ?? []).map((r) => r.follower_id as string));
+      setFollowingIds(followingSet);
+      // Mutuels = présents dans les deux ensembles
+      const mutual = new Set<string>();
+      followingSet.forEach((id) => { if (followerSet.has(id)) mutual.add(id); });
+      setMutualIds(mutual);
+    })();
   }, [user]);
 
   // Ouvrir directement un DM si paramètre ?dm=userId&pseudo=xxx présent
@@ -4413,7 +4428,7 @@ function CommunautePageInner() {
               {feedTab === "posts" && !feedLoading && (
                 <div className="flex items-center justify-center gap-2 py-1"
                   style={{ maxWidth: 560, margin: "0 auto" }}>
-                  {(["algo", "recent"] as const).map((mode) => (
+                  {(["algo", "amis"] as const).map((mode) => (
                     <motion.button
                       key={mode}
                       whileTap={{ scale: 0.94 }}
@@ -4426,7 +4441,7 @@ function CommunautePageInner() {
                           : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
                       }}
                     >
-                      {mode === "algo" ? "Pour toi" : "Récents"}
+                      {mode === "algo" ? "Pour toi" : "Amis"}
                     </motion.button>
                   ))}
                 </div>
@@ -4487,7 +4502,32 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {feedTab === "posts" && !feedLoading && sortedFeedPosts.length === 0 && (
+            {feedTab === "posts" && !feedLoading && sortedFeedPosts.length === 0 && feedMode === "amis" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
+                <div
+                  className="w-16 h-16 rounded-3xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.25) 100%)", border: "1px solid rgba(167,139,250,0.15)" }}
+                >
+                  <Heart size={22} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                </div>
+                <div className="text-center px-6">
+                  <p className="text-base font-light" style={{ color: "#2D3748" }}>Pas encore de posts d&apos;amis</p>
+                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                    Tu verras ici les posts des personnes que tu suis et qui te suivent en retour. Abonne-toi et reste connecté pour remplir ton fil 💜
+                  </p>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setFeedMode("algo")}
+                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                >
+                  Découvrir « Pour toi »
+                </motion.button>
+              </motion.div>
+            )}
+
+            {feedTab === "posts" && !feedLoading && sortedFeedPosts.length === 0 && feedMode === "algo" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"

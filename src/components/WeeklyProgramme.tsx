@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Dumbbell, Settings } from "lucide-react";
+import { RefreshCw, Dumbbell, Settings, Home, MapPin } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -131,6 +131,43 @@ function DayDetail({ day }: { day: WorkoutDay }) {
   );
 }
 
+/* ─── Question du lieu d'entraînement (posée par le coach IA) ─── */
+function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col gap-3 pt-1"
+    >
+      <div className="flex items-start gap-2.5 rounded-2xl px-3.5 py-3"
+        style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.18)" }}>
+        <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+          <Dumbbell size={13} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+        </div>
+        <p className="text-[13px] font-light leading-snug" style={{ color: "#2D3748" }}>
+          Avant de te créer ton programme, dis-moi : tu t&apos;entraînes plutôt <strong className="font-semibold">en salle</strong> ou <strong className="font-semibold">à la maison</strong> ? J&apos;adapterai les exercices 💪
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("salle")}
+          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.5)", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
+          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>En salle</span>
+          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Machines & charges</span>
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("maison")}
+          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(245,230,163,0.6)", boxShadow: "0 2px 12px rgba(212,168,67,0.1)" }}>
+          <Home size={20} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>À la maison</span>
+          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Poids du corps</span>
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── Main Component ─── */
 export default function WeeklyProgramme() {
   const { user } = useAuth();
@@ -139,6 +176,39 @@ export default function WeeklyProgramme() {
   const [programme, setProgramme] = useState<Programme | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Lieu d'entraînement (salle / maison) — demandé par le coach avant génération
+  const [location, setLocation] = useState<"salle" | "maison" | null>(null);
+  const forceNextRef = useRef(false);
+
+  /* ── Charge le lieu enregistré ── */
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const v = localStorage.getItem(`vaiiya_lieu_${user.id}`);
+      if (v === "salle" || v === "maison") setLocation(v);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  /* ── Sync si le lieu change ailleurs (ex: coach chat) ── */
+  useEffect(() => {
+    const handler = () => {
+      if (!user) return;
+      try {
+        const v = localStorage.getItem(`vaiiya_lieu_${user.id}`);
+        if (v === "salle" || v === "maison") { forceNextRef.current = true; setLocation(v); }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("lieu-updated", handler);
+    return () => window.removeEventListener("lieu-updated", handler);
+  }, [user]);
+
+  const chooseLocation = useCallback((loc: "salle" | "maison") => {
+    if (user) {
+      try { localStorage.setItem(`vaiiya_lieu_${user.id}`, loc); } catch { /* ignore */ }
+    }
+    forceNextRef.current = true; // force la régénération avec le nouveau lieu
+    setLocation(loc);
+  }, [user]);
 
   // Today's day index (0 = Lundi … 6 = Dimanche), fallback to 0
   const todayIndex = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
@@ -163,7 +233,7 @@ export default function WeeklyProgramme() {
 
   /* ── Generate programme ── */
   const generate = useCallback(
-    async (force = false) => {
+    async (loc: "salle" | "maison" | null, force = false) => {
       if (!user || !profile) return;
 
       // Check cache first (unless forced)
@@ -184,11 +254,17 @@ export default function WeeklyProgramme() {
       const goals = (profile.onboarding_goals ?? [])
         .map((g) => goalLabels[g] ?? g)
         .join(", ") || "forme générale";
+      const lieuLine = loc === "maison"
+        ? "- Lieu: À LA MAISON — utilise UNIQUEMENT des exercices au poids du corps ou avec du matériel minimal (haltères, élastiques, chaise). AUCUNE machine de salle."
+        : loc === "salle"
+        ? "- Lieu: EN SALLE DE SPORT — tu peux utiliser machines, charges libres (barres, haltères, poulies) et tout l'équipement."
+        : "";
 
       const prompt = `Tu es un coach sportif expert. Génère un programme hebdomadaire personnalisé en JSON pour cet utilisateur:
 - Niveau: ${level}
 - Objectifs: ${goals}
 - Séances/semaine: ${sessions}
+${lieuLine}
 Réponds UNIQUEMENT avec un JSON valide de cette forme:
 { "semaine": [ { "jour": "Lundi", "type": "Repos", "titre": "", "exercices": [], "duree": "" }, { "jour": "Mardi", "type": "Force", "titre": "Push Day", "exercices": ["Développé couché 4x8", "Pompes 3x12", "Élévations latérales 3x15"], "duree": "45 min" } ] }
 Maximum 7 jours, exactement ${sessions} séances actives, le reste en Repos.
@@ -238,12 +314,14 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     [user, profile]
   );
 
-  /* ── Auto-generate on profile load ── */
+  /* ── Auto-generate on profile load (uniquement si le lieu est connu) ── */
   useEffect(() => {
-    if (profileLoaded && profile && profile.onboarding_level) {
-      generate(false);
+    if (profileLoaded && profile && profile.onboarding_level && location) {
+      const f = forceNextRef.current;
+      forceNextRef.current = false;
+      generate(location, f);
     }
-  }, [profileLoaded, profile, generate]);
+  }, [profileLoaded, profile, location, generate]);
 
   /* ── Recharge depuis le cache quand l'IA modifie le programme ── */
   useEffect(() => {
@@ -327,6 +405,11 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     );
   }
 
+  // Lieu pas encore choisi → le coach pose la question avant de générer
+  if (profileLoaded && hasOnboardingData && !location) {
+    return <LocationQuestion onChoose={chooseLocation} />;
+  }
+
   const currentDay = programme?.semaine?.[selectedDay];
 
   const getDayFromX = (clientX: number): number => {
@@ -391,11 +474,17 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
             style={{ width: `${pct}%`, background: "linear-gradient(90deg, #A78BFA, #D4A843)", transition: "width 0.12s ease" }} />
         </div>
 
-        {/* Régénérer */}
+        {/* Lieu + Régénérer */}
         {programme && !loading && (
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
             <button
-              onClick={() => generate(true)}
+              onClick={() => { if (user) { try { localStorage.removeItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ } } setLocation(null); }}
+              className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
+              {location === "maison" ? <Home size={10} strokeWidth={2} /> : <MapPin size={10} strokeWidth={2} />}
+              <span className="text-[9px] font-medium">{location === "maison" ? "À la maison" : "En salle"} · changer</span>
+            </button>
+            <button
+              onClick={() => generate(location, true)}
               className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
               <RefreshCw size={10} strokeWidth={2.5} />
               <span className="text-[9px] font-medium">Régénérer</span>

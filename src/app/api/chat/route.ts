@@ -72,7 +72,8 @@ function buildSystemPrompt(
   pseudo: string,
   live?: LiveStats | null,
   programme?: string | null,
-  rich?: RichProfile | null
+  rich?: RichProfile | null,
+  lieu?: string | null
 ): string {
   const base = `Tu es Vaiiya, un coach de santé IA premium, bienveillant, motivant et expert en nutrition, fitness et bien-être.
 Tu réponds toujours en français, de manière concise et encourageante (2-4 phrases maximum sauf si on te demande un plan détaillé).
@@ -111,7 +112,14 @@ Règles du JSON :
 - "jour" : Lundi / Mardi / Mercredi / Jeudi / Vendredi / Samedi / Dimanche (première lettre majuscule)
 - "type" : Force / Cardio / Mobilité / HIIT / Endurance / Full Body / Haut du corps / Bas du corps / Repos
 - Pour Repos : type="Repos", titre="", exercices=[], duree=""
-- Génère TOUJOURS 3 à 5 exercices pertinents avec sets×reps${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+- Génère TOUJOURS 3 à 5 exercices pertinents avec sets×reps
+
+LIEU D'ENTRAÎNEMENT (TRÈS IMPORTANT) :
+${lieu === "salle" || lieu === "maison"
+  ? `L'utilisateur s'entraîne ${lieu === "maison" ? "À LA MAISON" : "EN SALLE DE SPORT"}. Adapte TOUJOURS les exercices en conséquence : ${lieu === "maison" ? "uniquement poids du corps ou matériel minimal (haltères, élastiques, chaise), JAMAIS de machine de salle." : "tu peux utiliser machines, charges libres (barres, haltères, poulies) et tout l'équipement."}`
+  : `Tu ne sais PAS encore où l'utilisateur s'entraîne. Dès qu'il te demande un programme, une séance ou une modification d'exercices, tu DOIS d'abord lui demander : "Tu t'entraînes en salle de sport ou à la maison ? 💪" et attendre sa réponse avant de proposer des exercices.`}
+Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
+[LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
@@ -210,6 +218,7 @@ export async function POST(req: NextRequest) {
   let liveStats: LiveStats | null = null;
   let programme: string | null = null;
   let richProfile: RichProfile | null = null;
+  let lieu: string | null = null;
 
   try {
     const body = await req.json();
@@ -219,11 +228,12 @@ export async function POST(req: NextRequest) {
     liveStats = body.liveStats ?? null;
     programme = body.programme ?? null;
     richProfile = body.richProfile ?? null;
+    lieu = body.lieu ?? null;
   } catch {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile);
+  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu);
 
   try {
     const stream = await groq.chat.completions.create({
