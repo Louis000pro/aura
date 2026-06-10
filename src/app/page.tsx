@@ -447,21 +447,21 @@ function LandingPage() {
         <div className="flex items-center gap-2">
           <Link href="/auth?mode=login">
             <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
-              className="px-3.5 py-2 rounded-2xl text-[13px] font-medium cursor-pointer whitespace-nowrap"
+              className="px-3 py-2 rounded-xl text-xs font-medium cursor-pointer whitespace-nowrap"
               style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4A5568", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
               Se connecter
             </motion.div>
           </Link>
           <Link href="/auth?mode=signup">
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}
-              className="relative px-3.5 py-2 rounded-2xl text-[13px] font-semibold cursor-pointer overflow-hidden whitespace-nowrap"
+              className="relative px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer overflow-hidden text-center leading-tight max-w-[120px]"
               style={{ background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
               <motion.div className="absolute inset-0 pointer-events-none"
                 style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.3) 50%,transparent 65%)" }}
                 animate={{ x: ["-120%","120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }} />
-              <span className="relative z-10 flex items-center gap-1.5">
-                Commencer
-                <ArrowRight size={14} strokeWidth={2.5} />
+              <span className="relative z-10 inline-flex items-center gap-1">
+                Commencer gratuitement
+                <ArrowRight size={12} strokeWidth={2.5} className="flex-shrink-0" />
               </span>
             </motion.div>
           </Link>
