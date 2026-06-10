@@ -1,4 +1,4 @@
-// Vaiiya Service Worker — v6 (lancement instantané : app-shell)
+// Vaiiya Service Worker — v7 (cache des images Supabase storage)
 // Stratégie :
 //   - Navigation (HTML) → Stale-While-Revalidate : on sert la page en CACHE
 //     immédiatement (lancement instantané), puis on rafraîchit en arrière-plan.
@@ -34,12 +34,17 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
 
-  // 1. API / Supabase / auth → réseau direct
-  if (
-    url.hostname.includes("supabase") ||
-    url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/auth/")
-  ) return;
+  // 1. Supabase : on CACHE les images de storage (pdp, posters) mais on
+  //    bypass l'API/auth/realtime et les vidéos (range requests).
+  if (url.hostname.includes("supabase")) {
+    const isStorageImg =
+      url.pathname.includes("/storage/v1/object/public/") &&
+      /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(url.pathname);
+    if (!isStorageImg) return; // auth/rest/realtime/vidéos → réseau direct
+    // image de storage → continue vers le cache SWR (étape 4)
+  } else if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
+    return;
+  }
 
   // 2. Chunks Next.js (immuables par hash) → Cache-first PERMANENT
   if (url.pathname.startsWith("/_next/static/")) {
