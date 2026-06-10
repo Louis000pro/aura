@@ -25,7 +25,7 @@ function ChatUI({
   aiTyping: boolean;
   onSend: (text: string) => void;
   isFullscreen: boolean;
-  onToggleFullscreen: () => void;
+  onToggleFullscreen?: () => void;
 }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -194,7 +194,6 @@ export default function AIChatPanel({
           aiTyping={aiTyping}
           onSend={onSend}
           isFullscreen={false}
-          onToggleFullscreen={() => setIsFullscreen(true)}
         />
       </div>
 
