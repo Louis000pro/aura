@@ -237,6 +237,9 @@ export default function PublicProfilePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [profileStories, setProfileStories] = useState<HighlightItem[]>([]);
   const [viewingStories, setViewingStories] = useState<HighlightViewData | null>(null);
+  // Stories à la une (highlights permanents) du profil visité
+  const [profileHighlights, setProfileHighlights] = useState<{ id: string; name: string; cover_url: string | null }[]>([]);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [userPosts, setUserPosts] = useState<DbPost[]>([]);
   const [postCount, setPostCount] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -357,9 +360,30 @@ export default function PublicProfilePage() {
           .order("created_at", { ascending: true });
         if (storiesData) setProfileStories(storiesData as HighlightItem[]);
 
+        // Charger les "stories à la une" (highlights permanents) — visibles par tous
+        const { data: hlData } = await supabase
+          .from("highlights")
+          .select("id, name, cover_url")
+          .eq("user_id", data.id)
+          .order("created_at", { ascending: true });
+        if (hlData) setProfileHighlights(hlData as { id: string; name: string; cover_url: string | null }[]);
+
         setLoading(false);
       });
   }, [username, user]);
+
+  /* Ouvre une story à la une (charge ses médias) */
+  const openProfileHighlight = async (h: { id: string; name: string; cover_url: string | null }) => {
+    setViewerLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("highlight_items")
+      .select("id, media_url, media_type, caption")
+      .eq("highlight_id", h.id)
+      .order("display_order", { ascending: true });
+    setViewingStories({ id: h.id, name: h.name, cover_url: h.cover_url, items: (data ?? []) as HighlightItem[] });
+    setViewerLoading(false);
+  };
 
   const handleFollow = async () => {
     if (!user || !profile || isOwnProfile) return;
@@ -891,6 +915,56 @@ export default function PublicProfilePage() {
           </motion.div>
         ))}
       </motion.div>
+
+      {/* ── Stories à la une (lecture seule) ── */}
+      {profileHighlights.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.27 }}
+          className="flex items-center gap-4 mt-6 overflow-x-auto pb-1"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {profileHighlights.map((h, i) => (
+            <motion.div
+              key={h.id}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.06, type: "spring", bounce: 0.4 }}
+            >
+              <div className="relative">
+                <motion.div
+                  whileHover={{ scale: 1.06 }}
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => openProfileHighlight(h)}
+                  className="cursor-pointer"
+                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(167,139,250,0.25)" }}
+                >
+                  <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
+                    <div
+                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.5),rgba(245,230,163,0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
+                    >
+                      {h.cover_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img loading="lazy" decoding="async" src={h.cover_url} alt={h.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : h.name.charAt(0).toUpperCase()}
+                    </div>
+                  </div>
+                </motion.div>
+                {viewerLoading && (
+                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)" }}>
+                    <motion.div className="w-5 h-5 rounded-full border-2"
+                      style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                      animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                  </div>
+                )}
+              </div>
+              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "#718096", letterSpacing: "0.02em" }}>{h.name}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
 
       {/* ── Tab switcher Posts / Séances ── */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 mb-4">
