@@ -75,8 +75,8 @@ function PremiumInner() {
   const order: PlanId[] = ["free", "premium", "creator"];
 
   return (
-    <div className="relative h-dvh overflow-hidden px-4 py-4 md:py-10 flex flex-col"
-      style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)" }}>
+    <div className="relative h-dvh overflow-hidden px-4 md:py-10 flex flex-col"
+      style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
       <motion.div className="absolute rounded-full pointer-events-none"
@@ -123,7 +123,7 @@ function PremiumInner() {
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0"
+                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[calc(100vw-2rem)] max-w-[440px] md:w-auto md:max-w-none min-h-0"
                 style={{
                   background: highlight
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"

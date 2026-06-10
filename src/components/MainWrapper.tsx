@@ -10,8 +10,8 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   const isAuth = pathname === "/auth";
   const isLanding = pathname === "/" && !user && !isLoading;
   const noNav = isAuth || isLanding;
-  // Communauté gère son propre plein écran (feed vidéo immersif) → aucun padding global
-  const fullBleed = noNav || pathname === "/communaute";
+  // Communauté + Premium gèrent leur propre plein écran → aucun padding global
+  const fullBleed = noNav || pathname === "/communaute" || pathname === "/premium";
 
   return (
     <main
