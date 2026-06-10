@@ -627,6 +627,11 @@ function Dashboard() {
   }, []);
   // Nouveaux états pour la refonte mobile portrait
   const [showChat, setShowChat] = useState(false);
+  // Masque la barre du bas quand le chat IA est ouvert (évite la superposition)
+  useEffect(() => {
+    document.body.classList.toggle("chat-open", showChat);
+    return () => document.body.classList.remove("chat-open");
+  }, [showChat]);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
   const [dailyVideoUrl, setDailyVideoUrl] = useState<string | null>(null);
@@ -1179,7 +1184,7 @@ function Dashboard() {
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 280 }}
               className="fixed inset-x-2 md:left-[96px] bottom-2 z-[60] overflow-hidden rounded-3xl"
-              style={{ top: "40px" }}>
+              style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}>
               <button type="button" onClick={() => setShowChat(false)} aria-label="Fermer"
                 className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center"
                 style={{ background: "rgba(167,139,250,0.15)", backdropFilter: "blur(8px)" }}>
