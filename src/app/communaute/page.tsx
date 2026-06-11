@@ -2863,7 +2863,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         )}
 
         {/* ══ AUTEUR + CAPTION (bas gauche, abaissé vers la nav) ══ */}
-        <div className="absolute left-4 z-20" style={{ right: isMobile ? 72 : 16, bottom: isMobile ? "calc(70px + env(safe-area-inset-bottom))" : 18, pointerEvents: "none" }}>
+        <div className="absolute left-4 z-20" style={{ right: isMobile ? 72 : 16, bottom: isMobile ? "calc(82px + env(safe-area-inset-bottom))" : 18, pointerEvents: "none" }}>
           <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -2934,7 +2934,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       ══════════════════════════════════ */}
       <div className={isMobile ? "absolute z-30 flex flex-col items-center" : "flex flex-col items-center flex-shrink-0"}
         style={isMobile
-          ? { gap: 20, width: 52, right: 8, bottom: "calc(86px + env(safe-area-inset-bottom))" }
+          ? { gap: 20, width: 52, right: 8, bottom: "calc(92px + env(safe-area-inset-bottom))" }
           : { gap: 22, width: 52, paddingBottom: 8 }}
         onClick={e => e.stopPropagation()}>
 
