@@ -31,16 +31,16 @@ function mealTypesForCount(n: number): string[] {
 }
 
 /* ─── Banque de repas connus de tous ─── */
-const POOLS: Record<string, { nom: string; calories: number }[]> = {
+const POOLS: Record<string, { nom: string; calories: number; i?: boolean }[]> = {
   "petit-dejeuner": [
     { nom: "Tartines beurre & confiture", calories: 350 },
     { nom: "Bol de céréales + lait", calories: 320 },
     { nom: "Porridge avoine & banane", calories: 380 },
     { nom: "Œufs brouillés + pain", calories: 400 },
-    { nom: "Pain perdu", calories: 420 },
+    { nom: "Pain perdu", calories: 420, i: true },
     { nom: "Yaourt + granola + fruits", calories: 330 },
     { nom: "Croissant + jus d'orange", calories: 360 },
-    { nom: "Pancakes + sirop d'érable", calories: 450 },
+    { nom: "Pancakes + sirop d'érable", calories: 450, i: true },
     { nom: "Smoothie banane-fraise", calories: 280 },
     { nom: "Tartines avocat & œuf", calories: 410 },
     { nom: "Fromage blanc, miel & noix", calories: 340 },
@@ -48,26 +48,26 @@ const POOLS: Record<string, { nom: string; calories: number }[]> = {
     { nom: "Müesli + lait + banane", calories: 360 },
     { nom: "Omelette + pain", calories: 380 },
     { nom: "Bol de fruits + yaourt", calories: 250 },
-    { nom: "Tartines pâte à tartiner", calories: 400 },
-    { nom: "Brioche + chocolat chaud", calories: 430 },
+    { nom: "Tartines pâte à tartiner", calories: 400, i: true },
+    { nom: "Brioche + chocolat chaud", calories: 430, i: true },
     { nom: "Flocons d'avoine & pomme", calories: 350 },
     { nom: "Œufs au plat + bacon", calories: 450 },
     { nom: "Smoothie bowl", calories: 320 },
     { nom: "Pain, fromage & jambon", calories: 420 },
     { nom: "Toasts + œuf poché", calories: 380 },
-    { nom: "Crêpes + confiture", calories: 410 },
+    { nom: "Crêpes + confiture", calories: 410, i: true },
     { nom: "Skyr, muesli & myrtilles", calories: 330 },
   ],
   "dejeuner": [
     { nom: "Pâtes bolognaise", calories: 650 },
     { nom: "Poulet, riz & haricots verts", calories: 600 },
-    { nom: "Steak frites", calories: 700 },
+    { nom: "Steak frites", calories: 700, i: true },
     { nom: "Riz cantonais", calories: 580 },
     { nom: "Salade César au poulet", calories: 520 },
-    { nom: "Lasagnes", calories: 680 },
+    { nom: "Lasagnes", calories: 680, i: true },
     { nom: "Poulet curry & riz", calories: 620 },
-    { nom: "Pâtes carbonara", calories: 700 },
-    { nom: "Burger maison + frites", calories: 750 },
+    { nom: "Pâtes carbonara", calories: 700, i: true },
+    { nom: "Burger maison + frites", calories: 750, i: true },
     { nom: "Saumon, riz & brocolis", calories: 580 },
     { nom: "Quiche lorraine + salade", calories: 600 },
     { nom: "Couscous poulet & légumes", calories: 640 },
@@ -76,15 +76,15 @@ const POOLS: Record<string, { nom: string; calories: number }[]> = {
     { nom: "Omelette, salade & pain", calories: 500 },
     { nom: "Pâtes au pesto", calories: 560 },
     { nom: "Boulettes sauce tomate & riz", calories: 640 },
-    { nom: "Croque-monsieur + salade", calories: 550 },
+    { nom: "Croque-monsieur + salade", calories: 550, i: true },
     { nom: "Poke bowl saumon", calories: 540 },
-    { nom: "Gratin de pâtes", calories: 660 },
+    { nom: "Gratin de pâtes", calories: 660, i: true },
     { nom: "Poulet rôti & pommes de terre", calories: 620 },
     { nom: "Hachis parmentier", calories: 650 },
     { nom: "Risotto aux champignons", calories: 580 },
     { nom: "Sandwich poulet crudités", calories: 460 },
     { nom: "Pâtes au saumon", calories: 620 },
-    { nom: "Tacos poulet", calories: 680 },
+    { nom: "Tacos poulet", calories: 680, i: true },
     { nom: "Salade de pâtes au thon", calories: 520 },
     { nom: "Escalope de dinde & purée", calories: 600 },
   ],
@@ -101,7 +101,7 @@ const POOLS: Record<string, { nom: string; calories: number }[]> = {
     { nom: "Yaourt grec & miel", calories: 180 },
     { nom: "Fruits secs & amandes", calories: 230 },
     { nom: "Galettes de riz & confiture", calories: 160 },
-    { nom: "Cookies maison", calories: 250 },
+    { nom: "Cookies maison", calories: 250, i: true },
     { nom: "Crêpe au sucre", calories: 200 },
     { nom: "Tartine de miel", calories: 190 },
     { nom: "Skyr & myrtilles", calories: 160 },
@@ -135,7 +135,7 @@ const POOLS: Record<string, { nom: string; calories: number }[]> = {
     { nom: "Salade de lentilles", calories: 440 },
     { nom: "Boulgour & légumes", calories: 480 },
     { nom: "Wok de nouilles & légumes", calories: 530 },
-    { nom: "Croque-madame + salade", calories: 560 },
+    { nom: "Croque-madame + salade", calories: 560, i: true },
     { nom: "Dahl de lentilles & riz", calories: 520 },
   ],
   "collation": [
@@ -188,24 +188,40 @@ function weekNumber(): number {
   return Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
 }
 
-/* ─── Construit le plan local (instantané, sans IA, sans doublon dans la semaine) ─── */
+/* ─── Construit le plan local (instantané, sans IA, sans doublon dans la semaine) ───
+   Équilibré : max 2 plats "plaisir" (i:true, ex. steak frites, burger) sur la semaine. */
+const INDULGENT_MAX = 2;
 function buildLocalPlan(userId: string, mealsCount: number, variant: number): MealPlan {
   const types = mealTypesForCount(mealsCount);
   const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}`));
 
-  // Une liste mélangée + un curseur par type (les slots du même type piochent des plats différents)
-  const shuffled: Record<string, { nom: string; calories: number }[]> = {};
+  const shuffled: Record<string, { nom: string; calories: number; i?: boolean }[]> = {};
   const cursor: Record<string, number> = {};
-
-  const semaine: MealDay[] = DAY_LABELS.map((jour) => ({ jour, repas: [] }));
-
   for (const t of types) {
     if (!shuffled[t]) { shuffled[t] = shuffle(POOLS[t] ?? [], rng); cursor[t] = 0; }
-    const pool = shuffled[t];
-    for (let d = 0; d < 7; d++) {
-      const item = pool.length ? pool[cursor[t] % pool.length] : { nom: "Repas équilibré", calories: 400 };
-      cursor[t]++;
-      semaine[d].repas.push({ type: t, nom: item.nom, calories: item.calories });
+  }
+
+  let indulgentBudget = INDULGENT_MAX;
+  const semaine: MealDay[] = DAY_LABELS.map((jour) => ({ jour, repas: [] }));
+
+  // Jour par jour, type par type → le budget "plaisir" se répartit naturellement
+  for (let d = 0; d < 7; d++) {
+    for (const t of types) {
+      const pool = shuffled[t];
+      if (!pool.length) { semaine[d].repas.push({ type: t, nom: "Repas équilibré", calories: 400 }); continue; }
+
+      let chosen: { nom: string; calories: number; i?: boolean } | null = null;
+      // On avance dans la liste mélangée ; on saute les plats "plaisir" si le budget est épuisé
+      for (let scanned = 0; scanned < pool.length; scanned++) {
+        const item = pool[cursor[t] % pool.length];
+        cursor[t]++;
+        if (item.i && indulgentBudget <= 0) continue; // budget plaisir épuisé → on saute
+        chosen = item;
+        if (item.i) indulgentBudget--;
+        break;
+      }
+      if (!chosen) { chosen = pool[cursor[t] % pool.length]; cursor[t]++; }
+      semaine[d].repas.push({ type: t, nom: chosen.nom, calories: chosen.calories });
     }
   }
   return { semaine };
