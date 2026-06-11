@@ -2868,11 +2868,10 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img loading="lazy" decoding="async" src={authorAvatar} alt={authorPseudo}
-                className="w-7 h-7 rounded-full object-cover flex-shrink-0"
-                style={{ border: "1.5px solid rgba(255,255,255,0.85)" }} />
+                className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: "1.5px solid rgba(255,255,255,0.85)" }}>
+                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
                 {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
@@ -2932,23 +2931,6 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           : { gap: 22, width: 52, paddingBottom: 8 }}
         onClick={e => e.stopPropagation()}>
 
-        {/* Avatar auteur */}
-        <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="cursor-pointer" onClick={e => e.stopPropagation()}>
-          <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.06 }}>
-            {authorAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img loading="lazy" decoding="async" src={authorAvatar} alt={authorPseudo}
-                className="w-11 h-11 rounded-full object-cover"
-                style={{ border: isMobile ? "2px solid #fff" : "2px solid rgba(167,139,250,0.5)", boxShadow: "0 2px 10px rgba(0,0,0,0.25)" }} />
-            ) : (
-              <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff", border: isMobile ? "2px solid #fff" : "none" }}>
-                {authorPseudo[0]?.toUpperCase()}
-              </div>
-            )}
-          </motion.div>
-        </Link>
-
         {/* Like */}
         <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.45 }} animate={liked ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
@@ -2966,13 +2948,14 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(commentCount)}</span>
         </button>
 
-        {/* Repost */}
-        <button onClick={toggleRepost} className="flex flex-col items-center gap-1 cursor-pointer">
-          <motion.div whileTap={{ scale: 1.3 }} animate={reposted ? { rotate: [0, 360] } : {}} transition={{ duration: 0.45 }}>
-            <Repeat2 size={29} strokeWidth={1.8}
-              style={{ color: reposted ? "#34D399" : icoColor, filter: reposted ? "drop-shadow(0 0 6px rgba(52,211,153,0.5))" : icoShadow }} />
+        {/* Sauvegarder */}
+        <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
+          <motion.div whileTap={{ scale: 1.3 }}>
+            <Bookmark size={29} strokeWidth={1.8}
+              fill={saved ? "#F5E6A3" : "none"}
+              style={{ color: saved ? "#D4A843" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: reposted ? "#34D399" : labelColor, ...labelShadow }}>{fmtCount(reposts)}</span>
+          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>Sauv.</span>
         </button>
 
         {/* Partager */}
@@ -2981,16 +2964,6 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
             <Share2 size={27} strokeWidth={1.8} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
           </motion.div>
           <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>Partager</span>
-        </button>
-
-        {/* Bookmark */}
-        <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
-          <motion.div whileTap={{ scale: 1.3 }}>
-            <Bookmark size={27} strokeWidth={1.8}
-              fill={saved ? "#F5E6A3" : "none"}
-              style={{ color: saved ? "#D4A843" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : icoShadow }} />
-          </motion.div>
-          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>Sauv.</span>
         </button>
 
         {/* Plus / settings */}
