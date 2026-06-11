@@ -2039,7 +2039,7 @@ export default function ProfilPage() {
             >
               {displayPseudo}
             </h1>
-            {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+            {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
               <motion.div
                 initial={{ scale: 0, rotate: -20 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -2324,7 +2324,7 @@ export default function ProfilPage() {
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
-                                {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+                                {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
                                   <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
                                     <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                   </div>
@@ -2770,7 +2770,7 @@ export default function ProfilPage() {
                   <div>
                     <div className="flex items-center gap-1">
                       <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
-                      {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+                      {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
                         <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
                           <svg width="8" height="8" viewBox="0 0 13 13" fill="none">

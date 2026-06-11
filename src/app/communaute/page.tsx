@@ -42,7 +42,7 @@ type RealStory = {
   media_type?: string | null;
   created_at: string;
   expires_at: string;
-  profiles: { pseudo: string; full_name: string | null; avatar_url: string | null } | null;
+  profiles: { pseudo: string; full_name: string | null; avatar_url: string | null; is_admin?: boolean; is_certified?: boolean } | null;
 };
 
 type RealPost = {
@@ -57,7 +57,7 @@ type RealPost = {
   media_type?: string | null;
   views?: number;
   created_at: string;
-  author: { pseudo: string; full_name?: string; avatar_url?: string; is_admin?: boolean } | null;
+  author: { pseudo: string; full_name?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean } | null;
   post_likes: { user_id: string }[];
   post_comments: { id: string }[];
   post_reposts: { user_id: string }[];
@@ -1557,11 +1557,11 @@ type RealComment = {
   created_at: string;
   user_id: string;
   parent_id: string | null;
-  author: { pseudo: string; avatar_url?: string | null } | null;
+  author: { pseudo: string; avatar_url?: string | null; is_admin?: boolean; is_certified?: boolean } | null;
   comment_likes: { user_id: string }[];
 };
 
-const COMMENTS_SELECT = "id, content:text, created_at, user_id, parent_id, author:profiles!user_id(pseudo, avatar_url), comment_likes(user_id)";
+const COMMENTS_SELECT = "id, content:text, created_at, user_id, parent_id, author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified), comment_likes(user_id)";
 
 // Rend le contenu d'un commentaire avec @mentions en violet
 function renderMentions(text: string) {
@@ -1588,6 +1588,7 @@ function CommentRow({
 }) {
   const pseudo = c.author?.pseudo ?? "inconnu";
   const avatar = c.author?.avatar_url;
+  const certified = c.author?.is_certified === true || c.author?.is_admin === true;
   const timeStr = postTimeAgo(c.created_at);
   const liked = c.comment_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false;
   const likeCount = c.comment_likes?.length ?? 0;
@@ -1608,9 +1609,10 @@ function CommentRow({
       <div className="flex-1 min-w-0">
         <p className="text-xs leading-relaxed" style={{ color: txt }}>
           <Link href={`/profil/${encodeURIComponent(pseudo)}`}>
-            <span className="font-semibold mr-1.5" style={{ color: dark ? "#D4C0FF" : "#A78BFA" }}>{pseudo}</span>
+            <span className="font-semibold" style={{ color: dark ? "#D4C0FF" : "#A78BFA" }}>{pseudo}</span>
           </Link>
-          <span className="font-light">{renderMentions(c.content)}</span>
+          {certified && <BadgeCheck size={11} strokeWidth={2.5} className="inline-block align-text-bottom mx-0.5" style={{ color: "#A78BFA" }} />}
+          <span className="font-light ml-1">{renderMentions(c.content)}</span>
         </p>
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-[10px]" style={{ color: sub }}>{timeStr}</span>
@@ -1865,12 +1867,12 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
     Promise.all([
       supabase.from("posts").select(`
         id, type, caption, description, media_url, media_type, views, created_at, user_id,
-        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
         post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
       `).eq("media_type", "video").ilike("caption", `%${tag}%`).limit(60),
       supabase.from("posts").select(`
         id, type, caption, description, media_url, media_type, views, created_at, user_id,
-        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
         post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
       `).eq("media_type", "video").ilike("description", `%${tag}%`).limit(60),
     ]).then(([capRes, descRes]) => {
@@ -2012,7 +2014,7 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
     Promise.all([
       supabase.from("posts").select(`
         id, type, caption, description, media_url, media_type, created_at, user_id,
-        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
         post_likes(user_id),
         post_comments(id),
         post_reposts(user_id),
@@ -2020,7 +2022,7 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
       `).ilike("caption", `%${tag}%`).order("created_at", { ascending: false }).limit(20),
       supabase.from("posts").select(`
         id, type, caption, description, media_url, media_type, created_at, user_id,
-        author:profiles!user_id(pseudo, avatar_url, is_admin),
+        author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
         post_likes(user_id),
         post_comments(id),
         post_reposts(user_id),
@@ -2598,7 +2600,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
 
   const authorPseudo = post.author?.pseudo ?? "utilisateur";
   const authorAvatar = post.author?.avatar_url;
-  const authorCertified = post.author?.is_admin === true;
+  const authorCertified = post.author?.is_certified === true || post.author?.is_admin === true;
 
   // Play/pause on isActive + incrémenter les vues une fois par activation
   const viewCountedRef = useRef(false);
@@ -3243,7 +3245,7 @@ function CommunautePageInner() {
   const [view, setView] = useState<View>("feed");
   const [search, setSearch] = useState("");
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
-  const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string }[]>([]);
+  const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean }[]>([]);
   const [realSessions, setRealSessions] = useState<SessionResult[]>([]);
   const [hashtagDbPosts, setHashtagDbPosts] = useState<RealPost[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -3252,7 +3254,7 @@ function CommunautePageInner() {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   // mutualIds = amis réciproques (je les suis ET ils me suivent) → onglet "Amis"
   const [mutualIds, setMutualIds] = useState<Set<string>>(new Set());
-  const [suggestedProfiles, setSuggestedProfiles] = useState<{ id: string; pseudo: string; full_name?: string; avatar_url?: string; bio?: string }[]>([]);
+  const [suggestedProfiles, setSuggestedProfiles] = useState<{ id: string; pseudo: string; full_name?: string; avatar_url?: string; bio?: string; is_admin?: boolean; is_certified?: boolean }[]>([]);
 
   /* Workout guide modal launched from a community post */
   const [communityWorkout, setCommunityWorkout] = useState<{
@@ -3456,7 +3458,7 @@ function CommunautePageInner() {
     const supabase = createClient();
     supabase
       .from("profiles")
-      .select("id, pseudo, full_name, avatar_url, bio")
+      .select("id, pseudo, full_name, avatar_url, bio, is_admin, is_certified")
       .neq("id", user.id)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -3539,7 +3541,7 @@ function CommunautePageInner() {
       .from("posts")
       .select(`
         id, type, caption, description, audience, performance_data, media_url, media_type, views, created_at, user_id,
-        author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
+        author:profiles!user_id(pseudo, full_name, avatar_url, is_admin, is_certified),
         post_likes(user_id),
         post_comments(id),
         post_reposts(user_id),
@@ -3612,7 +3614,7 @@ function CommunautePageInner() {
           .from("posts")
           .select(`
             id, type, caption, description, audience, performance_data, media_url, media_type, views, created_at, user_id,
-            author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
+            author:profiles!user_id(pseudo, full_name, avatar_url, is_admin, is_certified),
             post_likes(user_id),
             post_comments(id),
             post_reposts(user_id),
@@ -4042,7 +4044,7 @@ function CommunautePageInner() {
         const supabase = createClient();
         const [profileRes, sessionRes, postRes] = await Promise.all([
           !isHashtag && searchFilter !== "seances"
-            ? supabase.from("profiles").select("id, pseudo, full_name, bio, avatar_url").or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`).limit(15)
+            ? supabase.from("profiles").select("id, pseudo, full_name, bio, avatar_url, is_admin, is_certified").or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`).limit(15)
             : { data: [] },
           !isHashtag && searchFilter !== "compte"
             ? supabase.from("custom_sessions").select("id, title, category, duration, difficulty, muscles, accent, icon, user_id").eq("visibility", "public").ilike("title", `%${q}%`).limit(12)
@@ -4050,7 +4052,7 @@ function CommunautePageInner() {
           isHashtag
             ? supabase.from("posts").select(`
                 id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
-                author:profiles!user_id(pseudo, full_name, avatar_url, is_admin),
+                author:profiles!user_id(pseudo, full_name, avatar_url, is_admin, is_certified),
                 post_likes(user_id),
                 post_comments(id),
                 post_reposts(user_id),
@@ -4589,7 +4591,7 @@ function CommunautePageInner() {
               const savesCount = post.post_saves?.length ?? 0;
               const authorPseudo = post.author?.pseudo ?? "utilisateur";
               const authorAvatar = post.author?.avatar_url;
-              const authorCertified = post.author?.is_admin === true;
+              const authorCertified = post.author?.is_certified === true || post.author?.is_admin === true;
               const postScore = feedMode === "algo" ? getScore(post) : 0;
               const isHot = feedMode === "algo" && postScore >= 15;
 
@@ -5025,7 +5027,10 @@ function CommunautePageInner() {
                           </div>
                         </Link>
                         <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
+                          <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: "#2D3748" }}>
+                            <span className="truncate">{profile.full_name || profile.pseudo}</span>
+                            {(profile.is_certified || profile.is_admin) && <BadgeCheck size={13} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "#A78BFA" }} />}
+                          </p>
                           <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
                           {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
                         </Link>
@@ -5079,7 +5084,10 @@ function CommunautePageInner() {
                         </Link>
                         {/* Infos cliquables */}
                         <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{profile.full_name || profile.pseudo}</p>
+                          <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: "#2D3748" }}>
+                            <span className="truncate">{profile.full_name || profile.pseudo}</span>
+                            {(profile.is_certified || profile.is_admin) && <BadgeCheck size={13} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "#A78BFA" }} />}
+                          </p>
                           <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
                           {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
                         </Link>

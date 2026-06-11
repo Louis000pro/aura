@@ -43,6 +43,7 @@ type DailyVideo = {
   pseudo: string;
   avatar_url?: string | null;
   is_admin: boolean;
+  is_certified?: boolean;
 };
 
 /* ─── Composant ──────────────────────────────────────────────────────── */
@@ -73,7 +74,7 @@ export default function DailyDrawer({
     supabase
       .from("posts")
       .select(`id, media_url, caption, views, user_id, created_at,
-               author:profiles!user_id(pseudo, avatar_url, is_admin)`)
+               author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified)`)
       .eq("media_type", "video")
       .gte("created_at", since)
       .order("views", { ascending: false, nullsFirst: false })
@@ -90,6 +91,7 @@ export default function DailyDrawer({
             pseudo:    (author?.pseudo as string) ?? "aura",
             avatar_url: author?.avatar_url ?? null,
             is_admin:  Boolean(author?.is_admin),
+                is_certified: Boolean((author as { is_certified?: boolean } | null)?.is_certified),
           });
           return;
         }
@@ -98,7 +100,7 @@ export default function DailyDrawer({
         supabase
           .from("posts")
           .select(`id, media_url, caption, views, user_id, created_at,
-                   author:profiles!user_id(pseudo, avatar_url, is_admin)`)
+                   author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified)`)
           .eq("media_type", "video")
           .gte("created_at", weekAgo)
           .order("views", { ascending: false, nullsFirst: false })
@@ -115,6 +117,7 @@ export default function DailyDrawer({
                 pseudo:    (author?.pseudo as string) ?? "aura",
                 avatar_url: author?.avatar_url ?? null,
                 is_admin:  Boolean(author?.is_admin),
+                is_certified: Boolean((author as { is_certified?: boolean } | null)?.is_certified),
               });
             }
           });
@@ -393,7 +396,7 @@ export default function DailyDrawer({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1">
                               <p className="text-sm font-bold truncate text-white">@{dailyVideo.pseudo}</p>
-                              {dailyVideo.is_admin && (
+                              {(dailyVideo.is_certified || dailyVideo.is_admin) && (
                                 <BadgeCheck size={13} strokeWidth={2} className="flex-shrink-0" style={{ color: "#A78BFA", fill: "rgba(255,255,255,0.95)" }} />
                               )}
                             </div>
