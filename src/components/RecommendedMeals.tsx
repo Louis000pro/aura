@@ -1,54 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Utensils, Settings } from "lucide-react";
-import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
 /* ─── Types ─── */
-type MealItem = {
-  type: string; // petit-dejeuner | dejeuner | gouter | diner
-  nom: string;
-  calories: number;
-};
-
-type MealDay = {
-  jour: string;
-  repas: MealItem[];
-};
-
-type MealPlan = {
-  semaine: MealDay[];
-};
-
-type ProfileData = {
-  onboarding_level: string | null;
-  onboarding_sessions_week: number | null;
-  onboarding_goals: string[] | null;
-  onboarding_age: number | null;
-  onboarding_weight: number | null;
-  onboarding_meals_day: number | null;
-};
+type MealItem = { type: string; nom: string; calories: number };
+type MealDay = { jour: string; repas: MealItem[] };
+type MealPlan = { semaine: MealDay[] };
 
 /* ─── Meal type meta ─── */
 const MEAL_EMOJI: Record<string, string> = {
-  "petit-dejeuner": "🥐",
-  "dejeuner": "🍽️",
-  "gouter": "🍪",
-  "diner": "🍲",
-  "collation": "🥤",
+  "petit-dejeuner": "🥐", "dejeuner": "🍽️", "gouter": "🍪", "diner": "🍲", "collation": "🥤",
 };
 const MEAL_LABEL: Record<string, string> = {
-  "petit-dejeuner": "Petit-déj",
-  "dejeuner": "Déjeuner",
-  "gouter": "Goûter",
-  "diner": "Dîner",
-  "collation": "Collation",
+  "petit-dejeuner": "Petit-déj", "dejeuner": "Déjeuner", "gouter": "Goûter", "diner": "Dîner", "collation": "Collation",
 };
 
-/* ─── Quels repas proposer selon le nombre choisi par l'utilisateur ─── */
 function mealTypesForCount(n: number): string[] {
   switch (n) {
     case 2:  return ["dejeuner", "diner"];
@@ -60,61 +30,188 @@ function mealTypesForCount(n: number): string[] {
   }
 }
 
-/* ─── Goal labels ─── */
-const goalLabels: Record<string, string> = {
-  masse: "prise de masse",
-  prise_de_masse: "prise de masse",
-  poids: "perte de poids",
-  perte_de_poids: "perte de poids",
-  force: "force",
-  endurance: "endurance",
-  sante: "santé générale",
-  sante_generale: "santé générale",
-  souplesse: "souplesse",
+/* ─── Banque de repas connus de tous ─── */
+const POOLS: Record<string, { nom: string; calories: number }[]> = {
+  "petit-dejeuner": [
+    { nom: "Tartines beurre & confiture", calories: 350 },
+    { nom: "Bol de céréales + lait", calories: 320 },
+    { nom: "Porridge avoine & banane", calories: 380 },
+    { nom: "Œufs brouillés + pain", calories: 400 },
+    { nom: "Pain perdu", calories: 420 },
+    { nom: "Yaourt + granola + fruits", calories: 330 },
+    { nom: "Croissant + jus d'orange", calories: 360 },
+    { nom: "Pancakes + sirop d'érable", calories: 450 },
+    { nom: "Smoothie banane-fraise", calories: 280 },
+    { nom: "Tartines avocat & œuf", calories: 410 },
+    { nom: "Fromage blanc, miel & noix", calories: 340 },
+    { nom: "Pain complet & beurre de cacahuète", calories: 390 },
+    { nom: "Müesli + lait + banane", calories: 360 },
+    { nom: "Omelette + pain", calories: 380 },
+    { nom: "Bol de fruits + yaourt", calories: 250 },
+    { nom: "Tartines pâte à tartiner", calories: 400 },
+    { nom: "Brioche + chocolat chaud", calories: 430 },
+    { nom: "Flocons d'avoine & pomme", calories: 350 },
+    { nom: "Œufs au plat + bacon", calories: 450 },
+    { nom: "Smoothie bowl", calories: 320 },
+    { nom: "Pain, fromage & jambon", calories: 420 },
+    { nom: "Toasts + œuf poché", calories: 380 },
+    { nom: "Crêpes + confiture", calories: 410 },
+    { nom: "Skyr, muesli & myrtilles", calories: 330 },
+  ],
+  "dejeuner": [
+    { nom: "Pâtes bolognaise", calories: 650 },
+    { nom: "Poulet, riz & haricots verts", calories: 600 },
+    { nom: "Steak frites", calories: 700 },
+    { nom: "Riz cantonais", calories: 580 },
+    { nom: "Salade César au poulet", calories: 520 },
+    { nom: "Lasagnes", calories: 680 },
+    { nom: "Poulet curry & riz", calories: 620 },
+    { nom: "Pâtes carbonara", calories: 700 },
+    { nom: "Burger maison + frites", calories: 750 },
+    { nom: "Saumon, riz & brocolis", calories: 580 },
+    { nom: "Quiche lorraine + salade", calories: 600 },
+    { nom: "Couscous poulet & légumes", calories: 640 },
+    { nom: "Chili con carne", calories: 590 },
+    { nom: "Wrap poulet crudités", calories: 480 },
+    { nom: "Omelette, salade & pain", calories: 500 },
+    { nom: "Pâtes au pesto", calories: 560 },
+    { nom: "Boulettes sauce tomate & riz", calories: 640 },
+    { nom: "Croque-monsieur + salade", calories: 550 },
+    { nom: "Poke bowl saumon", calories: 540 },
+    { nom: "Gratin de pâtes", calories: 660 },
+    { nom: "Poulet rôti & pommes de terre", calories: 620 },
+    { nom: "Hachis parmentier", calories: 650 },
+    { nom: "Risotto aux champignons", calories: 580 },
+    { nom: "Sandwich poulet crudités", calories: 460 },
+    { nom: "Pâtes au saumon", calories: 620 },
+    { nom: "Tacos poulet", calories: 680 },
+    { nom: "Salade de pâtes au thon", calories: 520 },
+    { nom: "Escalope de dinde & purée", calories: 600 },
+  ],
+  "gouter": [
+    { nom: "Yaourt + fruits rouges", calories: 180 },
+    { nom: "Pomme + amandes", calories: 200 },
+    { nom: "Banane & beurre de cacahuète", calories: 250 },
+    { nom: "Barre de céréales", calories: 150 },
+    { nom: "Compote + biscuits", calories: 190 },
+    { nom: "Fromage blanc & miel", calories: 170 },
+    { nom: "Poignée de noix", calories: 200 },
+    { nom: "Smoothie banane", calories: 220 },
+    { nom: "Pain + carré de chocolat", calories: 210 },
+    { nom: "Yaourt grec & miel", calories: 180 },
+    { nom: "Fruits secs & amandes", calories: 230 },
+    { nom: "Galettes de riz & confiture", calories: 160 },
+    { nom: "Cookies maison", calories: 250 },
+    { nom: "Crêpe au sucre", calories: 200 },
+    { nom: "Tartine de miel", calories: 190 },
+    { nom: "Skyr & myrtilles", calories: 160 },
+    { nom: "Madeleine + jus de fruits", calories: 220 },
+    { nom: "Chocolat & noisettes", calories: 210 },
+  ],
+  "diner": [
+    { nom: "Soupe, pain & fromage", calories: 450 },
+    { nom: "Omelette + salade", calories: 400 },
+    { nom: "Poulet & légumes vapeur", calories: 480 },
+    { nom: "Riz sauté aux légumes", calories: 500 },
+    { nom: "Pâtes tomate-basilic", calories: 520 },
+    { nom: "Saumon & purée", calories: 550 },
+    { nom: "Salade composée", calories: 420 },
+    { nom: "Quiche + salade verte", calories: 540 },
+    { nom: "Gratin de courgettes", calories: 460 },
+    { nom: "Soupe de légumes + tartines", calories: 400 },
+    { nom: "Poisson pané & riz", calories: 540 },
+    { nom: "Velouté de potiron + pain", calories: 420 },
+    { nom: "Poêlée de légumes & œufs", calories: 450 },
+    { nom: "Risotto aux légumes", calories: 520 },
+    { nom: "Tortilla de pommes de terre", calories: 500 },
+    { nom: "Curry de pois chiches & riz", calories: 540 },
+    { nom: "Poulet & haricots verts", calories: 480 },
+    { nom: "Tarte aux légumes", calories: 470 },
+    { nom: "Pâtes aux courgettes", calories: 510 },
+    { nom: "Steak haché & purée", calories: 560 },
+    { nom: "Buddha bowl", calories: 500 },
+    { nom: "Filet de poisson & ratatouille", calories: 490 },
+    { nom: "Gnocchis sauce tomate", calories: 540 },
+    { nom: "Salade de lentilles", calories: 440 },
+    { nom: "Boulgour & légumes", calories: 480 },
+    { nom: "Wok de nouilles & légumes", calories: 530 },
+    { nom: "Croque-madame + salade", calories: 560 },
+    { nom: "Dahl de lentilles & riz", calories: 520 },
+  ],
+  "collation": [
+    { nom: "Fruit + yaourt", calories: 150 },
+    { nom: "Poignée d'amandes", calories: 180 },
+    { nom: "Barre protéinée", calories: 200 },
+    { nom: "Banane", calories: 100 },
+    { nom: "Fromage blanc", calories: 120 },
+    { nom: "Smoothie protéiné", calories: 220 },
+    { nom: "Œuf dur", calories: 80 },
+    { nom: "Compote", calories: 90 },
+    { nom: "Galette de riz", calories: 70 },
+    { nom: "Noix de cajou", calories: 180 },
+    { nom: "Skyr nature", calories: 110 },
+    { nom: "Pain & jambon", calories: 150 },
+    { nom: "Poignée de noisettes", calories: 170 },
+    { nom: "Yaourt à boire", calories: 130 },
+  ],
 };
-
-/* ─── Cache helpers (clé hebdomadaire, comme le programme) ─── */
-function getCacheKey(userId: string, mealsCount: number): string {
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-  // mealsCount + version dans la clé → régénère si le nb de repas ou le style change
-  return `aura_repas_v2_${userId}_m${mealsCount}_w${week}_${now.getFullYear()}`;
-}
-function loadFromCache(key: string): MealPlan | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as MealPlan;
-  } catch {
-    return null;
-  }
-}
-function saveToCache(key: string, data: MealPlan): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch { /* ignore */ }
-}
 
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
-/* ─── Skeleton ─── */
-function SkeletonMeals() {
-  return (
-    <div className="flex flex-col gap-2 pt-1">
-      {[70, 90, 65, 85].map((w, i) => (
-        <motion.div key={i} className="rounded-2xl"
-          style={{ height: 44, width: `${w}%`, background: "rgba(212,168,67,0.1)" }}
-          animate={{ opacity: [0.4, 0.9, 0.4] }}
-          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }} />
-      ))}
-    </div>
-  );
+/* ─── PRNG déterministe (seed → suite stable) ─── */
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a: number) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle<T>(arr: T[], rng: () => number): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
-/* ─── Day meals panel ─── */
+/* Numéro de semaine ISO (pour faire varier le plan chaque semaine) */
+function weekNumber(): number {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
+}
+
+/* ─── Construit le plan local (instantané, sans IA, sans doublon dans la semaine) ─── */
+function buildLocalPlan(userId: string, mealsCount: number, variant: number): MealPlan {
+  const types = mealTypesForCount(mealsCount);
+  const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}`));
+
+  // Une liste mélangée + un curseur par type (les slots du même type piochent des plats différents)
+  const shuffled: Record<string, { nom: string; calories: number }[]> = {};
+  const cursor: Record<string, number> = {};
+
+  const semaine: MealDay[] = DAY_LABELS.map((jour) => ({ jour, repas: [] }));
+
+  for (const t of types) {
+    if (!shuffled[t]) { shuffled[t] = shuffle(POOLS[t] ?? [], rng); cursor[t] = 0; }
+    const pool = shuffled[t];
+    for (let d = 0; d < 7; d++) {
+      const item = pool.length ? pool[cursor[t] % pool.length] : { nom: "Repas équilibré", calories: 400 };
+      cursor[t]++;
+      semaine[d].repas.push({ type: t, nom: item.nom, calories: item.calories });
+    }
+  }
+  return { semaine };
+}
+
+/* ─── Repas du jour sélectionné ─── */
 function DayMeals({ day }: { day: MealDay }) {
   const total = (day.repas ?? []).reduce((s, m) => s + (m.calories || 0), 0);
   return (
@@ -123,24 +220,18 @@ function DayMeals({ day }: { day: MealDay }) {
       exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2, ease: "easeOut" }}
       className="flex flex-col gap-2">
       {total > 0 && (
-        <p className="text-[10px] font-semibold self-end" style={{ color: "#D4A843" }}>
-          ~{total} kcal / jour
-        </p>
+        <p className="text-[10px] font-semibold self-end" style={{ color: "#D4A843" }}>~{total} kcal / jour</p>
       )}
       {(day.repas ?? []).map((m, i) => (
         <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
           style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.25)" }}>
           <span className="text-lg flex-shrink-0">{MEAL_EMOJI[m.type] ?? "🍽️"}</span>
           <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-              {MEAL_LABEL[m.type] ?? "Repas"}
-            </p>
+            <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
             <p className="text-[13px] font-medium leading-snug" style={{ color: "#2D3748" }}>{m.nom}</p>
           </div>
           {m.calories > 0 && (
-            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>
-              {m.calories} kcal
-            </span>
+            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>{m.calories} kcal</span>
           )}
         </div>
       ))}
@@ -148,164 +239,52 @@ function DayMeals({ day }: { day: MealDay }) {
   );
 }
 
-/* ─── Main Component ─── */
+/* ─── Composant principal ─── */
 export default function RecommendedMeals() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [profileLoaded, setProfileLoaded] = useState(false);
-  const [plan, setPlan] = useState<MealPlan | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [mealsCount, setMealsCount] = useState(4);
+  const [variant, setVariant] = useState(0);
 
   const todayIndex = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
   const [selectedDay, setSelectedDay] = useState(todayIndex);
 
-  /* ── Fetch profile ── */
-  useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("onboarding_level, onboarding_sessions_week, onboarding_goals, onboarding_age, onboarding_weight, onboarding_meals_day")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data, error: err }) => {
-        if (!err && data) setProfile(data as ProfileData);
-        setProfileLoaded(true);
-      });
-  }, [user]);
-
-  /* ── Generate meal plan ── */
-  const generate = useCallback(
-    async (force = false) => {
-      if (!user || !profile) return;
-
-      // Nombre de repas/jour choisi par l'utilisateur (défaut 4)
-      const mealsCount = profile.onboarding_meals_day && profile.onboarding_meals_day >= 2
-        ? Math.min(6, profile.onboarding_meals_day)
-        : 4;
-
-      const cacheKey = getCacheKey(user.id, mealsCount);
-      if (!force) {
-        const cached = loadFromCache(cacheKey);
-        if (cached) { setPlan(cached); return; }
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const level = profile.onboarding_level ?? "intermédiaire";
-      const weight = profile.onboarding_weight ? `${profile.onboarding_weight} kg` : "non précisé";
-      const age = profile.onboarding_age ? `${profile.onboarding_age} ans` : "non précisé";
-      const goals = (profile.onboarding_goals ?? [])
-        .map((g) => goalLabels[g] ?? g)
-        .join(", ") || "forme générale";
-
-      const mealTypes = mealTypesForCount(mealsCount);
-      const exampleRepas = mealTypes
-        .map((t) => `{ "type": "${t}", "nom": "Plat exemple", "calories": 400 }`)
-        .join(", ");
-
-      const prompt = `Tu es un nutritionniste sportif expert. Génère un plan alimentaire hebdomadaire personnalisé en JSON pour cet utilisateur:
-- Niveau sportif: ${level}
-- Objectifs: ${goals}
-- Poids: ${weight}
-- Âge: ${age}
-- Nombre de repas par jour: ${mealsCount}
-Pour chaque jour, propose EXACTEMENT ${mealsCount} repas, dans cet ordre et avec ces types exacts : ${mealTypes.join(", ")}. Des plats CONCRETS, équilibrés et adaptés à l'objectif, avec une estimation de calories réaliste.
-TRÈS IMPORTANT : propose UNIQUEMENT des plats SIMPLES et CONNUS DE TOUS, qu'on mange au quotidien (ex : pâtes bolognaise, poulet riz haricots verts, omelette, steak frites, salade de pâtes, yaourt + fruits, tartines, riz cantonais, sandwich poulet, pâtes au saumon, porridge avoine, œufs au plat, soupe). PAS de plats exotiques, compliqués ou rares.
-IMPORTANT : noms de plats COURTS (4-6 mots max, sans détails superflus) pour garder une réponse compacte.
-Réponds UNIQUEMENT avec un JSON valide de cette forme:
-{ "semaine": [ { "jour": "Lundi", "repas": [ ${exampleRepas} ] } ] }
-Exactement 7 jours (Lundi à Dimanche), ${mealsCount} repas par jour. Varie les plats d'un jour à l'autre.`;
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // Plan 7 jours × 4 repas → besoin de plus de tokens pour un JSON complet
-          body: JSON.stringify({ messages: [{ role: "user", content: prompt }], maxTokens: 4000 }),
-        });
-        if (!response.ok || !response.body) throw new Error("API error");
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullText = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          fullText += decoder.decode(value, { stream: true });
-        }
-
-        const match = fullText.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error("No JSON found in response");
-
-        const parsed: MealPlan = JSON.parse(match[0]);
-        if (!parsed.semaine || !Array.isArray(parsed.semaine)) {
-          throw new Error("Invalid plan structure");
-        }
-
-        saveToCache(cacheKey, parsed);
-        setPlan(parsed);
-      } catch (err) {
-        console.error("Meal plan generation error:", err);
-        setError("Impossible de générer les plats. Réessaie.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [user, profile]
-  );
-
-  /* ── Auto-generate on profile load ── */
-  useEffect(() => {
-    if (profileLoaded && profile && profile.onboarding_level) {
-      generate(false);
-    }
-  }, [profileLoaded, profile, generate]);
-
-  /* ── Refs ── */
   const trackRef = useRef<HTMLDivElement>(null);
   const nameRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // ⚠️ Tous les hooks AVANT tout return conditionnel (Rules of Hooks)
+  /* Charge le nombre de repas/jour depuis le profil (sinon 4 par défaut) */
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase.from("profiles").select("onboarding_meals_day").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        const n = data?.onboarding_meals_day;
+        if (n && n >= 2) setMealsCount(Math.min(6, n));
+      });
+  }, [user]);
+
+  /* Variant persistant (Régénérer) */
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const v = localStorage.getItem(`vaiiya_repas_variant_${user.id}`);
+      if (v) setVariant(parseInt(v) || 0);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  /* Plan construit instantanément (mémo simple) */
+  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant) : null;
+
+  const regenerate = useCallback(() => {
+    setVariant((v) => {
+      const nv = v + 1;
+      if (user) { try { localStorage.setItem(`vaiiya_repas_variant_${user.id}`, String(nv)); } catch { /* ignore */ } }
+      return nv;
+    });
+  }, [user]);
+
   useEffect(() => {
     nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
   }, [selectedDay]);
-
-  const hasOnboardingData =
-    profile &&
-    (profile.onboarding_level ||
-      profile.onboarding_sessions_week ||
-      (profile.onboarding_goals && profile.onboarding_goals.length > 0));
-
-  if (profileLoaded && !hasOnboardingData) {
-    return (
-      <div className="px-1 pb-2">
-        <div className="rounded-2xl p-5 flex items-center gap-4"
-          style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", boxShadow: "0 4px 24px rgba(212,168,67,0.1)" }}>
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(212,168,67,0.12)" }}>
-            <Utensils size={18} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium mb-0.5" style={{ color: "#2D3748" }}>
-              Complète ton profil pour tes plats recommandés
-            </p>
-            <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Objectifs et poids requis</p>
-          </div>
-          <Link href="/parametres">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl"
-              style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" }}>
-              <Settings size={12} strokeWidth={2} style={{ color: "#2D3748" }} />
-              <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>Réglages</span>
-            </motion.div>
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   const currentDay = plan?.semaine?.[selectedDay];
 
@@ -328,7 +307,7 @@ Exactement 7 jours (Lundi à Dimanche), ${mealsCount} repas par jour. Varie les 
 
   return (
     <div className="flex flex-col gap-3">
-      {/* ── Slider jour ── */}
+      {/* Slider jour */}
       <div className="flex flex-col gap-2">
         <div className="flex overflow-x-auto gap-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
           {DAY_LABELS.map((label, i) => (
@@ -339,8 +318,7 @@ Exactement 7 jours (Lundi à Dimanche), ${mealsCount} repas par jour. Varie les 
               style={{
                 color: i === selectedDay ? "#2D3748" : "#A0AEC0",
                 fontWeight: i === selectedDay ? 600 : 400,
-                fontSize: 12,
-                transition: "color 0.15s, font-weight 0.15s",
+                fontSize: 12, transition: "color 0.15s, font-weight 0.15s",
                 background: "none", border: "none", padding: 0,
               }}>
               {label}
@@ -351,41 +329,24 @@ Exactement 7 jours (Lundi à Dimanche), ${mealsCount} repas par jour. Varie les 
         <div ref={trackRef}
           className="relative rounded-full cursor-pointer select-none touch-none"
           style={{ height: 5, background: "rgba(212,168,67,0.12)" }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}>
+          onPointerDown={onPointerDown} onPointerMove={onPointerMove}>
           <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
             style={{ width: `${pct}%`, background: "linear-gradient(90deg, #D4A843, #A78BFA)", transition: "width 0.12s ease" }} />
         </div>
 
-        {plan && !loading && (
-          <div className="flex justify-end">
-            <button onClick={() => generate(true)}
-              className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
-              <RefreshCw size={10} strokeWidth={2.5} />
-              <span className="text-[9px] font-medium">Régénérer</span>
-            </button>
-          </div>
-        )}
+        <div className="flex justify-end">
+          <button onClick={regenerate}
+            className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
+            <RefreshCw size={10} strokeWidth={2.5} />
+            <span className="text-[9px] font-medium">Changer les repas</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Repas du jour sélectionné ── */}
+      {/* Repas du jour */}
       <div className="min-h-[100px]">
-        {error && !loading && (
-          <div className="rounded-2xl p-3 flex items-center justify-between"
-            style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.18)" }}>
-            <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(true)}
-              className="text-[10px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
-              style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}>
-              Réessayer
-            </motion.button>
-          </div>
-        )}
-
-        {(loading || (!plan && profileLoaded && hasOnboardingData)) && <SkeletonMeals />}
-
         <AnimatePresence mode="wait">
-          {!loading && currentDay && <DayMeals key={selectedDay} day={currentDay} />}
+          {currentDay && <DayMeals key={`${selectedDay}-${variant}`} day={currentDay} />}
         </AnimatePresence>
       </div>
     </div>
