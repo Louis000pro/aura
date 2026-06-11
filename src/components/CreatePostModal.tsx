@@ -85,7 +85,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
 
       if (uploadErr) {
         console.error("post media upload:", uploadErr);
-        setError("L'envoi du média a échoué, réessaie 💜");
+        setError("L'envoi du média a échoué, réessaie");
         setSubmitting(false);
         return;
       }
@@ -114,7 +114,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
 
     if (insertError) {
       console.error("post insert:", insertError);
-      setError("La publication a échoué, réessaie 💜");
+      setError("La publication a échoué, réessaie");
       return;
     }
 

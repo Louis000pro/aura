@@ -66,7 +66,7 @@ export default function Error({
           }}
         >
           On n&apos;a pas réussi à charger cette page. Pas de panique, réessaie
-          dans un instant 💜
+          dans un instant
         </p>
         <button
           onClick={() => reset()}

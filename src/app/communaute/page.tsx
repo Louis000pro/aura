@@ -566,7 +566,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       },
       caption: caption.trim() || null,
     });
-    if (e) { console.error("publishWorkout:", e); setError("La publication a échoué, réessaie 💜"); setStep("workout-preview"); return; }
+    if (e) { console.error("publishWorkout:", e); setError("La publication a échoué, réessaie"); setStep("workout-preview"); return; }
     setStep("success");
     onPublished();
   };
@@ -581,7 +581,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       content_data: { text: textContent.trim(), emoji: selectedEmoji },
       caption:      null,
     });
-    if (e) { console.error("publishText:", e); setError("La publication a échoué, réessaie 💜"); setStep("text-input"); return; }
+    if (e) { console.error("publishText:", e); setError("La publication a échoué, réessaie"); setStep("text-input"); return; }
     setStep("success");
     onPublished();
   };
@@ -600,7 +600,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       },
       caption: caption.trim() || null,
     });
-    if (e) { console.error("publishMeal:", e); setError("La publication a échoué, réessaie 💜"); setStep("meal-input"); return; }
+    if (e) { console.error("publishMeal:", e); setError("La publication a échoué, réessaie"); setStep("meal-input"); return; }
     setStep("success");
     onPublished();
   };
@@ -626,7 +626,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       const ext  = mediaFile.name.split(".").pop();
       const path = `${userId}/story_${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, mediaFile, { upsert: true });
-      if (uploadErr) { console.error("publishMedia upload:", uploadErr); setError("L'envoi du média a échoué, réessaie 💜"); setStep("photo-preview"); return; }
+      if (uploadErr) { console.error("publishMedia upload:", uploadErr); setError("L'envoi du média a échoué, réessaie"); setStep("photo-preview"); return; }
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const mediaUrl = urlData.publicUrl + "?t=" + Date.now();
       const { data: inserted, error: e } = await supabase.from("stories").insert({
@@ -637,14 +637,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
         media_url:    mediaUrl,
         media_type:   mediaType,
       }).select("id").single();
-      if (e) { console.error("publishMedia insert:", e); setError("La publication a échoué, réessaie 💜"); setStep("photo-preview"); return; }
+      if (e) { console.error("publishMedia insert:", e); setError("La publication a échoué, réessaie"); setStep("photo-preview"); return; }
       setPublishedStoryId(inserted?.id ?? null);
       setPublishedMediaUrl(mediaUrl);
       setStep("success");
       onPublished();
     } catch (err) {
       console.error("publishMedia:", err);
-      setError("Une erreur est survenue, réessaie 💜");
+      setError("Une erreur est survenue, réessaie");
       setStep("photo-preview");
     }
   };

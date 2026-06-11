@@ -35,7 +35,7 @@ function PremiumInner() {
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
     if (params?.get("success")) setCelebrate(true);
-    else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux 💜");
+    else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux");
   }, [params]);
 
   // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.
@@ -70,9 +70,9 @@ function PremiumInner() {
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }
-      setMsg(data.message || "Les paiements seront bientôt activés 💜");
+      setMsg(data.message || "Les paiements seront bientôt activés");
     } catch {
-      setMsg("Une erreur est survenue, réessaie 💜");
+      setMsg("Une erreur est survenue, réessaie");
     } finally {
       setLoading(null);
     }

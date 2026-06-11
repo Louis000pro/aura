@@ -16,7 +16,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vaiiya.fr";
 export async function POST(req: NextRequest) {
   if (!SECRET) {
     return NextResponse.json(
-      { error: "not_configured", message: "Les paiements seront bientôt activés 💜" },
+      { error: "not_configured", message: "Les paiements seront bientôt activés" },
       { status: 503 }
     );
   }
