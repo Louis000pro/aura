@@ -2550,7 +2550,6 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
 
 const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef, onDeletePost }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean>; onDeletePost?: (id: string) => Promise<boolean> | void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
 
   // Interaction state
@@ -2680,19 +2679,16 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       setDoubleTapHeart(true);
       setTimeout(() => setDoubleTapHeart(false), 900);
     } else {
-      // Single tap → play/pause (vidéo + fond synchronisés)
+      // Single tap → play/pause
       const video = videoRef.current;
-      const bg = bgVideoRef.current;
       if (!video) return;
       if (video.paused) {
         userPausedRef.current = false;
         void video.play().catch(() => {});
-        void bg?.play().catch(() => {});
         setPaused(false);
       } else {
         userPausedRef.current = true;
         video.pause();
-        bg?.pause();
         setPaused(true);
       }
     }
@@ -2812,11 +2808,6 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
             muted={muted} playsInline autoPlay={isActive} preload={isActive || eager ? "auto" : "metadata"} loop
             style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"], backgroundColor: "#000" }} />
         )}
-        {/* bgVideoRef — preload none, on économise la bande passante */}
-        {post.media_url && (
-          <video ref={bgVideoRef} src={post.media_url}
-            className="hidden" muted playsInline preload="none" loop />
-        )}
 
         {/* Gradient bas — couvre caption + boutons */}
         <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
@@ -2884,7 +2875,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
               </div>
             )}
             <span className="text-white text-sm font-semibold leading-none drop-shadow-sm">@{authorPseudo}</span>
-            {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#D4A843", flexShrink: 0 }} />}
+            {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
           </Link>
           {post.caption && (
             <p className="text-white text-[13px] leading-snug line-clamp-2" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.85)", pointerEvents: "auto" }}>
@@ -3199,7 +3190,7 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
                 <VideoCard
                   post={post}
                   isActive={i === activeIndex}
-                  eager={dist === 1}
+                  eager={dist === 1 || dist === 2}
                   onHashtagClick={onHashtagClick}
                   isScrollingRef={isScrollingRef}
                   onDeletePost={onDeletePost}
@@ -4471,8 +4462,8 @@ function CommunautePageInner() {
                       style={{
                         width: 105,
                         ...(feedMode === mode
-                          ? { background: "linear-gradient(135deg,#F5D98A,#D4A843)", color: "#fff", boxShadow: "0 2px 12px rgba(212,168,67,0.4)" }
-                          : { background: "rgba(245,240,225,0.6)", color: "#A0AEC0" })
+                          ? { background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", color: "#fff", boxShadow: "0 2px 12px rgba(124,92,250,0.35)" }
+                          : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
                       }}
                     >
                       {mode === "algo" ? "Pour toi" : "Amis"}
@@ -4632,7 +4623,7 @@ function CommunautePageInner() {
                         <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
                         {authorCertified && (
                           <div className="flex-shrink-0 flex items-center justify-center rounded-full"
-                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,#F5D98A,#D4A843)", boxShadow: "0 1px 6px rgba(212,168,67,0.45)" }}>
+                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
                             <svg width="9" height="9" viewBox="0 0 13 13" fill="none">
                               <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>

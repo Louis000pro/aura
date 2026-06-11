@@ -75,9 +75,19 @@ function buildSystemPrompt(
   rich?: RichProfile | null,
   lieu?: string | null
 ): string {
+  // ── Repère temporel (fuseau France) ──
+  let dateContext = "";
+  try {
+    const now = new Date();
+    const jourSemaine = new Intl.DateTimeFormat("fr-FR", { weekday: "long", timeZone: "Europe/Paris" }).format(now);
+    const dateLongue = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" }).format(now);
+    const jourCap = jourSemaine.charAt(0).toUpperCase() + jourSemaine.slice(1);
+    dateContext = `\n\nREPÈRE TEMPOREL (très important) :\nNous sommes aujourd'hui ${dateLongue}. Le jour de la semaine EN COURS est "${jourCap}".\n- Quand l'utilisateur dit "aujourd'hui", "séance du jour", "ma séance", "ce soir", etc., tu te bases TOUJOURS sur ${jourCap}.\n- Si tu proposes la séance du jour depuis son programme, prends la ligne du jour "${jourCap}" — JAMAIS Lundi par défaut.\n- "Demain" = le jour suivant ${jourCap}, "hier" = le jour précédent.`;
+  } catch { /* ignore */ }
+
   const base = `Tu es Vaiiya, un coach de santé IA premium, bienveillant, motivant et expert en nutrition, fitness et bien-être.
 Tu réponds toujours en français, de manière concise et encourageante (2-4 phrases maximum sauf si on te demande un plan détaillé).
-Tu es personnalisé, précis et tu utilises des données réelles de l'utilisateur quand elles sont disponibles.
+Tu es personnalisé, précis et tu utilises des données réelles de l'utilisateur quand elles sont disponibles.${dateContext}
 
 DOMAINES AUTORISÉS (tu ne réponds QU'à ces sujets) :
 - Sport, entraînement, musculation, cardio, mobilité, récupération, performance
