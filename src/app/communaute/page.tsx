@@ -2474,9 +2474,10 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
 }
 
 // Panel paramètres vidéo (vitesse, sous-titres, signaler)
-function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggleCaptions, onReport }: {
+function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggleCaptions, onReport, onDelete }: {
   onClose: () => void; onSpeedChange: (s: number) => void;
   speed: number; captionsOn: boolean; onToggleCaptions: () => void; onReport: () => void;
+  onDelete?: () => void;
 }) {
   const speeds = [0.25, 0.5, 1, 1.5, 2];
   return (
@@ -2527,6 +2528,15 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
           <Flag size={16} strokeWidth={1.5} style={{ color: "#FC8181" }} />
           <p className="text-sm font-medium" style={{ color: "#FC8181" }}>Signaler cette vidéo</p>
         </motion.button>
+        {/* Supprimer (auteur uniquement) */}
+        {onDelete && (
+          <motion.button whileTap={{ scale: 0.97 }} onClick={onDelete}
+            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-2 cursor-pointer"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
+            <X size={16} strokeWidth={2} style={{ color: "#EF4444" }} />
+            <p className="text-sm font-semibold" style={{ color: "#EF4444" }}>Supprimer la vidéo</p>
+          </motion.button>
+        )}
         {/* Fermer */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
           className="w-full py-3 mt-3 rounded-2xl text-sm font-medium cursor-pointer"
@@ -2538,7 +2548,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
-const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean> }) {
+const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef, onDeletePost }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean>; onDeletePost?: (id: string) => Promise<boolean> | void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const bgVideoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
@@ -2911,6 +2921,9 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
               captionsOn={captionsOn}
               onToggleCaptions={() => setCaptionsOn(c => !c)}
               onReport={handleReport}
+              onDelete={(user?.id === post.user_id || (user as { is_admin?: boolean } | null)?.is_admin) && onDeletePost
+                ? async () => { setShowSettings(false); await onDeletePost(post.id); }
+                : undefined}
               onClose={() => setShowSettings(false)}
             />
           )}
@@ -3020,7 +3033,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   );
 });
 
-const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight, onCreatePost }: {
+const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight, onCreatePost, onDeletePost }: {
   posts: RealPost[];
   initialPostId?: string | null;
   onInitialScrolled?: () => void;
@@ -3029,6 +3042,7 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
   onScrollCollapse?: (collapsed: boolean) => void;
   feedHeight?: number; // hauteur exacte mesurée depuis le parent
   onCreatePost?: () => void;
+  onDeletePost?: (id: string) => Promise<boolean> | void;
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
   const wrapperRef   = useRef<HTMLDivElement>(null);  // fallback measurement
@@ -3188,6 +3202,7 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
                   eager={dist === 1}
                   onHashtagClick={onHashtagClick}
                   isScrollingRef={isScrollingRef}
+                  onDeletePost={onDeletePost}
                 />
               ) : null}
             </div>
@@ -3347,6 +3362,25 @@ function CommunautePageInner() {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   };
+
+  // ── Suppression d'un post (posts ET vidéos) via route serveur sécurisée ──
+  const deleteRealPost = useCallback(async (postId: string): Promise<boolean> => {
+    const supabase = createClient();
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) { showToast("Session expirée, reconnecte-toi"); return false; }
+    const res = await fetch("/api/posts/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ post_id: postId }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast(`Suppression impossible : ${json.error ?? res.status}`); return false; }
+    setRealFeedPosts((prev) => prev.filter((p) => p.id !== postId));
+    __feedCache = __feedCache.filter((p) => p.id !== postId);
+    showToast("Post supprimé");
+    return true;
+  }, []);
 
   // ── Algorithme de ranking ────────────────────────────────────
   const getScore = useCallback((post: RealPost): number => {
@@ -4459,6 +4493,7 @@ function CommunautePageInner() {
                     onActiveIndexChange={handleActiveIndexChange}
                     feedHeight={feedContainerH}
                     onCreatePost={handleCreatePost}
+                    onDeletePost={deleteRealPost}
                   />
                 </div>
               )}
@@ -4635,10 +4670,8 @@ function CommunautePageInner() {
                             }}
                             onReport={() => showToast("Signalement envoyé. Merci !")}
                             onDelete={async () => {
-                              const supabase = createClient();
-                              await supabase.from("posts").delete().eq("id", post.id);
-                              setRealFeedPosts((prev) => prev.filter((p) => p.id !== post.id));
-                              showToast("Post supprimé");
+                              const ok = await deleteRealPost(post.id);
+                              if (ok) setOpenRealMenu(null);
                             }}
                             onClose={() => setOpenRealMenu(null)}
                           />
