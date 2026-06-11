@@ -1010,7 +1010,7 @@ function Dashboard() {
                   : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ background: isHero ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
-                  <Icon size={isHero ? 15 : 13} strokeWidth={isHero ? 2 : 1.5} style={{ color: isHero ? "#7C3AED" : "#A78BFA" }} fill={isHero ? "#7C3AED" : "none"} />
+                  <Icon size={isHero ? 15 : 13} strokeWidth={isHero ? 2 : 1.5} style={{ color: isHero ? "#E8A11E" : "#A78BFA" }} fill={isHero ? "#F0B429" : "none"} />
                 </div>
                 <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "#2D3748" : "#A0AEC0" }}>{s.label}</p>
                 <div className="flex items-baseline gap-0.5">
