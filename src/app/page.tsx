@@ -1138,9 +1138,17 @@ function Dashboard() {
           <path d="M 0 0 Q 50 10 100 0 L 100 6 L 0 6 Z" fill="url(#topCrescentGrad)" />
         </svg>
 
-        {/* Hint chevron */}
-        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 pointer-events-none">
-          <ChevronDown size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
+        {/* Hint label : indique clairement ce qu'il y a derrière le tap */}
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none flex flex-col items-center gap-0.5">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+            style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.6)", boxShadow: "0 2px 10px rgba(167,139,250,0.18)" }}>
+            <Dumbbell size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
+            <span className="text-[10px] font-bold tracking-wide" style={{ color: "#6B5BA0" }}>Séances &amp; repas recommandés</span>
+            <Utensils size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
+          </div>
+          <motion.div animate={{ y: [0, 3, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
+            <ChevronDown size={14} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
+          </motion.div>
         </div>
       </button>
 
