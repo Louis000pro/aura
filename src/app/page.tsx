@@ -999,20 +999,23 @@ function Dashboard() {
             { label: "Séances", icon: Dumbbell, value: liveStats.loaded ? `${liveStats.sessionsWeek}` : "—", unit: "/ sem" },
           ].map((s, i) => {
             const Icon = s.icon;
+            const isHero = i === 1; // Série mis en avant avec la DA du site
             return (
               <motion.div key={s.label}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.3 }}
-                className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1"
-                style={{ background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, scale: isHero ? 1.07 : 1 }}
+                transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
+                className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1 relative"
+                style={isHero
+                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 10px 28px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.95)", zIndex: 2 }
+                  : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
-                  <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  style={{ background: isHero ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
+                  <Icon size={isHero ? 15 : 13} strokeWidth={isHero ? 2 : 1.5} style={{ color: isHero ? "#7C3AED" : "#A78BFA" }} fill={isHero ? "#7C3AED" : "none"} />
                 </div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{s.label}</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "#2D3748" : "#A0AEC0" }}>{s.label}</p>
                 <div className="flex items-baseline gap-0.5">
-                  <span className="text-base font-semibold leading-none" style={{ color: "#2D3748" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{s.unit}</span>}
+                  <span className={`${isHero ? "text-lg font-extrabold" : "text-base font-semibold"} leading-none`} style={{ color: "#2D3748" }}>{s.value}</span>
+                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "#5A4A8A" : "#A0AEC0" }}>{s.unit}</span>}
                 </div>
               </motion.div>
             );
