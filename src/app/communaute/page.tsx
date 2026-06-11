@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect, useCallback, memo, Suspense } fro
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
@@ -2550,6 +2550,9 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
+// Préférence de son partagée entre toutes les vidéos (une fois activé, ça reste)
+let __videoMuted = true;
+
 const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef, onDeletePost }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean>; onDeletePost?: (id: string) => Promise<boolean> | void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { user } = useAuth();
@@ -2586,7 +2589,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   const [following, setFollowing] = useState(false);
 
   // UI state
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(__videoMuted);
   const [paused, setPaused] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -2617,6 +2620,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
     if (isActive) {
       userPausedRef.current = false;
       setPaused(false);
+      setMuted(__videoMuted); // respecte la préférence de son globale
       // Pas de reset currentTime (évite la frame noire au scroll)
       const p = video.play();
       if (p && typeof p.catch === "function") p.catch(() => {});
@@ -2665,6 +2669,23 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = speed;
   }, [speed]);
+
+  // Synchronise l'attribut muted réel de la vidéo
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+  }, [muted]);
+
+  // Bouton son (préférence globale : une fois activé, toutes les vidéos ont le son)
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !muted;
+    __videoMuted = next;
+    setMuted(next);
+    if (videoRef.current) {
+      videoRef.current.muted = next;
+      if (!next) { const p = videoRef.current.play(); if (p && typeof p.catch === "function") p.catch(() => {}); }
+    }
+  };
 
   // Captions via HTML track (if available)
   useEffect(() => {
@@ -2857,9 +2878,16 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           )}
         </AnimatePresence>
 
+        {/* Bouton son */}
+        <button onClick={toggleMute} aria-label={muted ? "Activer le son" : "Couper le son"}
+          className="absolute top-3 left-3 z-30 w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+          style={{ background: "rgba(0,0,0,0.42)", backdropFilter: "blur(6px)" }}>
+          {muted ? <VolumeX size={17} strokeWidth={2} color="#fff" /> : <Volume2 size={17} strokeWidth={2} color="#fff" />}
+        </button>
+
         {/* Badge vitesse */}
         {speed !== 1 && (
-          <div className="absolute top-3 left-3 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
+          <div className="absolute top-3 left-14 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
             style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
             ×{speed}
           </div>
@@ -3392,6 +3420,12 @@ function CommunautePageInner() {
     }
     return [...visible].sort((a, b) => getScore(b) - getScore(a));
   }, [realFeedPosts, hiddenRealIds, feedMode, getScore, mutualIds]);
+
+  // Onglet "Posts" : on exclut les vidéos (elles ont leur propre onglet Vidéos)
+  const postsFeed = useMemo(
+    () => sortedFeedPosts.filter((p) => p.media_type !== "video"),
+    [sortedFeedPosts]
+  );
 
 
   // Charger les abonnements réels depuis Supabase + calculer les amis mutuels
@@ -4528,7 +4562,7 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {feedTab === "posts" && !feedLoading && sortedFeedPosts.length === 0 && feedMode === "amis" && (
+            {feedTab === "posts" && !feedLoading && postsFeed.length === 0 && feedMode === "amis" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -4553,7 +4587,7 @@ function CommunautePageInner() {
               </motion.div>
             )}
 
-            {feedTab === "posts" && !feedLoading && sortedFeedPosts.length === 0 && feedMode === "algo" && (
+            {feedTab === "posts" && !feedLoading && postsFeed.length === 0 && feedMode === "algo" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -4578,7 +4612,7 @@ function CommunautePageInner() {
               </motion.div>
             )}
 
-            {feedTab === "posts" && !feedLoading && sortedFeedPosts.map((post, postIdx) => {
+            {feedTab === "posts" && !feedLoading && postsFeed.map((post, postIdx) => {
               const liked = likedRealIds.has(post.id);
               const isMenuOpen = openRealMenu === post.id;
               const isSaved = savedRealIds.has(post.id);
