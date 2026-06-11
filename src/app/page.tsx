@@ -1010,7 +1010,24 @@ function Dashboard() {
                   : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ background: isHero ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
-                  <Icon size={isHero ? 15 : 13} strokeWidth={isHero ? 2 : 1.5} style={{ color: isHero ? "#E8A11E" : "#A78BFA" }} fill={isHero ? "#F0B429" : "none"} />
+                  {isHero ? (
+                    <motion.div
+                      style={{ display: "flex" }}
+                      animate={{
+                        scale: [1, 1.15, 1],
+                        filter: [
+                          "drop-shadow(0 0 2px rgba(240,180,41,0.7))",
+                          "drop-shadow(0 0 7px rgba(240,180,41,1)) drop-shadow(0 0 13px rgba(232,140,20,0.75))",
+                          "drop-shadow(0 0 2px rgba(240,180,41,0.7))",
+                        ],
+                      }}
+                      transition={{ duration: 1.7, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <Icon size={15} strokeWidth={2} style={{ color: "#E8A11E" }} fill="#F0B429" />
+                    </motion.div>
+                  ) : (
+                    <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} fill="none" />
+                  )}
                 </div>
                 <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "#2D3748" : "#A0AEC0" }}>{s.label}</p>
                 <div className="flex items-baseline gap-0.5">
