@@ -2862,8 +2862,8 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           </div>
         )}
 
-        {/* ══ AUTEUR + CAPTION (bas gauche) ══ */}
-        <div className="absolute left-4 z-20" style={{ right: isMobile ? 72 : 16, bottom: isMobile ? "calc(96px + env(safe-area-inset-bottom))" : 20, pointerEvents: "none" }}>
+        {/* ══ AUTEUR + CAPTION (bas gauche, abaissé vers la nav) ══ */}
+        <div className="absolute left-4 z-20" style={{ right: isMobile ? 72 : 16, bottom: isMobile ? "calc(70px + env(safe-area-inset-bottom))" : 18, pointerEvents: "none" }}>
           <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
             {authorAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -2875,8 +2875,15 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
                 {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
-            <span className="text-white text-sm font-semibold leading-none drop-shadow-sm">@{authorPseudo}</span>
-            {authorCertified && <BadgeCheck size={14} strokeWidth={2} style={{ color: "#A78BFA", flexShrink: 0 }} />}
+            <span className="flex items-center gap-1 min-w-0">
+              <span className="text-white text-sm font-semibold leading-none drop-shadow-sm truncate">@{authorPseudo}</span>
+              {authorCertified && (
+                <span className="inline-flex items-center justify-center rounded-full flex-shrink-0"
+                  style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 5px rgba(124,92,250,0.55)" }}>
+                  <svg width="9" height="9" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+              )}
+            </span>
           </Link>
           {post.caption && (
             <p className="text-white text-[13px] leading-snug line-clamp-2" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.85)", pointerEvents: "auto" }}>
@@ -2927,14 +2934,14 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       ══════════════════════════════════ */}
       <div className={isMobile ? "absolute z-30 flex flex-col items-center" : "flex flex-col items-center flex-shrink-0"}
         style={isMobile
-          ? { gap: 18, width: 52, right: 8, bottom: "calc(108px + env(safe-area-inset-bottom))" }
+          ? { gap: 20, width: 52, right: 8, bottom: "calc(86px + env(safe-area-inset-bottom))" }
           : { gap: 22, width: 52, paddingBottom: 8 }}
         onClick={e => e.stopPropagation()}>
 
         {/* Like */}
         <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.45 }} animate={liked ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-            <Heart size={29} strokeWidth={liked ? 0 : 1.8} fill={liked ? "#FF4458" : "none"}
+            <Heart size={30} strokeWidth={liked ? 0 : 2} fill={liked ? "#FF4458" : "none"}
               style={{ color: liked ? "#FF4458" : icoColor, filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.5))" : icoShadow }} />
           </motion.div>
           <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : labelColor, ...labelShadow }}>{fmtCount(likes)}</span>
@@ -2943,33 +2950,31 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         {/* Commentaires */}
         <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }}
           className="flex flex-col items-center gap-1 cursor-pointer">
-          <MessageCircle size={29} strokeWidth={1.8}
+          <MessageCircle size={30} strokeWidth={2}
             style={{ color: showComments ? "#A78BFA" : icoColor, filter: icoShadow }} />
           <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(commentCount)}</span>
         </button>
 
         {/* Sauvegarder */}
-        <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
+        <button onClick={toggleSave} className="flex flex-col items-center cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }}>
-            <Bookmark size={29} strokeWidth={1.8}
+            <Bookmark size={29} strokeWidth={2}
               fill={saved ? "#F5E6A3" : "none"}
               style={{ color: saved ? "#D4A843" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>Sauv.</span>
         </button>
 
         {/* Partager */}
-        <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
+        <button onClick={handleShare} className="flex flex-col items-center cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Share2 size={27} strokeWidth={1.8} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
+            <Share2 size={28} strokeWidth={2} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>Partager</span>
         </button>
 
         {/* Plus / settings */}
         <button onClick={() => { setShowSettings(s => !s); setShowComments(false); }}
-          className="flex flex-col items-center gap-1 cursor-pointer">
-          <MoreHorizontal size={27} strokeWidth={1.8} style={{ color: icoColor, filter: icoShadow }} />
+          className="flex flex-col items-center cursor-pointer">
+          <MoreHorizontal size={28} strokeWidth={2} style={{ color: icoColor, filter: icoShadow }} />
         </button>
       </div>{/* ── fin colonne actions ── */}
 
@@ -4430,6 +4435,19 @@ function CommunautePageInner() {
                     <Send size={17} strokeWidth={1.9} color="#fff" />
                   </button>
                 </div>
+              )}
+
+              {/* ── Flou + dégradé en bas (derrière la barre de navigation) ── */}
+              {immersiveVideo && (
+                <div className="fixed bottom-0 left-0 right-0 z-20 pointer-events-none"
+                  style={{
+                    height: "calc(104px + env(safe-area-inset-bottom))",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to top, black 42%, transparent 100%)",
+                    maskImage: "linear-gradient(to top, black 42%, transparent 100%)",
+                  }} />
               )}
 
 
