@@ -301,6 +301,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Groq chat error:", err);
+    if (req.nextUrl.searchParams.get("debug") === "1") {
+      return new Response("DEBUG_ERR: " + String((err as { message?: string })?.message ?? err), { status: 200 });
+    }
     return new Response(
       "Désolé, une erreur est survenue. Réessaie dans quelques secondes ✨",
       { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
