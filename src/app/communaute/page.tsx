@@ -2675,17 +2675,14 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
-  // Bouton son (préférence globale : une fois activé, toutes les vidéos ont le son)
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const next = !muted;
-    __videoMuted = next;
-    setMuted(next);
-    if (videoRef.current) {
-      videoRef.current.muted = next;
-      if (!next) { const p = videoRef.current.play(); if (p && typeof p.catch === "function") p.catch(() => {}); }
-    }
-  };
+  // Son : suit le volume du téléphone. On démute dès le 1er contact utilisateur
+  // (l'autoplay démarre muet pour passer la restriction navigateur, puis le son
+  // s'active tout seul et reste activé pour toutes les vidéos).
+  useEffect(() => {
+    const onSound = () => setMuted(false);
+    window.addEventListener("vaiiya-video-sound", onSound);
+    return () => window.removeEventListener("vaiiya-video-sound", onSound);
+  }, []);
 
   // Captions via HTML track (if available)
   useEffect(() => {
@@ -2878,16 +2875,9 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           )}
         </AnimatePresence>
 
-        {/* Bouton son */}
-        <button onClick={toggleMute} aria-label={muted ? "Activer le son" : "Couper le son"}
-          className="absolute top-3 left-3 z-30 w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-          style={{ background: "rgba(0,0,0,0.42)", backdropFilter: "blur(6px)" }}>
-          {muted ? <VolumeX size={17} strokeWidth={2} color="#fff" /> : <Volume2 size={17} strokeWidth={2} color="#fff" />}
-        </button>
-
         {/* Badge vitesse */}
         {speed !== 1 && (
-          <div className="absolute top-3 left-14 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
+          <div className="absolute top-3 left-3 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
             style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
             ×{speed}
           </div>
@@ -3054,6 +3044,18 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
   onDeletePost?: (id: string) => Promise<boolean> | void;
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
+
+  // Active le son dès le 1er contact utilisateur (puis suit le volume du téléphone)
+  useEffect(() => {
+    if (!__videoMuted) return;
+    const enable = () => {
+      if (!__videoMuted) return;
+      __videoMuted = false;
+      window.dispatchEvent(new Event("vaiiya-video-sound"));
+    };
+    window.addEventListener("pointerdown", enable, { once: true });
+    return () => window.removeEventListener("pointerdown", enable);
+  }, []);
   const wrapperRef   = useRef<HTMLDivElement>(null);  // fallback measurement
   const containerRef = useRef<HTMLDivElement>(null);  // élément scrollable
   const isScrollingRef = useRef(false);               // true pendant le scroll → bloque handleVideoTap
@@ -4460,23 +4462,20 @@ function CommunautePageInner() {
 
               {/* ── Accès flottant (mobile immersif) : Découverte · Recherche · Messages ── */}
               {immersiveVideo && (
-                <div className="absolute right-3 z-40 flex items-center gap-2"
+                <div className="absolute right-3 z-40 flex items-center gap-3.5"
                   style={{ top: "calc(env(safe-area-inset-top) + 10px)" }}>
                   <Link href="/decouverte" aria-label="Découvrir des comptes">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-                      style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)" }}>
-                      <Compass size={18} strokeWidth={1.9} color="#fff" />
+                    <div className="flex items-center justify-center cursor-pointer">
+                      <Compass size={23} strokeWidth={2} color="#fff" style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.75))" }} />
                     </div>
                   </Link>
                   <button onClick={() => setView("search")} aria-label="Rechercher"
-                    className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-                    style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)" }}>
-                    <Search size={18} strokeWidth={1.9} color="#fff" />
+                    className="flex items-center justify-center cursor-pointer">
+                    <Search size={23} strokeWidth={2} color="#fff" style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.75))" }} />
                   </button>
                   <button onClick={() => setView("dms")} aria-label="Messages"
-                    className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-                    style={{ background: "rgba(0,0,0,0.38)", backdropFilter: "blur(6px)" }}>
-                    <Send size={17} strokeWidth={1.9} color="#fff" />
+                    className="flex items-center justify-center cursor-pointer">
+                    <Send size={22} strokeWidth={2} color="#fff" style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.75))" }} />
                   </button>
                 </div>
               )}
