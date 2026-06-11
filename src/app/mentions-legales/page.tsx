@@ -71,7 +71,7 @@ export default function MentionsLegalesPage() {
             {/* À COMPLÉTER : adresse complète du siège / de l'entrepreneur */}
             <li><strong>Adresse :</strong> [ADRESSE]</li>
             {/* À COMPLÉTER : adresse email de contact officielle */}
-            <li><strong>Contact :</strong> [EMAIL DE CONTACT]</li>
+            <li><strong>Contact :</strong> bonjour@vaiiya.fr</li>
           </ul>
           <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>
             En tant que micro-entreprise, l&apos;éditeur n&apos;est pas assujetti à la TVA (article 293 B du CGI),
@@ -141,7 +141,7 @@ export default function MentionsLegalesPage() {
             Pour toute question relative au site, à son fonctionnement ou aux présentes mentions légales,
             vous pouvez nous écrire à l&apos;adresse suivante :
             {/* À COMPLÉTER : adresse email de contact officielle */}
-            {" "}<strong>[EMAIL DE CONTACT]</strong>.
+            {" "}<strong>bonjour@vaiiya.fr</strong>.
           </p>
           <p>
             Pour les questions relatives à vos données personnelles, consultez notre{" "}

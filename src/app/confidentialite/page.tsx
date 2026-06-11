@@ -66,7 +66,7 @@ export default function ConfidentialitePage() {
             Pour toute question relative au traitement de vos données personnelles, vous pouvez nous
             contacter à l&apos;adresse :
             {/* À COMPLÉTER : adresse email de contact officielle */}
-            {" "}<strong>[EMAIL DE CONTACT]</strong>.
+            {" "}<strong>bonjour@vaiiya.fr</strong>.
           </p>
           <p className="text-xs" style={{ color: "#A0AEC0" }}>
             Les informations complètes sur l&apos;éditeur figurent dans les{" "}
@@ -153,7 +153,7 @@ export default function ConfidentialitePage() {
             Vous pouvez exercer ces droits directement depuis vos <strong>Paramètres</strong> (notamment la
             suppression de compte) ou en nous écrivant à
             {/* À COMPLÉTER : adresse email de contact officielle */}
-            {" "}<strong>[EMAIL DE CONTACT]</strong>.
+            {" "}<strong>bonjour@vaiiya.fr</strong>.
           </p>
         </LegalSection>
 
