@@ -267,16 +267,32 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip);
 
   try {
-    const stream = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages,
-      ],
-      stream: true,
-      max_tokens: maxTokens,
-      temperature: 0.4,
-    });
+    // Les grosses générations (programme, repas) → modèle léger (limites bien plus hautes)
+    // La conversation → modèle premium 70b. Fallback auto vers le léger si saturé (429).
+    const LIGHT_MODEL = "llama-3.1-8b-instant";
+    const HEAVY_MODEL = "llama-3.3-70b-versatile";
+    const primaryModel = maxTokens > 1500 ? LIGHT_MODEL : HEAVY_MODEL;
+
+    const makeStream = (model: string) =>
+      groq.chat.completions.create({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages,
+        ],
+        stream: true,
+        max_tokens: maxTokens,
+        temperature: 0.4,
+      });
+
+    let stream;
+    try {
+      stream = await makeStream(primaryModel);
+    } catch (primErr) {
+      // Saturation/erreur du modèle principal → on bascule sur le léger
+      console.warn("[chat] primary model failed, fallback:", (primErr as { message?: string })?.message);
+      stream = await makeStream(LIGHT_MODEL);
+    }
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
@@ -301,9 +317,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Groq chat error:", err);
-    if (req.nextUrl.searchParams.get("debug") === "1") {
-      return new Response("DEBUG_ERR: " + String((err as { message?: string })?.message ?? err), { status: 200 });
-    }
     return new Response(
       "Désolé, une erreur est survenue. Réessaie dans quelques secondes ✨",
       { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }

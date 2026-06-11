@@ -7,6 +7,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { User } from "@/context/AuthContext";
+import WorkoutGuideModal, { resolveSessionId, type Exercise } from "@/components/WorkoutGuideModal";
+
+/* Parse une ligne d'exercice du programme ("Développé couché 4x8") en Exercise */
+function parseProgrammeExercise(raw: string): Exercise {
+  const m = raw.match(/^(.+?)\s+(\d+)\s*[x×]\s*(.+)$/);
+  if (m) {
+    return { name: m[1].trim(), sets: parseInt(m[2]) || 3, reps: m[3].trim(), rest: 60, tip: "", benefit: "", muscles: [] };
+  }
+  return { name: raw.trim(), sets: 1, reps: "—", rest: 45, tip: "", benefit: "", muscles: [] };
+}
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 type WorkoutSummary = {
@@ -15,6 +25,7 @@ type WorkoutSummary = {
   difficulty: string;
   category: string;
   id: string;
+  exercices: string[];
 };
 
 type DailyPerf = {
@@ -46,6 +57,7 @@ export default function DailyDrawer({
 }) {
   const [activeIdx, setActiveIdx] = useState(0); // 0=VOTD, 1=SOTD, 2=POTD
   const [todayWorkout, setTodayWorkout] = useState<WorkoutSummary | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
   const [perfs, setPerfs] = useState<DailyPerf[]>([]);
   const [dailyVideo, setDailyVideo] = useState<DailyVideo | null>(null);
   const [videoMuted, setVideoMuted] = useState(true);
@@ -137,6 +149,7 @@ export default function DailyDrawer({
           duration:   parseInt(todayJour.duree) || 45,
           difficulty: todayJour.niveau || "Intermédiaire",
           category:   todayJour.type,
+          exercices:  Array.isArray(todayJour.exercices) ? todayJour.exercices : [],
         });
       } else {
         setTodayWorkout(null);
@@ -471,12 +484,16 @@ export default function DailyDrawer({
                           </div>
                         </div>
 
-                        {/* CTA lancer */}
-                        <Link href="/progression"
-                          className="rounded-2xl p-4 flex items-center justify-between cursor-pointer flex-shrink-0"
+                        {/* CTA lancer — ouvre le guide de séance */}
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setShowGuide(true)}
+                          className="w-full rounded-2xl p-4 flex items-center justify-between cursor-pointer flex-shrink-0"
                           style={{
-                            background: "rgba(45,55,72,0.95)",
-                            boxShadow: "0 8px 24px rgba(45,55,72,0.25)",
+                            background: "rgba(255,255,255,0.98)",
+                            border: "1px solid rgba(212,192,255,0.5)",
+                            boxShadow: "0 8px 24px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
                           }}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
@@ -484,14 +501,14 @@ export default function DailyDrawer({
                               <Play size={14} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 2 }} fill="#2D3748" />
                             </div>
                             <div className="text-left">
-                              <p className="text-sm font-semibold" style={{ color: "#fff" }}>Lancer la séance</p>
-                              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.65)" }}>
+                              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>Lancer la séance</p>
+                              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
                                 {todayWorkout.category}
                               </p>
                             </div>
                           </div>
-                          <ChevronRight size={16} strokeWidth={2} style={{ color: "rgba(255,255,255,0.5)" }} />
-                        </Link>
+                          <ChevronRight size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                        </motion.button>
 
                         <div>
                           <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "#A0AEC0" }}>
@@ -636,6 +653,20 @@ export default function DailyDrawer({
               </div>
             </div>
           </motion.div>
+
+          {/* Guide de séance lancé */}
+          {showGuide && todayWorkout && (
+            <WorkoutGuideModal
+              sessionId={resolveSessionId(todayWorkout.title) ?? todayWorkout.id ?? "custom"}
+              title={todayWorkout.title}
+              accent="#A78BFA"
+              duration={todayWorkout.duration}
+              difficulty={todayWorkout.difficulty}
+              category={todayWorkout.category}
+              exerciseList={todayWorkout.exercices.map(parseProgrammeExercise)}
+              onClose={() => setShowGuide(false)}
+            />
+          )}
         </>
       )}
     </AnimatePresence>
