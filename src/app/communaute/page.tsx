@@ -2550,8 +2550,8 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
   );
 }
 
-// Préférence de son partagée entre toutes les vidéos (une fois activé, ça reste)
-let __videoMuted = true;
+// Son toujours actif (suit le volume du téléphone). Pas de bouton, pas d'interaction.
+let __videoMuted = false;
 
 const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef, onDeletePost }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean>; onDeletePost?: (id: string) => Promise<boolean> | void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -2675,14 +2675,6 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
     if (videoRef.current) videoRef.current.muted = muted;
   }, [muted]);
 
-  // Son : suit le volume du téléphone. On démute dès le 1er contact utilisateur
-  // (l'autoplay démarre muet pour passer la restriction navigateur, puis le son
-  // s'active tout seul et reste activé pour toutes les vidéos).
-  useEffect(() => {
-    const onSound = () => setMuted(false);
-    window.addEventListener("vaiiya-video-sound", onSound);
-    return () => window.removeEventListener("vaiiya-video-sound", onSound);
-  }, []);
 
   // Captions via HTML track (if available)
   useEffect(() => {
@@ -3044,18 +3036,6 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
   onDeletePost?: (id: string) => Promise<boolean> | void;
 }) {
   const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
-
-  // Active le son dès le 1er contact utilisateur (puis suit le volume du téléphone)
-  useEffect(() => {
-    if (!__videoMuted) return;
-    const enable = () => {
-      if (!__videoMuted) return;
-      __videoMuted = false;
-      window.dispatchEvent(new Event("vaiiya-video-sound"));
-    };
-    window.addEventListener("pointerdown", enable, { once: true });
-    return () => window.removeEventListener("pointerdown", enable);
-  }, []);
   const wrapperRef   = useRef<HTMLDivElement>(null);  // fallback measurement
   const containerRef = useRef<HTMLDivElement>(null);  // élément scrollable
   const isScrollingRef = useRef(false);               // true pendant le scroll → bloque handleVideoTap
