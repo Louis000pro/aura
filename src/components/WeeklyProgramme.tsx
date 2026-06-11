@@ -19,7 +19,10 @@ type WorkoutDay = {
 
 type Programme = {
   semaine: WorkoutDay[];
+  v?: number; // version du générateur local (pour migrer les anciens caches IA)
 };
+
+const LOCAL_PROG_VERSION = 2;
 
 type ProfileData = {
   onboarding_level: string | null;
@@ -83,6 +86,106 @@ function saveToCache(key: string, data: Programme): void {
 }
 
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+/* ═══════════════════════════════════════════════════════════════════
+   Génération LOCALE des séances (sans IA, instantané)
+   ═══════════════════════════════════════════════════════════════════ */
+type Ctx = "salle" | "halteres" | "poids";
+
+// Banque d'exercices par contexte (matériel) et par type de séance
+const EX: Record<Ctx, Record<string, string[]>> = {
+  salle: {
+    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
+    "Haut du corps": ["Développé couché", "Tirage poitrine", "Développé épaules machine", "Rowing assis poulie", "Pec deck", "Tirage vertical", "Élévations latérales", "Curl haltères", "Extensions triceps poulie"],
+    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
+    "Push": ["Développé couché", "Développé incliné haltères", "Développé épaules machine", "Pec deck", "Élévations latérales", "Extensions triceps poulie", "Dips machine"],
+    "Pull": ["Tirage vertical", "Rowing assis poulie", "Tirage poitrine", "Rowing haltère", "Curl barre EZ", "Curl haltères", "Face pull poulie", "Tirage horizontal"],
+    "Cardio / HIIT": ["Tapis course 20 min", "Vélo 15 min", "Rameur 10 min", "Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s"],
+  },
+  halteres: {
+    "Full Body": ["Squat haltères", "Développé couché haltères", "Rowing haltère", "Développé épaules haltères", "Fentes haltères", "Curl haltères", "Pompes", "Gainage 3x45s"],
+    "Haut du corps": ["Développé couché haltères", "Rowing haltère", "Développé épaules haltères", "Élévations latérales", "Curl haltères", "Extensions triceps haltère", "Pompes", "Oiseau haltères"],
+    "Bas du corps": ["Squat haltères", "Fentes haltères", "Soulevé de terre roumain haltères", "Hip thrust haltère", "Mollets haltères", "Squat bulgare", "Fentes marchées"],
+    "Push": ["Développé couché haltères", "Développé épaules haltères", "Élévations latérales", "Pompes", "Extensions triceps haltère", "Développé incliné haltères"],
+    "Pull": ["Rowing haltère", "Tirage menton haltères", "Curl haltères", "Oiseau haltères", "Curl marteau", "Rowing buste penché"],
+    "Cardio / HIIT": ["Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s", "Jumping jacks 4x40s", "Squats sautés 4x20", "Gainage dynamique 4x45s"],
+  },
+  poids: {
+    "Full Body": ["Pompes", "Squats", "Fentes", "Gainage 3x45s", "Dips sur chaise", "Superman 3x15", "Mountain climbers 3x30s", "Chaise contre le mur 3x45s"],
+    "Haut du corps": ["Pompes", "Pompes diamant", "Dips sur chaise", "Pompes inclinées", "Pike push-ups", "Gainage 3x45s", "Superman 3x15", "Pompes serrées"],
+    "Bas du corps": ["Squats", "Fentes", "Fentes sautées", "Squats sautés", "Chaise contre le mur 3x45s", "Mollets debout", "Pont fessier 4x15", "Squat bulgare"],
+    "Push": ["Pompes", "Pike push-ups", "Dips sur chaise", "Pompes diamant", "Pompes inclinées", "Gainage 3x45s"],
+    "Pull": ["Tractions (ou rowing serviette)", "Rowing inversé sous table", "Superman 3x15", "Gainage dorsal 3x40s", "Bird dog 3x12", "Pont fessier 4x15"],
+    "Cardio / HIIT": ["Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s", "Jumping jacks 4x40s", "Squats sautés 4x20", "Montées de genoux 4x40s"],
+  },
+};
+
+// Répartition des séances sur la semaine (indices de jours d'entraînement, 0=Lundi)
+const REST_PATTERN: Record<number, number[]> = {
+  1: [0], 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 4, 5], 6: [0, 1, 2, 4, 5, 6],
+};
+function buildSplit(sessions: number): string[] {
+  if (sessions <= 1) return ["Full Body"];
+  if (sessions === 2) return ["Haut du corps", "Bas du corps"];
+  if (sessions === 3) return ["Full Body", "Haut du corps", "Bas du corps"];
+  if (sessions === 4) return ["Haut du corps", "Bas du corps", "Push", "Pull"];
+  if (sessions === 5) return ["Push", "Pull", "Bas du corps", "Haut du corps", "Cardio / HIIT"];
+  return ["Push", "Pull", "Bas du corps", "Haut du corps", "Full Body", "Cardio / HIIT"];
+}
+function repSchemeFor(goals: string[]): string {
+  const g = goals.join(" ").toLowerCase();
+  if (g.includes("force")) return "5x5";
+  if (g.includes("masse")) return "4x10";
+  if (g.includes("poids") || g.includes("endurance") || g.includes("souplesse")) return "3x15";
+  return "4x12";
+}
+
+/* PRNG déterministe */
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a: number) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffleArr<T>(arr: T[], rng: () => number): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+/* Construit un programme hebdo local, instantané, adapté au matériel + objectifs */
+function buildLocalProgramme(ctx: Ctx, sessionsRaw: number, goals: string[], variant: number, seedBase: string): Programme {
+  const sessions = Math.max(1, Math.min(6, sessionsRaw || 3));
+  const rng = mulberry32(hashStr(`${seedBase}-${ctx}-s${sessions}-v${variant}`));
+  const split = buildSplit(sessions);
+  const trainingDays = REST_PATTERN[sessions] ?? [0, 2, 4];
+  const reps = repSchemeFor(goals);
+
+  const semaine: WorkoutDay[] = DAY_LABELS.map((jour, dayIdx) => {
+    const pos = trainingDays.indexOf(dayIdx);
+    if (pos === -1) return { jour, type: "Repos", titre: "", exercices: [], duree: "" };
+    const sessionType = split[pos % split.length];
+    const isCardio = sessionType.includes("Cardio");
+    const bank = EX[ctx][sessionType] ?? EX[ctx]["Full Body"];
+    const picked = shuffleArr(bank, rng).slice(0, 5);
+    const exercices = picked.map((ex) => (/\d/.test(ex) ? ex : `${ex} ${reps}`));
+    return {
+      jour,
+      type: isCardio ? "HIIT" : "Force",
+      titre: sessionType,
+      exercices,
+      duree: isCardio ? "30 min" : "45 min",
+    };
+  });
+  return { semaine, v: LOCAL_PROG_VERSION };
+}
 
 /* ─── Skeleton inline ─── */
 function SkeletonDetail() {
@@ -411,90 +514,44 @@ export default function WeeklyProgramme() {
 
   /* ── Generate programme ── */
   const generate = useCallback(
-    async (loc: "salle" | "maison" | null, equip: "halteres" | "poids" | null, force = false) => {
+    (loc: "salle" | "maison" | null, equip: "halteres" | "poids" | null, force = false) => {
       if (!user || !profile) return;
 
-      // Check cache first (unless forced)
+      // Cache d'abord (préserve les modifs faites via le coach) sauf si forcé.
+      // Un ancien cache IA (sans marqueur v=2) est ignoré → régénération locale.
       const cacheKey = getCacheKey(user.id);
       if (!force) {
         const cached = loadFromCache(cacheKey);
-        if (cached) {
-          setProgramme(cached);
-          return;
-        }
+        if (cached && (cached as Programme).v === LOCAL_PROG_VERSION) { setProgramme(cached); return; }
       }
 
-      setLoading(true);
-      setError(null);
-
-      const level = profile.onboarding_level ?? "intermédiaire";
+      const ctx: Ctx = loc === "salle" ? "salle" : equip === "halteres" ? "halteres" : "poids";
       const sessions = profile.onboarding_sessions_week ?? 3;
-      const goals = (profile.onboarding_goals ?? [])
-        .map((g) => goalLabels[g] ?? g)
-        .join(", ") || "forme générale";
-      const lieuLine =
-        loc === "salle"
-          ? "- Lieu: EN SALLE DE SPORT type BASIC FIT. Base-toi UNIQUEMENT sur le matériel d'une salle Basic Fit : machines guidées (presse à cuisses, leg extension, leg curl, pec deck, tirage vertical/poitrine, rowing assis, développé épaules, abducteurs/adducteurs, mollets), machine Smith, poulies/câbles, racks, haltères et barres, plus cardio (tapis, vélo, elliptique, rameur). Propose des exercices réalisables avec cet équipement."
-          : loc === "maison" && equip === "halteres"
-          ? "- Lieu: À LA MAISON AVEC HALTÈRES. Utilise EXCLUSIVEMENT des exercices au poids du corps ET avec des haltères (éventuellement un banc ou une chaise). AUCUNE machine, AUCUNE poulie, AUCune barre de salle."
-          : loc === "maison"
-          ? "- Lieu: À LA MAISON SANS MATÉRIEL. Utilise EXCLUSIVEMENT des exercices au POIDS DU CORPS (aucun haltère, aucune machine, aucun élastique). Joue sur les variations, le tempo, l'amplitude et le nombre de répétitions."
-          : "";
+      const goals = (profile.onboarding_goals ?? []).map((g) => goalLabels[g] ?? g);
+      let variant = 0;
+      try { variant = parseInt(localStorage.getItem(`vaiiya_prog_variant_${user.id}`) || "0") || 0; } catch { /* ignore */ }
 
-      const prompt = `Tu es un coach sportif expert. Génère un programme hebdomadaire personnalisé en JSON pour cet utilisateur:
-- Niveau: ${level}
-- Objectifs: ${goals}
-- Séances/semaine: ${sessions}
-${lieuLine}
-Réponds UNIQUEMENT avec un JSON valide de cette forme:
-{ "semaine": [ { "jour": "Lundi", "type": "Repos", "titre": "", "exercices": [], "duree": "" }, { "jour": "Mardi", "type": "Force", "titre": "Push Day", "exercices": ["Développé couché 4x8", "Pompes 3x12", "Élévations latérales 3x15"], "duree": "45 min" } ] }
-Maximum 7 jours, exactement ${sessions} séances actives, le reste en Repos.
-Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [{ role: "user", content: prompt }],
-            maxTokens: 2500,
-          }),
-        });
-
-        if (!response.ok || !response.body) throw new Error("API error");
-
-        // Consume the full stream
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullText = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          fullText += decoder.decode(value, { stream: true });
-        }
-
-        // Extract JSON from the response
-        const match = fullText.match(/\{[\s\S]*\}/);
-        if (!match) throw new Error("No JSON found in response");
-
-        const parsed: Programme = JSON.parse(match[0]);
-
-        // Validate basic structure
-        if (!parsed.semaine || !Array.isArray(parsed.semaine)) {
-          throw new Error("Invalid programme structure");
-        }
-
-        saveToCache(cacheKey, parsed);
-        setProgramme(parsed);
-      } catch (err) {
-        console.error("Programme generation error:", err);
-        setError("Impossible de générer le programme. Réessaie.");
-      } finally {
-        setLoading(false);
-      }
+      // Génération locale instantanée (aucune IA)
+      const programme = buildLocalProgramme(ctx, sessions, goals, variant, user.id);
+      saveToCache(cacheKey, programme);
+      setProgramme(programme);
+      setError(null);
+      setLoading(false);
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated"));
     },
     [user, profile]
   );
+
+  /* Régénère un programme différent (incrémente le variant) */
+  const regenerateProgramme = useCallback(() => {
+    if (user) {
+      try {
+        const v = (parseInt(localStorage.getItem(`vaiiya_prog_variant_${user.id}`) || "0") || 0) + 1;
+        localStorage.setItem(`vaiiya_prog_variant_${user.id}`, String(v));
+      } catch { /* ignore */ }
+    }
+    generate(location, homeEquip, true);
+  }, [user, location, homeEquip, generate]);
 
   /* ── Auto-generate on profile load (lieu connu + matériel si maison) ── */
   useEffect(() => {
@@ -685,7 +742,7 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
               </span>
             </button>
             <button
-              onClick={() => generate(location, homeEquip, true)}
+              onClick={regenerateProgramme}
               className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
               <RefreshCw size={10} strokeWidth={2.5} />
               <span className="text-[9px] font-medium">Régénérer</span>
