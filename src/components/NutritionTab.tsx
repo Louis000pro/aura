@@ -1671,13 +1671,13 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
     return { streak: current, bestStreak: best };
   }, [allData, today]);
 
-  /* All-time aggregates — mémorisé */
-  const globalAvgCal = useMemo(() => {
-    const allTracked = [...allData.values()].filter(d => d.meal_count > 0);
-    return allTracked.length > 0
-      ? Math.round(allTracked.reduce((s,d) => s + d.total_calories,0) / allTracked.length)
-      : 0;
-  }, [allData]);
+  /* All-time aggregates — mémorisé (allTracked au niveau composant pour le rendu) */
+  const allTracked = useMemo(() => [...allData.values()].filter(d => d.meal_count > 0), [allData]);
+  const globalAvgCal = useMemo(() =>
+    allTracked.length > 0
+      ? Math.round(allTracked.reduce((s, d) => s + d.total_calories, 0) / allTracked.length)
+      : 0,
+  [allTracked]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}

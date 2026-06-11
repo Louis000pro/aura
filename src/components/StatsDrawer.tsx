@@ -157,34 +157,11 @@ export default function StatsDrawer({
                 </button>
               </div>
 
-              {/* Dots indicateur (verticale, droite) */}
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2.5">
-                {[0, 1, 2].map(i => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => goTo(i)}
-                    aria-label={`Aller à la zone ${i + 1}`}
-                    className="block rounded-full transition-all"
-                    style={{
-                      width: activeIdx === i ? 7 : 5,
-                      height: activeIdx === i ? 7 : 5,
-                      background: activeIdx === i ? "#A78BFA" : "rgba(167,139,250,0.3)",
-                    }}
-                  />
-                ))}
-              </div>
-
-              {/* Scroll container avec snap */}
+              {/* Conteneur (séance + plats recommandés) */}
               <div
                 ref={scrollRef}
-                onScroll={onScroll}
                 className="h-full overflow-y-scroll"
-                style={{
-                  scrollSnapType: "y mandatory",
-                  WebkitOverflowScrolling: "touch",
-                  scrollbarWidth: "none",
-                }}
+                style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
               >
 
                 {/* ─── ZONE 1 : Séance recommandée ─── */}
@@ -219,60 +196,6 @@ export default function StatsDrawer({
                   </div>
                 </section>
 
-                {/* ─── ZONE 2 : Plats du jour — Carousel horizontal d'assiettes ─── */}
-                <PlatsZone
-                  meals={meals}
-                  totalCals={totalCals}
-                  totalProteins={totalProteins}
-                  onOpenRepas={onOpenRepas}
-                />
-                {/* ─── ZONE 3 : Statistiques ─── */}
-                <section
-                  className="h-full flex flex-col pt-16 pb-6 px-5 gap-3"
-                  style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
-                >
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <BarChart3 size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                    <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-                      Mes statistiques
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {stats.slice(0, 6).map((stat) => {
-                      const Icon = stat.icon;
-                      return (
-                        <motion.button type="button" key={stat.label}
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => onOpenStat(stat)}
-                          className="rounded-2xl p-3 flex flex-col items-start gap-1.5 cursor-pointer text-left"
-                          style={{
-                            background: "rgba(255,255,255,0.85)",
-                            border: "1px solid rgba(212,192,255,0.3)",
-                            boxShadow: "0 2px 8px rgba(167,139,250,0.06)",
-                          }}>
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                            style={{ background: "rgba(167,139,250,0.1)" }}>
-                            <Icon size={14} strokeWidth={1.5} style={{ color: stat.iconColor }} />
-                          </div>
-                          <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{stat.label}</p>
-                          <p className="text-base font-semibold leading-none" style={{ color: "#2D3748" }}>
-                            {stat.value}<span className="text-[10px] font-normal ml-1" style={{ color: "#A0AEC0" }}>{stat.unit}</span>
-                          </p>
-                          {/* Mini bar de progression */}
-                          <div className="w-full h-1 rounded-full overflow-hidden mt-1"
-                            style={{ background: "rgba(167,139,250,0.12)" }}>
-                            <div className="h-full rounded-full"
-                              style={{
-                                width: `${Math.min(100, stat.progress * 100)}%`,
-                                background: stat.barGradient,
-                              }} />
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </section>
               </div>
             </div>
           </motion.div>
