@@ -4447,17 +4447,6 @@ function CommunautePageInner() {
                 </div>
               )}
 
-              {/* ── Flou en bas (derrière la barre de navigation) — juste flouté, pas sombre ── */}
-              {immersiveVideo && (
-                <div className="fixed bottom-0 left-0 right-0 z-20 pointer-events-none"
-                  style={{
-                    height: "calc(96px + env(safe-area-inset-bottom))",
-                    backdropFilter: "blur(16px)",
-                    WebkitBackdropFilter: "blur(16px)",
-                    WebkitMaskImage: "linear-gradient(to top, black 38%, transparent 100%)",
-                    maskImage: "linear-gradient(to top, black 38%, transparent 100%)",
-                  }} />
-              )}
 
 
               {/* ── Toggle algo / récents (Posts uniquement) — même cadrage que les tabs ── */}
