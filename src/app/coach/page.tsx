@@ -362,6 +362,22 @@ export default function CoachPage() {
       setInput("");
       setIsStreaming(true);
 
+      // ── Limite quotidienne du coach pour les comptes gratuits (admin/premium = illimité) ──
+      const isUnlimited = !!(user?.is_admin || user?.is_premium);
+      if (!isUnlimited && user) {
+        const dayKey = `vaiiya_ai_count_${user.id}_${new Date().toISOString().slice(0, 10)}`;
+        const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
+        if (count >= 12) {
+          setMessages((prev) => prev.map((m) => m.id === assistantId
+            ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages/jour avec le coach. Passe au plan supérieur pour un coach illimité — je t'emmène voir les offres…", streaming: false }
+            : m));
+          setIsStreaming(false);
+          setTimeout(() => router.push("/premium"), 1900);
+          return;
+        }
+        try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
+      }
+
       /* Build history for API (excluding the placeholder assistant msg) */
       const history = [...messages, userMsg].map(({ role, content }) => ({
         role,
@@ -405,14 +421,35 @@ export default function CoachPage() {
           );
         }
 
-        /* Mark streaming done */
+        /* Nettoie les tags techniques et gère la navigation */
+        const cleaned = accumulated
+          .replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "")
+          .replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "")
+          .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")
+          .trim();
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: accumulated, streaming: false }
+              ? { ...m, content: cleaned, streaming: false }
               : m
           )
         );
+        const navMatch = accumulated.match(/\[NAV\]\s*([a-zéè]+)\s*\[\/NAV\]/i);
+        if (navMatch) {
+          const target = navMatch[1].toLowerCase();
+          setTimeout(() => {
+            switch (target) {
+              case "repas": case "seances": case "séances": case "recommandations": router.push("/"); break;
+              case "premium": router.push("/premium"); break;
+              case "progression": router.push("/progression"); break;
+              case "nutrition": router.push("/nutrition"); break;
+              case "communaute": case "communauté": router.push("/communaute"); break;
+              case "decouverte": case "découverte": router.push("/decouverte"); break;
+              case "parametres": case "paramètres": router.push("/parametres"); break;
+              default: break;
+            }
+          }, 700);
+        }
       } catch (err: unknown) {
         if ((err as { name?: string }).name === "AbortError") return;
         setMessages((prev) =>

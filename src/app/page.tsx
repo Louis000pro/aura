@@ -605,6 +605,8 @@ function LandingPage() {
 }
 
 /* ─── Dashboard ─── */
+// Limite quotidienne de messages avec le coach IA pour les comptes gratuits
+const DAILY_AI_LIMIT = 12;
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
 let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
 
@@ -859,6 +861,24 @@ function Dashboard() {
     const newMessages = [...chatMessagesRef.current, userMsg];
     chatMessagesRef.current = newMessages;
     setChatMessages(newMessages);
+
+    // ── Limite quotidienne du coach pour les comptes gratuits (admins/premium = illimité) ──
+    const isUnlimited = !!(user?.is_admin || user?.is_premium);
+    if (!isUnlimited && user) {
+      const dayKey = `vaiiya_ai_count_${user.id}_${new Date().toISOString().slice(0, 10)}`;
+      const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
+      if (count >= DAILY_AI_LIMIT) {
+        const upMsg: Message = { id: Date.now() + 1, from: "ai", time,
+          text: `🚀 Tu as atteint ta limite gratuite de ${DAILY_AI_LIMIT} messages/jour avec le coach Vaiiya. Passe au plan supérieur pour un coach illimité — je t'emmène voir les offres…` };
+        const withUp = [...chatMessagesRef.current, upMsg];
+        chatMessagesRef.current = withUp;
+        setChatMessages(withUp);
+        setTimeout(() => router.push("/premium"), 1900);
+        return;
+      }
+      try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
+    }
+
     setAiTyping(true);
 
     // Historique pour l'API
@@ -959,6 +979,38 @@ function Dashboard() {
           chatMessagesRef.current = updated;
           return updated;
         });
+      }
+
+      // Détecte une demande de navigation [NAV]cible[/NAV] → ouvre la page/fenêtre
+      const navMatch = fullText.match(/\[NAV\]\s*([a-zéè]+)\s*\[\/NAV\]/i);
+      if (navMatch) {
+        const target = navMatch[1].toLowerCase();
+        // Nettoie le tag du message affiché
+        setChatMessages((m) => {
+          const updated = m.map((msg) =>
+            msg.id === aiMsgId ? { ...msg, text: msg.text.replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "").trim() } : msg
+          );
+          chatMessagesRef.current = updated;
+          return updated;
+        });
+        setTimeout(() => {
+          switch (target) {
+            case "repas":
+            case "seances":
+            case "séances":
+            case "recommandations": setShowChat(false); setShowStatsDrawer(true); break;
+            case "premium":        router.push("/premium"); break;
+            case "progression":    router.push("/progression"); break;
+            case "nutrition":      router.push("/nutrition"); break;
+            case "communaute":
+            case "communauté":     router.push("/communaute"); break;
+            case "decouverte":
+            case "découverte":     router.push("/decouverte"); break;
+            case "parametres":
+            case "paramètres":     router.push("/parametres"); break;
+            default: break;
+          }
+        }, 700);
       }
     } catch {
       setAiTyping(false);

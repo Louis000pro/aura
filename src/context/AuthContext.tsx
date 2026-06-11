@@ -13,6 +13,7 @@ export type User = {
   avatar?: string;
   is_admin?: boolean;
   is_certified?: boolean;
+  is_premium?: boolean;
 };
 
 type AuthError = { message: string } | null;
@@ -37,7 +38,7 @@ type AuthCtx = {
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
-function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean } | null): User {
+function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean; is_premium?: boolean } | null): User {
   const m = sbUser.user_metadata ?? {};
   return {
     id: sbUser.id,
@@ -48,6 +49,7 @@ function mapUser(sbUser: SBUser, profile?: { pseudo?: string; avatar_url?: strin
     avatar: profile?.avatar_url ?? m.avatar_url ?? m.picture,
     is_admin: profile?.is_admin ?? false,
     is_certified: profile?.is_certified ?? false,
+    is_premium: profile?.is_premium ?? false,
   };
 }
 
@@ -69,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       let res = await supabase
         .from("profiles")
-        .select("pseudo, avatar_url, is_admin, is_banned, is_certified")
+        .select("pseudo, avatar_url, is_admin, is_banned, is_certified, is_premium")
         .eq("id", sbUser.id)
         .maybeSingle();
       if (res.error) {
@@ -79,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq("id", sbUser.id)
           .maybeSingle();
       }
-      const data = res.data as ({ pseudo?: string; avatar_url?: string; is_admin?: boolean; is_banned?: boolean; is_certified?: boolean } | null);
+      const data = res.data as ({ pseudo?: string; avatar_url?: string; is_admin?: boolean; is_banned?: boolean; is_certified?: boolean; is_premium?: boolean } | null);
 
       // Compte banni → déconnexion immédiate
       if (data && (data as { is_banned?: boolean }).is_banned) {
