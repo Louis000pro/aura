@@ -121,7 +121,7 @@ export default function OnboardingModal({
   const canNext = [
     data.age && data.height && data.weight && data.gender,
     data.goals.length > 0,
-    data.level,
+    data.level && data.sessionsPerWeek,
     data.mealsPerDay && data.diet,
   ][step];
 

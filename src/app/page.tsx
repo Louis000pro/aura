@@ -784,12 +784,12 @@ function Dashboard() {
       const stored = localStorage.getItem(key);
       if (stored) { try { setUserContext(JSON.parse(stored)); } catch { /* ignore */ } break; }
     }
-    // Ouverture forcée depuis les Paramètres (?ob=1)
+    // Ouverture UNIQUEMENT manuelle via Paramètres (?ob=1). L'onboarding des
+    // nouveaux comptes est géré par <OnboardingWrapper /> (évite le double modal/boucle).
     const forced = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("ob") === "1";
-    // N'auto-affiche QUE pour un compte tout juste créé (inscription) — jamais à la reconnexion.
-    // (Si l'user n'a pas rempli ses objectifs, le coach IA le lui rappellera.)
-    if (forced || (isNewUser && !localStorage.getItem(seenKey))) {
-      const t = setTimeout(() => setShowOnboarding(true), forced ? 0 : 600);
+    void seenKey;
+    if (forced) {
+      const t = setTimeout(() => setShowOnboarding(true), 0);
       return () => clearTimeout(t);
     }
   }, [user, isNewUser]);

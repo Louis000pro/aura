@@ -60,6 +60,9 @@ export default function OnboardingWrapper() {
   const handleComplete = async (data: OnboardingData) => {
     if (!user) return;
 
+    // Sauvegarde le contexte côté client (le coach IA s'en sert)
+    try { localStorage.setItem(`vaiiya_ob_${user.id}`, JSON.stringify(data)); } catch { /* ignore */ }
+
     const isCompleted = !!(data.age && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
 
     const supabase = createClient();
