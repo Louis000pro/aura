@@ -2968,10 +2968,14 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
           <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>{fmtCount(savesCount)}</span>
         </button>
 
-        {/* Partager (avion) */}
+        {/* Partager (avion Instagram) */}
         <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Send size={27} strokeWidth={2} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
+            <svg width="29" height="29" viewBox="0 0 24 24" fill="none"
+              style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }}>
+              <line x1="22" y1="3" x2="9.218" y2="10.083" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round" />
+              <polygon points="11.698 20.334 22 3.001 2 3.001 9.218 10.084 11.698 20.334" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round" fill="none" />
+            </svg>
           </motion.div>
           <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(reposts)}</span>
         </button>
