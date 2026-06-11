@@ -61,14 +61,39 @@ export default function ResetPasswordPage() {
     const params = new URLSearchParams(window.location.search);
     const token_hash = params.get("token_hash");
     const type       = params.get("type");
+    const code       = params.get("code");
 
-    if (token_hash && type === "recovery") {
+    // Tokens parfois renvoyés dans le hash (#access_token=...&type=recovery)
+    const hash       = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const hashAccess = hash.get("access_token");
+    const hashRefresh = hash.get("refresh_token");
+    const hashError  = hash.get("error") || params.get("error");
+
+    const ready = () => setStatus("ready");
+    const invalid = () => setStatus("invalid");
+
+    if (hashError) {
+      // Lien expiré / déjà utilisé → Supabase renvoie ?error=... ou #error=...
+      invalid();
+    } else if (code) {
+      // Flux PKCE (par défaut avec createBrowserClient) : ?code=XXXX
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        error ? invalid() : ready();
+      });
+    } else if (token_hash && type === "recovery") {
+      // Flux token_hash (templates email avec {{ .TokenHash }})
       supabase.auth.verifyOtp({ token_hash, type: "recovery" }).then(({ error }) => {
-        setStatus(error ? "invalid" : "ready");
+        error ? invalid() : ready();
+      });
+    } else if (hashAccess && hashRefresh) {
+      // Flux implicite : tokens dans le hash
+      supabase.auth.setSession({ access_token: hashAccess, refresh_token: hashRefresh }).then(({ error }) => {
+        error ? invalid() : ready();
       });
     } else {
+      // Session déjà établie (ex: onAuthStateChange a consommé le lien)
       supabase.auth.getSession().then(({ data }) => {
-        setStatus(data.session ? "ready" : "invalid");
+        data.session ? ready() : invalid();
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
