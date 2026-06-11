@@ -3452,6 +3452,15 @@ function CommunautePageInner() {
       });
   }, [searchParams]); // eslint-disable-line
 
+  // Ouvrir directement la VIDÉO du jour si ?video=<id> présent → onglet Vidéos + scroll dessus
+  useEffect(() => {
+    const vid = searchParams?.get("video");
+    if (!vid) return;
+    setView("feed");
+    setFeedTab("videos");
+    setHighlightVideoId(vid);
+  }, [searchParams]); // eslint-disable-line
+
   // Charger les suggestions de comptes à suivre
   useEffect(() => {
     if (!user) return;
