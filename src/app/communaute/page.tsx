@@ -2558,6 +2558,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   const [liked, setLiked] = useState(() => post.post_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false);
   const [likes, setLikes] = useState(post.post_likes?.length ?? 0);
   const [saved, setSaved] = useState(false);
+  const [savesCount, setSavesCount] = useState(post.post_saves?.length ?? 0);
 
   // Charger l'état "sauvegardé" depuis la DB
   useEffect(() => {
@@ -2570,8 +2571,10 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   const toggleSave = async () => {
     if (!user) return;
     const supabase = createClient();
-    setSaved(s => !s); // optimiste
-    if (saved) {
+    const next = !saved;
+    setSaved(next); // optimiste
+    setSavesCount(c => Math.max(0, c + (next ? 1 : -1)));
+    if (!next) {
       await supabase.from("post_saves").delete().eq("post_id", post.id).eq("user_id", user.id);
     } else {
       await supabase.from("post_saves").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
@@ -2934,7 +2937,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       ══════════════════════════════════ */}
       <div className={isMobile ? "absolute z-30 flex flex-col items-center" : "flex flex-col items-center flex-shrink-0"}
         style={isMobile
-          ? { gap: 20, width: 52, right: 8, bottom: "calc(92px + env(safe-area-inset-bottom))" }
+          ? { gap: 22, width: 52, right: 8, bottom: "calc(120px + env(safe-area-inset-bottom))" }
           : { gap: 22, width: 52, paddingBottom: 8 }}
         onClick={e => e.stopPropagation()}>
 
@@ -2956,19 +2959,21 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         </button>
 
         {/* Sauvegarder */}
-        <button onClick={toggleSave} className="flex flex-col items-center cursor-pointer">
+        <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }}>
             <Bookmark size={29} strokeWidth={2}
               fill={saved ? "#F5E6A3" : "none"}
               style={{ color: saved ? "#D4A843" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : icoShadow }} />
           </motion.div>
+          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>{fmtCount(savesCount)}</span>
         </button>
 
-        {/* Partager */}
-        <button onClick={handleShare} className="flex flex-col items-center cursor-pointer">
+        {/* Partager (avion) */}
+        <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <Share2 size={28} strokeWidth={2} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
+            <Send size={27} strokeWidth={2} style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }} />
           </motion.div>
+          <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(reposts)}</span>
         </button>
 
         {/* Plus / settings */}
@@ -2995,6 +3000,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
             onClose={() => setShowShareToDM(false)}
             onSent={(_partner) => {
               setShared(true);
+              setReposts(c => c + 1); // compteur de partages
               setTimeout(() => setShared(false), 2000);
             }}
           />
@@ -3165,7 +3171,7 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
           const dist = i - activeIndex;
           const inWindow = dist >= -1 && dist <= 2;
           return (
-            <div key={post.id} data-slot={i} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always" }}>
+            <div key={post.id} data-slot={i} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always", contentVisibility: "auto", containIntrinsicSize: `${H}px`, contain: "layout paint" }}>
               {inWindow ? (
                 <VideoCard
                   post={post}
@@ -4437,16 +4443,15 @@ function CommunautePageInner() {
                 </div>
               )}
 
-              {/* ── Flou + dégradé en bas (derrière la barre de navigation) ── */}
+              {/* ── Flou en bas (derrière la barre de navigation) — juste flouté, pas sombre ── */}
               {immersiveVideo && (
                 <div className="fixed bottom-0 left-0 right-0 z-20 pointer-events-none"
                   style={{
-                    height: "calc(104px + env(safe-area-inset-bottom))",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                    background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)",
-                    WebkitMaskImage: "linear-gradient(to top, black 42%, transparent 100%)",
-                    maskImage: "linear-gradient(to top, black 42%, transparent 100%)",
+                    height: "calc(96px + env(safe-area-inset-bottom))",
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                    WebkitMaskImage: "linear-gradient(to top, black 38%, transparent 100%)",
+                    maskImage: "linear-gradient(to top, black 38%, transparent 100%)",
                   }} />
               )}
 
