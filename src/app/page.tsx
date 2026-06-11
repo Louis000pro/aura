@@ -657,6 +657,20 @@ function Dashboard() {
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Animation quand le score augmente (+N qui s'envole + pop)
+  const [scoreBump, setScoreBump] = useState<number | null>(null);
+  const prevScoreRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!liveStats.loaded) return;
+    const prev = prevScoreRef.current;
+    prevScoreRef.current = liveStats.score;
+    if (prev !== null && liveStats.score > prev) {
+      setScoreBump(liveStats.score - prev);
+      const t = setTimeout(() => setScoreBump(null), 2200);
+      return () => clearTimeout(t);
+    }
+  }, [liveStats.score, liveStats.loaded]);
+
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
     if (!showMenu) return;
@@ -1000,14 +1014,34 @@ function Dashboard() {
           ].map((s, i) => {
             const Icon = s.icon;
             const isHero = i === 1; // Série mis en avant avec la DA du site
+            const isScore = i === 0;
+            const bumping = isScore && scoreBump != null;
             return (
               <motion.div key={s.label}
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, scale: isHero ? 1.07 : 1 }}
-                transition={{ delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0, scale: bumping ? [isHero ? 1.07 : 1, 1.22, isHero ? 1.07 : 1] : (isHero ? 1.07 : 1) }}
+                transition={bumping ? { duration: 0.6, ease: "easeOut" } : { delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
                 className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1 relative"
                 style={isHero
                   ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 10px 28px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.95)", zIndex: 2 }
-                  : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+                  : { background: bumping ? "linear-gradient(135deg, rgba(212,192,255,0.85) 0%, rgba(245,230,163,0.7) 100%)" : "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: bumping ? "0 0 22px rgba(167,139,250,0.6), 0 6px 18px rgba(212,168,67,0.35)" : "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)", zIndex: bumping ? 3 : 1, transition: "box-shadow 0.4s, background 0.4s" }}>
+
+                {/* +N qui s'envole quand le score monte */}
+                <AnimatePresence>
+                  {bumping && (
+                    <motion.div
+                      key="bump"
+                      initial={{ opacity: 0, y: 4, scale: 0.6 }}
+                      animate={{ opacity: 1, y: -26, scale: 1 }}
+                      exit={{ opacity: 0, y: -40 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="absolute left-1/2 -translate-x-1/2 -top-1 pointer-events-none px-2 py-0.5 rounded-full text-[11px] font-extrabold"
+                      style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", boxShadow: "0 4px 12px rgba(167,139,250,0.5)", whiteSpace: "nowrap" }}
+                    >
+                      +{scoreBump}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center"
                   style={{ background: isHero ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
                   {isHero ? (
@@ -1026,7 +1060,9 @@ function Dashboard() {
                       <Icon size={15} strokeWidth={2} style={{ color: "#E8A11E" }} fill="#F0B429" />
                     </motion.div>
                   ) : (
-                    <Icon size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} fill="none" />
+                    <Icon size={13} strokeWidth={1.5}
+                      style={{ color: bumping ? "#D4A843" : "#A78BFA", filter: bumping ? "drop-shadow(0 0 6px rgba(212,168,67,0.9))" : "none", transition: "color 0.3s" }}
+                      fill="none" />
                   )}
                 </div>
                 <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "#2D3748" : "#A0AEC0" }}>{s.label}</p>
@@ -1280,6 +1316,10 @@ function Dashboard() {
             setShowRepas(false);
             setMealsRefreshKey(k => k + 1);
             showToast(`${meal.name} enregistré ✓`);
+            // Recalcule le score → il monte en direct (déclenche l'animation)
+            computeAndSaveScore(user.id, supabase)
+              .then((c) => setLiveStats(prev => ({ ...prev, score: c.score, calories: c.calories, loaded: true })))
+              .catch(() => {});
           }
         }} />}
         {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
