@@ -277,6 +277,46 @@ function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") =>
   );
 }
 
+/* ─── Question matériel à la maison (haltères ?) ─── */
+function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "poids") => void; onBack: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col gap-3 pt-1"
+    >
+      <div className="flex items-start gap-2.5 rounded-2xl px-3.5 py-3"
+        style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.18)" }}>
+        <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+          style={{ background: "linear-gradient(135deg,#F5E6A3,#D4C0FF)" }}>
+          <Dumbbell size={13} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+        </div>
+        <p className="text-[13px] font-light leading-snug" style={{ color: "#2D3748" }}>
+          Super, à la maison ! Une dernière chose : tu as des <strong className="font-semibold">haltères</strong> ? Sinon je te fais tout au <strong className="font-semibold">poids du corps</strong> 💪
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("halteres")}
+          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(245,230,163,0.6)", boxShadow: "0 2px 12px rgba(212,168,67,0.1)" }}>
+          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Oui, haltères</span>
+          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Poids du corps + haltères</span>
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("poids")}
+          className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
+          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.5)", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
+          <Home size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Non</span>
+          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Poids du corps uniquement</span>
+        </motion.button>
+      </div>
+      <button onClick={onBack} className="text-[10px] font-medium self-center cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none" }}>
+        ← Changer de lieu
+      </button>
+    </motion.div>
+  );
+}
+
 /* ─── Main Component ─── */
 export default function WeeklyProgramme() {
   const { user } = useAuth();
@@ -287,16 +327,20 @@ export default function WeeklyProgramme() {
   const [error, setError] = useState<string | null>(null);
   // Lieu d'entraînement (salle / maison) — demandé par le coach avant génération
   const [location, setLocation] = useState<"salle" | "maison" | null>(null);
+  // Matériel à la maison : haltères ou poids du corps uniquement
+  const [homeEquip, setHomeEquip] = useState<"halteres" | "poids" | null>(null);
   const forceNextRef = useRef(false);
   // Exercice dont on affiche le tuto vidéo (null = fermé)
   const [tuto, setTuto] = useState<string | null>(null);
 
-  /* ── Charge le lieu enregistré ── */
+  /* ── Charge le lieu + matériel enregistrés ── */
   useEffect(() => {
     if (!user) return;
     try {
       const v = localStorage.getItem(`vaiiya_lieu_${user.id}`);
       if (v === "salle" || v === "maison") setLocation(v);
+      const e = localStorage.getItem(`vaiiya_lieu_equip_${user.id}`);
+      if (e === "halteres" || e === "poids") setHomeEquip(e);
     } catch { /* ignore */ }
   }, [user]);
 
@@ -307,6 +351,8 @@ export default function WeeklyProgramme() {
       try {
         const v = localStorage.getItem(`vaiiya_lieu_${user.id}`);
         if (v === "salle" || v === "maison") { forceNextRef.current = true; setLocation(v); }
+        const e = localStorage.getItem(`vaiiya_lieu_equip_${user.id}`);
+        setHomeEquip(e === "halteres" || e === "poids" ? e : null);
       } catch { /* ignore */ }
     };
     window.addEventListener("lieu-updated", handler);
@@ -314,11 +360,32 @@ export default function WeeklyProgramme() {
   }, [user]);
 
   const chooseLocation = useCallback((loc: "salle" | "maison") => {
-    if (user) {
-      try { localStorage.setItem(`vaiiya_lieu_${user.id}`, loc); } catch { /* ignore */ }
+    if (loc === "salle") {
+      if (user) {
+        try {
+          localStorage.setItem(`vaiiya_lieu_${user.id}`, "salle");
+          localStorage.removeItem(`vaiiya_lieu_equip_${user.id}`);
+        } catch { /* ignore */ }
+      }
+      forceNextRef.current = true;
+      setHomeEquip(null);
+      setLocation("salle");
+    } else {
+      // Maison → on demande ensuite s'il a des haltères (pas de génération tout de suite)
+      if (user) {
+        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, "maison"); } catch { /* ignore */ }
+      }
+      setHomeEquip(null);
+      setLocation("maison");
     }
-    forceNextRef.current = true; // force la régénération avec le nouveau lieu
-    setLocation(loc);
+  }, [user]);
+
+  const chooseHomeEquip = useCallback((equip: "halteres" | "poids") => {
+    if (user) {
+      try { localStorage.setItem(`vaiiya_lieu_equip_${user.id}`, equip); } catch { /* ignore */ }
+    }
+    forceNextRef.current = true; // force la régénération avec le matériel choisi
+    setHomeEquip(equip);
   }, [user]);
 
   // Today's day index (0 = Lundi … 6 = Dimanche), fallback to 0
@@ -344,7 +411,7 @@ export default function WeeklyProgramme() {
 
   /* ── Generate programme ── */
   const generate = useCallback(
-    async (loc: "salle" | "maison" | null, force = false) => {
+    async (loc: "salle" | "maison" | null, equip: "halteres" | "poids" | null, force = false) => {
       if (!user || !profile) return;
 
       // Check cache first (unless forced)
@@ -365,11 +432,14 @@ export default function WeeklyProgramme() {
       const goals = (profile.onboarding_goals ?? [])
         .map((g) => goalLabels[g] ?? g)
         .join(", ") || "forme générale";
-      const lieuLine = loc === "maison"
-        ? "- Lieu: À LA MAISON — utilise UNIQUEMENT des exercices au poids du corps ou avec du matériel minimal (haltères, élastiques, chaise). AUCUNE machine de salle."
-        : loc === "salle"
-        ? "- Lieu: EN SALLE DE SPORT — tu peux utiliser machines, charges libres (barres, haltères, poulies) et tout l'équipement."
-        : "";
+      const lieuLine =
+        loc === "salle"
+          ? "- Lieu: EN SALLE DE SPORT type BASIC FIT. Base-toi UNIQUEMENT sur le matériel d'une salle Basic Fit : machines guidées (presse à cuisses, leg extension, leg curl, pec deck, tirage vertical/poitrine, rowing assis, développé épaules, abducteurs/adducteurs, mollets), machine Smith, poulies/câbles, racks, haltères et barres, plus cardio (tapis, vélo, elliptique, rameur). Propose des exercices réalisables avec cet équipement."
+          : loc === "maison" && equip === "halteres"
+          ? "- Lieu: À LA MAISON AVEC HALTÈRES. Utilise EXCLUSIVEMENT des exercices au poids du corps ET avec des haltères (éventuellement un banc ou une chaise). AUCUNE machine, AUCUNE poulie, AUCune barre de salle."
+          : loc === "maison"
+          ? "- Lieu: À LA MAISON SANS MATÉRIEL. Utilise EXCLUSIVEMENT des exercices au POIDS DU CORPS (aucun haltère, aucune machine, aucun élastique). Joue sur les variations, le tempo, l'amplitude et le nombre de répétitions."
+          : "";
 
       const prompt = `Tu es un coach sportif expert. Génère un programme hebdomadaire personnalisé en JSON pour cet utilisateur:
 - Niveau: ${level}
@@ -426,14 +496,15 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     [user, profile]
   );
 
-  /* ── Auto-generate on profile load (uniquement si le lieu est connu) ── */
+  /* ── Auto-generate on profile load (lieu connu + matériel si maison) ── */
   useEffect(() => {
-    if (profileLoaded && profile && profile.onboarding_level && location) {
+    const ready = location === "salle" || (location === "maison" && homeEquip);
+    if (profileLoaded && profile && profile.onboarding_level && ready) {
       const f = forceNextRef.current;
       forceNextRef.current = false;
-      generate(location, f);
+      generate(location, homeEquip, f);
     }
-  }, [profileLoaded, profile, location, generate]);
+  }, [profileLoaded, profile, location, homeEquip, generate]);
 
   /* ── Recharge depuis le cache quand l'IA modifie le programme ── */
   useEffect(() => {
@@ -523,9 +594,24 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
     );
   }
 
+  const resetLocation = () => {
+    if (user) {
+      try {
+        localStorage.removeItem(`vaiiya_lieu_${user.id}`);
+        localStorage.removeItem(`vaiiya_lieu_equip_${user.id}`);
+      } catch { /* ignore */ }
+    }
+    setHomeEquip(null);
+    setLocation(null);
+  };
+
   // Lieu pas encore choisi → le coach pose la question avant de générer
   if (profileLoaded && hasOnboardingData && !location) {
     return <LocationQuestion onChoose={chooseLocation} />;
+  }
+  // Maison choisie mais matériel inconnu → on demande s'il a des haltères
+  if (profileLoaded && hasOnboardingData && location === "maison" && !homeEquip) {
+    return <HomeEquipQuestion onChoose={chooseHomeEquip} onBack={resetLocation} />;
   }
 
   const currentDay = programme?.semaine?.[selectedDay];
@@ -591,13 +677,15 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
         {programme && !loading && (
           <div className="flex justify-between items-center">
             <button
-              onClick={() => { if (user) { try { localStorage.removeItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ } } setLocation(null); }}
+              onClick={resetLocation}
               className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
               {location === "maison" ? <Home size={10} strokeWidth={2} /> : <MapPin size={10} strokeWidth={2} />}
-              <span className="text-[9px] font-medium">{location === "maison" ? "À la maison" : "En salle"} · changer</span>
+              <span className="text-[9px] font-medium">
+                {location === "maison" ? (homeEquip === "halteres" ? "Maison · haltères" : "Maison · poids du corps") : "En salle"} · changer
+              </span>
             </button>
             <button
-              onClick={() => generate(location, true)}
+              onClick={() => generate(location, homeEquip, true)}
               className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
               <RefreshCw size={10} strokeWidth={2.5} />
               <span className="text-[9px] font-medium">Régénérer</span>
@@ -613,7 +701,7 @@ Pour les jours de repos: type "Repos", titre "", exercices [], duree "".`;
           <div className="rounded-2xl p-3 flex items-center justify-between"
             style={{ background: "rgba(252,129,129,0.08)", border: "1px solid rgba(252,129,129,0.18)" }}>
             <p className="text-xs" style={{ color: "#DC2626" }}>{error}</p>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(location, true)}
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => generate(location, homeEquip, true)}
               className="text-[10px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer"
               style={{ background: "rgba(252,129,129,0.15)", color: "#DC2626" }}>
               Réessayer

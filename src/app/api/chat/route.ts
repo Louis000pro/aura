@@ -73,7 +73,8 @@ function buildSystemPrompt(
   live?: LiveStats | null,
   programme?: string | null,
   rich?: RichProfile | null,
-  lieu?: string | null
+  lieu?: string | null,
+  equip?: string | null
 ): string {
   // ── Repère temporel (fuseau France) ──
   let dateContext = "";
@@ -133,9 +134,15 @@ Règles du JSON :
 - Génère TOUJOURS 3 à 5 exercices pertinents avec sets×reps
 
 LIEU D'ENTRAÎNEMENT (TRÈS IMPORTANT) :
-${lieu === "salle" || lieu === "maison"
-  ? `L'utilisateur s'entraîne ${lieu === "maison" ? "À LA MAISON" : "EN SALLE DE SPORT"}. Adapte TOUJOURS les exercices en conséquence : ${lieu === "maison" ? "uniquement poids du corps ou matériel minimal (haltères, élastiques, chaise), JAMAIS de machine de salle." : "tu peux utiliser machines, charges libres (barres, haltères, poulies) et tout l'équipement."}`
-  : `Tu ne sais PAS encore où l'utilisateur s'entraîne. Dès qu'il te demande un programme, une séance ou une modification d'exercices, tu DOIS d'abord lui demander : "Tu t'entraînes en salle de sport ou à la maison ? 💪" et attendre sa réponse avant de proposer des exercices.`}
+${lieu === "salle"
+  ? `L'utilisateur s'entraîne EN SALLE DE SPORT type BASIC FIT. Base TES exercices UNIQUEMENT sur le matériel d'une salle Basic Fit : machines guidées (presse à cuisses, leg extension/curl, pec deck, tirage vertical/poitrine, rowing, développé épaules, abducteurs, mollets), machine Smith, poulies/câbles, haltères, barres, et cardio. JAMAIS d'exercice nécessitant du matériel absent d'une Basic Fit.`
+  : lieu === "maison"
+  ? (equip === "halteres"
+      ? `L'utilisateur s'entraîne À LA MAISON AVEC DES HALTÈRES. Utilise EXCLUSIVEMENT des exercices au poids du corps ET avec haltères (banc/chaise éventuels). AUCUNE machine, AUCUNE poulie.`
+      : equip === "poids"
+      ? `L'utilisateur s'entraîne À LA MAISON SANS MATÉRIEL. Utilise EXCLUSIVEMENT le POIDS DU CORPS (aucun haltère, aucune machine, aucun élastique). Joue sur variations, tempo et répétitions.`
+      : `L'utilisateur s'entraîne À LA MAISON mais tu ne sais pas s'il a du matériel. Avant de proposer des exercices, demande-lui : "Tu as des haltères à la maison, ou je te fais tout au poids du corps ? 💪" et attends sa réponse.`)
+  : `Tu ne sais PAS encore où l'utilisateur s'entraîne. Dès qu'il te demande un programme, une séance ou une modification d'exercices, tu DOIS d'abord lui demander : "Tu t'entraînes en salle de sport (type Basic Fit) ou à la maison ? 💪" et attendre sa réponse avant de proposer des exercices. S'il répond la maison, demande ensuite s'il a des haltères.`}
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
 [LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
@@ -237,6 +244,7 @@ export async function POST(req: NextRequest) {
   let programme: string | null = null;
   let richProfile: RichProfile | null = null;
   let lieu: string | null = null;
+  let lieuEquip: string | null = null;
   let maxTokens = 800;
 
   try {
@@ -248,6 +256,7 @@ export async function POST(req: NextRequest) {
     programme = body.programme ?? null;
     richProfile = body.richProfile ?? null;
     lieu = body.lieu ?? null;
+    lieuEquip = body.lieu_equip ?? null;
     // Les tâches de génération (programme, plan repas) peuvent demander plus de tokens
     // pour éviter un JSON tronqué. Plafonné pour rester raisonnable.
     if (body.maxTokens) maxTokens = Math.min(Math.max(Number(body.maxTokens) || 800, 800), 4000);
@@ -255,7 +264,7 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu);
+  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip);
 
   try {
     const stream = await groq.chat.completions.create({

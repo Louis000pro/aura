@@ -883,6 +883,7 @@ function Dashboard() {
           } : null,
           programme: programmeText,
           lieu: user ? (localStorage.getItem(`vaiiya_lieu_${user.id}`) || null) : null,
+          lieu_equip: user ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,
         }),
       });
 

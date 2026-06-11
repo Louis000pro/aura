@@ -78,8 +78,8 @@ function getCacheKey(userId: string, mealsCount: number): string {
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-  // mealsCount dans la clé → un changement du nb de repas régénère le plan
-  return `aura_repas_${userId}_m${mealsCount}_w${week}_${now.getFullYear()}`;
+  // mealsCount + version dans la clé → régénère si le nb de repas ou le style change
+  return `aura_repas_v2_${userId}_m${mealsCount}_w${week}_${now.getFullYear()}`;
 }
 function loadFromCache(key: string): MealPlan | null {
   if (typeof window === "undefined") return null;
@@ -213,6 +213,7 @@ export default function RecommendedMeals() {
 - Âge: ${age}
 - Nombre de repas par jour: ${mealsCount}
 Pour chaque jour, propose EXACTEMENT ${mealsCount} repas, dans cet ordre et avec ces types exacts : ${mealTypes.join(", ")}. Des plats CONCRETS, équilibrés et adaptés à l'objectif, avec une estimation de calories réaliste.
+TRÈS IMPORTANT : propose UNIQUEMENT des plats SIMPLES et CONNUS DE TOUS, qu'on mange au quotidien (ex : pâtes bolognaise, poulet riz haricots verts, omelette, steak frites, salade de pâtes, yaourt + fruits, tartines, riz cantonais, sandwich poulet, pâtes au saumon, porridge avoine, œufs au plat, soupe). PAS de plats exotiques, compliqués ou rares.
 IMPORTANT : noms de plats COURTS (4-6 mots max, sans détails superflus) pour garder une réponse compacte.
 Réponds UNIQUEMENT avec un JSON valide de cette forme:
 { "semaine": [ { "jour": "Lundi", "repas": [ ${exampleRepas} ] } ] }
