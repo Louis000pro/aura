@@ -10,17 +10,19 @@ export async function proxy(request: NextRequest) {
 
   let response = NextResponse.next({ request });
 
+  const LONG = 60 * 60 * 24 * 365; // 1 an → reste connecté
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
+      cookieOptions: { maxAge: LONG, sameSite: "lax", secure: true, path: "/" },
       cookies: {
         getAll() { return request.cookies.getAll(); },
         setAll(toSet) {
           toSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           toSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
+            response.cookies.set(name, value, { ...options, maxAge: LONG }),
           );
         },
       },
