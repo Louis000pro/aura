@@ -1057,18 +1057,8 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Bloc bas : label + 3 cadrans + chevron, empilés (ancré en bas, zéro chevauchement) */}
-        <div className="absolute bottom-2 left-0 right-0 px-5 flex flex-col items-center gap-2">
-          {/* Label : indique clairement ce qu'il y a derrière le tap */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
-            style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.6)", boxShadow: "0 2px 10px rgba(167,139,250,0.18)" }}>
-            <Dumbbell size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-[10px] font-bold tracking-wide" style={{ color: "#6B5BA0" }}>Séances &amp; repas recommandés</span>
-            <Utensils size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
-          </div>
-
-          {/* 3 mini-cadrans : Score · Série · Séances */}
-          <div className="w-full grid grid-cols-3 gap-2">
+        {/* 3 mini-cadrans : Score · Série · Séances */}
+        <div className="absolute bottom-8 left-0 right-0 px-5 grid grid-cols-3 gap-2">
           {[
             { label: "Score",   icon: Sparkles, value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—", unit: liveStats.score > 0 ? "/100" : "" },
             { label: "Série",   icon: Flame,    value: liveStats.loaded && liveStats.streak > 0 ? `${liveStats.streak}` : "—", unit: liveStats.streak > 0 ? (liveStats.streak > 1 ? "jours" : "jour") : "" },
@@ -1135,13 +1125,16 @@ function Dashboard() {
               </motion.div>
             );
           })}
-          </div>
-
-          {/* Chevron : affordance "tape pour ouvrir" */}
-          <motion.div animate={{ y: [0, 3, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
-            <ChevronDown size={13} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
-          </motion.div>
         </div>
+
+        {/* Label compact tout en bas : indique le tap sans empiéter sur les cadrans ni l'en-tête */}
+        <motion.div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none flex items-center gap-1.5 px-3 py-0.5 rounded-full"
+          style={{ background: "rgba(255,255,255,0.88)", border: "1px solid rgba(212,192,255,0.6)", boxShadow: "0 2px 10px rgba(167,139,250,0.18)" }}
+          animate={{ y: [0, 1.5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
+          <Dumbbell size={10} strokeWidth={2} style={{ color: "#A78BFA" }} />
+          <span className="text-[10px] font-bold tracking-wide" style={{ color: "#6B5BA0" }}>Séances &amp; repas recommandés</span>
+          <ChevronDown size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+        </motion.div>
 
         {/* Croissant SVG (courbe douce qui s'incurve vers le bas) — étendu jusqu'à la sidebar sur desktop */}
         <svg className="absolute -bottom-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
