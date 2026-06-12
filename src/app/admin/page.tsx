@@ -506,23 +506,18 @@ export default function AdminPage() {
   }, [user?.is_admin]); // eslint-disable-line
 
   const toggleAdmin = async (target: AdminUser) => {
-    const supabase = createClient();
     const newVal = !target.is_admin;
-    const { error } = await supabase.from("profiles").update({ is_admin: newVal }).eq("id", target.id);
-    if (error) { showToast(`Erreur : ${error.message}`); return; }
+    // Passe par l'API serveur (service role) — le client direct est bloqué par les RLS
+    const r = await callAdminApi("set_admin", target.id, { value: newVal });
+    if (!r) return;
     setUsers((prev) => prev.map((u) => u.id === target.id ? { ...u, is_admin: newVal } : u));
     showToast(newVal ? `@${target.pseudo} est maintenant admin` : `Droits admin retirés à @${target.pseudo}`);
   };
 
   const deleteUser = async (target: AdminUser) => {
-    const supabase = createClient();
-    // On supprime les follows et notifs d'abord
-    await Promise.all([
-      supabase.from("followers").delete().or(`follower_id.eq.${target.id},following_id.eq.${target.id}`),
-      supabase.from("notifications").delete().or(`user_id.eq.${target.id},from_user_id.eq.${target.id}`),
-    ]);
-    const { error } = await supabase.from("profiles").delete().eq("id", target.id);
-    if (error) { showToast(`Erreur : ${error.message}`); return; }
+    // Suppression via l'API serveur (service role) — supprime profil + follows + notifs + posts (cascade)
+    const r = await callAdminApi("delete", target.id);
+    if (!r) return;
     setUsers((prev) => prev.filter((u) => u.id !== target.id));
     setConfirmDelete(null);
     showToast(`@${target.pseudo} supprimé`);
