@@ -23,7 +23,7 @@ import TourSpotlight from "@/components/GuidedTour/TourSpotlight";
 import TourProgress from "@/components/GuidedTour/TourProgress";
 
 export default function GuidedTour() {
-  const { isOpen, stepIndex, totalSteps, next, close, goTo } = useGuidedTour();
+  const { isOpen, stepIndex, next, close } = useGuidedTour();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -59,12 +59,7 @@ export default function GuidedTour() {
             animate={{ rotate: 360 }}
             transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
           />
-          <TourProgress
-            current={stepIndex}
-            total={totalSteps}
-            onSkip={() => close(true)}
-            onDotClick={goTo}
-          />
+          <TourProgress onSkip={() => close(true)} />
         </motion.div>
       </AnimatePresence>
     );
@@ -94,12 +89,7 @@ export default function GuidedTour() {
           />
         )}
 
-        <TourProgress
-          current={stepIndex}
-          total={totalSteps}
-          onSkip={() => close(true)}
-          onDotClick={goTo}
-        />
+        <TourProgress onSkip={() => close(true)} />
       </div>
     </AnimatePresence>
   );
