@@ -1567,6 +1567,15 @@ export default function ProfilPage() {
   const [burstPostId, setBurstPostId] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [editingSelectedPost, setEditingSelectedPost] = useState(false);
+
+  // ── Compter une vue quand on ouvre une vidéo depuis le profil ──
+  useEffect(() => {
+    if (!selectedPost || selectedPost.media_type !== "video") return;
+    const id = selectedPost.id;
+    void createClient().rpc("increment_post_views", { p_post_id: id });
+    setUserPosts((prev) => prev.map((p) => p.id === id ? { ...p, views: (p.views ?? 0) + 1 } : p));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPost?.id]);
   const [profileWorkout, setProfileWorkout] = useState<{
     sessionId: string; title: string; accent: string; duration: number;
     difficulty: string; category: string; exerciseList: Exercise[];

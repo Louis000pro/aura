@@ -256,6 +256,16 @@ export default function PublicProfilePage() {
 
   // Action bar state
   const [selectedPost, setSelectedPost] = useState<DbPost | null>(null);
+
+  // ── Compter une vue quand on ouvre une vidéo depuis le profil d'une personne ──
+  useEffect(() => {
+    if (!selectedPost || selectedPost.media_type !== "video") return;
+    const id = selectedPost.id;
+    void createClient().rpc("increment_post_views", { p_post_id: id });
+    setUserPosts((prev) => prev.map((p) => p.id === id ? { ...p, views: (p.views ?? 0) + 1 } : p));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPost?.id]);
+
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
