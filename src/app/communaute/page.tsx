@@ -3310,9 +3310,13 @@ function CommunautePageInner() {
   const [swipeHint, setSwipeHint] = useState(true);
   useEffect(() => {
     setSwipeHint(true);
-    const t = setTimeout(() => setSwipeHint(false), 5000);
-    return () => clearTimeout(t);
-  }, [feedTab, view]);
+    // Sur PC on ne peut pas swiper → on garde les boutons Vidéos/Publications visibles en permanence.
+    // Sur mobile : auto-masqués après 5 s comme avant.
+    if (isMobileView) {
+      const t = setTimeout(() => setSwipeHint(false), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [feedTab, view, isMobileView]);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onFeedTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];

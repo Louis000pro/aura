@@ -5,24 +5,18 @@ import { useState, useEffect, useCallback } from "react";
 export type Theme = "light" | "dark";
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
+  // Mode sombre désactivé pour le moment — on force le clair partout.
+  const [theme] = useState<Theme>("light");
 
   useEffect(() => {
-    const stored = localStorage.getItem("aura-theme") as Theme | null;
-    const resolved = stored ?? "light";
-    setTheme(resolved);
-    document.documentElement.setAttribute("data-theme", resolved);
-  }, []);
-
-  const applyTheme = useCallback((next: Theme) => {
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("aura-theme", next);
+    document.documentElement.removeAttribute("data-theme");
+    try { localStorage.removeItem("aura-theme"); } catch { /* ignore */ }
   }, []);
 
   const toggleTheme = useCallback(() => {
-    applyTheme(theme === "light" ? "dark" : "light");
-  }, [theme, applyTheme]);
+    // no-op tant que le mode sombre est désactivé
+    document.documentElement.removeAttribute("data-theme");
+  }, []);
 
-  return { theme, toggleTheme, isDark: theme === "dark" };
+  return { theme, toggleTheme, isDark: false };
 }
