@@ -83,6 +83,13 @@ export async function POST(req: NextRequest) {
         const value = Boolean(body.value);
         const { error } = await admin.from("profiles").update({ is_banned: value }).eq("id", targetId);
         if (error) return NextResponse.json({ error: error.message, hint: "colonne is_banned ?" }, { status: 500 });
+        // Bannir = retirer aussi tout son contenu (posts + stories = ses vidéos)
+        if (value) {
+          await Promise.all([
+            admin.from("posts").delete().eq("user_id", targetId),
+            admin.from("stories").delete().eq("user_id", targetId),
+          ]);
+        }
         return NextResponse.json({ ok: true, is_banned: value });
       }
 
