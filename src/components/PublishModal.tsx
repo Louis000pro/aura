@@ -8,6 +8,51 @@ import { useAuth } from "@/context/AuthContext";
 
 type Mode = "post" | "story";
 
+// ── Limites vidéo (évite les fichiers monstres qui rament à l'upload) ──
+const MAX_VIDEO_SECONDS = 180; // 3 min
+const MAX_VIDEO_MB = 150;
+
+// Compresse une image (downscale + JPEG) → upload bien plus rapide, qualité conservée
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 1920;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const r = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * r); height = Math.round(height * r);
+        }
+        const c = document.createElement("canvas");
+        c.width = width; c.height = height;
+        c.getContext("2d")?.drawImage(img, 0, 0, width, height);
+        c.toBlob((blob) => {
+          if (!blob || blob.size >= file.size) { resolve(file); return; } // garde l'original si pas plus léger
+          resolve(new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }));
+        }, "image/jpeg", 0.82);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    } catch { resolve(file); }
+  });
+}
+
+// Durée d'une vidéo (pour la limite)
+function getVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    try {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => { const d = v.duration || 0; URL.revokeObjectURL(v.src); resolve(d); };
+      v.onerror = () => resolve(0);
+      v.src = URL.createObjectURL(file);
+    } catch { resolve(0); }
+  });
+}
+
 export default function PublishModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("post");
@@ -59,13 +104,32 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     setError(null);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     const isVideo = f.type.startsWith("video/");
+
+    let finalFile = f;
+    if (isVideo) {
+      // Limite taille + durée
+      const sizeMB = f.size / (1024 * 1024);
+      const dur = await getVideoDuration(f);
+      if (dur > MAX_VIDEO_SECONDS) {
+        setError(`Vidéo trop longue (${Math.round(dur)} s). Maximum ${Math.round(MAX_VIDEO_SECONDS / 60)} min.`);
+        return;
+      }
+      if (sizeMB > MAX_VIDEO_MB) {
+        setError(`Vidéo trop lourde (${Math.round(sizeMB)} Mo). Maximum ${MAX_VIDEO_MB} Mo — réduis la qualité à l'enregistrement.`);
+        return;
+      }
+    } else {
+      // Compression image → upload rapide
+      finalFile = await compressImage(f);
+    }
+
     setMediaType(isVideo ? "video" : "image");
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setFile(finalFile);
+    setPreview(URL.createObjectURL(finalFile));
     setError(null);
     // Reset couverture
     coverBlobRef.current = null;
