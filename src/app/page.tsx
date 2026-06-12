@@ -1219,7 +1219,7 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[30dvh]">
+      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[22dvh]">
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
@@ -1231,7 +1231,7 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[25dvh]"
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[20dvh]"
         style={{ bottom: "calc(70px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
@@ -1311,7 +1311,7 @@ function Dashboard() {
             {/* Vidéo verticale à gauche — plus grande */}
             <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
               style={{
-                width: isMobile ? 62 : 118, height: isMobile ? 98 : 182,
+                width: isMobile ? 62 : 78, height: isMobile ? 98 : 128,
                 background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
                 boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}>
@@ -1358,7 +1358,7 @@ function Dashboard() {
               <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#A78BFA" }}>
                 Du jour
               </p>
-              <p className="text-xl font-light leading-tight" style={{ color: "#1A1535" }}>
+              <p className="text-base md:text-lg font-light leading-tight" style={{ color: "#1A1535" }}>
                 Vidéo · Séance · Perf
               </p>
               <p className="text-[11px] font-light mt-1.5 leading-snug" style={{ color: "#8B82A8" }}>
