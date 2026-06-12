@@ -606,7 +606,8 @@ function LandingPage() {
 
 /* ─── Dashboard ─── */
 // Limite quotidienne de messages avec le coach IA pour les comptes gratuits
-const DAILY_AI_LIMIT = 12;
+// (aligné sur plans.ts free.limits.chatPerDay = 5 et l'affichage page /premium)
+const DAILY_AI_LIMIT = 5;
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
 let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
 
