@@ -239,8 +239,8 @@ export default function CoachPage() {
       ] = await Promise.all([
         // Nutrition aujourd'hui
         supabase.from("nutrition_logs").select("calories, proteins, carbs, fats").eq("user_id", user.id).eq("date", today),
-        // Nutrition 7 derniers jours
-        supabase.from("nutrition_logs").select("date, calories, proteins, carbs, fats").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }),
+        // Nutrition 7 derniers jours (avec détail des repas)
+        supabase.from("nutrition_logs").select("date, meal_type, food_name, calories, proteins, carbs, fats, time, description").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).order("time", { ascending: true }),
         // Séances (30 derniers jours)
         supabase.from("workout_sessions").select("title, started_at, duration_minutes, calories_burned, exercises").eq("user_id", user.id).gte("started_at", thirtyDaysAgo).order("started_at", { ascending: false }).limit(15),
         // Historique poids
@@ -299,6 +299,15 @@ export default function CoachPage() {
         .sort(([a], [b]) => b.localeCompare(a))
         .map(([date, vals]) => ({ date, calories: Math.round(vals.calories), proteins: Math.round(vals.proteins), carbs: Math.round(vals.carbs), fats: Math.round(vals.fats) }));
 
+      // ── Détail des repas réels loggés/scannés (pour répondre "qu'est-ce que j'ai mangé") ──
+      const mealsDetail = ((nutritionWeekRes.data ?? []) as { date: string; meal_type?: string; food_name?: string; calories?: number; proteins?: number; time?: string; description?: string | null }[])
+        .slice(0, 40)
+        .map(m => ({
+          date: m.date, mealType: m.meal_type, name: m.food_name ?? "Repas",
+          calories: m.calories, proteins: m.proteins, time: m.time,
+          description: m.date === today ? (m.description ?? null) : null,
+        }));
+
       // ── Posts récents ──
       const recentPosts = (postsRes.data ?? []).map((p: { type: string; caption?: string | null; performance_data?: Record<string, unknown> | null; created_at: string }) => {
         let performanceSummary: string | null = null;
@@ -333,6 +342,8 @@ export default function CoachPage() {
         followingCount: followingRes.count ?? 0,
         postsCount: recentPosts.length,
         recentPosts,
+        todayDate: today,
+        mealsDetail,
         nutritionWeek,
         weightHistory: weightHistory.map(w => ({ date: w.date, weight: w.weight_kg })),
         workoutHistory,

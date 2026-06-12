@@ -65,6 +65,31 @@ interface RichProfile {
   // Totaux du mois
   monthWorkouts?: number;
   monthCaloriesAvg?: number;
+  // Date du jour (YYYY-MM-DD, fuseau utilisateur) pour distinguer "aujourd'hui"
+  todayDate?: string;
+  // Repas RÉELS loggés/scannés par l'utilisateur (détail, pas agrégat)
+  mealsDetail?: {
+    date: string;
+    mealType?: string;
+    name: string;
+    calories?: number;
+    proteins?: number;
+    time?: string;
+    description?: string | null;
+  }[];
+}
+
+// Libellé lisible d'un type de repas
+function mealTypeLabel(t?: string): string {
+  if (!t) return "Repas";
+  const k = t.toLowerCase().replace(/[-_]/g, "");
+  const map: Record<string, string> = {
+    "petitdejeuner": "Petit-déjeuner", "petitdej": "Petit-déjeuner", "breakfast": "Petit-déjeuner",
+    "dejeuner": "Déjeuner", "lunch": "Déjeuner", "midi": "Déjeuner",
+    "diner": "Dîner", "dinner": "Dîner", "soir": "Dîner",
+    "gouter": "Goûter", "snack": "Collation", "collation": "Collation",
+  };
+  return map[k] ?? t;
 }
 
 function buildSystemPrompt(
@@ -111,6 +136,12 @@ TON ET POSTURE :
 MÉMOIRE & CONTEXTE (très important) :
 - Tu tiens compte de TOUT ce que l'utilisateur t'a dit dans la conversation ET de ses données de profil/stats. Ne redemande jamais une info déjà donnée, réutilise-la.
 - Tu relies tes conseils à ses objectifs, son niveau, ses séances et sa nutrition réels quand ils sont disponibles.
+
+DONNÉES RÉELLES DU COMPTE (repas & séances) :
+- Tu as accès aux REPAS réellement loggés/scannés par l'utilisateur et à ses SÉANCES réalisées (plus bas dans ce message).
+- Quand il demande ce qu'il a mangé ("qu'est-ce que j'ai mangé ce matin / aujourd'hui / hier", "mon petit-déj", "mes repas", "combien de calories aujourd'hui"), tu réponds À PARTIR de ces données réelles, en citant les aliments et leurs calories. "Ce matin" = le petit-déjeuner ; "ce midi" = le déjeuner ; "ce soir" = le dîner.
+- Quand il demande ce qu'il a fait comme sport ("ma dernière séance", "qu'est-ce que j'ai fait à la salle"), tu réponds à partir de ses séances réalisées (titre, exercices, durée).
+- Si aucune donnée n'est enregistrée pour la période demandée, dis-le simplement et propose-lui d'ajouter/scanner son repas. N'INVENTE JAMAIS un repas ou une séance qui n'est pas dans les données.
 
 TOUJOURS FINIR PAR UNE QUESTION :
 - Termine SYSTÉMATIQUEMENT chaque réponse par une question courte, bienveillante et engageante pour relancer l'échange (ex : "Tu veux que je t'aide à planifier ça ?", "Comment tu te sens là-dessus ?", "On regarde ensemble ta séance de demain ?").
@@ -213,6 +244,30 @@ Statistiques du jour :
       const mealPosts = rich.recentPosts.filter(p => p.type === "meal");
       if (workoutPosts.length) richBlock += `\nPublications sport récentes (${workoutPosts.length}) : ${workoutPosts.slice(0, 3).map(p => `"${p.caption?.slice(0, 40) ?? p.performanceSummary ?? p.type}"`).join(", ")}`;
       if (mealPosts.length) richBlock += `\nPublications repas récentes (${mealPosts.length}) : ${mealPosts.slice(0, 3).map(p => `"${p.caption?.slice(0, 40) ?? p.type}"`).join(", ")}`;
+    }
+
+    // ── Repas RÉELS loggés/scannés (le coach doit pouvoir dire ce que l'utilisateur a mangé) ──
+    if (rich.mealsDetail && rich.mealsDetail.length > 0) {
+      const today = rich.todayDate;
+      const todays = today ? rich.mealsDetail.filter(m => m.date === today) : [];
+      const previous = today ? rich.mealsDetail.filter(m => m.date !== today) : rich.mealsDetail;
+
+      richBlock += `\n\nREPAS LOGGÉS PAR L'UTILISATEUR (données réelles, à utiliser pour répondre précisément à "qu'est-ce que j'ai mangé") :`;
+      if (todays.length > 0) {
+        richBlock += `\nAUJOURD'HUI :`;
+        todays.forEach(m => {
+          richBlock += `\n  • ${mealTypeLabel(m.mealType)}${m.time ? ` (${m.time})` : ""} : ${m.name}${m.calories ? ` — ${m.calories} kcal` : ""}${m.proteins ? `, ${m.proteins}g prot` : ""}`;
+          if (m.description) richBlock += ` [${String(m.description).slice(0, 80)}]`;
+        });
+      } else {
+        richBlock += `\nAUJOURD'HUI : aucun repas enregistré pour le moment.`;
+      }
+      if (previous.length > 0) {
+        richBlock += `\nJOURS PRÉCÉDENTS :`;
+        previous.slice(0, 12).forEach(m => {
+          richBlock += `\n  • ${m.date.slice(5)} — ${mealTypeLabel(m.mealType)} : ${m.name}${m.calories ? ` (${m.calories} kcal)` : ""}`;
+        });
+      }
     }
   }
 

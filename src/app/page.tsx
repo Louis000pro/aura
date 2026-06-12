@@ -900,6 +900,57 @@ function Dashboard() {
       } catch { /* ignore */ }
     }
 
+    // ── Données RÉELLES du compte (repas loggés/scannés + séances) pour que l'IA réponde précisément ──
+    let richProfile: unknown = null;
+    if (user) {
+      try {
+        const sb = createClient();
+        const pad = (x: number) => String(x).padStart(2, "0");
+        const d0 = new Date();
+        const todayStr = `${d0.getFullYear()}-${pad(d0.getMonth() + 1)}-${pad(d0.getDate())}`;
+        const d7 = new Date(d0.getTime() - 6 * 86400000);
+        const weekAgoStr = `${d7.getFullYear()}-${pad(d7.getMonth() + 1)}-${pad(d7.getDate())}`;
+
+        const [mealsRes, workoutsRes] = await Promise.all([
+          sb.from("nutrition_logs")
+            .select("date, meal_type, food_name, calories, proteins, carbs, fats, time, description")
+            .eq("user_id", user.id).gte("date", weekAgoStr)
+            .order("date", { ascending: false }).order("time", { ascending: true }).limit(120),
+          sb.from("workout_sessions")
+            .select("title, category, duration_minutes, calories_burned, exercises, started_at")
+            .eq("user_id", user.id)
+            .order("started_at", { ascending: false }).limit(10),
+        ]);
+
+        const meals = mealsRes.data ?? [];
+        const mealsDetail = meals.slice(0, 40).map((m) => ({
+          date: m.date, mealType: m.meal_type, name: m.food_name,
+          calories: m.calories, proteins: m.proteins, time: m.time,
+          description: m.date === todayStr ? m.description : null,
+        }));
+        // Agrégats 7 jours (par jour)
+        const byDay: Record<string, { calories: number; proteins: number; carbs: number; fats: number }> = {};
+        meals.forEach((m) => {
+          const day = (byDay[m.date] ||= { calories: 0, proteins: 0, carbs: 0, fats: 0 });
+          day.calories += m.calories || 0; day.proteins += m.proteins || 0;
+          day.carbs += m.carbs || 0; day.fats += m.fats || 0;
+        });
+        const nutritionWeek = Object.entries(byDay)
+          .sort((a, b) => b[0].localeCompare(a[0]))
+          .map(([date, v]) => ({ date, calories: Math.round(v.calories), proteins: Math.round(v.proteins), carbs: Math.round(v.carbs), fats: Math.round(v.fats) }));
+
+        const workoutHistory = (workoutsRes.data ?? []).map((w) => ({
+          title: w.title, date: String(w.started_at ?? "").slice(0, 10),
+          durationMinutes: w.duration_minutes, caloriesBurned: w.calories_burned,
+          exercises: Array.isArray(w.exercises)
+            ? (w.exercises as unknown[]).map((e) => (typeof e === "string" ? e : ((e as { name?: string; title?: string })?.name ?? (e as { title?: string })?.title ?? ""))).filter(Boolean).slice(0, 8)
+            : undefined,
+        }));
+
+        richProfile = { todayDate: todayStr, mealsDetail, nutritionWeek, workoutHistory };
+      } catch { /* ignore — l'IA marchera sans, juste moins précise */ }
+    }
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -908,6 +959,7 @@ function Dashboard() {
           messages: apiMessages,
           userContext,
           pseudo: user?.pseudo ?? user?.name ?? "",
+          richProfile,
           liveStats: liveStats.loaded ? {
             calories: liveStats.calories || undefined,
             steps: liveStats.steps || undefined,
