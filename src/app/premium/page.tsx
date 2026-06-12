@@ -104,8 +104,8 @@ function PremiumInner() {
             Passe au niveau supérieur
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "#7C6BAA" }}>
-            Coach IA illimité, contenus exclusifs, sans pub.
-            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>7 jours d'essai gratuit</strong> — sans engagement.
+            Coach IA <strong style={{ color: "#6D28D9" }}>sans limite</strong>, programmes exclusifs, zéro pub.
+            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>7 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
           </p>
         </motion.div>
 
@@ -150,11 +150,17 @@ function PremiumInner() {
                   </div>
                   <p className="text-xs font-light mb-2.5 md:mb-5 md:min-h-[32px]" style={{ color: "#9488B5" }}>{p.tagline}</p>
 
-                  <div className="mb-3 md:mb-5 flex items-end gap-1">
+                  <div className="mb-3 md:mb-5 flex items-end gap-1.5 flex-wrap">
                     <span className="text-3xl md:text-4xl font-black" style={{ color: "#2D2150" }}>
                       {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                     </span>
                     {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "#9488B5" }}>/mois</span>}
+                    {p.priceCents > 0 && (
+                      <span className="text-[11px] font-semibold mb-1.5 px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(167,139,250,0.1)", color: "#7C5CFA" }}>
+                        ≈ {(p.priceCents / 100 / 30).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/jour
+                      </span>
+                    )}
                   </div>
 
                   <ul className="flex flex-col gap-1.5 md:gap-2.5 mb-3 md:mb-6 flex-1 overflow-hidden">
@@ -179,7 +185,7 @@ function PremiumInner() {
                         background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "linear-gradient(135deg,#C4A8FF,#A78BFA)",
                         boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
                       }}>
-                      {loading === id ? "Redirection…" : "Essayer 7 jours gratuits"}
+                      {loading === id ? "Redirection…" : "Démarrer mes 7 jours gratuits"}
                     </motion.button>
                   )}
                 </div>
@@ -189,7 +195,7 @@ function PremiumInner() {
         </div>
 
         <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "#9488B5" }}>
-          Sans engagement · annulable à tout moment · paiement sécurisé par Stripe 🔒
+          <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
         </p>
       </div>
 
