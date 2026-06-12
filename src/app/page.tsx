@@ -1107,6 +1107,7 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowStatsDrawer(true)}
+        data-tour-anchor="stats"
         className="relative w-full flex-shrink-0 outline-none active:opacity-95 transition-opacity"
         style={{ height: "31%" }}
       >
@@ -1220,17 +1221,20 @@ function Dashboard() {
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
       <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[34dvh]">
-        <HomeOrb
-          onTap={() => setShowChat(true)}
-          onTranscript={handleVoiceTranscript}
-          size={isMobile ? 138 : 176}
-        />
+        <div data-tour-anchor="orb">
+          <HomeOrb
+            onTap={() => setShowChat(true)}
+            onTranscript={handleVoiceTranscript}
+            size={isMobile ? 138 : 176}
+          />
+        </div>
       </div>
 
       {/* ────────────────── BOTTOM : VOTD carte large + croissant — AU-DESSUS de la nav ─ */}
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
+        data-tour-anchor="votd"
         className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[32dvh]"
         style={{ bottom: "calc(70px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"

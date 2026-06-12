@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target } from "lucide-react";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useTheme } from "@/hooks/useTheme";
+import { useGuidedTour } from "@/context/GuidedTourContext";
 import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/push";
 
 /* ── Section header ─────────────────────────────────────── */
@@ -581,6 +582,7 @@ export default function ParametresPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
+  const { start: startTour } = useGuidedTour();
   const [showProfileModal, setShowProfileModal]   = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
@@ -785,6 +787,22 @@ export default function ParametresPage() {
               />
             </div>
           </motion.button>
+        </div>
+
+        {/* Découvrir Vaiiya */}
+        <Section title="Découvrir Vaiiya" />
+        <div className="flex flex-col gap-2">
+          <Row
+            icon={Sparkles}
+            label="Refaire la visite guidée"
+            sublabel="Redécouvre les fonctionnalités principales en 9 étapes"
+            onClick={() => {
+              router.push("/");
+              // Laisser le temps à la home de monter avant de lancer la visite
+              setTimeout(() => startTour(), 250);
+            }}
+            iconBg="linear-gradient(135deg, rgba(167,139,250,0.4), rgba(34,211,238,0.25))"
+          />
         </div>
 
         {/* Légal */}

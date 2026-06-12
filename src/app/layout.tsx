@@ -4,7 +4,9 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
+import { GuidedTourProvider } from "@/context/GuidedTourContext";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
+import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
 import { Analytics } from "@vercel/analytics/next";
@@ -171,10 +173,13 @@ export default function RootLayout({
         <div aria-hidden style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(45,33,80,0.18), transparent)" }} />
         <SplashIntro />
         <AuthProvider>
-          <Navigation />
-          <MainWrapper>{children}</MainWrapper>
-          <OnboardingWrapper />
-          <PWARegister />
+          <GuidedTourProvider>
+            <Navigation />
+            <MainWrapper>{children}</MainWrapper>
+            <OnboardingWrapper />
+            <GuidedTour />
+            <PWARegister />
+          </GuidedTourProvider>
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

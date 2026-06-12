@@ -21,11 +21,11 @@ type TabItem = {
   sub?: { href: string; label: string; icon?: React.ElementType }[];
 };
 
-const TABS: TabItem[] = [
-  { href: "/",            label: "Accueil",     icon: Home },
-  { href: "/progression", label: "Progression", icon: TrendingUp },
-  { href: "/communaute",  label: "Communauté",  icon: Users },
-  { href: "/profil",      label: "Profil",      icon: User },
+const TABS: (TabItem & { tourAnchor?: string })[] = [
+  { href: "/",            label: "Accueil",     icon: Home,        tourAnchor: "nav-accueil" },
+  { href: "/progression", label: "Progression", icon: TrendingUp,  tourAnchor: "nav-progression" },
+  { href: "/communaute",  label: "Communauté",  icon: Users,       tourAnchor: "nav-communaute" },
+  { href: "/profil",      label: "Profil",      icon: User,        tourAnchor: "nav-profil" },
 ];
 
 export default function Navigation() {
@@ -84,18 +84,19 @@ export default function Navigation() {
 
   /* ── Helper: icône d'onglet ── */
   const NavIcon = ({
-    href, label, icon: Icon, sub, mobile,
+    href, label, icon: Icon, sub, mobile, tourAnchor,
   }: {
     href: string; label: string; icon: React.ElementType;
     sub?: { href: string; label: string; icon?: React.ElementType }[];
     mobile?: boolean;
+    tourAnchor?: string;
   }) => {
     const isActive = sub ? isProgActive : pathname === href;
     const badge    = href === "/communaute" && unreadDMs > 0 ? unreadDMs : null;
 
     if (mobile) {
       return (
-        <Link href={href} className="flex-1" aria-label={label}>
+        <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
           <motion.div
             className="flex items-center justify-center py-3 px-1 rounded-xl cursor-pointer relative"
             whileTap={{ scale: 0.85 }} transition={{ duration: 0.12 }}
@@ -126,7 +127,7 @@ export default function Navigation() {
         <div className="relative"
           onMouseEnter={() => setProgMenu(true)}
           onMouseLeave={() => setProgMenu(false)}>
-          <Link href={href} aria-label={label}>
+          <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
             <motion.div
               className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
@@ -180,7 +181,7 @@ export default function Navigation() {
     }
 
     return (
-      <Link href={href} aria-label={label}>
+      <Link href={href} aria-label={label} data-tour-anchor={tourAnchor}>
         <motion.div
           className="relative flex items-center justify-center w-10 h-10 rounded-2xl cursor-pointer mx-auto"
           whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
@@ -218,13 +219,14 @@ export default function Navigation() {
         <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
             {/* 1. Accueil */}
-            <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile />
+            <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
             {/* 2. Progression */}
-            <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile />
+            <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
 
             {/* 3. Bouton + (centre) */}
             {user ? (
               <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowPublish(true)}
+                data-tour-anchor="nav-publish"
                 className="flex-1 flex items-center justify-center" aria-label="Publier">
                 <div className="nav-glass-yellow w-10 h-10 rounded-2xl flex items-center justify-center">
                   <Plus size={20} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
@@ -233,9 +235,9 @@ export default function Navigation() {
             ) : <div className="flex-1" />}
 
             {/* 4. Communauté */}
-            <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile />
+            <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
             {/* 5. Profil */}
-            <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile />
+            <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
           </div>
         </div>
       </nav>
@@ -248,8 +250,8 @@ export default function Navigation() {
           className="nav-glass lg-highlight relative flex flex-col h-full w-[68px] py-6 px-3 gap-2 rounded-3xl"
         >
           {/* Icônes de navigation */}
-          {TABS.map(({ href, label, icon, sub }) => (
-            <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} />
+          {TABS.map(({ href, label, icon, sub, tourAnchor }) => (
+            <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} />
           ))}
 
           {/* Bouton + Publier */}
@@ -257,6 +259,7 @@ export default function Navigation() {
             <motion.button
               whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
               onClick={() => setShowPublish(true)}
+              data-tour-anchor="nav-publish"
               aria-label="Publier" title="Publier"
               className="nav-glass-yellow w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mt-1"
             >

@@ -7,9 +7,11 @@ import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
 import { createClient } from "@/lib/supabase";
+import { useGuidedTour, hasTourBeenCompleted } from "@/context/GuidedTourContext";
 
 export default function OnboardingWrapper() {
   const { user, isNewUser, isLoading } = useAuth();
+  const { start: startTour } = useGuidedTour();
 
   const [showModal, setShowModal]             = useState(false);
   const [showBubble, setShowBubble]           = useState(false);
@@ -117,8 +119,18 @@ export default function OnboardingWrapper() {
         {showCelebration && (
           <WelcomeCelebration
             isFirstTime={!wasAlreadyCompleted}
-            onDone={() => {
+            onDone={async () => {
               setShowCelebration(false);
+              // Si c'est un nouveau compte et que la visite n'a jamais été faite, on la lance.
+              // Sinon, comportement habituel : bulle objectifs si non remplis.
+              if (!wasAlreadyCompleted && user?.id) {
+                const alreadyDone = await hasTourBeenCompleted(user.id);
+                if (!alreadyDone) {
+                  // Petit délai pour laisser la home se monter (les data-tour-anchor doivent exister)
+                  setTimeout(() => startTour(), 500);
+                  return;
+                }
+              }
               if (!bubbleDismissed) setShowBubble(true);
             }}
           />
