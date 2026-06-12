@@ -6,8 +6,6 @@ import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
   Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-const AnimatedAvatar = dynamic(() => import("@/components/AnimatedAvatar"), { ssr: false });
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -835,17 +833,7 @@ export default function WorkoutGuideModal({
                       </div>
                     </div>
 
-                    {/* Avatar animé 3D */}
-                    <div className="flex justify-center py-3 rounded-3xl"
-                      style={{ background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.08)" }}>
-                      <AnimatedAvatar
-                        exerciseName={cur.name}
-                        accent={accent}
-                        size={148}
-                      />
-                    </div>
-
-                    {/* Référence humaine — vidéo YouTube de démo */}
+                    {/* Démonstration — vidéo YouTube de l'exercice */}
                     <ExerciseVideo exerciseName={cur.name} />
 
                     {/* Benefit */}
@@ -1000,15 +988,8 @@ export default function WorkoutGuideModal({
                       )}
                     </AnimatePresence>
 
-                    {/* Avatar animé 3D */}
-                    <div className="flex justify-center py-3 rounded-3xl"
-                      style={{ background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.08)" }}>
-                      <AnimatedAvatar
-                        exerciseName={cur.name}
-                        accent={accent}
-                        size={128}
-                      />
-                    </div>
+                    {/* Démonstration — vidéo YouTube de l'exercice */}
+                    <ExerciseVideo exerciseName={cur.name} />
 
                     {/* Muscles */}
                     <div className="flex flex-wrap gap-1.5">
