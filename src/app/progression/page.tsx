@@ -573,12 +573,15 @@ function WeightChart({
                 </span>
               )}
             </div>
-            <div className="flex items-end gap-2">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
-                {current !== null ? current.toFixed(1) : "—"}
+            <button onClick={() => setAdding(true)} className="flex items-end gap-2 cursor-pointer"
+              style={{ background: "none", border: "none", padding: 0 }} aria-label="Ajouter mon poids">
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: current !== null ? "#1A202C" : "#A78BFA" }}>
+                {current !== null ? current.toFixed(1) : "+"}
               </span>
-              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>kg</span>
-            </div>
+              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>
+                {current !== null ? "kg" : "kg ?"}
+              </span>
+            </button>
           </div>
           <div className="flex items-center gap-1.5 mt-1">
             <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
@@ -625,15 +628,21 @@ function WeightChart({
 
       {/* Chart */}
       {pts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(167,139,250,0.08)" }}>
-            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#C4A8FF" }} />
+        <button onClick={() => setAdding(true)}
+          className="w-full flex flex-col items-center justify-center py-9 gap-3 cursor-pointer"
+          style={{ background: "none", border: "none" }}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(167,139,250,0.1)" }}>
+            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
           </div>
-          <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
-            Ajoute ton premier poids<br />pour suivre ta progression
+          <p className="text-xs text-center font-light" style={{ color: "#718096" }}>
+            Aucun poids enregistré pour le moment
           </p>
-        </div>
+          <span className="px-4 py-2 rounded-xl text-xs font-bold"
+            style={{ background: "linear-gradient(135deg,#C4A8FF,#A78BFA)", color: "#fff", boxShadow: "0 4px 14px rgba(167,139,250,0.3)" }}>
+            + Ajouter mon poids
+          </span>
+        </button>
       ) : (
         <div className="px-2 pb-2">
           <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
