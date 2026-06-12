@@ -5,12 +5,14 @@
  *  - "slide"     : plein écran narratif (intro, outro)
  *  - "spotlight" : overlay assombri + halo sur un élément ancré dans le DOM
  *
- * Pour les spotlights, `anchorId` correspond à un attribut data-tour-anchor="<id>"
- * placé sur l'élément cible dans le DOM (home, navigation, etc.).
+ * Champ `route` : si défini, la visite navigue vers ce chemin avant d'afficher l'étape.
+ * Ainsi, quand on présente la page Progression, on est BIEN sur /progression — pas sur la home.
  *
- * `tooltipPosition` indique où afficher la bulle de texte par rapport à l'élément spotlightée :
- *  - "auto" : décidé dynamiquement selon la position (au-dessus ou en-dessous)
- *  - "top" / "bottom" : forcé
+ * Pour les spotlights, `anchorId` correspond à un attribut data-tour-anchor="<id>"
+ * placé sur l'élément cible dans le DOM.
+ *
+ * Champ `softOverlay` : pour les étapes "page tour" (5/7/8), l'overlay est moins
+ * opaque afin que l'utilisateur voie la page derrière le spotlight.
  */
 
 export type TourStep =
@@ -20,8 +22,9 @@ export type TourStep =
       title: string;
       subtitle: string;
       cta?: string;
-      /** Optionnel : utilise un emoji ou un caractère décoratif */
       decoration?: string;
+      /** Page sur laquelle afficher cette slide. Si défini, on navigue avant l'affichage. */
+      route?: string;
     }
   | {
       id: string;
@@ -29,12 +32,13 @@ export type TourStep =
       anchorId: string;
       title: string;
       description: string;
-      /** Forme du halo */
       shape?: "circle" | "rounded";
-      /** Padding autour de l'élément (px) */
       padding?: number;
-      /** Position du tooltip */
       tooltipPosition?: "auto" | "top" | "bottom";
+      /** Page à atteindre avant d'afficher ce spotlight. */
+      route?: string;
+      /** Si true, l'overlay sombre est plus transparent pour laisser voir la page. */
+      softOverlay?: boolean;
     };
 
 export const TOUR_STEPS: TourStep[] = [
@@ -46,6 +50,7 @@ export const TOUR_STEPS: TourStep[] = [
     subtitle: "Ton coach IA fitness & nutrition, pensé pour transformer ta santé au quotidien.",
     cta: "Commencer la visite",
     decoration: "✦",
+    route: "/",
   },
 
   /* ── 2. ORBE IA (home) ── */
@@ -54,10 +59,11 @@ export const TOUR_STEPS: TourStep[] = [
     type: "spotlight",
     anchorId: "orb",
     title: "Ton coach IA",
-    description: "Touche l'orbe à tout moment pour discuter, demander conseil ou créer un programme sur-mesure.",
+    description: "Touche l'orbe pour discuter, demander conseil ou créer un programme sur-mesure.",
     shape: "circle",
     padding: 16,
     tooltipPosition: "bottom",
+    route: "/",
   },
 
   /* ── 3. VOTD (home) ── */
@@ -66,10 +72,11 @@ export const TOUR_STEPS: TourStep[] = [
     type: "spotlight",
     anchorId: "votd",
     title: "Ta vidéo du jour",
-    description: "Chaque jour, une vidéo choisie pour toi : entraînement, recette ou conseil. Tape pour la regarder en plein écran.",
+    description: "Chaque jour, une vidéo choisie pour toi : entraînement, recette, conseil.",
     shape: "rounded",
     padding: 12,
     tooltipPosition: "top",
+    route: "/",
   },
 
   /* ── 4. STATS (home) ── */
@@ -78,49 +85,55 @@ export const TOUR_STEPS: TourStep[] = [
     type: "spotlight",
     anchorId: "stats",
     title: "Tes stats du jour",
-    description: "Calories, séances, sommeil, eau… toutes tes données en un coup d'œil. Tape pour explorer le détail.",
+    description: "Calories, séances, sommeil, eau… toutes tes données en un coup d'œil.",
     shape: "rounded",
     padding: 8,
     tooltipPosition: "bottom",
+    route: "/",
   },
 
-  /* ── 5. PROGRESSION (nav) ── */
+  /* ── 5. PROGRESSION (page entière) ── */
   {
     id: "nav-progression",
     type: "spotlight",
     anchorId: "nav-progression",
     title: "Progression",
-    description: "Suis ton évolution dans le temps : poids, performances, nutrition. Des courbes claires pour rester motivé.",
+    description: "Cette page affiche ton évolution : poids, performances, séances, nutrition. Tout l'historique pour rester motivé.",
     shape: "rounded",
     padding: 8,
     tooltipPosition: "top",
+    route: "/progression",
+    softOverlay: true,
   },
 
-  /* ── 6. + PUBLIER (nav) ── */
+  /* ── 6. + PUBLIER (reste sur /progression) ── */
   {
     id: "nav-publish",
     type: "spotlight",
     anchorId: "nav-publish",
     title: "Partager",
-    description: "Le bouton + te permet de publier une séance, une recette ou un message à la communauté en quelques tapotements.",
+    description: "Le bouton + te permet de publier une séance, une recette ou une perf à la communauté en quelques tapotements.",
     shape: "rounded",
     padding: 8,
     tooltipPosition: "top",
+    softOverlay: true,
   },
 
-  /* ── 7. COMMUNAUTÉ (nav) ── */
+  /* ── 7. COMMUNAUTÉ (page entière) ── */
   {
     id: "nav-communaute",
     type: "spotlight",
     anchorId: "nav-communaute",
     title: "Communauté",
-    description: "Découvre les publications des autres, échange en messages directs, trouve des amis motivants.",
+    description: "Découvre les publications des autres, échange en messages privés, trouve des amis motivants.",
     shape: "rounded",
     padding: 8,
     tooltipPosition: "top",
+    route: "/communaute",
+    softOverlay: true,
   },
 
-  /* ── 8. PROFIL (nav) ── */
+  /* ── 8. PROFIL (page entière) ── */
   {
     id: "nav-profil",
     type: "spotlight",
@@ -130,6 +143,8 @@ export const TOUR_STEPS: TourStep[] = [
     shape: "rounded",
     padding: 8,
     tooltipPosition: "top",
+    route: "/profil",
+    softOverlay: true,
   },
 
   /* ── 9. OUTRO ── */
@@ -137,7 +152,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "outro",
     type: "slide",
     title: "C'est parti !",
-    subtitle: "Tu peux refaire cette visite à tout moment depuis tes paramètres → Découvrir Vaiiya.",
+    subtitle: "Tu peux refaire cette visite à tout moment depuis Paramètres → Découvrir Vaiiya.",
     cta: "Commencer mon parcours",
     decoration: "✦",
   },
