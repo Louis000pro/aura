@@ -1866,12 +1866,12 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
     const supabase = createClient();
     Promise.all([
       supabase.from("posts").select(`
-        id, type, caption, description, media_url, media_type, views, created_at, user_id,
+        id, type, caption, description, media_url, media_type, performance_data, views, created_at, user_id,
         author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
         post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
       `).eq("media_type", "video").ilike("caption", `%${tag}%`).limit(60),
       supabase.from("posts").select(`
-        id, type, caption, description, media_url, media_type, views, created_at, user_id,
+        id, type, caption, description, media_url, media_type, performance_data, views, created_at, user_id,
         author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
         post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
       `).eq("media_type", "video").ilike("description", `%${tag}%`).limit(60),
@@ -1964,6 +1964,7 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
                 {/* Thumbnail pleine hauteur — vidéo entière visible */}
                 <video
                   src={video.media_url ?? undefined}
+                  poster={(video.performance_data as { poster?: string } | null)?.poster ?? undefined}
                   className="absolute inset-0 w-full h-full object-cover"
                   muted playsInline preload="metadata"
                   style={{ pointerEvents: "none" }}

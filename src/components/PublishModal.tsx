@@ -25,6 +25,34 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
+  /* ── Couverture vidéo (frame choisie) ── */
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [coverTime, setCoverTime] = useState(0);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const coverBlobRef = useRef<Blob | null>(null);
+  const hiddenVideoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Capture l'image de la vidéo à l'instant t → devient la couverture
+  const captureFrame = (t: number) => {
+    const v = hiddenVideoRef.current, c = canvasRef.current;
+    if (!v || !c) return;
+    const onSeeked = () => {
+      v.removeEventListener("seeked", onSeeked);
+      const w = v.videoWidth, h = v.videoHeight;
+      if (!w || !h) return;
+      c.width = w; c.height = h;
+      c.getContext("2d")?.drawImage(v, 0, 0, w, h);
+      c.toBlob((blob) => {
+        if (!blob) return;
+        coverBlobRef.current = blob;
+        setCoverPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob); });
+      }, "image/jpeg", 0.82);
+    };
+    v.addEventListener("seeked", onSeeked);
+    try { v.currentTime = Math.min(Math.max(t, 0), v.duration || t); } catch { v.removeEventListener("seeked", onSeeked); }
+  };
+
   const switchMode = (m: Mode) => {
     if (m === mode) return;
     setMode(m);
@@ -39,6 +67,11 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     setFile(f);
     setPreview(URL.createObjectURL(f));
     setError(null);
+    // Reset couverture
+    coverBlobRef.current = null;
+    setCoverPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+    setVideoDuration(0);
+    setCoverTime(0);
   };
 
   const uploadMedia = async (): Promise<string | null> => {
@@ -111,6 +144,17 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
       if (err) { console.error("publishStory:", err); setError("La publication a échoué, réessaie"); return; }
       setDone("story");
     } else {
+      // Couverture vidéo choisie → on l'upload et on la range dans performance_data.poster
+      // (convention déjà utilisée par le lecteur plein écran du feed)
+      let coverUrl: string | null = null;
+      if (mediaType === "video" && coverBlobRef.current) {
+        try {
+          const cpath = `${user.id}/posts/${Date.now()}-cover.jpg`;
+          const { error: cErr } = await supabase.storage.from("avatars")
+            .upload(cpath, coverBlobRef.current, { upsert: false, contentType: "image/jpeg" });
+          if (!cErr) coverUrl = supabase.storage.from("avatars").getPublicUrl(cpath).data.publicUrl;
+        } catch { /* couverture optionnelle */ }
+      }
       const { error: err } = await supabase.from("posts").insert({
         user_id: user.id,
         type: "day",
@@ -119,7 +163,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
         media_url: url,
         media_type: mediaType,
         audience: "public",
-        performance_data: {},
+        performance_data: coverUrl ? { poster: coverUrl } : {},
       });
       setPublishing(false);
       if (err) { console.error("publishPost:", err); setError("La publication a échoué, réessaie"); return; }
@@ -263,6 +307,53 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                 </div>
                 <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
                 <input ref={cameraRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileSelect} />
+
+                {/* ── Sélecteur de couverture (publications vidéo uniquement) ── */}
+                {preview && mediaType === "video" && mode === "post" && (
+                  <div className="rounded-2xl p-3.5" style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.14)" }}>
+                    {/* éléments cachés pour la capture */}
+                    <video
+                      ref={hiddenVideoRef}
+                      src={preview}
+                      muted playsInline preload="metadata"
+                      className="hidden"
+                      onLoadedMetadata={(e) => {
+                        const d = e.currentTarget.duration || 0;
+                        setVideoDuration(d);
+                        setCoverTime(0);
+                        captureFrame(0.1); // couverture par défaut = début
+                      }}
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+
+                    <div className="flex items-center gap-3">
+                      {coverPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={coverPreview} alt="Couverture" className="w-12 h-16 rounded-lg object-cover flex-shrink-0" style={{ background: "#000" }} />
+                      ) : (
+                        <div className="w-12 h-16 rounded-lg flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold tracking-wide uppercase mb-1" style={{ color: "#6B5BA0" }}>Couverture de la vidéo</p>
+                        <p className="text-[11px] mb-2" style={{ color: "#A0AEC0" }}>Choisis le moment à afficher en miniature</p>
+                        <input
+                          type="range"
+                          min={0}
+                          max={Math.max(videoDuration, 0.1)}
+                          step={0.1}
+                          value={coverTime}
+                          onChange={(e) => { const t = parseFloat(e.target.value); setCoverTime(t); captureFrame(t); }}
+                          className="w-full accent-[#A78BFA]"
+                          style={{ accentColor: "#A78BFA" }}
+                        />
+                        <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>
+                          <span>{coverTime.toFixed(1)}s</span>
+                          <span>{videoDuration ? videoDuration.toFixed(1) + "s" : "…"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Titre */}
                 <div>
