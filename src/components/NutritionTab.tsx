@@ -384,11 +384,28 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
       const base64 = dataUrl.split(",")[1];
       try {
+        // Jeton d'auth (l'endpoint vision est protégé + limité par jour pour les gratuits)
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch("/api/nutrition/analyze", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({ image: base64, mimeType: file.type }),
         });
+        if (res.status === 429) {
+          const err = await res.json().catch(() => ({}));
+          setError(`Tu as atteint ta limite gratuite de ${err.dailyLimit ?? 3} analyses photo/jour 📸 Passe en Premium pour des analyses illimitées.`);
+          setPhase("select");
+          return;
+        }
+        if (res.status === 401) {
+          setError("Connecte-toi pour analyser tes repas.");
+          setPhase("select");
+          return;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error ?? "Analyse échouée");

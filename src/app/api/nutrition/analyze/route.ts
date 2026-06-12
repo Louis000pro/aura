@@ -1,11 +1,47 @@
 import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
+// Analyses photo gratuites par jour (la vision IA est le poste de coût le plus cher)
+const FREE_DAILY_SCANS = 3;
+
+// Date du jour au format YYYY-MM-DD en fuseau Europe/Paris (= date stockée côté app)
+function parisToday(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+}
+
 export async function POST(req: Request) {
   try {
+    // ── 1) Authentification obligatoire (empêche l'abus anonyme de l'endpoint vision) ──
+    const admin = createAdminClient();
+    const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+    if (!token) return NextResponse.json({ error: "non_authentifié" }, { status: 401 });
+    const { data: userData, error: authErr } = await admin.auth.getUser(token);
+    const caller = userData?.user;
+    if (authErr || !caller) return NextResponse.json({ error: "token_invalide" }, { status: 401 });
+
+    // ── 2) Limite quotidienne pour les comptes gratuits (Premium/admin = illimité) ──
+    const { data: prof } = await admin
+      .from("profiles").select("is_admin, is_premium").eq("id", caller.id).maybeSingle();
+    const unlimited = !!(prof?.is_admin || prof?.is_premium);
+    if (!unlimited) {
+      const { count } = await admin
+        .from("nutrition_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", caller.id).eq("date", parisToday()).eq("has_photo", true);
+      if ((count ?? 0) >= FREE_DAILY_SCANS) {
+        return NextResponse.json(
+          { error: "limite_atteinte", limitReached: true, dailyLimit: FREE_DAILY_SCANS },
+          { status: 429 },
+        );
+      }
+    }
+
     const { image, mimeType } = await req.json();
 
     if (!image || !mimeType) {
