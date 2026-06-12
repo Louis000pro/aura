@@ -1252,7 +1252,7 @@ function Dashboard() {
         </div>
 
         {/* VOTD carte horizontale large — vidéo à gauche + texte à droite (centrée verticalement dans la demi-lune) */}
-        <div className="absolute inset-x-4 top-[80px] bottom-0 flex items-center justify-center">
+        <div className="absolute inset-x-4 top-[9dvh] bottom-0 flex items-center justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
             className="relative w-full pointer-events-none"
