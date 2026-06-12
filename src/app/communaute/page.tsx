@@ -2618,6 +2618,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    let viewTimer: ReturnType<typeof setTimeout> | null = null;
     if (isActive) {
       userPausedRef.current = false;
       setPaused(false);
@@ -2625,14 +2626,18 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
       // Pas de reset currentTime (évite la frame noire au scroll)
       const p = video.play();
       if (p && typeof p.catch === "function") p.catch(() => {});
+      // +1 vue seulement si on RESTE plus d'1 s sur la vidéo (un scroll rapide ne compte pas)
       if (!viewCountedRef.current) {
-        viewCountedRef.current = true;
-        void createClient().rpc("increment_post_views", { p_post_id: post.id });
+        viewTimer = setTimeout(() => {
+          viewCountedRef.current = true;
+          void createClient().rpc("increment_post_views", { p_post_id: post.id });
+        }, 1000);
       }
     } else {
       video.pause();
       viewCountedRef.current = false;
     }
+    return () => { if (viewTimer) clearTimeout(viewTimer); };
   }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Anti-pause involontaire : pendant le scroll mobile, le navigateur met
