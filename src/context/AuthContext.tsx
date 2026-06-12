@@ -202,10 +202,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => { await supabase.auth.signOut(); };
 
   const resetPassword: AuthCtx["resetPassword"] = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
-    return error ? { message: error.message } : null;
+    // Envoi via Resend (fiable) au lieu de l'email Supabase intégré (limité/spam)
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        return { message: j.error ?? "L'envoi a échoué, réessaie." };
+      }
+      return null;
+    } catch {
+      return { message: "Erreur réseau, réessaie." };
+    }
   };
 
   const verifySignupOtp: AuthCtx["verifySignupOtp"] = async (email, token) => {
