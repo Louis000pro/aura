@@ -20,6 +20,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [progress, setProgress] = useState(0); // 0→1 pendant l'upload
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -47,6 +48,35 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     const folder = mode === "story" ? "stories" : "posts";
     // Path MUST start with userId for RLS: (storage.foldername(name))[1] = auth.uid()
     const path = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+
+    // ── Upload via XHR pour avoir une vraie progression (les vidéos sont lourdes) ──
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (base && anon && token) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", `${base}/storage/v1/object/avatars/${path}`);
+          xhr.setRequestHeader("authorization", `Bearer ${token}`);
+          xhr.setRequestHeader("apikey", anon);
+          xhr.setRequestHeader("x-upsert", "false");
+          xhr.setRequestHeader("cache-control", "3600");
+          if (file.type) xhr.setRequestHeader("content-type", file.type);
+          xhr.upload.onprogress = (e) => { if (e.lengthComputable) setProgress(e.loaded / e.total); };
+          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`upload ${xhr.status}`));
+          xhr.onerror = () => reject(new Error("network"));
+          xhr.send(file);
+        });
+        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+        return data.publicUrl;
+      } catch (e) {
+        console.warn("[PublishModal] xhr upload failed, fallback supabase-js:", e);
+      }
+    }
+
+    // Fallback : upload classique supabase-js (sans progression)
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: false });
     if (upErr) {
       console.error("[PublishModal] upload error:", upErr);
@@ -62,6 +92,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     if (!file || !user) return;
     if (mode === "post" && !title.trim()) return;
     setPublishing(true);
+    setProgress(0);
     setError(null);
     const url = await uploadMedia();
     if (!url) { setPublishing(false); return; }
@@ -180,12 +211,15 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                 {/* Zone média */}
                 <div
                   onClick={preview ? () => fileRef.current?.click() : undefined}
-                  className={`relative rounded-2xl overflow-hidden flex items-center justify-center${preview ? " cursor-pointer" : ""}`}
-                  style={{
+                  className={`relative w-full rounded-2xl overflow-hidden flex items-center justify-center${preview ? " cursor-pointer" : ""}`}
+                  style={preview ? {
                     aspectRatio: mode === "story" ? "9/16" : "1/1",
                     maxHeight: mode === "story" ? 360 : undefined,
-                    background: preview ? "#000" : "rgba(167,139,250,0.05)",
-                    border: preview ? "none" : "2px dashed rgba(167,139,250,0.25)",
+                    background: "#000",
+                  } : {
+                    background: "rgba(167,139,250,0.05)",
+                    border: "2px dashed rgba(167,139,250,0.25)",
+                    padding: "28px 16px",
                   }}
                 >
                   {preview ? (
@@ -280,9 +314,19 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                   }}
                 >
                   {publishing
-                    ? <span className="flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin" />Publication…</span>
+                    ? <span className="flex items-center justify-center gap-2">
+                        <Loader2 size={16} className="animate-spin" />
+                        {progress > 0 && progress < 1 ? `Envoi… ${Math.round(progress * 100)}%` : "Publication…"}
+                      </span>
                     : mode === "post" ? "Publier" : "Publier la story"}
                 </motion.button>
+
+                {/* Barre de progression d'upload (rassure pour les vidéos lourdes) */}
+                {publishing && progress > 0 && progress < 1 && (
+                  <div className="w-full h-1.5 rounded-full overflow-hidden -mt-2" style={{ background: "rgba(167,139,250,0.15)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${Math.round(progress * 100)}%`, background: "linear-gradient(90deg,#A78BFA,#D4A843)", transition: "width 0.2s ease" }} />
+                  </div>
+                )}
               </motion.div>
             )}
 
