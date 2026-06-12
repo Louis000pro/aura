@@ -220,25 +220,7 @@ export default function TourSpotlight({
         />
       </svg>
 
-      {/* ── Halo néon animé autour du trou ── */}
-      <motion.div
-        className="absolute pointer-events-none"
-        style={{
-          left: rect.x - 12,
-          top: rect.y - 12,
-          width: rect.width + 24,
-          height: rect.height + 24,
-          borderRadius: shape === "circle" ? "50%" : cornerRadius + 12,
-          background: "conic-gradient(from 0deg, #A78BFA, #22D3EE, #F5E6A3, #A78BFA)",
-          filter: "blur(14px)",
-          opacity: 0.6,
-          zIndex: -1,
-        }}
-        animate={{ rotate: 360 }}
-        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-      />
-
-      {/* Bordure néon nette */}
+      {/* ── Bordure douce qui pulse en opacité (pas de rotation, pas de couleurs qui tournoient) ── */}
       <motion.div
         className="absolute pointer-events-none"
         style={{
@@ -247,45 +229,12 @@ export default function TourSpotlight({
           width: rect.width + 4,
           height: rect.height + 4,
           borderRadius: shape === "circle" ? "50%" : cornerRadius + 2,
-          border: "2px solid rgba(212,192,255,0.9)",
-          boxShadow: "0 0 24px rgba(167,139,250,0.7), inset 0 0 12px rgba(212,192,255,0.4)",
+          border: "1.5px solid rgba(255,255,255,0.85)",
+          boxShadow: "0 0 32px rgba(255,255,255,0.45)",
         }}
-        animate={{ opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ opacity: [0.55, 1, 0.55] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
       />
-
-      {/* Particules scintillantes autour de la zone */}
-      {[...Array(6)].map((_, i) => {
-        const angle = (i / 6) * Math.PI * 2;
-        const radiusX = rect.width / 2 + 30;
-        const radiusY = rect.height / 2 + 30;
-        const px = rect.x + rect.width / 2 + Math.cos(angle) * radiusX;
-        const py = rect.y + rect.height / 2 + Math.sin(angle) * radiusY;
-        return (
-          <motion.div
-            key={i}
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              left: px - 3,
-              top: py - 3,
-              width: 6,
-              height: 6,
-              background: i % 2 === 0 ? "#A78BFA" : "#22D3EE",
-              boxShadow: `0 0 16px ${i % 2 === 0 ? "#A78BFA" : "#22D3EE"}`,
-            }}
-            animate={{
-              opacity: [0.3, 1, 0.3],
-              scale: [0.7, 1.4, 0.7],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              delay: i * 0.25,
-              ease: "easeInOut",
-            }}
-          />
-        );
-      })}
 
       {/* ── Tooltip (positionné en absolu, clampé dans le viewport) ── */}
       <motion.div
