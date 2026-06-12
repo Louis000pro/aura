@@ -4144,7 +4144,7 @@ function CommunautePageInner() {
       }`}
       style={
         immersiveVideo
-          ? {}
+          ? { background: "#000" }
           : feedTab === "videos" && !immersiveVideo
             ? {
                 paddingTop: headerCollapsed ? 0 : 32,
