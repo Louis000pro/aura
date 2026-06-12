@@ -1219,7 +1219,7 @@ function Dashboard() {
       </button>
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[330px]">
+      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[30dvh]">
         <HomeOrb
           onTap={() => setShowChat(true)}
           onTranscript={handleVoiceTranscript}
@@ -1231,7 +1231,7 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[250px]"
+        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[25dvh]"
         style={{ bottom: "calc(70px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
       >
