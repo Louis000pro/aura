@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -258,6 +259,8 @@ function DayMeals({ day }: { day: MealDay }) {
 /* ─── Composant principal ─── */
 export default function RecommendedMeals() {
   const { user } = useAuth();
+  const router = useRouter();
+  const isPremium = !!(user?.is_admin || user?.is_premium);
   const [mealsCount, setMealsCount] = useState(4);
   const [variant, setVariant] = useState(0);
 
@@ -291,12 +294,14 @@ export default function RecommendedMeals() {
   const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant) : null;
 
   const regenerate = useCallback(() => {
+    // Régénérer = réservé au Premium (le gratuit garde la sélection du jour)
+    if (!isPremium) { router.push("/premium"); return; }
     setVariant((v) => {
       const nv = v + 1;
       if (user) { try { localStorage.setItem(`vaiiya_repas_variant_${user.id}`, String(nv)); } catch { /* ignore */ } }
       return nv;
     });
-  }, [user]);
+  }, [user, isPremium, router]);
 
   useEffect(() => {
     nameRefs.current[selectedDay]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
@@ -352,9 +357,9 @@ export default function RecommendedMeals() {
 
         <div className="flex justify-end">
           <button onClick={regenerate}
-            className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
-            <RefreshCw size={10} strokeWidth={2.5} />
-            <span className="text-[9px] font-medium">Changer les repas</span>
+            className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "#A0AEC0" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
+            {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
+            <span className="text-[9px] font-medium">{isPremium ? "Changer les repas" : "Changer les repas · Premium"}</span>
           </button>
         </div>
       </div>

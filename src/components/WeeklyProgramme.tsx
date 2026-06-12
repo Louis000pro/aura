@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X } from "lucide-react";
+import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X, Lock } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
@@ -423,6 +424,8 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
 /* ─── Main Component ─── */
 export default function WeeklyProgramme() {
   const { user } = useAuth();
+  const router = useRouter();
+  const isPremium = !!(user?.is_admin || user?.is_premium);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [programme, setProgramme] = useState<Programme | null>(null);
@@ -542,8 +545,9 @@ export default function WeeklyProgramme() {
     [user, profile]
   );
 
-  /* Régénère un programme différent (incrémente le variant) */
+  /* Régénère un programme différent (incrémente le variant) — réservé au Premium */
   const regenerateProgramme = useCallback(() => {
+    if (!isPremium) { router.push("/premium"); return; }
     if (user) {
       try {
         const v = (parseInt(localStorage.getItem(`vaiiya_prog_variant_${user.id}`) || "0") || 0) + 1;
@@ -551,7 +555,7 @@ export default function WeeklyProgramme() {
       } catch { /* ignore */ }
     }
     generate(location, homeEquip, true);
-  }, [user, location, homeEquip, generate]);
+  }, [user, isPremium, router, location, homeEquip, generate]);
 
   /* ── Auto-generate on profile load (lieu connu + matériel si maison) ── */
   useEffect(() => {
@@ -743,9 +747,9 @@ export default function WeeklyProgramme() {
             </button>
             <button
               onClick={regenerateProgramme}
-              className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
-              <RefreshCw size={10} strokeWidth={2.5} />
-              <span className="text-[9px] font-medium">Régénérer</span>
+              className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "#A0AEC0" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
+              {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
+              <span className="text-[9px] font-medium">{isPremium ? "Régénérer" : "Régénérer · Premium"}</span>
             </button>
           </div>
         )}

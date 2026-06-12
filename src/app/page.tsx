@@ -62,6 +62,19 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   const calories = todayNutrition.reduce((sum: number, n: { calories: number }) => sum + (n.calories || 0), 0);
   const burned = todaySessions.reduce((sum: number, s: { calories_burned?: number }) => sum + (s.calories_burned || 0), 0);
 
+  // ── Série de connexion : +1 par jour consécutif où l'on ouvre le site, reset si un jour est sauté ──
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const { data: streakRows } = await supabase.from("daily_stats")
+    .select("date, streak").eq("user_id", userId).in("date", [yesterday, today]);
+  const todayRow = streakRows?.find((r: { date: string; streak: number }) => r.date === today);
+  const yRow = streakRows?.find((r: { date: string; streak: number }) => r.date === yesterday);
+  let streak: number;
+  if (todayRow && (todayRow.streak ?? 0) > 0) {
+    streak = todayRow.streak; // déjà compté aujourd'hui → on ne ré-incrémente pas
+  } else {
+    streak = (yRow && (yRow.streak ?? 0) > 0) ? yRow.streak + 1 : 1; // hier présent → +1, sinon repart à 1
+  }
+
   // Upsert dans daily_stats
   await supabase.from("daily_stats").upsert({
     user_id: userId,
@@ -69,10 +82,10 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
     score,
     calories,
     burned,
-    streak: 1,
+    streak,
   }, { onConflict: "user_id,date" });
 
-  return { score, calories, burned, steps: 0, sleepHours: 0, streak: 1 };
+  return { score, calories, burned, steps: 0, sleepHours: 0, streak };
 }
 
 /* ─── Score Ring ─── */
