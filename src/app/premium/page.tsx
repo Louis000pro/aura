@@ -30,7 +30,21 @@ function PremiumInner() {
   const [msg, setMsg] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(1); // Premium centré par défaut
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  const onCarouselScroll = () => {
+    const c = carouselRef.current; if (!c) return;
+    const cards = Array.from(c.querySelectorAll("[data-tier]")) as HTMLElement[];
+    const center = c.scrollLeft + c.clientWidth / 2;
+    let best = 0, bestDist = Infinity;
+    cards.forEach((card, i) => {
+      const cc = card.offsetLeft + card.offsetWidth / 2;
+      const d = Math.abs(cc - center);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    setActiveIdx(best);
+  };
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
@@ -120,6 +134,7 @@ function PremiumInner() {
         {/* Tiers — carrousel horizontal sur mobile, grille sur desktop */}
         <div
           ref={carouselRef}
+          onScroll={onCarouselScroll}
           className="flex md:grid md:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch flex-1 min-h-0"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never }}
         >
@@ -130,7 +145,7 @@ function PremiumInner() {
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[calc(100vw-2rem)] max-w-[440px] md:w-auto md:max-w-none min-h-0"
+                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0"
                 style={{
                   background: highlight
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
@@ -193,6 +208,21 @@ function PremiumInner() {
               </motion.div>
             );
           })}
+        </div>
+
+        {/* Points indicateurs — montrent qu'il y a 3 offres à faire défiler (mobile) */}
+        <div className="flex md:hidden justify-center items-center gap-2 mt-3 flex-shrink-0">
+          {order.map((id, i) => (
+            <button key={id} aria-label={`Offre ${i + 1}`}
+              onClick={() => {
+                const c = carouselRef.current;
+                const card = c?.querySelector(`[data-tier="${id}"]`) as HTMLElement | null;
+                if (c && card) c.scrollTo({ left: Math.max(0, card.offsetLeft + card.offsetWidth / 2 - c.clientWidth / 2), behavior: "smooth" });
+              }}
+              className="rounded-full transition-all cursor-pointer"
+              style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
+          ))}
+          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "#9488B5" }}>3 offres · glisse pour comparer</span>
         </div>
 
         <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "#9488B5" }}>

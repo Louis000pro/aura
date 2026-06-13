@@ -11,7 +11,7 @@ import { useGuidedTour, hasTourBeenCompleted } from "@/context/GuidedTourContext
 
 export default function OnboardingWrapper() {
   const { user, isNewUser, isLoading } = useAuth();
-  const { start: startTour } = useGuidedTour();
+  const { start: startTour, isOpen: tourOpen } = useGuidedTour();
 
   const [showModal, setShowModal]             = useState(false);
   const [showBubble, setShowBubble]           = useState(false);
@@ -139,7 +139,7 @@ export default function OnboardingWrapper() {
 
       {/* ── Bulle robot (objectifs non remplis) ── */}
       <AnimatePresence>
-        {showBubble && !showModal && (
+        {showBubble && !showModal && !tourOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
