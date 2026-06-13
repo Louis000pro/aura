@@ -97,17 +97,23 @@ function PremiumInner() {
 
   return (
     <div className="relative h-dvh overflow-hidden px-4 md:py-10 flex flex-col"
-      style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
+      style={{ background: "linear-gradient(180deg,#faf8ff 0%,#f4eeff 50%,#ece4ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
       <motion.div className="absolute rounded-full pointer-events-none"
         style={{ top: "-12%", left: "-8%", width: 460, height: 460, background: "rgba(212,192,255,0.40)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.15, 1] }}
         transition={isMobile ? undefined : { duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+      {/* Touche dorée subtile en haut à droite (rappel de marque, sans couper le bas) */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-12%", right: "-8%", width: 420, height: 420, background: "rgba(245,230,163,0.38)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
-        animate={isMobile ? undefined : { scale: [1, 1.12, 1] }}
+        style={{ top: "6%", right: "-12%", width: 340, height: 340, background: "rgba(245,230,163,0.28)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
+        animate={isMobile ? undefined : { scale: [1, 1.1, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
+      {/* Halo violet en bas → le dégradé continue jusqu'en bas (plus de coupure jaune) */}
+      <motion.div className="absolute rounded-full pointer-events-none"
+        style={{ bottom: "-14%", left: "50%", x: "-50%", width: 520, height: 420, background: "rgba(167,139,250,0.30)", filter: isMobile ? "blur(70px)" : "blur(100px)" }}
+        animate={isMobile ? undefined : { scale: [1, 1.12, 1] }}
+        transition={isMobile ? undefined : { duration: 11, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} />
 
       <div className="relative z-10 max-w-5xl mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
