@@ -109,11 +109,6 @@ function PremiumInner() {
         style={{ top: "6%", right: "-12%", width: 340, height: 340, background: "rgba(245,230,163,0.28)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.1, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
-      {/* Halo violet en bas → le dégradé continue jusqu'en bas (plus de coupure jaune) */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-14%", left: "50%", x: "-50%", width: 520, height: 420, background: "rgba(167,139,250,0.30)", filter: isMobile ? "blur(70px)" : "blur(100px)" }}
-        animate={isMobile ? undefined : { scale: [1, 1.12, 1] }}
-        transition={isMobile ? undefined : { duration: 11, repeat: Infinity, ease: "easeInOut", delay: 0.5 }} />
 
       <div className="relative z-10 max-w-5xl mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
@@ -156,7 +151,7 @@ function PremiumInner() {
                   background: highlight
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
                     : "rgba(220,215,235,0.7)",
-                  boxShadow: highlight ? "0 24px 60px -16px rgba(167,139,250,0.45)" : "0 10px 30px rgba(167,139,250,0.10)",
+                  boxShadow: highlight ? "0 18px 50px -22px rgba(167,139,250,0.32)" : "0 10px 30px rgba(167,139,250,0.08)",
                 }}>
                 <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
                   style={{ background: "rgba(255,255,255,0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
