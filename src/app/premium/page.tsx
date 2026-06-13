@@ -36,6 +36,7 @@ function PremiumInner() {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
     if (params?.get("success")) setCelebrate(true);
     else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux");
+    else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 7 jours d'essai offerts.");
   }, [params]);
 
   // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.

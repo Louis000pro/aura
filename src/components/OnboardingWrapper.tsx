@@ -121,13 +121,13 @@ export default function OnboardingWrapper() {
             isFirstTime={!wasAlreadyCompleted}
             onDone={async () => {
               setShowCelebration(false);
-              // Si c'est un nouveau compte et que la visite n'a jamais été faite, on la lance.
-              // Sinon, comportement habituel : bulle objectifs si non remplis.
+              // Nouveau compte → on lance la visite guidée, qui se terminera sur les 3 offres
+              // (on montre d'abord la valeur, puis le prix = meilleure conversion).
               if (!wasAlreadyCompleted && user?.id) {
                 const alreadyDone = await hasTourBeenCompleted(user.id);
                 if (!alreadyDone) {
                   // Petit délai pour laisser la home se monter (les data-tour-anchor doivent exister)
-                  setTimeout(() => startTour(), 500);
+                  setTimeout(() => startTour({ showPlansAfter: true }), 500);
                   return;
                 }
               }
