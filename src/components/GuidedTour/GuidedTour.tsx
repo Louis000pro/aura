@@ -135,9 +135,20 @@ function GuidedTourInner() {
   const chapter = step && step.type === "focus" ? step.chapter : undefined;
   const targetRoute = step?.route;
   const currentUrl = buildCurrentUrl(pathname, searchParams);
-  const needsNavigation = !!(targetRoute && currentUrl !== targetRoute);
 
-  /* ── Annonce de chapitre : timer au changement d'étape ── */
+  /* ── Navigation en arrière-plan vers la route de l'étape.
+        Fire-and-forget : AUCUN rendu ne dépend de la fin de la navigation
+        (sinon une comparaison d'URL ratée fige toute la visite). La page se
+        charge sous l'annonce / le voile, et les spotlights gèrent eux-mêmes
+        une ancre pas-encore-présente via leur polling. ── */
+  useEffect(() => {
+    if (!isOpen || !step || !targetRoute) return;
+    if (currentUrl !== targetRoute) {
+      router.push(targetRoute);
+    }
+  }, [isOpen, stepIndex, step, targetRoute, currentUrl, router]);
+
+  /* ── Annonce de chapitre : purement temporelle (jamais bloquée) ── */
   useEffect(() => {
     if (!isOpen) return;
     const s = TOUR_STEPS[stepIndex];
@@ -151,21 +162,14 @@ function GuidedTourInner() {
   }, [stepIndex, isOpen]);
 
   /* ── Étapes « focus » : auto-avance après leur durée d'affichage.
-        Le chrono ne démarre qu'une fois l'annonce finie ET la page chargée. ── */
+        Démarre une fois l'annonce terminée (la navigation s'est faite
+        pendant l'annonce). Purement temporel → jamais de blocage. ── */
   useEffect(() => {
     if (!isOpen || !step || step.type !== "focus") return;
-    if (needsNavigation || announcing) return;
+    if (announcing) return; // attendre la fin de l'annonce de chapitre
     const t = setTimeout(() => next(), step.duration);
     return () => clearTimeout(t);
-  }, [isOpen, stepIndex, step, needsNavigation, announcing, next]);
-
-  /* ── Navigation automatique vers la route de l'étape ── */
-  useEffect(() => {
-    if (!isOpen || !step || !targetRoute) return;
-    if (currentUrl !== targetRoute) {
-      router.push(targetRoute);
-    }
-  }, [isOpen, stepIndex, step, targetRoute, currentUrl, router]);
+  }, [isOpen, stepIndex, step, announcing, next]);
 
   /* ── Navigation clavier ── */
   useEffect(() => {
@@ -188,39 +192,15 @@ function GuidedTourInner() {
 
   if (!isOpen || !step) return null;
 
-  // L'annonce couvre la transition : tant que le timer court OU que la
-  // navigation n'est pas terminée, l'écran de chapitre reste affiché.
-  const showChapterAnnounce = !!chapter && (announcing || needsNavigation);
+  // L'annonce est purement temporelle : elle couvre la navigation de page
+  // (qui se fait en arrière-plan) puis cède la place au focus.
+  const showChapterAnnounce = !!chapter && announcing;
 
   return (
     <>
       <AnimatePresence mode="wait">
         {showChapterAnnounce ? (
           <ChapterAnnounce key={`chapter-${step.id}`} chapter={chapter!} />
-        ) : needsNavigation ? (
-          /* Transition intra-chapitre (sous-onglet) : voile + ✦ brève */
-          <motion.div
-            key="navigating"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center"
-            style={{ background: "rgba(10,5,25,0.85)", backdropFilter: "blur(10px)" }}
-          >
-            <motion.span
-              aria-hidden
-              style={{
-                fontSize: 34,
-                color: "#F5E6A3",
-                textShadow: "0 0 24px rgba(245,230,163,0.6), 0 0 48px rgba(167,139,250,0.4)",
-              }}
-              animate={{ opacity: [0.45, 1, 0.45], scale: [0.94, 1.08, 0.94] }}
-              transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
-            >
-              ✦
-            </motion.span>
-          </motion.div>
         ) : step.type === "slide" ? (
           <TourSlide
             key={step.id}
