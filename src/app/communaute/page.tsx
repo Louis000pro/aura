@@ -4140,6 +4140,7 @@ function CommunautePageInner() {
 
   return (
     <div
+      data-tour-anchor="page-communaute"
       className={`flex flex-col w-full mx-auto max-w-4xl relative ${
         immersiveVideo
           ? "fixed inset-0 z-20 h-dvh overflow-hidden px-0"

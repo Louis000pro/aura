@@ -1972,7 +1972,7 @@ export default function ProfilPage() {
       </div>
 
       {/* ─── Header ─── */}
-      <div className="relative z-10 pt-12 px-5 md:px-8 max-w-3xl mx-auto">
+      <div data-tour-anchor="profil-header" className="relative z-10 pt-12 px-5 md:px-8 max-w-3xl mx-auto">
 
         {/* Avatar + pseudo + bio */}
         <motion.div
@@ -2139,6 +2139,7 @@ export default function ProfilPage() {
 
         {/* ─── Stories à la une ─── */}
         <motion.div
+          data-tour-anchor="profil-highlights"
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.17 }}

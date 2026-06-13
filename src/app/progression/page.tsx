@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
@@ -2200,8 +2201,25 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 }
 
 /* ─── Page ──────────────────────────────────────────────── */
+type ProgressionTab = "progression" | "mes-seances" | "nutrition" | "analyse" | "badges";
+const VALID_TABS: ProgressionTab[] = ["progression", "mes-seances", "nutrition", "analyse", "badges"];
+
 export default function ProgressionPage() {
-  const [activeTab, setActiveTab]           = useState<"progression" | "mes-seances" | "nutrition" | "analyse" | "badges">("progression");
+  // Lecture du sous-onglet via query param (?tab=mes-seances) — utilisé par la visite guidée
+  const searchParams = useSearchParams();
+  const initialTab = (() => {
+    const t = searchParams.get("tab");
+    return (t && (VALID_TABS as string[]).includes(t)) ? (t as ProgressionTab) : "progression";
+  })();
+  const [activeTab, setActiveTab]           = useState<ProgressionTab>(initialTab);
+  // Si l'URL change après le mount (navigation pendant la visite guidée), suivre le param
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    if (t && (VALID_TABS as string[]).includes(t) && t !== activeTab) {
+      setActiveTab(t as ProgressionTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [shareData, setShareData]           = useState<PerformanceData | null>(null);
   const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
   const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
@@ -2582,6 +2600,7 @@ export default function ProgressionPage() {
         ] as const).map(({ key, label }) => (
           <motion.button
             key={key}
+            data-tour-anchor={`prog-tab-${key}`}
             whileTap={{ scale: 0.95 }}
             onClick={() => setActiveTab(key)}
             className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex-shrink-0"
@@ -2601,6 +2620,7 @@ export default function ProgressionPage() {
       {activeTab === "progression" && (
         <motion.div
           key="progression-tab"
+          data-tour-anchor="prog-content-progression"
           initial={{ opacity: 0, x: -16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -16 }}
@@ -2799,6 +2819,7 @@ export default function ProgressionPage() {
 
           {/* Section header */}
           <motion.div
+            data-tour-anchor="prog-seances-catalogue"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -2899,6 +2920,7 @@ export default function ProgressionPage() {
               </AnimatePresence>
               {/* "Créer" placeholder card */}
               <motion.div
+                data-tour-anchor="prog-seances-create"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ y: -3, scale: 1.02 }}
@@ -2937,6 +2959,7 @@ export default function ProgressionPage() {
 
             return (
               <motion.div
+                data-tour-anchor="prog-seances-library"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.15 }}
@@ -3245,6 +3268,7 @@ export default function ProgressionPage() {
       {activeTab === "nutrition" && (
         <motion.div
           key="nutrition-tab"
+          data-tour-anchor="prog-content-nutrition"
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 16 }}
@@ -3259,6 +3283,7 @@ export default function ProgressionPage() {
       {activeTab === "analyse" && (
         <motion.div
           key="analyse-tab"
+          data-tour-anchor="prog-content-analyse"
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 16 }}
@@ -3272,6 +3297,7 @@ export default function ProgressionPage() {
       {activeTab === "badges" && (
         <motion.div
           key="badges-tab"
+          data-tour-anchor="prog-content-badges"
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 16 }}

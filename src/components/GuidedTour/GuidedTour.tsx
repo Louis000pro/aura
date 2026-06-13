@@ -5,43 +5,52 @@
  *
  * Responsabilités :
  *  1. Lit l'état depuis le context (open, stepIndex)
- *  2. NAVIGUE vers step.route avant d'afficher le spotlight (ainsi, quand on présente
- *     /progression, on est BIEN sur /progression et l'utilisateur voit la page derrière).
+ *  2. NAVIGUE vers step.route avant d'afficher le spotlight. La route peut inclure
+ *     un query param (ex: "/progression?tab=mes-seances") qui pré-sélectionne le
+ *     sous-onglet. La page Progression suit ce param via useSearchParams.
  *  3. Route entre TourSlide et TourSpotlight selon le type d'étape
- *  4. Affiche la barre de progression + bouton skip par-dessus
+ *  4. Affiche le bouton skip par-dessus
  *
  * À monter une seule fois dans le layout root.
  */
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGuidedTour } from "@/context/GuidedTourContext";
 import { TOUR_STEPS } from "@/components/GuidedTour/steps";
 import TourSlide from "@/components/GuidedTour/TourSlide";
 import TourSpotlight from "@/components/GuidedTour/TourSpotlight";
 import TourProgress from "@/components/GuidedTour/TourProgress";
 
+/** Construit l'URL courante (path + query) pour comparaison avec step.route */
+function buildCurrentUrl(pathname: string, search: URLSearchParams): string {
+  const s = search.toString();
+  return s ? `${pathname}?${s}` : pathname;
+}
+
 export default function GuidedTour() {
   const { isOpen, stepIndex, next, close } = useGuidedTour();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const step = isOpen ? TOUR_STEPS[stepIndex] : null;
   const targetRoute = step?.route;
-  const needsNavigation = !!(targetRoute && pathname !== targetRoute);
+  const currentUrl = buildCurrentUrl(pathname, searchParams);
+  const needsNavigation = !!(targetRoute && currentUrl !== targetRoute);
 
   /* ── Navigation automatique vers la route de l'étape ── */
   useEffect(() => {
     if (!isOpen || !step || !targetRoute) return;
-    if (pathname !== targetRoute) {
+    if (currentUrl !== targetRoute) {
       router.push(targetRoute);
     }
-  }, [isOpen, stepIndex, step, targetRoute, pathname, router]);
+  }, [isOpen, stepIndex, step, targetRoute, currentUrl, router]);
 
   if (!isOpen || !step) return null;
 
-  /* ── Pendant la navigation : overlay sombre simple ── */
+  /* ── Pendant la navigation : overlay sombre + spinner ── */
   if (needsNavigation) {
     return (
       <AnimatePresence>
