@@ -15,7 +15,7 @@
  *  2. Sur clic du bouton "Refaire la visite" dans /parametres (manuel)
  */
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -96,13 +96,9 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
     setStepIndex(index);
   }, [totalSteps]);
 
-  /* ── Verrouiller le scroll quand la visite est ouverte ── */
-  useEffect(() => {
-    if (!isOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prevOverflow; };
-  }, [isOpen]);
+  // NOTE : pas de verrou body.overflow ici — la visite doit pouvoir auto-scroller
+  // vers les éléments présentés (catalogue, bibliothèque…). L'overlay SVG bloque
+  // déjà les clics sur la page, et le spotlight suit le scroll en temps réel.
 
   return (
     <GuidedTourContext.Provider value={{ isOpen, stepIndex, totalSteps, start, next, prev, goTo, close }}>

@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * TourSlide — Slide narratif plein écran (intro / outro).
+ * TourSlide — Slide narratif plein écran (intro / outro de la visite).
  *
- * Style cohérent avec la palette Vaiiya : fond sombre violet profond,
- * orbe lumineuse centrale, gradient conique animé, particules scintillantes.
+ * Composition : fond violet profond radial, orbe de marque au centre
+ * (halo conique Siri-style — c'est l'identité de l'orbe IA), eyebrow
+ * "VAIIYA" letterspaced, titre en font-light serré, CTA gradient marque.
+ * Les révélations sont décalées (orbe → eyebrow → titre → sous-titre → CTA).
  */
 
 import { motion } from "framer-motion";
@@ -18,123 +20,170 @@ type Props = {
   onNext: () => void;
 };
 
+/* Positions déterministes des particules (pas de Math.random → pas d'hydration mismatch) */
+const PARTICLES = Array.from({ length: 8 }, (_, i) => ({
+  left: `${(i * 41 + 13) % 100}%`,
+  top: `${(i * 59 + 7) % 100}%`,
+  gold: i % 3 === 0,
+  delay: i * 0.35,
+  duration: 3.2 + (i % 3) * 0.7,
+}));
+
 export default function TourSlide({ title, subtitle, cta, decoration = "✦", onNext }: Props) {
   return (
     <motion.div
-      key="slide"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-6"
       style={{
-        background: "radial-gradient(120% 80% at 50% 50%, rgba(40, 25, 80, 0.92) 0%, rgba(15, 10, 35, 0.98) 100%)",
+        background:
+          "radial-gradient(120% 85% at 50% 42%, rgba(42,28,82,0.94) 0%, rgba(14,9,32,0.99) 100%)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }}
     >
-      {/* Particules scintillantes en fond */}
-      {[...Array(12)].map((_, i) => (
+      {/* Particules discrètes */}
+      {PARTICLES.map((p, i) => (
         <motion.div
           key={i}
+          aria-hidden
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: 3,
-            height: 3,
-            left: `${(i * 37) % 100}%`,
-            top: `${(i * 53) % 100}%`,
-            background: i % 2 === 0 ? "#A78BFA" : "#22D3EE",
-            boxShadow: `0 0 12px ${i % 2 === 0 ? "#A78BFA" : "#22D3EE"}`,
+            width: 2.5,
+            height: 2.5,
+            left: p.left,
+            top: p.top,
+            background: p.gold ? "#F5E6A3" : "#A78BFA",
+            boxShadow: `0 0 10px ${p.gold ? "rgba(245,230,163,0.8)" : "rgba(167,139,250,0.8)"}`,
           }}
-          animate={{
-            opacity: [0.3, 1, 0.3],
-            scale: [0.8, 1.5, 0.8],
-          }}
-          transition={{
-            duration: 2.5 + (i % 3) * 0.5,
-            repeat: Infinity,
-            delay: i * 0.2,
-            ease: "easeInOut",
-          }}
+          animate={{ opacity: [0.15, 0.75, 0.15], scale: [0.8, 1.25, 0.8] }}
+          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "easeInOut" }}
         />
       ))}
 
-      {/* Orbe centrale animée */}
-      <div className="relative mb-12">
-        {/* Halo conique animé */}
+      {/* ── Orbe de marque ── */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="relative mb-10"
+      >
+        {/* Halo conique Siri-style — l'identité de l'orbe IA */}
         <motion.div
-          className="absolute inset-0 rounded-full"
+          aria-hidden
+          className="absolute rounded-full"
           style={{
-            width: 180,
-            height: 180,
+            width: 170,
+            height: 170,
             left: "50%",
             top: "50%",
-            transform: "translate(-50%, -50%)",
+            x: "-50%",
+            y: "-50%",
             background: "conic-gradient(from 0deg, #A78BFA, #22D3EE, #F5E6A3, #A78BFA)",
-            filter: "blur(28px)",
-            opacity: 0.6,
+            filter: "blur(30px)",
+            opacity: 0.5,
           }}
           animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
         />
-        {/* Orbe blanche au centre avec respiration */}
         <motion.div
           className="relative rounded-full flex items-center justify-center"
           style={{
-            width: 130,
-            height: 130,
-            background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0%, rgba(212,192,255,0.7) 60%, rgba(167,139,250,0.5) 100%)",
-            boxShadow: "0 0 60px rgba(167,139,250,0.6), inset 0 4px 16px rgba(255,255,255,0.8)",
+            width: 124,
+            height: 124,
+            background:
+              "radial-gradient(circle at 32% 30%, rgba(255,255,255,0.96) 0%, rgba(212,192,255,0.72) 58%, rgba(167,139,250,0.5) 100%)",
+            boxShadow: "0 0 56px rgba(167,139,250,0.55), inset 0 4px 18px rgba(255,255,255,0.85)",
           }}
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ scale: [1, 1.045, 1] }}
+          transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <span className="text-5xl select-none" style={{ color: "#5A4A8A", textShadow: "0 2px 8px rgba(255,255,255,0.6)" }}>
+          <span
+            className="select-none"
+            style={{ fontSize: 44, color: "#5A4A8A", textShadow: "0 2px 10px rgba(255,255,255,0.65)" }}
+          >
             {decoration}
           </span>
         </motion.div>
-      </div>
+      </motion.div>
+
+      {/* Eyebrow de marque */}
+      <motion.p
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.5, ease: "easeOut" }}
+        className="uppercase select-none mb-3"
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.38em",
+          color: "rgba(212,192,255,0.75)",
+          textIndent: "0.38em", // compense le tracking du dernier caractère
+        }}
+      >
+        Vaiiya
+      </motion.p>
 
       {/* Titre */}
       <motion.h1
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="text-3xl md:text-4xl font-light tracking-tight text-center mb-4 max-w-md"
-        style={{ color: "#FFFFFF", textShadow: "0 2px 16px rgba(167,139,250,0.4)" }}
+        transition={{ delay: 0.25, duration: 0.55, ease: "easeOut" }}
+        className="text-center mb-4 max-w-md"
+        style={{
+          fontSize: "clamp(28px, 5vw, 40px)",
+          fontWeight: 300,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.15,
+          color: "#FFFFFF",
+          textShadow: "0 2px 20px rgba(167,139,250,0.35)",
+        }}
       >
         {title}
       </motion.h1>
 
       {/* Sous-titre */}
       <motion.p
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35, duration: 0.5 }}
-        className="text-sm md:text-base font-light text-center max-w-md leading-relaxed mb-10"
-        style={{ color: "rgba(255,255,255,0.78)" }}
+        transition={{ delay: 0.38, duration: 0.55, ease: "easeOut" }}
+        className="text-center max-w-sm mb-10"
+        style={{
+          fontSize: 14.5,
+          fontWeight: 300,
+          lineHeight: 1.65,
+          color: "rgba(255,255,255,0.74)",
+        }}
       >
         {subtitle}
       </motion.p>
 
-      {/* CTA */}
+      {/* CTA — même gradient que le tooltip (cohérence) */}
       {cta && (
         <motion.button
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          whileHover={{ scale: 1.03 }}
+          transition={{ delay: 0.52, duration: 0.5, ease: "easeOut" }}
+          whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.97 }}
           onClick={onNext}
-          className="flex items-center gap-2.5 px-7 py-3.5 rounded-full text-sm font-semibold cursor-pointer"
+          className="flex items-center gap-2.5 cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-            color: "#2D3748",
-            boxShadow: "0 8px 32px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.9)",
+            padding: "14px 30px",
+            borderRadius: 999,
+            fontSize: 14,
+            fontWeight: 600,
+            letterSpacing: "0.01em",
+            color: "#1A1535",
+            background: "linear-gradient(135deg, #D4C0FF 0%, #E8DDFF 45%, #F5E6A3 100%)",
+            boxShadow: "0 10px 36px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.92)",
+            border: "none",
           }}
         >
           <span>{cta}</span>
-          <ArrowRight size={16} strokeWidth={2.2} />
+          <ArrowRight size={15} strokeWidth={2.4} />
         </motion.button>
       )}
     </motion.div>
