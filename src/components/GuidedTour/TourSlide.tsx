@@ -16,6 +16,7 @@ type Props = {
   title: string;
   subtitle: string;
   cta?: string;
+  /** Conservé pour compat (l'API GuidedTour le passe encore) mais le logo a remplacé l'orbe ✦ */
   decoration?: string;
   onNext: () => void;
 };
@@ -29,7 +30,7 @@ const PARTICLES = Array.from({ length: 8 }, (_, i) => ({
   duration: 3.2 + (i % 3) * 0.7,
 }));
 
-export default function TourSlide({ title, subtitle, cta, decoration = "✦", onNext }: Props) {
+export default function TourSlide({ title, subtitle, cta, onNext }: Props) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -63,50 +64,43 @@ export default function TourSlide({ title, subtitle, cta, decoration = "✦", on
         />
       ))}
 
-      {/* ── Orbe de marque ── */}
+      {/* ── Logo de marque Vaiiya ── */}
       <motion.div
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="relative mb-10"
+        className="relative mb-10 flex items-center justify-center"
+        style={{ width: 150, height: 150 }}
       >
-        {/* Halo conique Siri-style — l'identité de l'orbe IA */}
+        {/* Halo doux derrière le logo (couleurs de marque, pas de rotation agressive) */}
         <motion.div
           aria-hidden
           className="absolute rounded-full"
           style={{
-            width: 170,
-            height: 170,
-            left: "50%",
-            top: "50%",
-            x: "-50%",
-            y: "-50%",
-            background: "conic-gradient(from 0deg, #A78BFA, #22D3EE, #F5E6A3, #A78BFA)",
-            filter: "blur(30px)",
-            opacity: 0.5,
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div
-          className="relative rounded-full flex items-center justify-center"
-          style={{
-            width: 124,
-            height: 124,
+            width: 150,
+            height: 150,
             background:
-              "radial-gradient(circle at 32% 30%, rgba(255,255,255,0.96) 0%, rgba(212,192,255,0.72) 58%, rgba(167,139,250,0.5) 100%)",
-            boxShadow: "0 0 56px rgba(167,139,250,0.55), inset 0 4px 18px rgba(255,255,255,0.85)",
+              "radial-gradient(circle, rgba(167,139,250,0.45) 0%, rgba(245,230,163,0.25) 45%, transparent 72%)",
+            filter: "blur(26px)",
           }}
-          animate={{ scale: [1, 1.045, 1] }}
-          transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <span
-            className="select-none"
-            style={{ fontSize: 44, color: "#5A4A8A", textShadow: "0 2px 10px rgba(255,255,255,0.65)" }}
-          >
-            {decoration}
-          </span>
-        </motion.div>
+          animate={{ opacity: [0.55, 0.9, 0.55], scale: [0.92, 1.05, 0.92] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Logo — léger flottement vertical pour le rendre vivant */}
+        <motion.img
+          src="/logo-vaiiya.png"
+          alt="Vaiiya"
+          draggable={false}
+          className="relative select-none"
+          style={{
+            width: 132,
+            height: 132,
+            objectFit: "contain",
+            filter: "drop-shadow(0 6px 28px rgba(167,139,250,0.5))",
+          }}
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+        />
       </motion.div>
 
       {/* Eyebrow de marque */}
