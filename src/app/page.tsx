@@ -838,32 +838,29 @@ function Dashboard() {
 
   // Applique une mise à jour de jour dans le programme localStorage — retourne le label pour le toast
   const applyProgrammeUpdate = useCallback((rawJson: string): string | null => {
-    const cacheKey = getProgrammeCacheKey();
-    if (!cacheKey) return null;
+    if (!user) return null;
     try {
       // Nettoyage : retire les backticks markdown éventuels
       const clean = rawJson.replace(/```json?/g, "").replace(/```/g, "").trim();
       const update = JSON.parse(clean);
       if (!update.jour) return null;
-      const raw = localStorage.getItem(cacheKey);
-      const programme = raw ? JSON.parse(raw) : { semaine: [] };
-      if (!Array.isArray(programme.semaine)) programme.semaine = [];
-      const idx = programme.semaine.findIndex(
-        (d: { jour: string }) => d.jour?.toLowerCase() === update.jour.toLowerCase()
-      );
-      if (idx >= 0) {
-        programme.semaine[idx] = update;
-      } else {
-        programme.semaine.push(update);
-      }
-      localStorage.setItem(cacheKey, JSON.stringify(programme));
+      // Jour normalisé (Lundi, Mardi…) pour matcher le programme local
+      const j = String(update.jour).trim().toLowerCase();
+      const dayKey = j.charAt(0).toUpperCase() + j.slice(1);
+      // On stocke la modif dans un store "overrides" séparé : la régénération
+      // locale du programme ne pourra JAMAIS l'écraser.
+      const okey = `vaiiya_prog_overrides_${user.id}`;
+      let overrides: Record<string, unknown> = {};
+      try { overrides = JSON.parse(localStorage.getItem(okey) || "{}"); } catch { /* ignore */ }
+      overrides[dayKey] = { ...update, jour: dayKey };
+      localStorage.setItem(okey, JSON.stringify(overrides));
       window.dispatchEvent(new CustomEvent("programme-updated"));
-      return `${update.jour} : ${update.titre || update.type}`;
+      return `${dayKey} : ${update.titre || update.type}`;
     } catch (e) {
       console.error("Programme update parse error", e);
       return null;
     }
-  }, [getProgrammeCacheKey]);
+  }, [user]);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
