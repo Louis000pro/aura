@@ -148,6 +148,18 @@ export const TOUR_STEPS: TourStep[] = [
     chapter: { name: "Progression", tagline: "Là où tout se mesure" },
   },
 
+  // ── Sous-onglet Vue d'ensemble : focus sur le pill, puis contenu ──
+  {
+    id: "focus-tab-progression",
+    type: "focus",
+    anchorId: "prog-tab-progression",
+    label: "Sous-onglet · Vue d'ensemble",
+    duration: 1000,
+    route: "/progression?tab=progression",
+    shape: "rounded",
+    padding: 6,
+  },
+
   // Vue d'ensemble
   {
     id: "prog-progression",

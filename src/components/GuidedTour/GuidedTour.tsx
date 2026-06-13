@@ -19,7 +19,7 @@
  * Suspense : useSearchParams() impose un boundary en Next 14+.
  */
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGuidedTour } from "@/context/GuidedTourContext";
@@ -29,7 +29,7 @@ import TourSpotlight from "@/components/GuidedTour/TourSpotlight";
 import TourProgress from "@/components/GuidedTour/TourProgress";
 
 /** Durée de l'annonce de chapitre (entrée + lecture + sortie gérée par exit) */
-const CHAPTER_ANNOUNCE_MS = 2100;
+const CHAPTER_ANNOUNCE_MS = 2600;
 
 /** URL courante (path + query) pour comparaison avec step.route */
 function buildCurrentUrl(pathname: string, search: URLSearchParams): string {
@@ -125,11 +125,22 @@ function ChapterAnnounce({ chapter }: { chapter: TourChapter }) {
 }
 
 function GuidedTourInner() {
-  const { isOpen, stepIndex, next, prev, close } = useGuidedTour();
+  const { isOpen, stepIndex, next, close, goTo } = useGuidedTour();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [announcing, setAnnouncing] = useState(false);
+
+  /* ── Retour arrière « intelligent » ──
+     On ne revient jamais SUR une étape « focus » (transition de passage qui
+     s'auto-avance : on resterait coincé). On recule jusqu'au contenu
+     précédent (slide ou spotlight). Permet de remonter toute la visite. ── */
+  const handlePrev = useCallback(() => {
+    let target = stepIndex - 1;
+    while (target > 0 && TOUR_STEPS[target].type === "focus") target--;
+    if (target < 0) target = 0;
+    goTo(target);
+  }, [stepIndex, goTo]);
 
   const step = isOpen ? TOUR_STEPS[stepIndex] : null;
   const chapter = step && step.type === "focus" ? step.chapter : undefined;
@@ -180,7 +191,7 @@ function GuidedTourInner() {
         next();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        prev();
+        handlePrev();
       } else if (e.key === "Escape") {
         e.preventDefault();
         close(true);
@@ -188,7 +199,7 @@ function GuidedTourInner() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, next, prev, close]);
+  }, [isOpen, next, handlePrev, close]);
 
   if (!isOpen || !step) return null;
 
@@ -220,7 +231,7 @@ function GuidedTourInner() {
             shape={step.shape}
             padding={step.padding}
             canPrev={false}
-            onPrev={prev}
+            onPrev={handlePrev}
             onNext={next}
           />
         ) : (
@@ -237,7 +248,7 @@ function GuidedTourInner() {
             softOverlay={step.softOverlay}
             secondaryAnchors={step.secondaryAnchors}
             canPrev={stepIndex > 0}
-            onPrev={prev}
+            onPrev={handlePrev}
             onNext={next}
           />
         )}

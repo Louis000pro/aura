@@ -251,6 +251,38 @@ export default function TourSpotlight({
   }
   tooltipTop = Math.max(safeTop, Math.min(viewport.height - tooltipH - 24, tooltipTop));
 
+  /* ── Anti-recouvrement ──
+     Si la carte chevauche encore l'élément spotlighté (typique d'un élément
+     petit collé à un bord : le bouton + de la sidebar desktop), on la déplace
+     SUR LE CÔTÉ qui a le plus de place, centrée verticalement sur l'élément.
+     Évite que le texte cache l'onglet présenté. ── */
+  if (!coverMode) {
+    const overlapX = tooltipLeft < rect.x + rect.width + gap && tooltipLeft + tooltipWidth > rect.x - gap;
+    const overlapY = tooltipTop < rect.y + rect.height + gap && tooltipTop + tooltipH > rect.y - gap;
+    if (overlapX && overlapY) {
+      const roomRight = viewport.width - (rect.x + rect.width) - gap - sideMargin;
+      const roomLeft = rect.x - gap - sideMargin;
+      if (roomRight >= tooltipWidth || roomRight >= roomLeft) {
+        // À droite de l'élément
+        tooltipLeft = Math.min(
+          viewport.width - tooltipWidth - sideMargin,
+          rect.x + rect.width + gap
+        );
+      } else {
+        // À gauche de l'élément
+        tooltipLeft = Math.max(sideMargin, rect.x - gap - tooltipWidth);
+      }
+      // Recentrer verticalement sur l'élément, clampé
+      tooltipTop = Math.max(
+        safeTop,
+        Math.min(
+          viewport.height - tooltipH - 24,
+          rect.y + rect.height / 2 - tooltipH / 2
+        )
+      );
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

@@ -1234,7 +1234,6 @@ function Dashboard() {
       <button
         type="button"
         onClick={() => setShowDailyDrawer(true)}
-        data-tour-anchor="votd"
         className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[32dvh]"
         style={{ bottom: "calc(70px + env(safe-area-inset-bottom))" }}
         aria-label="Ouvrir Du Jour"
@@ -1259,6 +1258,7 @@ function Dashboard() {
         <div className="absolute inset-x-4 top-[9dvh] bottom-0 flex items-center justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
+            data-tour-anchor="votd"
             className="relative w-full pointer-events-none"
             style={{ maxWidth: 600 }}>
 
