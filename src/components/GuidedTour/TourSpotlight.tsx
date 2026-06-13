@@ -59,17 +59,26 @@ export default function TourSpotlight({
   /* ── Mesurer la position de l'élément cible (en cherchant le 1er visible) ── */
   useLayoutEffect(() => {
     const measure = () => {
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      setViewport({ width: vw, height: vh });
       const r = findVisibleAnchor(anchorId);
       if (!r) {
         setRect(null);
         return false;
       }
+      // Clamper le rect (avec padding) à l'intérieur du viewport pour éviter
+      // qu'une bordure dépasse hors écran et soit coupée.
+      const margin = 4;
+      const left   = Math.max(margin, r.left - padding);
+      const top    = Math.max(margin, r.top  - padding);
+      const right  = Math.min(vw - margin, r.right  + padding);
+      const bottom = Math.min(vh - margin, r.bottom + padding);
       setRect({
-        x: r.left - padding,
-        y: r.top - padding,
-        width: r.width + padding * 2,
-        height: r.height + padding * 2,
+        x: left,
+        y: top,
+        width: Math.max(0, right - left),
+        height: Math.max(0, bottom - top),
       });
       setMissing(false);
       return true;

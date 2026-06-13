@@ -1221,7 +1221,7 @@ function Dashboard() {
 
       {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
       <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[34dvh]">
-        <div data-tour-anchor="orb">
+        <div data-tour-anchor="orb" style={{ display: "inline-block", lineHeight: 0 }}>
           <HomeOrb
             onTap={() => setShowChat(true)}
             onTranscript={handleVoiceTranscript}
