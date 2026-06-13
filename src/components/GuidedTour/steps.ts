@@ -61,8 +61,8 @@ export const TOUR_STEPS: TourStep[] = [
     title: "Ton coach IA",
     description: "Touche l'orbe pour discuter, demander conseil ou créer un programme sur-mesure.",
     shape: "circle",
-    padding: 16,
-    tooltipPosition: "bottom",
+    padding: 28,
+    tooltipPosition: "top",
     route: "/",
   },
 
