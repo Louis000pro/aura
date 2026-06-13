@@ -216,7 +216,14 @@ export default function TourSpotlight({
 
   /* ─────────────── Calculs de cadrage ─────────────── */
 
-  const cornerRadius = shape === "circle" ? Math.max(rect.width, rect.height) / 2 : 22;
+  const isCircle = shape === "circle";
+  const cornerRadius = 22;
+
+  /* Géométrie du vrai cercle (shape "circle") : centré sur l'élément, rayon =
+     moitié de la PLUS PETITE dimension → un cercle net, jamais un ovale. */
+  const circleCx = rect.x + rect.width / 2;
+  const circleCy = rect.y + rect.height / 2;
+  const circleR = Math.min(rect.width, rect.height) / 2;
 
   const tooltipWidth = Math.min(360, viewport.width - 32);
   const sideMargin = 16;
@@ -300,19 +307,28 @@ export default function TourSpotlight({
         <defs>
           <mask id="vaiiya-tour-mask">
             <rect width={viewport.width} height={viewport.height} fill="white" />
-            {/* Découpe principale */}
-            <motion.rect
-              initial={false}
-              animate={{
-                x: rect.x,
-                y: rect.y,
-                width: rect.width,
-                height: rect.height,
-                rx: cornerRadius,
-              }}
-              transition={{ duration: 0.5, ease: EASE }}
-              fill="black"
-            />
+            {/* Découpe principale — vrai cercle, ou rect arrondi */}
+            {isCircle ? (
+              <motion.circle
+                initial={false}
+                animate={{ cx: circleCx, cy: circleCy, r: circleR }}
+                transition={{ duration: 0.5, ease: EASE }}
+                fill="black"
+              />
+            ) : (
+              <motion.rect
+                initial={false}
+                animate={{
+                  x: rect.x,
+                  y: rect.y,
+                  width: rect.width,
+                  height: rect.height,
+                  rx: cornerRadius,
+                }}
+                transition={{ duration: 0.5, ease: EASE }}
+                fill="black"
+              />
+            )}
             {/* Découpes des accents secondaires */}
             {Object.entries(secRects).map(([id, sr]) => (
               <motion.rect
@@ -381,13 +397,24 @@ export default function TourSpotlight({
         <motion.div
           className="absolute pointer-events-none"
           initial={false}
-          animate={{
-            left: rect.x - 2,
-            top: rect.y - 2,
-            width: rect.width + 4,
-            height: rect.height + 4,
-            borderRadius: shape === "circle" ? Math.max(rect.width, rect.height) / 2 + 2 : 24,
-          }}
+          animate={
+            isCircle
+              ? {
+                  // Carré centré sur l'orbe → cercle parfait (jamais d'ovale)
+                  left: circleCx - circleR - 2,
+                  top: circleCy - circleR - 2,
+                  width: circleR * 2 + 4,
+                  height: circleR * 2 + 4,
+                  borderRadius: circleR + 2,
+                }
+              : {
+                  left: rect.x - 2,
+                  top: rect.y - 2,
+                  width: rect.width + 4,
+                  height: rect.height + 4,
+                  borderRadius: 24,
+                }
+          }
           transition={{ duration: 0.5, ease: EASE }}
           style={{
             border: "1.5px solid rgba(255,255,255,0.9)",
