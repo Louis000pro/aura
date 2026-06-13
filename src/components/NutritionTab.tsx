@@ -2110,6 +2110,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
           </motion.button>
           {/* Photo CTA */}
           <motion.button
+            data-tour-anchor="nutrition-photo-cta"
             whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
             onClick={() => setShowPhoto(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"

@@ -1,23 +1,32 @@
 /**
- * Configuration des 16 étapes de la visite guidée Vaiiya (~2 minutes).
+ * Configuration de la visite guidée Vaiiya — structure CHAPITRÉE.
  *
- * Deux types d'étapes :
- *  - "slide"     : plein écran narratif (intro, outro)
- *  - "spotlight" : zone illuminée sur un élément réel + tooltip
+ * Le déroulé n'est plus une liste plate de spotlights : il raconte une
+ * histoire en 4 chapitres (Accueil → Progression → Communauté → Ton espace).
  *
- * `route` : la visite navigue vers ce chemin avant d'afficher l'étape.
- *   Peut contenir un query param (?tab=mes-seances) qui pré-sélectionne
- *   un sous-onglet (la page Progression écoute useSearchParams).
+ * Mécanismes d'orientation (l'utilisateur sait TOUJOURS où il est) :
  *
- * `anchorId` : correspond à un attribut data-tour-anchor="<id>" dans le DOM.
- *   Le spotlight auto-scrolle vers l'ancre (vertical + horizontal carousel).
+ *  · `chapter`          — posé sur la PREMIÈRE étape d'un chapitre. Déclenche
+ *                         une annonce plein écran (~2 s) fusionnée à la
+ *                         transition de page : « ✦ Progression — Là où tout
+ *                         se mesure ». Le temps de chargement devient narration.
  *
- * `softOverlay` : voile à 45 % au lieu de 78 % — pour les présentations de
- *   pages entières, l'utilisateur doit VOIR la page derrière.
+ *  · `breadcrumb`       — fil d'Ariane affiché en pill au-dessus du titre du
+ *                         tooltip : « Progression · Nutrition ». Repère fixe.
  *
- * Ton éditorial : promesse énergique. Verbes d'action, bénéfice concret,
- * rythme court. Jamais de description plate. C'est la première impression.
+ *  · `secondaryAnchors` — ancres qui reçoivent un anneau gradient violet→or
+ *                         en PLUS de la zone principale : le pill du
+ *                         sous-onglet actif (montre le changement de
+ *                         sous-catégorie), le bouton Photo IA… Deux niveaux
+ *                         de lecture : la zone, puis LE détail.
+ *
+ * Ton éditorial : promesse énergique — verbes d'action, bénéfice concret.
  */
+
+export type TourChapter = {
+  name: string;
+  tagline: string;
+};
 
 export type TourStep =
   | {
@@ -35,15 +44,20 @@ export type TourStep =
       anchorId: string;
       title: string;
       description: string;
+      breadcrumb: string;
       shape?: "circle" | "rounded";
       padding?: number;
       tooltipPosition?: "auto" | "top" | "bottom";
       route?: string;
       softOverlay?: boolean;
+      /** Annonce de chapitre — uniquement sur la 1re étape du chapitre */
+      chapter?: TourChapter;
+      /** Éléments précis à entourer d'un anneau gradient (en plus de la zone) */
+      secondaryAnchors?: string[];
     };
 
 export const TOUR_STEPS: TourStep[] = [
-  /* ════════════════ 1 · INTRO ════════════════ */
+  /* ═══════════════════════ INTRO ═══════════════════════ */
   {
     id: "intro",
     type: "slide",
@@ -55,11 +69,13 @@ export const TOUR_STEPS: TourStep[] = [
     route: "/",
   },
 
-  /* ════════════════ 2-4 · HOME ════════════════ */
+  /* ═══════════ CHAPITRE 1 · L'ACCUEIL ═══════════ */
   {
     id: "orb",
     type: "spotlight",
     anchorId: "orb",
+    chapter: { name: "L'Accueil", tagline: "Ton point de départ, chaque jour" },
+    breadcrumb: "Accueil",
     title: "Ton coach IA, toujours là",
     description:
       "Une question, un doute, un objectif ? Touche l'orbe et parle-lui. Il te répond, te conseille, et te construit des programmes calibrés sur toi.",
@@ -72,6 +88,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "votd",
     type: "spotlight",
     anchorId: "votd",
+    breadcrumb: "Accueil",
     title: "Ta dose quotidienne",
     description:
       "Chaque jour, une vidéo sélectionnée pour toi : séance à tester, recette à dévorer, conseil à appliquer. Reviens demain — il y en aura une nouvelle.",
@@ -84,6 +101,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "stats",
     type: "spotlight",
     anchorId: "stats",
+    breadcrumb: "Accueil",
     title: "Tes journées, en un regard",
     description:
       "Score du jour, série en cours, séances de la semaine. Tape ici pour plonger dans le détail de tes données.",
@@ -93,13 +111,15 @@ export const TOUR_STEPS: TourStep[] = [
     route: "/",
   },
 
-  /* ════════════════ 5-11 · PROGRESSION ════════════════ */
+  /* ═══════════ CHAPITRE 2 · PROGRESSION ═══════════ */
 
-  // 5 · Tableau de bord
+  // Vue d'ensemble
   {
     id: "prog-progression",
     type: "spotlight",
     anchorId: "prog-content-progression",
+    chapter: { name: "Progression", tagline: "Là où tout se mesure" },
+    breadcrumb: "Progression · Vue d'ensemble",
     title: "Ton QG de progression",
     description:
       "Poids, calories, volume d'entraînement, timeline de tes exploits : tout ce que tu accomplis laisse une trace ici. Regarde ta courbe monter.",
@@ -108,13 +128,15 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=progression",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-progression"],
   },
 
-  // 6 · Catalogue de séances
+  // Mes Séances — catalogue
   {
     id: "prog-seances-catalogue",
     type: "spotlight",
     anchorId: "prog-seances-catalogue",
+    breadcrumb: "Progression · Mes Séances",
     title: "Des séances prêtes à l'emploi",
     description:
       "Force, cardio, mobilité, full body… Choisis, tape, transpire. Chaque séance est guidée exercice par exercice.",
@@ -123,13 +145,15 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=mes-seances",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-mes-seances"],
   },
 
-  // 7 · Création (manuelle + IA)
+  // Mes Séances — création
   {
     id: "prog-seances-create",
     type: "spotlight",
     anchorId: "prog-seances-create",
+    breadcrumb: "Progression · Mes Séances",
     title: "Crée la séance parfaite",
     description:
       "Compose-la toi-même, exercice par exercice — ou décris ton objectif à l'IA et laisse-la générer un programme sur-mesure en quelques secondes.",
@@ -138,13 +162,15 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=mes-seances",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-mes-seances"],
   },
 
-  // 8 · Partage & bibliothèque
+  // Mes Séances — partage
   {
     id: "prog-seances-library",
     type: "spotlight",
     anchorId: "prog-seances-library",
+    breadcrumb: "Progression · Mes Séances",
     title: "Ta bibliothèque, ton influence",
     description:
       "Tes créations restent privées, se partagent entre amis ou deviennent publiques. Et dans l'autre sens : entraîne-toi sur les séances de la communauté.",
@@ -153,13 +179,15 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=mes-seances",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-mes-seances"],
   },
 
-  // 9 · Nutrition — photo IA ⭐
+  // Nutrition — photo IA ⭐ (double accent : pill + bouton Photo IA)
   {
     id: "prog-nutrition",
     type: "spotlight",
     anchorId: "prog-content-nutrition",
+    breadcrumb: "Progression · Nutrition",
     title: "Photographie. L'IA calcule.",
     description:
       "Prends ton assiette en photo : l'IA reconnaît les aliments et compte calories et macros à ta place. Le suivi nutrition n'a jamais été aussi simple.",
@@ -168,13 +196,15 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=nutrition",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-nutrition", "nutrition-photo-cta"],
   },
 
-  // 10 · Analyse de mouvement
+  // Analyse de mouvement
   {
     id: "prog-analyse",
     type: "spotlight",
     anchorId: "prog-content-analyse",
+    breadcrumb: "Progression · Analyse",
     title: "Ta technique, passée au scanner",
     description:
       "Filme ton squat, tes pompes, ton gainage : l'IA analyse ton mouvement en temps réel et corrige ta posture. Progresse sans te blesser.",
@@ -183,13 +213,15 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=analyse",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-analyse"],
   },
 
-  // 11 · Badges
+  // Badges
   {
     id: "prog-badges",
     type: "spotlight",
     anchorId: "prog-content-badges",
+    breadcrumb: "Progression · Badges",
     title: "Chaque effort compte",
     description:
       "Régularité, records, étapes franchies : tes accomplissements se transforment en badges. Collectionne-les.",
@@ -198,13 +230,16 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=badges",
     softOverlay: true,
+    secondaryAnchors: ["prog-tab-badges"],
   },
 
-  /* ════════════════ 12 · COMMUNAUTÉ ════════════════ */
+  /* ═══════════ CHAPITRE 3 · COMMUNAUTÉ ═══════════ */
   {
     id: "communaute",
     type: "spotlight",
     anchorId: "page-communaute",
+    chapter: { name: "Communauté", tagline: "Ta motivation, démultipliée" },
+    breadcrumb: "Communauté",
     title: "Ta communauté d'entraînement",
     description:
       "Publications, vidéos, stories, messages privés : retrouve tes amis, partage tes perfs et nourris ta motivation de celle des autres.",
@@ -215,11 +250,13 @@ export const TOUR_STEPS: TourStep[] = [
     softOverlay: true,
   },
 
-  /* ════════════════ 13-14 · PROFIL ════════════════ */
+  /* ═══════════ CHAPITRE 4 · TON ESPACE ═══════════ */
   {
     id: "profil-header",
     type: "spotlight",
     anchorId: "profil-header",
+    chapter: { name: "Ton espace", tagline: "Ton identité, ton histoire" },
+    breadcrumb: "Profil",
     title: "Ta vitrine",
     description:
       "Avatar, bio, objectifs, abonnés : c'est toi, version Vaiiya. Personnalise chaque détail.",
@@ -233,6 +270,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "profil-content",
     type: "spotlight",
     anchorId: "profil-highlights",
+    breadcrumb: "Profil",
     title: "Ton histoire à la une",
     description:
       "Stories, publications, performances : ton parcours s'archive ici, proprement. De quoi être fier du chemin parcouru.",
@@ -242,12 +280,11 @@ export const TOUR_STEPS: TourStep[] = [
     route: "/profil",
     softOverlay: true,
   },
-
-  /* ════════════════ 15 · PUBLIER ════════════════ */
   {
     id: "nav-publish",
     type: "spotlight",
     anchorId: "nav-publish",
+    breadcrumb: "Publier",
     title: "Partage en deux tapes",
     description:
       "Une séance terminée, une recette réussie, une perf débloquée ? Le bouton + la publie à ta communauté en quelques secondes.",
@@ -257,7 +294,7 @@ export const TOUR_STEPS: TourStep[] = [
     softOverlay: true,
   },
 
-  /* ════════════════ 16 · OUTRO ════════════════ */
+  /* ═══════════════════════ OUTRO ═══════════════════════ */
   {
     id: "outro",
     type: "slide",

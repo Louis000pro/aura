@@ -3,33 +3,28 @@
 /**
  * TourSpotlight — Couche spotlight persistante de la visite guidée.
  *
- * Différence clé avec une implémentation naïve : ce composant reste MONTÉ
- * entre deux étapes spotlight de la même page. Le trou de lumière, la bordure
- * et le tooltip GLISSENT d'un élément au suivant (morphing), au lieu de
- * disparaître/réapparaître. C'est ce qui donne la sensation premium.
+ * Ce composant reste MONTÉ entre deux étapes spotlight de la même page :
+ * le trou de lumière, le liseré et le tooltip MORPHENT d'un élément au
+ * suivant au lieu de disparaître/réapparaître.
  *
- * Pipeline à chaque changement d'ancre :
- *  1. findVisibleAnchor : sélectionne l'élément data-tour-anchor qui a une
- *     vraie taille (la nav mobile et desktop partagent les mêmes ids).
- *  2. Auto-scroll : scrollIntoView({ center }) — vertical ET horizontal
- *     (les cartes du carousel "Mes Séances" sont hors-champ à droite).
- *  3. Polling + listeners scroll/resize : le rect est suivi en continu,
- *     le spotlight reste collé à l'élément pendant le smooth scroll.
- *  4. Morphing : mask SVG, bordure et tooltip animés vers la nouvelle position.
+ * Hiérarchie visuelle à deux niveaux :
+ *  · ZONE PRINCIPALE  — grande découpe + liseré blanc respirant.
+ *  · ACCENTS          — `secondaryAnchors` : petites découpes + anneau
+ *    gradient violet→or pulsant. Usage : pill du sous-onglet actif
+ *    (« tu es ICI dans Progression »), bouton Photo IA…
  *
- * Cadrage du tooltip :
- *  - largeur ≤ 360px, clampé à 16px des bords
- *  - au-dessus ou en-dessous de l'élément selon l'espace (auto-flip)
- *  - mode "pleine page" : si l'élément couvre > 62 % de la hauteur d'écran
- *    (présentation d'un onglet entier), le tooltip se pose au centre,
- *    composition intentionnelle plutôt que collage sur un bord.
+ * Orientation : `breadcrumb` affiché en pill uppercase au-dessus du titre
+ * (« Progression · Nutrition ») — l'utilisateur sait toujours où il est.
  *
- * ADN visuel : carte blanche, trait gradient violet→or, ✦ doré,
- * compteur d'étape discret, CTA gradient marque.
+ * Cadrage :
+ *  · auto-scroll vertical + horizontal vers l'ancre (carousel inclus)
+ *  · le rect suit l'élément en continu (polling + listeners scroll/resize)
+ *  · tooltip ≤ 360 px, hauteur réelle mesurée, flip auto, clamp 16 px
+ *  · mode « pleine page » (> 62 % de la hauteur) : tooltip composé au centre
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 type Rect = { x: number; y: number; width: number; height: number };
@@ -38,18 +33,18 @@ type Props = {
   anchorId: string;
   title: string;
   description: string;
+  breadcrumb?: string;
   shape?: "circle" | "rounded";
   padding?: number;
   tooltipPosition?: "auto" | "top" | "bottom";
   softOverlay?: boolean;
-  stepNumber: number;
-  totalSteps: number;
+  secondaryAnchors?: string[];
   canPrev: boolean;
   onPrev: () => void;
   onNext: () => void;
 };
 
-/** Courbe d'animation signature — décélération douce, zéro rebond sur les masques. */
+/** Courbe signature — décélération douce, zéro rebond sur les masques. */
 const EASE = [0.32, 0.72, 0, 1] as const;
 
 /** Sélectionne le 1er élément data-tour-anchor qui a une vraie taille à l'écran. */
@@ -62,30 +57,44 @@ function findVisibleAnchor(anchorId: string): Element | null {
   return null;
 }
 
+function sameRect(a: Rect | undefined, b: Rect): boolean {
+  return (
+    !!a &&
+    Math.abs(a.x - b.x) < 0.5 &&
+    Math.abs(a.y - b.y) < 0.5 &&
+    Math.abs(a.width - b.width) < 0.5 &&
+    Math.abs(a.height - b.height) < 0.5
+  );
+}
+
 export default function TourSpotlight({
   anchorId,
   title,
   description,
+  breadcrumb,
   shape = "rounded",
   padding = 8,
   tooltipPosition = "auto",
   softOverlay = false,
-  stepNumber,
-  totalSteps,
+  secondaryAnchors,
   canPrev,
   onPrev,
   onNext,
 }: Props) {
   const [rect, setRect] = useState<Rect | null>(null);
+  const [secRects, setSecRects] = useState<Record<string, Rect>>({});
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [missing, setMissing] = useState(false);
   const [tooltipH, setTooltipH] = useState(176);
   const scrolledFor = useRef<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const secKey = secondaryAnchors?.join(",") ?? "";
+
   /* ── Mesure continue : scroll auto + polling + listeners ── */
   useLayoutEffect(() => {
     let cancelled = false;
+    const secIds = secKey ? secKey.split(",") : [];
 
     const measure = () => {
       const vw = window.innerWidth;
@@ -95,9 +104,8 @@ export default function TourSpotlight({
       const el = findVisibleAnchor(anchorId);
       if (!el) return false;
 
-      // Auto-scroll une seule fois par ancre, dès qu'elle apparaît dans le DOM.
-      // block+inline "center" gère le scroll vertical de la page ET le scroll
-      // horizontal du carousel de séances.
+      // Auto-scroll une seule fois par ancre, dès qu'elle apparaît.
+      // block+inline "center" : scroll vertical de page ET horizontal de carousel.
       if (scrolledFor.current !== anchorId) {
         scrolledFor.current = anchorId;
         try {
@@ -119,16 +127,25 @@ export default function TourSpotlight({
         width: Math.max(0, right - left),
         height: Math.max(0, bottom - top),
       };
-      // Identité stable si la position n'a pas bougé (évite les re-renders du polling)
-      setRect((prev) =>
-        prev &&
-        Math.abs(prev.x - nr.x) < 0.5 &&
-        Math.abs(prev.y - nr.y) < 0.5 &&
-        Math.abs(prev.width - nr.width) < 0.5 &&
-        Math.abs(prev.height - nr.height) < 0.5
-          ? prev
-          : nr
-      );
+      setRect((prev) => (prev && sameRect(prev, nr) ? prev : nr));
+
+      // Accents secondaires — mesure souple : absents = ignorés
+      const next: Record<string, Rect> = {};
+      for (const id of secIds) {
+        const sEl = findVisibleAnchor(id);
+        if (!sEl) continue;
+        const sr = sEl.getBoundingClientRect();
+        // visible à l'écran uniquement
+        if (sr.bottom < 0 || sr.top > vh || sr.right < 0 || sr.left > vw) continue;
+        next[id] = { x: sr.left - 5, y: sr.top - 5, width: sr.width + 10, height: sr.height + 10 };
+      }
+      setSecRects((prev) => {
+        const pk = Object.keys(prev);
+        const nk = Object.keys(next);
+        if (pk.length === nk.length && nk.every((k) => sameRect(prev[k], next[k]))) return prev;
+        return next;
+      });
+
       setMissing(false);
       return true;
     };
@@ -136,7 +153,7 @@ export default function TourSpotlight({
     setMissing(false); // reset à chaque changement d'ancre (évite un faux auto-skip)
     let found = measure();
 
-    // Polling : capture l'élément qui se monte après une navigation + suit le smooth scroll.
+    // Polling : capture l'élément qui se monte après navigation + suit le smooth scroll.
     let attempts = 0;
     const interval = window.setInterval(() => {
       attempts++;
@@ -156,13 +173,13 @@ export default function TourSpotlight({
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [anchorId, padding]);
+  }, [anchorId, padding, secKey]);
 
-  /* ── Hauteur réelle du tooltip (positionnement précis, pas d'estimation) ── */
+  /* ── Hauteur réelle du tooltip (positionnement précis) ── */
   const hasRect = rect !== null;
   useLayoutEffect(() => {
     if (cardRef.current) setTooltipH(cardRef.current.offsetHeight);
-  }, [anchorId, title, description, hasRect]);
+  }, [anchorId, title, description, breadcrumb, hasRect]);
 
   /* ── Auto-skip si l'ancre reste introuvable ── */
   useEffect(() => {
@@ -194,11 +211,10 @@ export default function TourSpotlight({
 
   const tooltipWidth = Math.min(360, viewport.width - 32);
   const sideMargin = 16;
-  const gap = 22;          // espace entre l'élément et le tooltip
-  const safeTop = 72;      // safe-area + bouton Passer
-  const safeBottom = 84;   // nav + safe-area
+  const gap = 22;
+  const safeTop = 72;
+  const safeBottom = 84;
 
-  // Mode "pleine page" : l'élément couvre la majorité de l'écran
   const coverMode = rect.height > viewport.height * 0.62;
 
   const elementCenterX = rect.x + rect.width / 2;
@@ -207,7 +223,6 @@ export default function TourSpotlight({
 
   let tooltipTop: number;
   if (coverMode) {
-    // Composition centrée : le tooltip flotte sur le tiers inférieur du contenu
     tooltipTop = viewport.height * 0.5 - tooltipH / 2 + viewport.height * 0.06;
   } else {
     const decided: "top" | "bottom" =
@@ -217,11 +232,11 @@ export default function TourSpotlight({
 
     if (decided === "top") {
       tooltipTop = rect.y - gap - tooltipH;
-      if (tooltipTop < safeTop) tooltipTop = rect.y + rect.height + gap; // flip
+      if (tooltipTop < safeTop) tooltipTop = rect.y + rect.height + gap;
     } else {
       tooltipTop = rect.y + rect.height + gap;
       if (tooltipTop + tooltipH > viewport.height - safeBottom) {
-        tooltipTop = rect.y - gap - tooltipH; // flip
+        tooltipTop = rect.y - gap - tooltipH;
       }
     }
   }
@@ -235,7 +250,7 @@ export default function TourSpotlight({
       transition={{ duration: 0.3 }}
       className="fixed inset-0 z-[100] pointer-events-none"
     >
-      {/* ── Voile sombre avec découpe morphante ── */}
+      {/* ── Voile sombre avec découpes morphantes ── */}
       <svg
         width={viewport.width}
         height={viewport.height}
@@ -244,6 +259,7 @@ export default function TourSpotlight({
         <defs>
           <mask id="vaiiya-tour-mask">
             <rect width={viewport.width} height={viewport.height} fill="white" />
+            {/* Découpe principale */}
             <motion.rect
               initial={false}
               animate={{
@@ -256,6 +272,16 @@ export default function TourSpotlight({
               transition={{ duration: 0.5, ease: EASE }}
               fill="black"
             />
+            {/* Découpes des accents secondaires */}
+            {Object.entries(secRects).map(([id, sr]) => (
+              <motion.rect
+                key={id}
+                initial={false}
+                animate={{ x: sr.x, y: sr.y, width: sr.width, height: sr.height, rx: 16 }}
+                transition={{ duration: 0.5, ease: EASE }}
+                fill="black"
+              />
+            ))}
           </mask>
         </defs>
         <motion.rect
@@ -269,7 +295,7 @@ export default function TourSpotlight({
         />
       </svg>
 
-      {/* ── Liseré lumineux qui glisse avec la découpe ── */}
+      {/* ── Liseré blanc de la zone principale ── */}
       <motion.div
         className="absolute pointer-events-none"
         initial={false}
@@ -286,7 +312,6 @@ export default function TourSpotlight({
           boxShadow: "0 0 28px rgba(255,255,255,0.38), 0 0 64px rgba(167,139,250,0.3)",
         }}
       >
-        {/* Respiration intérieure douce (opacité seule, aucune rotation) */}
         <motion.div
           className="absolute inset-0"
           style={{ borderRadius: "inherit", boxShadow: "inset 0 0 16px rgba(212,192,255,0.35)" }}
@@ -294,6 +319,52 @@ export default function TourSpotlight({
           transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
         />
       </motion.div>
+
+      {/* ── Anneaux gradient des accents secondaires ── */}
+      <AnimatePresence>
+        {Object.entries(secRects).map(([id, sr]) => (
+          <motion.div
+            key={id}
+            className="absolute pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: 1,
+              left: sr.x - 3,
+              top: sr.y - 3,
+              width: sr.width + 6,
+              height: sr.height + 6,
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: EASE, opacity: { duration: 0.35, delay: 0.3 } }}
+          >
+            {/* Halo doux derrière l'anneau */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                borderRadius: 18,
+                boxShadow: "0 0 22px rgba(167,139,250,0.55), 0 0 40px rgba(245,230,163,0.3)",
+              }}
+              animate={{ opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
+            />
+            {/* Anneau gradient violet→or (masque border-only, centre transparent) */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                borderRadius: 18,
+                padding: 2.5,
+                background: "linear-gradient(135deg, #A78BFA 0%, #C4A8FF 40%, #F5E6A3 100%)",
+                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                WebkitMaskComposite: "xor",
+                mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                maskComposite: "exclude",
+              } as React.CSSProperties}
+              animate={{ opacity: [0.75, 1, 0.75] }}
+              transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
 
       {/* ─────────── Tooltip signature Vaiiya ─────────── */}
       <motion.div
@@ -313,7 +384,7 @@ export default function TourSpotlight({
             "0 24px 64px rgba(26,21,53,0.28), 0 6px 20px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
         }}
       >
-        {/* Trait gradient violet → or — signature ADN sur le bord supérieur */}
+        {/* Trait gradient violet → or — signature ADN */}
         <div
           aria-hidden
           style={{
@@ -327,7 +398,7 @@ export default function TourSpotlight({
           }}
         />
 
-        {/* Contenu — remonté à chaque étape avec un micro fade-up */}
+        {/* Contenu — micro fade-up à chaque étape */}
         <motion.div
           key={anchorId}
           initial={{ opacity: 0, y: 6 }}
@@ -335,6 +406,27 @@ export default function TourSpotlight({
           transition={{ duration: 0.26, delay: 0.14, ease: "easeOut" }}
           className="px-6 pt-5 pb-3.5"
         >
+          {/* Fil d'Ariane — l'utilisateur sait toujours où il est */}
+          {breadcrumb && (
+            <span
+              className="inline-flex items-center uppercase select-none"
+              style={{
+                padding: "4px 11px",
+                borderRadius: 999,
+                marginBottom: 10,
+                background:
+                  "linear-gradient(135deg, rgba(212,192,255,0.25) 0%, rgba(245,230,163,0.22) 100%)",
+                border: "1px solid rgba(167,139,250,0.28)",
+                color: "#6B4FB8",
+                fontSize: 9.5,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+              }}
+            >
+              {breadcrumb}
+            </span>
+          )}
+
           <div className="flex items-start gap-2 mb-2">
             <span
               aria-hidden
@@ -374,61 +466,47 @@ export default function TourSpotlight({
           </p>
         </motion.div>
 
-        {/* Footer : compteur + navigation (stable, ne re-render pas entre étapes) */}
-        <div className="px-6 pb-4 flex items-center justify-between">
-          <span
-            style={{
-              color: "#B4ABC8",
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.06em",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {stepNumber} / {totalSteps}
-          </span>
-
-          <div className="flex items-center gap-2">
-            {canPrev && (
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onPrev}
-                aria-label="Étape précédente"
-                className="flex items-center justify-center cursor-pointer"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 999,
-                  background: "rgba(240,235,255,0.7)",
-                  border: "1px solid rgba(167,139,250,0.22)",
-                  color: "#7C6BAA",
-                }}
-              >
-                <ArrowLeft size={13} strokeWidth={2.4} />
-              </motion.button>
-            )}
+        {/* Footer : navigation (stable entre les étapes) */}
+        <div className="px-6 pb-4 flex items-center justify-end gap-2">
+          {canPrev && (
             <motion.button
-              whileHover={{ scale: 1.025 }}
-              whileTap={{ scale: 0.96 }}
-              onClick={onNext}
-              className="flex items-center gap-1.5 cursor-pointer"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onPrev}
+              aria-label="Étape précédente"
+              className="flex items-center justify-center cursor-pointer"
               style={{
-                padding: "9px 18px",
+                width: 32,
+                height: 32,
                 borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                letterSpacing: "0.01em",
-                color: "#1A1535",
-                background: "linear-gradient(135deg, #D4C0FF 0%, #E8DDFF 45%, #F5E6A3 100%)",
-                boxShadow: "0 6px 18px rgba(167,139,250,0.32), inset 0 1px 0 rgba(255,255,255,0.9)",
-                border: "none",
+                background: "rgba(240,235,255,0.7)",
+                border: "1px solid rgba(167,139,250,0.22)",
+                color: "#7C6BAA",
               }}
             >
-              <span>Suivant</span>
-              <ArrowRight size={12} strokeWidth={2.6} />
+              <ArrowLeft size={13} strokeWidth={2.4} />
             </motion.button>
-          </div>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.025 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={onNext}
+            className="flex items-center gap-1.5 cursor-pointer"
+            style={{
+              padding: "9px 18px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.01em",
+              color: "#1A1535",
+              background: "linear-gradient(135deg, #D4C0FF 0%, #E8DDFF 45%, #F5E6A3 100%)",
+              boxShadow: "0 6px 18px rgba(167,139,250,0.32), inset 0 1px 0 rgba(255,255,255,0.9)",
+              border: "none",
+            }}
+          >
+            <span>Suivant</span>
+            <ArrowRight size={12} strokeWidth={2.6} />
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>
