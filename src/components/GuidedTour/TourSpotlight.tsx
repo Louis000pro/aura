@@ -31,14 +31,21 @@ type Rect = { x: number; y: number; width: number; height: number };
 
 type Props = {
   anchorId: string;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   breadcrumb?: string;
   shape?: "circle" | "rounded";
   padding?: number;
   tooltipPosition?: "auto" | "top" | "bottom";
   softOverlay?: boolean;
   secondaryAnchors?: string[];
+  /**
+   * Mode « focus » : si défini, pas de carte tooltip — l'élément est entouré
+   * d'un anneau gradient violet→or + une étiquette courte à côté
+   * (« Onglet · Progression »). Utilisé pour MONTRER les transitions
+   * d'onglet / sous-onglet. L'auto-avance est gérée par GuidedTour.
+   */
+  focusLabel?: string;
   canPrev: boolean;
   onPrev: () => void;
   onNext: () => void;
@@ -69,18 +76,20 @@ function sameRect(a: Rect | undefined, b: Rect): boolean {
 
 export default function TourSpotlight({
   anchorId,
-  title,
-  description,
+  title = "",
+  description = "",
   breadcrumb,
   shape = "rounded",
   padding = 8,
   tooltipPosition = "auto",
   softOverlay = false,
   secondaryAnchors,
+  focusLabel,
   canPrev,
   onPrev,
   onNext,
 }: Props) {
+  const isFocus = !!focusLabel;
   const [rect, setRect] = useState<Rect | null>(null);
   const [secRects, setSecRects] = useState<Record<string, Rect>>({});
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
@@ -295,30 +304,72 @@ export default function TourSpotlight({
         />
       </svg>
 
-      {/* ── Liseré blanc de la zone principale ── */}
-      <motion.div
-        className="absolute pointer-events-none"
-        initial={false}
-        animate={{
-          left: rect.x - 2,
-          top: rect.y - 2,
-          width: rect.width + 4,
-          height: rect.height + 4,
-          borderRadius: shape === "circle" ? Math.max(rect.width, rect.height) / 2 + 2 : 24,
-        }}
-        transition={{ duration: 0.5, ease: EASE }}
-        style={{
-          border: "1.5px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 0 28px rgba(255,255,255,0.38), 0 0 64px rgba(167,139,250,0.3)",
-        }}
-      >
+      {/* ── Liseré de la zone principale ──
+          spotlight : liseré blanc respirant
+          focus     : anneau GRADIENT violet→or (signal « c'est ICI ») ── */}
+      {isFocus ? (
         <motion.div
-          className="absolute inset-0"
-          style={{ borderRadius: "inherit", boxShadow: "inset 0 0 16px rgba(212,192,255,0.35)" }}
-          animate={{ opacity: [0.45, 1, 0.45] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.div>
+          className="absolute pointer-events-none"
+          initial={false}
+          animate={{
+            left: rect.x - 4,
+            top: rect.y - 4,
+            width: rect.width + 8,
+            height: rect.height + 8,
+          }}
+          transition={{ duration: 0.5, ease: EASE }}
+        >
+          {/* Halo doux */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              borderRadius: shape === "circle" ? "50%" : 20,
+              boxShadow: "0 0 26px rgba(167,139,250,0.6), 0 0 52px rgba(245,230,163,0.35)",
+            }}
+            animate={{ opacity: [0.55, 1, 0.55] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Anneau gradient (masque border-only, centre transparent) */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              borderRadius: shape === "circle" ? "50%" : 20,
+              padding: 3,
+              background: "linear-gradient(135deg, #A78BFA 0%, #C4A8FF 40%, #F5E6A3 100%)",
+              WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+              WebkitMaskComposite: "xor",
+              mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+              maskComposite: "exclude",
+            } as React.CSSProperties}
+            animate={{ opacity: [0.8, 1, 0.8] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+      ) : (
+        <motion.div
+          className="absolute pointer-events-none"
+          initial={false}
+          animate={{
+            left: rect.x - 2,
+            top: rect.y - 2,
+            width: rect.width + 4,
+            height: rect.height + 4,
+            borderRadius: shape === "circle" ? Math.max(rect.width, rect.height) / 2 + 2 : 24,
+          }}
+          transition={{ duration: 0.5, ease: EASE }}
+          style={{
+            border: "1.5px solid rgba(255,255,255,0.9)",
+            boxShadow: "0 0 28px rgba(255,255,255,0.38), 0 0 64px rgba(167,139,250,0.3)",
+          }}
+        >
+          <motion.div
+            className="absolute inset-0"
+            style={{ borderRadius: "inherit", boxShadow: "inset 0 0 16px rgba(212,192,255,0.35)" }}
+            animate={{ opacity: [0.45, 1, 0.45] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+      )}
 
       {/* ── Anneaux gradient des accents secondaires ── */}
       <AnimatePresence>
@@ -366,7 +417,44 @@ export default function TourSpotlight({
         ))}
       </AnimatePresence>
 
+      {/* ── Mode focus : étiquette courte près de l'élément ── */}
+      {isFocus && (
+        <motion.div
+          key={`focus-${anchorId}`}
+          className="absolute pointer-events-none flex items-center gap-1.5"
+          initial={{ opacity: 0, y: 6, x: "-50%" }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            x: "-50%",
+            left: Math.max(
+              90,
+              Math.min(viewport.width - 90, rect.x + rect.width / 2)
+            ),
+            top:
+              rect.y + rect.height + 56 > viewport.height - 90
+                ? rect.y - 54
+                : rect.y + rect.height + 16,
+          }}
+          transition={{ duration: 0.4, ease: EASE, opacity: { duration: 0.3, delay: 0.2 } }}
+          style={{
+            padding: "9px 16px",
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.97)",
+            border: "1px solid rgba(212,192,255,0.6)",
+            boxShadow: "0 10px 32px rgba(26,21,53,0.35), 0 4px 14px rgba(167,139,250,0.25)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span aria-hidden style={{ color: "#D4A843", fontSize: 12, lineHeight: 1 }}>✦</span>
+          <span style={{ color: "#1A1535", fontSize: 13, fontWeight: 600, letterSpacing: "0.01em" }}>
+            {focusLabel}
+          </span>
+        </motion.div>
+      )}
+
       {/* ─────────── Tooltip signature Vaiiya ─────────── */}
+      {!isFocus && (
       <motion.div
         ref={cardRef}
         className="absolute pointer-events-auto overflow-hidden"
@@ -509,6 +597,7 @@ export default function TourSpotlight({
           </motion.button>
         </div>
       </motion.div>
+      )}
     </motion.div>
   );
 }

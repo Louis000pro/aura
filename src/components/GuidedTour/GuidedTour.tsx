@@ -132,7 +132,7 @@ function GuidedTourInner() {
   const [announcing, setAnnouncing] = useState(false);
 
   const step = isOpen ? TOUR_STEPS[stepIndex] : null;
-  const chapter = step && step.type === "spotlight" ? step.chapter : undefined;
+  const chapter = step && step.type === "focus" ? step.chapter : undefined;
   const targetRoute = step?.route;
   const currentUrl = buildCurrentUrl(pathname, searchParams);
   const needsNavigation = !!(targetRoute && currentUrl !== targetRoute);
@@ -141,7 +141,7 @@ function GuidedTourInner() {
   useEffect(() => {
     if (!isOpen) return;
     const s = TOUR_STEPS[stepIndex];
-    const ch = s && s.type === "spotlight" ? s.chapter : undefined;
+    const ch = s && s.type === "focus" ? s.chapter : undefined;
     if (ch) {
       setAnnouncing(true);
       const t = setTimeout(() => setAnnouncing(false), CHAPTER_ANNOUNCE_MS);
@@ -149,6 +149,15 @@ function GuidedTourInner() {
     }
     setAnnouncing(false);
   }, [stepIndex, isOpen]);
+
+  /* ── Étapes « focus » : auto-avance après leur durée d'affichage.
+        Le chrono ne démarre qu'une fois l'annonce finie ET la page chargée. ── */
+  useEffect(() => {
+    if (!isOpen || !step || step.type !== "focus") return;
+    if (needsNavigation || announcing) return;
+    const t = setTimeout(() => next(), step.duration);
+    return () => clearTimeout(t);
+  }, [isOpen, stepIndex, step, needsNavigation, announcing, next]);
 
   /* ── Navigation automatique vers la route de l'étape ── */
   useEffect(() => {
@@ -219,6 +228,19 @@ function GuidedTourInner() {
             subtitle={step.subtitle}
             cta={step.cta}
             decoration={step.decoration}
+            onNext={next}
+          />
+        ) : step.type === "focus" ? (
+          /* Focus : montre la transition d'onglet/sous-onglet (auto-avance).
+             Même key que le spotlight → la lumière GLISSE du pill au contenu. */
+          <TourSpotlight
+            key="spotlight"
+            anchorId={step.anchorId}
+            focusLabel={step.label}
+            shape={step.shape}
+            padding={step.padding}
+            canPrev={false}
+            onPrev={prev}
             onNext={next}
           />
         ) : (

@@ -1,26 +1,27 @@
 /**
  * Configuration de la visite guidée Vaiiya — structure CHAPITRÉE.
  *
- * Le déroulé n'est plus une liste plate de spotlights : il raconte une
- * histoire en 4 chapitres (Accueil → Progression → Communauté → Ton espace).
+ * Trois types d'étapes :
+ *  · "slide"     — plein écran narratif (intro, outro)
+ *  · "focus"     — moment bref AUTO-AVANÇANT qui MONTRE une transition :
+ *                  l'icône de l'onglet dans la nav (ou le pill du sous-onglet)
+ *                  est entourée d'un anneau gradient + étiquette
+ *                  « Onglet · Progression ». L'utilisateur voit physiquement
+ *                  OÙ il vient d'arriver, sans lire ni cliquer.
+ *                  Durée : ~1,5 s pour un onglet, ~1 s pour un sous-onglet.
+ *  · "spotlight" — présentation d'un contenu : zone illuminée + tooltip.
  *
- * Mécanismes d'orientation (l'utilisateur sait TOUJOURS où il est) :
+ * Entrée dans un chapitre = séquence en 3 temps, zéro clic :
+ *   annonce plein écran (« ✦ Progression — Là où tout se mesure », ~2 s)
+ *   → focus sur l'icône nav (1,5 s)
+ *   → le trou de lumière GLISSE de l'icône vers le premier contenu.
  *
- *  · `chapter`          — posé sur la PREMIÈRE étape d'un chapitre. Déclenche
- *                         une annonce plein écran (~2 s) fusionnée à la
- *                         transition de page : « ✦ Progression — Là où tout
- *                         se mesure ». Le temps de chargement devient narration.
+ * Changement de sous-onglet = focus 1 s sur le pill avant le contenu.
  *
- *  · `breadcrumb`       — fil d'Ariane affiché en pill au-dessus du titre du
- *                         tooltip : « Progression · Nutrition ». Repère fixe.
- *
- *  · `secondaryAnchors` — ancres qui reçoivent un anneau gradient violet→or
- *                         en PLUS de la zone principale : le pill du
- *                         sous-onglet actif (montre le changement de
- *                         sous-catégorie), le bouton Photo IA… Deux niveaux
- *                         de lecture : la zone, puis LE détail.
- *
- * Ton éditorial : promesse énergique — verbes d'action, bénéfice concret.
+ * Autres champs d'orientation :
+ *  · `breadcrumb`       — pill « Progression · Nutrition » dans le tooltip
+ *  · `secondaryAnchors` — anneau gradient maintenu sur le pill actif pendant
+ *                         la lecture + bouton Photo IA (double accent)
  */
 
 export type TourChapter = {
@@ -40,6 +41,20 @@ export type TourStep =
     }
   | {
       id: string;
+      type: "focus";
+      anchorId: string;
+      /** Étiquette affichée près de l'élément : « Onglet · Progression » */
+      label: string;
+      /** Durée d'affichage avant auto-avance (ms) */
+      duration: number;
+      route?: string;
+      shape?: "circle" | "rounded";
+      padding?: number;
+      /** Annonce de chapitre jouée AVANT le focus (1re étape du chapitre) */
+      chapter?: TourChapter;
+    }
+  | {
+      id: string;
       type: "spotlight";
       anchorId: string;
       title: string;
@@ -50,9 +65,6 @@ export type TourStep =
       tooltipPosition?: "auto" | "top" | "bottom";
       route?: string;
       softOverlay?: boolean;
-      /** Annonce de chapitre — uniquement sur la 1re étape du chapitre */
-      chapter?: TourChapter;
-      /** Éléments précis à entourer d'un anneau gradient (en plus de la zone) */
       secondaryAnchors?: string[];
     };
 
@@ -71,10 +83,20 @@ export const TOUR_STEPS: TourStep[] = [
 
   /* ═══════════ CHAPITRE 1 · L'ACCUEIL ═══════════ */
   {
+    id: "focus-nav-accueil",
+    type: "focus",
+    anchorId: "nav-accueil",
+    label: "Onglet · Accueil",
+    duration: 1400,
+    route: "/",
+    shape: "rounded",
+    padding: 10,
+    chapter: { name: "L'Accueil", tagline: "Ton point de départ, chaque jour" },
+  },
+  {
     id: "orb",
     type: "spotlight",
     anchorId: "orb",
-    chapter: { name: "L'Accueil", tagline: "Ton point de départ, chaque jour" },
     breadcrumb: "Accueil",
     title: "Ton coach IA, toujours là",
     description:
@@ -113,12 +135,24 @@ export const TOUR_STEPS: TourStep[] = [
 
   /* ═══════════ CHAPITRE 2 · PROGRESSION ═══════════ */
 
+  // Annonce + focus sur l'icône nav : « cet onglet-LÀ, c'est Progression »
+  {
+    id: "focus-nav-progression",
+    type: "focus",
+    anchorId: "nav-progression",
+    label: "Onglet · Progression",
+    duration: 1500,
+    route: "/progression?tab=progression",
+    shape: "rounded",
+    padding: 10,
+    chapter: { name: "Progression", tagline: "Là où tout se mesure" },
+  },
+
   // Vue d'ensemble
   {
     id: "prog-progression",
     type: "spotlight",
     anchorId: "prog-content-progression",
-    chapter: { name: "Progression", tagline: "Là où tout se mesure" },
     breadcrumb: "Progression · Vue d'ensemble",
     title: "Ton QG de progression",
     description:
@@ -131,7 +165,17 @@ export const TOUR_STEPS: TourStep[] = [
     secondaryAnchors: ["prog-tab-progression"],
   },
 
-  // Mes Séances — catalogue
+  // ── Sous-onglet Mes Séances : focus 1 s sur le pill, puis contenu ──
+  {
+    id: "focus-tab-mes-seances",
+    type: "focus",
+    anchorId: "prog-tab-mes-seances",
+    label: "Sous-onglet · Mes Séances",
+    duration: 1000,
+    route: "/progression?tab=mes-seances",
+    shape: "rounded",
+    padding: 6,
+  },
   {
     id: "prog-seances-catalogue",
     type: "spotlight",
@@ -147,8 +191,6 @@ export const TOUR_STEPS: TourStep[] = [
     softOverlay: true,
     secondaryAnchors: ["prog-tab-mes-seances"],
   },
-
-  // Mes Séances — création
   {
     id: "prog-seances-create",
     type: "spotlight",
@@ -164,8 +206,6 @@ export const TOUR_STEPS: TourStep[] = [
     softOverlay: true,
     secondaryAnchors: ["prog-tab-mes-seances"],
   },
-
-  // Mes Séances — partage
   {
     id: "prog-seances-library",
     type: "spotlight",
@@ -182,7 +222,17 @@ export const TOUR_STEPS: TourStep[] = [
     secondaryAnchors: ["prog-tab-mes-seances"],
   },
 
-  // Nutrition — photo IA ⭐ (double accent : pill + bouton Photo IA)
+  // ── Sous-onglet Nutrition : focus, puis photo IA ⭐ ──
+  {
+    id: "focus-tab-nutrition",
+    type: "focus",
+    anchorId: "prog-tab-nutrition",
+    label: "Sous-onglet · Nutrition",
+    duration: 1000,
+    route: "/progression?tab=nutrition",
+    shape: "rounded",
+    padding: 6,
+  },
   {
     id: "prog-nutrition",
     type: "spotlight",
@@ -196,10 +246,20 @@ export const TOUR_STEPS: TourStep[] = [
     tooltipPosition: "auto",
     route: "/progression?tab=nutrition",
     softOverlay: true,
-    secondaryAnchors: ["prog-tab-nutrition", "nutrition-photo-cta"],
+    secondaryAnchors: ["nutrition-photo-cta"],
   },
 
-  // Analyse de mouvement
+  // ── Sous-onglet Analyse ──
+  {
+    id: "focus-tab-analyse",
+    type: "focus",
+    anchorId: "prog-tab-analyse",
+    label: "Sous-onglet · Analyse",
+    duration: 1000,
+    route: "/progression?tab=analyse",
+    shape: "rounded",
+    padding: 6,
+  },
   {
     id: "prog-analyse",
     type: "spotlight",
@@ -216,7 +276,17 @@ export const TOUR_STEPS: TourStep[] = [
     secondaryAnchors: ["prog-tab-analyse"],
   },
 
-  // Badges
+  // ── Sous-onglet Badges ──
+  {
+    id: "focus-tab-badges",
+    type: "focus",
+    anchorId: "prog-tab-badges",
+    label: "Sous-onglet · Badges",
+    duration: 1000,
+    route: "/progression?tab=badges",
+    shape: "rounded",
+    padding: 6,
+  },
   {
     id: "prog-badges",
     type: "spotlight",
@@ -235,10 +305,20 @@ export const TOUR_STEPS: TourStep[] = [
 
   /* ═══════════ CHAPITRE 3 · COMMUNAUTÉ ═══════════ */
   {
+    id: "focus-nav-communaute",
+    type: "focus",
+    anchorId: "nav-communaute",
+    label: "Onglet · Communauté",
+    duration: 1500,
+    route: "/communaute",
+    shape: "rounded",
+    padding: 10,
+    chapter: { name: "Communauté", tagline: "Ta motivation, démultipliée" },
+  },
+  {
     id: "communaute",
     type: "spotlight",
     anchorId: "page-communaute",
-    chapter: { name: "Communauté", tagline: "Ta motivation, démultipliée" },
     breadcrumb: "Communauté",
     title: "Ta communauté d'entraînement",
     description:
@@ -252,10 +332,20 @@ export const TOUR_STEPS: TourStep[] = [
 
   /* ═══════════ CHAPITRE 4 · TON ESPACE ═══════════ */
   {
+    id: "focus-nav-profil",
+    type: "focus",
+    anchorId: "nav-profil",
+    label: "Onglet · Profil",
+    duration: 1500,
+    route: "/profil",
+    shape: "rounded",
+    padding: 10,
+    chapter: { name: "Ton espace", tagline: "Ton identité, ton histoire" },
+  },
+  {
     id: "profil-header",
     type: "spotlight",
     anchorId: "profil-header",
-    chapter: { name: "Ton espace", tagline: "Ton identité, ton histoire" },
     breadcrumb: "Profil",
     title: "Ta vitrine",
     description:
