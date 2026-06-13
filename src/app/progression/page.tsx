@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Suspense, useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
@@ -2204,7 +2204,19 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 type ProgressionTab = "progression" | "mes-seances" | "nutrition" | "analyse" | "badges";
 const VALID_TABS: ProgressionTab[] = ["progression", "mes-seances", "nutrition", "analyse", "badges"];
 
+/**
+ * Wrapper avec Suspense — useSearchParams() exige un boundary Suspense
+ * en Next 14+, sinon le build statique échoue.
+ */
 export default function ProgressionPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProgressionPageContent />
+    </Suspense>
+  );
+}
+
+function ProgressionPageContent() {
   // Lecture du sous-onglet via query param (?tab=mes-seances) — utilisé par la visite guidée
   const searchParams = useSearchParams();
   const initialTab = (() => {

@@ -11,10 +11,13 @@
  *  3. Route entre TourSlide et TourSpotlight selon le type d'étape
  *  4. Affiche le bouton skip par-dessus
  *
+ * Pourquoi le Suspense : useSearchParams() impose un boundary Suspense en
+ * Next 14+ ; sinon le build statique échoue.
+ *
  * À monter une seule fois dans le layout root.
  */
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useGuidedTour } from "@/context/GuidedTourContext";
@@ -29,7 +32,7 @@ function buildCurrentUrl(pathname: string, search: URLSearchParams): string {
   return s ? `${pathname}?${s}` : pathname;
 }
 
-export default function GuidedTour() {
+function GuidedTourInner() {
   const { isOpen, stepIndex, next, close } = useGuidedTour();
   const router = useRouter();
   const pathname = usePathname();
@@ -101,5 +104,13 @@ export default function GuidedTour() {
         <TourProgress onSkip={() => close(true)} />
       </div>
     </AnimatePresence>
+  );
+}
+
+export default function GuidedTour() {
+  return (
+    <Suspense fallback={null}>
+      <GuidedTourInner />
+    </Suspense>
   );
 }
