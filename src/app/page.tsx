@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Brain, Activity, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
+import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import HomeOrb from "@/components/HomeOrb";
@@ -12,6 +12,7 @@ import DailyDrawer from "@/components/DailyDrawer";
 import NotificationBell from "@/components/NotificationBell";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
+import LandingStory from "@/components/Landing/LandingStory";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import type { StatData } from "@/data/statsData";
@@ -400,13 +401,6 @@ type Particle = { id: number; x: number; y: number; size: number; delay: number;
 
 const heroLines = ["Devenez", "inarrêtable."];
 
-const features = [
-  { icon: Dumbbell, label: "Musculation",  desc: "Suivi musculaire précis" },
-  { icon: Brain,    label: "Coach IA",     desc: "Vocal & personnalisé" },
-  { icon: Utensils, label: "Nutrition",    desc: "Plans adaptatifs" },
-  { icon: Activity, label: "Performance",  desc: "Analyse en temps réel" },
-];
-
 function LandingPage() {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -425,7 +419,10 @@ function LandingPage() {
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen flex flex-col overflow-hidden" style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}>
+    <div className="relative w-full" style={{ overflowX: "clip", background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}>
+
+      {/* ════════ HERO — premier écran ════════ */}
+      <section className="relative w-full min-h-[100svh] flex flex-col overflow-hidden">
 
       {/* ── Grands blobs ambiants ── */}
       <motion.div className="absolute rounded-full pointer-events-none"
@@ -523,96 +520,45 @@ function LandingPage() {
           <span style={{ color: "#A78BFA", fontWeight: 500 }}>tout au même endroit.</span>
         </motion.p>
 
-        {/* ── Visuel central : mesh lumineux animé ── */}
+        {/* ── Appels à l'action ── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex items-center justify-center mb-10 md:mb-14"
-          style={{ width: 340, height: 200 }}
+          initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95, duration: 0.6 }}
+          className="flex flex-col sm:flex-row items-center gap-3"
         >
-          {/* Halos gradient animés en couches */}
-          <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ width: 320, height: 180, background: "radial-gradient(ellipse at 40% 50%, rgba(167,139,250,0.55) 0%, rgba(212,168,67,0.32) 50%, transparent 75%)", filter: "blur(28px)" }}
-            animate={{ scale: [1,1.12,1], x: [-12,12,-12], rotate: [0,8,0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
-          <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ width: 260, height: 140, background: "radial-gradient(ellipse at 60% 40%, rgba(212,168,67,0.5) 0%, rgba(167,139,250,0.3) 55%, transparent 75%)", filter: "blur(22px)" }}
-            animate={{ scale: [1,1.18,1], x: [10,-10,10], rotate: [0,-6,0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }} />
-
-          {/* Lignes decoratives */}
-          {[0,1,2].map((i) => (
-            <motion.div key={i} className="absolute pointer-events-none rounded-full"
-              style={{ width: 180 + i * 60, height: 100 + i * 35, border: `1px solid rgba(167,139,250,${0.2 - i * 0.05})` }}
-              animate={{ rotate: i % 2 === 0 ? [0, 360] : [0, -360], scale: [1, 1.04, 1] }}
-              transition={{ rotate: { duration: 18 + i * 8, repeat: Infinity, ease: "linear" }, scale: { duration: 3, repeat: Infinity, ease: "easeInOut", delay: i * 0.6 } }} />
-          ))}
-
-          {/* Glass card centrale — aperçu app */}
-          <motion.div className="relative z-10 px-7 py-5 rounded-3xl"
-            style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 16px 56px rgba(167,139,250,0.2), 0 4px 16px rgba(212,168,67,0.1), inset 0 1px 0 rgba(255,255,255,0.95)" }}
-            animate={{ y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="flex items-center gap-4">
-              {/* Score ring mini */}
-              <div className="relative flex-shrink-0" style={{ width: 52, height: 52 }}>
-                <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: "rotate(-90deg)" }}>
-                  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(167,139,250,0.15)" strokeWidth="3.5" />
-                  <motion.circle cx="26" cy="26" r="22" fill="none" stroke="url(#sg2)" strokeWidth="3.5" strokeLinecap="round"
-                    strokeDasharray={138.2} initial={{ strokeDashoffset: 138.2 }}
-                    animate={{ strokeDashoffset: 138.2 * 0.09 }} transition={{ duration: 1.5, delay: 0.8, ease: "easeOut" }} />
-                  <defs><linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#A78BFA" /><stop offset="100%" stopColor="#D4A843" /></linearGradient></defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base font-light leading-none" style={{ color: "#2D3748" }}>91</span>
-                  <span className="text-[7px] font-semibold" style={{ color: "#A0AEC0" }}>/100</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>Score du jour</p>
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Récupération top 🔥</p>
-                <p className="text-[10px] font-light" style={{ color: "#A78BFA" }}>+12% cette semaine</p>
-              </div>
-              <div className="ml-2 flex flex-col gap-1.5">
-                {[["💪", "+23%"], ["🔥", "1 847"], ["😴", "7h24"]].map(([emoji, val]) => (
-                  <div key={val} className="flex items-center gap-1.5">
-                    <span className="text-[11px]">{emoji}</span>
-                    <span className="text-[10px] font-semibold" style={{ color: "#4A5568" }}>{val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* ── Feature pills ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.6 }}
-          className="flex flex-wrap justify-center gap-3"
-        >
-          {features.map(({ icon: Icon, label, desc }, i) => (
-            <motion.div key={label}
-              initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 1.15 + i * 0.09, type: "spring", bounce: 0.35 }}
-              whileHover={{ y: -3, scale: 1.04 }}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.62)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 4px 18px rgba(167,139,250,0.07)", cursor: "default" }}
-            >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: i % 2 === 0 ? "linear-gradient(135deg,rgba(240,235,255,0.95) 0%,rgba(212,192,255,0.75) 100%)" : "linear-gradient(135deg,rgba(255,251,240,0.95) 0%,rgba(245,230,163,0.75) 100%)" }}>
-                <Icon size={15} strokeWidth={1.5} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold leading-none mb-0.5" style={{ color: "#2D3748" }}>{label}</p>
-                <p className="text-[10px] font-light leading-none" style={{ color: "#A0AEC0" }}>{desc}</p>
-              </div>
+          <Link href="/auth?mode=signup">
+            <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
+              className="relative inline-flex items-center gap-2 cursor-pointer overflow-hidden rounded-full font-semibold text-white"
+              style={{ padding: "15px 30px", fontSize: 15, background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", boxShadow: "0 10px 30px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+              <motion.div className="absolute inset-0 pointer-events-none"
+                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.35) 50%,transparent 65%)" }}
+                animate={{ x: ["-120%", "120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.6 }} />
+              <span className="relative z-10">Commencer gratuitement</span>
+              <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
             </motion.div>
-          ))}
+          </Link>
+          <button type="button" onClick={() => document.getElementById("decouvrir")?.scrollIntoView({ behavior: "smooth" })}
+            className="inline-flex items-center px-6 py-[14px] rounded-full text-[14px] font-medium cursor-pointer"
+            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.25)", color: "#5A4B86" }}>
+            Découvrir Vaiiya
+          </button>
         </motion.div>
-      </div>
 
-      {/* Dégradé de bas */}
-      <div className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(250,248,255,0.85), transparent)" }} />
+        {/* ── Indice de scroll ── */}
+        <motion.button type="button" aria-label="Découvrir Vaiiya"
+          onClick={() => document.getElementById("decouvrir")?.scrollIntoView({ behavior: "smooth" })}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4, duration: 0.8 }}
+          className="absolute left-1/2 -translate-x-1/2 bottom-6 flex flex-col items-center gap-1.5 cursor-pointer"
+        >
+          <span className="text-[10px] font-medium uppercase tracking-[0.2em]" style={{ color: "#9A8AC0" }}>Découvrir</span>
+          <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }} style={{ color: "#A78BFA" }}>
+            <ChevronDown size={20} strokeWidth={2} />
+          </motion.span>
+        </motion.button>
+      </div>
+      </section>
+
+      {/* ════════ STORY — présentation scrollable ════════ */}
+      <LandingStory />
     </div>
   );
 }
