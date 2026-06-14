@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Coach IA · Musculation · Nutrition — ton accompagnement de santé premium piloté par l'IA. Programmes personnalisés, suivi de progression et communauté fitness.",
+  description: "Coach IA, musculation, nutrition et communauté — tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
   applicationName: "Vaiiya",
   keywords: [
     "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
