@@ -427,30 +427,6 @@ function LandingPage() {
   return (
     <div className="relative w-full min-h-screen flex flex-col overflow-hidden" style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}>
 
-      {/* ──────────────────────────────────────────────────────────────
-          Bloc SEO — descriptif éditorial lu par Google et les lecteurs
-          d'écran, masqué visuellement (le hero animé reste le visuel).
-          Donne à Google un vrai texte de présentation + un <h1> propre,
-          au lieu des chiffres décoratifs de l'aperçu (« 91/100… »).
-         ────────────────────────────────────────────────────────────── */}
-      <section className="sr-only">
-        <h1>Vaiiya — Coach IA, musculation, nutrition et communauté</h1>
-        <p>
-          Vaiiya réunit tout ton coaching sportif au même endroit : un coach IA
-          qui crée tes séances de musculation personnalisées, un suivi nutrition
-          à partir d&apos;une simple photo, l&apos;analyse de ta progression et une
-          communauté pour rester motivé. Prise de masse, perte de poids ou remise
-          en forme : Vaiiya t&apos;accompagne au quotidien et te fait progresser
-          plus vite.
-        </p>
-        <p>
-          Crée et partage tes programmes d&apos;entraînement, suis tes performances
-          et garde le cap grâce à ton score quotidien. Coach IA vocal, nutrition
-          intelligente et suivi de progression — inscription gratuite, sur le web,
-          iOS et Android.
-        </p>
-      </section>
-
       {/* ── Grands blobs ambiants ── */}
       <motion.div className="absolute rounded-full pointer-events-none"
         style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)", willChange: "transform" }}
@@ -1501,16 +1477,42 @@ function LoadingSpinner() {
   );
 }
 
+/* ─── Bloc SEO ───
+   Rendu de façon INCONDITIONNELLE (hors du verrou `isLoading`), donc présent
+   dans le HTML servi côté serveur — Google le lit sans avoir à exécuter le JS.
+   Masqué visuellement (sr-only) : aucun impact sur le design. Lui donne un vrai
+   <h1> + un descriptif éditorial au lieu des chiffres décoratifs de l'aperçu. */
+function SeoIntro() {
+  return (
+    <section className="sr-only">
+      <h1>Vaiiya — Coach IA, musculation, nutrition et communauté</h1>
+      <p>
+        Vaiiya réunit tout ton coaching sportif au même endroit : un coach IA qui
+        crée tes séances de musculation personnalisées, un suivi nutrition à partir
+        d&apos;une simple photo, l&apos;analyse de ta progression et une communauté pour
+        rester motivé. Prise de masse, perte de poids ou remise en forme : Vaiiya
+        t&apos;accompagne au quotidien et te fait progresser plus vite.
+      </p>
+      <p>
+        Crée et partage tes programmes d&apos;entraînement, suis tes performances et
+        garde le cap grâce à ton score quotidien. Coach IA vocal, nutrition
+        intelligente et suivi de progression — inscription gratuite, sur le web,
+        iOS et Android.
+      </p>
+    </section>
+  );
+}
+
 /* ─── Page principale ─── */
 export default function HomePage() {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
-  // Affiche un spinner pendant le chargement de la session (évite la page blanche)
-  if (isLoading) return <LoadingSpinner />;
   // Le popup animé "Bonsoir" est retiré au profit de l'intro logo (SplashIntro).
   void justLoggedIn; void isNewUser; void clearWelcome;
   return (
     <>
-      {user ? <Dashboard /> : <LandingPage />}
+      {/* Toujours rendu, même pendant le chargement → présent dans le HTML SSR (SEO). */}
+      <SeoIntro />
+      {isLoading ? <LoadingSpinner /> : user ? <Dashboard /> : <LandingPage />}
     </>
   );
 }
