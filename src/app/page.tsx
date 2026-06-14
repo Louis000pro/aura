@@ -520,39 +520,21 @@ function LandingPage() {
           <span style={{ color: "#A78BFA", fontWeight: 500 }}>tout au même endroit.</span>
         </motion.p>
 
-        {/* ── Appels à l'action ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95, duration: 0.6 }}
-          className="flex flex-col sm:flex-row items-center gap-3"
-        >
-          <Link href="/auth?mode=signup">
-            <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-              className="relative inline-flex items-center gap-2 cursor-pointer overflow-hidden rounded-full font-semibold text-white"
-              style={{ padding: "15px 30px", fontSize: 15, background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", boxShadow: "0 10px 30px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
-              <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.35) 50%,transparent 65%)" }}
-                animate={{ x: ["-120%", "120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.6 }} />
-              <span className="relative z-10">Commencer gratuitement</span>
-              <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
-            </motion.div>
-          </Link>
-          <button type="button" onClick={() => document.getElementById("decouvrir")?.scrollIntoView({ behavior: "smooth" })}
-            className="inline-flex items-center px-6 py-[14px] rounded-full text-[14px] font-medium cursor-pointer"
-            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.25)", color: "#5A4B86" }}>
-            Découvrir Vaiiya
-          </button>
-        </motion.div>
-
-        {/* ── Indice de scroll ── */}
+        {/* ── Indice de scroll — invite claire à dérouler la page ── */}
         <motion.button type="button" aria-label="Découvrir Vaiiya"
           onClick={() => document.getElementById("decouvrir")?.scrollIntoView({ behavior: "smooth" })}
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4, duration: 0.8 }}
-          className="absolute left-1/2 -translate-x-1/2 bottom-6 flex flex-col items-center gap-1.5 cursor-pointer"
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }}
+          whileHover={{ y: -2 }}
+          className="absolute left-1/2 -translate-x-1/2 bottom-10 flex flex-col items-center gap-3 cursor-pointer"
         >
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em]" style={{ color: "#9A8AC0" }}>Découvrir</span>
-          <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }} style={{ color: "#A78BFA" }}>
-            <ChevronDown size={20} strokeWidth={2} />
-          </motion.span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: "#9A8AC0" }}>Découvrir</span>
+          <motion.div
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 44, height: 44, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(10px)", border: "1px solid rgba(167,139,250,0.3)", boxShadow: "0 8px 26px rgba(167,139,250,0.28)" }}
+            animate={{ y: [0, 9, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <ChevronDown size={23} strokeWidth={2.4} style={{ color: "#A78BFA" }} />
+          </motion.div>
         </motion.button>
       </div>
       </section>
