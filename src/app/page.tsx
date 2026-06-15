@@ -525,9 +525,8 @@ function LandingPage() {
           onClick={() => document.getElementById(DISCOVER_ANCHOR)?.scrollIntoView({ behavior: "smooth" })}
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }}
           whileHover={{ y: -2 }}
-          className="absolute left-1/2 -translate-x-1/2 bottom-10 flex flex-col items-center gap-3 cursor-pointer"
+          className="absolute left-1/2 -translate-x-1/2 bottom-10 flex flex-col items-center cursor-pointer"
         >
-          <span className="text-[11px] font-semibold uppercase tracking-[0.28em]" style={{ color: "#9A8AC0" }}>Découvrir</span>
           <motion.div
             className="flex items-center justify-center rounded-full"
             style={{ width: 44, height: 44, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(10px)", border: "1px solid rgba(167,139,250,0.3)", boxShadow: "0 8px 26px rgba(167,139,250,0.28)" }}
