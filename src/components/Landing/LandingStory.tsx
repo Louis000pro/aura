@@ -29,6 +29,16 @@ const GRAD_TEXT: React.CSSProperties = {
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+/** Ancre de la 1re section — partagée avec le bouton « Découvrir » du hero (page.tsx). */
+export const DISCOVER_ANCHOR = "decouvrir";
+
+/** Surface « carte verre clair » réutilisée (cartes secondaires + personas). */
+const GLASS_CARD: React.CSSProperties = {
+  background: "rgba(255,255,255,0.6)",
+  backdropFilter: "blur(12px)",
+  border: "1px solid rgba(255,255,255,0.85)",
+};
+
 /* ── Révélation au scroll (une seule fois) ── */
 function Reveal({
   children, delay = 0, y = 28, className,
@@ -194,6 +204,15 @@ function MockAnalyse() {
   );
 }
 
+/* Coque commune des 3 maquettes secondaires (grille). */
+function MockShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="lg-surface lg-highlight rounded-[24px] p-4 w-full" style={{ boxShadow: "0 18px 44px -16px rgba(167,139,250,0.3)" }}>
+      {children}
+    </div>
+  );
+}
+
 /* Séances sur-mesure — liste d’exercices + bouton */
 const EXOS = [
   { n: "Développé couché", s: "4 × 8", done: true },
@@ -203,7 +222,7 @@ const EXOS = [
 ];
 function MockSeance() {
   return (
-    <div className="lg-surface lg-highlight rounded-[24px] p-4 w-full" style={{ boxShadow: "0 18px 44px -16px rgba(167,139,250,0.3)" }}>
+    <MockShell>
       <div className="flex items-center gap-2 mb-3">
         <div className="w-7 h-7 rounded-xl flex items-center justify-center lg-rose"><Dumbbell size={14} color="#7C5CFA" /></div>
         <p className="text-[13px] font-semibold" style={{ color: "#2D2150" }}>Haut du corps</p>
@@ -221,7 +240,7 @@ function MockSeance() {
           </div>
         ))}
       </div>
-    </div>
+    </MockShell>
   );
 }
 
@@ -230,7 +249,7 @@ const BARS = [40, 52, 46, 64, 58, 76, 88];
 function MockProgression() {
   const R = 26, C = 2 * Math.PI * R;
   return (
-    <div className="lg-surface lg-highlight rounded-[24px] p-4 w-full" style={{ boxShadow: "0 18px 44px -16px rgba(167,139,250,0.3)" }}>
+    <MockShell>
       <div className="flex items-center gap-3 mb-3">
         <div className="relative" style={{ width: 64, height: 64 }}>
           <svg width="64" height="64" viewBox="0 0 64 64" style={{ transform: "rotate(-90deg)" }}>
@@ -259,14 +278,14 @@ function MockProgression() {
             transition={{ duration: 0.7, ease: EASE, delay: 0.1 + i * 0.06 }} />
         ))}
       </div>
-    </div>
+    </MockShell>
   );
 }
 
 /* Communauté — mini post de feed */
 function MockCommunaute() {
   return (
-    <div className="lg-surface lg-highlight rounded-[24px] p-4 w-full" style={{ boxShadow: "0 18px 44px -16px rgba(167,139,250,0.3)" }}>
+    <MockShell>
       <div className="flex items-center gap-2.5 mb-3">
         <div className="w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-semibold text-white"
           style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)" }}>L</div>
@@ -285,7 +304,7 @@ function MockCommunaute() {
       <div className="flex items-center gap-4 text-[11px] font-medium" style={{ color: "#7C6BAA" }}>
         <span>❤️ 128</span><span>💬 14</span><span className="ml-auto">↗ Partager</span>
       </div>
-    </div>
+    </MockShell>
   );
 }
 
@@ -335,7 +354,7 @@ function MiniCard({ icon: Icon, title, desc, mock }: { icon: React.ElementType; 
   return (
     <Reveal className="h-full">
       <div className="h-full rounded-[26px] p-5 flex flex-col"
-        style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 12px 40px -14px rgba(167,139,250,0.2)" }}>
+        style={{ ...GLASS_CARD, boxShadow: "0 12px 40px -14px rgba(167,139,250,0.2)" }}>
         <div className="mb-4">{mock}</div>
         <div className="flex items-center gap-2 mb-1.5">
           <div className="w-7 h-7 rounded-xl flex items-center justify-center lg-rose"><Icon size={14} color="#7C5CFA" /></div>
@@ -354,12 +373,40 @@ const PERSONAS = [
   { tag: "Un objectif précis", title: "Taillé pour ton but", desc: "Perte de poids, prise de masse ou remise en forme : Vaiiya adapte tout à ce que tu vises vraiment." },
 ];
 
+/* Fonctionnalités phares — pilotent les lignes alternées (l'alternance vient de l'index). */
+const FEATURES = [
+  {
+    eyebrow: "Coach IA vocal",
+    accent: "rgba(167,139,250,0.28)",
+    title: <>Parle. Il <span style={GRAD_TEXT}>t’écoute</span>, et il agit.</>,
+    desc: "Demande à voix haute, comme à un vrai coach. Vaiiya crée ta séance, répond à tes questions et ajuste ton plan en temps réel — sans que tu touches un seul réglage.",
+    bullets: ["Séances générées sur commande", "Répond à toutes tes questions", "S’adapte à ta forme du jour"],
+    mockup: <MockCoachIA />,
+  },
+  {
+    eyebrow: "Nutrition par photo",
+    accent: "rgba(212,168,67,0.26)",
+    title: <>Photographie ton plat. <span style={GRAD_TEXT}>L’IA fait le reste</span>.</>,
+    desc: "Fini de tout peser et de chercher dans des bases interminables. Une photo, et Vaiiya reconnaît ton repas, estime les calories et détaille tes macros en un instant.",
+    bullets: ["Reconnaissance du plat par l’IA", "Calories et macros automatiques", "Ton suivi nutrition sans friction"],
+    mockup: <MockNutrition />,
+  },
+  {
+    eyebrow: "Analyse du mouvement",
+    accent: "rgba(167,139,250,0.28)",
+    title: <>Filme ton geste, <span style={GRAD_TEXT}>corrige ta technique</span>.</>,
+    desc: "Vaiiya analyse ton mouvement, repère tes appuis et te donne un retour clair pour t’entraîner mieux — et surtout sans te blesser.",
+    bullets: ["Détection des articulations", "Score de technique instantané", "Conseils concrets pour progresser"],
+    mockup: <MockAnalyse />,
+  },
+];
+
 export default function LandingStory() {
   return (
     <div className="relative w-full">
 
       {/* ─────────── 1. CE QU’EST VAIIYA ─────────── */}
-      <section id="decouvrir" className="relative px-6 py-24 md:py-32 scroll-mt-10">
+      <section id={DISCOVER_ANCHOR} className="relative px-6 py-24 md:py-32 scroll-mt-10">
         <div className="max-w-3xl mx-auto text-center">
           <Reveal><Eyebrow>C’est quoi Vaiiya ?</Eyebrow></Reveal>
           <Reveal delay={0.06}>
@@ -391,33 +438,9 @@ export default function LandingStory() {
       {/* ─────────── 2. FONCTIONNALITÉS PHARES ─────────── */}
       <section className="relative px-6 py-10 md:py-14">
         <div className="max-w-5xl mx-auto space-y-24 md:space-y-36">
-          <FeatureRow
-            index={0}
-            eyebrow="Coach IA vocal"
-            accent="rgba(167,139,250,0.28)"
-            title={<>Parle. Il <span style={GRAD_TEXT}>t’écoute</span>, et il agit.</>}
-            desc="Demande à voix haute, comme à un vrai coach. Vaiiya crée ta séance, répond à tes questions et ajuste ton plan en temps réel — sans que tu touches un seul réglage."
-            bullets={["Séances générées sur commande", "Répond à toutes tes questions", "S’adapte à ta forme du jour"]}
-            mockup={<MockCoachIA />}
-          />
-          <FeatureRow
-            index={1}
-            eyebrow="Nutrition par photo"
-            accent="rgba(212,168,67,0.26)"
-            title={<>Photographie ton plat. <span style={GRAD_TEXT}>L’IA fait le reste</span>.</>}
-            desc="Fini de tout peser et de chercher dans des bases interminables. Une photo, et Vaiiya reconnaît ton repas, estime les calories et détaille tes macros en un instant."
-            bullets={["Reconnaissance du plat par l’IA", "Calories et macros automatiques", "Ton suivi nutrition sans friction"]}
-            mockup={<MockNutrition />}
-          />
-          <FeatureRow
-            index={2}
-            eyebrow="Analyse du mouvement"
-            accent="rgba(167,139,250,0.28)"
-            title={<>Filme ton geste, <span style={GRAD_TEXT}>corrige ta technique</span>.</>}
-            desc="Vaiiya analyse ton mouvement, repère tes appuis et te donne un retour clair pour t’entraîner mieux — et surtout sans te blesser."
-            bullets={["Détection des articulations", "Score de technique instantané", "Conseils concrets pour progresser"]}
-            mockup={<MockAnalyse />}
-          />
+          {FEATURES.map((f, i) => (
+            <FeatureRow key={f.eyebrow} index={i} {...f} />
+          ))}
         </div>
       </section>
 
@@ -466,7 +489,7 @@ export default function LandingStory() {
             {PERSONAS.map((p, i) => (
               <Reveal key={p.tag} delay={i * 0.06}>
                 <div className="h-full rounded-[24px] p-6"
-                  style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 12px 40px -16px rgba(167,139,250,0.18)" }}>
+                  style={{ ...GLASS_CARD, boxShadow: "0 12px 40px -16px rgba(167,139,250,0.18)" }}>
                   <span className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold mb-3 lg-rose" style={{ color: "#7C5CFA" }}>{p.tag}</span>
                   <h3 className="text-[17px] font-semibold mb-2" style={{ color: "#1A202C" }}>{p.title}</h3>
                   <p className="text-[14px] font-light leading-relaxed" style={{ color: "#5A6177" }}>{p.desc}</p>

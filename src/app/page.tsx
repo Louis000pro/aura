@@ -12,7 +12,7 @@ import DailyDrawer from "@/components/DailyDrawer";
 import NotificationBell from "@/components/NotificationBell";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
-import LandingStory from "@/components/Landing/LandingStory";
+import LandingStory, { DISCOVER_ANCHOR } from "@/components/Landing/LandingStory";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import type { StatData } from "@/data/statsData";
@@ -522,7 +522,7 @@ function LandingPage() {
 
         {/* ── Indice de scroll — invite claire à dérouler la page ── */}
         <motion.button type="button" aria-label="Découvrir Vaiiya"
-          onClick={() => document.getElementById("decouvrir")?.scrollIntoView({ behavior: "smooth" })}
+          onClick={() => document.getElementById(DISCOVER_ANCHOR)?.scrollIntoView({ behavior: "smooth" })}
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }}
           whileHover={{ y: -2 }}
           className="absolute left-1/2 -translate-x-1/2 bottom-10 flex flex-col items-center gap-3 cursor-pointer"
