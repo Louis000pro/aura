@@ -104,8 +104,8 @@ function MockCoachIA() {
         <div className="px-3.5 py-3 rounded-2xl rounded-tl-md max-w-[82%]" style={{ background: "rgba(240,235,255,0.85)" }}>
           <div className="flex items-center gap-[3px] h-6 mb-1.5">
             {WAVE.map((h, i) => (
-              <motion.span key={i} className="w-[3px] rounded-full" style={{ background: "linear-gradient(180deg,#A78BFA,#D4A843)" }}
-                animate={{ height: [h, h * 1.8, h] }}
+              <motion.span key={i} className="w-[3px] rounded-full" style={{ height: h, background: "linear-gradient(180deg,#A78BFA,#D4A843)" }}
+                animate={{ scaleY: [1, 1.8, 1] }}
                 transition={{ duration: 0.9 + (i % 3) * 0.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.06 }} />
             ))}
           </div>
