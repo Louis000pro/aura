@@ -47,7 +47,7 @@ export const PLANS: Record<PlanId, Plan> = {
   premium: {
     id: "premium",
     name: "Premium",
-    priceCents: 899,
+    priceCents: 599,
     currency: "eur",
     trialDays: 3,
     tagline: "L'expérience Vaiiya complète",
@@ -64,7 +64,7 @@ export const PLANS: Record<PlanId, Plan> = {
   creator: {
     id: "creator",
     name: "Créateur",
-    priceCents: 1499,
+    priceCents: 999,
     currency: "eur",
     trialDays: 3,
     tagline: "Pour les coachs & créateurs qui veulent grandir",
@@ -86,7 +86,7 @@ export function getPlan(id: string | null | undefined): Plan {
   return PLANS.free;
 }
 
-/** Prix formaté pour l'affichage, ex. "8,99 €". */
+/** Prix formaté pour l'affichage, ex. "5,99 €". */
 export function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
 }
