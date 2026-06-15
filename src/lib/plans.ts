@@ -49,7 +49,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Premium",
     priceCents: 899,
     currency: "eur",
-    trialDays: 7,
+    trialDays: 3,
     tagline: "L'expérience Vaiiya complète",
     aiModel: "llama-3.3-70b-versatile", // modèle avancé
     features: [
@@ -66,7 +66,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Créateur",
     priceCents: 1499,
     currency: "eur",
-    trialDays: 7,
+    trialDays: 3,
     tagline: "Pour les coachs & créateurs qui veulent grandir",
     aiModel: "llama-3.3-70b-versatile",
     features: [

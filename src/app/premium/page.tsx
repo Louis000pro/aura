@@ -50,7 +50,7 @@ function PremiumInner() {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
     if (params?.get("success")) setCelebrate(true);
     else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux");
-    else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 7 jours d'essai offerts.");
+    else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 3 jours d'essai offerts.");
   }, [params]);
 
   // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.
@@ -121,7 +121,7 @@ function PremiumInner() {
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "#7C6BAA" }}>
             Coach IA <strong style={{ color: "#6D28D9" }}>sans limite</strong>, programmes exclusifs, zéro pub.
-            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>7 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
           </p>
         </motion.div>
 
@@ -202,7 +202,7 @@ function PremiumInner() {
                         background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "linear-gradient(135deg,#C4A8FF,#A78BFA)",
                         boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
                       }}>
-                      {loading === id ? "Redirection…" : "Démarrer mes 7 jours gratuits"}
+                      {loading === id ? "Redirection…" : "Démarrer mes 3 jours gratuits"}
                     </motion.button>
                   )}
                 </div>
