@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
+import { usePerfMode } from "@/lib/perfMode";
 
 /* ─── Détection geste : tap court vs long press ────────────────────────
    - Tap court  (<350 ms) → ouvre le chat
@@ -45,6 +46,9 @@ export default function HomeOrb({
   const [state, setState] = useState<OrbState>("idle");
   const [levels, setLevels] = useState<number[]>([0, 0, 0, 0, 0]);
   const [error, setError] = useState<string | null>(null);
+
+  // Appareils faibles : on allège l'orbe (moins de blobs, pas de sheen ni d'arcs).
+  const lite = usePerfMode();
 
   const pressStartRef = useRef<number>(0);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -214,8 +218,8 @@ export default function HomeOrb({
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* ─── Anneaux extérieurs irréguliers (très subtils) ─── */}
-      <svg
+      {/* ─── Anneaux extérieurs irréguliers (très subtils) — coupés en perf-lite ─── */}
+      {!lite && <svg
         className="absolute pointer-events-none"
         width={accentSize}
         height={accentSize}
@@ -256,7 +260,7 @@ export default function HomeOrb({
           transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
           style={{ transformOrigin: `${accentSize / 2}px ${accentSize / 2}px` }}
         />
-      </svg>
+      </svg>}
 
       {/* Pulses pendant recording */}
       <AnimatePresence>
@@ -363,6 +367,8 @@ export default function HomeOrb({
           }}
         />
 
+        {/* Blobs 3-5 + sheen rotatif — coupés en perf-lite (allège fortement le GPU) */}
+        {!lite && <>
         {/* Blob 3 — Pêche corail */}
         <motion.div
           className="absolute rounded-full pointer-events-none"
@@ -448,6 +454,7 @@ export default function HomeOrb({
           animate={{ rotate: 360 }}
           transition={{ duration: 14 * speedMult, repeat: Infinity, ease: "linear" }}
         />
+        </>}
 
         {/* ═══ GLASS HIGHLIGHT (effet 3D verre) ═══ */}
         {/* Reflet brillant en haut-gauche pour sphère */}
