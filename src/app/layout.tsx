@@ -119,11 +119,12 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1290x2796.png" />
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{document.documentElement.removeAttribute('data-theme');localStorage.removeItem('aura-theme');}catch(e){}})();` }} />
 
-        {/* Dégradation adaptative : pose la classe perf-lite sur <html> AVANT le
-            paint si l'appareil est faible (peu de RAM/cœurs) ou si l'utilisateur
-            demande moins d'animations. Le CSS + l'orbe s'allègent en conséquence.
-            Seuils ajustables ici (m = Go de RAM, c = cœurs CPU). */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var n=navigator,m=n.deviceMemory,c=n.hardwareConcurrency,r=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;if(r||(typeof m==='number'&&m<=4)||(typeof c==='number'&&c<=4)){document.documentElement.classList.add('perf-lite');}}catch(e){}})();` }} />
+        {/* Qualité visuelle adaptative : pose la classe perf-lite sur <html> AVANT
+            le paint. Priorité au réglage manuel (Paramètres → vaiiya-quality) ;
+            sinon mode auto = détection de l'appareil (m = Go RAM, c = cœurs CPU,
+            ou préférence système « réduire les animations »). Le CSS + l'orbe
+            s'allègent en conséquence. Seuils auto à garder synchro avec perfMode.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var q;try{q=localStorage.getItem('vaiiya-quality');}catch(e){}var lite;if(q==='high'){lite=false;}else if(q==='lite'){lite=true;}else{var n=navigator,m=n.deviceMemory,c=n.hardwareConcurrency,r=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;lite=!!(r||(typeof m==='number'&&m<=4)||(typeof c==='number'&&c<=4));}if(lite){document.documentElement.classList.add('perf-lite');}}catch(e){}})();` }} />
 
         {/* Données structurées JSON-LD — aide Google à comprendre Vaiiya */}
         <script
