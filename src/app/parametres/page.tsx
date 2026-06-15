@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles } from "lucide-react";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles, Gauge } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useTheme } from "@/hooks/useTheme";
+import { useVisualQuality, type VisualQuality } from "@/lib/perfMode";
 import { useGuidedTour } from "@/context/GuidedTourContext";
 import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/push";
 
@@ -79,6 +80,13 @@ const GOALS_OPTIONS = [
 
 const LEVELS = ["Débutant", "Intermédiaire", "Avancé"];
 const DIETS = ["Aucun régime particulier", "Végétarien", "Végétalien", "Sans gluten", "Cétogène", "Paléo"];
+
+/* Réglage de qualité visuelle (impacte la fluidité) — voir lib/perfMode.ts */
+const QUALITY_OPTS: { key: VisualQuality; label: string; desc: string }[] = [
+  { key: "auto", label: "Auto", desc: "S'adapte à la puissance de ton appareil" },
+  { key: "high", label: "Élevée", desc: "Tous les effets visuels (verre dépoli, orbe complet)" },
+  { key: "lite", label: "Fluide", desc: "Effets allégés — plus rapide sur appareils modestes" },
+];
 
 function FieldInput({ label, value, onChange, type = "text", placeholder }: {
   label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
@@ -582,6 +590,7 @@ export default function ParametresPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
+  const { quality, setQuality } = useVisualQuality();
   const { start: startTour } = useGuidedTour();
   const [showProfileModal, setShowProfileModal]   = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -787,6 +796,48 @@ export default function ParametresPage() {
               />
             </div>
           </motion.button>
+
+          {/* Qualité visuelle — impacte directement la fluidité */}
+          <div
+            className="w-full flex flex-col gap-3 px-4 py-3.5 rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.7)",
+              border: "1px solid rgba(255,255,255,0.8)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+            }}
+          >
+            <div className="flex items-center gap-3.5">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(34,211,238,0.2))" }}
+              >
+                <Gauge size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Qualité visuelle</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                  {QUALITY_OPTS.find((o) => o.key === quality)?.desc}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {QUALITY_OPTS.map((opt) => (
+                <motion.button
+                  key={opt.key}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => { setQuality(opt.key); showToast(`Qualité : ${opt.label}`); }}
+                  className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
+                  style={quality === opt.key
+                    ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" }
+                    : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }
+                  }
+                >
+                  {opt.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Découvrir Vaiiya */}
