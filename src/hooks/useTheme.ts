@@ -9,12 +9,13 @@ const STORAGE_KEY = "aura-theme";
 const THEME_EVENT = "aura:theme-change";
 
 function readPreference(): ThemePreference {
-  if (typeof window === "undefined") return "system";
+  // Défaut = clair tout le temps (tant que l'utilisateur ne choisit pas Auto/Sombre).
+  if (typeof window === "undefined") return "light";
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "light" || saved === "dark" || saved === "system") return saved;
   } catch { /* ignore */ }
-  return "system";
+  return "light";
 }
 
 function systemPrefersDark(): boolean {

@@ -103,7 +103,7 @@ export default function Navigation() {
           >
             {isActive && (
               <motion.div layoutId="mobile-pill" className="absolute inset-0 rounded-xl"
-                style={{ background: "linear-gradient(135deg, rgba(var(--surface-rgb),0.62) 0%, rgba(var(--surface-rgb),0.34) 100%)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--surface-rgb),0.6)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.85), 0 2px 10px rgba(0,0,0,0.10)" }}
+                style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
                 transition={{ type: "spring", stiffness: 500, damping: 35 }} />
             )}
             <div className="relative z-10">
@@ -135,7 +135,7 @@ export default function Navigation() {
             >
               {isActive && (
                 <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-                  style={{ background: "linear-gradient(135deg, rgba(var(--surface-rgb),0.62) 0%, rgba(var(--surface-rgb),0.34) 100%)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--surface-rgb),0.6)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.85), 0 2px 10px rgba(0,0,0,0.10)" }}
+                  style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
                   transition={{ type: "spring", stiffness: 500, damping: 35 }} />
               )}
               <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
@@ -189,7 +189,7 @@ export default function Navigation() {
         >
           {isActive && (
             <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-              style={{ background: "linear-gradient(135deg,rgba(var(--tint-violet-rgb),0.95),rgba(var(--tint-cream-rgb),0.95))", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.95),0 2px 12px -2px rgba(var(--accent-rgb),0.22)" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.9)", boxShadow: "0 2px 12px -2px rgba(var(--accent-rgb),0.22)" }}
               transition={{ type: "spring", stiffness: 500, damping: 35 }} />
           )}
           <div className="relative z-10">
@@ -361,7 +361,7 @@ export default function Navigation() {
             <Link href="/auth">
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
                 className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer mx-auto"
-                style={{ background: "linear-gradient(135deg,rgba(var(--tint-violet-rgb),0.7),rgba(var(--tint-cream-rgb),0.7))" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.65)" }}
                 aria-label="Connexion">
                 <LogIn size={16} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
               </motion.div>

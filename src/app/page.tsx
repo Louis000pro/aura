@@ -1038,8 +1038,8 @@ function Dashboard() {
         {/* Header en haut : greeting + avatar (remonté un peu pour dégager le label) */}
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5" style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}>
           <div className="text-left">
-            <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "#7C6BAA" }}>{greeting}</p>
-            <h1 className="text-xl font-light mt-0.5" style={{ color: "#1A1535" }}>
+            <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
+            <h1 className="text-xl font-light mt-0.5" style={{ color: "var(--text-0)" }}>
               {user?.pseudo ?? user?.name ?? ""}
             </h1>
           </div>
@@ -1055,7 +1055,7 @@ function Dashboard() {
             style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.18)" }}
             animate={{ y: [0, 1.5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
             <Dumbbell size={11} strokeWidth={2} style={{ color: "var(--accent)" }} />
-            <span className="text-[11px] font-bold tracking-wide" style={{ color: "#6B5BA0" }}>Séances &amp; repas recommandés</span>
+            <span className="text-[11px] font-bold tracking-wide" style={{ color: "var(--text-soft)" }}>Séances &amp; repas recommandés</span>
             <ChevronDown size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
           </motion.div>
 
@@ -1122,7 +1122,7 @@ function Dashboard() {
                 <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.label}</p>
                 <div className="flex items-baseline gap-0.5">
                   <span className={`${isHero ? "text-lg font-extrabold" : "text-base font-semibold"} leading-none`} style={{ color: "var(--text-1)" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "#5A4A8A" : "var(--text-3)" }}>{s.unit}</span>}
+                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.unit}</span>}
                 </div>
               </motion.div>
             );
@@ -1286,10 +1286,10 @@ function Dashboard() {
               <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--accent)" }}>
                 Du jour
               </p>
-              <p className="text-xl font-light leading-tight" style={{ color: "#1A1535" }}>
+              <p className="text-xl font-light leading-tight" style={{ color: "var(--text-0)" }}>
                 Vidéo · Séance · Perf
               </p>
-              <p className="text-[11px] font-light mt-1.5 leading-snug" style={{ color: "#8B82A8" }}>
+              <p className="text-[11px] font-light mt-1.5 leading-snug" style={{ color: "var(--text-soft)" }}>
                 Tap pour explorer ton contenu
               </p>
               <div className="flex items-center gap-2 mt-2.5">

@@ -34,6 +34,7 @@
   --text-1: #2D3748;   /* principal   */    --text-1-rgb: 45, 55, 72;
   --text-body: #4A5568;/* corps       */
   --text-2: #718096;   /* secondaire  */
+  --text-soft: #6B5BA0;/* texte violet doux (greeting, sous-titres) */
   --text-3: #A0AEC0;   /* labels / tertiaire */  --text-3-rgb: 160, 174, 192;
   /* Accents */
   --accent: #A78BFA;        --accent-rgb: 167, 139, 250;   /* violet */
@@ -57,9 +58,10 @@
   color-scheme: dark;
   --text-0: #F6F4FB;
   --text-1: #ECEAF6;                 --text-1-rgb: 236, 234, 246;
-  --text-body: #C7C2DC;
-  --text-2: #ABA6C4;
-  --text-3: #817B9C;                 --text-3-rgb: 129, 123, 156;
+  --text-body: #CFCAE2;
+  --text-2: #BCB7D6;
+  --text-soft: #BAB2DD;
+  --text-3: #9E98BE;                 --text-3-rgb: 158, 152, 190;
   --accent: #C3AEFF;        --accent-rgb: 195, 174, 255;   /* violet adouci */
   --gold:   #E6C56E;        --gold-rgb:   230, 197, 110;
   --surface-rgb:     46, 39, 76;       /* panneau violet-gris surélevé */
@@ -104,25 +106,21 @@
 
   /* Liquid glass — barres de navigation (frosté translucide, style iOS/Instagram) */
   .nav-glass {
-    /* Verre frosté ; assez opaque pour rester IDENTIQUE sur tout fond (clair ou vidéo) */
-    background: linear-gradient(135deg, rgba(var(--surface-rgb),0.62) 0%, rgba(var(--surface-rgb),0.50) 100%);
+    /* Surface unie translucide (fini le dégradé blanc diagonal) */
+    background: rgba(var(--surface-rgb),0.58);
     backdrop-filter: blur(26px) saturate(180%);
     -webkit-backdrop-filter: blur(26px) saturate(180%);
-    border: 1px solid rgba(var(--glass-sheen),0.6);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen),0.7) inset,
-      0 10px 36px -10px rgba(0,0,0,0.22);
+    border: 1px solid rgba(var(--accent-rgb),0.12);
+    box-shadow: 0 10px 36px -12px rgba(0,0,0,0.22);
   }
 
-  /* Liquid glass jaune — bouton "+" (Publier) */
+  /* Liquid glass — bouton "+" (Publier) : dégradé COLORÉ or (pas blanc) */
   .nav-glass-yellow {
-    background: linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.62) 0%, rgba(var(--gold-rgb),0.46) 100%);
+    background: linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.7) 0%, rgba(var(--gold-rgb),0.55) 100%);
     backdrop-filter: blur(20px) saturate(200%);
     -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border: 1px solid rgba(var(--glass-sheen),0.7);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen),0.65) inset,
-      0 4px 18px rgba(var(--gold-rgb),0.4);
+    border: 1px solid rgba(var(--gold-rgb),0.4);
+    box-shadow: 0 4px 18px rgba(var(--gold-rgb),0.4);
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -143,76 +141,50 @@
   /* Standard liquid glass surface */
   .lg-surface {
     position: relative;
-    background:
-      linear-gradient(135deg, rgba(var(--surface-rgb), 0.72) 0%, rgba(var(--surface-rgb), 0.42) 100%);
+    background: rgba(var(--surface-rgb), 0.66);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--glass-sheen), 0.7);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen), 0.9) inset,
-      0 -1px 0 0 rgba(var(--tint-violet-rgb), 0.4) inset,
-      0 8px 32px -8px rgba(var(--accent-rgb), 0.18),
-      0 24px 56px -12px rgba(var(--cream-mid-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-rgb), 0.10);
+    box-shadow: 0 10px 32px -12px rgba(var(--accent-rgb), 0.16);
   }
 
   /* Violet léger */
   .lg-rose {
-    background:
-      linear-gradient(135deg, rgba(var(--tint-violet-rgb), 0.85) 0%, rgba(var(--violet-mid-rgb), 0.55) 100%);
+    background: rgba(var(--tint-violet-rgb), 0.72);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--glass-sheen), 0.7);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen), 0.95) inset,
-      0 8px 32px -8px rgba(var(--accent-rgb), 0.22);
+    border: 1px solid rgba(var(--violet-mid-rgb), 0.35);
+    box-shadow: 0 10px 32px -12px rgba(var(--accent-rgb), 0.2);
   }
 
   /* Jaune beige léger */
   .lg-turquoise {
-    background:
-      linear-gradient(135deg, rgba(var(--tint-cream-rgb), 0.85) 0%, rgba(var(--cream-mid-rgb), 0.55) 100%);
+    background: rgba(var(--tint-cream-rgb), 0.72);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--glass-sheen), 0.7);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen), 0.95) inset,
-      0 8px 32px -8px rgba(var(--gold-rgb), 0.22);
+    border: 1px solid rgba(var(--cream-mid-rgb), 0.4);
+    box-shadow: 0 10px 32px -12px rgba(var(--gold-rgb), 0.2);
   }
 
   .lg-bicolor {
-    background:
-      linear-gradient(135deg, rgba(var(--tint-violet-rgb), 0.7) 0%, rgba(var(--tint-cream-rgb), 0.7) 100%);
+    background: rgba(var(--tint-violet-rgb), 0.66);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(var(--glass-sheen), 0.75);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen), 0.95) inset,
-      0 8px 32px -8px rgba(var(--accent-rgb), 0.18);
+    border: 1px solid rgba(var(--violet-mid-rgb), 0.3);
+    box-shadow: 0 10px 32px -12px rgba(var(--accent-rgb), 0.16);
   }
 
   /* Strong (more opaque) glass — used for nav bars */
   .lg-strong {
-    background:
-      linear-gradient(135deg, rgba(var(--surface-rgb), 0.86) 0%, rgba(var(--surface-rgb), 0.7) 100%);
+    background: rgba(var(--surface-rgb), 0.82);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(var(--glass-sheen), 0.8);
-    box-shadow:
-      0 1px 0 0 rgba(var(--glass-sheen), 1) inset,
-      0 -1px 0 0 rgba(var(--tint-violet-rgb), 0.4) inset,
-      0 4px 24px -4px rgba(var(--accent-rgb), 0.14);
+    border: 1px solid rgba(var(--accent-rgb), 0.12);
+    box-shadow: 0 6px 24px -8px rgba(var(--accent-rgb), 0.14);
   }
 
-  /* Refractive highlight overlay — adds top-edge shine */
-  .lg-highlight::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(180deg, rgba(var(--glass-sheen), 0.5) 0%, transparent 35%);
-    pointer-events: none;
-    mix-blend-mode: screen;
-  }
+  /* Ancien reflet blanc supprimé (rendu « bâclé / IA ») → no-op */
+  .lg-highlight::before { content: none; }
 
   /* Ambient glow blob — to layer behind glass */
   .lg-blob {
