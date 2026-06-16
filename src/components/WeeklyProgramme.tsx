@@ -86,6 +86,21 @@ function saveToCache(key: string, data: Programme): void {
   } catch { /* ignore */ }
 }
 
+/* ── Overrides : modifs faites via le coach IA (ex: "mercredi pecs").
+   Stockés séparément du programme généré → la régénération locale ne les écrase JAMAIS. ── */
+function getOverrides(userId: string): Record<string, WorkoutDay> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(`vaiiya_prog_overrides_${userId}`) || "{}"); }
+  catch { return {}; }
+}
+
+function applyOverrides(programme: Programme, userId: string): Programme {
+  const ov = getOverrides(userId);
+  if (!ov || Object.keys(ov).length === 0) return programme;
+  const semaine = programme.semaine.map((d) => (ov[d.jour] ? { ...d, ...ov[d.jour] } : d));
+  return { ...programme, semaine };
+}
+
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -525,7 +540,7 @@ export default function WeeklyProgramme() {
       const cacheKey = getCacheKey(user.id);
       if (!force) {
         const cached = loadFromCache(cacheKey);
-        if (cached && (cached as Programme).v === LOCAL_PROG_VERSION) { setProgramme(cached); return; }
+        if (cached && (cached as Programme).v === LOCAL_PROG_VERSION) { setProgramme(applyOverrides(cached, user.id)); return; }
       }
 
       const ctx: Ctx = loc === "salle" ? "salle" : equip === "halteres" ? "halteres" : "poids";
@@ -536,8 +551,8 @@ export default function WeeklyProgramme() {
 
       // Génération locale instantanée (aucune IA)
       const programme = buildLocalProgramme(ctx, sessions, goals, variant, user.id);
-      saveToCache(cacheKey, programme);
-      setProgramme(programme);
+      saveToCache(cacheKey, programme);          // on cache la base SANS les overrides
+      setProgramme(applyOverrides(programme, user.id)); // mais on affiche AVEC les modifs IA
       setError(null);
       setLoading(false);
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated"));
@@ -571,14 +586,10 @@ export default function WeeklyProgramme() {
   useEffect(() => {
     const handler = () => {
       if (!user) return;
-      const now = new Date();
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-      const key = `aura_programme_${user.id}_w${week}_${now.getFullYear()}`;
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) setProgramme(JSON.parse(raw));
-      } catch { /* ignore */ }
+      const key = getCacheKey(user.id);
+      const base = loadFromCache(key);
+      if (base) setProgramme(applyOverrides(base, user.id));
+      else setProgramme((prev) => (prev ? applyOverrides(prev, user.id) : prev));
     };
     window.addEventListener("programme-updated", handler);
     return () => window.removeEventListener("programme-updated", handler);

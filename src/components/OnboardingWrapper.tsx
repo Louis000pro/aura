@@ -11,7 +11,7 @@ import { useGuidedTour, hasTourBeenCompleted } from "@/context/GuidedTourContext
 
 export default function OnboardingWrapper() {
   const { user, isNewUser, isLoading } = useAuth();
-  const { start: startTour } = useGuidedTour();
+  const { start: startTour, isOpen: tourOpen } = useGuidedTour();
 
   const [showModal, setShowModal]             = useState(false);
   const [showBubble, setShowBubble]           = useState(false);
@@ -121,13 +121,13 @@ export default function OnboardingWrapper() {
             isFirstTime={!wasAlreadyCompleted}
             onDone={async () => {
               setShowCelebration(false);
-              // Si c'est un nouveau compte et que la visite n'a jamais été faite, on la lance.
-              // Sinon, comportement habituel : bulle objectifs si non remplis.
+              // Nouveau compte → on lance la visite guidée, qui se terminera sur les 3 offres
+              // (on montre d'abord la valeur, puis le prix = meilleure conversion).
               if (!wasAlreadyCompleted && user?.id) {
                 const alreadyDone = await hasTourBeenCompleted(user.id);
                 if (!alreadyDone) {
                   // Petit délai pour laisser la home se monter (les data-tour-anchor doivent exister)
-                  setTimeout(() => startTour(), 500);
+                  setTimeout(() => startTour({ showPlansAfter: true }), 500);
                   return;
                 }
               }
@@ -139,7 +139,7 @@ export default function OnboardingWrapper() {
 
       {/* ── Bulle robot (objectifs non remplis) ── */}
       <AnimatePresence>
-        {showBubble && !showModal && (
+        {showBubble && !showModal && !tourOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

@@ -256,7 +256,7 @@ export default function TourSpotlight({
       }
     }
   }
-  tooltipTop = Math.max(safeTop, Math.min(viewport.height - tooltipH - 24, tooltipTop));
+  tooltipTop = Math.max(safeTop, Math.min(viewport.height - tooltipH - safeBottom, tooltipTop));
 
   /* ── Anti-recouvrement ──
      Si la carte chevauche encore l'élément spotlighté (typique d'un élément
@@ -283,7 +283,7 @@ export default function TourSpotlight({
       tooltipTop = Math.max(
         safeTop,
         Math.min(
-          viewport.height - tooltipH - 24,
+          viewport.height - tooltipH - safeBottom,
           rect.y + rect.height / 2 - tooltipH / 2
         )
       );

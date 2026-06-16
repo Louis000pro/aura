@@ -15,7 +15,7 @@
  *  2. Sur clic du bouton "Refaire la visite" dans /parametres (manuel)
  */
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -25,7 +25,7 @@ type GuidedTourCtx = {
   isOpen: boolean;
   stepIndex: number;
   totalSteps: number;
-  start: () => void;
+  start: (opts?: { showPlansAfter?: boolean }) => void;
   next: () => void;
   prev: () => void;
   goTo: (index: number) => void;
@@ -41,16 +41,27 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  // Si true, on redirige vers les 3 offres à la fin de la visite (cas nouvelle inscription)
+  const showPlansAfterRef = useRef(false);
 
   const totalSteps = TOUR_STEPS.length;
 
   /* ── Démarrer la visite ── */
-  const start = useCallback(() => {
+  const start = useCallback((opts?: { showPlansAfter?: boolean }) => {
+    showPlansAfterRef.current = !!opts?.showPlansAfter;
     setStepIndex(0);
     setIsOpen(true);
     // Toujours partir de la home pour que les ancres existent
     if (typeof window !== "undefined" && window.location.pathname !== "/") {
       router.push("/");
+    }
+  }, [router]);
+
+  /* ── Fin de visite → montrer les 3 offres si on vient de l'inscription ── */
+  const goToPlansIfNeeded = useCallback(() => {
+    if (showPlansAfterRef.current) {
+      showPlansAfterRef.current = false;
+      router.push("/premium?welcome=1");
     }
   }, [router]);
 
@@ -69,21 +80,22 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
   /* ── Fermer ── */
   const close = useCallback((shouldMark = true) => {
     setIsOpen(false);
-    if (shouldMark) void markCompleted();
-  }, [markCompleted]);
+    if (shouldMark) { void markCompleted(); goToPlansIfNeeded(); }
+  }, [markCompleted, goToPlansIfNeeded]);
 
   /* ── Suivant ── */
   const next = useCallback(() => {
     setStepIndex((i) => {
       if (i >= totalSteps - 1) {
-        // Dernière étape → fermer + marquer
+        // Dernière étape → fermer + marquer + (éventuellement) montrer les offres
         setIsOpen(false);
         void markCompleted();
+        goToPlansIfNeeded();
         return i;
       }
       return i + 1;
     });
-  }, [totalSteps, markCompleted]);
+  }, [totalSteps, markCompleted, goToPlansIfNeeded]);
 
   /* ── Précédent ── */
   const prev = useCallback(() => {

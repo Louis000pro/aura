@@ -30,12 +30,27 @@ function PremiumInner() {
   const [msg, setMsg] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(1); // Premium centré par défaut
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  const onCarouselScroll = () => {
+    const c = carouselRef.current; if (!c) return;
+    const cards = Array.from(c.querySelectorAll("[data-tier]")) as HTMLElement[];
+    const center = c.scrollLeft + c.clientWidth / 2;
+    let best = 0, bestDist = Infinity;
+    cards.forEach((card, i) => {
+      const cc = card.offsetLeft + card.offsetWidth / 2;
+      const d = Math.abs(cc - center);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    setActiveIdx(best);
+  };
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
     if (params?.get("success")) setCelebrate(true);
     else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux");
+    else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 3 jours d'essai offerts.");
   }, [params]);
 
   // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.
@@ -82,16 +97,17 @@ function PremiumInner() {
 
   return (
     <div className="relative h-dvh overflow-hidden px-4 md:py-10 flex flex-col"
-      style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
+      style={{ background: "linear-gradient(180deg,#faf8ff 0%,#f4eeff 50%,#ece4ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
       <motion.div className="absolute rounded-full pointer-events-none"
         style={{ top: "-12%", left: "-8%", width: 460, height: 460, background: "rgba(212,192,255,0.40)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.15, 1] }}
         transition={isMobile ? undefined : { duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+      {/* Touche dorée subtile en haut à droite (rappel de marque, sans couper le bas) */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-12%", right: "-8%", width: 420, height: 420, background: "rgba(245,230,163,0.38)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
-        animate={isMobile ? undefined : { scale: [1, 1.12, 1] }}
+        style={{ top: "6%", right: "-12%", width: 340, height: 340, background: "rgba(245,230,163,0.28)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
+        animate={isMobile ? undefined : { scale: [1, 1.1, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
 
       <div className="relative z-10 max-w-5xl mx-auto w-full flex flex-col flex-1 min-h-0">
@@ -105,7 +121,7 @@ function PremiumInner() {
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "#7C6BAA" }}>
             Coach IA <strong style={{ color: "#6D28D9" }}>sans limite</strong>, programmes exclusifs, zéro pub.
-            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>7 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
           </p>
         </motion.div>
 
@@ -119,6 +135,7 @@ function PremiumInner() {
         {/* Tiers — carrousel horizontal sur mobile, grille sur desktop */}
         <div
           ref={carouselRef}
+          onScroll={onCarouselScroll}
           className="flex md:grid md:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch flex-1 min-h-0"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never }}
         >
@@ -129,12 +146,12 @@ function PremiumInner() {
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[calc(100vw-2rem)] max-w-[440px] md:w-auto md:max-w-none min-h-0"
+                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0"
                 style={{
                   background: highlight
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
                     : "rgba(220,215,235,0.7)",
-                  boxShadow: highlight ? "0 24px 60px -16px rgba(167,139,250,0.45)" : "0 10px 30px rgba(167,139,250,0.10)",
+                  boxShadow: highlight ? "0 18px 50px -22px rgba(167,139,250,0.32)" : "0 10px 30px rgba(167,139,250,0.08)",
                 }}>
                 <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
                   style={{ background: "rgba(255,255,255,0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
@@ -185,13 +202,28 @@ function PremiumInner() {
                         background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "linear-gradient(135deg,#C4A8FF,#A78BFA)",
                         boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
                       }}>
-                      {loading === id ? "Redirection…" : "Démarrer mes 7 jours gratuits"}
+                      {loading === id ? "Redirection…" : "Démarrer mes 3 jours gratuits"}
                     </motion.button>
                   )}
                 </div>
               </motion.div>
             );
           })}
+        </div>
+
+        {/* Points indicateurs — montrent qu'il y a 3 offres à faire défiler (mobile) */}
+        <div className="flex md:hidden justify-center items-center gap-2 mt-3 flex-shrink-0">
+          {order.map((id, i) => (
+            <button key={id} aria-label={`Offre ${i + 1}`}
+              onClick={() => {
+                const c = carouselRef.current;
+                const card = c?.querySelector(`[data-tier="${id}"]`) as HTMLElement | null;
+                if (c && card) c.scrollTo({ left: Math.max(0, card.offsetLeft + card.offsetWidth / 2 - c.clientWidth / 2), behavior: "smooth" });
+              }}
+              className="rounded-full transition-all cursor-pointer"
+              style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
+          ))}
+          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "#9488B5" }}>3 offres · glisse pour comparer</span>
         </div>
 
         <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "#9488B5" }}>

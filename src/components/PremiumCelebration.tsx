@@ -108,7 +108,7 @@ export default function PremiumCelebration({ onClose }: { onClose: () => void })
 
           <motion.p className="text-sm font-light mb-6" style={{ color: "#7C6BAA" }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
-            Ton essai de 7 jours est lancé 🎉<br />
+            Ton essai de 3 jours est lancé 🎉<br />
             Coach IA illimité · contenus exclusifs · zéro pub — <strong style={{ color: "#6D28D9" }}>tout est débloqué.</strong>
           </motion.p>
 
