@@ -99,19 +99,19 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
         <defs>
           <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#A78BFA" />
-            <stop offset="100%" stopColor="#D4A843" />
+            <stop offset="0%" stopColor="var(--accent)" />
+            <stop offset="100%" stopColor="var(--gold)" />
           </linearGradient>
         </defs>
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={strokeW} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--surface-rgb),0.35)" strokeWidth={strokeW} />
         <motion.circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="url(#scoreGrad)" strokeWidth={strokeW} strokeLinecap="round"
           strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: circumference * (1 - score / 100) }}
           transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-2xl font-light leading-none" style={{ color: "#2D3748" }}>{score}</motion.span>
-        <span className="text-[9px] font-semibold tracking-wider uppercase mt-0.5" style={{ color: "#A0AEC0" }}>/100</span>
+        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-2xl font-light leading-none" style={{ color: "var(--text-1)" }}>{score}</motion.span>
+        <span className="text-[9px] font-semibold tracking-wider uppercase mt-0.5" style={{ color: "var(--text-3)" }}>/100</span>
       </div>
     </div>
   );
@@ -136,15 +136,15 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.04 }}
       transition={{ duration: 0.35 }}
       className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}
+      style={{ background: "var(--page-bg)" }}
       onClick={onDismiss}
     >
       {/* Halos de fond */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-20%", left: "-15%", width: 640, height: 640, background: "radial-gradient(circle, rgba(212,192,255,0.55) 0%, transparent 65%)", filter: "blur(60px)" }}
+        style={{ top: "-20%", left: "-15%", width: 640, height: 640, background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.55) 0%, transparent 65%)", filter: "blur(60px)" }}
         animate={{ scale: [1,1.12,1], x: [-8,18,-8] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-20%", right: "-15%", width: 560, height: 560, background: "radial-gradient(circle, rgba(245,230,163,0.5) 0%, transparent 65%)", filter: "blur(60px)" }}
+        style={{ bottom: "-20%", right: "-15%", width: 560, height: 560, background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.5) 0%, transparent 65%)", filter: "blur(60px)" }}
         animate={{ scale: [1,1.18,1], x: [8,-18,8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.6 }} />
 
       {/* Carte principale */}
@@ -155,10 +155,10 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
         transition={{ type: "spring", damping: 22, stiffness: 260, delay: 0.05 }}
         className="relative z-10 flex flex-col items-center text-center mx-5 rounded-[2.5rem] overflow-hidden"
         style={{
-          background: "rgba(255,255,255,0.78)",
+          background: "rgba(var(--surface-rgb),0.78)",
           backdropFilter: "blur(20px)",
-          border: "1px solid rgba(255,255,255,0.92)",
-          boxShadow: "0 40px 100px rgba(167,139,250,0.18), 0 8px 32px rgba(212,168,67,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+          border: "1px solid rgba(var(--surface-rgb),0.92)",
+          boxShadow: "0 40px 100px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(var(--gold-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
           maxWidth: 360,
           width: "100%",
           paddingTop: 40,
@@ -171,7 +171,7 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
         {/* Particules internes */}
         {Array.from({ length: 6 }).map((_, i) => (
           <motion.div key={i} className="absolute rounded-full pointer-events-none"
-            style={{ width: 5 + (i % 3) * 3, height: 5 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(167,139,250,0.75)" : "rgba(212,168,67,0.65)", left: `${8 + i * 16}%`, top: `${8 + (i % 3) * 20}%`, willChange: "transform, opacity" }}
+            style={{ width: 5 + (i % 3) * 3, height: 5 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(var(--accent-rgb),0.75)" : "rgba(var(--gold-rgb),0.65)", left: `${8 + i * 16}%`, top: `${8 + (i % 3) * 20}%`, willChange: "transform, opacity" }}
             animate={{ y: [0, -70, 0], opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
             transition={{ duration: 2.2, delay: 0.4 + i * 0.22, repeat: Infinity, repeatDelay: 2 }} />
         ))}
@@ -179,25 +179,25 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
         {/* Badge salutation */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-full mb-7"
-          style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.12), rgba(212,168,67,0.10))", border: "1px solid rgba(167,139,250,0.18)" }}>
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+          style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.12), rgba(var(--gold-rgb),0.10))", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
+          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
             {isNew ? "Nouvelle aventure" : timeGreeting}
           </span>
-          <span className="text-sm" style={{ color: "#D4A843" }}>✦</span>
+          <span className="text-sm" style={{ color: "var(--gold)" }}>✦</span>
         </motion.div>
 
         {/* Avatar */}
         <div className="relative mb-6">
           {/* Halo pulsant derrière l'avatar */}
           <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ inset: -16, background: "radial-gradient(circle, rgba(167,139,250,0.22) 0%, transparent 70%)" }}
+            style={{ inset: -16, background: "radial-gradient(circle, rgba(var(--accent-rgb),0.22) 0%, transparent 70%)" }}
             animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.15, 0.6] }}
             transition={{ duration: 2.4, repeat: Infinity }} />
           <motion.div
             initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", bounce: 0.52, delay: 0.14 }}
             className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-4xl font-bold"
-            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 14px 48px rgba(167,139,250,0.38), 0 4px 16px rgba(212,168,67,0.18), inset 0 1px 0 rgba(255,255,255,0.85)" }}
+            style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 14px 48px rgba(var(--accent-rgb),0.38), 0 4px 16px rgba(var(--gold-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }}
           >
             {(pseudo || "?")[0]?.toUpperCase()}
           </motion.div>
@@ -207,30 +207,30 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: [0,1.4,0], opacity: [0,1,0], y: i % 2 === 0 ? [-3,-18,-3] : [3,18,3] }}
               transition={{ duration: 1.6, delay: 0.28 + i * 0.22, repeat: Infinity, repeatDelay: 1.4 }}>
-              <Sparkles size={12} style={{ color: i % 2 === 0 ? "#A78BFA" : "#D4A843" }} />
+              <Sparkles size={12} style={{ color: i % 2 === 0 ? "var(--accent)" : "var(--gold)" }} />
             </motion.div>
           ))}
         </div>
 
         {/* Texte */}
         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.27 }}
-          className="text-3xl font-extralight mb-1" style={{ color: "#2D3748" }}>
+          className="text-3xl font-extralight mb-1" style={{ color: "var(--text-1)" }}>
           {isNew ? "Bienvenue !" : "Bon retour !"}
         </motion.p>
         <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}
-          className="text-xl font-light mb-3" style={{ background: "linear-gradient(135deg, #A78BFA, #D4A843)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
+          className="text-xl font-light mb-3" style={{ background: "linear-gradient(135deg, var(--accent), var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
           @{pseudo || "toi"}
         </motion.p>
         <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.44 }}
-          className="text-sm font-light leading-relaxed mb-8" style={{ color: "#718096" }}>
+          className="text-sm font-light leading-relaxed mb-8" style={{ color: "var(--text-2)" }}>
           {isNew ? "Votre parcours commence maintenant ✦" : "Prêt à repousser vos limites ? 💪"}
         </motion.p>
 
         {/* Barre de progression en bas de la carte */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52 }}
-          className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.1)" }}>
+          className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
           <div className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, #A78BFA, #D4A843)", width: `${progress}%`, transition: progress === 0 ? `width ${duration.current}ms linear` : "none" }} />
+            style={{ background: "linear-gradient(90deg, var(--accent), var(--gold))", width: `${progress}%`, transition: progress === 0 ? `width ${duration.current}ms linear` : "none" }} />
         </motion.div>
       </motion.div>
     </motion.div>
@@ -243,10 +243,10 @@ function HomeToast({ message }: { message: string }) {
     <motion.div initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
       className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-      style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2),inset 0 1px 0 rgba(255,255,255,0.9)", whiteSpace: "nowrap" }}
+      style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2),inset 0 1px 0 rgba(var(--surface-rgb),0.9)", whiteSpace: "nowrap" }}
     >
-      <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
-      <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{message}</span>
+      <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
+      <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{message}</span>
     </motion.div>
   );
 }
@@ -277,37 +277,37 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
+      style={{ background: "rgba(var(--tint-violet-rgb),0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
       <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15),inset 0 1px 0 rgba(255,255,255,0.95)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Nutrition</p><h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Ajouter un repas</h2></div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}><X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} /></motion.button>
+          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Nutrition</p><h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Ajouter un repas</h2></div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}><X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} /></motion.button>
         </div>
         <div className="grid grid-cols-4 gap-2 mb-4">
           {mealTypesList.map(({ id, label, emoji }) => (
             <motion.button key={id} whileTap={{ scale: 0.93 }} onClick={() => setType(id)}
               className="flex flex-col items-center gap-1 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
-              style={type === id ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" } : { background: "rgba(240,235,255,0.5)" }}>
+              style={type === id ? { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" } : { background: "rgba(var(--tint-violet-rgb),0.5)" }}>
               <span className="text-base leading-none">{emoji}</span>
-              <span className="text-[9px] font-semibold" style={{ color: type === id ? "#2D3748" : "#A0AEC0" }}>{label}</span>
+              <span className="text-[9px] font-semibold" style={{ color: type === id ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
             </motion.button>
           ))}
         </div>
         <div className="mb-3">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Aliment / Plat</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Poulet grillé, riz complet…" autoFocus className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }} />
+          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Aliment / Plat</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Poulet grillé, riz complet…" autoFocus className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }} />
         </div>
         <div className="mb-5">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Calories (kcal)</label>
-          <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="Ex : 450" className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }} />
+          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Calories (kcal)</label>
+          <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="Ex : 450" className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }} />
         </div>
         <motion.button whileHover={{ scale: saving ? 1 : 1.02 }} whileTap={{ scale: saving ? 1 : 0.97 }} disabled={saving} onClick={handleSubmit}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer transition-all duration-200"
-          style={{ background: name.trim() && !saving ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.45)", color: name.trim() && !saving ? "#2D3748" : "#A0AEC0", boxShadow: name.trim() && !saving ? "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px rgba(167,139,250,0.2)" : "none" }}>
+          style={{ background: name.trim() && !saving ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.45)", color: name.trim() && !saving ? "var(--text-1)" : "var(--text-3)", boxShadow: name.trim() && !saving ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9),0 4px 16px rgba(var(--accent-rgb),0.2)" : "none" }}>
           {saving ? "Enregistrement…" : "Enregistrer le repas"}
         </motion.button>
       </motion.div>
@@ -318,10 +318,10 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
 /* ─── Objectif Modal ─── */
 type GoalType = "workouts" | "calories" | "steps" | "sleep";
 const goalTypesList: { id: GoalType; label: string; desc: string; unit: string; defaultVal: string; icon: React.ElementType; color: string }[] = [
-  { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,     color: "#A78BFA" },
-  { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,       color: "#A78BFA" },
-  { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "#D4A843" },
-  { id: "sleep",    label: "Sommeil",  desc: "/ nuit",    unit: "h/nuit",      defaultVal: "8",     icon: Moon,      color: "#D4A843" },
+  { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,     color: "var(--accent)" },
+  { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,       color: "var(--accent)" },
+  { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "var(--gold)" },
+  { id: "sleep",    label: "Sommeil",  desc: "/ nuit",    unit: "h/nuit",      defaultVal: "8",     icon: Moon,      color: "var(--gold)" },
 ];
 function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (label: string) => void }) {
   const [type, setType] = useState<GoalType>("workouts");
@@ -331,38 +331,38 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(255,251,240,0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
+      style={{ background: "rgba(var(--tint-cream-rgb),0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
       <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(212,168,67,0.12),inset 0 1px 0 rgba(255,255,255,0.95)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--gold-rgb),0.12),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Performance</p><h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Définir un objectif</h2></div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(255,251,240,0.8)" }}><X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} /></motion.button>
+          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Performance</p><h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Définir un objectif</h2></div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-cream-rgb),0.8)" }}><X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} /></motion.button>
         </div>
         <div className="grid grid-cols-2 gap-2 mb-5">
           {goalTypesList.map(({ id, label, desc, icon: Icon, color }) => (
             <motion.button key={id} whileTap={{ scale: 0.95 }} onClick={() => handleTypeChange(id)}
               className="flex items-center gap-2.5 px-3 py-3 rounded-2xl cursor-pointer text-left transition-all duration-150"
-              style={type === id ? { background: "linear-gradient(135deg,rgba(240,235,255,0.95) 0%,rgba(255,251,240,0.95) 100%)", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" } : { background: "rgba(240,235,255,0.45)", border: "1px solid transparent" }}>
-              <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: type === id ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.5)" }}>
-                <Icon size={13} strokeWidth={1.5} style={{ color: type === id ? color : "#A0AEC0" }} />
+              style={type === id ? { background: "linear-gradient(135deg,rgba(var(--tint-violet-rgb),0.95) 0%,rgba(var(--tint-cream-rgb),0.95) 100%)", border: "1px solid rgba(var(--surface-rgb),0.8)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" } : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid transparent" }}>
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: type === id ? "rgba(var(--surface-rgb),0.8)" : "rgba(var(--surface-rgb),0.5)" }}>
+                <Icon size={13} strokeWidth={1.5} style={{ color: type === id ? color : "var(--text-3)" }} />
               </div>
-              <div><p className="text-xs font-semibold" style={{ color: type === id ? "#2D3748" : "#A0AEC0" }}>{label}</p><p className="text-[9px]" style={{ color: "#A0AEC0" }}>{desc}</p></div>
+              <div><p className="text-xs font-semibold" style={{ color: type === id ? "var(--text-1)" : "var(--text-3)" }}>{label}</p><p className="text-[9px]" style={{ color: "var(--text-3)" }}>{desc}</p></div>
             </motion.button>
           ))}
         </div>
         <div className="mb-5">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>Cible</label>
+          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Cible</label>
           <div className="relative">
-            <input type="number" value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-4 py-3 pr-28 rounded-2xl text-sm outline-none" style={{ background: "rgba(255,251,240,0.35)", border: "1px solid rgba(245,230,163,0.55)", color: "#2D3748" }} />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-medium" style={{ color: "#A0AEC0" }}>{selected.unit}</span>
+            <input type="number" value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-4 py-3 pr-28 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-cream-rgb),0.35)", border: "1px solid rgba(var(--cream-mid-rgb),0.55)", color: "var(--text-1)" }} />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>{selected.unit}</span>
           </div>
         </div>
         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => onSave(`${value} ${selected.unit}`)}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-          style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9),0 4px 16px rgba(167,139,250,0.2)" }}>
+          style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9),0 4px 16px rgba(var(--accent-rgb),0.2)" }}>
           Définir l'objectif
         </motion.button>
       </motion.div>
@@ -381,17 +381,17 @@ function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { ico
       onClick={() => { setTapped(true); setTimeout(() => setTapped(false), 500); onClick?.(); }}
       className={`${bg} lg-highlight relative flex-1 rounded-2xl py-4 flex flex-col items-center gap-2 cursor-pointer overflow-hidden`}>
       <AnimatePresence>
-        {tapped && (<motion.div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: "rgba(255,255,255,0.4)" }} initial={{ opacity: 1 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} />)}
+        {tapped && (<motion.div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: "rgba(var(--surface-rgb),0.4)" }} initial={{ opacity: 1 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} />)}
       </AnimatePresence>
       <Icon size={17} strokeWidth={1.5} style={{ color }} />
-      <span className="text-[10px] font-semibold tracking-wide" style={{ color: "#2D3748" }}>{label}</span>
+      <span className="text-[10px] font-semibold tracking-wide" style={{ color: "var(--text-1)" }}>{label}</span>
     </motion.button>
   );
 }
 const quickActionsConfig = [
-  { icon: Flame,    label: "Séance",   color: "#A78BFA", bg: "lg-rose" },
-  { icon: Utensils, label: "Repas",    color: "#D4A843", bg: "lg-turquoise" },
-  { icon: Zap,      label: "Objectif", color: "#A78BFA", bg: "lg-bicolor" },
+  { icon: Flame,    label: "Séance",   color: "var(--accent)", bg: "lg-rose" },
+  { icon: Utensils, label: "Repas",    color: "var(--gold)", bg: "lg-turquoise" },
+  { icon: Zap,      label: "Objectif", color: "var(--accent)", bg: "lg-bicolor" },
 ];
 
 /* ─────────────────────────────────────────────────
@@ -419,7 +419,7 @@ function LandingPage() {
   }, []);
 
   return (
-    <div className="relative w-full" style={{ overflowX: "clip", background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%)" }}>
+    <div className="relative w-full" style={{ overflowX: "clip", background: "var(--page-bg)" }}>
 
       {/* ════════ HERO — premier écran ════════ */}
       <section className="relative w-full min-h-[100svh] flex flex-col overflow-hidden">
@@ -437,37 +437,37 @@ function LandingPage() {
       {/* ── Particules ── */}
       {mounted && particles.map(({ id, x, y, size, delay, duration, opacity }) => (
         <motion.div key={id} className="absolute rounded-full pointer-events-none"
-          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, willChange: "transform, opacity", background: id % 3 === 0 ? `rgba(167,139,250,${opacity})` : id % 3 === 1 ? `rgba(212,168,67,${opacity})` : `rgba(212,192,255,${opacity * 0.8})` }}
+          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, willChange: "transform, opacity", background: id % 3 === 0 ? `rgba(var(--accent-rgb),${opacity})` : id % 3 === 1 ? `rgba(var(--gold-rgb),${opacity})` : `rgba(var(--violet-mid-rgb),${opacity * 0.8})` }}
           animate={{ y: ["-16px","16px","-16px"], opacity: [opacity * 0.2, opacity, opacity * 0.2] }}
           transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }} />
       ))}
 
       {/* ── Anneau décoratif ── */}
       <div className="absolute pointer-events-none rounded-full"
-        style={{ width: 600, height: 600, border: "1px solid rgba(167,139,250,0.07)", top: "50%", left: "50%", marginTop: -300, marginLeft: -300 }} />
+        style={{ width: 600, height: 600, border: "1px solid rgba(var(--accent-rgb),0.07)", top: "50%", left: "50%", marginTop: -300, marginLeft: -300 }} />
 
       {/* ── Nav bar ── */}
       <motion.nav
         initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
         className="relative z-20 flex items-center justify-between gap-2 px-4 md:px-10 py-4"
       >
-        <span className="text-xl md:text-2xl font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "#2D3748" }}>
+        <span className="text-xl md:text-2xl font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "var(--text-1)" }}>
           Vaiiya
         </span>
         <div className="flex items-stretch gap-2">
           <Link href="/auth?mode=login" className="flex">
             <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
               className="flex items-center justify-center h-full px-3 py-2 rounded-xl text-xs font-medium cursor-pointer whitespace-nowrap"
-              style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.85)", color: "#4A5568", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
+              style={{ background: "rgba(var(--surface-rgb),0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.85)", color: "var(--text-body)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
               Se connecter
             </motion.div>
           </Link>
           <Link href="/auth?mode=signup" className="flex">
             <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}
               className="relative flex items-center justify-center h-full px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer overflow-hidden text-center leading-tight max-w-[120px]"
-              style={{ background: "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(167,139,250,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}>
+              style={{ background: "linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.45), inset 0 1px 0 rgba(var(--surface-rgb),0.25)" }}>
               <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.3) 50%,transparent 65%)" }}
+                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(var(--surface-rgb),0.3) 50%,transparent 65%)" }}
                 animate={{ x: ["-120%","120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }} />
               <span className="relative z-10 inline-flex items-center gap-1">
                 Commencer gratuitement
@@ -486,11 +486,11 @@ function LandingPage() {
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 md:mb-10"
-          style={{ background: "rgba(255,255,255,0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(167,139,250,0.25)", boxShadow: "0 4px 20px rgba(167,139,250,0.12)" }}
+          style={{ background: "rgba(var(--surface-rgb),0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.25)", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.12)" }}
         >
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#A78BFA" }} animate={{ opacity: [1,0.3,1], scale: [1,1.4,1] }} transition={{ duration: 1.6, repeat: Infinity }} />
+          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} animate={{ opacity: [1,0.3,1], scale: [1,1.4,1] }} transition={{ duration: 1.6, repeat: Infinity }} />
           <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#5A6177" }}>IA · Musculation · Nutrition</span>
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "#D4A843" }} animate={{ opacity: [0.3,1,0.3], scale: [1.4,1,1.4] }} transition={{ duration: 1.6, repeat: Infinity }} />
+          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} animate={{ opacity: [0.3,1,0.3], scale: [1.4,1,1.4] }} transition={{ duration: 1.6, repeat: Infinity }} />
         </motion.div>
 
         {/* Titre — ligne par ligne */}
@@ -502,7 +502,7 @@ function LandingPage() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.9, delay: 0.3 + li * 0.22, ease: [0.16, 1, 0.3, 1] }}
                 className="text-[clamp(3.2rem,10vw,7rem)] font-extralight leading-[0.95] tracking-tight"
-                style={li === 1 ? { backgroundImage: "linear-gradient(135deg,#A78BFA 0%,#C4902A 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" } : { color: "#1A202C" }}
+                style={li === 1 ? { backgroundImage: "linear-gradient(135deg,var(--accent) 0%,#C4902A 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" } : { color: "var(--text-0)" }}
               >
                 {line}
               </motion.div>
@@ -514,10 +514,10 @@ function LandingPage() {
         <motion.p
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.6 }}
           className="text-base md:text-lg font-light max-w-md leading-relaxed mb-10 md:mb-12"
-          style={{ color: "#718096" }}
+          style={{ color: "var(--text-2)" }}
         >
           Ton coach IA vocal, ton suivi musculaire, ta nutrition —<br />
-          <span style={{ color: "#A78BFA", fontWeight: 500 }}>tout au même endroit.</span>
+          <span style={{ color: "var(--accent)", fontWeight: 500 }}>tout au même endroit.</span>
         </motion.p>
 
         {/* ── Indice de scroll — invite claire à dérouler la page ── */}
@@ -529,10 +529,10 @@ function LandingPage() {
         >
           <motion.div
             className="flex items-center justify-center rounded-full"
-            style={{ width: 44, height: 44, background: "rgba(255,255,255,0.72)", backdropFilter: "blur(10px)", border: "1px solid rgba(167,139,250,0.3)", boxShadow: "0 8px 26px rgba(167,139,250,0.28)" }}
+            style={{ width: 44, height: 44, background: "rgba(var(--surface-rgb),0.72)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.3)", boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.28)" }}
             animate={{ y: [0, 9, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           >
-            <ChevronDown size={23} strokeWidth={2.4} style={{ color: "#A78BFA" }} />
+            <ChevronDown size={23} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
           </motion.div>
         </motion.button>
       </div>
@@ -1025,7 +1025,7 @@ function Dashboard() {
   void quickActionHandlers;
 
   return (
-    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-y-hidden overscroll-none" style={{ background: "linear-gradient(180deg, #faf8ff 0%, #fffef8 100%)", height: "100dvh" }}>
+    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-y-hidden overscroll-none" style={{ background: "var(--page-bg)", height: "100dvh" }}>
 
       {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
       <button
@@ -1052,11 +1052,11 @@ function Dashboard() {
         <div className="absolute bottom-7 left-0 right-0 px-5 flex flex-col items-center gap-2.5">
           {/* Label compact (une seule ligne) : indique clairement le tap */}
           <motion.div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full whitespace-nowrap"
-            style={{ background: "rgba(255,255,255,0.9)", border: "1px solid rgba(212,192,255,0.6)", boxShadow: "0 2px 10px rgba(167,139,250,0.18)" }}
+            style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.18)" }}
             animate={{ y: [0, 1.5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-            <Dumbbell size={11} strokeWidth={2} style={{ color: "#A78BFA" }} />
+            <Dumbbell size={11} strokeWidth={2} style={{ color: "var(--accent)" }} />
             <span className="text-[11px] font-bold tracking-wide" style={{ color: "#6B5BA0" }}>Séances &amp; repas recommandés</span>
-            <ChevronDown size={12} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+            <ChevronDown size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
           </motion.div>
 
           {/* 3 mini-cadrans : Score · Série · Séances */}
@@ -1077,8 +1077,8 @@ function Dashboard() {
                 transition={bumping ? { duration: 0.6, ease: "easeOut" } : { delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
                 className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1 relative"
                 style={isHero
-                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", border: "1px solid rgba(255,255,255,0.95)", boxShadow: "0 10px 28px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.95)", zIndex: 2 }
-                  : { background: bumping ? "linear-gradient(135deg, rgba(212,192,255,0.85) 0%, rgba(245,230,163,0.7) 100%)" : "rgba(255,255,255,0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: bumping ? "0 0 22px rgba(167,139,250,0.6), 0 6px 18px rgba(212,168,67,0.35)" : "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)", zIndex: bumping ? 3 : 1, transition: "box-shadow 0.4s, background 0.4s" }}>
+                  ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", border: "1px solid rgba(var(--surface-rgb),0.95)", boxShadow: "0 10px 28px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(var(--surface-rgb),0.95)", zIndex: 2 }
+                  : { background: bumping ? "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.85) 0%, rgba(var(--cream-mid-rgb),0.7) 100%)" : "rgba(var(--surface-rgb),0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: bumping ? "0 0 22px rgba(var(--accent-rgb),0.6), 0 6px 18px rgba(var(--gold-rgb),0.35)" : "0 4px 16px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)", zIndex: bumping ? 3 : 1, transition: "box-shadow 0.4s, background 0.4s" }}>
 
                 {/* +N qui s'envole quand le score monte */}
                 <AnimatePresence>
@@ -1090,14 +1090,14 @@ function Dashboard() {
                       exit={{ opacity: 0, y: -40 }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
                       className="absolute left-1/2 -translate-x-1/2 -top-1 pointer-events-none px-2 py-0.5 rounded-full text-[11px] font-extrabold"
-                      style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", boxShadow: "0 4px 12px rgba(167,139,250,0.5)", whiteSpace: "nowrap" }}
+                      style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.5)", whiteSpace: "nowrap" }}
                     >
                       +{scoreBump}
                     </motion.div>
                   )}
                 </AnimatePresence>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: isHero ? "rgba(255,255,255,0.6)" : "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
+                  style={{ background: isHero ? "rgba(var(--surface-rgb),0.6)" : "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.95) 0%, rgba(var(--tint-cream-rgb),0.95) 100%)" }}>
                   {isHero ? (
                     <motion.div
                       style={{ display: "flex" }}
@@ -1115,14 +1115,14 @@ function Dashboard() {
                     </motion.div>
                   ) : (
                     <Icon size={13} strokeWidth={1.5}
-                      style={{ color: bumping ? "#D4A843" : "#A78BFA", filter: bumping ? "drop-shadow(0 0 6px rgba(212,168,67,0.9))" : "none", transition: "color 0.3s" }}
+                      style={{ color: bumping ? "var(--gold)" : "var(--accent)", filter: bumping ? "drop-shadow(0 0 6px rgba(var(--gold-rgb),0.9))" : "none", transition: "color 0.3s" }}
                       fill="none" />
                   )}
                 </div>
-                <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "#2D3748" : "#A0AEC0" }}>{s.label}</p>
+                <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.label}</p>
                 <div className="flex items-baseline gap-0.5">
-                  <span className={`${isHero ? "text-lg font-extrabold" : "text-base font-semibold"} leading-none`} style={{ color: "#2D3748" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "#5A4A8A" : "#A0AEC0" }}>{s.unit}</span>}
+                  <span className={`${isHero ? "text-lg font-extrabold" : "text-base font-semibold"} leading-none`} style={{ color: "var(--text-1)" }}>{s.value}</span>
+                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "#5A4A8A" : "var(--text-3)" }}>{s.unit}</span>}
                 </div>
               </motion.div>
             );
@@ -1134,8 +1134,8 @@ function Dashboard() {
         <svg className="absolute -bottom-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
           <defs>
             <linearGradient id="topCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(212,192,255,0.5)" />
-              <stop offset="100%" stopColor="rgba(245,230,163,0.0)" />
+              <stop offset="0%" stopColor="rgba(var(--violet-mid-rgb),0.5)" />
+              <stop offset="100%" stopColor="rgba(var(--cream-mid-rgb),0.0)" />
             </linearGradient>
           </defs>
           <path d="M 0 0 Q 50 10 100 0 L 100 6 L 0 6 Z" fill="url(#topCrescentGrad)" />
@@ -1166,8 +1166,8 @@ function Dashboard() {
         <svg className="absolute -top-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
           <defs>
             <linearGradient id="bottomCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(245,230,163,0.0)" />
-              <stop offset="100%" stopColor="rgba(212,192,255,0.5)" />
+              <stop offset="0%" stopColor="rgba(var(--cream-mid-rgb),0.0)" />
+              <stop offset="100%" stopColor="rgba(var(--violet-mid-rgb),0.5)" />
             </linearGradient>
           </defs>
           <path d="M 0 6 Q 50 -4 100 6 L 100 0 L 0 0 Z" fill="url(#bottomCrescentGrad)" />
@@ -1175,7 +1175,7 @@ function Dashboard() {
 
         {/* Hint chevron */}
         <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
-          <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(167,139,250,0.55)" }} />
+          <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(var(--accent-rgb),0.55)" }} />
         </div>
 
         {/* VOTD carte horizontale large — vidéo à gauche + texte à droite (centrée verticalement dans la demi-lune) */}
@@ -1202,14 +1202,14 @@ function Dashboard() {
               {/* Contour de marque FIXE (dégradé doux, couvre tout le rectangle) */}
               <div
                 className="absolute inset-0"
-                style={{ background: "linear-gradient(120deg, #A78BFA 0%, #C4A8FF 30%, #F5E6A3 65%, #FFB088 100%)", opacity: 0.55 }}
+                style={{ background: "linear-gradient(120deg, var(--accent) 0%, #C4A8FF 30%, var(--cream-mid) 65%, #FFB088 100%)", opacity: 0.55 }}
               />
               {/* UN seul reflet lumineux qui glisse autour, doucement */}
               <motion.div
                 className="absolute"
                 style={{
                   top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(255,255,255,0.85) 340deg, rgba(212,192,255,0.5) 352deg, transparent 360deg)",
+                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(var(--surface-rgb),0.85) 340deg, rgba(var(--violet-mid-rgb),0.5) 352deg, transparent 360deg)",
                 }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
@@ -1220,9 +1220,9 @@ function Dashboard() {
             <div
             className="relative flex items-stretch gap-4 p-2.5 rounded-[28px] w-full overflow-hidden"
             style={{
-              background: "rgba(255,255,255,0.96)",
+              background: "rgba(var(--surface-rgb),0.96)",
               backdropFilter: "blur(14px)",
-              boxShadow: "0 12px 36px rgba(167,139,250,0.22), inset 0 1px 0 rgba(255,255,255,0.95)",
+              boxShadow: "0 12px 36px rgba(var(--accent-rgb),0.22), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
             }}>
 
             {/* Reflet brillant qui balaie la carte (shimmer) */}
@@ -1230,7 +1230,7 @@ function Dashboard() {
               className="absolute top-0 bottom-0 pointer-events-none"
               style={{
                 width: "45%",
-                background: "linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%)",
+                background: "linear-gradient(105deg, transparent 0%, rgba(var(--surface-rgb),0.55) 50%, transparent 100%)",
                 filter: "blur(2px)",
               }}
               animate={{ left: ["-50%", "140%"] }}
@@ -1241,7 +1241,7 @@ function Dashboard() {
               style={{
                 width: isMobile ? 62 : 118, height: isMobile ? 98 : 182,
                 background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18)",
+                boxShadow: "inset 0 0 0 1px rgba(var(--surface-rgb),0.18)",
               }}>
               {dailyVideoUrl ? (
                 <video
@@ -1255,7 +1255,7 @@ function Dashboard() {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(4px)" }}>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.18)", backdropFilter: "blur(4px)" }}>
                     <Play size={24} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 3 }} fill="#FFFFFF" />
                   </div>
                 </div>
@@ -1283,7 +1283,7 @@ function Dashboard() {
 
             {/* Texte à droite */}
             <div className="flex-1 min-w-0 flex flex-col justify-center py-1 pr-2">
-              <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#A78BFA" }}>
+              <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--accent)" }}>
                 Du jour
               </p>
               <p className="text-xl font-light leading-tight" style={{ color: "#1A1535" }}>
@@ -1294,11 +1294,11 @@ function Dashboard() {
               </p>
               <div className="flex items-center gap-2 mt-2.5">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                  style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", boxShadow: "0 2px 8px rgba(167,139,250,0.25)" }}>
-                  <Play size={11} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 0.5 }} fill="#2D3748" />
-                  <span className="text-[12px] font-bold" style={{ color: "#2D3748" }}>Voir</span>
+                  style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.25)" }}>
+                  <Play size={11} strokeWidth={2.5} style={{ color: "var(--text-1)", marginLeft: 0.5 }} fill="var(--text-1)" />
+                  <span className="text-[12px] font-bold" style={{ color: "var(--text-1)" }}>Voir</span>
                 </div>
-                <ChevronUp size={13} strokeWidth={2} style={{ color: "rgba(167,139,250,0.7)" }} />
+                <ChevronUp size={13} strokeWidth={2} style={{ color: "rgba(var(--accent-rgb),0.7)" }} />
               </div>
             </div>
             </div>{/* fin carte intérieure */}
@@ -1329,15 +1329,15 @@ function Dashboard() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowChat(false)}
-              className="fixed inset-0 md:left-[88px] z-[55]" style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }} />
+              className="fixed inset-0 md:left-[88px] z-[55]" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(10px)" }} />
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 280 }}
               className="fixed inset-x-2 md:left-[96px] bottom-2 z-[60] overflow-hidden rounded-3xl"
               style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}>
               <button type="button" onClick={() => setShowChat(false)} aria-label="Fermer"
                 className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(167,139,250,0.15)", backdropFilter: "blur(8px)" }}>
-                <X size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                style={{ background: "rgba(var(--accent-rgb),0.15)", backdropFilter: "blur(8px)" }}>
+                <X size={16} strokeWidth={2} style={{ color: "var(--accent)" }} />
               </button>
               <AIChatPanel messages={chatMessages} aiTyping={aiTyping} onSend={sendMessage} />
             </motion.div>
@@ -1390,10 +1390,10 @@ function Dashboard() {
 /* ─── Spinner de chargement ─── */
 function LoadingSpinner() {
   return (
-    <div className="fixed inset-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)" }}>
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: "var(--page-bg)" }}>
       <motion.div
         className="w-10 h-10 rounded-full border-2"
-        style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+        style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       />

@@ -22,26 +22,78 @@
   --shadow-aura-lg: 0 8px 48px 0 rgba(167, 139, 250, 0.18);
 }
 
+/* ───────────────────────── DESIGN TOKENS ─────────────────────────
+   Source unique de vérité des couleurs. Le mode clair garde EXACTEMENT
+   les valeurs d'origine (zéro régression) ; [data-theme="dark"] redéfinit
+   les mêmes tokens en « violet-nuit ». Les surfaces utilisent un triplet
+   RGB → rgba(var(--surface-rgb), α) pour reteinter sans toucher aux opacités. */
+:root {
+  color-scheme: light;
+  /* Texte */
+  --text-0: #1A202C;   /* titres forts */
+  --text-1: #2D3748;   /* principal   */    --text-1-rgb: 45, 55, 72;
+  --text-body: #4A5568;/* corps       */
+  --text-2: #718096;   /* secondaire  */
+  --text-3: #A0AEC0;   /* labels / tertiaire */  --text-3-rgb: 160, 174, 192;
+  /* Accents */
+  --accent: #A78BFA;        --accent-rgb: 167, 139, 250;   /* violet */
+  --gold:   #D4A843;        --gold-rgb:   212, 168, 67;    /* or beige */
+  /* Surfaces translucides (base RGB) */
+  --surface-rgb:      255, 255, 255;   /* verre blanc            */
+  --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
+  --tint-cream-rgb:   255, 251, 240;   /* #FFFBF0 — voile crème  */
+  --violet-mid: #D4C0FF;    --violet-mid-rgb: 212, 192, 255;
+  --cream-mid:  #F5E6A3;    --cream-mid-rgb:  245, 230, 163;
+  --glass-sheen: 255, 255, 255;        /* liseré lumineux du verre */
+  /* Navigation (icônes sur barre frostée) */
+  --nav-fg-active: #1A1535;
+  --nav-fg-inactive: #2D2150;
+  /* Fonds de page */
+  --page-bg: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
+  --html-bg: #F5F3FF;                  /* anti-flash au lancement PWA */
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --text-0: #F6F4FB;
+  --text-1: #ECEAF6;                 --text-1-rgb: 236, 234, 246;
+  --text-body: #C7C2DC;
+  --text-2: #ABA6C4;
+  --text-3: #817B9C;                 --text-3-rgb: 129, 123, 156;
+  --accent: #C3AEFF;        --accent-rgb: 195, 174, 255;   /* violet adouci */
+  --gold:   #E6C56E;        --gold-rgb:   230, 197, 110;
+  --surface-rgb:     46, 39, 76;       /* panneau violet-gris surélevé */
+  --tint-violet-rgb: 58, 49, 94;
+  --tint-cream-rgb:  54, 46, 82;
+  --violet-mid: #5A4B92;    --violet-mid-rgb: 90, 75, 146;
+  --cream-mid:  #6E5CA0;    --cream-mid-rgb:  110, 92, 160;
+  --glass-sheen: 188, 176, 236;
+  --nav-fg-active: #F4F1FF;
+  --nav-fg-inactive: #B3ABD2;
+  --page-bg: linear-gradient(150deg, #0E0B1A 0%, #16112B 50%, #0E0B1A 100%);
+  --html-bg: #0E0B1A;
+}
+
 @layer base {
   * { box-sizing: border-box; }
 
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
-    background-color: #F5F3FF; /* évite le flash blanc au lancement (PWA) */
+    background-color: var(--html-bg); /* évite le flash blanc au lancement (PWA) */
   }
 
   body {
-    background: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
+    background: var(--page-bg);
     background-attachment: scroll;
-    color: #2D3748;
+    color: var(--text-1);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
   }
 
-  ::selection { background-color: #F0EBFF; color: #2D3748; }
+  ::selection { background-color: rgba(var(--tint-violet-rgb), 1); color: var(--text-1); }
 
   /* Perf scroll : le navigateur saute le rendu des cartes hors écran */
   .cv-auto { content-visibility: auto; contain-intrinsic-size: 0 480px; }
@@ -52,30 +104,30 @@
 
   /* Liquid glass — barres de navigation (frosté translucide, style iOS/Instagram) */
   .nav-glass {
-    /* Verre blanc frosté ; assez opaque pour rester IDENTIQUE sur tout fond (clair ou vidéo) */
-    background: linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.50) 100%);
+    /* Verre frosté ; assez opaque pour rester IDENTIQUE sur tout fond (clair ou vidéo) */
+    background: linear-gradient(135deg, rgba(var(--surface-rgb),0.62) 0%, rgba(var(--surface-rgb),0.50) 100%);
     backdrop-filter: blur(26px) saturate(180%);
     -webkit-backdrop-filter: blur(26px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.6);
+    border: 1px solid rgba(var(--glass-sheen),0.6);
     box-shadow:
-      0 1px 0 0 rgba(255,255,255,0.7) inset,
+      0 1px 0 0 rgba(var(--glass-sheen),0.7) inset,
       0 10px 36px -10px rgba(0,0,0,0.22);
   }
 
   /* Liquid glass jaune — bouton "+" (Publier) */
   .nav-glass-yellow {
-    background: linear-gradient(135deg, rgba(245,230,163,0.62) 0%, rgba(212,168,67,0.46) 100%);
+    background: linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.62) 0%, rgba(var(--gold-rgb),0.46) 100%);
     backdrop-filter: blur(20px) saturate(200%);
     -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border: 1px solid rgba(255,245,200,0.7);
+    border: 1px solid rgba(var(--glass-sheen),0.7);
     box-shadow:
-      0 1px 0 0 rgba(255,255,255,0.65) inset,
-      0 4px 18px rgba(212,168,67,0.4);
+      0 1px 0 0 rgba(var(--glass-sheen),0.65) inset,
+      0 4px 18px rgba(var(--gold-rgb),0.4);
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background-color: rgba(212, 192, 255, 0.6); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb { background-color: rgba(var(--violet-mid-rgb), 0.6); border-radius: 99px; }
 
   /* ─── iOS : empêche le zoom auto sur focus d'un input (font-size >= 16px requis) ─── */
   @media (max-width: 768px) {
@@ -92,63 +144,63 @@
   .lg-surface {
     position: relative;
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.42) 100%);
+      linear-gradient(135deg, rgba(var(--surface-rgb), 0.72) 0%, rgba(var(--surface-rgb), 0.42) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(var(--glass-sheen), 0.7);
     box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
-      0 -1px 0 0 rgba(240, 235, 255, 0.4) inset,
-      0 8px 32px -8px rgba(167, 139, 250, 0.18),
-      0 24px 56px -12px rgba(245, 230, 163, 0.1);
+      0 1px 0 0 rgba(var(--glass-sheen), 0.9) inset,
+      0 -1px 0 0 rgba(var(--tint-violet-rgb), 0.4) inset,
+      0 8px 32px -8px rgba(var(--accent-rgb), 0.18),
+      0 24px 56px -12px rgba(var(--cream-mid-rgb), 0.1);
   }
 
   /* Violet léger */
   .lg-rose {
     background:
-      linear-gradient(135deg, rgba(240, 235, 255, 0.85) 0%, rgba(212, 192, 255, 0.55) 100%);
+      linear-gradient(135deg, rgba(var(--tint-violet-rgb), 0.85) 0%, rgba(var(--violet-mid-rgb), 0.55) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(var(--glass-sheen), 0.7);
     box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
-      0 8px 32px -8px rgba(167, 139, 250, 0.22);
+      0 1px 0 0 rgba(var(--glass-sheen), 0.95) inset,
+      0 8px 32px -8px rgba(var(--accent-rgb), 0.22);
   }
 
   /* Jaune beige léger */
   .lg-turquoise {
     background:
-      linear-gradient(135deg, rgba(255, 251, 240, 0.85) 0%, rgba(245, 230, 163, 0.55) 100%);
+      linear-gradient(135deg, rgba(var(--tint-cream-rgb), 0.85) 0%, rgba(var(--cream-mid-rgb), 0.55) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(var(--glass-sheen), 0.7);
     box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
-      0 8px 32px -8px rgba(212, 168, 67, 0.22);
+      0 1px 0 0 rgba(var(--glass-sheen), 0.95) inset,
+      0 8px 32px -8px rgba(var(--gold-rgb), 0.22);
   }
 
   .lg-bicolor {
     background:
-      linear-gradient(135deg, rgba(240, 235, 255, 0.7) 0%, rgba(255, 251, 240, 0.7) 100%);
+      linear-gradient(135deg, rgba(var(--tint-violet-rgb), 0.7) 0%, rgba(var(--tint-cream-rgb), 0.7) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(var(--glass-sheen), 0.75);
     box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
-      0 8px 32px -8px rgba(167, 139, 250, 0.18);
+      0 1px 0 0 rgba(var(--glass-sheen), 0.95) inset,
+      0 8px 32px -8px rgba(var(--accent-rgb), 0.18);
   }
 
   /* Strong (more opaque) glass — used for nav bars */
   .lg-strong {
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.7) 100%);
+      linear-gradient(135deg, rgba(var(--surface-rgb), 0.86) 0%, rgba(var(--surface-rgb), 0.7) 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(var(--glass-sheen), 0.8);
     box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 1) inset,
-      0 -1px 0 0 rgba(240, 235, 255, 0.4) inset,
-      0 4px 24px -4px rgba(167, 139, 250, 0.14);
+      0 1px 0 0 rgba(var(--glass-sheen), 1) inset,
+      0 -1px 0 0 rgba(var(--tint-violet-rgb), 0.4) inset,
+      0 4px 24px -4px rgba(var(--accent-rgb), 0.14);
   }
 
   /* Refractive highlight overlay — adds top-edge shine */
@@ -157,7 +209,7 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 35%);
+    background: linear-gradient(180deg, rgba(var(--glass-sheen), 0.5) 0%, transparent 35%);
     pointer-events: none;
     mix-blend-mode: screen;
   }
@@ -228,7 +280,7 @@
 /* Uses <b> tag so [data-theme="dark"] span {!important} cannot override */
 .hashtag,
 b.hashtag {
-  color: #A78BFA !important;
+  color: var(--accent) !important;
   font-weight: 700 !important;
   cursor: pointer;
   display: inline;
@@ -291,162 +343,37 @@ html.perf-lite .lg-blob { filter: blur(34px); opacity: 0.5; }
 /* ─────────────────────── SKELETON SHIMMER ─────────────────────── */
 @layer utilities {
   .skeleton {
-    background: linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.4) 50%, rgba(212,192,255,0.2) 75%);
+    background: linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.2) 25%, rgba(var(--violet-mid-rgb),0.4) 50%, rgba(var(--violet-mid-rgb),0.2) 75%);
     background-size: 200% 100%;
     animation: shimmer-x 1.5s infinite;
     border-radius: 9999px;
   }
 }
 
-/* ─────────────────────────── DARK MODE ─────────────────────────── */
-
-[data-theme="dark"] body {
-  background: linear-gradient(135deg, #0F0E1A 0%, #15111E 50%, #0F0E1A 100%) !important;
-  color: #E2E0EA !important;
-  color-scheme: dark;
-}
+/* ─────────────────────────── MODE SOMBRE ───────────────────────────
+   Fini les surcharges fragiles `[style*=...]` : tout passe désormais par les
+   design tokens redéfinis dans [data-theme="dark"] (en haut du fichier).
+   Surfaces → rgba(var(--…-rgb), α), texte → var(--text-…), accents →
+   var(--accent)/var(--gold). Le basculement est automatique partout où le
+   code utilise ces tokens. Ci-dessous : seuls les garde-fous pour les
+   éléments natifs qui n'ont pas de style inline (sélection, champs nus). */
 
 [data-theme="dark"] ::selection {
-  background-color: rgba(167, 139, 250, 0.3);
-  color: #E2E0EA;
+  background-color: rgba(var(--accent-rgb), 0.32);
+  color: var(--text-1);
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 80, 180, 0.5);
-}
-
-/* Glass surfaces */
-[data-theme="dark"] .lg-surface {
-  background: linear-gradient(135deg, rgba(40, 32, 72, 0.82) 0%, rgba(28, 22, 55, 0.62) 100%) !important;
-  border-color: rgba(100, 80, 180, 0.22) !important;
-  box-shadow:
-    0 1px 0 0 rgba(120, 100, 200, 0.25) inset,
-    0 -1px 0 0 rgba(80, 60, 160, 0.15) inset,
-    0 8px 32px -8px rgba(80, 60, 160, 0.22),
-    0 24px 56px -12px rgba(60, 40, 120, 0.1) !important;
-}
-
-[data-theme="dark"] .lg-strong {
-  background: linear-gradient(135deg, rgba(22, 18, 45, 0.97) 0%, rgba(16, 12, 36, 0.94) 100%) !important;
-  border-color: rgba(100, 80, 180, 0.28) !important;
-  box-shadow:
-    0 1px 0 0 rgba(120, 100, 200, 0.3) inset,
-    0 -1px 0 0 rgba(80, 60, 160, 0.15) inset,
-    0 4px 24px -4px rgba(80, 60, 160, 0.18) !important;
-}
-
-[data-theme="dark"] .lg-rose {
-  background: linear-gradient(135deg, rgba(55, 38, 110, 0.85) 0%, rgba(75, 52, 138, 0.62) 100%) !important;
-  border-color: rgba(120, 90, 200, 0.3) !important;
-}
-
-[data-theme="dark"] .lg-turquoise {
-  background: linear-gradient(135deg, rgba(42, 36, 18, 0.85) 0%, rgba(62, 52, 22, 0.62) 100%) !important;
-  border-color: rgba(160, 130, 60, 0.25) !important;
-}
-
-[data-theme="dark"] .lg-bicolor {
-  background: linear-gradient(135deg, rgba(48, 34, 96, 0.78) 0%, rgba(38, 32, 18, 0.78) 100%) !important;
-  border-color: rgba(100, 80, 180, 0.22) !important;
-}
-
-/* Text color overrides — !important needed to beat inline styles */
-[data-theme="dark"] p,
-[data-theme="dark"] span,
-[data-theme="dark"] h1,
-[data-theme="dark"] h2,
-[data-theme="dark"] h3,
-[data-theme="dark"] h4,
-[data-theme="dark"] h5,
-[data-theme="dark"] label,
-[data-theme="dark"] li,
-[data-theme="dark"] td,
-[data-theme="dark"] th {
-  color: #E2E0EA !important;
-}
-
-/* Preserve accent colors */
-[data-theme="dark"] [style*="#A78BFA"],
-[data-theme="dark"] [style*="167, 139, 250"] { color: #A78BFA !important; }
-
-/* Hashtag purple — must come AFTER [data-theme="dark"] span rule to win the cascade */
-[data-theme="dark"] .hashtag,
-[data-theme="dark"] p .hashtag,
-[data-theme="dark"] span.hashtag {
-  color: #A78BFA !important;
-  font-weight: 700 !important;
-}
-[data-theme="dark"] [style*="#D4A843"],
-[data-theme="dark"] [style*="212, 168, 67"] { color: #D4A843 !important; }
-[data-theme="dark"] [style*="#EF4444"],
-[data-theme="dark"] [style*="239, 68, 68"] { color: #EF4444 !important; }
-[data-theme="dark"] [style*="#10B981"],
-[data-theme="dark"] [style*="16, 185, 129"] { color: #10B981 !important; }
-[data-theme="dark"] [style*="#F59E0B"],
-[data-theme="dark"] [style*="245, 158, 11"] { color: #F59E0B !important; }
-[data-theme="dark"] [style*="#A0AEC0"],
-[data-theme="dark"] [style*="160, 174, 192"] { color: #9A98B0 !important; }
-[data-theme="dark"] [style*="#718096"],
-[data-theme="dark"] [style*="113, 128, 150"] { color: #7A7890 !important; }
-
-/* Button backgrounds */
-[data-theme="dark"] button {
-  color: #E2E0EA !important;
-}
-
-/* Input fields */
-[data-theme="dark"] input,
-[data-theme="dark"] textarea {
-  background: rgba(35, 28, 62, 0.7) !important;
-  border-color: rgba(100, 80, 180, 0.25) !important;
-  color: #E2E0EA !important;
-}
-
-[data-theme="dark"] input::placeholder,
-[data-theme="dark"] textarea::placeholder {
-  color: #6B6A80 !important;
-}
-
-/* Cards & surfaces with white/light backgrounds */
-[data-theme="dark"] [style*="rgba(255,255,255,0.85)"],
-[data-theme="dark"] [style*="rgba(255,255,255,0.9)"],
-[data-theme="dark"] [style*="rgba(255,255,255,0.97)"],
-[data-theme="dark"] [style*="rgba(255,255,255,0.95)"],
-[data-theme="dark"] [style*="rgba(255,255,255,0.7)"],
-[data-theme="dark"] [style*="rgba(255,255,255,0.65)"] {
-  background: rgba(28, 22, 55, 0.82) !important;
-  border-color: rgba(100, 80, 180, 0.2) !important;
-}
-
-/* Inline white/light backgrounds */
-[data-theme="dark"] [style*="background: \"rgba(255,255,255"],
-[data-theme="dark"] [style*="background:\"rgba(255,255,255"] {
-  background: rgba(28, 22, 55, 0.82) !important;
-}
-
-/* Body background in dark mode */
-[data-theme="dark"] body {
-  background: linear-gradient(135deg, #0D0B18 0%, #130F22 50%, #0D0B18 100%) !important;
-}
-
-/* Feed post cards specifically */
-[data-theme="dark"] .feed-card {
-  background: rgba(22, 17, 45, 0.9) !important;
-  border-color: rgba(100, 80, 180, 0.18) !important;
-}
-
-/* Inputs */
+/* Champs de formulaire sans style inline → fond sombre lisible.
+   Pas de !important : un input déjà stylé en inline (donc tokenisé) gagne. */
 [data-theme="dark"] input,
 [data-theme="dark"] textarea,
 [data-theme="dark"] select {
-  background: rgba(35, 28, 62, 0.8) !important;
-  border-color: rgba(100, 80, 180, 0.3) !important;
-  color: #E2E0EA !important;
+  background: rgba(var(--surface-rgb), 0.5);
+  border-color: rgba(var(--accent-rgb), 0.22);
+  color: var(--text-1);
 }
-
-/* Secondary text */
-[data-theme="dark"] [style*="#2D3748"] { color: #E2E0EA !important; }
-[data-theme="dark"] [style*="45, 55, 72"] { color: #E2E0EA !important; }
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: var(--text-3); }
 
 /* ───────────────── Pages vitrine SEO (.seo-article) ───────────────── */
 .seo-article h1 {

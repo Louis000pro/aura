@@ -117,7 +117,9 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" media="screen and (device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1284x2778.png" />
         <link rel="apple-touch-startup-image" media="screen and (device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1179x2556.png" />
         <link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1290x2796.png" />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{document.documentElement.removeAttribute('data-theme');localStorage.removeItem('aura-theme');}catch(e){}})();` }} />
+        {/* Thème AVANT le paint → aucun flash. Préf. aura-theme : system|light|dark.
+            "system" (ou absente) suit prefers-color-scheme du téléphone. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p;try{p=localStorage.getItem('aura-theme');}catch(e){}var dark=p==='dark'||((p==='system'||!p)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(dark){el.setAttribute('data-theme','dark');}else{el.removeAttribute('data-theme');}}catch(e){}})();` }} />
 
         {/* Qualité visuelle adaptative : pose la classe perf-lite sur <html> AVANT
             le paint. Priorité au réglage manuel (Paramètres → vaiiya-quality) ;

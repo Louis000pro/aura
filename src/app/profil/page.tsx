@@ -108,21 +108,21 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="overflow-hidden"
     >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(var(--tint-violet-rgb),0.8)" }}>
         <div className="flex flex-col gap-2.5 mb-3 max-h-52 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-3">
-              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
             </div>
           ) : comments.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
+            <p className="text-xs text-center py-2" style={{ color: "var(--text-3)" }}>Sois le premier à commenter</p>
           ) : comments.map((c, i) => {
             const pseudo = c.author?.pseudo ?? "inconnu";
             const avatar = c.author?.avatar_url;
             return (
               <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2">
                 <Link href={`/profil/${encodeURIComponent(pseudo)}`} className="flex-shrink-0">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                     {avatar
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
@@ -130,11 +130,11 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
                   </div>
                 </Link>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: "#2D3748" }}>
+                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-1)" }}>
                     <Link href={`/profil/${encodeURIComponent(pseudo)}`}><span className="font-semibold mr-1.5 hover:underline">{pseudo}</span></Link>
                     <span className="font-light">{c.content}</span>
                   </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{postTimeAgo(c.created_at)}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{postTimeAgo(c.created_at)}</p>
                 </div>
               </motion.div>
             );
@@ -144,11 +144,11 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { po
           <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
             placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"} disabled={!user}
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
-            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
           <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)", transition: "background 0.2s" }}>
-            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
+            style={{ background: input.trim() && user ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)", transition: "background 0.2s" }}>
+            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }} />
           </motion.button>
         </div>
       </div>
@@ -181,15 +181,15 @@ function Toast({ message }: { message: string }) {
       transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
       className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
       style={{
-        background: "rgba(255,255,255,0.95)",
+        background: "rgba(var(--surface-rgb),0.95)",
         backdropFilter: "blur(10px)",
-        border: "1px solid rgba(240,235,255,0.9)",
-        boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
-        color: "#2D3748",
+        border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
+        boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+        color: "var(--text-1)",
         whiteSpace: "nowrap",
       }}
     >
-      <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
+      <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
       <span className="text-sm font-medium">{message}</span>
     </motion.div>
   );
@@ -263,10 +263,10 @@ function AvatarCropper({ src, onCancel, onCropped }: {
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-3xl p-6 flex flex-col items-center"
-        style={{ background: "rgba(255,255,255,0.98)", boxShadow: "0 24px 70px rgba(167,139,250,0.3)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 24px 70px rgba(var(--accent-rgb),0.3)" }}
       >
-        <p className="text-base font-semibold mb-1" style={{ color: "#2D3748" }}>Recadre ta photo</p>
-        <p className="text-[11px] mb-4" style={{ color: "#A0AEC0" }}>Glisse pour déplacer · zoome avec le curseur</p>
+        <p className="text-base font-semibold mb-1" style={{ color: "var(--text-1)" }}>Recadre ta photo</p>
+        <p className="text-[11px] mb-4" style={{ color: "var(--text-3)" }}>Glisse pour déplacer · zoome avec le curseur</p>
 
         {/* Viewport circulaire */}
         <div
@@ -292,26 +292,26 @@ function AvatarCropper({ src, onCancel, onCropped }: {
             }}
           />
           {/* Anneau de cadrage */}
-          <div className="absolute inset-0 pointer-events-none rounded-full" style={{ boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.9)" }} />
+          <div className="absolute inset-0 pointer-events-none rounded-full" style={{ boxShadow: "inset 0 0 0 2px rgba(var(--surface-rgb),0.9)" }} />
         </div>
 
         {/* Zoom */}
         <input
           type="range" min={1} max={3} step={0.01} value={zoom}
           onChange={(e) => setZoom(parseFloat(e.target.value))}
-          className="w-full mt-5 accent-[#A78BFA]"
+          className="w-full mt-5 accent-[var(--accent)]"
         />
 
         {/* Actions */}
         <div className="flex gap-3 w-full mt-5">
           <motion.button whileTap={{ scale: 0.96 }} onClick={onCancel}
             className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)", color: "#718096" }}>
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-2)" }}>
             Annuler
           </motion.button>
           <motion.button whileTap={{ scale: 0.96 }} onClick={confirm}
             className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-            style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}>
+            style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}>
             <Check size={15} strokeWidth={2.5} /> Valider
           </motion.button>
         </div>
@@ -398,9 +398,9 @@ function EditProfileModal({
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 pb-8 md:pb-6"
         style={{
-          background: "rgba(255,255,255,0.98)",
+          background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(12px)",
-          boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
+          boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.18)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -410,14 +410,14 @@ function EditProfileModal({
         </div>
 
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold" style={{ color: "#2D3748" }}>Modifier le profil</h2>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>Modifier le profil</h2>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
           >
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -429,9 +429,9 @@ function EditProfileModal({
             onClick={() => fileRef.current?.click()}
             className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-light cursor-pointer relative overflow-hidden"
             style={{
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 4px 20px rgba(167,139,250,0.3)",
-              color: "#2D3748",
+              background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+              boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.3)",
+              color: "var(--text-1)",
             }}
           >
             {previewUrl ? (
@@ -441,10 +441,10 @@ function EditProfileModal({
               <span>{editPseudo.charAt(0).toUpperCase() || "?"}</span>
             )}
             {uploading && (
-              <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(255,255,255,0.75)" }}>
+              <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
                 <motion.div
                   className="w-5 h-5 rounded-full border-2"
-                  style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                  style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                 />
@@ -458,7 +458,7 @@ function EditProfileModal({
             </div>
           </motion.div>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>Appuie pour changer la photo</p>
+          <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>Appuie pour changer la photo</p>
         </div>
 
         {/* Recadrage de la photo sélectionnée */}
@@ -475,7 +475,7 @@ function EditProfileModal({
         <div className="flex flex-col gap-3">
           {/* Full name */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Nom complet
             </label>
             <input
@@ -483,14 +483,14 @@ function EditProfileModal({
               value={editFullName}
               onChange={(e) => setEditFullName(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-              style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
               placeholder="Ton prénom et nom"
             />
           </div>
 
           {/* Pseudo */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Pseudo
             </label>
             <input
@@ -504,14 +504,14 @@ function EditProfileModal({
                 )
               }
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-              style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
               placeholder="Ton pseudo (espaces & emojis ok)"
             />
           </div>
 
           {/* Bio */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 flex items-center justify-between" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 flex items-center justify-between" style={{ color: "var(--text-3)" }}>
               <span>Bio</span>
               <span>{editBio.length}/150</span>
             </label>
@@ -520,7 +520,7 @@ function EditProfileModal({
               onChange={(e) => setEditBio(e.target.value.slice(0, 150))}
               rows={3}
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none resize-none"
-              style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
               placeholder="Dis quelque chose sur toi…"
             />
           </div>
@@ -533,9 +533,9 @@ function EditProfileModal({
           disabled={saving || uploading || !editPseudo.trim()}
           className="w-full mt-5 py-3.5 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
           style={{
-            background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-            color: "#2D3748",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
+            background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+            color: "var(--text-1)",
+            boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 4px 16px rgba(var(--accent-rgb),0.2)",
             opacity: saving || uploading ? 0.7 : 1,
           }}
         >
@@ -543,7 +543,7 @@ function EditProfileModal({
             <>
               <motion.div
                 className="w-4 h-4 rounded-full border-2"
-                style={{ borderColor: "rgba(45,55,72,0.3)", borderTopColor: "#2D3748" }}
+                style={{ borderColor: "rgba(var(--text-1-rgb),0.3)", borderTopColor: "var(--text-1)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
@@ -651,22 +651,22 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
         exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(167,139,250,0.18)", maxHeight: "82vh" }}
+        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(12px)", boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.18)", maxHeight: "82vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
         </div>
         <div className="flex items-center justify-between px-5 pb-3 pt-1">
-          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>{type}</h2>
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>{type}</h2>
           <motion.button whileTap={{ scale: 0.88 }} onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer" style={{ background: "rgba(0,0,0,0.06)" }}>
-            <X size={14} strokeWidth={2.5} style={{ color: "#718096" }} />
+            <X size={14} strokeWidth={2.5} style={{ color: "var(--text-2)" }} />
           </motion.button>
         </div>
         <div className="px-4 pb-3">
           <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl" style={{ background: "rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.06)" }}>
-            <Search size={13} strokeWidth={2.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="flex-1 text-sm bg-transparent outline-none" style={{ color: "#2D3748" }} />
+            <Search size={13} strokeWidth={2.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher…" className="flex-1 text-sm bg-transparent outline-none" style={{ color: "var(--text-1)" }} />
           </div>
         </div>
         <div className="h-px mx-4" style={{ background: "rgba(0,0,0,0.06)" }} />
@@ -674,13 +674,13 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
           {loading ? (
             <div className="flex justify-center py-12">
               <motion.div className="w-6 h-6 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <span className="text-3xl">👤</span>
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                 {query ? "Aucun résultat" : type === "Abonnés" ? "Pas encore d'abonnés" : "Vous ne suivez personne"}
               </p>
             </div>
@@ -692,7 +692,7 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
                 <motion.div key={u.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 px-4 py-2.5">
                   <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-shrink-0">
                     <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
-                      style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                      style={{ background: u.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                       {u.avatar_url
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img loading="lazy" decoding="async" src={u.avatar_url} alt={u.pseudo} className="w-full h-full object-cover" />
@@ -700,8 +700,8 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
                     </div>
                   </Link>
                   <Link href={`/profil/${encodeURIComponent(u.pseudo)}`} onClick={onClose} className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{u.full_name || u.pseudo}</p>
-                    <p className="text-[11px] font-light truncate" style={{ color: "#A0AEC0" }}>@{u.pseudo}</p>
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{u.full_name || u.pseudo}</p>
+                    <p className="text-[11px] font-light truncate" style={{ color: "var(--text-3)" }}>@{u.pseudo}</p>
                   </Link>
                   {!isOwn && (
                     <motion.button
@@ -710,8 +710,8 @@ function FollowListModal({ type, userId, onClose }: { type: "Abonnés" | "Abonne
                       onClick={() => handleFollow(u)}
                       className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                       style={isF
-                        ? { background: "rgba(0,0,0,0.05)", color: "#718096", border: "1px solid rgba(0,0,0,0.08)" }
-                        : { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }
+                        ? { background: "rgba(0,0,0,0.05)", color: "var(--text-2)", border: "1px solid rgba(0,0,0,0.08)" }
+                        : { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }
                       }
                     >
                       {isF ? <><UserCheck size={11} strokeWidth={2.5} />Abonné</> : <><UserPlus size={11} strokeWidth={2.5} />Suivre</>}
@@ -793,13 +793,13 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
   };
 
   const inputStyle = {
-    background: "rgba(240,235,255,0.5)",
-    border: "1px solid rgba(212,192,255,0.6)",
-    color: "#2D3748",
+    background: "rgba(var(--tint-violet-rgb),0.5)",
+    border: "1px solid rgba(var(--violet-mid-rgb),0.6)",
+    color: "var(--text-1)",
   };
 
   const sectionLabel = (text: string) => (
-    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>{text}</p>
+    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2.5" style={{ color: "var(--text-3)" }}>{text}</p>
   );
 
   return (
@@ -818,9 +818,9 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
         style={{
-          background: "rgba(255,255,255,0.98)",
+          background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(12px)",
-          boxShadow: "0 -12px 60px rgba(167,139,250,0.18)",
+          boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.18)",
           maxHeight: "90dvh",
         }}
         onClick={e => e.stopPropagation()}
@@ -833,17 +833,17 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-4 pb-3 flex-shrink-0">
           <div>
-            <h2 className="text-lg font-semibold" style={{ color: "#2D3748" }}>Mes objectifs</h2>
-            <p className="text-xs mt-0.5" style={{ color: "#A0AEC0" }}>Mise à jour de ton profil sportif</p>
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>Mes objectifs</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>Mise à jour de ton profil sportif</p>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
-        <div className="h-px mx-6" style={{ background: "rgba(212,192,255,0.3)" }} />
+        <div className="h-px mx-6" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
 
         {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-5" style={{ scrollbarWidth: "none" }}>
@@ -858,7 +858,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                 { label: "Poids", unit: "kg", key: "weight" as const, placeholder: "70" },
               ].map(({ label, unit, key, placeholder }) => (
                 <div key={key} className="flex flex-col gap-1.5">
-                  <label className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{label}</label>
+                  <label className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
                   <div className="flex items-center gap-1 px-3 py-2.5 rounded-2xl" style={inputStyle}>
                     <input
                       type="number"
@@ -866,9 +866,9 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                       onChange={e => set(key, e.target.value)}
                       placeholder={placeholder}
                       className="flex-1 bg-transparent text-sm outline-none min-w-0 placeholder:text-[#C4CAD4]"
-                      style={{ color: "#2D3748" }}
+                      style={{ color: "var(--text-1)" }}
                     />
-                    <span className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{unit}</span>
+                    <span className="text-[10px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{unit}</span>
                   </div>
                 </div>
               ))}
@@ -885,8 +885,8 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                   <motion.button key={id} whileTap={{ scale: 0.93 }} onClick={() => toggleGoal(id)}
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-sm font-medium cursor-pointer border"
                     style={active
-                      ? { background: "linear-gradient(135deg,rgba(212,192,255,0.9) 0%,rgba(245,230,163,0.9) 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                      : { background: "rgba(240,235,255,0.45)", borderColor: "rgba(212,192,255,0.3)", color: "#718096" }
+                      ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.9) 0%,rgba(var(--cream-mid-rgb),0.9) 100%)", borderColor: "rgba(var(--accent-rgb),0.5)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                      : { background: "rgba(var(--tint-violet-rgb),0.45)", borderColor: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--text-2)" }
                     }>
                     <span className="text-sm">{emoji}</span>
                     <span className="text-xs font-semibold">{label}</span>
@@ -906,11 +906,11 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                   <motion.button key={id} whileTap={{ scale: 0.97 }} onClick={() => set("level", active ? "" : id)}
                     className="flex items-center justify-between px-4 py-3 rounded-2xl cursor-pointer border"
                     style={active
-                      ? { background: "linear-gradient(135deg,rgba(212,192,255,0.7) 0%,rgba(245,230,163,0.7) 100%)", borderColor: "rgba(167,139,250,0.5)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)" }
+                      ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.7) 0%,rgba(var(--cream-mid-rgb),0.7) 100%)", borderColor: "rgba(var(--accent-rgb),0.5)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      : { background: "rgba(var(--tint-violet-rgb),0.4)", borderColor: "rgba(var(--violet-mid-rgb),0.25)" }
                     }>
-                    <span className="text-sm font-semibold" style={{ color: active ? "#2D3748" : "#718096" }}>{label}</span>
-                    <span className="text-[10px] font-medium" style={{ color: active ? "#A78BFA" : "#A0AEC0" }}>{sub}</span>
+                    <span className="text-sm font-semibold" style={{ color: active ? "var(--text-1)" : "var(--text-2)" }}>{label}</span>
+                    <span className="text-[10px] font-medium" style={{ color: active ? "var(--accent)" : "var(--text-3)" }}>{sub}</span>
                   </motion.button>
                 );
               })}
@@ -927,8 +927,8 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                   <motion.button key={n} whileTap={{ scale: 0.9 }} onClick={() => set("sessionsPerWeek", active ? "" : n)}
                     className="w-11 h-11 rounded-2xl text-sm font-semibold cursor-pointer border flex items-center justify-center"
                     style={active
-                      ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)", color: "#718096" }
+                      ? { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", borderColor: "rgba(var(--accent-rgb),0.5)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      : { background: "rgba(var(--tint-violet-rgb),0.4)", borderColor: "rgba(var(--violet-mid-rgb),0.25)", color: "var(--text-2)" }
                     }>
                     {n}
                   </motion.button>
@@ -947,8 +947,8 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                   <motion.button key={n} whileTap={{ scale: 0.9 }} onClick={() => set("mealsPerDay", active ? "" : n)}
                     className="px-4 h-10 rounded-2xl text-sm font-semibold cursor-pointer border flex items-center justify-center"
                     style={active
-                      ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)", color: "#718096" }
+                      ? { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", borderColor: "rgba(var(--accent-rgb),0.5)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      : { background: "rgba(var(--tint-violet-rgb),0.4)", borderColor: "rgba(var(--violet-mid-rgb),0.25)", color: "var(--text-2)" }
                     }>
                     {n}
                   </motion.button>
@@ -967,8 +967,8 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
                   <motion.button key={id} whileTap={{ scale: 0.95 }} onClick={() => set("diet", active ? "" : id)}
                     className="flex items-center gap-2 px-3.5 py-3 rounded-2xl text-sm font-medium cursor-pointer border"
                     style={active
-                      ? { background: "linear-gradient(135deg,rgba(212,192,255,0.8) 0%,rgba(245,230,163,0.8) 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                      : { background: "rgba(240,235,255,0.4)", borderColor: "rgba(212,192,255,0.25)", color: "#718096" }
+                      ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.8) 0%,rgba(var(--cream-mid-rgb),0.8) 100%)", borderColor: "rgba(var(--accent-rgb),0.5)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      : { background: "rgba(var(--tint-violet-rgb),0.4)", borderColor: "rgba(var(--violet-mid-rgb),0.25)", color: "var(--text-2)" }
                     }>
                     <span className="text-base">{emoji}</span>
                     <span className="text-xs font-semibold">{label}</span>
@@ -987,9 +987,9 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
             onClick={handleSave}
             className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
             style={{
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              color: "#2D3748",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 16px rgba(167,139,250,0.2)",
+              background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+              color: "var(--text-1)",
+              boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 4px 16px rgba(var(--accent-rgb),0.2)",
             }}
           >
             Sauvegarder
@@ -997,9 +997,9 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
 
           {/* Séparateur */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
-            <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>ou</span>
-            <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
+            <div className="flex-1 h-px" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
+            <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>ou</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
           </div>
 
           <div className="flex gap-2">
@@ -1065,16 +1065,16 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
         exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Lock size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Confidentialité</h2>
+            <Lock size={16} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Confidentialité</h2>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
         <div className="flex flex-col gap-3">
@@ -1082,15 +1082,15 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
             { label: "Partage de données", desc: "Partager vos stats avec la communauté", state: dataSharing, toggle: () => setDataSharing(v => !v) },
             { label: "Analytiques", desc: "Améliorer l'app avec vos données anonymisées", state: analytics, toggle: () => setAnalytics(v => !v) },
           ].map(({ label, desc, state, toggle }) => (
-            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(240,235,255,0.4)" }}>
+            <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.4)" }}>
               <div className="flex-1">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
-                <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{desc}</p>
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{label}</p>
+                <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{desc}</p>
               </div>
               <motion.button
                 onClick={toggle}
                 className="relative w-11 h-6 rounded-full cursor-pointer flex-shrink-0"
-                style={{ background: state ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.6)" }}
+                style={{ background: state ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.6)" }}
                 whileTap={{ scale: 0.95 }}
               >
                 <motion.div
@@ -1103,7 +1103,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] mt-4 text-center" style={{ color: "#A0AEC0" }}>Conforme au RGPD · Données hébergées en France</p>
+        <p className="text-[10px] mt-4 text-center" style={{ color: "var(--text-3)" }}>Conforme au RGPD · Données hébergées en France</p>
       </motion.div>
     </motion.div>
   );
@@ -1129,7 +1129,7 @@ const PROF_ICON_MAP: Record<string, typeof Dumbbell> = { Dumbbell, Flame, Wind, 
 const resolveProfileIcon = (name: string): typeof Dumbbell => PROF_ICON_MAP[name] ?? Dumbbell;
 
 const PROF_DIFF_COLOR: Record<string, string> = {
-  "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "#A78BFA",
+  "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "var(--accent)",
 };
 
 const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: string }> = {
@@ -1194,18 +1194,18 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-8"
-        style={{ background: "rgba(255,255,255,0.98)", boxShadow: "0 -12px 60px rgba(167,139,250,0.2)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.2)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center mb-5 md:hidden">
           <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.1)" }} />
         </div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "#1A202C" }}>Nouvelle catégorie</h2>
+          <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Nouvelle catégorie</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -1214,29 +1214,29 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
             onClick={() => coverRef.current?.click()}
             className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
-            style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.4),rgba(245,230,163,0.4))" }}>
+            style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.4))" }}>
             {coverUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
               : uploading
-              ? <div className="text-xs font-medium" style={{ color: "#A78BFA" }}>Upload…</div>
+              ? <div className="text-xs font-medium" style={{ color: "var(--accent)" }}>Upload…</div>
               : <div className="flex flex-col items-center gap-1">
-                  <Camera size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                  <span className="text-[9px] font-semibold" style={{ color: "#A78BFA" }}>Cover</span>
+                  <Camera size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                  <span className="text-[9px] font-semibold" style={{ color: "var(--accent)" }}>Cover</span>
                 </div>
             }
           </motion.div>
           <input ref={coverRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleCover} />
-          <p className="text-[11px] mt-2 font-light" style={{ color: "#A0AEC0" }}>Photo de couverture (optionnel)</p>
+          <p className="text-[11px] mt-2 font-light" style={{ color: "var(--text-3)" }}>Photo de couverture (optionnel)</p>
         </div>
 
         {/* Name */}
         <div className="mb-6">
-          <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: "#A0AEC0" }}>Nom</label>
+          <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Nom</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)}
             placeholder="Ex : Sport, Voyage, Nutrition…" maxLength={24}
             className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-            style={{ background: "rgba(240,235,255,0.55)", border: "1px solid rgba(167,139,250,0.2)", color: "#1A202C" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.2)", color: "var(--text-0)" }}
           />
         </div>
 
@@ -1245,9 +1245,9 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
           disabled={!name.trim() || saving || uploading}
           className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
           style={{
-            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.5)",
-            color: name.trim() ? "#3D2F6B" : "#A0AEC0",
-            boxShadow: name.trim() ? "0 4px 18px rgba(167,139,250,0.3)" : "none",
+            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.5)",
+            color: name.trim() ? "#3D2F6B" : "var(--text-3)",
+            boxShadow: name.trim() ? "0 4px 18px rgba(var(--accent-rgb),0.3)" : "none",
             opacity: saving || uploading ? 0.7 : 1,
           }}>
           {saving ? "Création…" : "Créer la catégorie"}
@@ -1385,7 +1385,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
         transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
-        style={{ background: "rgba(255,255,255,0.98)", boxShadow: "0 -12px 60px rgba(167,139,250,0.2)", maxHeight: "92dvh" }}
+        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.2)", maxHeight: "92dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -1395,11 +1395,11 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-3 pb-3 flex-shrink-0">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "#1A202C" }}>Modifier la catégorie</h2>
+          <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Modifier la catégorie</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -1411,31 +1411,31 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
             <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
               onClick={() => coverRef.current?.click()}
               className="w-[60px] h-[60px] rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center cursor-pointer"
-              style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.4),rgba(245,230,163,0.4))" }}>
+              style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.4))" }}>
               {coverUrl
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
-                : <Camera size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />}
+                : <Camera size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />}
             </motion.div>
             <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
             <div className="flex-1">
-              <label className="text-[9px] font-bold tracking-widest uppercase mb-1 block" style={{ color: "#A0AEC0" }}>Nom</label>
+              <label className="text-[9px] font-bold tracking-widest uppercase mb-1 block" style={{ color: "var(--text-3)" }}>Nom</label>
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={24}
                 className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.55)", border: "1px solid rgba(167,139,250,0.2)", color: "#1A202C" }} />
+                style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.2)", color: "var(--text-0)" }} />
             </div>
           </div>
 
           {/* Media grid */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
               Médias ({items.length}/50)
             </span>
             {items.length < 50 && (
               <motion.button whileTap={{ scale: 0.93 }} onClick={() => mediaRef.current?.click()}
                 disabled={uploading}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
-                style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.7),rgba(245,230,163,0.7))", color: "#3D2F6B" }}>
+                style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.7),rgba(var(--cream-mid-rgb),0.7))", color: "#3D2F6B" }}>
                 <Plus size={11} strokeWidth={3} />
                 {uploading ? "Upload…" : "Ajouter"}
               </motion.button>
@@ -1446,16 +1446,16 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
           {loadingItems ? (
             <div className="flex justify-center py-8">
               <motion.div className="w-6 h-6 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
             </div>
           ) : items.length === 0 ? (
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => mediaRef.current?.click()}
               className="w-full py-10 rounded-2xl flex flex-col items-center gap-3 cursor-pointer"
-              style={{ border: "2px dashed rgba(167,139,250,0.3)", background: "rgba(240,235,255,0.2)" }}>
-              <Plus size={24} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-              <span className="text-sm font-medium" style={{ color: "#A78BFA" }}>Ajouter des photos / vidéos</span>
-              <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Jusqu&apos;à 50 médias</span>
+              style={{ border: "2px dashed rgba(var(--accent-rgb),0.3)", background: "rgba(var(--tint-violet-rgb),0.2)" }}>
+              <Plus size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+              <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>Ajouter des photos / vidéos</span>
+              <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Jusqu&apos;à 50 médias</span>
             </motion.button>
           ) : (
             <div className="grid grid-cols-3 gap-1.5 mb-4">
@@ -1483,8 +1483,8 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
               {items.length < 50 && (
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => mediaRef.current?.click()}
                   className="aspect-square rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ border: "2px dashed rgba(167,139,250,0.35)", background: "rgba(240,235,255,0.2)" }}>
-                  <Plus size={18} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+                  style={{ border: "2px dashed rgba(var(--accent-rgb),0.35)", background: "rgba(var(--tint-violet-rgb),0.2)" }}>
+                  <Plus size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
                 </motion.button>
               )}
             </div>
@@ -1498,9 +1498,9 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
             disabled={!name.trim() || saving}
             className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
             style={{
-              background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 100%)",
+              background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)",
               color: "#3D2F6B",
-              boxShadow: "0 4px 18px rgba(167,139,250,0.3)",
+              boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.3)",
               opacity: saving ? 0.7 : 1,
             }}>
             {saving ? "Sauvegarde…" : "Sauvegarder"}
@@ -1516,7 +1516,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
             <div className="flex gap-2">
               <motion.button whileTap={{ scale: 0.97 }} onClick={() => setDelConfirm(false)}
                 className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "rgba(240,235,255,0.8)", color: "#718096" }}>
+                style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-2)" }}>
                 Annuler
               </motion.button>
               <motion.button whileTap={{ scale: 0.97 }} onClick={handleDelete}
@@ -1934,7 +1934,7 @@ export default function ProfilPage() {
       <div
         className="absolute top-0 left-0 right-0 h-64 pointer-events-none"
         style={{
-          background: "linear-gradient(180deg, rgba(212,192,255,0.22) 0%, rgba(245,230,163,0.08) 60%, transparent 100%)",
+          background: "linear-gradient(180deg, rgba(var(--violet-mid-rgb),0.22) 0%, rgba(var(--cream-mid-rgb),0.08) 60%, transparent 100%)",
           zIndex: 0,
         }}
       />
@@ -1947,7 +1947,7 @@ export default function ProfilPage() {
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
             style={{
-              background: "linear-gradient(135deg,#A78BFA,#7C5CFA)",
+              background: "linear-gradient(135deg,var(--accent),#7C5CFA)",
               boxShadow: "0 2px 14px rgba(124,92,250,0.35)",
             }}
             aria-label="Vaiiya Premium"
@@ -1960,13 +1960,13 @@ export default function ProfilPage() {
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
             style={{
-              background: "rgba(255,255,255,0.88)",
+              background: "rgba(var(--surface-rgb),0.88)",
               backdropFilter: "blur(16px)",
-              border: "1px solid rgba(212,192,255,0.45)",
-              boxShadow: "0 2px 14px rgba(167,139,250,0.15)",
+              border: "1px solid rgba(var(--violet-mid-rgb),0.45)",
+              boxShadow: "0 2px 14px rgba(var(--accent-rgb),0.15)",
             }}
           >
-            <Settings size={15} strokeWidth={1.6} style={{ color: "#A78BFA" }} />
+            <Settings size={15} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
           </motion.div>
         </Link>
       </div>
@@ -1996,7 +1996,7 @@ export default function ProfilPage() {
               {hasActiveStory && (
                 <motion.div
                   className="absolute inset-0 rounded-full"
-                  style={{ background: "conic-gradient(#C4A8FF, #A78BFA, #7C5CFA, #F5E6A3, #D4A843, #C4A8FF)" }}
+                  style={{ background: "conic-gradient(#C4A8FF, var(--accent), #7C5CFA, var(--cream-mid), var(--gold), #C4A8FF)" }}
                   animate={{ rotate: 360 }}
                   transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                 />
@@ -2008,10 +2008,10 @@ export default function ProfilPage() {
                 className="absolute rounded-full overflow-hidden flex items-center justify-center text-4xl"
                 style={{
                   inset: hasActiveStory ? 7 : 3,
-                  background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF,#FFFBF0)",
+                  background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
                   color: "#7C5CFA",
                   fontWeight: 300,
-                  boxShadow: hasActiveStory ? "none" : "0 12px 40px rgba(167,139,250,0.35)",
+                  boxShadow: hasActiveStory ? "none" : "0 12px 40px rgba(var(--accent-rgb),0.35)",
                 }}
               >
                 {displayAvatar
@@ -2030,8 +2030,8 @@ export default function ProfilPage() {
               style={{
                 width: 32, height: 32,
                 bottom: -6, right: -6,
-                background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                boxShadow: "0 3px 12px rgba(167,139,250,0.45)",
+                background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                boxShadow: "0 3px 12px rgba(var(--accent-rgb),0.45)",
                 border: "3px solid white",
                 zIndex: 30,
               }}
@@ -2044,7 +2044,7 @@ export default function ProfilPage() {
           <div className="flex items-center gap-2">
             <h1
               className="text-[28px] font-black tracking-[-0.03em] leading-none"
-              style={{ color: "#1A202C" }}
+              style={{ color: "var(--text-0)" }}
             >
               {displayPseudo}
             </h1>
@@ -2057,7 +2057,7 @@ export default function ProfilPage() {
                 className="flex items-center justify-center rounded-full flex-shrink-0"
                 style={{
                   width: 24, height: 24,
-                  background: "linear-gradient(135deg,#A78BFA,#7C5CFA)",
+                  background: "linear-gradient(135deg,var(--accent),#7C5CFA)",
                   boxShadow: "0 2px 8px rgba(124,92,250,0.4)",
                 }}
               >
@@ -2070,7 +2070,7 @@ export default function ProfilPage() {
 
           {/* Goals / titre */}
           {profileGoals.length > 0 && (
-            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "#A78BFA" }}>
+            <p className="text-[12px] font-semibold mt-1.5 max-w-[260px]" style={{ color: "var(--accent)" }}>
               {profileGoals
                 .map((id) => GOALS_LIST.find((g) => g.id === id))
                 .filter(Boolean)
@@ -2083,7 +2083,7 @@ export default function ProfilPage() {
           {profileLevel && (
             <span
               className="mt-1 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(212,192,255,0.3)", color: "#7C5CFA", border: "1px solid rgba(167,139,250,0.25)" }}
+              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "#7C5CFA", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
             >
               {LEVELS_LIST.find((l) => l.id === profileLevel)?.label ?? profileLevel}
             </span>
@@ -2091,7 +2091,7 @@ export default function ProfilPage() {
 
           {/* Bio */}
           {profileBio && (
-            <p className="text-[13px] mt-2 max-w-[240px] leading-relaxed font-light" style={{ color: "#718096" }}>
+            <p className="text-[13px] mt-2 max-w-[240px] leading-relaxed font-light" style={{ color: "var(--text-2)" }}>
               {profileBio}
             </p>
           )}
@@ -2104,9 +2104,9 @@ export default function ProfilPage() {
           transition={{ duration: 0.45, delay: 0.1 }}
           className="flex items-stretch mb-3 rounded-3xl overflow-hidden"
           style={{
-            background: "rgba(255,255,255,0.8)",
-            border: "1px solid rgba(255,255,255,0.9)",
-            boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+            background: "rgba(var(--surface-rgb),0.8)",
+            border: "1px solid rgba(var(--surface-rgb),0.9)",
+            boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
             backdropFilter: "blur(10px)",
           }}
         >
@@ -2117,7 +2117,7 @@ export default function ProfilPage() {
           ].map(({ label, value, clickable }, i) => (
             <div key={label} className="flex items-stretch flex-1">
               {i > 0 && (
-                <div className="w-px self-stretch my-3.5" style={{ background: "rgba(212,192,255,0.3)" }} />
+                <div className="w-px self-stretch my-3.5" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
               )}
               <motion.button
                 whileHover={clickable ? { scale: 1.05 } : {}}
@@ -2126,10 +2126,10 @@ export default function ProfilPage() {
                 className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
-                <span className="text-[24px] font-black leading-none" style={{ color: "#1A202C", letterSpacing: "-0.03em" }}>
+                <span className="text-[24px] font-black leading-none" style={{ color: "var(--text-0)", letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
-                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "#A78BFA" : "#B0BBCA" }}>
+                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "#B0BBCA" }}>
                   {label}
                 </span>
               </motion.button>
@@ -2156,14 +2156,14 @@ export default function ProfilPage() {
             <div
               className="w-[68px] h-[68px] rounded-full flex items-center justify-center"
               style={{
-                background: "rgba(255,255,255,0.9)",
-                border: "2px dashed rgba(167,139,250,0.45)",
-                boxShadow: "0 3px 14px rgba(167,139,250,0.1)",
+                background: "rgba(var(--surface-rgb),0.9)",
+                border: "2px dashed rgba(var(--accent-rgb),0.45)",
+                boxShadow: "0 3px 14px rgba(var(--accent-rgb),0.1)",
               }}
             >
-              <Plus size={24} strokeWidth={1.6} style={{ color: "#A78BFA" }} />
+              <Plus size={24} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
             </div>
-            <span className="text-[10px] font-semibold" style={{ color: "#A0AEC0", letterSpacing: "0.02em" }}>Nouveau</span>
+            <span className="text-[10px] font-semibold" style={{ color: "var(--text-3)", letterSpacing: "0.02em" }}>Nouveau</span>
           </motion.button>
 
           {/* Highlights créés */}
@@ -2182,11 +2182,11 @@ export default function ProfilPage() {
                   whileTap={{ scale: 0.93 }}
                   onClick={() => openHighlightViewer(h)}
                   className="cursor-pointer"
-                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(167,139,250,0.25)" }}
+                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.25)" }}
                 >
                   <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
                     <div
-                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.5),rgba(245,230,163,0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
+                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5),rgba(var(--cream-mid-rgb),0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
                     >
                       {h.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
@@ -2197,9 +2197,9 @@ export default function ProfilPage() {
                 </motion.div>
                 {/* Loading spinner */}
                 {viewerLoading && (
-                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)" }}>
+                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)" }}>
                     <motion.div className="w-5 h-5 rounded-full border-2"
-                      style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                      style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                       animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
                   </div>
                 )}
@@ -2208,12 +2208,12 @@ export default function ProfilPage() {
                   whileTap={{ scale: 0.85 }}
                   onClick={(e) => { e.stopPropagation(); setEditHighlight(h); }}
                   className="absolute -bottom-0.5 -right-0.5 w-[20px] h-[20px] rounded-full flex items-center justify-center cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#C4A8FF,#F5E6A3)", border: "2.5px solid white", boxShadow: "0 1px 6px rgba(167,139,250,0.4)" }}
+                  style={{ background: "linear-gradient(135deg,#C4A8FF,var(--cream-mid))", border: "2.5px solid white", boxShadow: "0 1px 6px rgba(var(--accent-rgb),0.4)" }}
                 >
                   <Pencil size={8} strokeWidth={3} style={{ color: "#3D2F6B" }} />
                 </motion.button>
               </div>
-              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "#718096", letterSpacing: "0.02em" }}>{h.name}</span>
+              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "var(--text-2)", letterSpacing: "0.02em" }}>{h.name}</span>
             </motion.div>
           ))}
         </motion.div>
@@ -2225,8 +2225,8 @@ export default function ProfilPage() {
           transition={{ delay: 0.2 }}
           className="flex gap-1 mb-6 p-1 rounded-2xl"
           style={{
-            background: "rgba(240,235,255,0.6)",
-            border: "1px solid rgba(212,192,255,0.2)",
+            background: "rgba(var(--tint-violet-rgb),0.6)",
+            border: "1px solid rgba(var(--violet-mid-rgb),0.2)",
           }}
         >
           {([
@@ -2240,11 +2240,11 @@ export default function ProfilPage() {
               onClick={() => setActiveTab(id)}
               className="flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"
               animate={{
-                background: activeTab === id ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "transparent",
-                color: activeTab === id ? "#3D2F6B" : "#A0AEC0",
+                background: activeTab === id ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "transparent",
+                color: activeTab === id ? "#3D2F6B" : "var(--text-3)",
               }}
               style={{
-                boxShadow: activeTab === id ? "0 2px 10px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                boxShadow: activeTab === id ? "0 2px 10px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
                 letterSpacing: "0.02em",
               }}
             >
@@ -2271,20 +2271,20 @@ export default function ProfilPage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                 </div>
                 <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Partage ta première publication pour lancer ton feed 💜</p>
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Partage ta première publication pour lancer ton feed 💜</p>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => router.push("/communaute")}
                   className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                  style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
                 >
                   Publier maintenant
                 </motion.button>
@@ -2296,14 +2296,14 @@ export default function ProfilPage() {
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                    style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                    style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
                   >
-                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                       <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                     </div>
                     <div className="text-center px-8">
-                      <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
-                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
+                      <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
+                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
                     </div>
                   </motion.div>
                 ) : (
@@ -2316,16 +2316,16 @@ export default function ProfilPage() {
                         transition={{ duration: 0.35, delay: idx * 0.06 }}
                         className="rounded-3xl overflow-hidden cv-auto"
                         style={{
-                          background: "rgba(255,255,255,0.85)",
-                          border: "1px solid rgba(255,255,255,0.9)",
-                          boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+                          background: "rgba(var(--surface-rgb),0.85)",
+                          border: "1px solid rgba(var(--surface-rgb),0.9)",
+                          boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
                         }}
                       >
                         {/* Header */}
                         <div className="flex items-center justify-between px-4 pt-4 pb-3">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                               {displayAvatar
                                 // eslint-disable-next-line @next/next/no-img-element
                                 ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
@@ -2333,14 +2333,14 @@ export default function ProfilPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                                <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
                                 {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
-                                  <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                                  <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--accent),#7C5CFA)" }}>
                                     <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                   </div>
                                 )}
                               </div>
-                              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
                                 {(() => {
                                   const diff = Date.now() - new Date(post.created_at).getTime();
                                   const h = Math.floor(diff / 3600000);
@@ -2358,7 +2358,7 @@ export default function ProfilPage() {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => { setSelectedPost(post); setEditCaption(post.caption ?? ""); setEditBio(post.description ?? ""); setEditingSelectedPost(true); }}
                             className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-                            style={{ background: "rgba(167,139,250,0.1)" }}
+                            style={{ background: "rgba(var(--accent-rgb),0.1)" }}
                           >
                             <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#7C5CFA" }} />
                           </motion.button>
@@ -2366,7 +2366,7 @@ export default function ProfilPage() {
 
                         {/* Titre / Caption */}
                         {post.caption && (
-                          <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                          <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
                             {post.caption}
                           </p>
                         )}
@@ -2397,7 +2397,7 @@ export default function ProfilPage() {
 
                         {/* Description */}
                         {post.description && (
-                          <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                          <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                             {post.description}
                           </p>
                         )}
@@ -2423,7 +2423,7 @@ export default function ProfilPage() {
                                       transition={{ duration: 0.55, delay: i*0.04 }} />
                                   ))}
                                   <motion.div animate={liked ? { scale: [1,1.5,0.9,1.15,1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                                    <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
+                                    <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-1)" }} />
                                   </motion.div>
                                 </motion.button>
 
@@ -2431,32 +2431,32 @@ export default function ProfilPage() {
                                 <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85, rotate: -15 }}
                                   onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                                   className="flex items-center cursor-pointer">
-                                  <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(167,139,250,0.2)" : "none"} style={{ color: commentsOpen ? "#A78BFA" : "#2D3748" }} />
+                                  <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"} style={{ color: commentsOpen ? "var(--accent)" : "var(--text-1)" }} />
                                 </motion.button>
 
                                 {/* Repost */}
                                 <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
                                   onClick={() => togglePostRepost(post.id)} className="flex items-center cursor-pointer">
                                   <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#2D3748" }} />
+                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "var(--text-1)" }} />
                                   </motion.div>
                                 </motion.button>
 
                                 {/* Partager */}
                                 <motion.button whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.85 }} className="flex items-center cursor-pointer">
-                                  <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                                  <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                                 </motion.button>
                               </div>
 
                               {/* Stats */}
                               <div className="px-4 pt-2 pb-1">
                                 {likesCount > 0 && (
-                                  <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                                  <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
                                     {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
                                   </p>
                                 )}
-                                <motion.p whileHover={{ color: "#2D3748" }}
-                                  className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "#A0AEC0" }}
+                                <motion.p whileHover={{ color: "var(--text-1)" }}
+                                  className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "var(--text-3)" }}
                                   onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}>
                                   {commentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
                                 </motion.p>
@@ -2500,14 +2500,14 @@ export default function ProfilPage() {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                  style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                  style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
                 >
-                  <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                     <Film size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                   </div>
                   <div className="text-center px-8">
-                    <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo</p>
-                    <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes publications vidéo apparaîtront ici automatiquement.</p>
+                    <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune vidéo</p>
+                    <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes publications vidéo apparaîtront ici automatiquement.</p>
                   </div>
                 </motion.div>
               ) : (
@@ -2554,14 +2554,14 @@ export default function ProfilPage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   <Bookmark size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                 </div>
                 <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucun enregistrement</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les vidéos que tu sauvegardes dans le feed apparaîtront ici.</p>
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun enregistrement</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Les vidéos que tu sauvegardes dans le feed apparaîtront ici.</p>
                 </div>
               </motion.div>
             ) : (
@@ -2589,7 +2589,7 @@ export default function ProfilPage() {
                     </div>
                     {/* Badge bookmark */}
                     <div className="absolute top-1.5 right-1.5">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.85)" }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.85)" }}>
                         <Bookmark size={10} fill="white" style={{ color: "white" }} />
                       </div>
                     </div>
@@ -2614,14 +2614,14 @@ export default function ProfilPage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   <Dumbbell size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                 </div>
                 <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Tes séances enregistrées apparaîtront ici une fois complétées.</p>
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance enregistrée</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes séances enregistrées apparaîtront ici une fois complétées.</p>
                 </div>
               </motion.div>
             ) : (
@@ -2634,16 +2634,16 @@ export default function ProfilPage() {
                     <motion.div
                       key={session.id}
                       className="flex items-center gap-4 px-4 py-3.5 rounded-2xl"
-                      style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 12px rgba(167,139,250,0.06)" }}
+                      style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.06)" }}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                     >
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
                         <Dumbbell size={16} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "#1A202C" }}>{session.title || "Séance"}</p>
-                        <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
+                        <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
                           {session.started_at ? new Date(session.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "Date inconnue"}
                           {durationMin ? ` · ${durationMin} min` : ""}
                         </p>
@@ -2758,8 +2758,8 @@ export default function ProfilPage() {
               transition={{ type: "spring", bounce: 0.22, duration: 0.4 }}
               className="w-full max-w-sm rounded-t-3xl md:rounded-3xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.97)",
-                boxShadow: "0 -12px 48px rgba(167,139,250,0.2)",
+                background: "rgba(var(--surface-rgb),0.97)",
+                boxShadow: "0 -12px 48px rgba(var(--accent-rgb),0.2)",
                 maxHeight: "92dvh",
                 overflowY: "auto",
               }}
@@ -2770,7 +2770,7 @@ export default function ProfilPage() {
                 <div className="flex items-center gap-2.5">
                   <div
                     className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                    style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                    style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
                   >
                     {displayAvatar
                       // eslint-disable-next-line @next/next/no-img-element
@@ -2779,17 +2779,17 @@ export default function ProfilPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-1">
-                      <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
                       {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
                         <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                          style={{ background: "linear-gradient(135deg,var(--accent),#7C5CFA)" }}>
                           <svg width="8" height="8" viewBox="0 0 13 13" fill="none">
                             <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
                       {new Date(selectedPost.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                     </p>
                   </div>
@@ -2805,7 +2805,7 @@ export default function ProfilPage() {
                         setEditingSelectedPost(true);
                       }}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
-                      style={{ background: "rgba(167,139,250,0.15)", color: "#7C5CFA" }}
+                      style={{ background: "rgba(var(--accent-rgb),0.15)", color: "#7C5CFA" }}
                     >
                       <Pencil size={11} strokeWidth={2} />
                       Modifier
@@ -2815,9 +2815,9 @@ export default function ProfilPage() {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => { setSelectedPost(null); setEditingSelectedPost(false); }}
                     className="w-7 h-7 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(240,235,255,0.8)" }}
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
                   >
-                    <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                    <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                   </motion.button>
                 </div>
               </div>
@@ -2826,7 +2826,7 @@ export default function ProfilPage() {
               {!editingSelectedPost && (
                 <>
                   {selectedPost.caption && (
-                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
                       {selectedPost.caption}
                     </p>
                   )}
@@ -2862,7 +2862,7 @@ export default function ProfilPage() {
                       <div className="px-4 pt-2 pb-3">
                         {unavailable ? (
                           <div className="w-full py-3 rounded-2xl flex flex-col items-center justify-center gap-1 text-xs"
-                            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#A0AEC0" }}>
+                            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-3)" }}>
                             <span>Séance perso — exercices non embarqués</span>
                             <span className="text-[10px]" style={{ color: "#C4B5FD" }}>Repartage via l&apos;écran de fin pour l&apos;activer</span>
                           </div>
@@ -2874,7 +2874,7 @@ export default function ProfilPage() {
                               setProfileWorkout({
                                 sessionId:    hasEmbedded ? "profile-post" : builtinId!,
                                 title:        pd?.title ?? "Séance",
-                                accent:       "#A78BFA",
+                                accent:       "var(--accent)",
                                 duration:     dur,
                                 difficulty:   "Intermédiaire",
                                 category:     pd?.category ?? "force",
@@ -2883,8 +2883,8 @@ export default function ProfilPage() {
                             }}
                             className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
                             style={{
-                              background: "linear-gradient(135deg,rgba(167,139,250,0.18) 0%,rgba(212,192,255,0.12) 100%)",
-                              border: "1px solid rgba(167,139,250,0.28)",
+                              background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.18) 0%,rgba(var(--violet-mid-rgb),0.12) 100%)",
+                              border: "1px solid rgba(var(--accent-rgb),0.28)",
                               color: "#7C5CFA",
                             }}
                           >
@@ -2897,13 +2897,13 @@ export default function ProfilPage() {
                   })()}
 
                   {selectedPost.description && (
-                    <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                    <p className="px-4 pb-3 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {selectedPost.description}
                     </p>
                   )}
                   <div className="px-4 pb-5 flex items-center gap-2">
                     <Heart size={16} strokeWidth={0} fill="#F43F5E" style={{ color: "#F43F5E" }} />
-                    <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                    <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
                       {selectedPost.likes_count ?? 0}{" "}j&apos;aime
                     </span>
                   </div>
@@ -2926,14 +2926,14 @@ export default function ProfilPage() {
 
                   {/* Titre */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Titre</label>
+                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Titre</label>
                     <input
                       type="text"
                       value={editCaption}
                       onChange={(e) => setEditCaption(e.target.value)}
                       maxLength={200}
                       className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
                       placeholder="Titre du post..."
                       autoFocus
                     />
@@ -2941,14 +2941,14 @@ export default function ProfilPage() {
 
                   {/* Bio */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Bio</label>
+                    <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Bio</label>
                     <textarea
                       value={editBio}
                       onChange={(e) => setEditBio(e.target.value)}
                       rows={3}
                       maxLength={500}
                       className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.6)", color: "#2D3748" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }}
                       placeholder="Description du post..."
                     />
                   </div>
@@ -2959,7 +2959,7 @@ export default function ProfilPage() {
                       whileTap={{ scale: 0.97 }}
                       onClick={() => setEditingSelectedPost(false)}
                       className="flex-1 py-3 rounded-2xl text-sm font-semibold"
-                      style={{ background: "rgba(240,235,255,0.6)", color: "#718096" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}
                     >
                       Annuler
                     </motion.button>
@@ -3002,9 +3002,9 @@ export default function ProfilPage() {
                       }}
                       className="flex-[2] py-3 rounded-2xl text-sm font-bold"
                       style={{
-                        background: editSaving ? "rgba(212,192,255,0.5)" : "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                        background: editSaving ? "rgba(var(--violet-mid-rgb),0.5)" : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
                         color: "#3D2F6B",
-                        boxShadow: editSaving ? "none" : "0 4px 16px rgba(167,139,250,0.3)",
+                        boxShadow: editSaving ? "none" : "0 4px 16px rgba(var(--accent-rgb),0.3)",
                       }}
                     >
                       {editSaving ? "Sauvegarde..." : "Sauvegarder"}
