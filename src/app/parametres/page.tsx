@@ -684,6 +684,15 @@ export default function ParametresPage() {
             onClick={() => setShowPasswordModal(true)}
             iconBg="linear-gradient(135deg, rgba(167,139,250,0.25), rgba(212,192,255,0.2))"
           />
+          {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
+            <Row
+              icon={Shield}
+              label="Administration"
+              sublabel="Gérer les utilisateurs, bannir, certifier"
+              onClick={() => router.push("/admin")}
+              iconBg="linear-gradient(135deg, rgba(212,168,67,0.35), rgba(245,230,163,0.3))"
+            />
+          )}
         </div>
 
         {/* Notifications */}
