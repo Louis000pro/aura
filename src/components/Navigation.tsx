@@ -6,11 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Users, User, LogIn, LogOut,
-  Settings, Shield, Plus, ChevronRight, Crown,
+  Settings, Shield, ChevronRight, Crown,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
-import PublishModal from "@/components/PublishModal";
+import NavOrb from "@/components/NavOrb";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase";
 
@@ -34,7 +34,6 @@ export default function Navigation() {
   const { user, logout } = useAuth();
 
   const [unreadDMs,   setUnreadDMs]   = useState(0);
-  const [showPublish, setShowPublish] = useState(false);
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -210,11 +209,7 @@ export default function Navigation() {
 
   return (
     <>
-      <AnimatePresence>
-        {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
-      </AnimatePresence>
-
-      {/* ══ Mobile Bottom Bar — 5 onglets : Accueil / Progression / + / Communauté / Profil ══ */}
+      {/* ══ Mobile Bottom Bar — 5 emplacements : Accueil / Progression / Orbe IA / Communauté / Profil ══ */}
       <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
@@ -223,16 +218,12 @@ export default function Navigation() {
             {/* 2. Progression */}
             <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
 
-            {/* 3. Bouton + (centre) */}
-            {user ? (
-              <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowPublish(true)}
-                data-tour-anchor="nav-publish"
-                className="flex-1 flex items-center justify-center" aria-label="Publier">
-                <div className="nav-glass-yellow w-10 h-10 rounded-2xl flex items-center justify-center">
-                  <Plus size={20} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
-                </div>
-              </motion.button>
-            ) : <div className="flex-1" />}
+            {/* 3. Orbe assistant (centre, mise en avant) */}
+            <div className="flex-1 flex items-center justify-center" data-tour-anchor="nav-assistant">
+              <div className="-translate-y-2">
+                <NavOrb size={48} />
+              </div>
+            </div>
 
             {/* 4. Communauté */}
             <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
@@ -254,18 +245,10 @@ export default function Navigation() {
             <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} />
           ))}
 
-          {/* Bouton + Publier */}
-          {user && (
-            <motion.button
-              whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
-              onClick={() => setShowPublish(true)}
-              data-tour-anchor="nav-publish"
-              aria-label="Publier" title="Publier"
-              className="nav-glass-yellow w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mt-1"
-            >
-              <Plus size={18} strokeWidth={2.5} style={{ color: "#3D2F00" }} />
-            </motion.button>
-          )}
+          {/* Orbe assistant */}
+          <div className="flex justify-center mt-1" data-tour-anchor="nav-assistant">
+            <NavOrb size={44} />
+          </div>
 
           <div className="flex-1" />
 

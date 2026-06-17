@@ -383,13 +383,13 @@ export const TOUR_STEPS: TourStep[] = [
     softOverlay: true,
   },
   {
-    id: "nav-publish",
+    id: "nav-assistant",
     type: "spotlight",
-    anchorId: "nav-publish",
-    breadcrumb: "Publier",
-    title: "Partage en deux tapes",
+    anchorId: "nav-assistant",
+    breadcrumb: "Assistant",
+    title: "Ton assistant, partout",
     description:
-      "Une séance terminée, une recette réussie, une perf débloquée ? Le bouton + la publie à ta communauté en quelques secondes.",
+      "L'orbe au centre, c'est ton coach IA — sur chaque écran. Tape pour écrire, maintiens pour parler : il t'explique, te guide et t'emmène où tu veux dans l'app.",
     shape: "rounded",
     padding: 8,
     tooltipPosition: "auto",

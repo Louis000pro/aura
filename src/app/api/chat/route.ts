@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import Groq from "groq-sdk";
+import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 
 const groq = new Groq({ apiKey: process.env.COACH_AURA_KEY ?? "placeholder" });
 
@@ -99,7 +100,8 @@ function buildSystemPrompt(
   programme?: string | null,
   rich?: RichProfile | null,
   lieu?: string | null,
-  equip?: string | null
+  equip?: string | null,
+  currentPage?: string | null
 ): string {
   // ── Repère temporel (fuseau France) ──
   let dateContext = "";
@@ -193,7 +195,9 @@ ${lieu === "salle"
       : `L'utilisateur s'entraîne À LA MAISON mais tu ne sais pas s'il a du matériel. Avant de proposer des exercices, demande-lui : "Tu as des haltères à la maison, ou je te fais tout au poids du corps ? 💪" et attends sa réponse.`)
   : `Tu ne sais PAS encore où l'utilisateur s'entraîne. Dès qu'il te demande un programme, une séance ou une modification d'exercices, tu DOIS d'abord lui demander : "Tu t'entraînes en salle de sport (type Basic Fit) ou à la maison ? 💪" et attendre sa réponse avant de proposer des exercices. S'il répond la maison, demande ensuite s'il a des haltères.`}
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
-[LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+[LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
+
+${buildSiteKnowledgePrompt(currentPage ?? undefined)}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
@@ -318,6 +322,7 @@ export async function POST(req: NextRequest) {
   let richProfile: RichProfile | null = null;
   let lieu: string | null = null;
   let lieuEquip: string | null = null;
+  let currentPage: string | null = null;
   let maxTokens = 800;
 
   try {
@@ -330,6 +335,7 @@ export async function POST(req: NextRequest) {
     richProfile = body.richProfile ?? null;
     lieu = body.lieu ?? null;
     lieuEquip = body.lieu_equip ?? null;
+    currentPage = body.currentPage ?? null;
     // Les tâches de génération (programme, plan repas) peuvent demander plus de tokens
     // pour éviter un JSON tronqué. Plafonné pour rester raisonnable.
     if (body.maxTokens) maxTokens = Math.min(Math.max(Number(body.maxTokens) || 800, 800), 4000);
@@ -337,7 +343,7 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip);
+  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage);
 
   try {
     // Les grosses générations (programme, repas) → modèle léger (limites bien plus hautes)
