@@ -28,30 +28,36 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
 
   const longTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongRef = useRef(false);
+  const suppressClickRef = useRef(false);
 
   const clearTimer = () => {
     if (longTimer.current) { clearTimeout(longTimer.current); longTimer.current = null; }
   };
 
+  // L'appui démarre le timer d'appui long. Le TAP est géré par onClick (natif),
+  // bien plus fiable au toucher que pointerup — qui « saute » au moindre
+  // micro-mouvement du doigt et faisait que le chat ne s'ouvrait pas sur mobile.
   const onDown = useCallback(() => {
     if (voice.state === "recording" || voice.state === "processing") return;
     isLongRef.current = false;
     setPressing(true);
-    longTimer.current = setTimeout(() => { isLongRef.current = true; voice.start(); }, LONG_PRESS_MS);
+    longTimer.current = setTimeout(() => {
+      isLongRef.current = true;
+      suppressClickRef.current = true; // appui long → ce n'est pas un tap
+      voice.start();
+    }, LONG_PRESS_MS);
   }, [voice]);
 
-  const onUp = useCallback(() => {
+  const endPress = useCallback(() => {
     clearTimer();
     setPressing(false);
-    if (voice.state === "recording" && isLongRef.current) { voice.stop(); return; }
-    if (!isLongRef.current) open();
-  }, [voice, open]);
-
-  const onCancel = useCallback(() => {
-    clearTimer();
-    setPressing(false);
-    if (voice.state === "recording") voice.stop();
+    if (voice.state === "recording" && isLongRef.current) voice.stop();
   }, [voice]);
+
+  const onClick = useCallback(() => {
+    if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+    open();
+  }, [open]);
 
   const recording = voice.state === "recording";
   const processing = voice.state === "processing";
@@ -79,9 +85,10 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
       <motion.button
         type="button"
         onPointerDown={onDown}
-        onPointerUp={onUp}
-        onPointerCancel={onCancel}
-        onPointerLeave={onCancel}
+        onPointerUp={endPress}
+        onPointerCancel={endPress}
+        onPointerLeave={endPress}
+        onClick={onClick}
         onContextMenu={(e) => e.preventDefault()}
         aria-label="Assistant Vaiiya — appuie pour écrire, maintiens pour parler"
         className="relative rounded-full overflow-hidden cursor-pointer outline-none"
