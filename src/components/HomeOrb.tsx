@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
-import { usePerfMode } from "@/lib/perfMode";
 
 /* ─── Détection geste : tap court vs long press ────────────────────────
    - Tap court  (<350 ms) → ouvre le chat
@@ -46,9 +45,6 @@ export default function HomeOrb({
   const [state, setState] = useState<OrbState>("idle");
   const [levels, setLevels] = useState<number[]>([0, 0, 0, 0, 0]);
   const [error, setError] = useState<string | null>(null);
-
-  // Appareils faibles : on allège l'orbe (moins de blobs, pas de sheen ni d'arcs).
-  const lite = usePerfMode();
 
   const pressStartRef = useRef<number>(0);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -218,8 +214,8 @@ export default function HomeOrb({
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* ─── Anneaux extérieurs irréguliers (très subtils) — coupés en perf-lite ─── */}
-      {!lite && <svg
+      {/* ─── Anneaux extérieurs irréguliers (très subtils) — toujours affichés ─── */}
+      <svg
         className="absolute pointer-events-none"
         width={accentSize}
         height={accentSize}
@@ -260,7 +256,7 @@ export default function HomeOrb({
           transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
           style={{ transformOrigin: `${accentSize / 2}px ${accentSize / 2}px` }}
         />
-      </svg>}
+      </svg>
 
       {/* Pulses pendant recording */}
       <AnimatePresence>
@@ -295,8 +291,8 @@ export default function HomeOrb({
         style={{
           width: size,
           height: size,
-          // Fond clair et lumineux
-          background: "radial-gradient(circle at 50% 42%, #FFFFFF 0%, #F6F1FE 65%, #EFE8FA 100%)",
+          // Base lumineuse légèrement teintée violet (moins « boule blanche », plus colorée)
+          background: "radial-gradient(circle at 50% 42%, #F6EEFF 0%, #E9DBFB 60%, #DBC9F5 100%)",
           boxShadow:
             state === "recording"
               ? "0 0 72px 18px rgba(167,139,250,0.38), 0 0 140px 36px rgba(212,168,67,0.22), inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -2px 8px rgba(167,139,250,0.15)"
@@ -367,8 +363,8 @@ export default function HomeOrb({
           }}
         />
 
-        {/* Blobs 3-5 + sheen rotatif — coupés en perf-lite (allège fortement le GPU) */}
-        {!lite && <>
+        {/* Blobs 3-5 + sheen rotatif — toujours affichés (orbe premium colorée) */}
+        <>
         {/* Blob 3 — Pêche corail */}
         <motion.div
           className="absolute rounded-full pointer-events-none"
@@ -454,7 +450,7 @@ export default function HomeOrb({
           animate={{ rotate: 360 }}
           transition={{ duration: 14 * speedMult, repeat: Infinity, ease: "linear" }}
         />
-        </>}
+        </>
 
         {/* ═══ GLASS HIGHLIGHT (effet 3D verre) ═══ */}
         {/* Reflet brillant en haut-gauche pour sphère */}
@@ -555,7 +551,7 @@ export default function HomeOrb({
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25 }}
           className="text-[11px] font-medium tracking-[0.18em] uppercase text-center"
-          style={{ color: "#8B7FB0" }}
+          style={{ color: "var(--text-soft)" }}
         >
           {state === "idle" && "Appuie pour écrire · Maintiens pour parler"}
           {state === "pressing" && "Maintiens pour parler…"}

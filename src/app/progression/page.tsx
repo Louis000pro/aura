@@ -63,21 +63,21 @@ const workoutSessions: WorkoutSession[] = [
     title: "Démo Avatars 3D ✦", subtitle: "17 animations 3D — match exact",
     duration: 30, difficulty: "Débutant", exercises: 17,
     muscles: ["Corps entier"],
-    accent: "#A78BFA", icon: Sparkles,
+    accent: "var(--accent)", icon: Sparkles,
   },
   {
     id: "force-haut", category: "force",
     title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
-    accent: "#A78BFA", icon: Dumbbell,
+    accent: "var(--accent)", icon: Dumbbell,
   },
   {
     id: "fullbody-deb", category: "fullbody",
     title: "Full Body Débutant", subtitle: "Corps complet · Sans matériel",
     duration: 35, difficulty: "Débutant", exercises: 7,
     muscles: ["Corps entier"],
-    accent: "#D4A843", icon: Layers,
+    accent: "var(--gold)", icon: Layers,
   },
   {
     id: "hiit", category: "cardio",
@@ -91,7 +91,7 @@ const workoutSessions: WorkoutSession[] = [
     title: "Jambes & Fessiers", subtitle: "Squats · Fentes · Hip Thrust",
     duration: 50, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Quadriceps", "Fessiers"],
-    accent: "#A78BFA", icon: Dumbbell,
+    accent: "var(--accent)", icon: Dumbbell,
   },
   {
     id: "mobilite", category: "mobilite",
@@ -134,7 +134,7 @@ const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
 const difficultyColor: Record<string, string> = {
   "Débutant":      "#34D399",
   "Intermédiaire": "#FBBF24",
-  "Avancé":        "#A78BFA",
+  "Avancé":        "var(--accent)",
 };
 
 /* ─── Icon resolver (Supabase stores icon name as string) ── */
@@ -156,10 +156,10 @@ function toDateStr(d: Date) {
 }
 
 const CHART_CARD = {
-  background: "rgba(255,255,255,0.78)",
+  background: "rgba(var(--surface-rgb),0.78)",
   backdropFilter: "blur(10px)",
-  border: "1px solid rgba(255,255,255,0.9)",
-  boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+  border: "1px solid rgba(var(--surface-rgb),0.9)",
+  boxShadow: "0 4px 32px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
 };
 
 /* ─── PRChart ────────────────────────────────────────────── */
@@ -235,12 +235,12 @@ function PRChart({
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>RECORDS PERSO</p>
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>RECORDS PERSO</p>
             <div className="flex items-end gap-1.5">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>
                 {best ? best.value : "—"}
               </span>
-              {best && <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>{unit}</span>}
+              {best && <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>}
               {delta !== null && (
                 <span className="text-xs font-semibold mb-1 ml-1 px-1.5 py-0.5 rounded-lg"
                   style={{
@@ -258,7 +258,7 @@ function PRChart({
                 value={selected}
                 onChange={e => setSelected(e.target.value)}
                 className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold outline-none cursor-pointer max-w-[120px]"
-                style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(212,192,255,0.4)", color: "#2D3748" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)", color: "var(--text-1)" }}
               >
                 {exercises.map(ex => <option key={ex} value={ex}>{ex}</option>)}
               </select>
@@ -282,7 +282,7 @@ function PRChart({
                 <input type="text" placeholder="Exercice (ex: Squat)" value={newEx}
                   onChange={e => setNewEx(e.target.value)} list="pr-exercise-list"
                   className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
                 <datalist id="pr-exercise-list">
                   {commonExercisesPR.map(e => <option key={e} value={e} />)}
                 </datalist>
@@ -292,10 +292,10 @@ function PRChart({
                   onChange={e => setNewVal(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleAdd()}
                   className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
                 <select value={newUnit} onChange={e => setNewUnit(e.target.value)}
                   className="px-2.5 py-2 rounded-xl text-xs outline-none cursor-pointer"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}>
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}>
                   <option value="kg">kg</option>
                   <option value="reps">reps</option>
                   <option value="km">km</option>
@@ -319,7 +319,7 @@ function PRChart({
             style={{ background: "rgba(52,211,153,0.08)" }}>
             <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#34D399" }} />
           </div>
-          <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
+          <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>
             {exercises.length === 0
               ? "Aucun record encore.\nClique sur + pour ajouter ton premier PR !"
               : "Clique sur + pour ajouter\nun record pour cet exercice."}
@@ -345,7 +345,7 @@ function PRChart({
               return (
                 <g key={i}>
                   <line x1={PX} y1={y} x2={W - PX/2} y2={y} stroke="rgba(52,211,153,0.08)" strokeWidth="1" strokeDasharray="3,5" />
-                  <text x={PX - 6} y={y + 3.5} textAnchor="end" fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">{v.toFixed(0)}</text>
+                  <text x={PX - 6} y={y + 3.5} textAnchor="end" fontSize="8" fill="rgba(var(--text-3-rgb),0.9)" fontWeight="500">{v.toFixed(0)}</text>
                 </g>
               );
             })}
@@ -373,7 +373,7 @@ function PRChart({
               const lbl = `${d.getDate()}/${d.getMonth() + 1}`;
               return (
                 <text key={i} x={i === 0 ? PX : W - PX/2} y={H + 13} textAnchor={i === 0 ? "start" : "end"}
-                  fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">{lbl}</text>
+                  fontSize="8" fill="rgba(var(--text-3-rgb),0.9)" fontWeight="500">{lbl}</text>
               );
             })}
           </svg>
@@ -391,8 +391,8 @@ function PRChart({
               return (
                 <div key={entry.id} className="flex items-center gap-2 px-2 py-1 rounded-xl"
                   style={{ background: "transparent" }}>
-                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "#A0AEC0" }}>{label}</span>
-                  <span className="flex-1 text-xs font-semibold" style={{ color: "#2D3748" }}>{entry.value} {unit}</span>
+                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "var(--text-3)" }}>{label}</span>
+                  <span className="flex-1 text-xs font-semibold" style={{ color: "var(--text-1)" }}>{entry.value} {unit}</span>
                   <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(entry.id)}
                     className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
                     style={{ background: "rgba(252,129,129,0.1)" }}>
@@ -423,17 +423,17 @@ function VolumeChart({ data }: { data: Array<{ label: string; cals: number; sess
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>VOLUME · 8 SEMAINES</p>
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>VOLUME · 8 SEMAINES</p>
             <div className="flex items-end gap-2">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>{totalSessions}</span>
-              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>séance{totalSessions > 1 ? "s" : ""}</span>
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>{totalSessions}</span>
+              <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>séance{totalSessions > 1 ? "s" : ""}</span>
             </div>
           </div>
           <div className="text-right mt-1">
             {totalCals > 0 && (
-              <p className="text-xs font-semibold" style={{ color: "#D4A843" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
+              <p className="text-xs font-semibold" style={{ color: "var(--gold)" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
             )}
-            <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
               Cette sem. : {currentWeekSessions} séance{currentWeekSessions > 1 ? "s" : ""}
             </p>
           </div>
@@ -443,10 +443,10 @@ function VolumeChart({ data }: { data: Array<{ label: string; cals: number; sess
       {data.every(d => d.cals === 0) ? (
         <div className="flex flex-col items-center justify-center py-10 px-4 gap-3">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(167,139,250,0.08)" }}>
-            <Zap size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
+            <Zap size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>Lance des séances pour voir<br/>ton volume d&apos;entraînement !</p>
+          <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>Lance des séances pour voir<br/>ton volume d&apos;entraînement !</p>
         </div>
       ) : (
         <div className="px-3 pb-4">
@@ -454,15 +454,15 @@ function VolumeChart({ data }: { data: Array<{ label: string; cals: number; sess
             <defs>
               {data.map((_, i) => (
                 <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={i === data.length - 1 ? "#A78BFA" : "#C4B5FD"} stopOpacity="1" />
-                  <stop offset="100%" stopColor={i === data.length - 1 ? "#818CF8" : "#A78BFA"} stopOpacity={i === data.length - 1 ? "0.9" : "0.5"} />
+                  <stop offset="0%" stopColor={i === data.length - 1 ? "var(--accent)" : "#C4B5FD"} stopOpacity="1" />
+                  <stop offset="100%" stopColor={i === data.length - 1 ? "#818CF8" : "var(--accent)"} stopOpacity={i === data.length - 1 ? "0.9" : "0.5"} />
                 </linearGradient>
               ))}
             </defs>
             {/* Grid lines */}
             {[0.33, 0.66, 1].map((p, i) => (
               <line key={i} x1={PX} y1={H - PY - p * (H - 2*PY)} x2={W - PX} y2={H - PY - p * (H - 2*PY)}
-                stroke="rgba(167,139,250,0.06)" strokeWidth="1" strokeDasharray="3,5" />
+                stroke="rgba(var(--accent-rgb),0.06)" strokeWidth="1" strokeDasharray="3,5" />
             ))}
             {data.map((d, i) => {
               const barH = d.cals > 0 ? Math.max(5, (d.cals / maxCals) * (H - PY * 2)) : 0;
@@ -472,22 +472,22 @@ function VolumeChart({ data }: { data: Array<{ label: string; cals: number; sess
               return (
                 <g key={i}>
                   {/* Background track */}
-                  <rect x={x} y={PY} width={barW} height={H - 2*PY} rx="4" fill="rgba(167,139,250,0.05)" />
+                  <rect x={x} y={PY} width={barW} height={H - 2*PY} rx="4" fill="rgba(var(--accent-rgb),0.05)" />
                   {/* Actual bar */}
                   {d.cals > 0 && (
                     <rect x={x} y={y} width={barW} height={barH} rx="4"
                       fill={`url(#barGrad${i})`}
-                      style={isLast ? { filter: "drop-shadow(0 3px 8px rgba(167,139,250,0.45))" } : {}} />
+                      style={isLast ? { filter: "drop-shadow(0 3px 8px rgba(var(--accent-rgb),0.45))" } : {}} />
                   )}
                   {/* Session count dot */}
                   {d.sessions > 0 && (
                     <g>
-                      <circle cx={x + barW/2} cy={y - 6} r={5} fill={isLast ? "#A78BFA" : "#C4B5FD"} fillOpacity={isLast ? 1 : 0.7} />
+                      <circle cx={x + barW/2} cy={y - 6} r={5} fill={isLast ? "var(--accent)" : "#C4B5FD"} fillOpacity={isLast ? 1 : 0.7} />
                       <text x={x + barW/2} y={y - 2.5} textAnchor="middle" fontSize="5.5" fill="white" fontWeight="700">{d.sessions}</text>
                     </g>
                   )}
                   <text x={x + barW/2} y={H + 14} textAnchor="middle"
-                    fontSize="7.5" fill={isLast ? "#A78BFA" : "rgba(160,174,192,0.8)"} fontWeight={isLast ? "700" : "500"}>
+                    fontSize="7.5" fill={isLast ? "var(--accent)" : "rgba(var(--text-3-rgb),0.8)"} fontWeight={isLast ? "700" : "500"}>
                     {d.label.split(" ")[0]}
                   </text>
                 </g>
@@ -519,8 +519,8 @@ function WeightChart({
 
   const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
   const current = pts.at(-1)?.weight ?? null;
-  const lineColor = goalType === "masse" ? "#34D399" : "#A78BFA";
-  const gradColor = goalType === "masse" ? "#34D399" : "#A78BFA";
+  const lineColor = goalType === "masse" ? "#34D399" : "var(--accent)";
+  const gradColor = goalType === "masse" ? "#34D399" : "var(--accent)";
 
   const W = 320, H = 110, PX = 32, PY = 14;
   const ws   = pts.map(p => p.weight);
@@ -566,32 +566,32 @@ function WeightChart({
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "#A0AEC0" }}>POIDS</p>
+              <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>POIDS</p>
               {goalLabel && (
                 <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA" }}>
+                  style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)" }}>
                   {goalLabel}
                 </span>
               )}
             </div>
             <button onClick={() => setAdding(true)} className="flex items-end gap-2 cursor-pointer"
               style={{ background: "none", border: "none", padding: 0 }} aria-label="Ajouter mon poids">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: current !== null ? "#1A202C" : "#A78BFA" }}>
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: current !== null ? "var(--text-0)" : "var(--accent)" }}>
                 {current !== null ? current.toFixed(1) : "+"}
               </span>
-              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>
+              <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>
                 {current !== null ? "kg" : "kg ?"}
               </span>
             </button>
           </div>
           <div className="flex items-center gap-1.5 mt-1">
-            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(212,192,255,0.4)" }}>
+            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
               {(["week", "month"] as const).map(r => (
                 <button key={r} onClick={() => onRangeChange(r)}
                   className="px-2.5 py-1 text-[10px] font-semibold cursor-pointer"
                   style={{
-                    background: range === r ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "transparent",
-                    color: range === r ? "#2D3748" : "#A0AEC0",
+                    background: range === r ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "transparent",
+                    color: range === r ? "var(--text-1)" : "var(--text-3)",
                   }}>
                   {r === "week" ? "7j" : "30j"}
                 </button>
@@ -599,8 +599,8 @@ function WeightChart({
             </div>
             <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
               className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-              <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
+              style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+              <span className="text-sm font-bold leading-none" style={{ color: "var(--accent)" }}>+</span>
             </motion.button>
           </div>
         </div>
@@ -616,10 +616,10 @@ function WeightChart({
                 value={inputVal} onChange={e => setInputVal(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
                 className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
               <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
                 className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#C4A8FF,#A78BFA)", color: "white" }}>
+                style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))", color: "white" }}>
                 OK
               </motion.button>
             </div>
@@ -633,14 +633,14 @@ function WeightChart({
           className="w-full flex flex-col items-center justify-center py-9 gap-3 cursor-pointer"
           style={{ background: "none", border: "none" }}>
           <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(167,139,250,0.1)" }}>
-            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
           </div>
-          <p className="text-xs text-center font-light" style={{ color: "#718096" }}>
+          <p className="text-xs text-center font-light" style={{ color: "var(--text-2)" }}>
             Aucun poids enregistré pour le moment
           </p>
           <span className="px-4 py-2 rounded-xl text-xs font-bold"
-            style={{ background: "linear-gradient(135deg,#C4A8FF,#A78BFA)", color: "#fff", boxShadow: "0 4px 14px rgba(167,139,250,0.3)" }}>
+            style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))", color: "#fff", boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.3)" }}>
             + Ajouter mon poids
           </span>
         </button>
@@ -665,9 +665,9 @@ function WeightChart({
               return (
                 <g key={i}>
                   <line x1={PX} y1={y} x2={W - PX/2} y2={y}
-                    stroke="rgba(167,139,250,0.07)" strokeWidth="1" strokeDasharray="3,4" />
+                    stroke="rgba(var(--accent-rgb),0.07)" strokeWidth="1" strokeDasharray="3,4" />
                   <text x={PX - 4} y={y + 3.5} textAnchor="end"
-                    fontSize="7.5" fill="rgba(160,174,192,0.8)" fontWeight="500">
+                    fontSize="7.5" fill="rgba(var(--text-3-rgb),0.8)" fontWeight="500">
                     {w.toFixed(0)}
                   </text>
                 </g>
@@ -707,7 +707,7 @@ function WeightChart({
                 const x = i === 0 ? PX : W - PX / 2;
                 return (
                   <text key={i} x={x} y={H + 13} textAnchor={anchor}
-                    fontSize="8" fill="rgba(160,174,192,0.9)" fontWeight="500">
+                    fontSize="8" fill="rgba(var(--text-3-rgb),0.9)" fontWeight="500">
                     {lbl}
                   </text>
                 );
@@ -720,7 +720,7 @@ function WeightChart({
       {/* ── Liste des entrées avec édition / suppression ── */}
       {pts.length > 0 && (
         <div className="px-4 pb-4">
-          <div style={{ height: 1, background: "rgba(167,139,250,0.07)", marginBottom: 10 }} />
+          <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.07)", marginBottom: 10 }} />
           <div className="flex flex-col gap-1 max-h-36 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
             {[...pts].reverse().map(entry => {
               const d = new Date(entry.date + "T00:00:00");
@@ -731,9 +731,9 @@ function WeightChart({
                   key={entry.date}
                   layout
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                  style={{ background: isEditing ? "rgba(167,139,250,0.08)" : "transparent" }}
+                  style={{ background: isEditing ? "rgba(var(--accent-rgb),0.08)" : "transparent" }}
                 >
-                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "#A0AEC0" }}>{label}</span>
+                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "var(--text-3)" }}>{label}</span>
                   {isEditing ? (
                     <>
                       <input
@@ -748,7 +748,7 @@ function WeightChart({
                           if (e.key === "Escape") setEditingDate(null);
                         }}
                         className="flex-1 px-2 py-0.5 rounded-lg text-xs outline-none"
-                        style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                       />
                       <motion.button whileTap={{ scale: 0.9 }}
                         onClick={() => {
@@ -756,22 +756,22 @@ function WeightChart({
                           if (!isNaN(kg) && kg >= 20 && kg <= 300) { onUpdate(entry.date, kg); setEditingDate(null); }
                         }}
                         className="px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer"
-                        style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "white" }}>
+                        style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "white" }}>
                         OK
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingDate(null)}
-                        className="cursor-pointer" style={{ color: "#A0AEC0" }}>
+                        className="cursor-pointer" style={{ color: "var(--text-3)" }}>
                         <X size={12} />
                       </motion.button>
                     </>
                   ) : (
                     <>
-                      <span className="flex-1 text-xs font-semibold" style={{ color: "#2D3748" }}>{entry.weight.toFixed(1)} kg</span>
+                      <span className="flex-1 text-xs font-semibold" style={{ color: "var(--text-1)" }}>{entry.weight.toFixed(1)} kg</span>
                       <motion.button whileTap={{ scale: 0.9 }}
                         onClick={() => { setEditingDate(entry.date); setEditVal(String(entry.weight)); }}
                         className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
-                        style={{ background: "rgba(167,139,250,0.1)" }}>
-                        <Pencil size={10} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                        style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+                        <Pencil size={10} strokeWidth={2} style={{ color: "var(--accent)" }} />
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.9 }}
                         onClick={() => onDelete(entry.date)}
@@ -827,35 +827,35 @@ function WorkoutWeekCard({ sessions }: { sessions: TimelineEvent[] }) {
   return (
     <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
       <div className="px-5 pt-5 pb-3">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3" style={{ color: "#A0AEC0" }}>SÉANCES · 7 JOURS</p>
+        <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-3)" }}>SÉANCES · 7 JOURS</p>
 
         {weekSessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 gap-2">
-            <Dumbbell size={24} strokeWidth={1.4} style={{ color: "#D4C0FF" }} />
-            <p className="text-xs font-light text-center" style={{ color: "#A0AEC0" }}>Aucune séance cette semaine<br/>Lance-toi !</p>
+            <Dumbbell size={24} strokeWidth={1.4} style={{ color: "var(--violet-mid)" }} />
+            <p className="text-xs font-light text-center" style={{ color: "var(--text-3)" }}>Aucune séance cette semaine<br/>Lance-toi !</p>
           </div>
         ) : (
           <>
             {/* Gros chiffre */}
             <div className="flex items-end gap-2 mb-4">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>{weekSessions.length}</span>
-              <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>séance{weekSessions.length > 1 ? "s" : ""}</span>
+              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>{weekSessions.length}</span>
+              <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>séance{weekSessions.length > 1 ? "s" : ""}</span>
             </div>
 
             {/* Stats row */}
             <div className="flex items-center gap-4 mb-5">
               <div>
-                <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "#A0AEC0" }}>Durée totale</p>
-                <p className="text-sm font-bold" style={{ color: "#2D3748" }}>
+                <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>Durée totale</p>
+                <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
                   {totalDuration >= 60 ? `${Math.floor(totalDuration/60)}h${totalDuration%60 > 0 ? String(totalDuration%60).padStart(2,"0") : ""}` : `${totalDuration} min`}
                 </p>
               </div>
               {totalCals > 0 && (
                 <>
-                  <div style={{ width: 1, height: 28, background: "rgba(167,139,250,0.15)" }} />
+                  <div style={{ width: 1, height: 28, background: "rgba(var(--accent-rgb),0.15)" }} />
                   <div>
-                    <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "#A0AEC0" }}>Calories</p>
-                    <p className="text-sm font-bold" style={{ color: "#2D3748" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
+                    <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>Calories</p>
+                    <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
                   </div>
                 </>
               )}
@@ -864,7 +864,7 @@ function WorkoutWeekCard({ sessions }: { sessions: TimelineEvent[] }) {
         )}
 
         {/* Dots jours */}
-        <div style={{ height: 1, background: "rgba(167,139,250,0.07)", marginBottom: 16 }} />
+        <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.07)", marginBottom: 16 }} />
         <div className="flex justify-between">
           {dayDots.map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
@@ -875,17 +875,17 @@ function WorkoutWeekCard({ sessions }: { sessions: TimelineEvent[] }) {
                 className="w-7 h-7 rounded-full flex items-center justify-center"
                 style={{
                   background: d.hasSession
-                    ? "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)"
+                    ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)"
                     : d.isToday
-                    ? "rgba(167,139,250,0.12)"
+                    ? "rgba(var(--accent-rgb),0.12)"
                     : "rgba(0,0,0,0.04)",
-                  border: d.isToday && !d.hasSession ? "1.5px solid rgba(167,139,250,0.35)" : "none",
-                  boxShadow: d.hasSession ? "0 2px 8px rgba(167,139,250,0.35)" : "none",
+                  border: d.isToday && !d.hasSession ? "1.5px solid rgba(var(--accent-rgb),0.35)" : "none",
+                  boxShadow: d.hasSession ? "0 2px 8px rgba(var(--accent-rgb),0.35)" : "none",
                 }}
               >
                 {d.hasSession && <Dumbbell size={11} strokeWidth={2} style={{ color: "white" }} />}
               </motion.div>
-              <span className="text-[9px] font-medium" style={{ color: d.isToday ? "#A78BFA" : "#A0AEC0" }}>{d.label}</span>
+              <span className="text-[9px] font-medium" style={{ color: d.isToday ? "var(--accent)" : "var(--text-3)" }}>{d.label}</span>
             </div>
           ))}
         </div>
@@ -1032,14 +1032,14 @@ function CameraCapture({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(255,255,255,0.12)" }}
+          style={{ background: "rgba(var(--surface-rgb),0.12)" }}
         >
           <X size={16} strokeWidth={2} style={{ color: "#fff" }} />
         </button>
 
         {/* Title */}
         <div className="px-5 pt-5 pb-3">
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
             {mode === "photo" ? "Scan Nutrition" : "Analyse Posture"}
           </p>
           <h3 className="text-base font-light mt-0.5" style={{ color: "#fff" }}>{label}</h3>
@@ -1072,7 +1072,7 @@ function CameraCapture({
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
                 className="w-8 h-8 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               />
@@ -1081,8 +1081,8 @@ function CameraCapture({
           {/* Error */}
           {phase === "error" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <CameraOff size={32} strokeWidth={1.5} style={{ color: "#718096" }} />
-              <p className="text-xs text-center px-6" style={{ color: "#718096" }}>
+              <CameraOff size={32} strokeWidth={1.5} style={{ color: "var(--text-2)" }} />
+              <p className="text-xs text-center px-6" style={{ color: "var(--text-2)" }}>
                 Accès à la caméra refusé.<br/>Vérifiez les permissions du navigateur.
               </p>
             </div>
@@ -1104,7 +1104,7 @@ function CameraCapture({
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                backgroundImage: "linear-gradient(rgba(167,139,250,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(167,139,250,0.12) 1px, transparent 1px)",
+                backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb),0.12) 1px, transparent 1px)",
                 backgroundSize: "33.33% 33.33%",
               }}
             />
@@ -1120,12 +1120,12 @@ function CameraCapture({
               onClick={takePhoto}
               className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
               style={{
-                background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                boxShadow: "0 0 0 4px rgba(167,139,250,0.22), 0 6px 20px rgba(167,139,250,0.35)",
+                background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.22), 0 6px 20px rgba(var(--accent-rgb),0.35)",
               }}
               aria-label="Prendre une photo"
             >
-              <Camera size={22} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+              <Camera size={22} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
             </motion.button>
           )}
 
@@ -1165,19 +1165,19 @@ function CameraCapture({
                 whileTap={{ scale: 0.95 }}
                 onClick={retake}
                 className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.11)" }}
+                style={{ background: "rgba(var(--surface-rgb),0.07)", border: "1px solid rgba(var(--surface-rgb),0.11)" }}
               >
-                <RefreshCw size={13} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                <span className="text-sm font-medium" style={{ color: "#A0AEC0" }}>Reprendre</span>
+                <RefreshCw size={13} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+                <span className="text-sm font-medium" style={{ color: "var(--text-3)" }}>Reprendre</span>
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={useCapture}
                 className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}
               >
-                <CheckCircle size={13} strokeWidth={2} style={{ color: "#2D3748" }} />
-                <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Utiliser</span>
+                <CheckCircle size={13} strokeWidth={2} style={{ color: "var(--text-1)" }} />
+                <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Utiliser</span>
               </motion.button>
             </>
           )}
@@ -1223,12 +1223,12 @@ function UploadZone({
         <AnimatePresence mode="wait">
           {uploadState === "idle" && (
             <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 w-full">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                <Icon size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
+                <Icon size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{label}</p>
-                <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{sublabel}</p>
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{label}</p>
+                <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>{sublabel}</p>
               </div>
               {/* Two action buttons */}
               <div className="flex gap-2 w-full mt-1">
@@ -1236,7 +1236,7 @@ function UploadZone({
                   whileTap={{ scale: 0.94 }}
                   onClick={() => inputRef.current?.click()}
                   className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
-                  style={{ background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }}
+                  style={{ background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}
                 >
                   <Upload size={10} /><span>Importer</span>
                 </motion.button>
@@ -1244,7 +1244,7 @@ function UploadZone({
                   whileTap={{ scale: 0.94 }}
                   onClick={() => setShowCamera(true)}
                   className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
-                  style={{ background: "rgba(167,139,250,0.14)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.28)" }}
+                  style={{ background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.28)" }}
                 >
                   <Icon size={10} /><span>Capturer</span>
                 </motion.button>
@@ -1253,14 +1253,14 @@ function UploadZone({
           )}
           {uploadState === "uploading" && (
             <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 justify-center h-full">
-              <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(45,55,72,0.15)", borderTopColor: "#2D3748" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-              <p className="text-xs font-medium" style={{ color: "#718096" }}>Analyse IA en cours…</p>
+              <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(var(--text-1-rgb),0.15)", borderTopColor: "var(--text-1)" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+              <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Analyse IA en cours…</p>
             </motion.div>
           )}
           {uploadState === "done" && (
             <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
-              <CheckCircle size={28} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-              <p className="text-xs font-medium" style={{ color: "#2D3748" }}>Analyse terminée !</p>
+              <CheckCircle size={28} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+              <p className="text-xs font-medium" style={{ color: "var(--text-1)" }}>Analyse terminée !</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1304,15 +1304,15 @@ function WorkoutCard({
       style={{
         width: isDone ? 190 : 230,
         background: isDone
-          ? "rgba(255,255,255,0.45)"
-          : "rgba(255,255,255,0.75)",
+          ? "rgba(var(--surface-rgb),0.45)"
+          : "rgba(var(--surface-rgb),0.75)",
         backdropFilter: "blur(10px)",
         border: isDone
-          ? "1px solid rgba(255,255,255,0.55)"
-          : "1px solid rgba(255,255,255,0.88)",
+          ? "1px solid rgba(var(--surface-rgb),0.55)"
+          : "1px solid rgba(var(--surface-rgb),0.88)",
         boxShadow: isDone
           ? "0 4px 16px rgba(0,0,0,0.04)"
-          : "inset 0 1px 0 rgba(255,255,255,0.95), 0 8px 32px rgba(0,0,0,0.06)",
+          : "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 8px 32px rgba(0,0,0,0.06)",
         filter: isDone ? "grayscale(0.35)" : "none",
         transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}
@@ -1343,8 +1343,8 @@ function WorkoutCard({
             {session.difficulty}
           </span>
         </div>
-        <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>{session.title}</p>
-        <p className="text-[11px] font-light mt-0.5" style={{ color: "#718096" }}>{session.subtitle}</p>
+        <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>{session.title}</p>
+        <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-2)" }}>{session.subtitle}</p>
       </div>
 
       {/* Body avatar — full width, centered */}
@@ -1365,13 +1365,13 @@ function WorkoutCard({
         {/* Stats */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <Clock size={11} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.duration} min</span>
+            <Clock size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+            <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
           </div>
           <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
           <div className="flex items-center gap-1">
-            <Dumbbell size={11} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-            <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.exercises} exos</span>
+            <Dumbbell size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+            <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
           </div>
         </div>
 
@@ -1384,7 +1384,7 @@ function WorkoutCard({
             isActive
               ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
               : isDone
-              ? { background: "rgba(255,255,255,0.55)", border: "1px solid rgba(0,0,0,0.07)" }
+              ? { background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(0,0,0,0.07)" }
               : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
           }
         >
@@ -1396,8 +1396,8 @@ function WorkoutCard({
               </motion.span>
             ) : isDone ? (
               <motion.span key="redo" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <RefreshCw size={10} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                <span className="text-[11px] font-semibold" style={{ color: "#A0AEC0" }}>Refaire</span>
+                <RefreshCw size={10} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Refaire</span>
               </motion.span>
             ) : (
               <motion.span key="off" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
@@ -1414,7 +1414,7 @@ function WorkoutCard({
 
 /* ─── LibraryCard ───────────────────────────────────────── */
 const VIS_CONFIG = {
-  private: { label: "Privée",  desc: "Visible par toi uniquement",    icon: Lock,  color: "#A0AEC0", bg: "rgba(160,174,192,0.08)", border: "rgba(160,174,192,0.2)" },
+  private: { label: "Privée",  desc: "Visible par toi uniquement",    icon: Lock,  color: "var(--text-3)", bg: "rgba(var(--text-3-rgb),0.08)", border: "rgba(var(--text-3-rgb),0.2)" },
   friends: { label: "Amis",    desc: "Visible par tes abonnés",       icon: Users, color: "#60A5FA", bg: "rgba(96,165,250,0.10)",  border: "rgba(96,165,250,0.25)" },
   public:  { label: "Public",  desc: "Trouvable par tout le monde",   icon: Globe, color: "#34D399", bg: "rgba(52,211,153,0.10)",  border: "rgba(52,211,153,0.25)" },
 } as const;
@@ -1443,9 +1443,9 @@ function LibraryCard({
       layout
       className="rounded-3xl overflow-hidden flex flex-col"
       style={{
-        background: "rgba(255,255,255,0.82)",
-        border: "1px solid rgba(255,255,255,0.92)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 24px rgba(0,0,0,0.05)",
+        background: "rgba(var(--surface-rgb),0.82)",
+        border: "1px solid rgba(var(--surface-rgb),0.92)",
+        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 4px 24px rgba(0,0,0,0.05)",
       }}
     >
       {/* Colored header */}
@@ -1470,10 +1470,10 @@ function LibraryCard({
               whileTap={{ scale: 0.88 }}
               onClick={() => onEdit(session)}
               className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.2)" }}
+              style={{ background: "rgba(var(--accent-rgb),0.12)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
               aria-label="Modifier"
             >
-              <Pencil size={11} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+              <Pencil size={11} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.88 }}
@@ -1486,7 +1486,7 @@ function LibraryCard({
             </motion.button>
           </div>
         </div>
-        <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "#2D3748" }}>{session.title}</h3>
+        <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "var(--text-1)" }}>{session.title}</h3>
         {/* Muscle tags */}
         <div className="flex flex-wrap gap-1">
           {session.muscles.slice(0, 3).map(m => (
@@ -1501,7 +1501,7 @@ function LibraryCard({
           {session.muscles.length > 3 && (
             <span
               className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: "rgba(160,174,192,0.12)", color: "#A0AEC0" }}
+              style={{ background: "rgba(var(--text-3-rgb),0.12)", color: "var(--text-3)" }}
             >
               +{session.muscles.length - 3}
             </span>
@@ -1510,15 +1510,15 @@ function LibraryCard({
       </div>
 
       {/* Stats row */}
-      <div className="flex items-center gap-3 px-4 py-2.5 flex-1" style={{ borderBottom: "1px solid rgba(240,235,255,0.5)" }}>
+      <div className="flex items-center gap-3 px-4 py-2.5 flex-1" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.5)" }}>
         <div className="flex items-center gap-1.5">
-          <Clock size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-          <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.duration} min</span>
+          <Clock size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+          <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
         </div>
         <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
         <div className="flex items-center gap-1.5">
-          <Dumbbell size={10} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-          <span className="text-[11px] font-medium" style={{ color: "#4A5568" }}>{session.exercises} exos</span>
+          <Dumbbell size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+          <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
         </div>
       </div>
 
@@ -1577,10 +1577,10 @@ function LibraryCard({
                 transition={{ duration: 0.15 }}
                 className="absolute bottom-full mb-1 left-0 right-0 rounded-2xl overflow-hidden z-50"
                 style={{
-                  background: "rgba(255,255,255,0.97)",
+                  background: "rgba(var(--surface-rgb),0.97)",
                   backdropFilter: "blur(10px)",
-                  border: "1px solid rgba(240,235,255,0.9)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+                  border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}
                 onClick={e => e.stopPropagation()}
               >
@@ -1603,8 +1603,8 @@ function LibraryCard({
                         <CfgIcon size={12} strokeWidth={2} style={{ color: cfg.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold" style={{ color: isCurrent ? cfg.color : "#2D3748" }}>{cfg.label}</p>
-                        <p className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>{cfg.desc}</p>
+                        <p className="text-xs font-semibold" style={{ color: isCurrent ? cfg.color : "var(--text-1)" }}>{cfg.label}</p>
+                        <p className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{cfg.desc}</p>
                       </div>
                       {isCurrent && <Check size={11} strokeWidth={2.5} style={{ color: cfg.color }} />}
                     </motion.button>
@@ -1641,7 +1641,7 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
     id: s.id,
     date, time, type: "workout", title: s.title,
     desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
-    cardClass: "lg-turquoise", dot: "#D4A843",
+    cardClass: "lg-turquoise", dot: "var(--gold)",
     performance: {
       type: "workout", title: s.title, date: `${date} · ${time}`,
       metrics: [
@@ -1655,7 +1655,7 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
 /* ─── Custom session type & creation modal ────────────────── */
 
 const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
-  force: "#A78BFA", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
+  force: "var(--accent)", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
 };
 const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
   force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
@@ -1830,28 +1830,28 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
         transition={{ type: "spring", stiffness: 380, damping: 34 }}
         className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
         style={{
-          background: "rgba(255,255,255,0.96)",
+          background: "rgba(var(--surface-rgb),0.96)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
           maxHeight: "92vh",
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(240,235,255,0.8)" }}>
+        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
               {isEdit ? "Modifier la séance" : "Nouvelle séance"}
             </p>
-            <h2 className="text-lg font-light mt-0.5" style={{ color: "#2D3748" }}>
+            <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
               {isEdit ? "Éditer ma séance" : "Créer ma séance"}
             </h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={15} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -1860,10 +1860,10 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
           {/* ── 0. Assistant IA ── */}
           <div className="rounded-2xl p-4 flex flex-col gap-3"
-            style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.18) 0%, rgba(245,230,163,0.12) 100%)", border: "1px solid rgba(167,139,250,0.25)" }}>
+            style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.18) 0%, rgba(var(--cream-mid-rgb),0.12) 100%)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Assistant IA ✦</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}>Optionnel</span>
+              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Assistant IA ✦</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)" }}>Optionnel</span>
             </div>
             <textarea
               value={aiDescription}
@@ -1871,7 +1871,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
               placeholder="Décris ta séance idéale… ex : séance push pour prise de masse, 45 min, avec développé couché et épaules"
               rows={3}
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none resize-none"
-              style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(212,192,255,0.45)", color: "#2D3748", lineHeight: 1.5 }}
+              style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.45)", color: "var(--text-1)", lineHeight: 1.5 }}
             />
             {aiError && (
               <p className="text-[11px]" style={{ color: "#FC8181" }}>{aiError}</p>
@@ -1882,8 +1882,8 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
               disabled={!aiDescription.trim() || aiLoading}
               className="w-full py-2.5 rounded-xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
               style={aiDescription.trim() && !aiLoading
-                ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" }
+                ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" }
               }
             >
               {aiLoading ? (
@@ -1901,7 +1901,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
 
           {/* ── 1. Infos générales ── */}
           <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Informations</p>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Informations</p>
 
             {/* Nom */}
             <input
@@ -1910,7 +1910,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
               onChange={e => setTitle(e.target.value)}
               placeholder="Nom de la séance (ex : Push Day, Cardio matin…)"
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-              style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
               autoFocus={!isEdit}
             />
 
@@ -1921,7 +1921,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                   className="py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider cursor-pointer"
                   style={category === cat
                     ? { background: `${ACCENT_BY_CATEGORY[cat]}22`, color: ACCENT_BY_CATEGORY[cat], border: `1px solid ${ACCENT_BY_CATEGORY[cat]}55` }
-                    : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                    : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                   }>
                   {cat === "mobilite" ? "Mobilité" : cat === "fullbody" ? "Full" : cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </motion.button>
@@ -1931,23 +1931,23 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
             {/* Durée calculée + Difficulté */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Durée calculée</label>
+                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "var(--text-3)" }}>Durée calculée</label>
                 <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl"
-                  style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)" }}>
-                  <Clock size={13} strokeWidth={1.8} style={{ color: "#A78BFA", flexShrink: 0 }} />
-                  <span className="text-sm font-bold" style={{ color: "#A78BFA" }}>{duration} min</span>
+                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
+                  <Clock size={13} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                  <span className="text-sm font-bold" style={{ color: "var(--accent)" }}>{duration} min</span>
                 </div>
-                <p className="text-[9px] mt-1 text-center" style={{ color: "#A0AEC0" }}>Mise à jour auto</p>
+                <p className="text-[9px] mt-1 text-center" style={{ color: "var(--text-3)" }}>Mise à jour auto</p>
               </div>
               <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "#A0AEC0" }}>Niveau</label>
+                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "var(--text-3)" }}>Niveau</label>
                 <div className="flex flex-col gap-1">
                   {(["Débutant", "Intermédiaire", "Avancé"] as const).map(d => (
                     <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
                       className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
                       style={difficulty === d
                         ? { background: `${difficultyColor[d]}22`, color: difficultyColor[d], border: `1px solid ${difficultyColor[d]}44` }
-                        : { background: "rgba(255,255,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.9)" }
+                        : { background: "rgba(var(--surface-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                       }>
                       {d}
                     </motion.button>
@@ -1960,11 +1960,11 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
           {/* ── 2. Groupes musculaires ── */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
                 Muscles ciblés
               </p>
               {selectedMuscles.length > 0 && (
-                <button onClick={() => setSelectedMuscles([])} className="text-[10px] cursor-pointer" style={{ color: "#A0AEC0" }}>
+                <button onClick={() => setSelectedMuscles([])} className="text-[10px] cursor-pointer" style={{ color: "var(--text-3)" }}>
                   Tout décocher
                 </button>
               )}
@@ -1982,7 +1982,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                     className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
                     style={selected
                       ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55` }
-                      : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.8)" }
+                      : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)" }
                     }
                   >
                     {selected ? "✓ " : ""}{m}
@@ -2001,7 +2001,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                       className="pl-3 pr-1.5 py-1.5 rounded-l-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
                       style={selected
                         ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderRight: "none" }
-                        : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.8)", borderRight: "none" }
+                        : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)", borderRight: "none" }
                       }
                     >
                       {selected ? "✓ " : ""}{m}
@@ -2012,7 +2012,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                       className="pr-2 py-1.5 rounded-r-full text-[10px] flex items-center cursor-pointer transition-all duration-150"
                       style={selected
                         ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderLeft: "none" }
-                        : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(240,235,255,0.8)", borderLeft: "none" }
+                        : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)", borderLeft: "none" }
                       }
                     >
                       <X size={9} strokeWidth={2.5} />
@@ -2031,7 +2031,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                 onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomMuscle(); } }}
                 placeholder="Ajouter un muscle personnalisé…"
                 className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.35)", color: "#2D3748" }}
+                style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)", color: "var(--text-1)" }}
               />
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -2039,8 +2039,8 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                 disabled={!newMuscleInput.trim()}
                 className="px-3 py-2 rounded-xl flex items-center justify-center cursor-pointer"
                 style={newMuscleInput.trim()
-                  ? { background: "rgba(167,139,250,0.15)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.35)" }
-                  : { background: "rgba(240,235,255,0.4)", color: "#C4B5FD", border: "1px solid rgba(212,192,255,0.2)" }
+                  ? { background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.35)" }
+                  : { background: "rgba(var(--tint-violet-rgb),0.4)", color: "#C4B5FD", border: "1px solid rgba(var(--violet-mid-rgb),0.2)" }
                 }
               >
                 <Plus size={13} strokeWidth={2.5} />
@@ -2051,12 +2051,12 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
           {/* ── 3. Exercices ── */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
                 Exercices ({exForms.length})
               </p>
               <motion.button whileTap={{ scale: 0.9 }} onClick={addEx}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl cursor-pointer text-[10px] font-semibold"
-                style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
+                style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
                 <Plus size={10} strokeWidth={2.5} /> Ajouter
               </motion.button>
             </div>
@@ -2069,7 +2069,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-2xl p-4"
-                    style={{ background: "rgba(240,235,255,0.3)", border: "1px solid rgba(212,192,255,0.4)" }}
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}
                   >
                     {/* Name row */}
                     <div className="flex items-center gap-2 mb-3">
@@ -2083,7 +2083,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                         onChange={e => updateEx(i, "name", e.target.value)}
                         placeholder={`Exercice ${i + 1} (ex : Squat, Pompes…)`}
                         className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                        style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.3)", color: "#2D3748" }}
+                        style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)", color: "var(--text-1)" }}
                       />
                       {exForms.length > 1 && (
                         <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeEx(i)}
@@ -2098,46 +2098,46 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                     <div className="grid grid-cols-3 gap-2">
                       {/* Séries */}
                       <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Séries</p>
+                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Séries</p>
                         <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.max(1, ex.sets - 1))}
                             className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "#A78BFA" }}>−</motion.button>
-                          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.sets}</span>
+                            style={{ color: "var(--accent)" }}>−</motion.button>
+                          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{ex.sets}</span>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.min(10, ex.sets + 1))}
                             className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "#A78BFA" }}>+</motion.button>
+                            style={{ color: "var(--accent)" }}>+</motion.button>
                         </div>
                       </div>
 
                       {/* Reps */}
                       <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Répétitions</p>
+                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Répétitions</p>
                         <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.max(1, ex.reps - 1))}
                             className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "#A78BFA" }}>−</motion.button>
-                          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{ex.reps}</span>
+                            style={{ color: "var(--accent)" }}>−</motion.button>
+                          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{ex.reps}</span>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.min(100, ex.reps + 1))}
                             className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "#A78BFA" }}>+</motion.button>
+                            style={{ color: "var(--accent)" }}>+</motion.button>
                         </div>
                       </div>
 
                       {/* Repos entre séries */}
                       <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "#A0AEC0" }}>Repos (s)</p>
+                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Repos (s)</p>
                         <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
                             className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "#A78BFA" }}>−</motion.button>
-                          <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>{ex.rest}s</span>
+                            style={{ color: "var(--accent)" }}>−</motion.button>
+                          <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>{ex.rest}s</span>
                           <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
                             className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "#A78BFA" }}>+</motion.button>
+                            style={{ color: "var(--accent)" }}>+</motion.button>
                         </div>
                       </div>
                     </div>
@@ -2148,24 +2148,24 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                 const separator = (i < exForms.length - 1) ? (
                   <div key={`sep-${i}`}
                     className="flex items-center gap-3 px-3 py-2 rounded-xl"
-                    style={{ background: "rgba(167,139,250,0.07)", border: "1px dashed rgba(167,139,250,0.28)" }}
+                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}
                   >
-                    <Clock size={11} strokeWidth={1.8} style={{ color: "#A78BFA", flexShrink: 0 }} />
-                    <span className="text-[10px] font-medium flex-1" style={{ color: "#A78BFA" }}>
+                    <Clock size={11} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                    <span className="text-[10px] font-medium flex-1" style={{ color: "var(--accent)" }}>
                       Récupération entre exercices
                     </span>
                     <div className="flex items-center gap-1.5">
                       <motion.button whileTap={{ scale: 0.85 }}
                         onClick={() => updateEx(i, "restAfter", Math.max(0, ex.restAfter - 15))}
                         className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                        style={{ color: "#A78BFA" }}>−</motion.button>
-                      <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "#2D3748" }}>
+                        style={{ color: "var(--accent)" }}>−</motion.button>
+                      <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "var(--text-1)" }}>
                         {ex.restAfter}s
                       </span>
                       <motion.button whileTap={{ scale: 0.85 }}
                         onClick={() => updateEx(i, "restAfter", Math.min(300, ex.restAfter + 15))}
                         className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                        style={{ color: "#A78BFA" }}>+</motion.button>
+                        style={{ color: "var(--accent)" }}>+</motion.button>
                     </div>
                   </div>
                 ) : null;
@@ -2178,7 +2178,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4" style={{ borderTop: "1px solid rgba(240,235,255,0.8)" }}>
+        <div className="px-6 py-4" style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleCreate}
@@ -2186,10 +2186,10 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
             className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
             style={{
               background: title.trim()
-                ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)"
-                : "rgba(240,235,255,0.5)",
-              color: title.trim() ? "#2D3748" : "#A0AEC0",
-              boxShadow: title.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)"
+                : "rgba(var(--tint-violet-rgb),0.5)",
+              color: title.trim() ? "var(--text-1)" : "var(--text-3)",
+              boxShadow: title.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
             }}
           >
             {isEdit ? "Enregistrer les modifications" : "Créer la séance"}
@@ -2589,10 +2589,10 @@ function ProgressionPageContent() {
         transition={{ duration: 0.5 }}
         className="mb-6"
       >
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "#A0AEC0" }}>
+        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
           Votre Journey
         </p>
-        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Ma Progression</h1>
+        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Ma Progression</h1>
       </motion.div>
 
       {/* ── Tab switcher ── */}
@@ -2617,8 +2617,8 @@ function ProgressionPageContent() {
             onClick={() => setActiveTab(key)}
             className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex-shrink-0"
             style={activeTab === key
-              ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 12px rgba(167,139,250,0.2)" }
-              : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.7)" }
+              ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 2px 12px rgba(var(--accent-rgb),0.2)" }
+              : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.7)" }
             }
           >
             {label}
@@ -2649,10 +2649,10 @@ function ProgressionPageContent() {
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
               Analyse
             </p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Statistiques</h2>
+            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Statistiques</h2>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -2697,20 +2697,20 @@ function ProgressionPageContent() {
         className="flex flex-col gap-6"
       >
         <motion.div variants={itemVariants}>
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "#A0AEC0" }}>
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
             Historique
           </p>
-          <h2 className="text-lg font-light mb-4" style={{ color: "#2D3748" }}>Activité récente</h2>
+          <h2 className="text-lg font-light mb-4" style={{ color: "var(--text-1)" }}>Activité récente</h2>
         </motion.div>
 
         {displayTimeline.length === 0 && (
           <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 py-12 text-center">
             <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
-              style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.3),rgba(245,230,163,0.3))" }}>
+              style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.3),rgba(var(--cream-mid-rgb),0.3))" }}>
               🏋️
             </div>
-            <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Aucune activité encore</p>
-            <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Lance ta première séance pour<br/>commencer ton historique !</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Aucune activité encore</p>
+            <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Lance ta première séance pour<br/>commencer ton historique !</p>
           </motion.div>
         )}
 
@@ -2719,14 +2719,14 @@ function ProgressionPageContent() {
             <motion.p
               variants={itemVariants}
               className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3"
-              style={{ color: "#A0AEC0" }}
+              style={{ color: "var(--text-3)" }}
             >
               {date}
             </motion.p>
             <div className="relative flex flex-col gap-3">
               <div
                 className="absolute left-[19px] top-6 bottom-0 w-px"
-                style={{ background: "linear-gradient(to bottom, rgba(212,192,255,0.6), rgba(245,230,163,0.6), transparent)" }}
+                style={{ background: "linear-gradient(to bottom, rgba(var(--violet-mid-rgb),0.6), rgba(var(--cream-mid-rgb),0.6), transparent)" }}
               />
               {events.map((event, i) => {
                 const EvIcon = eventIcons[event.type];
@@ -2741,10 +2741,10 @@ function ProgressionPageContent() {
                       {/* Header row */}
                       <div className="flex items-center justify-between gap-2 p-4 pb-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{event.title}</p>
+                          <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{event.title}</p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <Clock size={9} style={{ color: "#A0AEC0" }} />
-                            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{event.time}</span>
+                            <Clock size={9} style={{ color: "var(--text-3)" }} />
+                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{event.time}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -2753,27 +2753,27 @@ function ProgressionPageContent() {
                             onClick={() => setShareData(event.performance)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer"
                             style={{
-                              background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 8px rgba(167,139,250,0.15)",
+                              background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                              boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 2px 8px rgba(var(--accent-rgb),0.15)",
                             }}
                           >
-                            <Share2 size={10} strokeWidth={2} style={{ color: "#2D3748" }} />
-                            <span className="text-[10px] font-semibold" style={{ color: "#2D3748" }}>Partager</span>
+                            <Share2 size={10} strokeWidth={2} style={{ color: "var(--text-1)" }} />
+                            <span className="text-[10px] font-semibold" style={{ color: "var(--text-1)" }}>Partager</span>
                           </motion.button>
                           <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setExpandedEvent(expandedEvent === (event.id ?? event.title + event.date) ? null : (event.id ?? event.title + event.date))}
                             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-                            style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}
+                            style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
                           >
                             <motion.div animate={{ rotate: expandedEvent === (event.id ?? event.title + event.date) ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                              <ChevronRight size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                              <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
                             </motion.div>
                           </motion.button>
                         </div>
                       </div>
                       {/* Desc */}
-                      <p className="text-xs px-4 pb-3 font-light" style={{ color: "#718096" }}>{event.desc}</p>
+                      <p className="text-xs px-4 pb-3 font-light" style={{ color: "var(--text-2)" }}>{event.desc}</p>
                       {/* Expandable exercises */}
                       <AnimatePresence initial={false}>
                         {expandedEvent === (event.id ?? event.title + event.date) && (
@@ -2782,20 +2782,20 @@ function ProgressionPageContent() {
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.22 }}
-                            style={{ overflow: "hidden", borderTop: "1px solid rgba(212,192,255,0.15)" }}
+                            style={{ overflow: "hidden", borderTop: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}
                           >
                             <div className="px-4 py-3 flex flex-col gap-1.5">
                               {(() => {
                                 const exs = event.id ? (eventExercises[event.id] ?? []) : [];
                                 if (exs.length === 0) {
-                                  return <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Aucun exercice enregistré pour cette séance.</p>;
+                                  return <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Aucun exercice enregistré pour cette séance.</p>;
                                 }
                                 return exs.map((ex, j) => (
                                   <div key={j} className="flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: event.dot }} />
-                                    <p className="text-xs font-medium flex-1" style={{ color: "#2D3748" }}>{ex.name}</p>
+                                    <p className="text-xs font-medium flex-1" style={{ color: "var(--text-1)" }}>{ex.name}</p>
                                     {(ex.sets || ex.reps || ex.weight) && (
-                                      <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                                      <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
                                         {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
                                       </p>
                                     )}
@@ -2838,14 +2838,14 @@ function ProgressionPageContent() {
             className="flex items-center justify-between mb-6 max-w-5xl"
           >
             <div>
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
                 Catalogue
               </p>
-              <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Séances Vaiiya</h2>
+              <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Séances Vaiiya</h2>
             </div>
             <span
               className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+              style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
             >
               {workoutSessions.length} séances
             </span>
@@ -2866,8 +2866,8 @@ function ProgressionPageContent() {
                   className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
                   style={
                     categoryFilter === key
-                      ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                      : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                      ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
                   }
                 >
                   {label}
@@ -2881,9 +2881,9 @@ function ProgressionPageContent() {
                   whileTap={{ scale: 0.88 }}
                   onClick={() => scroll(dir)}
                   className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.8)" }}
+                  style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.8)" }}
                 >
-                  <Icon size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                  <Icon size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
               ))}
             </div>
@@ -2942,20 +2942,20 @@ function ProgressionPageContent() {
                 style={{
                   width: 180,
                   minHeight: 280,
-                  background: "rgba(255,255,255,0.5)",
+                  background: "rgba(var(--surface-rgb),0.5)",
                   backdropFilter: "blur(10px)",
-                  border: "2px dashed rgba(167,139,250,0.35)",
+                  border: "2px dashed rgba(var(--accent-rgb),0.35)",
                 }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.25)" }}
+                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
                 >
-                  <Plus size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  <Plus size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-4">
-                  <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Créer</p>
-                  <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>Ma propre séance</p>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Créer</p>
+                  <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>Ma propre séance</p>
                 </div>
               </motion.div>
               <div className="flex-shrink-0 w-6" />
@@ -2980,15 +2980,15 @@ function ProgressionPageContent() {
                 {/* Section header */}
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
                       Mes créations
                     </p>
-                    <h2 className="text-lg font-light flex items-center gap-2" style={{ color: "#2D3748" }}>
+                    <h2 className="text-lg font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
                       Ma Bibliothèque
                       {customSessions.length > 0 && (
                         <span
                           className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+                          style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
                         >
                           {customSessions.length}
                         </span>
@@ -2999,7 +2999,7 @@ function ProgressionPageContent() {
                     whileTap={{ scale: 0.93 }}
                     onClick={() => setShowCreateModal(true)}
                     className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+                    style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
                   >
                     <Plus size={13} strokeWidth={2} />
                     Créer
@@ -3013,21 +3013,21 @@ function ProgressionPageContent() {
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
                     style={{
-                      background: "linear-gradient(135deg, rgba(212,192,255,0.16) 0%, rgba(245,230,163,0.13) 100%)",
-                      border: "1px solid rgba(167,139,250,0.16)",
+                      background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.16) 0%, rgba(var(--cream-mid-rgb),0.13) 100%)",
+                      border: "1px solid rgba(var(--accent-rgb),0.16)",
                     }}
                   >
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.45) 0%, rgba(245,230,163,0.4) 100%)" }}
+                      style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.45) 0%, rgba(var(--cream-mid-rgb),0.4) 100%)" }}
                     >
-                      <Sparkles size={15} strokeWidth={1.4} style={{ color: "#A78BFA" }} />
+                      <Sparkles size={15} strokeWidth={1.4} style={{ color: "var(--accent)" }} />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>
+                      <p className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
                         {customSessions.length} séance{customSessions.length > 1 ? "s" : ""} personnalisée{customSessions.length > 1 ? "s" : ""}
                       </p>
-                      <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                      <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
                         {totalMin} min de contenu créé sur mesure
                       </p>
                     </div>
@@ -3043,8 +3043,8 @@ function ProgressionPageContent() {
                         onClick={() => setLibraryFilter(key)}
                         className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
                         style={libraryFilter === key
-                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                          : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                          ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                          : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
                         }
                       >
                         {label}
@@ -3058,11 +3058,11 @@ function ProgressionPageContent() {
                   <div className="flex items-center gap-2 py-4">
                     <motion.div
                       className="w-4 h-4 rounded-full border-2"
-                      style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                      style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                       animate={{ rotate: 360 }}
                       transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
                     />
-                    <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Chargement de ta bibliothèque…</span>
+                    <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement de ta bibliothèque…</span>
                   </div>
                 ) : filteredCustom.length > 0 ? (
                   <motion.div
@@ -3097,20 +3097,20 @@ function ProgressionPageContent() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col items-center justify-center py-14 gap-5 rounded-3xl"
-                    style={{ background: "rgba(255,255,255,0.55)", border: "1px dashed rgba(167,139,250,0.3)" }}
+                    style={{ background: "rgba(var(--surface-rgb),0.55)", border: "1px dashed rgba(var(--accent-rgb),0.3)" }}
                   >
                     <div
                       className="w-16 h-16 rounded-3xl flex items-center justify-center"
                       style={{
-                        background: "linear-gradient(135deg, rgba(212,192,255,0.35) 0%, rgba(245,230,163,0.3) 100%)",
-                        border: "1px solid rgba(167,139,250,0.15)",
+                        background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.35) 0%, rgba(var(--cream-mid-rgb),0.3) 100%)",
+                        border: "1px solid rgba(var(--accent-rgb),0.15)",
                       }}
                     >
-                      <Sparkles size={24} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                      <Sparkles size={24} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
                     </div>
                     <div className="text-center px-6">
-                      <p className="text-base font-light" style={{ color: "#2D3748" }}>Ta bibliothèque est vide</p>
-                      <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                      <p className="text-base font-light" style={{ color: "var(--text-1)" }}>Ta bibliothèque est vide</p>
+                      <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
                         Crée ta première séance sur mesure et retrouve-la ici à tout moment.
                       </p>
                     </div>
@@ -3119,9 +3119,9 @@ function ProgressionPageContent() {
                       onClick={() => setShowCreateModal(true)}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
                       style={{
-                        background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                        color: "#2D3748",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                        color: "var(--text-1)",
+                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
                       }}
                     >
                       <Plus size={14} strokeWidth={2} />
@@ -3134,15 +3134,15 @@ function ProgressionPageContent() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                    style={{ background: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.6)" }}
+                    style={{ background: "rgba(var(--surface-rgb),0.4)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}
                   >
-                    <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                    <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                       Aucune séance dans cette catégorie
                     </p>
                     <button
                       onClick={() => setLibraryFilter("tous")}
                       className="text-xs font-medium cursor-pointer mt-1"
-                      style={{ color: "#A78BFA" }}
+                      style={{ color: "var(--accent)" }}
                     >
                       Voir toutes les séances
                     </button>
@@ -3161,16 +3161,16 @@ function ProgressionPageContent() {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "#A0AEC0" }}>Toutes les séances</p>
-                <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Historique</h2>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>Toutes les séances</p>
+                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Historique</h2>
               </div>
             </div>
 
             {historySessions.length === 0 && !historyLoading && (
               <div className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.6)" }}>
-                <Dumbbell size={24} strokeWidth={1.4} style={{ color: "#D4C0FF" }} />
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune séance enregistrée encore.</p>
+                style={{ background: "rgba(var(--surface-rgb),0.4)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}>
+                <Dumbbell size={24} strokeWidth={1.4} style={{ color: "var(--violet-mid)" }} />
+                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune séance enregistrée encore.</p>
               </div>
             )}
 
@@ -3184,9 +3184,9 @@ function ProgressionPageContent() {
                   ? `${Math.floor(s.elapsed_seconds / 60)} min`
                   : s.duration_minutes > 0 ? `${s.duration_minutes} min` : null;
                 const catColors: Record<string, string> = {
-                  force: "#A78BFA", cardio: "#34D399", mobilite: "#FBBF24", yoga: "#F9A8D4", hiit: "#F87171", sport: "#60A5FA",
+                  force: "var(--accent)", cardio: "#34D399", mobilite: "#FBBF24", yoga: "#F9A8D4", hiit: "#F87171", sport: "#60A5FA",
                 };
-                const catColor = catColors[s.category] ?? "#A0AEC0";
+                const catColor = catColors[s.category] ?? "var(--text-3)";
 
                 return (
                   <motion.div
@@ -3195,7 +3195,7 @@ function ProgressionPageContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     className="rounded-2xl overflow-hidden cursor-pointer"
-                    style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.18)", boxShadow: "0 2px 8px rgba(167,139,250,0.06)" }}
+                    style={{ background: "rgba(var(--surface-rgb),0.85)", border: "1px solid rgba(var(--violet-mid-rgb),0.18)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)" }}
                     onClick={() => setHistoryExpanded(isExpanded ? null : s.id)}
                   >
                     <div className="flex items-center gap-3 px-4 py-3">
@@ -3204,16 +3204,16 @@ function ProgressionPageContent() {
                         <Dumbbell size={13} strokeWidth={1.8} style={{ color: catColor }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{s.title}</p>
-                        <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{dateLabel} · {timeLabel}</p>
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
+                        <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{dateLabel} · {timeLabel}</p>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        {dur && <span className="text-[11px] font-medium" style={{ color: "#718096" }}>{dur}</span>}
+                        {dur && <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>{dur}</span>}
                         {s.calories_burned > 0 && (
-                          <span className="text-[11px] font-medium" style={{ color: "#D4A843" }}>{s.calories_burned} kcal</span>
+                          <span className="text-[11px] font-medium" style={{ color: "var(--gold)" }}>{s.calories_burned} kcal</span>
                         )}
                         <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronRight size={13} strokeWidth={2} style={{ color: "#A0AEC0", transform: "rotate(90deg)" }} />
+                          <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--text-3)", transform: "rotate(90deg)" }} />
                         </motion.div>
                       </div>
                     </div>
@@ -3225,18 +3225,18 @@ function ProgressionPageContent() {
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.22 }}
-                          style={{ overflow: "hidden", borderTop: "1px solid rgba(212,192,255,0.15)" }}
+                          style={{ overflow: "hidden", borderTop: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}
                         >
                           <div className="px-4 py-3 flex flex-col gap-1.5">
                             {s.exercises.length === 0 ? (
-                              <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Aucun détail d&apos;exercice enregistré.</p>
+                              <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Aucun détail d&apos;exercice enregistré.</p>
                             ) : (
                               s.exercises.map((ex, j) => (
                                 <div key={j} className="flex items-center gap-2">
                                   <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: catColor }} />
-                                  <p className="text-xs font-medium flex-1" style={{ color: "#2D3748" }}>{ex.name}</p>
+                                  <p className="text-xs font-medium flex-1" style={{ color: "var(--text-1)" }}>{ex.name}</p>
                                   {(ex.sets || ex.reps || ex.weight) && (
-                                    <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>
+                                    <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
                                       {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
                                     </p>
                                   )}
@@ -3255,9 +3255,9 @@ function ProgressionPageContent() {
             {historyLoading && (
               <div className="flex items-center justify-center gap-2 py-4">
                 <motion.div className="w-4 h-4 rounded-full border-2"
-                  style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                  style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                   animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
-                <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>Chargement…</span>
+                <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement…</span>
               </div>
             )}
 
@@ -3266,7 +3266,7 @@ function ProgressionPageContent() {
                 whileTap={{ scale: 0.96 }}
                 onClick={() => fetchHistory(historyPage + 1, true)}
                 className="w-full mt-3 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "rgba(240,235,255,0.6)", color: "#A78BFA", border: "1px solid rgba(212,192,255,0.3)" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--accent)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
               >
                 Voir plus
               </motion.button>
@@ -3401,9 +3401,9 @@ function ProgressionPageContent() {
             initial={{ opacity: 0, y: 30, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
-            style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2)", whiteSpace: "nowrap" }}>
-            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
-            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
+            style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)", whiteSpace: "nowrap" }}>
+            <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>

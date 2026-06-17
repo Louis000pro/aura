@@ -103,15 +103,15 @@ export default function Navigation() {
           >
             {isActive && (
               <motion.div layoutId="mobile-pill" className="absolute inset-0 rounded-xl"
-                style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.34) 100%)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85), 0 2px 10px rgba(0,0,0,0.10)" }}
+                style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
                 transition={{ type: "spring", stiffness: 500, damping: 35 }} />
             )}
             <div className="relative z-10">
-              <Icon size={22} strokeWidth={isActive ? 2.4 : 2} style={{ color: isActive ? "#1A1535" : "#2D2150", filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.55))", transition: "all 0.2s ease" }} />
+              <Icon size={22} strokeWidth={isActive ? 2.4 : 2} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", transition: "all 0.2s ease" }} />
               {badge && !isActive && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
-                  style={{ background: "#A78BFA", color: "#fff" }}>
+                  style={{ background: "var(--accent)", color: "#fff" }}>
                   {badge > 9 ? "9+" : badge}
                 </motion.span>
               )}
@@ -135,10 +135,10 @@ export default function Navigation() {
             >
               {isActive && (
                 <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-                  style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.34) 100%)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.6)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85), 0 2px 10px rgba(0,0,0,0.10)" }}
+                  style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
                   transition={{ type: "spring", stiffness: 500, damping: 35 }} />
               )}
-              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#1A1535" : "#2D2150", filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.55))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
+              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", position: "relative", zIndex: 1, transition: "color 0.2s ease" }} />
             </motion.div>
           </Link>
 
@@ -152,8 +152,8 @@ export default function Navigation() {
                 transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
                 className="absolute left-[56px] top-0 rounded-2xl overflow-hidden z-50 min-w-[200px]"
                 style={{
-                  background: "rgba(255,255,255,0.97)",
-                  boxShadow: "0 8px 32px rgba(167,139,250,0.18), 0 2px 8px rgba(0,0,0,0.08)",
+                  background: "rgba(var(--surface-rgb),0.97)",
+                  boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.18), 0 2px 8px rgba(0,0,0,0.08)",
                   border: "1px solid rgba(196,168,255,0.2)",
                 }}
               >
@@ -163,11 +163,11 @@ export default function Navigation() {
                   return (
                     <Link key={item.href} href={item.href}
                       className="flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors hover:bg-purple-50"
-                      style={{ color: subActive ? "#7C5CFA" : "#2D3748" }}
+                      style={{ color: subActive ? "#7C5CFA" : "var(--text-1)" }}
                       onClick={() => setProgMenu(false)}
                     >
-                      {SubIcon && <SubIcon size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "#A0AEC0" }} />}
-                      {!SubIcon && <TrendingUp size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "#A0AEC0" }} />}
+                      {SubIcon && <SubIcon size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "var(--text-3)" }} />}
+                      {!SubIcon && <TrendingUp size={14} strokeWidth={2} style={{ color: subActive ? "#7C5CFA" : "var(--text-3)" }} />}
                       {item.label}
                       {subActive && <ChevronRight size={12} strokeWidth={2} className="ml-auto" style={{ color: "#7C5CFA" }} />}
                     </Link>
@@ -189,16 +189,16 @@ export default function Navigation() {
         >
           {isActive && (
             <motion.div layoutId="desktop-pill" className="absolute inset-0 rounded-2xl"
-              style={{ background: "linear-gradient(135deg,rgba(240,235,255,0.95),rgba(255,251,240,0.95))", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95),0 2px 12px -2px rgba(167,139,250,0.22)" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.9)", boxShadow: "0 2px 12px -2px rgba(var(--accent-rgb),0.22)" }}
               transition={{ type: "spring", stiffness: 500, damping: 35 }} />
           )}
           <div className="relative z-10">
-            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "#1A1535" : "#2D2150", filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.55))" }} />
+            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))" }} />
             {badge && !isActive && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                 transition={{ type: "spring", bounce: 0.6 }}
                 className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold"
-                style={{ background: "#A78BFA", color: "#fff" }}>
+                style={{ background: "var(--accent)", color: "#fff" }}>
                 {badge > 9 ? "9+" : badge}
               </motion.span>
             )}
@@ -284,17 +284,17 @@ export default function Navigation() {
                     transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
                     className="absolute bottom-[52px] left-0 rounded-2xl overflow-hidden z-50 min-w-[200px]"
                     style={{
-                      background: "rgba(255,255,255,0.98)",
-                      boxShadow: "0 -4px 32px rgba(167,139,250,0.18), 0 8px 32px rgba(0,0,0,0.1)",
+                      background: "rgba(var(--surface-rgb),0.98)",
+                      boxShadow: "0 -4px 32px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(0,0,0,0.1)",
                       border: "1px solid rgba(196,168,255,0.2)",
                     }}
                   >
                     {/* User info */}
                     <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-                      <p className="text-sm font-black tracking-tight" style={{ color: "#1A202C" }}>
+                      <p className="text-sm font-black tracking-tight" style={{ color: "var(--text-0)" }}>
                         {user.pseudo ?? user.name ?? "Utilisateur"}
                       </p>
-                      <p className="text-xs mt-0.5 truncate" style={{ color: "#A0AEC0" }}>{user.email}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
                     </div>
 
                     {/* Vaiiya Premium */}
@@ -308,8 +308,8 @@ export default function Navigation() {
                     {/* Paramètres */}
                     <Link href="/parametres" onClick={() => setUserMenu(false)}
                       className="flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors"
-                      style={{ color: "#2D3748" }}>
-                      <Settings size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                      style={{ color: "var(--text-1)" }}>
+                      <Settings size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                       Paramètres
                     </Link>
 
@@ -317,8 +317,8 @@ export default function Navigation() {
                     {isAdmin && (
                       <Link href="/admin" onClick={() => setUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors"
-                        style={{ color: "#2D3748" }}>
-                        <Shield size={14} strokeWidth={2} style={{ color: "#D4A843" }} />
+                        style={{ color: "var(--text-1)" }}>
+                        <Shield size={14} strokeWidth={2} style={{ color: "var(--gold)" }} />
                         Administration
                       </Link>
                     )}
@@ -343,11 +343,11 @@ export default function Navigation() {
                 className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black cursor-pointer overflow-hidden"
                 style={{
                   background: userMenu
-                    ? "linear-gradient(135deg,#C4A8FF,#A78BFA)"
-                    : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                  color: "#2D3748",
+                    ? "linear-gradient(135deg,#C4A8FF,var(--accent))"
+                    : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                  color: "var(--text-1)",
                   boxShadow: userMenu ? "0 4px 16px rgba(124,92,250,0.35)" : "0 2px 8px rgba(0,0,0,0.08)",
-                  border: userMenu ? "2px solid rgba(124,92,250,0.3)" : "2px solid rgba(255,255,255,0.8)",
+                  border: userMenu ? "2px solid rgba(124,92,250,0.3)" : "2px solid rgba(var(--surface-rgb),0.8)",
                 }}
                 aria-label="Menu utilisateur"
               >
@@ -361,9 +361,9 @@ export default function Navigation() {
             <Link href="/auth">
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.88 }}
                 className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer mx-auto"
-                style={{ background: "linear-gradient(135deg,rgba(240,235,255,0.7),rgba(255,251,240,0.7))" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.65)" }}
                 aria-label="Connexion">
-                <LogIn size={16} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                <LogIn size={16} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
               </motion.div>
             </Link>
           )}

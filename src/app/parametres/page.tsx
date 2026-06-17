@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import { useVisualQuality, type VisualQuality } from "@/lib/perfMode";
 import { useGuidedTour } from "@/context/GuidedTourContext";
 import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/push";
@@ -16,7 +16,7 @@ import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/p
 /* ── Section header ─────────────────────────────────────── */
 function Section({ title }: { title: string }) {
   return (
-    <p className="text-[10px] font-semibold tracking-widest uppercase px-1 mb-2 mt-5 first:mt-0" style={{ color: "#A0AEC0" }}>
+    <p className="text-[10px] font-semibold tracking-widest uppercase px-1 mb-2 mt-5 first:mt-0" style={{ color: "var(--text-3)" }}>
       {title}
     </p>
   );
@@ -47,21 +47,21 @@ function Row({
       onClick={onClick}
       className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left cursor-pointer"
       style={{
-        background: danger ? "rgba(254,226,226,0.4)" : "rgba(255,255,255,0.7)",
-        border: danger ? "1px solid rgba(252,165,165,0.3)" : "1px solid rgba(255,255,255,0.8)",
+        background: danger ? "rgba(254,226,226,0.4)" : "rgba(var(--surface-rgb),0.7)",
+        border: danger ? "1px solid rgba(252,165,165,0.3)" : "1px solid rgba(var(--surface-rgb),0.8)",
         backdropFilter: "blur(12px)",
-        boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+        boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.04), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
       }}
     >
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: iconBg ?? (danger ? "linear-gradient(135deg, rgba(252,165,165,0.4), rgba(248,113,113,0.3))" : "linear-gradient(135deg, rgba(212,192,255,0.4), rgba(245,230,163,0.3))") }}
+        style={{ background: iconBg ?? (danger ? "linear-gradient(135deg, rgba(252,165,165,0.4), rgba(248,113,113,0.3))" : "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.4), rgba(var(--cream-mid-rgb),0.3))") }}
       >
-        <Icon size={16} strokeWidth={1.5} style={{ color: danger ? "#EF4444" : "#A78BFA" }} />
+        <Icon size={16} strokeWidth={1.5} style={{ color: danger ? "#EF4444" : "var(--accent)" }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate" style={{ color: danger ? "#EF4444" : "#2D3748" }}>{label}</p>
-        {sublabel && <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>{sublabel}</p>}
+        <p className="text-sm font-medium truncate" style={{ color: danger ? "#EF4444" : "var(--text-1)" }}>{label}</p>
+        {sublabel && <p className="text-xs font-light mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{sublabel}</p>}
       </div>
       {chevron && <ChevronRight size={14} strokeWidth={1.5} style={{ color: "#C4C9D4", flexShrink: 0 }} />}
     </motion.button>
@@ -88,19 +88,25 @@ const QUALITY_OPTS: { key: VisualQuality; label: string; desc: string }[] = [
   { key: "lite", label: "Fluide", desc: "Effets allégés — plus rapide sur appareils modestes" },
 ];
 
+const THEME_OPTS: { key: ThemePreference; label: string; desc: string }[] = [
+  { key: "system", label: "Auto", desc: "Suit le réglage clair/sombre de ton téléphone" },
+  { key: "light", label: "Clair", desc: "Toujours clair · Vaiiya Classic" },
+  { key: "dark", label: "Sombre", desc: "Toujours sombre · Vaiiya Night" },
+];
+
 function FieldInput({ label, value, onChange, type = "text", placeholder }: {
   label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</label>
+      <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="px-4 py-3 rounded-2xl text-sm outline-none"
-        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748" }}
+        style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)" }}
       />
     </div>
   );
@@ -186,17 +192,17 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
         initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)", maxHeight: "90dvh" }}
+        style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", maxHeight: "90dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <div>
-            <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Profil & Objectifs</h2>
-            <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>Ces données personnalisent ton Coach IA</p>
+            <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Profil & Objectifs</h2>
+            <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>Ces données personnalisent ton Coach IA</p>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -204,21 +210,21 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
         <div className="overflow-y-auto flex-1 px-6 pb-6" style={{ scrollbarWidth: "none" }}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <motion.div className="w-8 h-8 rounded-full border-2" style={{ borderColor: "#D4C0FF", borderTopColor: "#A78BFA" }}
+              <motion.div className="w-8 h-8 rounded-full border-2" style={{ borderColor: "var(--violet-mid)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
             </div>
           ) : success ? (
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-3 py-10">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
-                <Check size={24} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
+                <Check size={24} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
               </div>
-              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>Profil mis à jour !</p>
-              <p className="text-xs font-light text-center" style={{ color: "#A0AEC0" }}>Ton Coach IA peut maintenant te créer des plans personnalisés</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Profil mis à jour !</p>
+              <p className="text-xs font-light text-center" style={{ color: "var(--text-3)" }}>Ton Coach IA peut maintenant te créer des plans personnalisés</p>
             </motion.div>
           ) : (
             <div className="flex flex-col gap-4">
               {/* Physique */}
-              <p className="text-[10px] font-semibold tracking-widest uppercase mt-1" style={{ color: "#A0AEC0" }}>Informations physiques</p>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mt-1" style={{ color: "var(--text-3)" }}>Informations physiques</p>
               <div className="grid grid-cols-3 gap-3">
                 <FieldInput label="Âge" value={age} onChange={setAge} type="number" placeholder="25" />
                 <FieldInput label="Taille (cm)" value={height} onChange={setHeight} type="number" placeholder="175" />
@@ -227,14 +233,14 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
               {/* Genre */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Genre</label>
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>Genre</label>
                 <div className="flex gap-2">
                   {["homme", "femme", "autre"].map((g) => (
                     <motion.button key={g} whileTap={{ scale: 0.95 }} onClick={() => setGender(g)}
                       className="flex-1 py-2.5 rounded-2xl text-xs font-semibold capitalize cursor-pointer transition-all"
                       style={gender === g
-                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" }
-                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }
+                        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                        : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                       }>
                       {g}
                     </motion.button>
@@ -244,14 +250,14 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
               {/* Objectifs */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Objectifs</label>
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>Objectifs</label>
                 <div className="flex flex-wrap gap-2">
                   {GOALS_OPTIONS.map(({ key, label }) => (
                     <motion.button key={key} whileTap={{ scale: 0.93 }} onClick={() => toggleGoal(key)}
                       className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition-all"
                       style={goals.includes(key)
-                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", color: "#fff", boxShadow: "0 2px 8px rgba(167,139,250,0.3)" }
-                        : { background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(167,139,250,0.15)" }
+                        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3)" }
+                        : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.15)" }
                       }>
                       {label}
                     </motion.button>
@@ -261,14 +267,14 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
               {/* Niveau */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Niveau sportif</label>
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>Niveau sportif</label>
                 <div className="flex gap-2">
                   {LEVELS.map((l) => (
                     <motion.button key={l} whileTap={{ scale: 0.95 }} onClick={() => setLevel(l)}
                       className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
                       style={level === l
-                        ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" }
-                        : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }
+                        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                        : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                       }>
                       {l}
                     </motion.button>
@@ -277,7 +283,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
               </div>
 
               {/* Séances & repas */}
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Habitudes</p>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Habitudes</p>
               <div className="grid grid-cols-2 gap-3">
                 <FieldInput label="Séances / semaine" value={sessions} onChange={setSessions} type="number" placeholder="3" />
                 <FieldInput label="Repas / jour" value={meals} onChange={setMeals} type="number" placeholder="3" />
@@ -285,12 +291,12 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
               {/* Régime */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>Régime alimentaire</label>
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>Régime alimentaire</label>
                 <select
                   value={diet}
                   onChange={(e) => setDiet(e.target.value)}
                   className="px-4 py-3 rounded-2xl text-sm outline-none cursor-pointer"
-                  style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748" }}
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)" }}
                 >
                   {DIETS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
@@ -302,21 +308,21 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
 
         {/* Footer fixe — toujours visible */}
         {!loading && !success && (
-          <div className="flex-shrink-0 px-6 pb-6 pt-3 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(212,192,255,0.25)" }}>
+          <div className="flex-shrink-0 px-6 pb-6 pt-3 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
             <motion.button
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
               onClick={handleSave}
               disabled={saving}
               className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 20px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {saving ? "Enregistrement…" : "Enregistrer mon profil"}
             </motion.button>
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
-              <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>ou</span>
-              <div className="flex-1 h-px" style={{ background: "rgba(212,192,255,0.3)" }} />
+              <div className="flex-1 h-px" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
+              <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>ou</span>
+              <div className="flex-1 h-px" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
             </div>
 
             <div className="flex gap-2">
@@ -334,7 +340,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                   }
                 }}
                 className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(167,139,250,0.25)", color: "#7C5CBF" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.25)", color: "#7C5CBF" }}
               >
                 🔄 Recommencer
               </motion.button>
@@ -352,7 +358,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                   }
                 }}
                 className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.5) 0%,rgba(245,230,163,0.5) 100%)", border: "1px solid rgba(167,139,250,0.3)", color: "#5A4A8A" }}
+                style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5) 0%,rgba(var(--cream-mid-rgb),0.5) 100%)", border: "1px solid rgba(var(--accent-rgb),0.3)", color: "#5A4A8A" }}
               >
                 ➕ 2ème objectif
               </motion.button>
@@ -421,22 +427,22 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Changer le mot de passe</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Changer le mot de passe</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
         {success ? (
           <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center gap-3 py-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
-              <Check size={20} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
+              <Check size={20} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
             </div>
-            <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Mot de passe mis à jour !</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Mot de passe mis à jour !</p>
           </motion.div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -446,17 +452,17 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               { label: "Confirmer le nouveau", value: confirm, onChange: setConfirm, show: showNext, toggle: () => setShowNext(p => !p) },
             ].map(({ label, value, onChange, show, toggle }, i) => (
               <div key={i} className="flex flex-col gap-1">
-                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</label>
-                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.15)" }}>
+                <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
+                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
                   <input
                     type={show ? "text" : "password"}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     className="flex-1 bg-transparent text-sm outline-none"
-                    style={{ color: "#2D3748" }}
+                    style={{ color: "var(--text-1)" }}
                   />
                   <motion.button whileTap={{ scale: 0.9 }} onClick={toggle} className="cursor-pointer">
-                    {show ? <EyeOff size={14} strokeWidth={1.5} style={{ color: "#A0AEC0" }} /> : <Eye size={14} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />}
+                    {show ? <EyeOff size={14} strokeWidth={1.5} style={{ color: "var(--text-3)" }} /> : <Eye size={14} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />}
                   </motion.button>
                 </div>
               </div>
@@ -475,7 +481,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               onClick={handleSubmit}
               disabled={loading}
               className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
-              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {loading ? "Mise à jour…" : "Mettre à jour"}
             </motion.button>
@@ -527,13 +533,13 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(252,165,165,0.3)", boxShadow: "0 20px 60px rgba(239,68,68,0.1), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(252,165,165,0.3)", boxShadow: "0 20px 60px rgba(239,68,68,0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-semibold" style={{ color: "#EF4444" }}>Supprimer le compte</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -545,7 +551,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col gap-1.5 mb-4">
-          <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "#A0AEC0" }}>
+          <label className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>
             Tape <span style={{ color: "#EF4444" }}>SUPPRIMER</span> pour confirmer
           </label>
           <input
@@ -554,7 +560,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
             onChange={(e) => { setConfirm(e.target.value); setError(null); }}
             placeholder="SUPPRIMER"
             className="px-4 py-3 rounded-2xl text-sm outline-none"
-            style={{ background: "rgba(254,226,226,0.3)", border: "1px solid rgba(252,165,165,0.3)", color: "#2D3748" }}
+            style={{ background: "rgba(254,226,226,0.3)", border: "1px solid rgba(252,165,165,0.3)", color: "var(--text-1)" }}
           />
         </div>
 
@@ -572,9 +578,9 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
           disabled={loading || confirm !== "SUPPRIMER"}
           className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
-            background: confirm === "SUPPRIMER" ? "linear-gradient(135deg, #FCA5A5, #EF4444)" : "rgba(240,235,255,0.5)",
-            color: confirm === "SUPPRIMER" ? "#FFFFFF" : "#A0AEC0",
-            boxShadow: confirm === "SUPPRIMER" ? "0 4px 16px rgba(239,68,68,0.3), inset 0 1px 0 rgba(255,255,255,0.3)" : "none",
+            background: confirm === "SUPPRIMER" ? "linear-gradient(135deg, #FCA5A5, #EF4444)" : "rgba(var(--tint-violet-rgb),0.5)",
+            color: confirm === "SUPPRIMER" ? "#FFFFFF" : "var(--text-3)",
+            boxShadow: confirm === "SUPPRIMER" ? "0 4px 16px rgba(239,68,68,0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.3)" : "none",
             transition: "all 0.3s ease",
           }}
         >
@@ -589,7 +595,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 export default function ParametresPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, preference, setPreference } = useTheme();
   const { quality, setQuality } = useVisualQuality();
   const { start: startTour } = useGuidedTour();
   const [showProfileModal, setShowProfileModal]   = useState(false);
@@ -645,10 +651,10 @@ export default function ParametresPage() {
     <div className="min-h-screen px-4 md:px-8 pt-8 pb-24 max-w-2xl mx-auto">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-6">
-        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Paramètres</h1>
+        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Paramètres</h1>
         {user && (
-          <p className="text-sm font-light mt-1" style={{ color: "#A0AEC0" }}>
-            Connecté en tant que <span className="font-medium" style={{ color: "#718096" }}>@{user.pseudo}</span>
+          <p className="text-sm font-light mt-1" style={{ color: "var(--text-3)" }}>
+            Connecté en tant que <span className="font-medium" style={{ color: "var(--text-2)" }}>@{user.pseudo}</span>
           </p>
         )}
       </motion.div>
@@ -663,7 +669,7 @@ export default function ParametresPage() {
             label="Mes données & objectifs"
             sublabel="Âge, poids, objectifs fitness, niveau, alimentation"
             onClick={() => setShowProfileModal(true)}
-            iconBg="linear-gradient(135deg, rgba(212,192,255,0.5), rgba(245,230,163,0.3))"
+            iconBg="linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.5), rgba(var(--cream-mid-rgb),0.3))"
           />
         </div>
 
@@ -675,14 +681,14 @@ export default function ParametresPage() {
             label="Mon profil (Ton corps)"
             sublabel="Âge, taille, poids, objectifs — pour calibrer tes programmes"
             onClick={() => router.push("/?ob=1")}
-            iconBg="linear-gradient(135deg, rgba(212,192,255,0.3), rgba(245,230,163,0.25))"
+            iconBg="linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.3), rgba(var(--cream-mid-rgb),0.25))"
           />
           <Row
             icon={Lock}
             label="Changer le mot de passe"
             sublabel="Mets à jour ta sécurité"
             onClick={() => setShowPasswordModal(true)}
-            iconBg="linear-gradient(135deg, rgba(167,139,250,0.25), rgba(212,192,255,0.2))"
+            iconBg="linear-gradient(135deg, rgba(var(--accent-rgb),0.25), rgba(var(--violet-mid-rgb),0.2))"
           />
           {(user?.is_admin || user?.email === "teyprox@gmail.com") && (
             <Row
@@ -690,7 +696,7 @@ export default function ParametresPage() {
               label="Administration"
               sublabel="Gérer les utilisateurs, bannir, certifier"
               onClick={() => router.push("/admin")}
-              iconBg="linear-gradient(135deg, rgba(212,168,67,0.35), rgba(245,230,163,0.3))"
+              iconBg="linear-gradient(135deg, rgba(var(--gold-rgb),0.35), rgba(var(--cream-mid-rgb),0.3))"
             />
           )}
         </div>
@@ -703,7 +709,7 @@ export default function ParametresPage() {
             label="Notifications email"
             sublabel="Abonnements, likes, commentaires"
             onClick={() => showToast("Bientôt disponible !")}
-            iconBg="linear-gradient(135deg, rgba(245,230,163,0.4), rgba(212,168,67,0.2))"
+            iconBg="linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.4), rgba(var(--gold-rgb),0.2))"
           />
           <motion.button
             whileHover={{ x: 2 }}
@@ -712,24 +718,24 @@ export default function ParametresPage() {
             disabled={pushLoading}
             className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left cursor-pointer"
             style={{
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(255,255,255,0.8)",
+              background: "rgba(var(--surface-rgb),0.7)",
+              border: "1px solid rgba(var(--surface-rgb),0.8)",
               backdropFilter: "blur(12px)",
-              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+              boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.04), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
               opacity: pushLoading ? 0.7 : 1,
             }}
           >
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.4), rgba(167,139,250,0.2))" }}
+              style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.4), rgba(var(--accent-rgb),0.2))" }}
             >
-              <Shield size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+              <Shield size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>
+              <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>
                 Notifications push
               </p>
-              <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>
+              <p className="text-xs font-light mt-0.5 truncate" style={{ color: "var(--text-3)" }}>
                 {pushLoading ? "Traitement…" : pushEnabled ? "Activées sur cet appareil" : "Désactivées sur cet appareil"}
               </p>
             </div>
@@ -740,7 +746,7 @@ export default function ParametresPage() {
                 width: 44,
                 height: 26,
                 background: pushEnabled
-                  ? "linear-gradient(135deg, #A78BFA, #7C3AED)"
+                  ? "linear-gradient(135deg, var(--accent), #7C3AED)"
                   : "rgba(200,195,215,0.5)",
               }}
             >
@@ -758,74 +764,71 @@ export default function ParametresPage() {
         {/* Apparence */}
         <Section title="Apparence" />
         <div className="flex flex-col gap-2">
-          <motion.button
-            whileHover={{ x: 2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-left cursor-pointer"
-            style={{
-              background: isDark ? "rgba(30, 25, 55, 0.70)" : "rgba(255,255,255,0.7)",
-              border: isDark ? "1px solid rgba(100,80,180,0.3)" : "1px solid rgba(255,255,255,0.8)",
-              backdropFilter: "blur(12px)",
-              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
-            }}
-          >
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, rgba(245,230,163,0.35), rgba(212,192,255,0.25))" }}
-            >
-              {isDark
-                ? <Moon size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                : <Sun  size={16} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: isDark ? "#E2E0EA" : "#2D3748" }}>Mode sombre</p>
-              <p className="text-xs font-light mt-0.5 truncate" style={{ color: "#A0AEC0" }}>
-                {isDark ? "Sombre · Vaiiya Night" : "Lumineux · Vaiiya Classic"}
-              </p>
-            </div>
-            {/* Toggle pill */}
-            <div
-              className="relative flex-shrink-0 rounded-full transition-colors duration-300"
-              style={{
-                width: 44,
-                height: 26,
-                background: isDark
-                  ? "linear-gradient(135deg, #A78BFA, #7C3AED)"
-                  : "rgba(200,195,215,0.5)",
-              }}
-            >
-              <motion.div
-                layout
-                animate={{ x: isDark ? 20 : 2 }}
-                transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                className="absolute top-[3px] rounded-full"
-                style={{ width: 20, height: 20, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.18)" }}
-              />
-            </div>
-          </motion.button>
-
-          {/* Qualité visuelle — impacte directement la fluidité */}
+          {/* Thème — Auto / Clair / Sombre */}
           <div
             className="w-full flex flex-col gap-3 px-4 py-3.5 rounded-2xl"
             style={{
-              background: "rgba(255,255,255,0.7)",
-              border: "1px solid rgba(255,255,255,0.8)",
+              background: "rgba(var(--surface-rgb),0.7)",
+              border: "1px solid rgba(var(--surface-rgb),0.8)",
               backdropFilter: "blur(12px)",
-              boxShadow: "0 2px 8px rgba(167,139,250,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+              boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.04), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
             }}
           >
             <div className="flex items-center gap-3.5">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(34,211,238,0.2))" }}
+                style={{ background: "linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.35), rgba(var(--violet-mid-rgb),0.25))" }}
               >
-                <Gauge size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                {isDark
+                  ? <Moon size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                  : <Sun  size={16} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+                }
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Qualité visuelle</p>
-                <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Thème</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>
+                  {THEME_OPTS.find((o) => o.key === preference)?.desc}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {THEME_OPTS.map((opt) => (
+                <motion.button
+                  key={opt.key}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => { setPreference(opt.key); showToast(`Thème : ${opt.label}`); }}
+                  className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
+                  style={preference === opt.key
+                    ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                    : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
+                  }
+                >
+                  {opt.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Qualité visuelle — impacte directement la fluidité */}
+          <div
+            className="w-full flex flex-col gap-3 px-4 py-3.5 rounded-2xl"
+            style={{
+              background: "rgba(var(--surface-rgb),0.7)",
+              border: "1px solid rgba(var(--surface-rgb),0.8)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.04), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+            }}
+          >
+            <div className="flex items-center gap-3.5">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.3), rgba(34,211,238,0.2))" }}
+              >
+                <Gauge size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Qualité visuelle</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>
                   {QUALITY_OPTS.find((o) => o.key === quality)?.desc}
                 </p>
               </div>
@@ -838,8 +841,8 @@ export default function ParametresPage() {
                   onClick={() => { setQuality(opt.key); showToast(`Qualité : ${opt.label}`); }}
                   className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
                   style={quality === opt.key
-                    ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" }
-                    : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(167,139,250,0.12)" }
+                    ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                    : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                   }
                 >
                   {opt.label}
@@ -861,7 +864,7 @@ export default function ParametresPage() {
               // Laisser le temps à la home de monter avant de lancer la visite
               setTimeout(() => startTour(), 250);
             }}
-            iconBg="linear-gradient(135deg, rgba(167,139,250,0.4), rgba(34,211,238,0.25))"
+            iconBg="linear-gradient(135deg, rgba(var(--accent-rgb),0.4), rgba(34,211,238,0.25))"
           />
         </div>
 
@@ -877,7 +880,7 @@ export default function ParametresPage() {
               icon={Shield}
               label={label}
               onClick={() => router.push(href)}
-              iconBg="linear-gradient(135deg, rgba(240,235,255,0.6), rgba(212,192,255,0.2))"
+              iconBg="linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.6), rgba(var(--violet-mid-rgb),0.2))"
             />
           ))}
         </div>
@@ -890,7 +893,7 @@ export default function ParametresPage() {
             label="Se déconnecter"
             sublabel="Tu peux te reconnecter à tout moment"
             onClick={handleLogout}
-            iconBg="linear-gradient(135deg, rgba(245,230,163,0.4), rgba(212,168,67,0.2))"
+            iconBg="linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.4), rgba(var(--gold-rgb),0.2))"
           />
         </div>
 
@@ -906,10 +909,10 @@ export default function ParametresPage() {
           />
         </div>
 
-        <div className="flex items-center justify-center gap-2 mt-8 text-[11px] font-light" style={{ color: "#A0AEC0" }}>
-          <Link href="/mentions-legales" className="hover:underline" style={{ color: "#A78BFA" }}>Mentions légales</Link>
+        <div className="flex items-center justify-center gap-2 mt-8 text-[11px] font-light" style={{ color: "var(--text-3)" }}>
+          <Link href="/mentions-legales" className="hover:underline" style={{ color: "var(--accent)" }}>Mentions légales</Link>
           <span style={{ color: "#C4C9D4" }}>·</span>
-          <Link href="/confidentialite" className="hover:underline" style={{ color: "#A78BFA" }}>Politique de confidentialité</Link>
+          <Link href="/confidentialite" className="hover:underline" style={{ color: "var(--accent)" }}>Politique de confidentialité</Link>
         </div>
         <p className="text-center text-[10px] font-light mt-3" style={{ color: "#C4C9D4" }}>
           Vaiiya v1.0 · Fait avec ✦ pour ta santé
@@ -926,9 +929,9 @@ export default function ParametresPage() {
             initial={{ opacity: 0, y: 40, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
-            style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(240,235,255,0.9)", boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)", color: "#2D3748", whiteSpace: "nowrap" }}
+            style={{ background: "rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)", color: "var(--text-1)", whiteSpace: "nowrap" }}
           >
-            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
+            <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
             <span className="text-sm font-medium">{toast}</span>
           </motion.div>
         )}

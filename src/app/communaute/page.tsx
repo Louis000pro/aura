@@ -108,17 +108,17 @@ type DMConversation = {
 function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: number }) {
   const initial = (partner.pseudo ?? "?")[0]?.toUpperCase() ?? "?";
   const gradients = [
-    "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
-    "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
-    "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-    "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)",
-    "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)",
+    "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
+    "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
+    "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+    "linear-gradient(135deg, rgba(var(--tint-violet-rgb),1) 0%, var(--violet-mid) 100%)",
+    "linear-gradient(135deg, rgba(var(--tint-cream-rgb),1) 0%, var(--cream-mid) 100%)",
   ];
   const gradient = gradients[partner.id.charCodeAt(0) % gradients.length];
   return (
     <div
       className="rounded-full flex items-center justify-center flex-shrink-0 font-semibold overflow-hidden"
-      style={{ width: size, height: size, background: gradient, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)", color: "#2D3748", fontSize: size * 0.4 }}
+      style={{ width: size, height: size, background: gradient, boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)", color: "var(--text-1)", fontSize: size * 0.4 }}
     >
       {partner.avatar_url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -168,22 +168,22 @@ function StoryCard({ story }: { story: RealStory }) {
       >
         <div className="text-7xl mb-5">💪</div>
         <div className="inline-block px-4 py-1.5 rounded-full text-xs font-bold mb-5 tracking-widest uppercase"
-          style={{ background: "rgba(167,139,250,0.2)", color: "rgba(212,192,255,0.9)", border: "1px solid rgba(167,139,250,0.3)" }}>
+          style={{ background: "rgba(var(--accent-rgb),0.2)", color: "rgba(var(--violet-mid-rgb),0.9)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
           Séance
         </div>
         <p className="text-2xl font-bold text-white mb-2">{(d.session_title as string) ?? "Séance"}</p>
-        {story.caption && <p className="text-sm font-light mb-6" style={{ color: "rgba(255,255,255,0.65)" }}>{story.caption}</p>}
+        {story.caption && <p className="text-sm font-light mb-6" style={{ color: "rgba(var(--surface-rgb),0.65)" }}>{story.caption}</p>}
         <div className="flex justify-center gap-8 mt-2">
           {(d.duration_minutes as number) > 0 && (
             <div className="text-center">
               <p className="text-3xl font-bold text-white">{d.duration_minutes as number}</p>
-              <p className="text-xs mt-1" style={{ color: "rgba(212,192,255,0.7)" }}>min</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(var(--violet-mid-rgb),0.7)" }}>min</p>
             </div>
           )}
           {(d.calories_burned as number) > 0 && (
             <div className="text-center">
               <p className="text-3xl font-bold text-white">{d.calories_burned as number}</p>
-              <p className="text-xs mt-1" style={{ color: "rgba(212,192,255,0.7)" }}>kcal</p>
+              <p className="text-xs mt-1" style={{ color: "rgba(var(--violet-mid-rgb),0.7)" }}>kcal</p>
             </div>
           )}
         </div>
@@ -206,7 +206,7 @@ function StoryCard({ story }: { story: RealStory }) {
           Repas
         </div>
         <p className="text-2xl font-bold text-white mb-2">{(d.meal_title as string) ?? "Repas"}</p>
-        {story.caption && <p className="text-sm font-light mb-6" style={{ color: "rgba(255,255,255,0.65)" }}>{story.caption}</p>}
+        {story.caption && <p className="text-sm font-light mb-6" style={{ color: "rgba(var(--surface-rgb),0.65)" }}>{story.caption}</p>}
         <div className="flex justify-center gap-8 mt-2">
           {(d.calories as number) > 0 && (
             <div className="text-center">
@@ -384,11 +384,11 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
       {/* Barres de progression — une par story */}
       <div className="flex gap-1 px-3 pt-5 pb-1 z-10" data-no-hold>
         {stories.map((_, i) => (
-          <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 2, background: "rgba(255,255,255,0.25)" }}>
+          <div key={i} className="flex-1 rounded-full overflow-hidden" style={{ height: 2, background: "rgba(var(--surface-rgb),0.25)" }}>
             <div
               className="h-full rounded-full"
               style={{
-                background: "linear-gradient(90deg, #D4C0FF, #F5E6A3)",
+                background: "linear-gradient(90deg, var(--violet-mid), var(--cream-mid))",
                 width: i < idx ? "100%" : i === idx ? `${progress}%` : "0%",
                 transition: i === idx ? "none" : "width 0s",
               }}
@@ -402,10 +402,10 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden font-semibold text-sm"
           style={{
-            background: profile?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-            outline: "2px solid rgba(255,255,255,0.6)",
+            background: profile?.avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+            outline: "2px solid rgba(var(--surface-rgb),0.6)",
             outlineOffset: 2,
-            color: "#2D3748",
+            color: "var(--text-1)",
           }}
         >
           {profile?.avatar_url
@@ -424,7 +424,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
           onClick={(e) => { e.stopPropagation(); onClose(); }}
           className="cursor-pointer"
         >
-          <X size={20} strokeWidth={1.5} style={{ color: "rgba(255,255,255,0.8)" }} />
+          <X size={20} strokeWidth={1.5} style={{ color: "rgba(var(--surface-rgb),0.8)" }} />
         </motion.button>
       </div>
 
@@ -445,7 +445,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
               style={{
                 width: i === idx ? 16 : 6,
                 height: 6,
-                background: i === idx ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+                background: i === idx ? "rgba(var(--surface-rgb),0.9)" : "rgba(var(--surface-rgb),0.3)",
               }}
             />
           ))}
@@ -462,7 +462,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
               <span className="text-sm font-medium" style={{ color: "#6EE7B7" }}>Réponse envoyée</span>
             </div>
           ) : (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--surface-rgb),0.1)", border: "1px solid rgba(var(--surface-rgb),0.15)" }}>
               <input
                 type="text"
                 value={reply}
@@ -480,7 +480,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
                 className="flex-shrink-0 cursor-pointer disabled:cursor-default"
                 aria-label="Envoyer la réponse"
               >
-                <Send size={18} strokeWidth={1.8} style={{ color: reply.trim() ? "#fff" : "rgba(255,255,255,0.3)" }} />
+                <Send size={18} strokeWidth={1.8} style={{ color: reply.trim() ? "#fff" : "rgba(var(--surface-rgb),0.3)" }} />
               </button>
             </div>
           )}
@@ -521,8 +521,8 @@ function AddStoryModal({ onClose, userId, onPublished }: {
 
   // Catégorie → couleur de fond
   const catColors: Record<string, string> = {
-    force:    "linear-gradient(135deg, #F0EBFF 0%, #E9D8FD 100%)",
-    cardio:   "linear-gradient(135deg, #FFFBF0 0%, #FDE68A 100%)",
+    force:    "linear-gradient(135deg, rgba(var(--tint-violet-rgb),1) 0%, #E9D8FD 100%)",
+    cardio:   "linear-gradient(135deg, rgba(var(--tint-cream-rgb),1) 0%, #FDE68A 100%)",
     mobilite: "linear-gradient(135deg, #ECFDF5 0%, #A7F3D0 100%)",
     fullbody: "linear-gradient(135deg, #FFF5F5 0%, #FED7D7 100%)",
   };
@@ -702,10 +702,10 @@ function AddStoryModal({ onClose, userId, onPublished }: {
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: "rgba(255,255,255,0.95)",
+          background: "rgba(var(--surface-rgb),0.95)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -715,9 +715,9 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "pick" && (
             <motion.div key="pick" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Ajouter une story</h2>
-                <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Ajouter une story</h2>
+                <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                  <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
@@ -733,14 +733,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                     whileTap={{ scale: 0.97 }}
                     onClick={action}
                     className="flex flex-col items-center gap-2 p-3.5 rounded-2xl cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", border: "1px solid rgba(255,255,255,0.8)" }}
+                    style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),1) 0%, rgba(var(--tint-cream-rgb),1) 100%)", border: "1px solid rgba(var(--surface-rgb),0.8)" }}
                   >
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl" style={{ background: "rgba(255,255,255,0.7)" }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl" style={{ background: "rgba(var(--surface-rgb),0.7)" }}>
                       {emoji}
                     </div>
                     <div className="text-center">
-                      <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>{label}</p>
-                      <p className="text-[9px]" style={{ color: "#A0AEC0" }}>{desc}</p>
+                      <p className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>{label}</p>
+                      <p className="text-[9px]" style={{ color: "var(--text-3)" }}>{desc}</p>
                     </div>
                   </motion.button>
                 ))}
@@ -754,10 +754,10 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "workout-list" && (
             <motion.div key="workout-list" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-4">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(240,235,255,0.8)" }}>
-                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
-                <h2 className="text-base font-light" style={{ color: "#2D3748" }}>Quelle séance partager ?</h2>
+                <h2 className="text-base font-light" style={{ color: "var(--text-1)" }}>Quelle séance partager ?</h2>
               </div>
 
               <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-0.5" style={{ scrollbarWidth: "thin" }}>
@@ -771,21 +771,21 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => { setWorkoutData(s); setCaption(""); setStep("workout-preview"); }}
                     className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left cursor-pointer"
-                    style={{ background: catColors[s.category] ?? catColors.force, border: "1px solid rgba(255,255,255,0.8)" }}
+                    style={{ background: catColors[s.category] ?? catColors.force, border: "1px solid rgba(var(--surface-rgb),0.8)" }}
                   >
                     <span className="text-2xl flex-shrink-0">🏋️</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{s.session_title}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.session_title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {s.duration_minutes > 0 && (
-                          <span className="text-[10px]" style={{ color: "#718096" }}>{s.duration_minutes} min</span>
+                          <span className="text-[10px]" style={{ color: "var(--text-2)" }}>{s.duration_minutes} min</span>
                         )}
                         {s.calories_burned > 0 && (
-                          <span className="text-[10px]" style={{ color: "#718096" }}>· {s.calories_burned} kcal</span>
+                          <span className="text-[10px]" style={{ color: "var(--text-2)" }}>· {s.calories_burned} kcal</span>
                         )}
                       </div>
                     </div>
-                    <span className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{fmtDate(s.started_at)}</span>
+                    <span className="text-[10px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{fmtDate(s.started_at)}</span>
                   </motion.button>
                 ))}
               </div>
@@ -796,26 +796,26 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "workout-preview" && workoutData && (
             <motion.div key="workout-preview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-4">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("workout-list")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("workout-list")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
-                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Aperçu de ta story</h2>
+                <h2 className="text-base font-light flex-1" style={{ color: "var(--text-1)" }}>Aperçu de ta story</h2>
               </div>
 
               <div className="rounded-2xl p-5 mb-4 text-center" style={{ background: catColors[workoutData.category] ?? catColors.force }}>
                 <div className="text-4xl mb-2">🏋️</div>
-                <p className="text-base font-semibold" style={{ color: "#2D3748" }}>{workoutData.session_title}</p>
+                <p className="text-base font-semibold" style={{ color: "var(--text-1)" }}>{workoutData.session_title}</p>
                 <div className="flex justify-center gap-6 mt-3">
                   {workoutData.duration_minutes > 0 && (
                     <div>
-                      <p className="text-xl font-bold" style={{ color: "#2D3748" }}>{workoutData.duration_minutes}</p>
-                      <p className="text-[10px]" style={{ color: "#718096" }}>min</p>
+                      <p className="text-xl font-bold" style={{ color: "var(--text-1)" }}>{workoutData.duration_minutes}</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-2)" }}>min</p>
                     </div>
                   )}
                   {workoutData.calories_burned > 0 && (
                     <div>
-                      <p className="text-xl font-bold" style={{ color: "#2D3748" }}>{workoutData.calories_burned}</p>
-                      <p className="text-[10px]" style={{ color: "#718096" }}>kcal</p>
+                      <p className="text-xl font-bold" style={{ color: "var(--text-1)" }}>{workoutData.calories_burned}</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-2)" }}>kcal</p>
                     </div>
                   )}
                 </div>
@@ -827,14 +827,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Ajouter une légende (optionnel)…"
                 className="w-full text-sm outline-none px-4 py-3 rounded-xl mb-4"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
               />
               {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={publishWorkout}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
               >
                 Publier la story
               </motion.button>
@@ -845,10 +845,10 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "text-input" && (
             <motion.div key="text-input" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-4">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
-                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Créer une story</h2>
+                <h2 className="text-base font-light flex-1" style={{ color: "var(--text-1)" }}>Créer une story</h2>
               </div>
 
               <div className="flex gap-2 mb-3 flex-wrap">
@@ -859,8 +859,8 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                     onClick={() => setSelectedEmoji(e)}
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-xl cursor-pointer"
                     style={{
-                      background: selectedEmoji === e ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.6)",
-                      border: selectedEmoji === e ? "1px solid rgba(212,192,255,0.8)" : "1px solid transparent",
+                      background: selectedEmoji === e ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
+                      border: selectedEmoji === e ? "1px solid rgba(var(--violet-mid-rgb),0.8)" : "1px solid transparent",
                     }}
                   >
                     {e}
@@ -874,7 +874,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 placeholder="Ton message…"
                 rows={3}
                 className="w-full text-sm outline-none px-4 py-3 rounded-xl resize-none mb-4"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
               />
               {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
               <motion.button
@@ -882,9 +882,9 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 onClick={publishText}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
                 style={{
-                  background: textContent.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.6)",
-                  color: textContent.trim() ? "#2D3748" : "#A0AEC0",
-                  boxShadow: textContent.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                  background: textContent.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
+                  color: textContent.trim() ? "var(--text-1)" : "var(--text-3)",
+                  boxShadow: textContent.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
                   cursor: textContent.trim() ? "pointer" : "not-allowed",
                 }}
               >
@@ -897,15 +897,15 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "meal-input" && (
             <motion.div key="meal-input" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-5">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => setStep("pick")} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
-                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Mon repas 🥗</h2>
+                <h2 className="text-base font-light flex-1" style={{ color: "var(--text-1)" }}>Mon repas 🥗</h2>
               </div>
 
               <div className="flex flex-col gap-3 mb-4">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Nom du repas *</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Nom du repas *</p>
                   <input
                     type="text"
                     value={mealTitle}
@@ -913,42 +913,42 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                     placeholder="Ex : Bowl protéiné, Déjeuner…"
                     autoFocus
                     className="w-full text-sm outline-none px-4 py-3 rounded-xl"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Calories</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Calories</p>
                     <input
                       type="number"
                       value={mealCals}
                       onChange={e => setMealCals(e.target.value)}
                       placeholder="kcal"
                       className="w-full text-sm outline-none px-3 py-2.5 rounded-xl"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                     />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Protéines</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Protéines</p>
                     <input
                       type="number"
                       value={mealProts}
                       onChange={e => setMealProts(e.target.value)}
                       placeholder="grammes"
                       className="w-full text-sm outline-none px-3 py-2.5 rounded-xl"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                     />
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "#A0AEC0" }}>Légende (optionnel)</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Légende (optionnel)</p>
                   <input
                     type="text"
                     value={caption}
                     onChange={e => setCaption(e.target.value)}
                     placeholder="Ajoute une note…"
                     className="w-full text-sm outline-none px-4 py-2.5 rounded-xl"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                   />
                 </div>
               </div>
@@ -959,9 +959,9 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 onClick={publishMeal}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
                 style={{
-                  background: mealTitle.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.6)",
-                  color: mealTitle.trim() ? "#2D3748" : "#A0AEC0",
-                  boxShadow: mealTitle.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                  background: mealTitle.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
+                  color: mealTitle.trim() ? "var(--text-1)" : "var(--text-3)",
+                  boxShadow: mealTitle.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
                   cursor: mealTitle.trim() ? "pointer" : "not-allowed",
                 }}
               >
@@ -974,10 +974,10 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "photo-preview" && mediaPreview && (
             <motion.div key="photo-preview" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
               <div className="flex items-center gap-2 mb-4">
-                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setStep("pick"); if (mediaPreview) URL.revokeObjectURL(mediaPreview); setMediaPreview(null); setMediaFile(null); }} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setStep("pick"); if (mediaPreview) URL.revokeObjectURL(mediaPreview); setMediaPreview(null); setMediaFile(null); }} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+                  <ArrowLeft size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
-                <h2 className="text-base font-light flex-1" style={{ color: "#2D3748" }}>Aperçu de ta story</h2>
+                <h2 className="text-base font-light flex-1" style={{ color: "var(--text-1)" }}>Aperçu de ta story</h2>
               </div>
 
               <div className="rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: "9/16", maxHeight: 280, background: "#000" }}>
@@ -993,14 +993,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Ajouter une légende (optionnel)…"
                 className="w-full text-sm outline-none px-4 py-3 rounded-xl mb-4"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
               />
               {error && <p className="text-xs mb-2" style={{ color: "#FC8181" }}>{error}</p>}
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={publishMedia}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
               >
                 Publier la story
               </motion.button>
@@ -1011,14 +1011,14 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "no-session" && (
             <motion.div key="no-session" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-4">
               <div className="text-4xl mb-3">🏋️</div>
-              <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Aucune séance enregistrée</p>
-              <p className="text-sm font-light mb-5" style={{ color: "#A0AEC0" }}>Lance une séance depuis Progression pour la partager.</p>
+              <p className="text-base font-light mb-1" style={{ color: "var(--text-1)" }}>Aucune séance enregistrée</p>
+              <p className="text-sm font-light mb-5" style={{ color: "var(--text-3)" }}>Lance une séance depuis Progression pour la partager.</p>
               <div className="flex flex-col gap-2">
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setStep("pick")}
                   className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                  style={{ background: "rgba(240,235,255,0.8)", color: "#A0AEC0" }}
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-3)" }}
                 >
                   Retour
                 </motion.button>
@@ -1026,7 +1026,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setStep("text-input")}
                   className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                  style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+                  style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}
                 >
                   Publier un texte à la place
                 </motion.button>
@@ -1038,15 +1038,15 @@ function AddStoryModal({ onClose, userId, onPublished }: {
           {step === "db-error" && (
             <motion.div key="db-error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-4">
               <div className="text-4xl mb-3">⚙️</div>
-              <p className="text-base font-light mb-1" style={{ color: "#2D3748" }}>Table manquante</p>
-              <p className="text-sm font-light mb-4" style={{ color: "#A0AEC0" }}>
-                Exécute le SQL de migration <code className="text-xs px-1 rounded" style={{ background: "rgba(167,139,250,0.15)", color: "#7C3AED" }}>20260512_workout_sessions.sql</code> dans ton dashboard Supabase.
+              <p className="text-base font-light mb-1" style={{ color: "var(--text-1)" }}>Table manquante</p>
+              <p className="text-sm font-light mb-4" style={{ color: "var(--text-3)" }}>
+                Exécute le SQL de migration <code className="text-xs px-1 rounded" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "#7C3AED" }}>20260512_workout_sessions.sql</code> dans ton dashboard Supabase.
               </p>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 onClick={() => setStep("pick")}
                 className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                style={{ background: "rgba(240,235,255,0.8)", color: "#A0AEC0" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-3)" }}
               >
                 Retour
               </motion.button>
@@ -1058,11 +1058,11 @@ function AddStoryModal({ onClose, userId, onPublished }: {
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-4">
               <motion.div
                 className="w-10 h-10 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Chargement…</p>
+              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Chargement…</p>
             </motion.div>
           )}
 
@@ -1071,11 +1071,11 @@ function AddStoryModal({ onClose, userId, onPublished }: {
             <motion.div key="saving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-4">
               <motion.div
                 className="w-10 h-10 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Publication…</p>
+              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Publication…</p>
             </motion.div>
           )}
 
@@ -1093,12 +1093,12 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", bounce: 0.6, delay: 0.1 }}
                 className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}
               >
-                <Check size={28} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+                <Check size={28} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
               </motion.div>
-              <p className="text-lg font-light" style={{ color: "#2D3748" }}>Story publiée !</p>
-              <p className="text-sm text-center font-light" style={{ color: "#A0AEC0" }}>Visible pendant 24h par tes abonnés</p>
+              <p className="text-lg font-light" style={{ color: "var(--text-1)" }}>Story publiée !</p>
+              <p className="text-sm text-center font-light" style={{ color: "var(--text-3)" }}>Visible pendant 24h par tes abonnés</p>
 
               {/* Option sauvegarder dans highlight (pour photo/vidéo uniquement) */}
               {publishedMediaUrl && (
@@ -1107,11 +1107,11 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                   onClick={saveToHighlight}
                   disabled={savingToHL}
                   className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-                  style={{ background: "rgba(212,192,255,0.3)", color: "#5A4A8A", border: "1px solid rgba(167,139,250,0.3)" }}
+                  style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "#5A4A8A", border: "1px solid rgba(var(--accent-rgb),0.3)" }}
                 >
                   {savingToHL ? (
                     <>
-                      <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                      <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                         animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
                       Sauvegarde…
                     </>
@@ -1125,7 +1125,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 whileTap={{ scale: 0.97 }}
                 onClick={onClose}
                 className="mt-1 px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}
               >
                 Fermer
               </motion.button>
@@ -1145,14 +1145,14 @@ function OptionsMenu({ postId, saved, isOwn, canEdit, onSave, onHide, onReport, 
 }) {
   const items = isOwn
     ? [
-        ...(canEdit ? [{ icon: Pencil, label: "Modifier le post", action: onEdit, color: "#A78BFA" }] : []),
-        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
+        ...(canEdit ? [{ icon: Pencil, label: "Modifier le post", action: onEdit, color: "var(--accent)" }] : []),
+        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "var(--gold)" : "var(--text-1)" },
         { icon: X, label: "Supprimer le post", action: onDelete, color: "#EF4444" },
       ]
     : [
-        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "#D4A843" : "#2D3748" },
-        { icon: EyeOff, label: "Masquer ce post", action: onHide, color: "#2D3748" },
-        { icon: Flag, label: "Signaler", action: onReport, color: "#A78BFA" },
+        { icon: saved ? Check : Bookmark, label: saved ? "Sauvegardé ✓" : "Sauvegarder", action: onSave, color: saved ? "var(--gold)" : "var(--text-1)" },
+        { icon: EyeOff, label: "Masquer ce post", action: onHide, color: "var(--text-1)" },
+        { icon: Flag, label: "Signaler", action: onReport, color: "var(--accent)" },
       ];
 
   return (
@@ -1163,17 +1163,17 @@ function OptionsMenu({ postId, saved, isOwn, canEdit, onSave, onHide, onReport, 
       transition={{ type: "spring", bounce: 0.35, duration: 0.3 }}
       className="absolute right-4 top-14 z-30 rounded-2xl overflow-hidden min-w-[180px]"
       style={{
-        background: "rgba(255,255,255,0.9)",
+        background: "rgba(var(--surface-rgb),0.9)",
         backdropFilter: "blur(10px)",
-        border: "1px solid rgba(255,255,255,0.9)",
-        boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+        border: "1px solid rgba(var(--surface-rgb),0.9)",
+        boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
       }}
       onClick={(e) => e.stopPropagation()}
     >
       {items.map(({ icon: Icon, label, action, color }, i) => (
         <div key={label}>
           <motion.button
-            whileHover={{ background: "rgba(240,235,255,0.5)" }}
+            whileHover={{ background: "rgba(var(--tint-violet-rgb),0.5)" }}
             whileTap={{ scale: 0.98 }}
             onClick={() => { action(); onClose(); }}
             className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer text-left"
@@ -1181,7 +1181,7 @@ function OptionsMenu({ postId, saved, isOwn, canEdit, onSave, onHide, onReport, 
             <Icon size={14} strokeWidth={1.5} style={{ color }} />
             <span className="text-sm font-medium" style={{ color }}>{label}</span>
           </motion.button>
-          {i < 2 && <div className="h-px mx-3" style={{ background: "rgba(240,235,255,0.9)" }} />}
+          {i < 2 && <div className="h-px mx-3" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }} />}
         </div>
       ))}
     </motion.div>
@@ -1254,25 +1254,25 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
         style={{
-          background: "#FFFFFF",
-          border: "1px solid rgba(212,192,255,0.3)",
-          boxShadow: "0 24px 70px rgba(0,0,0,0.25), 0 4px 16px rgba(167,139,250,0.2)",
+          background: "rgba(var(--surface-rgb),1)",
+          border: "1px solid rgba(var(--violet-mid-rgb),0.3)",
+          boxShadow: "0 24px 70px rgba(0,0,0,0.25), 0 4px 16px rgba(var(--accent-rgb),0.2)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold" style={{ color: "#2D3748" }}>Partager</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>Partager</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
         <div className="grid grid-cols-4 gap-3 mb-5">
           {[
-            { label: "DM", emoji: "💬", color: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", action: () => { onClose(); onShareDM?.(); } },
-            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)", action: onClose },
-            { label: copied ? "Copié !" : "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, #F0EBFF 0%, #FFFBF0 100%)", action: handleCopy },
-            { label: "Partager", emoji: "📤", color: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", action: handleNativeShare },
+            { label: "DM", emoji: "💬", color: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", action: () => { onClose(); onShareDM?.(); } },
+            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)", action: onClose },
+            { label: copied ? "Copié !" : "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),1) 0%, rgba(var(--tint-cream-rgb),1) 100%)", action: handleCopy },
+            { label: "Partager", emoji: "📤", color: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", action: handleNativeShare },
           ].map(({ label, emoji, color, action }) => (
             <motion.button
               key={label}
@@ -1281,10 +1281,10 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
               onClick={action}
               className="flex flex-col items-center gap-2 cursor-pointer"
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: color, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: color, boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}>
                 {emoji}
               </div>
-              <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{label}</span>
+              <span className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
             </motion.button>
           ))}
         </div>
@@ -1296,7 +1296,7 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               className="text-center text-sm font-medium"
-              style={{ color: "#D4A843" }}
+              style={{ color: "var(--gold)" }}
             >
               Lien copié ! ✓
             </motion.div>
@@ -1351,22 +1351,22 @@ function NewDMModal({ onClose, onStartThread }: { onClose: () => void; onStartTh
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-5"
         style={{
-          background: "rgba(255,255,255,0.95)",
+          background: "rgba(var(--surface-rgb),0.95)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Nouveau message</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Nouveau message</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl mb-4" style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(167,139,250,0.15)" }}>
-          <Search size={14} strokeWidth={1.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl mb-4" style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
+          <Search size={14} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
           <input
             ref={inputRef}
             type="text"
@@ -1374,16 +1374,16 @@ function NewDMModal({ onClose, onStartThread }: { onClose: () => void; onStartTh
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-sm outline-none placeholder:font-light"
-            style={{ color: "#2D3748" }}
+            style={{ color: "var(--text-1)" }}
           />
           {loading && (
-            <motion.div className="w-3.5 h-3.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+            <motion.div className="w-3.5 h-3.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "rgba(var(--accent-rgb),0.25)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
           )}
         </div>
 
         <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
           {results.length === 0 && search.trim() && !loading && (
-            <p className="text-center text-xs py-6 font-light" style={{ color: "#A0AEC0" }}>Aucun résultat pour « {search} »</p>
+            <p className="text-center text-xs py-6 font-light" style={{ color: "var(--text-3)" }}>Aucun résultat pour « {search} »</p>
           )}
           {results.length === 0 && !search.trim() && (
             <p className="text-center text-xs py-6 font-light" style={{ color: "#C4C9D4" }}>Tape le pseudo d&apos;un utilisateur</p>
@@ -1395,12 +1395,12 @@ function NewDMModal({ onClose, onStartThread }: { onClose: () => void; onStartTh
               whileTap={{ scale: 0.98 }}
               onClick={() => { onStartThread(r); onClose(); }}
               className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left cursor-pointer"
-              style={{ background: "rgba(240,235,255,0.4)" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.4)" }}
             >
               <ProfileAvatar partner={r} size={38} />
               <div>
-                <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>{r.full_name ?? r.pseudo}</p>
-                <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>@{r.pseudo}</p>
+                <p className="text-sm font-semibold leading-none" style={{ color: "var(--text-1)" }}>{r.full_name ?? r.pseudo}</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>@{r.pseudo}</p>
               </div>
             </motion.button>
           ))}
@@ -1486,31 +1486,31 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
         initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-5"
-        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 20px 60px rgba(167,139,250,0.15), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold" style={{ color: "#2D3748" }}>Envoyer en DM</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Envoyer en DM</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
         {/* Preview du post */}
-        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl mb-3" style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.15) 0%, rgba(245,230,163,0.1) 100%)", border: "1px solid rgba(167,139,250,0.12)" }}>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)" }}>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-2xl mb-3" style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.15) 0%, rgba(var(--cream-mid-rgb),0.1) 100%)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
             {post.type === "workout" ? "🏋️" : post.type === "meal" ? "🥗" : "📊"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate" style={{ color: "#2D3748" }}>{post.performance_data?.title ?? "Post"}</p>
-            {post.caption && <p className="text-[10px] font-light truncate" style={{ color: "#A0AEC0" }}>{post.caption}</p>}
+            <p className="text-xs font-semibold truncate" style={{ color: "var(--text-1)" }}>{post.performance_data?.title ?? "Post"}</p>
+            {post.caption && <p className="text-[10px] font-light truncate" style={{ color: "var(--text-3)" }}>{post.caption}</p>}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl mb-3" style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(167,139,250,0.15)" }}>
-          <Search size={14} strokeWidth={1.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
-          <input ref={inputRef} type="text" placeholder="Envoyer à…" value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none placeholder:font-light" style={{ color: "#2D3748" }} />
-          {loading && <motion.div className="w-3.5 h-3.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />}
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl mb-3" style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
+          <Search size={14} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+          <input ref={inputRef} type="text" placeholder="Envoyer à…" value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none placeholder:font-light" style={{ color: "var(--text-1)" }} />
+          {loading && <motion.div className="w-3.5 h-3.5 rounded-full border-2 flex-shrink-0" style={{ borderColor: "rgba(var(--accent-rgb),0.25)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />}
         </div>
 
         <div className="flex flex-col gap-1 max-h-52 overflow-y-auto">
@@ -1518,10 +1518,10 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
             <p className="text-center text-xs py-5 font-light" style={{ color: "#C4C9D4" }}>Abonne-toi à des gens pour les envoyer en DM</p>
           )}
           {!search.trim() && friends.length > 0 && (
-            <p className="text-[10px] font-semibold px-1 pb-1" style={{ color: "#A0AEC0" }}>Mes abonnements</p>
+            <p className="text-[10px] font-semibold px-1 pb-1" style={{ color: "var(--text-3)" }}>Mes abonnements</p>
           )}
           {search.trim() && displayList.length === 0 && !loading && (
-            <p className="text-center text-xs py-5 font-light" style={{ color: "#A0AEC0" }}>Aucun résultat</p>
+            <p className="text-center text-xs py-5 font-light" style={{ color: "var(--text-3)" }}>Aucun résultat</p>
           )}
           {displayList.map((r) => (
             <motion.button
@@ -1530,17 +1530,17 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
               whileTap={{ scale: 0.98 }}
               onClick={() => sendPost(r)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-left cursor-pointer"
-              style={{ background: "rgba(240,235,255,0.4)" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.4)" }}
             >
               <ProfileAvatar partner={r} size={36} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-none truncate" style={{ color: "#2D3748" }}>{r.full_name ?? r.pseudo}</p>
-                <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>@{r.pseudo}</p>
+                <p className="text-sm font-semibold leading-none truncate" style={{ color: "var(--text-1)" }}>{r.full_name ?? r.pseudo}</p>
+                <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>@{r.pseudo}</p>
               </div>
               {sending === r.id ? (
-                <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+                <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.25)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
               ) : (
-                <Send size={13} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                <Send size={13} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
               )}
             </motion.button>
           ))}
@@ -1570,7 +1570,7 @@ function renderMentions(text: string) {
     /^@\w+$/.test(part)
       ? (
         <Link key={i} href={`/profil/${encodeURIComponent(part.slice(1))}`} onClick={e => e.stopPropagation()}>
-          <b style={{ color: "#A78BFA", fontWeight: 600, fontStyle: "normal" }}>{part}</b>
+          <b style={{ color: "var(--accent)", fontWeight: 600, fontStyle: "normal" }}>{part}</b>
         </Link>
       )
       : part
@@ -1593,13 +1593,13 @@ function CommentRow({
   const liked = c.comment_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false;
   const likeCount = c.comment_likes?.length ?? 0;
   const isOwn = user?.id === c.user_id;
-  const txt = dark ? "rgba(255,255,255,0.88)" : "#2D3748";
-  const sub = dark ? "rgba(255,255,255,0.38)" : "#A0AEC0";
+  const txt = dark ? "rgba(var(--surface-rgb),0.88)" : "var(--text-1)";
+  const sub = dark ? "rgba(var(--surface-rgb),0.38)" : "var(--text-3)";
   return (
     <div className="flex items-start gap-2 group">
       <Link href={`/profil/${encodeURIComponent(pseudo)}`} className="flex-shrink-0">
         <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden"
-          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
           {avatar
             // eslint-disable-next-line @next/next/no-img-element
             ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
@@ -1609,9 +1609,9 @@ function CommentRow({
       <div className="flex-1 min-w-0">
         <p className="text-xs leading-relaxed" style={{ color: txt }}>
           <Link href={`/profil/${encodeURIComponent(pseudo)}`}>
-            <span className="font-semibold" style={{ color: dark ? "#D4C0FF" : "#A78BFA" }}>{pseudo}</span>
+            <span className="font-semibold" style={{ color: dark ? "var(--violet-mid)" : "var(--accent)" }}>{pseudo}</span>
           </Link>
-          {certified && <BadgeCheck size={11} strokeWidth={2.5} className="inline-block align-text-bottom mx-0.5" style={{ color: "#A78BFA" }} />}
+          {certified && <BadgeCheck size={11} strokeWidth={2.5} className="inline-block align-text-bottom mx-0.5" style={{ color: "var(--accent)" }} />}
           <span className="font-light ml-1">{renderMentions(c.content)}</span>
         </p>
         <div className="flex items-center gap-3 mt-0.5">
@@ -1778,16 +1778,16 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   return (
     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }} className="overflow-hidden">
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(var(--tint-violet-rgb),0.8)" }}>
         <div className="flex flex-col gap-3 mb-3 max-h-56 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           {loading ? (
             <div className="flex justify-center py-3">
-              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
             </div>
           ) : dbError ? (
             <p className="text-xs text-center py-2" style={{ color: "#FC8181" }}>⚠️ Commentaires indisponibles</p>
           ) : topLevel.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
+            <p className="text-xs text-center py-2" style={{ color: "var(--text-3)" }}>Sois le premier à commenter</p>
           ) : topLevel.map((c, i) => (
             <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
               <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
@@ -1804,26 +1804,26 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
         {/* Indicateur réponse */}
         {replyingTo && (
           <div className="flex items-center gap-1.5 mb-1.5 px-1">
-            <span className="text-[10px]" style={{ color: "#A78BFA" }}>↩ Répondre à @{replyingTo.pseudo}</span>
-            <button onClick={() => setReplyingTo(null)} className="text-[10px] cursor-pointer" style={{ color: "#A0AEC0" }}>✕</button>
+            <span className="text-[10px]" style={{ color: "var(--accent)" }}>↩ Répondre à @{replyingTo.pseudo}</span>
+            <button onClick={() => setReplyingTo(null)} className="text-[10px] cursor-pointer" style={{ color: "var(--text-3)" }}>✕</button>
           </div>
         )}
         {sendError && <p className="text-[10px] mb-1" style={{ color: "#FC8181" }}>{sendError}</p>}
 
         {/* Dropdown @mention */}
         {mentionResults.length > 0 && (
-          <div className="mb-1.5 rounded-xl overflow-hidden shadow-md" style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(212,192,255,0.6)" }}>
+          <div className="mb-1.5 rounded-xl overflow-hidden shadow-md" style={{ background: "rgba(var(--surface-rgb),0.97)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)" }}>
             {mentionResults.map(profile => (
               <button key={profile.pseudo} onMouseDown={e => { e.preventDefault(); selectMention(profile.pseudo); }}
                 className="flex items-center gap-2 w-full px-3 py-1.5 text-left hover:bg-purple-50 transition-colors cursor-pointer">
                 <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[9px] font-semibold"
-                  style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                  style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                   {profile.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
                     : profile.pseudo[0]?.toUpperCase()}
                 </div>
-                <span className="text-xs font-medium" style={{ color: "#A78BFA" }}>@{profile.pseudo}</span>
+                <span className="text-xs font-medium" style={{ color: "var(--accent)" }}>@{profile.pseudo}</span>
               </button>
             ))}
           </div>
@@ -1838,12 +1838,12 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
             placeholder={user ? (replyingTo ? `Répondre à @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi pour commenter"}
             disabled={!user}
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
-            style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
           />
           <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)" }}>
-            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
+            style={{ background: input.trim() && user ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)" }}>
+            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }} />
           </motion.button>
         </div>
       </div>
@@ -1901,7 +1901,7 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
       exit={{ opacity: 0, y: 40 }}
       transition={{ type: "spring", damping: 30, stiffness: 280 }}
       className="fixed inset-y-0 right-0 left-0 md:left-[88px] pb-28 md:pb-0 z-[9999] flex flex-col"
-      style={{ background: "#fff" }}
+      style={{ background: "var(--page-bg)" }}
     >
       {/* Inner — same width as the video feed */}
       <div className="h-full flex flex-col mx-auto w-full" style={{ maxWidth: 560 }}>
@@ -1909,13 +1909,13 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
       {/* ── Header ── */}
       <div className="flex items-center gap-3 px-4 pt-6 pb-4 flex-shrink-0">
         <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-          className="cursor-pointer" style={{ color: "#2D3748" }}>
+          className="cursor-pointer" style={{ color: "var(--text-1)" }}>
           <ArrowLeft size={22} strokeWidth={1.8} />
         </motion.button>
         <div>
-          <h1 className="text-lg font-bold tracking-tight" style={{ color: "#2D3748" }}>{tag}</h1>
+          <h1 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-1)" }}>{tag}</h1>
           {!loading && (
-            <p className="text-[12px] font-light" style={{ color: "#A0AEC0" }}>
+            <p className="text-[12px] font-light" style={{ color: "var(--text-3)" }}>
               {videos.length} vidéo{videos.length !== 1 ? "s" : ""}
             </p>
           )}
@@ -1925,13 +1925,13 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
       {/* ── Sous-tabs "Pour vous / Non personnalisé" ── */}
       <div className="flex flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
         <button className="flex-1 py-2.5 text-[13px] font-semibold relative cursor-default"
-          style={{ color: "#2D3748" }}>
+          style={{ color: "var(--text-1)" }}>
           Pour vous
           <div className="absolute bottom-0 inset-x-0 h-0.5 rounded-full"
-            style={{ background: "linear-gradient(90deg,#D4C0FF,#A78BFA)" }} />
+            style={{ background: "linear-gradient(90deg,var(--violet-mid),var(--accent))" }} />
         </button>
         <button className="flex-1 py-2.5 text-[13px] font-light cursor-default"
-          style={{ color: "#A0AEC0" }}>
+          style={{ color: "var(--text-3)" }}>
           Non personnalisé
         </button>
       </div>
@@ -1942,13 +1942,13 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
           <div className="grid grid-cols-3 p-2" style={{ gap: 6 }}>
             {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="aspect-[9/16] animate-pulse rounded-xl"
-                style={{ background: "rgba(212,192,255,0.15)" }} />
+                style={{ background: "rgba(var(--violet-mid-rgb),0.15)" }} />
             ))}
           </div>
         ) : videos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <span className="text-4xl">🎬</span>
-            <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune vidéo pour {tag}</p>
+            <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune vidéo pour {tag}</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 p-2" style={{ gap: 6 }}>
@@ -1976,7 +1976,7 @@ function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
 
                 {/* Icône play — coin haut droit */}
                 <div className="absolute top-2 right-2 pointer-events-none">
-                  <Play size={14} strokeWidth={0} fill="rgba(255,255,255,0.9)" />
+                  <Play size={14} strokeWidth={0} fill="rgba(var(--surface-rgb),0.9)" />
                 </div>
 
                 {/* Vues — coin bas gauche, toujours affiché */}
@@ -2055,20 +2055,20 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 32, stiffness: 320 }}
         className="w-full max-w-lg rounded-t-3xl flex flex-col"
-        style={{ background: "rgba(255,255,255,0.97)", maxHeight: "75vh" }}
+        style={{ background: "rgba(var(--surface-rgb),0.97)", maxHeight: "75vh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.3)" }} />
         </div>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
           <div>
-            <span className="text-base font-semibold" style={{ color: "#A78BFA" }}>{tag}</span>
+            <span className="text-base font-semibold" style={{ color: "var(--accent)" }}>{tag}</span>
             {!loading && (
-              <span className="ml-2 text-xs font-light" style={{ color: "#A0AEC0" }}>
+              <span className="ml-2 text-xs font-light" style={{ color: "var(--text-3)" }}>
                 {posts.length} post{posts.length !== 1 ? "s" : ""}
               </span>
             )}
@@ -2077,9 +2077,9 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
           >
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -2089,7 +2089,7 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
             <div className="flex justify-center py-12">
               <motion.div
                 className="w-6 h-6 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
@@ -2097,7 +2097,7 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
           ) : posts.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <span className="text-4xl">#</span>
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                 Aucun post avec {tag}
               </p>
             </div>
@@ -2111,26 +2111,26 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
                   <div
                     key={p.id}
                     className="rounded-2xl overflow-hidden"
-                    style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
                   >
                     {/* Author row */}
                     <div className="flex items-center gap-2.5 px-3 pt-3 pb-2">
                       <div
                         className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden"
-                        style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                        style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
                       >
                         {avatar
                           // eslint-disable-next-line @next/next/no-img-element
                           ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
                           : pseudo[0]?.toUpperCase()}
                       </div>
-                      <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>@{pseudo}</span>
-                      <span className="text-[10px] ml-auto" style={{ color: "#A0AEC0" }}>{postTimeAgo(p.created_at)}</span>
+                      <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>@{pseudo}</span>
+                      <span className="text-[10px] ml-auto" style={{ color: "var(--text-3)" }}>{postTimeAgo(p.created_at)}</span>
                     </div>
 
                     {/* Caption */}
                     {p.caption && (
-                      <p className="px-3 pb-2 text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>
+                      <p className="px-3 pb-2 text-sm font-medium leading-snug" style={{ color: "var(--text-1)" }}>
                         {p.caption}
                       </p>
                     )}
@@ -2143,11 +2143,11 @@ function HashtagSheet({ tag, currentUserId, onClose }: {
 
                     {/* Stats */}
                     <div className="flex items-center gap-3 px-3 py-2.5">
-                      <span className="flex items-center gap-1 text-[11px]" style={{ color: liked ? "#F43F5E" : "#A0AEC0" }}>
-                        <Heart size={12} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#A0AEC0" }} />
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: liked ? "#F43F5E" : "var(--text-3)" }}>
+                        <Heart size={12} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-3)" }} />
                         {p.post_likes.length}
                       </span>
-                      <span className="flex items-center gap-1 text-[11px]" style={{ color: "#A0AEC0" }}>
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-3)" }}>
                         <MessageCircle size={12} />
                         {p.post_comments.length}
                       </span>
@@ -2174,7 +2174,7 @@ function CaptionText({ text, onHashtagClick }: { text: string; onHashtagClick: (
         /^#\w+$/.test(part) ? (
           <b
             key={i}
-            style={{ color: "#A78BFA", fontWeight: 700, cursor: "pointer", fontStyle: "normal" }}
+            style={{ color: "var(--accent)", fontWeight: 700, cursor: "pointer", fontStyle: "normal" }}
             onClick={(e) => { e.stopPropagation(); onHashtagClick(part); }}
           >
             {part}
@@ -2238,23 +2238,23 @@ function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onComm
         }
         style={
           isDesktop
-            ? { background: "#FFFFFF", boxShadow: "-12px 0 48px rgba(0,0,0,0.18)" }
-            : { background: "rgba(255,255,255,0.98)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }
+            ? { background: "rgba(var(--surface-rgb),1)", boxShadow: "-12px 0 48px rgba(0,0,0,0.18)" }
+            : { background: "rgba(var(--surface-rgb),0.98)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }
         }
         onClick={e => e.stopPropagation()}
       >
         {/* Poignée (mobile uniquement) */}
         {!isDesktop && (
           <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-            <div className="w-10 h-1 rounded-full" style={{ background: "rgba(167,139,250,0.3)" }} />
+            <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.3)" }} />
           </div>
         )}
-        <div className={`px-4 ${isDesktop ? "pt-5" : ""} pb-3 flex items-center justify-between flex-shrink-0`} style={{ borderBottom: "1px solid rgba(212,192,255,0.3)" }}>
-          <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{isDesktop ? "Commentaires" : `${commentCount} commentaire${commentCount !== 1 ? "s" : ""}`}</p>
+        <div className={`px-4 ${isDesktop ? "pt-5" : ""} pb-3 flex items-center justify-between flex-shrink-0`} style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{isDesktop ? "Commentaires" : `${commentCount} commentaire${commentCount !== 1 ? "s" : ""}`}</p>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={13} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -2400,7 +2400,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
       <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
         {loading ? (
           <div className="flex justify-center py-6">
-            <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+            <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
           </div>
         ) : dbError ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
@@ -2408,7 +2408,7 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
             <p className="text-xs" style={{ color: "#FC8181" }}>Commentaires indisponibles</p>
           </div>
         ) : topLevel.length === 0 ? (
-          <p className="text-center text-sm py-8" style={{ color: "#A0AEC0" }}>Sois le premier à commenter</p>
+          <p className="text-center text-sm py-8" style={{ color: "var(--text-3)" }}>Sois le premier à commenter</p>
         ) : topLevel.map((c, i) => (
           <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
             <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
@@ -2423,39 +2423,39 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
 
       {/* Indicateur réponse */}
       {replyingTo && (
-        <div className="flex items-center gap-2 px-4 py-1.5" style={{ borderTop: "1px solid rgba(212,192,255,0.3)", background: "rgba(240,235,255,0.5)" }}>
-          <span className="text-[11px]" style={{ color: "#A78BFA" }}>↩ Répondre à @{replyingTo.pseudo}</span>
-          <button onClick={() => setReplyingTo(null)} className="text-[11px] cursor-pointer ml-auto" style={{ color: "#A0AEC0" }}>✕</button>
+        <div className="flex items-center gap-2 px-4 py-1.5" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.3)", background: "rgba(var(--tint-violet-rgb),0.5)" }}>
+          <span className="text-[11px]" style={{ color: "var(--accent)" }}>↩ Répondre à @{replyingTo.pseudo}</span>
+          <button onClick={() => setReplyingTo(null)} className="text-[11px] cursor-pointer ml-auto" style={{ color: "var(--text-3)" }}>✕</button>
         </div>
       )}
       {sendError && <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>}
 
       {/* Dropdown @mention */}
       {mentionResults.length > 0 && (
-        <div className="mx-4 mb-1 rounded-xl overflow-hidden shadow-lg" style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(212,192,255,0.6)" }}>
+        <div className="mx-4 mb-1 rounded-xl overflow-hidden shadow-lg" style={{ background: "rgba(var(--surface-rgb),0.97)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)" }}>
           {mentionResults.map(profile => (
             <button key={profile.pseudo} onMouseDown={e => { e.preventDefault(); selectMention(profile.pseudo); }}
               className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-purple-50 transition-colors cursor-pointer">
               <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[10px] font-semibold"
-                style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                 {profile.avatar_url
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
                   : profile.pseudo[0]?.toUpperCase()}
               </div>
-              <span className="text-sm font-medium" style={{ color: "#A78BFA" }}>@{profile.pseudo}</span>
+              <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>@{profile.pseudo}</span>
             </button>
           ))}
         </div>
       )}
 
-      <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(212,192,255,0.3)" }}>
+      <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
         <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
-          style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
+          style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
           {user?.avatar
             // eslint-disable-next-line @next/next/no-img-element
             ? <img loading="lazy" decoding="async" src={user.avatar} alt="" className="w-full h-full object-cover" />
-            : <span className="text-[10px] font-bold" style={{ color: "#2D3748" }}>{user?.pseudo?.[0]?.toUpperCase() ?? "?"}</span>}
+            : <span className="text-[10px] font-bold" style={{ color: "var(--text-1)" }}>{user?.pseudo?.[0]?.toUpperCase() ?? "?"}</span>}
         </div>
         <input ref={inputRef} type="text" value={input} onChange={handleInputChange}
           onKeyDown={e => {
@@ -2465,11 +2465,11 @@ function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: st
           placeholder={user ? (replyingTo ? `↩ @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi"}
           disabled={!user}
           className="flex-1 text-sm outline-none px-3 py-2.5 rounded-2xl"
-          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }} />
+          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
         <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-          style={{ background: input.trim() && user ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)" }}>
-          <Send size={13} strokeWidth={2} style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }} />
+          style={{ background: input.trim() && user ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)" }}>
+          <Send size={13} strokeWidth={2} style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }} />
         </motion.button>
       </div>
     </div>
@@ -2488,22 +2488,22 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
       initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 32, stiffness: 320 }}
       className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl pb-8"
-      style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(24px)", boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }}
+      style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(24px)", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
       onClick={e => e.stopPropagation()}
     >
       <div className="pt-5" />
       <div className="px-5">
-        <p className="text-sm font-semibold mb-4" style={{ color: "#2D3748" }}>Paramètres vidéo</p>
+        <p className="text-sm font-semibold mb-4" style={{ color: "var(--text-1)" }}>Paramètres vidéo</p>
         {/* Vitesse */}
         <div className="mb-5">
-          <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>Vitesse de lecture</p>
+          <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>Vitesse de lecture</p>
           <div className="flex gap-2">
             {speeds.map(s => (
               <motion.button key={s} whileTap={{ scale: 0.93 }} onClick={() => onSpeedChange(s)}
                 className="flex-1 py-2.5 rounded-2xl text-xs font-bold cursor-pointer"
                 style={speed === s
-                  ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "0 2px 12px rgba(167,139,250,0.3)" }
-                  : { background: "rgba(240,235,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.4)" }}>
+                  ? { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.3)" }
+                  : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                 {s === 1 ? "×1" : `×${s}`}
               </motion.button>
             ))}
@@ -2512,15 +2512,15 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
         {/* Sous-titres */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onToggleCaptions}
           className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2 cursor-pointer"
-          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.4)" }}>
+          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
           <div className="flex items-center gap-3">
-            <span className="text-base font-bold" style={{ color: "#A78BFA" }}>CC</span>
+            <span className="text-base font-bold" style={{ color: "var(--accent)" }}>CC</span>
             <div>
-              <p className="text-sm font-medium text-left" style={{ color: "#2D3748" }}>Sous-titres</p>
-              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>{captionsOn ? "Activés" : "Désactivés"}</p>
+              <p className="text-sm font-medium text-left" style={{ color: "var(--text-1)" }}>Sous-titres</p>
+              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>{captionsOn ? "Activés" : "Désactivés"}</p>
             </div>
           </div>
-          <div className="w-11 h-6 rounded-full flex items-center px-1 transition-all" style={{ background: captionsOn ? "linear-gradient(135deg,#D4C0FF,#A78BFA)" : "rgba(212,192,255,0.3)" }}>
+          <div className="w-11 h-6 rounded-full flex items-center px-1 transition-all" style={{ background: captionsOn ? "linear-gradient(135deg,var(--violet-mid),var(--accent))" : "rgba(var(--violet-mid-rgb),0.3)" }}>
             <motion.div className="w-4 h-4 rounded-full bg-white shadow" animate={{ x: captionsOn ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
           </div>
         </motion.button>
@@ -2543,7 +2543,7 @@ function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggl
         {/* Fermer */}
         <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
           className="w-full py-3 mt-3 rounded-2xl text-sm font-medium cursor-pointer"
-          style={{ background: "rgba(240,235,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.3)" }}>
+          style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
           Fermer
         </motion.button>
       </div>
@@ -2807,7 +2807,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
   // Couleurs des icônes : blanc (overlay) sur mobile, sombre sur desktop
   const icoColor = isMobile ? "#fff" : "#374151";
   const icoShadow = isMobile ? "drop-shadow(0 1px 3px rgba(0,0,0,0.6))" : "none";
-  const labelColor = isMobile ? "rgba(255,255,255,0.95)" : "#6B7280";
+  const labelColor = isMobile ? "rgba(var(--surface-rgb),0.95)" : "#6B7280";
   const labelShadow = isMobile ? { textShadow: "0 1px 3px rgba(0,0,0,0.6)" } : {};
 
   return (
@@ -2876,7 +2876,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         {/* Badge vitesse */}
         {speed !== 1 && (
           <div className="absolute top-3 left-3 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
-            style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+            style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
             ×{speed}
           </div>
         )}
@@ -2890,7 +2890,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
                 className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
+                style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff" }}>
                 {authorPseudo[0]?.toUpperCase()}
               </div>
             )}
@@ -2898,7 +2898,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
               <span className="text-white text-sm font-semibold leading-none drop-shadow-sm truncate">@{authorPseudo}</span>
               {authorCertified && (
                 <span className="inline-flex items-center justify-center rounded-full flex-shrink-0"
-                  style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 5px rgba(124,92,250,0.55)" }}>
+                  style={{ width: 16, height: 16, background: "linear-gradient(135deg,var(--accent),#7C5CFA)", boxShadow: "0 1px 5px rgba(124,92,250,0.55)" }}>
                   <svg width="9" height="9" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </span>
               )}
@@ -2970,7 +2970,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }}
           className="flex flex-col items-center gap-1 cursor-pointer">
           <MessageCircle size={30} strokeWidth={2}
-            style={{ color: showComments ? "#A78BFA" : icoColor, filter: icoShadow }} />
+            style={{ color: showComments ? "var(--accent)" : icoColor, filter: icoShadow }} />
           <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(commentCount)}</span>
         </button>
 
@@ -2978,10 +2978,10 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }}>
             <Bookmark size={29} strokeWidth={2}
-              fill={saved ? "#F5E6A3" : "none"}
-              style={{ color: saved ? "#D4A843" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(212,168,67,0.5))" : icoShadow }} />
+              fill={saved ? "var(--cream-mid)" : "none"}
+              style={{ color: saved ? "var(--gold)" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(var(--gold-rgb),0.5))" : icoShadow }} />
           </motion.div>
-          <span className="text-[11px]" style={{ color: saved ? "#D4A843" : labelColor, ...labelShadow }}>{fmtCount(savesCount)}</span>
+          <span className="text-[11px]" style={{ color: saved ? "var(--gold)" : labelColor, ...labelShadow }}>{fmtCount(savesCount)}</span>
         </button>
 
         {/* Partager (avion Instagram) */}
@@ -3147,20 +3147,20 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
       <div className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center h-full">
         <div
           className="w-20 h-20 rounded-3xl flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.35) 0%, rgba(245,230,163,0.3) 100%)", border: "1px solid rgba(167,139,250,0.2)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)" }}
+          style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.35) 0%, rgba(var(--cream-mid-rgb),0.3) 100%)", border: "1px solid rgba(var(--accent-rgb),0.2)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)" }}
         >
-          <Plus size={30} strokeWidth={1.4} style={{ color: "#A78BFA" }} />
+          <Plus size={30} strokeWidth={1.4} style={{ color: "var(--accent)" }} />
         </div>
         <div>
-          <p className="text-base font-medium" style={{ color: "#2D3748" }}>Aucune vidéo pour le moment</p>
-          <p className="text-sm font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>Publie ta première vidéo et lance la communauté 🎬</p>
+          <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>Aucune vidéo pour le moment</p>
+          <p className="text-sm font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>Publie ta première vidéo et lance la communauté 🎬</p>
         </div>
         {onCreatePost && (
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onCreatePost}
             className="mt-1 px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-            style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+            style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
           >
             Publier ma première vidéo
           </motion.button>
@@ -3222,14 +3222,14 @@ const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScr
             }}
             className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-50 w-11 h-11 rounded-full hidden md:flex items-center justify-center cursor-pointer"
             style={{
-              background: "rgba(255,255,255,0.92)",
+              background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(12px)",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
-              border: "1px solid rgba(212,192,255,0.3)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+              border: "1px solid rgba(var(--violet-mid-rgb),0.3)",
             }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 14V4M9 4L4 9M9 4L14 9" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9 14V4M9 4L4 9M9 4L14 9" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </motion.button>
         )}
@@ -4188,19 +4188,19 @@ function CommunautePageInner() {
               // eslint-disable-next-line @next/next/no-img-element
               <img loading="lazy" decoding="async" src={activeDMPartner.avatar_url} alt={activeDMPartner.pseudo}
                 className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                style={{ border: "1.5px solid rgba(167,139,250,0.4)" }} />
+                style={{ border: "1.5px solid rgba(var(--accent-rgb),0.4)" }} />
             ) : (
               <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                style={{ background: "linear-gradient(135deg,#D4C0FF,#A78BFA)", color: "#fff" }}>
+                style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff" }}>
                 {activeDMPartner.pseudo[0]?.toUpperCase()}
               </div>
             )}
-            <h1 className="text-xl font-light tracking-tight group-hover:underline" style={{ color: "#2D3748" }}>
+            <h1 className="text-xl font-light tracking-tight group-hover:underline" style={{ color: "var(--text-1)" }}>
               @{activeDMPartner.pseudo}
             </h1>
           </Link>
         ) : (
-          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
+          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
             Communauté
           </h1>
         )}
@@ -4212,7 +4212,7 @@ function CommunautePageInner() {
               className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
               aria-label="Retour"
             >
-              <ArrowLeft size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+              <ArrowLeft size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
             </motion.button>
           ) : (
             <>
@@ -4221,7 +4221,7 @@ function CommunautePageInner() {
                   whileTap={{ scale: 0.9 }}
                   className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
                 >
-                  <Compass size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                  <Compass size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                 </motion.div>
               </Link>
               <motion.button
@@ -4230,7 +4230,7 @@ function CommunautePageInner() {
                 className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
                 aria-label="Rechercher"
               >
-                <Search size={16} strokeWidth={1.5} style={{ color: view === "search" ? "#A78BFA" : "#2D3748" }} />
+                <Search size={16} strokeWidth={1.5} style={{ color: view === "search" ? "var(--accent)" : "var(--text-1)" }} />
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -4238,7 +4238,7 @@ function CommunautePageInner() {
                 className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
                 aria-label="Messages"
               >
-                <Send size={15} strokeWidth={1.5} style={{ color: view === "dms" ? "#A78BFA" : "#2D3748" }} />
+                <Send size={15} strokeWidth={1.5} style={{ color: view === "dms" ? "var(--accent)" : "var(--text-1)" }} />
               </motion.button>
             </>
           )}
@@ -4265,7 +4265,7 @@ function CommunautePageInner() {
                   onClick={() => setFeedTab("videos")}
                   aria-label="Voir les vidéos"
                   className="fixed top-1/2 -translate-y-1/2 right-2 z-40 flex items-center gap-1 pl-3 pr-2 py-2 rounded-full cursor-pointer"
-                  style={{ background: "#fff", boxShadow: "0 6px 20px rgba(124,92,250,0.28)", border: "1px solid rgba(167,139,250,0.25)" }}
+                  style={{ background: "#fff", boxShadow: "0 6px 20px rgba(124,92,250,0.28)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
                   initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: [6, 0, 6] }} exit={{ opacity: 0, x: 18 }}
                   transition={{ opacity: { duration: 0.4 }, x: { duration: 1.6, repeat: Infinity, ease: "easeInOut" } }}
                 >
@@ -4333,8 +4333,8 @@ function CommunautePageInner() {
                       whileTap={{ scale: 0.92 }}
                       className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden relative"
                       style={myGroup
-                        ? { boxShadow: "0 0 0 2.5px white, 0 0 0 4.5px #D4C0FF", background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }
-                        : { background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(167,139,250,0.5)" }
+                        ? { boxShadow: "0 0 0 2.5px white, 0 0 0 4.5px var(--violet-mid)", background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }
+                        : { background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(var(--accent-rgb),0.5)" }
                       }
                     >
                       {user?.avatar ? (
@@ -4350,19 +4350,19 @@ function CommunautePageInner() {
                           )}
                         </>
                       ) : myGroup ? (
-                        <span className="text-2xl font-semibold" style={{ color: "#2D3748" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
+                        <span className="text-2xl font-semibold" style={{ color: "var(--text-1)" }}>{(user?.pseudo?.[0] ?? "M").toUpperCase()}</span>
                       ) : (
-                        <Plus size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                        <Plus size={22} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                       )}
                       {/* Badge count si plusieurs stories */}
                       {myGroup && myGroup.length > 1 && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                          style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white", color: "#2D3748" }}>
+                          style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", border: "2px solid white", color: "var(--text-1)" }}>
                           {myGroup.length}
                         </div>
                       )}
                     </motion.div>
-                    <span className="text-[10px] font-medium" style={{ color: myGroup ? "#2D3748" : "#A78BFA" }}>
+                    <span className="text-[10px] font-medium" style={{ color: myGroup ? "var(--text-1)" : "var(--accent)" }}>
                       Ma story
                     </span>
                   </motion.div>
@@ -4380,11 +4380,11 @@ function CommunautePageInner() {
                         whileHover={{ scale: 1.08 }}
                         whileTap={{ scale: 0.92 }}
                         className="w-16 h-16 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(240,235,255,0.6)", border: "2px dashed rgba(167,139,250,0.4)" }}
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "2px dashed rgba(var(--accent-rgb),0.4)" }}
                       >
-                        <Plus size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                        <Plus size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                       </motion.div>
-                      <span className="text-[10px] font-medium" style={{ color: "#A78BFA" }}>Nouvelle</span>
+                      <span className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>Nouvelle</span>
                     </motion.div>
                   )}
 
@@ -4408,9 +4408,9 @@ function CommunautePageInner() {
                           <div
                             className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden font-semibold text-lg"
                             style={{
-                              background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                              boxShadow: `0 0 0 2px white, 0 0 0 4px ${(group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) ? "#A78BFA" : "#D4C0FF"}`,
-                              color: "#2D3748",
+                              background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                              boxShadow: `0 0 0 2px white, 0 0 0 4px ${(group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) ? "var(--accent)" : "var(--violet-mid)"}`,
+                              color: "var(--text-1)",
                             }}
                           >
                             {/* Show photo thumbnail if first story is a photo */}
@@ -4426,12 +4426,12 @@ function CommunautePageInner() {
                           {/* Badge count si plusieurs stories */}
                           {group.length > 1 && (
                             <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                              style={{ background: "linear-gradient(135deg, #D4C0FF, #F5E6A3)", border: "2px solid white", color: "#2D3748" }}>
+                              style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", border: "2px solid white", color: "var(--text-1)" }}>
                               {group.length}
                             </div>
                           )}
                         </div>
-                        <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: "#2D3748" }}>
+                        <span className="text-[10px] font-medium max-w-[64px] truncate" style={{ color: "var(--text-1)" }}>
                           {name}
                         </span>
                       </motion.div>
@@ -4486,8 +4486,8 @@ function CommunautePageInner() {
                       style={{
                         width: 105,
                         ...(feedMode === mode
-                          ? { background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", color: "#fff", boxShadow: "0 2px 12px rgba(124,92,250,0.35)" }
-                          : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0" })
+                          ? { background: "linear-gradient(135deg,var(--accent),#7C5CFA)", color: "#fff", boxShadow: "0 2px 12px rgba(124,92,250,0.35)" }
+                          : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" })
                       }}
                     >
                       {mode === "algo" ? "Pour toi" : "Amis"}
@@ -4524,27 +4524,27 @@ function CommunautePageInner() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.08 }}
                     className="rounded-3xl overflow-hidden"
-                    style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 4px 24px rgba(167,139,250,0.08)" }}
+                    style={{ background: "rgba(var(--surface-rgb),0.85)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.08)" }}
                   >
                     {/* Header skeleton */}
                     <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-                      <div className="w-9 h-9 rounded-full animate-pulse" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.3) 25%, rgba(212,192,255,0.5) 50%, rgba(212,192,255,0.3) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite" }} />
+                      <div className="w-9 h-9 rounded-full animate-pulse" style={{ background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.3) 25%, rgba(var(--violet-mid-rgb),0.5) 50%, rgba(var(--violet-mid-rgb),0.3) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite" }} />
                       <div className="flex flex-col gap-1.5 flex-1">
-                        <div className="h-3 w-24 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.3) 25%, rgba(212,192,255,0.5) 50%, rgba(212,192,255,0.3) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite" }} />
-                        <div className="h-2 w-14 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.1s" }} />
+                        <div className="h-3 w-24 rounded-full" style={{ background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.3) 25%, rgba(var(--violet-mid-rgb),0.5) 50%, rgba(var(--violet-mid-rgb),0.3) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite" }} />
+                        <div className="h-2 w-14 rounded-full" style={{ background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.2) 25%, rgba(var(--violet-mid-rgb),0.35) 50%, rgba(var(--violet-mid-rgb),0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.1s" }} />
                       </div>
                     </div>
                     {/* Content skeleton */}
                     <div className="px-4 pb-2 flex flex-col gap-2">
-                      <div className="h-3 w-3/4 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.25) 25%, rgba(212,192,255,0.4) 50%, rgba(212,192,255,0.25) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.05s" }} />
-                      <div className="h-3 w-1/2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.1s" }} />
+                      <div className="h-3 w-3/4 rounded-full" style={{ background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.25) 25%, rgba(var(--violet-mid-rgb),0.4) 50%, rgba(var(--violet-mid-rgb),0.25) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.05s" }} />
+                      <div className="h-3 w-1/2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.2) 25%, rgba(var(--violet-mid-rgb),0.35) 50%, rgba(var(--violet-mid-rgb),0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.1s" }} />
                     </div>
                     {/* Image skeleton */}
-                    <div className="mx-4 mb-3 h-48 rounded-2xl" style={{ background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.15s" }} />
+                    <div className="mx-4 mb-3 h-48 rounded-2xl" style={{ background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.2) 25%, rgba(var(--violet-mid-rgb),0.35) 50%, rgba(var(--violet-mid-rgb),0.2) 75%)", backgroundSize: "200% 100%", animation: "shimmer-x 1.5s infinite 0.15s" }} />
                     {/* Action bar skeleton */}
                     <div className="flex items-center gap-4 px-4 pb-4">
                       {[20, 20, 20, 20].map((w, j) => (
-                        <div key={j} className="h-5 rounded-full" style={{ width: w, background: "linear-gradient(90deg, rgba(212,192,255,0.2) 25%, rgba(212,192,255,0.35) 50%, rgba(212,192,255,0.2) 75%)", backgroundSize: "200% 100%", animation: `shimmer-x 1.5s infinite ${j * 0.05}s` }} />
+                        <div key={j} className="h-5 rounded-full" style={{ width: w, background: "linear-gradient(90deg, rgba(var(--violet-mid-rgb),0.2) 25%, rgba(var(--violet-mid-rgb),0.35) 50%, rgba(var(--violet-mid-rgb),0.2) 75%)", backgroundSize: "200% 100%", animation: `shimmer-x 1.5s infinite ${j * 0.05}s` }} />
                       ))}
                     </div>
                   </motion.div>
@@ -4556,13 +4556,13 @@ function CommunautePageInner() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.25) 100%)", border: "1px solid rgba(167,139,250,0.15)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.3) 0%, rgba(var(--cream-mid-rgb),0.25) 100%)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}
                 >
-                  <Heart size={22} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                  <Heart size={22} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-6">
-                  <p className="text-base font-light" style={{ color: "#2D3748" }}>Pas encore de posts d&apos;amis</p>
-                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                  <p className="text-base font-light" style={{ color: "var(--text-1)" }}>Pas encore de posts d&apos;amis</p>
+                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
                     Tu verras ici les posts des personnes que tu suis et qui te suivent en retour. Abonne-toi et reste connecté pour remplir ton fil
                   </p>
                 </div>
@@ -4570,7 +4570,7 @@ function CommunautePageInner() {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setFeedMode("algo")}
                   className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                  style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
                 >
                   Découvrir « Pour toi »
                 </motion.button>
@@ -4581,13 +4581,13 @@ function CommunautePageInner() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.25) 100%)", border: "1px solid rgba(167,139,250,0.15)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.3) 0%, rgba(var(--cream-mid-rgb),0.25) 100%)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}
                 >
-                  <Heart size={22} strokeWidth={1.3} style={{ color: "#A78BFA" }} />
+                  <Heart size={22} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-6">
-                  <p className="text-base font-light" style={{ color: "#2D3748" }}>Aucun post pour l&apos;instant</p>
-                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                  <p className="text-base font-light" style={{ color: "var(--text-1)" }}>Aucun post pour l&apos;instant</p>
+                  <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
                     Sois le premier à partager une performance et inspire la communauté 💪
                   </p>
                 </div>
@@ -4595,7 +4595,7 @@ function CommunautePageInner() {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowCreatePost(true)}
                   className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                  style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
                 >
                   Créer un post
                 </motion.button>
@@ -4634,7 +4634,7 @@ function CommunautePageInner() {
                         whileHover={{ scale: 1.1 }}
                         transition={{ type: "spring", bounce: 0.4 }}
                         className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
-                        style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}
+                        style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}
                       >
                         {authorAvatar
                           // eslint-disable-next-line @next/next/no-img-element
@@ -4644,17 +4644,17 @@ function CommunautePageInner() {
                     </Link>
                     <Link href={`/profil/${encodeURIComponent(authorPseudo)}`} className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>@{authorPseudo}</p>
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>@{authorPseudo}</p>
                         {authorCertified && (
                           <div className="flex-shrink-0 flex items-center justify-center rounded-full"
-                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
+                            style={{ width: 16, height: 16, background: "linear-gradient(135deg,var(--accent),#7C5CFA)", boxShadow: "0 1px 6px rgba(124,92,250,0.4)" }}>
                             <svg width="9" height="9" viewBox="0 0 13 13" fill="none">
                               <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           </div>
                         )}
                       </div>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>{postTimeAgo(post.created_at)}</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-3)" }}>{postTimeAgo(post.created_at)}</p>
                     </Link>
                     <div className="relative">
                       <motion.button
@@ -4665,7 +4665,7 @@ function CommunautePageInner() {
                         className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
                         aria-label="Plus"
                       >
-                        <MoreHorizontal size={16} strokeWidth={1.5} style={{ color: isMenuOpen ? "#A78BFA" : "#A0AEC0" }} />
+                        <MoreHorizontal size={16} strokeWidth={1.5} style={{ color: isMenuOpen ? "var(--accent)" : "var(--text-3)" }} />
                       </motion.button>
                       <AnimatePresence>
                         {isMenuOpen && (
@@ -4697,7 +4697,7 @@ function CommunautePageInner() {
 
                   {/* Titre — affiché en haut avant la photo */}
                   {post.caption && (
-                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                    <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
                       <CaptionText text={post.caption} onHashtagClick={(tag) => setActiveHashtag(tag)} />
                     </p>
                   )}
@@ -4715,7 +4715,7 @@ function CommunautePageInner() {
 
                   {/* Bio / description — affichée après la photo */}
                   {post.description && (
-                    <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                    <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       <CaptionText text={post.description} onHashtagClick={(tag) => setActiveHashtag(tag)} />
                     </p>
                   )}
@@ -4743,8 +4743,8 @@ function CommunautePageInner() {
                       <div className="px-4 pt-4 pb-1">
                         {unavailable ? (
                           <div className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs"
-                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#4A5568" }}>
-                            <Play size={13} strokeWidth={2} style={{ color: "#4A5568" }} />
+                            style={{ background: "rgba(var(--surface-rgb),0.04)", border: "1px solid rgba(var(--surface-rgb),0.08)", color: "var(--text-body)" }}>
+                            <Play size={13} strokeWidth={2} style={{ color: "var(--text-body)" }} />
                             Séance perso — partage les exercices pour la rendre rejouable
                           </div>
                         ) : (
@@ -4753,7 +4753,7 @@ function CommunautePageInner() {
                             onClick={() => setCommunityWorkout({
                               sessionId:    hasEmbedded ? "community" : builtinId!,
                               title:        pd?.title ?? "Séance",
-                              accent:       "#A78BFA",
+                              accent:       "var(--accent)",
                               duration:     dur,
                               difficulty:   "Intermédiaire",
                               category:     pd?.category ?? "force",
@@ -4761,12 +4761,12 @@ function CommunautePageInner() {
                             })}
                             className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
                             style={{
-                              background: "linear-gradient(135deg,rgba(167,139,250,0.15) 0%,rgba(212,192,255,0.1) 100%)",
-                              border: "1px solid rgba(167,139,250,0.25)",
-                              color: "#A78BFA",
+                              background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.15) 0%,rgba(var(--violet-mid-rgb),0.1) 100%)",
+                              border: "1px solid rgba(var(--accent-rgb),0.25)",
+                              color: "var(--accent)",
                             }}
                           >
-                            <Play size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                            <Play size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
                             Faire cette séance
                           </motion.button>
                         )}
@@ -4793,7 +4793,7 @@ function CommunautePageInner() {
                         />
                       ))}
                       <motion.div animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
+                        <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-1)" }} />
                       </motion.div>
                     </motion.button>
 
@@ -4806,8 +4806,8 @@ function CommunautePageInner() {
                       aria-label="Commenter"
                     >
                       <MessageCircle size={20} strokeWidth={1.5}
-                        fill={isCommentsOpen ? "rgba(167,139,250,0.2)" : "none"}
-                        style={{ color: isCommentsOpen ? "#A78BFA" : "#2D3748" }} />
+                        fill={isCommentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"}
+                        style={{ color: isCommentsOpen ? "var(--accent)" : "var(--text-1)" }} />
                     </motion.button>
 
                     {/* Repartage / Boost */}
@@ -4819,7 +4819,7 @@ function CommunautePageInner() {
                       aria-label="Repartager"
                     >
                       <motion.div animate={repostedRealIds.has(post.id) ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                        <Repeat2 size={20} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#2D3748" }} />
+                        <Repeat2 size={20} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "var(--text-1)" }} />
                       </motion.div>
                     </motion.button>
 
@@ -4831,12 +4831,12 @@ function CommunautePageInner() {
                       className="flex items-center cursor-pointer"
                       aria-label="Partager"
                     >
-                      <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                      <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                     </motion.button>
 
                     {isSaved && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="ml-auto">
-                        <Bookmark size={16} strokeWidth={1.5} fill="#F5E6A3" style={{ color: "#D4A843" }} />
+                        <Bookmark size={16} strokeWidth={1.5} fill="var(--cream-mid)" style={{ color: "var(--gold)" }} />
                       </motion.div>
                     )}
                   </div>
@@ -4846,16 +4846,16 @@ function CommunautePageInner() {
                     {/* Compteurs */}
                     <div className="flex items-center gap-3 flex-wrap">
                       {likesCount > 0 && (
-                        <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: liked ? "#F43F5E" : "#718096" }}>
-                          <Heart size={12} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#718096" }} />
+                        <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: liked ? "#F43F5E" : "var(--text-2)" }}>
+                          <Heart size={12} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-2)" }} />
                           {likesCount} j&apos;aime
                         </span>
                       )}
                       {commentsCount > 0 && (
                         <motion.span
-                          whileHover={{ color: "#2D3748" }}
+                          whileHover={{ color: "var(--text-1)" }}
                           className="flex items-center gap-1 text-xs cursor-pointer"
-                          style={{ color: "#718096" }}
+                          style={{ color: "var(--text-2)" }}
                           onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                         >
                           <MessageCircle size={12} strokeWidth={1.5} />
@@ -4863,14 +4863,14 @@ function CommunautePageInner() {
                         </motion.span>
                       )}
                       {savesCount > 0 && (
-                        <span className="flex items-center gap-1 text-xs" style={{ color: isSaved ? "#D4A843" : "#718096" }}>
-                          <Bookmark size={12} strokeWidth={1.5} fill={isSaved ? "#F5E6A3" : "none"} style={{ color: isSaved ? "#D4A843" : "#718096" }} />
+                        <span className="flex items-center gap-1 text-xs" style={{ color: isSaved ? "var(--gold)" : "var(--text-2)" }}>
+                          <Bookmark size={12} strokeWidth={1.5} fill={isSaved ? "var(--cream-mid)" : "none"} style={{ color: isSaved ? "var(--gold)" : "var(--text-2)" }} />
                           {savesCount} favori{savesCount > 1 ? "s" : ""}
                         </span>
                       )}
                       {repostsCount > 0 && (
-                        <span className="flex items-center gap-1 text-xs" style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }}>
-                          <Repeat2 size={12} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "#718096" }} />
+                        <span className="flex items-center gap-1 text-xs" style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "var(--text-2)" }}>
+                          <Repeat2 size={12} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "var(--text-2)" }} />
                           {repostsCount} partage{repostsCount > 1 ? "s" : ""}
                         </span>
                       )}
@@ -4878,9 +4878,9 @@ function CommunautePageInner() {
                     {/* Lien commentaires */}
                     {commentsCount === 0 && (
                       <motion.p
-                        whileHover={{ color: "#2D3748" }}
+                        whileHover={{ color: "var(--text-1)" }}
                         className="text-[11px] cursor-pointer"
-                        style={{ color: "#A0AEC0" }}
+                        style={{ color: "var(--text-3)" }}
                         onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                       >
                         Ajouter un commentaire
@@ -4888,9 +4888,9 @@ function CommunautePageInner() {
                     )}
                     {isCommentsOpen && commentsCount > 0 && (
                       <motion.p
-                        whileHover={{ color: "#2D3748" }}
+                        whileHover={{ color: "var(--text-1)" }}
                         className="text-[11px] cursor-pointer"
-                        style={{ color: "#A0AEC0" }}
+                        style={{ color: "var(--text-3)" }}
                         onClick={() => setOpenRealComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                       >
                         Masquer les commentaires
@@ -4921,7 +4921,7 @@ function CommunautePageInner() {
                     {feedLoadingMore && (
                       <motion.div
                         className="w-5 h-5 rounded-full border-2"
-                        style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                        style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                         animate={{ rotate: 360 }}
                         transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                       />
@@ -4929,7 +4929,7 @@ function CommunautePageInner() {
                   </div>
                 )}
                 {!hasMoreFeed && sortedFeedPosts.length >= 30 && (
-                  <p className="text-center text-xs py-5 font-light" style={{ color: "#A0AEC0" }}>
+                  <p className="text-center text-xs py-5 font-light" style={{ color: "var(--text-3)" }}>
                     🎉 Tu as tout vu !
                   </p>
                 )}
@@ -4942,17 +4942,17 @@ function CommunautePageInner() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: "spring", bounce: 0.4, delay: 0.3 }}
-                whileHover={{ scale: 1.08, boxShadow: "0 12px 32px rgba(167,139,250,0.45)" }}
+                whileHover={{ scale: 1.08, boxShadow: "0 12px 32px rgba(var(--accent-rgb),0.45)" }}
                 whileTap={{ scale: 0.93 }}
                 onClick={() => setShowCreatePost(true)}
                 className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-14 h-14 rounded-full flex items-center justify-center cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, #A78BFA 0%, #D4C0FF 60%, #F5E6A3 100%)",
-                  boxShadow: "0 8px 24px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.5)",
+                  background: "linear-gradient(135deg, var(--accent) 0%, var(--violet-mid) 60%, var(--cream-mid) 100%)",
+                  boxShadow: "0 8px 24px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(var(--surface-rgb),0.5)",
                 }}
                 aria-label="Créer un post"
               >
-                <PenLine size={22} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+                <PenLine size={22} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
               </motion.button>
             )}
           </motion.div>
@@ -4969,19 +4969,19 @@ function CommunautePageInner() {
           >
             {/* Search bar */}
             <div className="lg-strong lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
-              <Search size={16} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+              <Search size={16} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
                 placeholder="Rechercher comptes, programmes, recettes…"
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0]"
-                style={{ color: "#2D3748" }}
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
+                style={{ color: "var(--text-1)" }}
               />
               {search && (
                 <button onClick={() => setSearch("")} className="cursor-pointer" aria-label="Effacer">
-                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                  <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </button>
               )}
             </div>
@@ -4995,8 +4995,8 @@ function CommunautePageInner() {
                   className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150"
                   style={
                     searchFilter === f
-                      ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                      : { background: "rgba(255,255,255,0.55)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                      ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
                   }
                 >
                   {f === "tous" ? "Tous" : f === "compte" ? "Personnes" : "Séances"}
@@ -5007,7 +5007,7 @@ function CommunautePageInner() {
             {/* ── Trending hashtags (quand search est vide) ── */}
             {!search.trim() && trendingHashtags.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
                   Tendances
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -5018,7 +5018,7 @@ function CommunautePageInner() {
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setSearch(tag)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer"
-                      style={{ background: "linear-gradient(135deg,rgba(167,139,250,0.12),rgba(212,192,255,0.18))", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}
+                      style={{ background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.12),rgba(var(--violet-mid-rgb),0.18))", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
                     >
                       {tag}
                       <span className="text-[9px] font-normal opacity-70">{count}</span>
@@ -5031,7 +5031,7 @@ function CommunautePageInner() {
             {/* Suggestions — comptes à découvrir (quand search est vide) */}
             {!search.trim() && filteredResults.suggestions.length > 0 && searchFilter !== "seances" && (
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
                   Suggestions
                 </p>
                 <div className="flex flex-col gap-2">
@@ -5041,7 +5041,7 @@ function CommunautePageInner() {
                       <div key={profile.id} className="lg-surface lg-highlight relative flex items-center gap-3 px-4 py-3 rounded-2xl">
                         <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-shrink-0">
                           <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold overflow-hidden"
-                            style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                            style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                             {profile.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
                               ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
@@ -5049,12 +5049,12 @@ function CommunautePageInner() {
                           </div>
                         </Link>
                         <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: "#2D3748" }}>
+                          <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: "var(--text-1)" }}>
                             <span className="truncate">{profile.full_name || profile.pseudo}</span>
-                            {(profile.is_certified || profile.is_admin) && <BadgeCheck size={13} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "#A78BFA" }} />}
+                            {(profile.is_certified || profile.is_admin) && <BadgeCheck size={13} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "var(--accent)" }} />}
                           </p>
-                          <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
-                          {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
+                          <p className="text-[11px]" style={{ color: "var(--accent)" }}>@{profile.pseudo}</p>
+                          {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-3)" }}>{profile.bio}</p>}
                         </Link>
                         {user && user.id !== profile.id && (
                           <motion.button
@@ -5062,8 +5062,8 @@ function CommunautePageInner() {
                             onClick={() => handleFollowReal(profile)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                             style={isF
-                              ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
-                              : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                              ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
+                              : { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
                             }
                           >
                             {isF ? <><UserCheck size={12} strokeWidth={2} /> Suivi</> : <><UserPlus size={12} strokeWidth={2} /> Suivre</>}
@@ -5080,13 +5080,13 @@ function CommunautePageInner() {
             {searchLoading && (
               <div className="flex justify-center py-6">
                 <motion.div className="w-5 h-5 rounded-full border-2"
-                  style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                  style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                   animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
               </div>
             )}
             {!searchLoading && filteredResults.realProfiles.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
                   Comptes
                 </p>
                 <div className="flex flex-col gap-2">
@@ -5097,7 +5097,7 @@ function CommunautePageInner() {
                         {/* Avatar cliquable → profil */}
                         <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-shrink-0">
                           <div className="w-11 h-11 rounded-full flex items-center justify-center text-base font-semibold overflow-hidden"
-                            style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                            style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                             {profile.avatar_url
                               // eslint-disable-next-line @next/next/no-img-element
                               ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
@@ -5106,12 +5106,12 @@ function CommunautePageInner() {
                         </Link>
                         {/* Infos cliquables */}
                         <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: "#2D3748" }}>
+                          <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: "var(--text-1)" }}>
                             <span className="truncate">{profile.full_name || profile.pseudo}</span>
-                            {(profile.is_certified || profile.is_admin) && <BadgeCheck size={13} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "#A78BFA" }} />}
+                            {(profile.is_certified || profile.is_admin) && <BadgeCheck size={13} strokeWidth={2.5} className="flex-shrink-0" style={{ color: "var(--accent)" }} />}
                           </p>
-                          <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
-                          {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>}
+                          <p className="text-[11px]" style={{ color: "var(--accent)" }}>@{profile.pseudo}</p>
+                          {profile.bio && <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-3)" }}>{profile.bio}</p>}
                         </Link>
                         {/* Bouton suivre connecté à Supabase */}
                         {user && user.id !== profile.id && (
@@ -5120,8 +5120,8 @@ function CommunautePageInner() {
                             onClick={() => handleFollowReal(profile)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                             style={isF
-                              ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
-                              : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                              ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
+                              : { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
                             }
                             aria-label={isF ? "Ne plus suivre" : "Suivre"}
                           >
@@ -5141,14 +5141,14 @@ function CommunautePageInner() {
             {/* Sessions publiques */}
             {filteredResults.sessions.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
                   Séances · {filteredResults.sessions.length} résultat{filteredResults.sessions.length > 1 ? "s" : ""}
                 </p>
                 <div className="flex flex-col gap-2">
                   {filteredResults.sessions.map((s) => {
-                    const catColors: Record<string, string> = { force: "#A78BFA", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C" };
-                    const accent = s.accent || catColors[s.category] || "#A78BFA";
-                    const diffColor: Record<string, string> = { "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "#A78BFA" };
+                    const catColors: Record<string, string> = { force: "var(--accent)", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C" };
+                    const accent = s.accent || catColors[s.category] || "var(--accent)";
+                    const diffColor: Record<string, string> = { "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "var(--accent)" };
                     return (
                       <motion.div
                         key={s.id}
@@ -5167,14 +5167,14 @@ function CommunautePageInner() {
                             <Dumbbell size={15} strokeWidth={1.5} style={{ color: accent }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{s.title}</p>
+                            <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{s.duration} min</span>
+                              <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{s.duration} min</span>
                               <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
-                              <span className="text-[10px] font-medium" style={{ color: diffColor[s.difficulty] ?? "#A0AEC0" }}>{s.difficulty}</span>
+                              <span className="text-[10px] font-medium" style={{ color: diffColor[s.difficulty] ?? "var(--text-3)" }}>{s.difficulty}</span>
                               {s.muscles?.[0] && <>
                                 <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
-                                <span className="text-[10px] font-light truncate" style={{ color: "#A0AEC0" }}>{s.muscles.slice(0, 2).join(" · ")}</span>
+                                <span className="text-[10px] font-light truncate" style={{ color: "var(--text-3)" }}>{s.muscles.slice(0, 2).join(" · ")}</span>
                               </>}
                             </div>
                           </div>
@@ -5195,10 +5195,10 @@ function CommunautePageInner() {
             {/* Sessions empty state when filter = séances */}
             {!searchLoading && searchFilter === "seances" && search.trim() && filteredResults.sessions.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                   Aucune séance publique pour « {search} »
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: "#A0AEC0" }}>
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
                   Les créateurs peuvent publier leurs séances depuis leur bibliothèque
                 </p>
               </div>
@@ -5207,7 +5207,7 @@ function CommunautePageInner() {
             {/* ── Hashtag posts ── */}
             {!searchLoading && filteredResults.hashtagPosts.length > 0 && (
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "#A78BFA" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--accent)" }}>
                   Posts · {filteredResults.hashtagPosts.length} résultat{filteredResults.hashtagPosts.length > 1 ? "s" : ""}
                 </p>
                 <div className="flex flex-col gap-2">
@@ -5223,7 +5223,7 @@ function CommunautePageInner() {
                       >
                         <div
                           className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-semibold overflow-hidden mt-0.5"
-                          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+                          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
                         >
                           {avatar
                             // eslint-disable-next-line @next/next/no-img-element
@@ -5231,11 +5231,11 @@ function CommunautePageInner() {
                             : pseudo[0]?.toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold" style={{ color: "#A78BFA" }}>@{pseudo}</p>
-                          <p className="text-xs font-light line-clamp-2 mt-0.5" style={{ color: "#2D3748" }}>{p.caption || p.description}</p>
+                          <p className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>@{pseudo}</p>
+                          <p className="text-xs font-light line-clamp-2 mt-0.5" style={{ color: "var(--text-1)" }}>{p.caption || p.description}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{p.post_likes.length} ❤️</span>
-                            <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{p.post_comments.length} 💬</span>
+                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{p.post_likes.length} ❤️</span>
+                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{p.post_comments.length} 💬</span>
                           </div>
                         </div>
                       </motion.button>
@@ -5247,7 +5247,7 @@ function CommunautePageInner() {
 
             {!searchLoading && search.trim() && filteredResults.realProfiles.length === 0 && filteredResults.sessions.length === 0 && filteredResults.hashtagPosts.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                   Aucun résultat pour « {search} »
                 </p>
               </div>
@@ -5266,23 +5266,23 @@ function CommunautePageInner() {
           >
             {/* En-tête : "Messages" + bouton nouveau DM */}
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Messages</p>
+              <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Messages</p>
               <motion.button
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowNewDM(true)}
                 className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 2px 8px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
                 aria-label="Nouveau message"
               >
-                <Plus size={14} strokeWidth={2.5} style={{ color: "#2D3748" }} />
+                <Plus size={14} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
               </motion.button>
             </div>
             {dmsLoading ? (
               <div className="flex justify-center py-12">
                 <motion.div
                   className="w-5 h-5 rounded-full border-2"
-                  style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                  style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                 />
@@ -5291,11 +5291,11 @@ function CommunautePageInner() {
               <div className="text-center py-16 flex flex-col items-center gap-3">
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.8) 0%, rgba(var(--tint-cream-rgb),0.8) 100%)" }}
                 >
-                  <Send size={20} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                  <Send size={20} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
                 </div>
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune conversation</p>
+                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune conversation</p>
                 <p className="text-xs font-light" style={{ color: "#C4C9D4" }}>
                   Envoie un message à quelqu'un depuis son profil
                 </p>
@@ -5312,19 +5312,19 @@ function CommunautePageInner() {
                   <ProfileAvatar partner={conv.partner} size={48} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>
                         {conv.partner.full_name ?? conv.partner.pseudo}
                       </p>
-                      <span className="text-[10px] flex-shrink-0" style={{ color: "#A0AEC0" }}>{conv.lastMessageTime}</span>
+                      <span className="text-[10px] flex-shrink-0" style={{ color: "var(--text-3)" }}>{conv.lastMessageTime}</span>
                     </div>
-                    <p className="text-xs font-light truncate mt-0.5" style={{ color: conv.unreadCount > 0 ? "#2D3748" : "#A0AEC0" }}>
+                    <p className="text-xs font-light truncate mt-0.5" style={{ color: conv.unreadCount > 0 ? "var(--text-1)" : "var(--text-3)" }}>
                       {conv.lastMessage}
                     </p>
                   </div>
                   {conv.unreadCount > 0 && (
                     <div
                       className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)", color: "#FFFFFF", boxShadow: "0 2px 8px rgba(167,139,250,0.4)" }}
+                      style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#FFFFFF", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.4)" }}
                     >
                       {conv.unreadCount}
                     </div>
@@ -5352,7 +5352,7 @@ function CommunautePageInner() {
                 {dmMessages.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 gap-2">
                     <ProfileAvatar partner={activeDMPartner} size={48} />
-                    <p className="text-sm font-light mt-1" style={{ color: "#A0AEC0" }}>
+                    <p className="text-sm font-light mt-1" style={{ color: "var(--text-3)" }}>
                       Début de la conversation avec @{activeDMPartner.pseudo}
                     </p>
                   </div>
@@ -5388,7 +5388,7 @@ function CommunautePageInner() {
                               exit={{ opacity: 0, scale: 0.85, y: 6 }}
                               transition={{ type: "spring", bounce: 0.3, duration: 0.2 }}
                               className={`absolute z-50 flex items-center gap-1 px-2 py-1.5 rounded-2xl ${isMe ? "right-0" : "left-0"}`}
-                              style={{ bottom: "calc(100% + 6px)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", boxShadow: "0 4px 24px rgba(0,0,0,0.12)", border: "1px solid rgba(240,235,255,0.8)" }}
+                              style={{ bottom: "calc(100% + 6px)", background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(20px)", boxShadow: "0 4px 24px rgba(0,0,0,0.12)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {DM_EMOJIS.map(emoji => (
@@ -5398,7 +5398,7 @@ function CommunautePageInner() {
                                   whileTap={{ scale: 0.9 }}
                                   onClick={() => handleDmReaction(msg.id, emoji)}
                                   className="text-lg leading-none p-1 rounded-lg cursor-pointer"
-                                  style={{ background: msg.reactions?.find(r => r.emoji === emoji)?.reacted ? "rgba(167,139,250,0.15)" : "transparent" }}
+                                  style={{ background: msg.reactions?.find(r => r.emoji === emoji)?.reacted ? "rgba(var(--accent-rgb),0.15)" : "transparent" }}
                                 >
                                   {emoji}
                                 </motion.button>
@@ -5410,7 +5410,7 @@ function CommunautePageInner() {
                                 whileTap={{ scale: 0.9 }}
                                 onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); setActiveMessageMenu(null); setTimeout(() => dmInputRef.current?.focus(), 50); }}
                                 className="p-1 rounded-lg cursor-pointer text-xs"
-                                style={{ color: "#A78BFA", fontWeight: 600 }}
+                                style={{ color: "var(--accent)", fontWeight: 600 }}
                               >
                                 ↩
                               </motion.button>
@@ -5428,7 +5428,7 @@ function CommunautePageInner() {
                           {msg.reply_to_content && (
                             <div
                               className="mb-1 px-3 py-1.5 rounded-xl text-xs truncate max-w-[220px]"
-                              style={{ background: isMe ? "rgba(255,255,255,0.35)" : "rgba(167,139,250,0.1)", borderLeft: "2px solid #A78BFA", color: "#718096" }}
+                              style={{ background: isMe ? "rgba(var(--surface-rgb),0.35)" : "rgba(var(--accent-rgb),0.1)", borderLeft: "2px solid var(--accent)", color: "var(--text-2)" }}
                             >
                               {msg.reply_to_content.slice(0, 60)}{msg.reply_to_content.length > 60 ? "…" : ""}
                             </div>
@@ -5436,8 +5436,8 @@ function CommunautePageInner() {
                           <div
                             className="rounded-2xl text-sm font-light max-w-[260px] overflow-hidden"
                             style={isMe
-                              ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                              : { background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.7)", color: "#2D3748", borderBottomLeftRadius: 6 }
+                              ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                              : { background: "rgba(var(--surface-rgb),0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.7)", color: "var(--text-1)", borderBottomLeftRadius: 6 }
                             }
                           >
                             {/* Mini-carte si le message contient un post partagé */}
@@ -5478,7 +5478,7 @@ function CommunautePageInner() {
                                 {/* Caption — affiché UNE seule fois depuis shared_post */}
                                 {msg.shared_post.caption && (
                                   <div className="px-3 py-2">
-                                    <p className="text-xs font-light line-clamp-2" style={{ color: "#2D3748" }}>
+                                    <p className="text-xs font-light line-clamp-2" style={{ color: "var(--text-1)" }}>
                                       {msg.shared_post.caption}
                                     </p>
                                   </div>
@@ -5499,21 +5499,21 @@ function CommunautePageInner() {
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => handleDmReaction(msg.id, r.emoji)}
                                 className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs cursor-pointer"
-                                style={{ background: r.reacted ? "rgba(167,139,250,0.2)" : "rgba(0,0,0,0.05)", border: r.reacted ? "1px solid rgba(167,139,250,0.4)" : "1px solid transparent", color: "#4A5568" }}
+                                style={{ background: r.reacted ? "rgba(var(--accent-rgb),0.2)" : "rgba(0,0,0,0.05)", border: r.reacted ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid transparent", color: "var(--text-body)" }}
                               >
                                 <span>{r.emoji}</span>
-                                {r.count > 1 && <span style={{ fontSize: 10, color: "#718096" }}>{r.count}</span>}
+                                {r.count > 1 && <span style={{ fontSize: 10, color: "var(--text-2)" }}>{r.count}</span>}
                               </motion.button>
                             ))}
                           </div>
                         )}
 
                         <div className={`flex items-center gap-0.5 mt-1 ${isMe ? "justify-end" : ""}`}>
-                          <span className="text-[9px]" style={{ color: "#A0AEC0" }}>{timeStr}</span>
+                          <span className="text-[9px]" style={{ color: "var(--text-3)" }}>{timeStr}</span>
                           {isMe && (
                             <span
                               className="text-[9px] font-bold"
-                              style={{ color: msg.read_at ? "#A78BFA" : "#C4C9D4", lineHeight: 1 }}
+                              style={{ color: msg.read_at ? "var(--accent)" : "#C4C9D4", lineHeight: 1 }}
                               title={msg.read_at ? "Lu" : "Envoyé"}
                             >
                               {msg.read_at ? "✓✓" : "✓"}
@@ -5535,17 +5535,17 @@ function CommunautePageInner() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl mb-2"
-                    style={{ background: "rgba(167,139,250,0.08)", borderLeft: "3px solid #A78BFA" }}
+                    style={{ background: "rgba(var(--accent-rgb),0.08)", borderLeft: "3px solid var(--accent)" }}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>
+                      <p className="text-[10px] font-semibold" style={{ color: "var(--accent)" }}>
                         {replyingTo.sender_id === user?.id ? "Toi" : `@${activeDMPartner.pseudo}`}
                       </p>
-                      <p className="text-xs font-light truncate" style={{ color: "#718096" }}>
+                      <p className="text-xs font-light truncate" style={{ color: "var(--text-2)" }}>
                         {replyingTo.content.slice(0, 60)}{replyingTo.content.length > 60 ? "…" : ""}
                       </p>
                     </div>
-                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => setReplyingTo(null)} className="flex-shrink-0 cursor-pointer" style={{ color: "#A0AEC0" }}>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => setReplyingTo(null)} className="flex-shrink-0 cursor-pointer" style={{ color: "var(--text-3)" }}>
                       <X size={14} />
                     </motion.button>
                   </motion.div>
@@ -5560,8 +5560,8 @@ function CommunautePageInner() {
                   onChange={(e) => setDmInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSendDM(); }}
                   placeholder="Message…"
-                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0] px-2"
-                  style={{ color: "#2D3748" }}
+                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)] px-2"
+                  style={{ color: "var(--text-1)" }}
                 />
                 <motion.button
                   whileHover={{ scale: dmInput.trim() ? 1.08 : 1 }}
@@ -5570,12 +5570,12 @@ function CommunautePageInner() {
                   disabled={dmSending}
                   className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200"
                   style={{
-                    background: dmInput.trim() ? "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" : "rgba(240,235,255,0.5)",
-                    boxShadow: dmInput.trim() ? "inset 0 1px 0 rgba(255,255,255,0.8)" : "none",
+                    background: dmInput.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.5)",
+                    boxShadow: dmInput.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
                   }}
                   aria-label="Envoyer"
                 >
-                  <Send size={13} strokeWidth={2} style={{ color: dmInput.trim() ? "#2D3748" : "#A0AEC0" }} />
+                  <Send size={13} strokeWidth={2} style={{ color: dmInput.trim() ? "var(--text-1)" : "var(--text-3)" }} />
                 </motion.button>
               </div>
             </motion.div>
@@ -5676,22 +5676,22 @@ function CommunautePageInner() {
               transition={{ type: "spring", bounce: 0.25 }}
               className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 flex flex-col gap-4"
               style={{
-                background: "rgba(255,255,255,0.97)",
-                boxShadow: "0 -8px 40px rgba(167,139,250,0.25)",
-                border: "1px solid rgba(255,255,255,0.9)",
+                background: "rgba(var(--surface-rgb),0.97)",
+                boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.25)",
+                border: "1px solid rgba(var(--surface-rgb),0.9)",
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-black" style={{ color: "#2D3748" }}>Modifier le post</h3>
+                <h3 className="text-base font-black" style={{ color: "var(--text-1)" }}>Modifier le post</h3>
                 <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingPost(null)}>
-                  <X size={18} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                  <X size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
               </div>
 
               {/* Titre */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Titre</label>
+                <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Titre</label>
                 <input
                   type="text"
                   value={editingPost.caption}
@@ -5699,9 +5699,9 @@ function CommunautePageInner() {
                   maxLength={200}
                   className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
                   style={{
-                    background: "rgba(240,235,255,0.5)",
-                    border: "1px solid rgba(212,192,255,0.6)",
-                    color: "#2D3748",
+                    background: "rgba(var(--tint-violet-rgb),0.5)",
+                    border: "1px solid rgba(var(--violet-mid-rgb),0.6)",
+                    color: "var(--text-1)",
                   }}
                   placeholder="Titre du post..."
                   autoFocus
@@ -5710,7 +5710,7 @@ function CommunautePageInner() {
 
               {/* Bio / description */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Bio</label>
+                <label className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Bio</label>
                 <textarea
                   value={editingPost.bio ?? ""}
                   onChange={(e) => setEditingPost((p) => p ? { ...p, bio: e.target.value } : p)}
@@ -5718,9 +5718,9 @@ function CommunautePageInner() {
                   maxLength={500}
                   className="w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none leading-relaxed"
                   style={{
-                    background: "rgba(240,235,255,0.5)",
-                    border: "1px solid rgba(212,192,255,0.6)",
-                    color: "#2D3748",
+                    background: "rgba(var(--tint-violet-rgb),0.5)",
+                    border: "1px solid rgba(var(--violet-mid-rgb),0.6)",
+                    color: "var(--text-1)",
                   }}
                   placeholder="Description du post..."
                 />
@@ -5762,9 +5762,9 @@ function CommunautePageInner() {
                 }}
                 className="w-full py-3 rounded-2xl text-sm font-bold"
                 style={{
-                  background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                  background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
                   color: "#3D2F6B",
-                  boxShadow: "0 4px 16px rgba(167,139,250,0.3)",
+                  boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.3)",
                 }}
               >
                 Sauvegarder
@@ -5781,15 +5781,15 @@ function CommunautePageInner() {
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
-              background: "rgba(255,255,255,0.9)",
+              background: "rgba(var(--surface-rgb),0.9)",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(240,235,255,0.9)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
-              color: "#2D3748",
+              border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
+              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+              color: "var(--text-1)",
               whiteSpace: "nowrap",
             }}
           >
-            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
+            <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
             <span className="text-sm font-medium">{toast}</span>
           </motion.div>
         )}
