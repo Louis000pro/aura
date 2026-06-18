@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import Groq from "groq-sdk";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
-import { buildMemoryPrompt, MEMORY_PROTOCOL_PROMPT, type AiMemory } from "@/lib/aiMemory";
+import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
 
 const groq = new Groq({ apiKey: process.env.COACH_AURA_KEY ?? "placeholder" });
 
@@ -200,7 +200,7 @@ ${lieu === "salle"
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
 [LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
 
-${memoryEnabled ? `${MEMORY_PROTOCOL_PROMPT}\n\n` : ""}${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `

@@ -20,7 +20,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
-import { parseMemoryTags, normalizeForDedupe, stripMemoryTags, type AiMemory } from "@/lib/aiMemory";
+import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
+
+type MemoryAction =
+  | { type: "save"; category?: string; fact?: string }
+  | { type: "forget"; keywords?: string }
+  | { type: "none" };
 
 export type AssistantMsg = {
   role: "user" | "assistant";
@@ -208,42 +213,39 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     memoriesRef.current = (memoriesRes.data ?? []) as AiMemory[];
   }, [user?.id, user?.pseudo]);
 
-  /* ── Mémoire long terme : applique les tags [MEMOIRE]/[OUBLI] émis par le modèle ── */
-  const applyMemoryTags = useCallback(async (raw: string, userText: string) => {
+  /* ── Mémoire long terme : persiste une action d'extraction (save / forget) ── */
+  const persistMemoryAction = useCallback(async (action: MemoryAction) => {
     if (!user?.id) return;
-    const { saves, forgets } = parseMemoryTags(raw);
-    if (saves.length === 0 && forgets.length === 0) return;
     const supabase = createClient();
 
-    // Oubli : supprime les mémoires correspondant aux mots-clés
-    for (const kw of forgets) {
-      const nk = normalizeForDedupe(kw);
-      if (!nk) continue;
+    if (action.type === "forget" && action.keywords) {
+      const nk = normalizeForDedupe(action.keywords);
+      if (!nk) return;
       const targets = memoriesRef.current.filter((mm) => {
         const c = normalizeForDedupe(mm.content);
         return c.includes(nk) || nk.includes(c);
       });
-      if (targets.length === 0) continue;
+      if (targets.length === 0) return;
       const ids = targets.map((t) => t.id);
       await supabase.from("ai_memories").delete().in("id", ids);
       const idSet = new Set(ids);
       memoriesRef.current = memoriesRef.current.filter((mm) => !idSet.has(mm.id));
       setMemoryNotice("C'est noté, j'oublie ça.");
+      return;
     }
 
-    // Enregistrement : insère les nouveaux faits durables (dédupliqués)
-    const explicit = /\b(retiens|souviens|rappelle|n'oublie|note que|garde en m[ée]moire)\b/i.test(userText);
-    for (const s of saves) {
-      const ns = normalizeForDedupe(s.content);
-      if (!ns) continue;
+    if (action.type === "save" && action.fact) {
+      const content = String(action.fact).trim();
+      const ns = normalizeForDedupe(content);
+      if (!ns) return;
       const dup = memoriesRef.current.some((mm) => {
         const c = normalizeForDedupe(mm.content);
         return c === ns || c.includes(ns) || ns.includes(c);
       });
-      if (dup) continue;
+      if (dup) return;
       const { data, error } = await supabase
         .from("ai_memories")
-        .insert({ user_id: user.id, content: s.content, category: s.category, source: explicit ? "user" : "auto" })
+        .insert({ user_id: user.id, content, category: normalizeCategory(action.category), source: "auto" })
         .select("id, content, category, source, created_at")
         .single();
       if (!error && data) {
@@ -252,6 +254,23 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [user?.id]);
+
+  /* ── Extraction dédiée : un petit modèle décide s'il y a un fait durable à retenir ── */
+  const extractMemory = useCallback(async (text: string, context: string) => {
+    if (!user?.id || !text.trim()) return;
+    try {
+      const res = await fetch("/api/memory-extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, context }),
+      });
+      if (!res.ok) return;
+      const action = (await res.json()) as MemoryAction;
+      if (action && (action.type === "save" || action.type === "forget")) {
+        await persistMemoryAction(action);
+      }
+    } catch { /* silencieux — la mémoire est best-effort */ }
+  }, [user?.id, persistMemoryAction]);
 
   /* ── Envoi d'un message ── */
   const sendMessage = useCallback(async (text: string) => {
@@ -280,6 +299,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
     }
+
+    // Capture mémoire (auto + explicite) via l'extracteur dédié, en parallèle du chat
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
+    void extractMemory(trimmed, lastAssistant);
 
     const history = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
 
@@ -330,9 +353,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const route = resolveNavTarget(navMatch[1]);
         if (route && route !== pathname) setTimeout(() => router.push(route), 700);
       }
-
-      // Mémoire long terme : applique [MEMOIRE]/[OUBLI] émis par le modèle
-      void applyMemoryTags(accumulated, trimmed);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
       setMessages((prev) => prev.map((m) => m.id === assistantId
@@ -341,7 +361,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, applyMemoryTags]);
+  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
