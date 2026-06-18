@@ -262,54 +262,52 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id]);
 
-  /* ── Extraction dédiée : un petit modèle décide s'il y a un fait durable à retenir ── */
-  const extractMemory = useCallback(async (text: string, context: string) => {
+  /* ── Analyse unifiée : UN seul appel 8b décide s'il y a un fait à retenir
+     ET/OU une action (créer une séance) → moitié moins d'appels Groq ── */
+  const analyzeMessage = useCallback(async (text: string, context: string) => {
     if (!user?.id || !text.trim()) return;
+
+    let parsed: {
+      memory?: MemoryAction;
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string };
+    } | null = null;
     try {
-      const res = await fetch("/api/memory-extract", {
+      const res = await fetch("/api/assistant/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, context }),
       });
       if (!res.ok) return;
-      const action = (await res.json()) as MemoryAction;
-      if (action && (action.type === "save" || action.type === "forget")) {
-        await persistMemoryAction(action);
-      }
-    } catch { /* silencieux — la mémoire est best-effort */ }
-  }, [user?.id, persistMemoryAction]);
+      parsed = await res.json();
+    } catch { return; }
+    if (!parsed) return;
 
-  /* ── Action : détecte « créer une séance », génère, et prépare la carte de confirmation ── */
-  const detectAndPrepareAction = useCallback(async (text: string, context: string) => {
-    if (!user?.id || !text.trim()) return;
-    let detectedCreate = false;
+    // 1) Mémoire (best-effort, silencieux)
+    const mem = parsed.memory;
+    if (mem && (mem.type === "save" || mem.type === "forget")) {
+      void persistMemoryAction(mem);
+    }
+
+    // 2) Action : créer une séance → génération + carte de confirmation
+    const action = parsed.action;
+    if (!action || action.intent !== "create_seance") return;
+
+    setActionLoading(true);
+    setPendingSeance(null);
     try {
-      const res = await fetch("/api/assistant/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, context }),
-      });
-      if (!res.ok) return;
-      const det = await res.json();
-      if (!det || det.intent !== "create_seance") return;
-
-      detectedCreate = true;
-      setActionLoading(true);
-      setPendingSeance(null);
-
-      const category = normalizeWorkoutCategory(det.category);
-      const difficulty = det.difficulty
-        ? normalizeDifficulty(det.difficulty)
+      const category = normalizeWorkoutCategory(action.category);
+      const difficulty = action.difficulty
+        ? normalizeDifficulty(action.difficulty)
         : levelToDifficulty(userContextRef.current?.level);
-      const muscles: string[] = Array.isArray(det.muscles)
-        ? det.muscles.filter((m: unknown): m is string => typeof m === "string")
+      const muscles: string[] = Array.isArray(action.muscles)
+        ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
         : [];
 
       // Lieu d'entraînement mémorisé par le chat → adapte les exercices
       let lieu: string | null = null;
       try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
       const lieuTxt = lieu === "maison" ? " à la maison" : lieu === "salle" ? " en salle de sport" : "";
-      const description = `${det.description || text}${lieuTxt}`.slice(0, 400);
+      const description = `${action.description || text}${lieuTxt}`.slice(0, 400);
 
       const genRes = await fetch("/api/workout/generate", {
         method: "POST",
@@ -328,18 +326,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         rawExercises: Array.isArray(data.exercises) ? data.exercises : [],
       }));
     } catch {
-      // Échec : on le DIT à l'utilisateur (plus de silence) si on avait bien détecté une création
-      if (detectedCreate) {
-        setMessages((prev) => [...prev, {
-          role: "assistant" as const,
-          content: "Hmm, je n'arrive pas à préparer ta séance à l'instant 😕 — réessaie dans quelques secondes !",
-          id: uid(),
-        }]);
-      }
+      // Échec de génération : on le DIT (plus de silence)
+      setMessages((prev) => [...prev, {
+        role: "assistant" as const,
+        content: "Hmm, je n'arrive pas à préparer ta séance à l'instant 😕 — réessaie dans quelques secondes !",
+        id: uid(),
+      }]);
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, persistMemoryAction]);
 
   /* ── Envoi d'un message ── */
   const sendMessage = useCallback(async (text: string) => {
@@ -369,10 +365,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
     }
 
-    // Capture mémoire + détection d'action, en parallèle du chat
+    // Analyse (mémoire + action) en UN appel, en parallèle du chat
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
-    void extractMemory(trimmed, lastAssistant);
-    void detectAndPrepareAction(trimmed, lastAssistant);
+    void analyzeMessage(trimmed, lastAssistant);
 
     const history = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
 
@@ -431,7 +426,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, detectAndPrepareAction]);
+  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, analyzeMessage]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {

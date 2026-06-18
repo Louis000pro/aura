@@ -2,7 +2,7 @@
    assistantActions — actions structurées de l'assistant (v2).
 
    Pour l'instant : créer une séance. L'assistant détecte l'intention
-   (via /api/assistant/action), génère la séance (via /api/workout/generate),
+   (via /api/assistant/analyze), génère la séance (via /api/workout/generate),
    l'assemble au format `custom_sessions`, et l'utilisateur la valide via
    une carte de confirmation avant insertion. Aucune écriture sans clic.
 
