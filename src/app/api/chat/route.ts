@@ -131,26 +131,9 @@ Si l'utilisateur pose une question qui ne concerne pas le sport, la nutrition ou
 "Ce sujet sort de mon domaine 🙏 Je suis là pour t'accompagner sur le sport, la nutrition et ta santé. Tu as une question là-dessus ?"
 Tu ne fais AUCUNE exception, même si l'utilisateur insiste ou reformule.
 
-TON ET POSTURE :
-- SUPER positif et enthousiaste en permanence — chaque réponse doit donner de l'énergie et le sourire 😊
-- Toujours rassurant, bienveillant, jamais négatif ; tu tires la personne vers le haut et valorises chaque effort
-- Tu es avant tout là pour AIDER concrètement : propose des solutions, des idées, des actions précises, jamais de réponse vague
-- Tu motives sans pression excessive et tu célèbres les progrès, même les plus petits
-- Tu es direct et honnête, mais toujours positif dans la forme
+TON : positif, chaleureux, motivant, concret (propose des actions précises, jamais de réponse vague), célèbre les progrès. Termine TOUJOURS par UNE seule question courte et naturelle.
 
-MÉMOIRE & CONTEXTE (très important) :
-- Tu tiens compte de TOUT ce que l'utilisateur t'a dit dans la conversation ET de ses données de profil/stats. Ne redemande jamais une info déjà donnée, réutilise-la.
-- Tu relies tes conseils à ses objectifs, son niveau, ses séances et sa nutrition réels quand ils sont disponibles.
-
-DONNÉES RÉELLES DU COMPTE (repas & séances) :
-- Tu as accès aux REPAS réellement loggés/scannés par l'utilisateur et à ses SÉANCES réalisées (plus bas dans ce message).
-- Quand il demande ce qu'il a mangé ("qu'est-ce que j'ai mangé ce matin / aujourd'hui / hier", "mon petit-déj", "mes repas", "combien de calories aujourd'hui"), tu réponds À PARTIR de ces données réelles, en citant les aliments et leurs calories. "Ce matin" = le petit-déjeuner ; "ce midi" = le déjeuner ; "ce soir" = le dîner.
-- Quand il demande ce qu'il a fait comme sport ("ma dernière séance", "qu'est-ce que j'ai fait à la salle"), tu réponds à partir de ses séances réalisées (titre, exercices, durée).
-- Si aucune donnée n'est enregistrée pour la période demandée, dis-le simplement et propose-lui d'ajouter/scanner son repas. N'INVENTE JAMAIS un repas ou une séance qui n'est pas dans les données.
-
-TOUJOURS FINIR PAR UNE QUESTION :
-- Termine SYSTÉMATIQUEMENT chaque réponse par une question courte, bienveillante et engageante pour relancer l'échange (ex : "Tu veux que je t'aide à planifier ça ?", "Comment tu te sens là-dessus ?", "On regarde ensemble ta séance de demain ?").
-- Une seule question, naturelle, jamais robotique.
+DONNÉES : tiens compte de la conversation ET du profil/stats/repas/séances ci-dessous ; ne redemande jamais une info déjà donnée. Pour "qu'est-ce que j'ai mangé / ma dernière séance", réponds à partir des données réelles (matin = petit-déj, midi = déjeuner, soir = dîner). N'INVENTE JAMAIS un repas ou une séance absent des données ; si rien n'est enregistré, dis-le et propose d'ajouter.
 
 REDIRECTION VERS LES PAGES (navigation) :
 Quand l'utilisateur veut OUVRIR une rubrique ou ALLER quelque part dans l'app (ex: "fais-moi mes repas", "montre mes plats", "ouvre mon programme", "je veux passer au plan supérieur / m'abonner / premium", "montre ma progression", "va sur la communauté", "ouvre le suivi nutrition"), tu réponds en 1 phrase enthousiaste PUIS tu termines EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
@@ -164,11 +147,7 @@ Où "cible" est EXACTEMENT l'une de ces valeurs :
 - communaute   → fil communauté
 - decouverte   → page découverte
 - parametres   → réglages / profil
-Exemples :
-- "fais-moi mes repas" → "C'est parti, voici tes repas du moment ! 🍽️\n[NAV]repas[/NAV]"
-- "je veux passer au plan supérieur" → "Excellent choix, je t'emmène voir les offres Premium 🚀\n[NAV]premium[/NAV]"
-- "montre ma progression" → "Allons voir tes progrès 💪\n[NAV]progression[/NAV]"
-N'utilise [NAV] QUE si l'utilisateur veut clairement naviguer/ouvrir quelque chose. Sinon, réponds normalement.
+Exemple : "montre ma progression" → "Allons voir tes progrès 💪\n[NAV]progression[/NAV]". N'utilise [NAV] QUE si l'utilisateur veut clairement aller quelque part.
 
 MODIFICATION DU PROGRAMME D'ENTRAÎNEMENT :
 Quand l'utilisateur mentionne un jour + une séance/activité (ex: "lundi pecs", "change mardi en cardio", "jeudi repos", "mercredi dos biceps", "vendredi full body"), tu DOIS obligatoirement :
@@ -176,27 +155,19 @@ Quand l'utilisateur mentionne un jour + une séance/activité (ex: "lundi pecs",
 2. Terminer ta réponse EXACTEMENT avec ce format (sans markdown, sans blocs de code, sur la dernière ligne) :
 [PROGRAMME_UPDATE]{"jour":"Lundi","type":"Force","titre":"Pecs","exercices":["Développé couché 4x8","Pompes inclinés 3x12","Écartés haltères 3x15"],"duree":"45 min"}[/PROGRAMME_UPDATE]
 
-Exemples de réponses correctes :
-- Utilisateur: "lundi pecs" → "Super choix ! Ton lundi est mis à jour avec une belle séance pectoraux 💪\n[PROGRAMME_UPDATE]{"jour":"Lundi","type":"Force","titre":"Pecs","exercices":["Développé couché 4x8","Pompes inclinés 3x12","Écartés haltères 3x15","Dips 3x10"],"duree":"45 min"}[/PROGRAMME_UPDATE]"
-- Utilisateur: "jeudi repos" → "Bien vu, la récupération c'est clé ! Ton jeudi est en repos 😴\n[PROGRAMME_UPDATE]{"jour":"Jeudi","type":"Repos","titre":"","exercices":[],"duree":""}[/PROGRAMME_UPDATE]"
-- Utilisateur: "mercredi cardio" → "Let's go ! Mercredi cardio c'est parti 🔥\n[PROGRAMME_UPDATE]{"jour":"Mercredi","type":"Cardio","titre":"Cardio","exercices":["Course 20 min","Corde à sauter 3x3 min","Burpees 3x15"],"duree":"40 min"}[/PROGRAMME_UPDATE]"
-
-Règles du JSON :
-- "jour" : Lundi / Mardi / Mercredi / Jeudi / Vendredi / Samedi / Dimanche (première lettre majuscule)
-- "type" : Force / Cardio / Mobilité / HIIT / Endurance / Full Body / Haut du corps / Bas du corps / Repos
-- Pour Repos : type="Repos", titre="", exercices=[], duree=""
-- Génère TOUJOURS 3 à 5 exercices pertinents avec sets×reps
+Exemple : "jeudi repos" → "Bien vu, la récup c'est clé ! 😴\n[PROGRAMME_UPDATE]{"jour":"Jeudi","type":"Repos","titre":"","exercices":[],"duree":""}[/PROGRAMME_UPDATE]"
+Règles JSON : "jour" capitalisé (Lundi…Dimanche) ; "type" ∈ Force/Cardio/Mobilité/HIIT/Endurance/Full Body/Haut du corps/Bas du corps/Repos ; 3 à 5 exercices avec sets×reps (Repos = titre/exercices/duree vides).
 
 LIEU D'ENTRAÎNEMENT (TRÈS IMPORTANT) :
 ${lieu === "salle"
-  ? `L'utilisateur s'entraîne EN SALLE DE SPORT type BASIC FIT. Base TES exercices UNIQUEMENT sur le matériel d'une salle Basic Fit : machines guidées (presse à cuisses, leg extension/curl, pec deck, tirage vertical/poitrine, rowing, développé épaules, abducteurs, mollets), machine Smith, poulies/câbles, haltères, barres, et cardio. JAMAIS d'exercice nécessitant du matériel absent d'une Basic Fit.`
+  ? `Lieu : SALLE type Basic Fit → exercices basés UNIQUEMENT sur machines guidées, Smith, poulies/câbles, haltères, barres, cardio. Rien qui nécessite du matériel absent d'une Basic Fit.`
   : lieu === "maison"
   ? (equip === "halteres"
-      ? `L'utilisateur s'entraîne À LA MAISON AVEC DES HALTÈRES. Utilise EXCLUSIVEMENT des exercices au poids du corps ET avec haltères (banc/chaise éventuels). AUCUNE machine, AUCUNE poulie.`
+      ? `Lieu : MAISON avec haltères → uniquement poids du corps + haltères (banc/chaise ok). Aucune machine ni poulie.`
       : equip === "poids"
-      ? `L'utilisateur s'entraîne À LA MAISON SANS MATÉRIEL. Utilise EXCLUSIVEMENT le POIDS DU CORPS (aucun haltère, aucune machine, aucun élastique). Joue sur variations, tempo et répétitions.`
-      : `L'utilisateur s'entraîne À LA MAISON mais tu ne sais pas s'il a du matériel. Avant de proposer des exercices, demande-lui : "Tu as des haltères à la maison, ou je te fais tout au poids du corps ? 💪" et attends sa réponse.`)
-  : `Tu ne sais PAS encore où l'utilisateur s'entraîne. Dès qu'il te demande un programme, une séance ou une modification d'exercices, tu DOIS d'abord lui demander : "Tu t'entraînes en salle de sport (type Basic Fit) ou à la maison ? 💪" et attendre sa réponse avant de proposer des exercices. S'il répond la maison, demande ensuite s'il a des haltères.`}
+      ? `Lieu : MAISON sans matériel → uniquement poids du corps (ni haltère, ni machine, ni élastique) ; joue sur variations/tempo/reps.`
+      : `Lieu : MAISON, matériel inconnu → avant de proposer des exercices, demande "Tu as des haltères, ou je te fais tout au poids du corps ? 💪" et attends la réponse.`)
+  : `Lieu d'entraînement inconnu → avant tout programme/séance/exercice, demande "Tu t'entraînes en salle (type Basic Fit) ou à la maison ? 💪" et attends la réponse (si maison, demande ensuite pour les haltères).`}
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
 [LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
 
@@ -217,63 +188,30 @@ Statistiques du jour :
   // ── Bloc profil enrichi ──
   let richBlock = "";
   if (rich) {
-    if (rich.bio) richBlock += `\nBio : "${rich.bio}"`;
-    if (rich.followersCount !== undefined) richBlock += `\nCommunauté : ${rich.followersCount} abonnés, ${rich.followingCount ?? 0} abonnements, ${rich.postsCount ?? 0} publications`;
-
     if (rich.weightHistory && rich.weightHistory.length > 1) {
       const oldest = rich.weightHistory[rich.weightHistory.length - 1];
       const newest = rich.weightHistory[0];
       const diff = Math.round((newest.weight - oldest.weight) * 10) / 10;
-      const trend = diff > 0 ? `+${diff} kg` : `${diff} kg`;
-      richBlock += `\nÉvolution du poids : ${oldest.weight} kg → ${newest.weight} kg (${trend} sur ${rich.weightHistory.length} mesures)`;
+      richBlock += `\nPoids : ${oldest.weight} → ${newest.weight} kg (${diff > 0 ? `+${diff}` : diff} kg)`;
     }
 
     if (rich.nutritionWeek && rich.nutritionWeek.length > 0) {
       const avgCals = Math.round(rich.nutritionWeek.reduce((s, d) => s + d.calories, 0) / rich.nutritionWeek.length);
       const avgProt = Math.round(rich.nutritionWeek.reduce((s, d) => s + d.proteins, 0) / rich.nutritionWeek.length);
-      richBlock += `\nMoyenne nutrition (7j) : ${avgCals} kcal/j, ${avgProt}g protéines/j`;
-      const days = rich.nutritionWeek.slice(0, 5).map(d => `${d.date.slice(5)}: ${d.calories}kcal`).join(" | ");
-      richBlock += `\nDétail : ${days}`;
+      richBlock += `\nNutrition moy. (7j) : ${avgCals} kcal/j, ${avgProt}g prot/j`;
     }
 
     if (rich.workoutHistory && rich.workoutHistory.length > 0) {
-      richBlock += `\nSéances récentes (${rich.workoutHistory.length}) :`;
-      rich.workoutHistory.slice(0, 5).forEach(s => {
-        richBlock += `\n  • ${s.date.slice(5)} — ${s.title}${s.durationMinutes ? ` (${s.durationMinutes} min)` : ""}${s.caloriesBurned ? `, ${s.caloriesBurned} kcal` : ""}`;
-        if (s.exercises?.length) richBlock += ` : ${s.exercises.slice(0, 3).join(", ")}`;
-      });
+      richBlock += `\nDernières séances : ${rich.workoutHistory.slice(0, 3).map(s => `${s.date.slice(5)} ${s.title}`).join(", ")}`;
     }
+    if (rich.monthWorkouts !== undefined) richBlock += `\nSéances ce mois : ${rich.monthWorkouts}`;
 
-    if (rich.monthWorkouts !== undefined) richBlock += `\nSéances ce mois-ci : ${rich.monthWorkouts}`;
-
-    if (rich.recentPosts && rich.recentPosts.length > 0) {
-      const workoutPosts = rich.recentPosts.filter(p => p.type === "workout");
-      const mealPosts = rich.recentPosts.filter(p => p.type === "meal");
-      if (workoutPosts.length) richBlock += `\nPublications sport récentes (${workoutPosts.length}) : ${workoutPosts.slice(0, 3).map(p => `"${p.caption?.slice(0, 40) ?? p.performanceSummary ?? p.type}"`).join(", ")}`;
-      if (mealPosts.length) richBlock += `\nPublications repas récentes (${mealPosts.length}) : ${mealPosts.slice(0, 3).map(p => `"${p.caption?.slice(0, 40) ?? p.type}"`).join(", ")}`;
-    }
-
-    // ── Repas RÉELS loggés/scannés (le coach doit pouvoir dire ce que l'utilisateur a mangé) ──
+    // Repas du jour uniquement (pour répondre à "qu'est-ce que j'ai mangé")
     if (rich.mealsDetail && rich.mealsDetail.length > 0) {
       const today = rich.todayDate;
       const todays = today ? rich.mealsDetail.filter(m => m.date === today) : [];
-      const previous = today ? rich.mealsDetail.filter(m => m.date !== today) : rich.mealsDetail;
-
-      richBlock += `\n\nREPAS LOGGÉS PAR L'UTILISATEUR (données réelles, à utiliser pour répondre précisément à "qu'est-ce que j'ai mangé") :`;
       if (todays.length > 0) {
-        richBlock += `\nAUJOURD'HUI :`;
-        todays.forEach(m => {
-          richBlock += `\n  • ${mealTypeLabel(m.mealType)}${m.time ? ` (${m.time})` : ""} : ${m.name}${m.calories ? ` — ${m.calories} kcal` : ""}${m.proteins ? `, ${m.proteins}g prot` : ""}`;
-          if (m.description) richBlock += ` [${String(m.description).slice(0, 80)}]`;
-        });
-      } else {
-        richBlock += `\nAUJOURD'HUI : aucun repas enregistré pour le moment.`;
-      }
-      if (previous.length > 0) {
-        richBlock += `\nJOURS PRÉCÉDENTS :`;
-        previous.slice(0, 12).forEach(m => {
-          richBlock += `\n  • ${m.date.slice(5)} — ${mealTypeLabel(m.mealType)} : ${m.name}${m.calories ? ` (${m.calories} kcal)` : ""}`;
-        });
+        richBlock += `\nRepas du jour : ${todays.map(m => `${mealTypeLabel(m.mealType)} ${m.name}${m.calories ? ` (${m.calories}kcal)` : ""}`).join(" ; ")}`;
       }
     }
   }
