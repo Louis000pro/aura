@@ -194,7 +194,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       .map(([date, v]) => ({ date, calories: Math.round(v.calories), proteins: Math.round(v.proteins) }));
 
     const mealsDetail = ((nutritionWeekRes.data ?? []) as { date: string; meal_type?: string; food_name?: string; calories?: number; proteins?: number; time?: string; description?: string | null }[])
-      .slice(0, 40)
+      .slice(0, 12)
       .map((m) => ({ date: m.date, mealType: m.meal_type, name: m.food_name ?? "Repas", calories: m.calories, proteins: m.proteins, time: m.time, description: m.date === today ? (m.description ?? null) : null }));
 
     const recentPosts = (postsRes.data ?? []).map((p: { type: string; caption?: string | null; created_at: string }) => ({
@@ -369,7 +369,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
     void analyzeMessage(trimmed, lastAssistant);
 
-    const history = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
+    // On n'envoie que les derniers échanges au modèle (limite la taille de requête
+    // → évite le 413 « request too large » de Groq sur les longues conversations).
+    const history = [...messages, userMsg].slice(-10).map(({ role, content }) => ({ role, content }));
 
     try {
       const abort = new AbortController();

@@ -328,7 +328,7 @@ export async function POST(req: NextRequest) {
   let currentPage: string | null = null;
   let memories: AiMemory[] | null = null;
   let memoryEnabled = false;
-  let maxTokens = 800;
+  let maxTokens = 600;
 
   try {
     const body = await req.json();
