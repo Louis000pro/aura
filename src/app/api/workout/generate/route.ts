@@ -9,10 +9,13 @@ export async function POST(req: Request) {
     const { description, category, difficulty, muscles } = await req.json();
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
-    if (!process.env.GROQ_API_KEY)
-      return NextResponse.json({ error: "GROQ_API_KEY manquante" }, { status: 500 });
+    // GROQ_API_KEY en priorité, sinon COACH_AURA_KEY (celle du chat) — évite
+    // un échec silencieux si une seule des deux clés est configurée.
+    const apiKey = process.env.GROQ_API_KEY ?? process.env.COACH_AURA_KEY;
+    if (!apiKey)
+      return NextResponse.json({ error: "Clé API manquante" }, { status: 500 });
 
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const groq = new Groq({ apiKey });
 
     // Extraire la durée cible si mentionnée dans la description (ex: "20min", "20 minutes")
     const durationMatch = description.match(/(\d+)\s*min/i);

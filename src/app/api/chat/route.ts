@@ -200,7 +200,7 @@ ${lieu === "salle"
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
 [LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
 
-${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${memoryEnabled ? `\n\nACTIONS (création de séance) : Quand l'utilisateur demande de CRÉER / GÉNÉRER / ENREGISTRER une séance, NE liste PAS la séance toi-même et n'invente pas d'exercices dans ta réponse. Réponds juste une phrase courte et enthousiaste (ex: « Voici une proposition de séance, regarde juste en dessous 👇 »). Une carte de confirmation contenant la séance s'affiche AUTOMATIQUEMENT sous ton message ; c'est elle qui gère la création, tu n'as rien d'autre à faire.` : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${memoryEnabled ? `\n\nACTIONS (création de séance) — RÈGLE ABSOLUE : Quand l'utilisateur demande de CRÉER / GÉNÉRER / ENREGISTRER / AJOUTER une séance, tu n'écris JAMAIS toi-même la liste des exercices, séries ou répétitions, et tu ne prétends PAS l'avoir créée. Réponds UNIQUEMENT par une phrase courte et enthousiaste (ex: « Voici une proposition de séance, regarde juste en dessous 👇 »). Une carte de confirmation contenant la séance s'affiche AUTOMATIQUEMENT sous ton message, et c'est l'utilisateur qui valide la création en cliquant. Tu n'as rien d'autre à faire.` : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `

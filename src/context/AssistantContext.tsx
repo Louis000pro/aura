@@ -282,6 +282,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   /* ── Action : détecte « créer une séance », génère, et prépare la carte de confirmation ── */
   const detectAndPrepareAction = useCallback(async (text: string, context: string) => {
     if (!user?.id || !text.trim()) return;
+    let detectedCreate = false;
     try {
       const res = await fetch("/api/assistant/action", {
         method: "POST",
@@ -292,6 +293,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const det = await res.json();
       if (!det || det.intent !== "create_seance") return;
 
+      detectedCreate = true;
       setActionLoading(true);
       setPendingSeance(null);
 
@@ -314,9 +316,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description, category, difficulty, muscles }),
       });
-      if (!genRes.ok) return;
+      if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();
-      if (!data || data.error) return;
+      if (!data || data.error) throw new Error("generation: " + (data?.error ?? "réponse vide"));
 
       setPendingSeance(assembleSeance({
         title: data.title,
@@ -325,8 +327,18 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         muscles: (Array.isArray(data.muscles) && data.muscles.length > 0) ? data.muscles : muscles,
         rawExercises: Array.isArray(data.exercises) ? data.exercises : [],
       }));
-    } catch { /* silencieux */ }
-    finally { setActionLoading(false); }
+    } catch {
+      // Échec : on le DIT à l'utilisateur (plus de silence) si on avait bien détecté une création
+      if (detectedCreate) {
+        setMessages((prev) => [...prev, {
+          role: "assistant" as const,
+          content: "Hmm, je n'arrive pas à préparer ta séance à l'instant 😕 — réessaie dans quelques secondes !",
+          id: uid(),
+        }]);
+      }
+    } finally {
+      setActionLoading(false);
+    }
   }, [user?.id]);
 
   /* ── Envoi d'un message ── */
