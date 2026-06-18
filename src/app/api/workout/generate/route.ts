@@ -82,7 +82,7 @@ ${targetSeconds ? `- SEULE contrainte absolue : total proche de ${targetMinutes}
 - Retourne UNIQUEMENT le JSON, rien d autre`,
         },
       ],
-      max_tokens: 1800,
+      max_tokens: 1000,
       temperature: 0.6,
     });
 
