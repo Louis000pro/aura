@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import Groq from "groq-sdk";
+import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 
 /* ════════════════════════════════════════════════════════════════════
    /api/assistant/analyze — analyse unifiée (mémoire + action).
@@ -9,11 +9,9 @@ import Groq from "groq-sdk";
    - s'il demande une ACTION (créer une séance) + ses paramètres
 
    Remplace les deux appels séparés (/memory-extract + /assistant/action)
-   → moitié moins d'appels Groq par message (limite de débit du palier
+   → moitié moins d'appels LLM par message (limite de débit du palier
    gratuit moins vite atteinte).
    ════════════════════════════════════════════════════════════════════ */
-
-const groq = new Groq({ apiKey: process.env.COACH_AURA_KEY ?? "placeholder" });
 
 const SYSTEM = `Tu analyses le DERNIER message d'un utilisateur à son coach de fitness. Tu produis DEUX informations indépendantes en un seul objet JSON : "memory" et "action".
 
@@ -36,7 +34,7 @@ ACTION — quand remplir "action" :
 RÈGLES : n'invente jamais. Les deux champs sont indépendants (l'un peut être non-null et l'autre null). Si rien : {"memory":null,"action":null}.`;
 
 export async function POST(req: NextRequest) {
-  if (!process.env.COACH_AURA_KEY) return Response.json({ memory: null, action: null });
+  if (!hasLLMKey()) return Response.json({ memory: null, action: null });
 
   let message = "";
   let context = "";
@@ -50,8 +48,8 @@ export async function POST(req: NextRequest) {
   if (!message.trim()) return Response.json({ memory: null, action: null });
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
+    const completion = await llm.chat.completions.create({
+      model: CHAT_MODEL,
       messages: [
         { role: "system", content: SYSTEM },
         {

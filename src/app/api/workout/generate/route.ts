@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -9,13 +9,8 @@ export async function POST(req: Request) {
     const { description, category, difficulty, muscles } = await req.json();
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
-    // GROQ_API_KEY en priorité, sinon COACH_AURA_KEY (celle du chat) — évite
-    // un échec silencieux si une seule des deux clés est configurée.
-    const apiKey = process.env.GROQ_API_KEY ?? process.env.COACH_AURA_KEY;
-    if (!apiKey)
+    if (!hasLLMKey())
       return NextResponse.json({ error: "Clé API manquante" }, { status: 500 });
-
-    const groq = new Groq({ apiKey });
 
     // Extraire la durée cible si mentionnée dans la description (ex: "20min", "20 minutes")
     const durationMatch = description.match(/(\d+)\s*min/i);
@@ -36,8 +31,8 @@ Ajuste le nombre d exercices, les sets, reps, rest et restAfter en consequence.
 Calcule mentalement le total avant de repondre et verifie qu il est proche de ${targetSeconds}s.`
       : "";
 
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+    const response = await llm.chat.completions.create({
+      model: CHAT_MODEL,
       messages: [
         {
           role: "system",
@@ -84,6 +79,7 @@ ${targetSeconds ? `- SEULE contrainte absolue : total proche de ${targetMinutes}
       ],
       max_tokens: 1000,
       temperature: 0.6,
+      response_format: { type: "json_object" },
     });
 
     const text = response.choices[0]?.message?.content ?? "";

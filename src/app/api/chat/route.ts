@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
-import Groq from "groq-sdk";
+import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
-
-const groq = new Groq({ apiKey: process.env.COACH_AURA_KEY ?? "placeholder" });
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -248,9 +246,9 @@ ${statsBlock}${richBlock}`;
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.COACH_AURA_KEY) {
+  if (!hasLLMKey()) {
     return new Response(
-      "⚠️ Clé API Groq manquante. Ajoute GROQ_API_KEY dans ton fichier .env.local (https://console.groq.com/keys)",
+      "⚠️ Clé API Gemini manquante. Ajoute GEMINI_API_KEY dans ton .env.local et sur Vercel (https://aistudio.google.com/apikey)",
       { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
     );
   }
@@ -291,32 +289,19 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled);
 
   try {
-    // Les grosses générations (programme, repas) → modèle léger (limites bien plus hautes)
-    // La conversation → modèle premium 70b. Fallback auto vers le léger si saturé (429).
-    const LIGHT_MODEL = "llama-3.1-8b-instant";
-    const HEAVY_MODEL = "llama-3.3-70b-versatile";
-    const primaryModel = maxTokens > 1500 ? LIGHT_MODEL : HEAVY_MODEL;
-
-    const makeStream = (model: string) =>
-      groq.chat.completions.create({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-        max_tokens: maxTokens,
-        temperature: 0.4,
-      });
-
-    let stream;
-    try {
-      stream = await makeStream(primaryModel);
-    } catch (primErr) {
-      // Saturation/erreur du modèle principal → on bascule sur le léger
-      console.warn("[chat] primary model failed, fallback:", (primErr as { message?: string })?.message);
-      stream = await makeStream(LIGHT_MODEL);
-    }
+    // Gemini 2.0 Flash gère aussi bien la conversation que les grosses
+    // générations (programme, repas) → un seul modèle, pas de limite TPM
+    // basse à contourner.
+    const stream = await llm.chat.completions.create({
+      model: CHAT_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
+      max_tokens: maxTokens,
+      temperature: 0.4,
+    });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
@@ -342,7 +327,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const e = err as { status?: number; message?: string; error?: { message?: string } };
     const detail = `[${e?.status ?? "?"}] ${(e?.error?.message ?? e?.message ?? "erreur inconnue").slice(0, 200)}`;
-    console.error("Groq chat error:", detail);
+    console.error("LLM chat error:", detail);
     const msg =
       e?.status === 429
         ? "⏳ La limite gratuite de l'IA est atteinte pour l'instant. Réessaie dans une minute — et si ça persiste aujourd'hui, c'est le quota du jour (ça repart demain) 🙏"
