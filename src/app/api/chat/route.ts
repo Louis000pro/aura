@@ -330,9 +330,9 @@ export async function POST(req: NextRequest) {
     console.error("LLM chat error:", detail);
     const msg =
       e?.status === 429
-        ? "⏳ La limite gratuite de l'IA est atteinte pour l'instant. Réessaie dans une minute — et si ça persiste aujourd'hui, c'est le quota du jour (ça repart demain) 🙏"
+        ? `⏳ Limite/quota de l'IA atteint. Détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à diagnostiquer ✨)`
         : e?.status === 401 || e?.status === 403
-        ? "🔑 Souci de configuration de l'IA côté serveur (clé API à vérifier)."
+        ? `🔑 Souci de clé API côté serveur. Détail : ${detail}`
         : `Désolé, une erreur est survenue 😕 — détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
     return new Response(msg, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
