@@ -12,9 +12,10 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, X, Mic, Square } from "lucide-react";
+import { Send, Sparkles, X, Mic, Square, Dumbbell, Check } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
+import { CATEGORY_LABEL } from "@/lib/assistantActions";
 
 const SUGGESTIONS = [
   "Comment créer une séance ?",
@@ -24,7 +25,7 @@ const SUGGESTIONS = [
 ];
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, actionLoading, confirmSeance, cancelSeance } = useAssistant();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,7 +38,7 @@ export default function AssistantSheet() {
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages, isOpen]);
+  }, [messages, isOpen, pendingSeance, actionLoading]);
 
   // Échap pour fermer
   useEffect(() => {
@@ -182,6 +183,65 @@ export default function AssistantSheet() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+
+              {/* Génération en cours */}
+              {actionLoading && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className="self-start max-w-[85%] flex items-center gap-2.5 px-4 py-3 rounded-3xl"
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+                  <motion.span className="w-4 h-4 rounded-full border-2" style={{ borderColor: "var(--violet-mid)", borderTopColor: "var(--accent)" }}
+                    animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
+                  <span className="text-[13px] font-light" style={{ color: "var(--text-1)" }}>Je te prépare une séance…</span>
+                </motion.div>
+              )}
+
+              {/* Carte de confirmation — création de séance (aucune écriture sans clic) */}
+              {pendingSeance && (
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="w-full rounded-3xl overflow-hidden"
+                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
+                      <Dumbbell size={16} strokeWidth={1.8} style={{ color: "#fff" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Nouvelle séance</p>
+                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingSeance.title}</p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
+                    {[CATEGORY_LABEL[pendingSeance.category], `${pendingSeance.duration} min`, pendingSeance.difficulty, `${pendingSeance.exercisesCount} exercices`].map((t) => (
+                      <span key={t} className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+                        style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>{t}</span>
+                    ))}
+                  </div>
+
+                  <div className="px-4 pb-2 flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 220, scrollbarWidth: "none" }}>
+                    {pendingSeance.exerciseList.map((ex, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
+                        <span className="text-[13px] font-light truncate" style={{ color: "var(--text-1)" }}>{ex.name}</span>
+                        <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{ex.sets} × {ex.reps}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 px-4 py-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={cancelSeance}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
+                      Annuler
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={confirmSeance}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+                      <Check size={15} strokeWidth={2.4} /> Créer la séance
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             {/* Input */}

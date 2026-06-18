@@ -21,6 +21,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
+import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -55,6 +56,10 @@ type AssistantContextValue = {
   sendMessage: (text: string) => void;
   pseudo?: string;
   memoryNotice: string | null;
+  pendingSeance: ProposedSeance | null;
+  actionLoading: boolean;
+  confirmSeance: () => void;
+  cancelSeance: () => void;
 };
 
 const Ctx = createContext<AssistantContextValue | null>(null);
@@ -78,6 +83,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<AssistantMsg[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
+  const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const userContextRef = useRef<UserContext | null>(null);
   const liveStatsRef = useRef<LiveStats | null>(null);
@@ -272,6 +279,56 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } catch { /* silencieux — la mémoire est best-effort */ }
   }, [user?.id, persistMemoryAction]);
 
+  /* ── Action : détecte « créer une séance », génère, et prépare la carte de confirmation ── */
+  const detectAndPrepareAction = useCallback(async (text: string, context: string) => {
+    if (!user?.id || !text.trim()) return;
+    try {
+      const res = await fetch("/api/assistant/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, context }),
+      });
+      if (!res.ok) return;
+      const det = await res.json();
+      if (!det || det.intent !== "create_seance") return;
+
+      setActionLoading(true);
+      setPendingSeance(null);
+
+      const category = normalizeWorkoutCategory(det.category);
+      const difficulty = det.difficulty
+        ? normalizeDifficulty(det.difficulty)
+        : levelToDifficulty(userContextRef.current?.level);
+      const muscles: string[] = Array.isArray(det.muscles)
+        ? det.muscles.filter((m: unknown): m is string => typeof m === "string")
+        : [];
+
+      // Lieu d'entraînement mémorisé par le chat → adapte les exercices
+      let lieu: string | null = null;
+      try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
+      const lieuTxt = lieu === "maison" ? " à la maison" : lieu === "salle" ? " en salle de sport" : "";
+      const description = `${det.description || text}${lieuTxt}`.slice(0, 400);
+
+      const genRes = await fetch("/api/workout/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description, category, difficulty, muscles }),
+      });
+      if (!genRes.ok) return;
+      const data = await genRes.json();
+      if (!data || data.error) return;
+
+      setPendingSeance(assembleSeance({
+        title: data.title,
+        category,
+        difficulty,
+        muscles: (Array.isArray(data.muscles) && data.muscles.length > 0) ? data.muscles : muscles,
+        rawExercises: Array.isArray(data.exercises) ? data.exercises : [],
+      }));
+    } catch { /* silencieux */ }
+    finally { setActionLoading(false); }
+  }, [user?.id]);
+
   /* ── Envoi d'un message ── */
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -300,9 +357,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
     }
 
-    // Capture mémoire (auto + explicite) via l'extracteur dédié, en parallèle du chat
+    // Capture mémoire + détection d'action, en parallèle du chat
     const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
     void extractMemory(trimmed, lastAssistant);
+    void detectAndPrepareAction(trimmed, lastAssistant);
 
     const history = [...messages, userMsg].map(({ role, content }) => ({ role, content }));
 
@@ -361,7 +419,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory]);
+  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, detectAndPrepareAction]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
@@ -376,6 +434,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (historyKey) { try { localStorage.removeItem(historyKey); } catch { /* ignore */ } }
   }, [historyKey]);
 
+  /* ── Validation de la carte : crée réellement la séance dans custom_sessions ── */
+  const confirmSeance = useCallback(async () => {
+    if (!user?.id || !pendingSeance) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("custom_sessions").insert(seanceToRow(pendingSeance, user.id));
+    if (error) { setMemoryNotice("Oups, impossible de créer la séance."); return; }
+    const title = pendingSeance.title;
+    setPendingSeance(null);
+    setMemoryNotice(`Séance « ${title} » créée ✓`);
+    setTimeout(() => { setIsOpen(false); router.push("/progression"); }, 900);
+  }, [user?.id, pendingSeance, router]);
+
+  const cancelSeance = useCallback(() => setPendingSeance(null), []);
+
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   // La notice mémoire ("Je m'en souviendrai") s'efface seule
@@ -386,7 +458,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, actionLoading, confirmSeance, cancelSeance }}>
       {children}
     </Ctx.Provider>
   );
