@@ -89,7 +89,12 @@ ${targetSeconds ? `- SEULE contrainte absolue : total proche de ${targetMinutes}
     const data = JSON.parse(jsonMatch[0]);
     return NextResponse.json(data);
   } catch (err) {
+    const e = err as { status?: number; message?: string };
     console.error("Workout generate error:", err);
-    return NextResponse.json({ error: "Generation impossible" }, { status: 500 });
+    // Détail temporaire pour diagnostic (statut Mistral : 429 ? parse ? …)
+    return NextResponse.json(
+      { error: `Generation impossible [${e?.status ?? "?"}] ${(e?.message ?? "").slice(0, 150)}` },
+      { status: 500 },
+    );
   }
 }

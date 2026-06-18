@@ -325,11 +325,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         muscles: (Array.isArray(data.muscles) && data.muscles.length > 0) ? data.muscles : muscles,
         rawExercises: Array.isArray(data.exercises) ? data.exercises : [],
       }));
-    } catch {
-      // Échec de génération : on le DIT (plus de silence)
+    } catch (e) {
+      // Échec de génération : on le DIT, avec le détail (diagnostic temporaire)
+      const detail = (e as { message?: string })?.message ?? String(e);
       setMessages((prev) => [...prev, {
         role: "assistant" as const,
-        content: "Hmm, je n'arrive pas à préparer ta séance à l'instant 😕 — réessaie dans quelques secondes !",
+        content: `⚠️ Génération séance échouée — ${detail}\n(copie-moi ce message stp)`,
         id: uid(),
       }]);
     } finally {
