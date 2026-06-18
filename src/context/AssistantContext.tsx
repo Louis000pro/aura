@@ -20,6 +20,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
+import { parseMemoryTags, normalizeForDedupe, stripMemoryTags, type AiMemory } from "@/lib/aiMemory";
 
 export type AssistantMsg = {
   role: "user" | "assistant";
@@ -48,6 +49,7 @@ type AssistantContextValue = {
   isStreaming: boolean;
   sendMessage: (text: string) => void;
   pseudo?: string;
+  memoryNotice: string | null;
 };
 
 const Ctx = createContext<AssistantContextValue | null>(null);
@@ -70,10 +72,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMsg[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
 
   const userContextRef = useRef<UserContext | null>(null);
   const liveStatsRef = useRef<LiveStats | null>(null);
   const richProfileRef = useRef<Record<string, unknown> | null>(null);
+  const memoriesRef = useRef<AiMemory[]>([]);
   const dataLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -127,7 +131,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
-    const [nutritionTodayRes, nutritionWeekRes, sessionsRes, weightHistoryRes, followersRes, followingRes, postsRes, profileBioRes] = await Promise.all([
+    const [nutritionTodayRes, nutritionWeekRes, sessionsRes, weightHistoryRes, followersRes, followingRes, postsRes, profileBioRes, memoriesRes] = await Promise.all([
       supabase.from("nutrition_logs").select("calories, proteins").eq("user_id", user.id).eq("date", today),
       supabase.from("nutrition_logs").select("date, meal_type, food_name, calories, proteins, carbs, fats, time, description").eq("user_id", user.id).gte("date", sevenDaysAgo).order("date", { ascending: false }).order("time", { ascending: true }),
       supabase.from("workout_sessions").select("title, started_at, duration_minutes, calories_burned, exercises").eq("user_id", user.id).gte("started_at", thirtyDaysAgo).order("started_at", { ascending: false }).limit(15),
@@ -136,6 +140,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", user.id),
       supabase.from("posts").select("type, caption, performance_data, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
       supabase.from("profiles").select("bio, full_name").eq("id", user.id).maybeSingle(),
+      supabase.from("ai_memories").select("id, content, category, source, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(60),
     ]);
 
     const nutritionRows = nutritionTodayRes.data ?? [];
@@ -199,7 +204,54 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       weightHistory: weightHistory.map((w) => ({ date: w.date, weight: w.weight_kg })),
       workoutHistory, monthWorkouts: sessionRows.length,
     };
+
+    memoriesRef.current = (memoriesRes.data ?? []) as AiMemory[];
   }, [user?.id, user?.pseudo]);
+
+  /* ── Mémoire long terme : applique les tags [MEMOIRE]/[OUBLI] émis par le modèle ── */
+  const applyMemoryTags = useCallback(async (raw: string, userText: string) => {
+    if (!user?.id) return;
+    const { saves, forgets } = parseMemoryTags(raw);
+    if (saves.length === 0 && forgets.length === 0) return;
+    const supabase = createClient();
+
+    // Oubli : supprime les mémoires correspondant aux mots-clés
+    for (const kw of forgets) {
+      const nk = normalizeForDedupe(kw);
+      if (!nk) continue;
+      const targets = memoriesRef.current.filter((mm) => {
+        const c = normalizeForDedupe(mm.content);
+        return c.includes(nk) || nk.includes(c);
+      });
+      if (targets.length === 0) continue;
+      const ids = targets.map((t) => t.id);
+      await supabase.from("ai_memories").delete().in("id", ids);
+      const idSet = new Set(ids);
+      memoriesRef.current = memoriesRef.current.filter((mm) => !idSet.has(mm.id));
+      setMemoryNotice("C'est noté, j'oublie ça.");
+    }
+
+    // Enregistrement : insère les nouveaux faits durables (dédupliqués)
+    const explicit = /\b(retiens|souviens|rappelle|n'oublie|note que|garde en m[ée]moire)\b/i.test(userText);
+    for (const s of saves) {
+      const ns = normalizeForDedupe(s.content);
+      if (!ns) continue;
+      const dup = memoriesRef.current.some((mm) => {
+        const c = normalizeForDedupe(mm.content);
+        return c === ns || c.includes(ns) || ns.includes(c);
+      });
+      if (dup) continue;
+      const { data, error } = await supabase
+        .from("ai_memories")
+        .insert({ user_id: user.id, content: s.content, category: s.category, source: explicit ? "user" : "auto" })
+        .select("id, content, category, source, created_at")
+        .single();
+      if (!error && data) {
+        memoriesRef.current = [data as AiMemory, ...memoriesRef.current];
+        setMemoryNotice("Je m'en souviendrai 🧠");
+      }
+    }
+  }, [user?.id]);
 
   /* ── Envoi d'un message ── */
   const sendMessage = useCallback(async (text: string) => {
@@ -244,6 +296,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           liveStats: liveStatsRef.current,
           richProfile: richProfileRef.current,
           currentPage: pathname,
+          memories: memoriesRef.current,
         }),
         signal: abort.signal,
       });
@@ -259,7 +312,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: accumulated, streaming: true } : m));
       }
 
-      const cleaned = accumulated
+      const cleaned = stripMemoryTags(accumulated)
         .replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "")
         .replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "")
         .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")
@@ -276,6 +329,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const route = resolveNavTarget(navMatch[1]);
         if (route && route !== pathname) setTimeout(() => router.push(route), 700);
       }
+
+      // Mémoire long terme : applique [MEMOIRE]/[OUBLI] émis par le modèle
+      void applyMemoryTags(accumulated, trimmed);
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
       setMessages((prev) => prev.map((m) => m.id === assistantId
@@ -284,7 +340,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist]);
+  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, applyMemoryTags]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
@@ -301,8 +357,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
+  // La notice mémoire ("Je m'en souviendrai") s'efface seule
+  useEffect(() => {
+    if (!memoryNotice) return;
+    const t = setTimeout(() => setMemoryNotice(null), 3400);
+    return () => clearTimeout(t);
+  }, [memoryNotice]);
+
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice }}>
       {children}
     </Ctx.Provider>
   );

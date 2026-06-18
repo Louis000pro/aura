@@ -24,7 +24,7 @@ const SUGGESTIONS = [
 ];
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, pseudo } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice } = useAssistant();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -187,6 +187,17 @@ export default function AssistantSheet() {
             {/* Input */}
             <div className="flex-shrink-0 px-3 pt-2"
               style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))", borderTop: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+              {/* Puce mémoire — « Je m'en souviendrai » */}
+              <AnimatePresence>
+                {memoryNotice && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    className="flex items-center gap-1.5 w-fit mx-auto mb-2 px-3 py-1.5 rounded-full text-[12px] font-medium"
+                    style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}>
+                    {memoryNotice}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {voice.error && (
                 <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--accent)" }}>{voice.error}</p>
               )}
