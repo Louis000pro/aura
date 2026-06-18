@@ -93,9 +93,9 @@ export default function AiMemoryManager({ onClose }: { onClose: () => void }) {
               <div className="w-14 h-14 rounded-[22px] flex items-center justify-center" style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }}>
                 <Sparkles size={24} strokeWidth={1.4} style={{ color: "var(--accent)" }} />
               </div>
-              <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Rien en mémoire pour l'instant</p>
+              <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Je n'ai encore rien retenu</p>
               <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-3)" }}>
-                Dis à l'assistant « retiens que… » ou confie-lui une info importante (une blessure, ton régime, ton planning) — il s'en souviendra pour toutes tes prochaines conversations.
+                Parle-moi normalement : confie-moi une blessure, ton régime ou ton planning — ou dis-moi simplement « retiens ça » — et je m'en souviendrai à chaque fois qu'on se parle. 💜
               </p>
             </div>
           ) : (

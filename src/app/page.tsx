@@ -17,6 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
+import { stripMemoryTags } from "@/lib/aiMemory";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
@@ -1001,6 +1002,18 @@ function Dashboard() {
             default: break;
           }
         }, 700);
+      }
+
+      // Sécurité : masque tout tag mémoire qui aurait fui (la mémoire long terme
+      // est gérée par l'assistant orbe, pas par ce chat). Nettoie aussi l'historique.
+      if (/\[MEMOIRE\]|\[OUBLI\]/i.test(fullText)) {
+        setChatMessages((m) => {
+          const updated = m.map((msg) =>
+            msg.id === aiMsgId ? { ...msg, text: stripMemoryTags(msg.text).trim() } : msg
+          );
+          chatMessagesRef.current = updated;
+          return updated;
+        });
       }
     } catch {
       setAiTyping(false);

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, MicOff, Sparkles, ArrowLeft, UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { stripMemoryTags } from "@/lib/aiMemory";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -433,7 +434,7 @@ export default function CoachPage() {
         }
 
         /* Nettoie les tags techniques et gère la navigation */
-        const cleaned = accumulated
+        const cleaned = stripMemoryTags(accumulated)
           .replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "")
           .replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "")
           .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")

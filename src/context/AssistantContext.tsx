@@ -297,6 +297,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           richProfile: richProfileRef.current,
           currentPage: pathname,
           memories: memoriesRef.current,
+          memoryEnabled: true,
         }),
         signal: abort.signal,
       });

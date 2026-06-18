@@ -128,4 +128,4 @@ Tu peux mémoriser des faits DURABLES et IMPORTANTS sur l'utilisateur, utiles po
 RÈGLES STRICTES :
 - Ne mémorise JAMAIS les banalités ni le temporaire (humeur du jour, "j'ai mangé une pomme", une question ponctuelle), ni une info déjà présente dans son profil ou ses stats.
 - Un seul [MEMOIRE] par réponse (le fait le plus important).
-- Ces tags sont INVISIBLES pour l'utilisateur : n'y fais JAMAIS référence dans ta phrase, réponds normalement et chaleureusement comme d'habitude.`;
+- Ces tags sont INVISIBLES pour l'utilisateur : n'y fais JAMAIS référence. N'annonce pas non plus que tu "retiens", "notes" ou "mémorises" quoi que ce soit — réponds simplement, naturellement et chaleureusement, comme si tu t'en souvenais déjà.`;

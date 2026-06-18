@@ -103,7 +103,8 @@ function buildSystemPrompt(
   lieu?: string | null,
   equip?: string | null,
   currentPage?: string | null,
-  memories?: AiMemory[] | null
+  memories?: AiMemory[] | null,
+  memoryEnabled?: boolean
 ): string {
   // ── Repère temporel (fuseau France) ──
   let dateContext = "";
@@ -199,9 +200,7 @@ ${lieu === "salle"
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
 [LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
 
-${MEMORY_PROTOCOL_PROMPT}
-
-${buildSiteKnowledgePrompt(currentPage ?? undefined)}${buildMemoryPrompt(memories)}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+${memoryEnabled ? `${MEMORY_PROTOCOL_PROMPT}\n\n` : ""}${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
@@ -328,6 +327,7 @@ export async function POST(req: NextRequest) {
   let lieuEquip: string | null = null;
   let currentPage: string | null = null;
   let memories: AiMemory[] | null = null;
+  let memoryEnabled = false;
   let maxTokens = 800;
 
   try {
@@ -342,6 +342,7 @@ export async function POST(req: NextRequest) {
     lieuEquip = body.lieu_equip ?? null;
     currentPage = body.currentPage ?? null;
     memories = body.memories ?? null;
+    memoryEnabled = body.memoryEnabled === true;
     // Les tâches de génération (programme, plan repas) peuvent demander plus de tokens
     // pour éviter un JSON tronqué. Plafonné pour rester raisonnable.
     if (body.maxTokens) maxTokens = Math.min(Math.max(Number(body.maxTokens) || 800, 800), 4000);
@@ -349,7 +350,7 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories);
+  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled);
 
   try {
     // Les grosses générations (programme, repas) → modèle léger (limites bien plus hautes)
