@@ -1,5 +1,5 @@
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
-import { SYSTEM as ANALYZE_SYSTEM } from "@/app/api/assistant/analyze/route";
+import { ANALYZE_SYSTEM } from "@/lib/analyzePrompt";
 
 /* Diagnostic temporaire : exécute côté serveur, sous Mistral, l'ANALYSE
    (détection d'action) ET la GÉNÉRATION de séance, puis renvoie les bruts.
