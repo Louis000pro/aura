@@ -402,14 +402,15 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    const e = err as { status?: number; message?: string };
-    console.error("Groq chat error:", e?.status, e?.message);
+    const e = err as { status?: number; message?: string; error?: { message?: string } };
+    const detail = `[${e?.status ?? "?"}] ${(e?.error?.message ?? e?.message ?? "erreur inconnue").slice(0, 200)}`;
+    console.error("Groq chat error:", detail);
     const msg =
       e?.status === 429
         ? "⏳ La limite gratuite de l'IA est atteinte pour l'instant. Réessaie dans une minute — et si ça persiste aujourd'hui, c'est le quota du jour (ça repart demain) 🙏"
         : e?.status === 401 || e?.status === 403
         ? "🔑 Souci de configuration de l'IA côté serveur (clé API à vérifier)."
-        : "Désolé, une erreur est survenue. Réessaie dans quelques secondes ✨";
+        : `Désolé, une erreur est survenue 😕 — détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
     return new Response(msg, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
 }
