@@ -5,6 +5,28 @@ import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
+/**
+ * Nettoie l'historique pour Mistral (plus strict que Groq) : la conversation
+ * doit commencer par un message `user`, alterner user/assistant, et n'avoir
+ * aucun contenu vide. On ignore les messages vides, on retire les messages
+ * `assistant` en tête, et on fusionne deux messages consécutifs de même rôle.
+ */
+function sanitizeHistory(msgs: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = [];
+  for (const m of msgs) {
+    const content = (m?.content ?? "").trim();
+    if (!content) continue;
+    if (out.length === 0 && m.role !== "user") continue; // démarre sur un user
+    const last = out[out.length - 1];
+    if (last && last.role === m.role) {
+      last.content += `\n${content}`; // rôles consécutifs → fusion
+    } else {
+      out.push({ role: m.role, content });
+    }
+  }
+  return out;
+}
+
 interface UserContext {
   pseudo?: string;
   age?: string;
@@ -127,10 +149,11 @@ DOMAINES AUTORISÉS (tu ne réponds QU'à ces sujets) :
 QUAND L'UTILISATEUR PARLE DE SA SANTÉ (douleur, blessure, maladie, symptôme, condition) :
 Tu ne refuses JAMAIS et tu ne dis JAMAIS que ça sort de ton domaine. Tu accueilles avec empathie et bienveillance, puis tu adaptes tes conseils sport/nutrition à sa situation. Tu ne poses PAS de diagnostic et tu ne prescris aucun traitement : pour la prise en charge médicale, oriente avec douceur vers son médecin ou spécialiste, sans jamais te défausser ni le rembarrer.
 
-SUJETS VRAIMENT HORS CONTEXTE (uniquement ceux SANS aucun lien avec le sport, la nutrition, le corps ou la santé — ex : politique, actualité, programmation, finance, histoire, divertissement) :
+PRINCIPE DE TOLÉRANCE (très important) : par DÉFAUT tu cherches à aider. Tu ne bloques QUE deux cas : (1) un message réellement abusif, insultant ou inapproprié ; (2) un sujet qui n'a VRAIMENT aucun lien avec le sport, la nutrition, le corps, la santé ou le bien-être de la personne. Tout le reste — un sujet tangent, une question formulée maladroitement, une confidence personnelle, une digression légère qui se rattache à son bien-être — tu y réponds avec bienveillance. Dans le moindre doute, tu RÉPONDS plutôt que de bloquer. Un blocage injustifié est bien plus grave qu'une petite digression tolérée.
+
+SUJETS VRAIMENT HORS CONTEXTE (le cas 2 ci-dessus, sans aucun lien avec la personne — ex : politique, actualité, programmation, finance, histoire, divertissement) :
 Tu réponds UNIQUEMENT avec ce message (adapté naturellement) :
 "Ce sujet sort de mon domaine 🙏 Je suis là pour t'accompagner sur le sport, la nutrition et ta santé. Tu as une question là-dessus ?"
-En cas de doute, considère que c'est DANS ton domaine et réponds normalement.
 
 TON : positif, chaleureux, motivant, concret (propose des actions précises, jamais de réponse vague), célèbre les progrès. Termine TOUJOURS par UNE seule question courte et naturelle.
 
@@ -299,7 +322,7 @@ export async function POST(req: NextRequest) {
       model: CHAT_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        ...messages,
+        ...sanitizeHistory(messages),
       ],
       stream: true,
       max_tokens: maxTokens,

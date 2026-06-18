@@ -365,9 +365,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
     }
 
-    // Analyse (mémoire + action) en UN appel, en parallèle du chat
-    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? "";
-    void analyzeMessage(trimmed, lastAssistant);
+    // Analyse (mémoire + action) en UN appel, en parallèle du chat.
+    // On passe les derniers échanges (pas juste le dernier message) pour que le
+    // détecteur suive une demande étalée (ex: "séance pecs" puis "à la maison").
+    const recentContext = messages
+      .slice(-4)
+      .map((m) => `${m.role === "user" ? "Utilisateur" : "Coach"}: ${m.content}`)
+      .join("\n");
+    void analyzeMessage(trimmed, recentContext);
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
     // → évite le 413 « request too large » de Groq sur les longues conversations).

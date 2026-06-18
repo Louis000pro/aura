@@ -27,9 +27,10 @@ MÉMOIRE — quand remplir "memory" :
 - null pour le temporaire / banal / une simple question.
 
 ACTION — quand remplir "action" :
-- "create_seance" UNIQUEMENT si l'utilisateur veut qu'on lui CRÉE / GÉNÈRE / AJOUTE / ENREGISTRE une séance d'entraînement (ex: "crée-moi une séance pecs", "fais-moi une séance jambes de 30 min", "ajoute une séance dos à mes séances").
+- "create_seance" si l'utilisateur veut qu'on lui CRÉE / GÉNÈRE / AJOUTE / ENREGISTRE une séance d'entraînement (ex: "crée-moi une séance pecs", "fais-moi une séance jambes de 30 min", "ajoute une séance dos à mes séances").
+- LE CONTEXTE COMPTE : si le coach vient de demander une précision pour préparer une séance (lieu, matériel, durée, niveau…) et que l'utilisateur répond (ex: "à la maison", "sans matériel", "30 min", "en salle"), c'est TOUJOURS "create_seance". Reprends alors les muscles / l'objectif mentionnés plus tôt dans le contexte.
 - Une simple QUESTION sur l'entraînement ("c'est quoi une bonne séance pecs ?") = null.
-- "muscles", "category", "difficulty" sont OPTIONNELS : ne les mets que s'ils sont déduits du message.
+- "muscles", "category", "difficulty" sont OPTIONNELS : déduis-les du message ET du contexte (ex: si "pecs" a été dit plus tôt, mets muscles:["pectoraux"]).
 
 RÈGLES : n'invente jamais. Les deux champs sont indépendants (l'un peut être non-null et l'autre null). Si rien : {"memory":null,"action":null}.`;
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     message = String(body.message ?? "").slice(0, 1000);
-    context = String(body.context ?? "").slice(0, 500);
+    context = String(body.context ?? "").slice(0, 800);
   } catch {
     return Response.json({ memory: null, action: null });
   }
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
         {
           role: "user",
           content: context
-            ? `Contexte (dernier message du coach) : ${context}\n\nMessage de l'utilisateur : ${message}`
+            ? `Contexte (derniers échanges) :\n${context}\n\nDernier message de l'utilisateur (à analyser) : ${message}`
             : `Message de l'utilisateur : ${message}`,
         },
       ],
