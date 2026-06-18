@@ -248,7 +248,7 @@ ${statsBlock}${richBlock}`;
 export async function POST(req: NextRequest) {
   if (!hasLLMKey()) {
     return new Response(
-      "⚠️ Clé API Gemini manquante. Ajoute GEMINI_API_KEY dans ton .env.local et sur Vercel (https://aistudio.google.com/apikey)",
+      "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
       { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
     );
   }
