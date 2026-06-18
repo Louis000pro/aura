@@ -13,7 +13,7 @@ import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
    gratuit moins vite atteinte).
    ════════════════════════════════════════════════════════════════════ */
 
-const SYSTEM = `Tu analyses le DERNIER message d'un utilisateur à son coach de fitness. Tu produis DEUX informations indépendantes en un seul objet JSON : "memory" et "action".
+export const SYSTEM = `Tu analyses le DERNIER message d'un utilisateur à son coach de fitness. Tu produis DEUX informations indépendantes en un seul objet JSON : "memory" et "action".
 
 Réponds UNIQUEMENT par cet objet JSON (rien autour) :
 {
