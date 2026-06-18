@@ -1,46 +1,32 @@
-import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
-
-/* Diagnostic temporaire : appel Gemini minimal NON-streamé.
-   Ouvre /api/assistant/ping dans le navigateur → renvoie l'erreur brute
-   (status + message + en-têtes Google) pour comprendre le 429. À SUPPRIMER
-   une fois le souci de clé/quota réglé. */
+/* Diagnostic temporaire : appel BRUT à l'endpoint natif Gemini.
+   Ouvre /api/assistant/ping dans le navigateur → renvoie le status HTTP et
+   le CORPS DE RÉPONSE EXACT de Google (qui contient le vrai motif du 429).
+   À SUPPRIMER une fois le souci de clé/quota réglé. */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!hasLLMKey()) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
     return Response.json({ ok: false, reason: "GEMINI_API_KEY absente de l'environnement" });
   }
+
   try {
-    const r = await llm.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [{ role: "user", content: "ping" }],
-      max_tokens: 5,
-    });
-    return Response.json({ ok: true, model: CHAT_MODEL, reply: r.choices[0]?.message?.content ?? "" });
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }),
+      },
+    );
+    const body = await res.text(); // brut : on veut le message exact, même en erreur
+    return new Response(
+      JSON.stringify({ httpStatus: res.status, ok: res.ok, body }, null, 2),
+      { headers: { "Content-Type": "application/json; charset=utf-8" } },
+    );
   } catch (err) {
-    const e = err as {
-      status?: number; message?: string; code?: unknown; type?: unknown;
-      requestID?: string; error?: unknown; headers?: unknown;
-    };
-    // Extraction défensive des en-têtes (objet simple OU instance Headers)
-    const headers: Record<string, string> = {};
-    const h = e?.headers as { forEach?: (cb: (v: string, k: string) => void) => void } | Record<string, string> | undefined;
-    if (h && typeof (h as { forEach?: unknown }).forEach === "function") {
-      (h as { forEach: (cb: (v: string, k: string) => void) => void }).forEach((v, k) => { headers[k] = v; });
-    } else if (h && typeof h === "object") {
-      Object.assign(headers, h);
-    }
-    return Response.json({
-      ok: false,
-      status: e?.status ?? null,
-      message: e?.message ?? null,
-      code: e?.code ?? null,
-      type: e?.type ?? null,
-      requestID: e?.requestID ?? null,
-      error: e?.error ?? null,
-      headers,
-    });
+    return Response.json({ ok: false, fetchError: (err as { message?: string })?.message ?? String(err) });
   }
 }
