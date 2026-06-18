@@ -365,14 +365,17 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
     }
 
-    // Analyse (mémoire + action) en UN appel, en parallèle du chat.
-    // On passe les derniers échanges (pas juste le dernier message) pour que le
-    // détecteur suive une demande étalée (ex: "séance pecs" puis "à la maison").
+    // Analyse (mémoire + action) en UN appel. On passe les derniers échanges
+    // (pas juste le dernier message) pour que le détecteur suive une demande
+    // étalée (ex: "séance pecs" puis "à la maison").
+    // ⚠️ Mistral free tier = 1 req/s : on DÉCALE l'analyse pour qu'elle n'entre
+    // pas en collision avec la requête de chat (sinon 429 → carte + mémoire
+    // perdues silencieusement). Le chat reste prioritaire et instantané.
     const recentContext = messages
       .slice(-4)
       .map((m) => `${m.role === "user" ? "Utilisateur" : "Coach"}: ${m.content}`)
       .join("\n");
-    void analyzeMessage(trimmed, recentContext);
+    setTimeout(() => { void analyzeMessage(trimmed, recentContext); }, 1200);
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
     // → évite le 413 « request too large » de Groq sur les longues conversations).
