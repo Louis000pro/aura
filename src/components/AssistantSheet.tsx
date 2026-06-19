@@ -37,7 +37,15 @@ export default function AssistantSheet() {
   // Auto-scroll en bas à chaque nouveau contenu
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    // La carte de séance s'anime et grandit après le 1er rendu : on re-scroll
+    // une fois sa hauteur stabilisée pour que ses boutons (Créer/Annuler)
+    // soient toujours visibles et cliquables.
+    if (pendingSeance) {
+      const t = setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }), 360);
+      return () => clearTimeout(t);
+    }
   }, [messages, isOpen, pendingSeance, actionLoading]);
 
   // Échap pour fermer
@@ -218,7 +226,7 @@ export default function AssistantSheet() {
                     ))}
                   </div>
 
-                  <div className="px-4 pb-2 flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 220, scrollbarWidth: "none" }}>
+                  <div className="px-4 pb-2 flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 150, scrollbarWidth: "none" }}>
                     {pendingSeance.exerciseList.map((ex, i) => (
                       <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
                         style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
