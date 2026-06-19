@@ -295,12 +295,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // Coordination avec le chat : si le lieu d'entraînement est inconnu, le chat
     // pose d'abord la question (« salle ou maison ? »). On NE génère donc PAS la
     // carte tant qu'on ne connaît pas le lieu — sinon la séance se créerait avant
-    // que l'utilisateur ait répondu. On le déduit du localStorage OU du message
-    // /contexte ; si introuvable, on laisse le chat demander et on attend.
+    // que l'utilisateur ait répondu. Source = localStorage (la même que le chat,
+    // tenu à jour par [LIEU_UPDATE]) OU, en secours, le MESSAGE COURANT (pas le
+    // contexte : un « maison » d'un échange précédent ne doit pas court-circuiter).
     let lieu: string | null = null;
     try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
     if (!lieu) {
-      const blob = `${text}\n${context}`.toLowerCase();
+      const blob = text.toLowerCase();
       if (/maison|chez\s*moi|domicile|sans\s*mat|halt[èe]re|poids\s*du\s*corps/.test(blob)) lieu = "maison";
       else if (/salle|gym|basic\s*fit/.test(blob)) lieu = "salle";
     }
@@ -408,6 +409,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           currentPage: pathname,
           memories: memoriesRef.current,
           memoryEnabled: true,
+          // Lieu connu → le chat ne redemande pas « salle ou maison ? »
+          lieu: user?.id ? (localStorage.getItem(`vaiiya_lieu_${user.id}`) || null) : null,
+          lieu_equip: user?.id ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,
         }),
         signal: abort.signal,
       });
@@ -421,6 +425,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         if (done) break;
         accumulated += decoder.decode(value, { stream: true });
         setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: accumulated, streaming: true } : m));
+      }
+
+      // Mémorise le lieu d'entraînement annoncé par le chat → il ne le
+      // redemandera plus, et la création de séance peut s'y fier (même source).
+      const lieuMatch = accumulated.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
+      if (lieuMatch && user?.id) {
+        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, lieuMatch[1].toLowerCase()); } catch { /* ignore */ }
       }
 
       const cleaned = stripMemoryTags(accumulated)
