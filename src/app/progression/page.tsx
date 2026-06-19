@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
 import NutritionTab from "@/components/NutritionTab";
+import WeeklyProgramme from "@/components/WeeklyProgramme";
 import ExerciseAnalyzer from "@/components/ExerciseAnalyzer";
 import Badges from "@/components/Badges";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
@@ -2830,6 +2831,34 @@ function ProgressionPageContent() {
           transition={{ duration: 0.3 }}
           className="flex flex-col gap-0"
         >
+
+          {/* ── Mon planning de la semaine (source de vérité, piloté par l'IA) ── */}
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-8 max-w-2xl rounded-3xl p-5"
+            style={{ background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
+                  Cette semaine
+                </p>
+                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Mon planning</h2>
+              </div>
+              <span
+                className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+                style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
+              >
+                Piloté par l&apos;IA ✦
+              </span>
+            </div>
+            <WeeklyProgramme />
+            <p className="text-[11px] font-light mt-3 leading-snug" style={{ color: "var(--text-3)" }}>
+              C&apos;est ce que tu suis cette semaine. Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
+            </p>
+          </motion.section>
 
           {/* Section header */}
           <motion.div

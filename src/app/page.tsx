@@ -755,40 +755,8 @@ function Dashboard() {
 
   const chatMessagesRef = useRef<Message[]>(initialChatMessages);
 
-  // Clé de cache programme (même logique que WeeklyProgramme)
-  const getProgrammeCacheKey = useCallback(() => {
-    if (!user) return null;
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-    return `aura_programme_${user.id}_w${week}_${now.getFullYear()}`;
-  }, [user]);
-
-  // Applique une mise à jour de jour dans le programme localStorage — retourne le label pour le toast
-  const applyProgrammeUpdate = useCallback((rawJson: string): string | null => {
-    if (!user) return null;
-    try {
-      // Nettoyage : retire les backticks markdown éventuels
-      const clean = rawJson.replace(/```json?/g, "").replace(/```/g, "").trim();
-      const update = JSON.parse(clean);
-      if (!update.jour) return null;
-      // Jour normalisé (Lundi, Mardi…) pour matcher le programme local
-      const j = String(update.jour).trim().toLowerCase();
-      const dayKey = j.charAt(0).toUpperCase() + j.slice(1);
-      // On stocke la modif dans un store "overrides" séparé : la régénération
-      // locale du programme ne pourra JAMAIS l'écraser.
-      const okey = `vaiiya_prog_overrides_${user.id}`;
-      let overrides: Record<string, unknown> = {};
-      try { overrides = JSON.parse(localStorage.getItem(okey) || "{}"); } catch { /* ignore */ }
-      overrides[dayKey] = { ...update, jour: dayKey };
-      localStorage.setItem(okey, JSON.stringify(overrides));
-      window.dispatchEvent(new CustomEvent("programme-updated"));
-      return `${dayKey} : ${update.titre || update.type}`;
-    } catch (e) {
-      console.error("Programme update parse error", e);
-      return null;
-    }
-  }, [user]);
+  // (Ancien pilotage de programme via localStorage retiré — le planning est
+  //  désormais en base et piloté par l'orbe via cartes de confirmation.)
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
@@ -826,18 +794,8 @@ function Dashboard() {
       content: m.text,
     }));
 
-    // Programme actuel (pour que l'IA sache ce qu'il y a déjà)
-    const cacheKey = getProgrammeCacheKey();
-    let programmeText: string | null = null;
-    if (cacheKey) {
-      try {
-        const raw = localStorage.getItem(cacheKey);
-        if (raw) {
-          const p = JSON.parse(raw);
-          programmeText = p.semaine?.map((d: { jour: string; type: string; titre: string }) => `${d.jour}: ${d.type} - ${d.titre}`).join(", ") ?? null;
-        }
-      } catch { /* ignore */ }
-    }
+    // Planning désormais en base (piloté par l'orbe) — non injecté ici.
+    const programmeText: string | null = null;
 
     // ── Données RÉELLES du compte (repas loggés/scannés + séances) pour que l'IA réponde précisément ──
     let richProfile: unknown = null;
@@ -936,12 +894,9 @@ function Dashboard() {
         });
       }
 
-      // Détecte et applique une mise à jour de programme (regex souple)
-      const match = fullText.match(/\[PROGRAMME_UPDATE\]([\s\S]*?)\[\/PROGRAMME_UPDATE\]/i);
-      if (match) {
-        const label = applyProgrammeUpdate(match[1].trim());
-        if (label) showToast(`✅ ${label} mis à jour`);
-        // Nettoie le bloc JSON du message affiché
+      // Le pilotage du planning passe désormais par l'orbe (cartes de confirmation).
+      // Défensif : on retire un éventuel ancien tag du message affiché.
+      if (/\[PROGRAMME_UPDATE\]/i.test(fullText)) {
         setChatMessages((m) => {
           const updated = m.map((msg) =>
             msg.id === aiMsgId
@@ -1021,7 +976,7 @@ function Dashboard() {
       chatMessagesRef.current = [...chatMessagesRef.current, errMsg];
       setChatMessages(chatMessagesRef.current);
     }
-  }, [user, userContext, liveStats, getProgrammeCacheKey, applyProgrammeUpdate]);
+  }, [user, userContext, liveStats]);
 
   const handleVoiceTranscript = useCallback((text: string) => {
     sendMessage(text);
