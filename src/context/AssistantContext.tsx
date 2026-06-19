@@ -292,6 +292,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const action = parsed.action;
     if (!action || action.intent !== "create_seance") return;
 
+    // Coordination avec le chat : si le lieu d'entraînement est inconnu, le chat
+    // pose d'abord la question (« salle ou maison ? »). On NE génère donc PAS la
+    // carte tant qu'on ne connaît pas le lieu — sinon la séance se créerait avant
+    // que l'utilisateur ait répondu. On le déduit du localStorage OU du message
+    // /contexte ; si introuvable, on laisse le chat demander et on attend.
+    let lieu: string | null = null;
+    try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
+    if (!lieu) {
+      const blob = `${text}\n${context}`.toLowerCase();
+      if (/maison|chez\s*moi|domicile|sans\s*mat|halt[èe]re|poids\s*du\s*corps/.test(blob)) lieu = "maison";
+      else if (/salle|gym|basic\s*fit/.test(blob)) lieu = "salle";
+    }
+    if (!lieu) return; // lieu inconnu → on laisse le chat demander, on attend la réponse
+
     setActionLoading(true);
     setPendingSeance(null);
     try {
@@ -303,10 +317,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
         : [];
 
-      // Lieu d'entraînement mémorisé par le chat → adapte les exercices
-      let lieu: string | null = null;
-      try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
-      const lieuTxt = lieu === "maison" ? " à la maison" : lieu === "salle" ? " en salle de sport" : "";
+      const lieuTxt = lieu === "maison" ? " à la maison" : " en salle de sport";
       const description = `${action.description || text}${lieuTxt}`.slice(0, 400);
 
       const genRes = await fetch("/api/workout/generate", {
