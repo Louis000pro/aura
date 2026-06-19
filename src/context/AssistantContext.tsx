@@ -648,7 +648,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id || !pendingPlan) return;
     try {
       for (const w of pendingPlan.writes) await saveDay(user.id, w);
-      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated"));
+      // On transporte la date de destination → le planning saute sur la bonne
+      // semaine/jour pour que la modif soit visible (même en semaine suivante).
+      const focusDate = pendingPlan.preview?.date ?? pendingPlan.writes[0]?.date ?? null;
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: focusDate } }));
       setPendingPlan(null);
       setMemoryNotice("Planning mis à jour ✓");
       setTimeout(() => setIsOpen(false), 900);

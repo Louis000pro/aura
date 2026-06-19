@@ -3,16 +3,43 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X, Lock } from "lucide-react";
+import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X, Lock, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
-  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle,
+  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle, weekDates, todayWeekIndex,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
+
+/** Dates (Lu→Di) de la semaine décalée de `offset` semaines vs aujourd'hui. */
+function weekDatesForOffset(offset: number): string[] {
+  const ref = new Date();
+  ref.setDate(ref.getDate() + offset * 7);
+  return weekDates(ref);
+}
+/** Nombre max de semaines en avant qu'on autorise à consulter. */
+const MAX_WEEK_AHEAD = 6;
+
+/** Lundi (minuit) de la semaine contenant `d`. */
+function mondayOf(d: Date): Date {
+  const x = new Date(d); const day = x.getDay();
+  x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day));
+  return x;
+}
+/** Décalage en semaines d'une date (YYYY-MM-DD) vs la semaine courante. */
+function weekOffsetOf(ymdStr: string): number {
+  const target = mondayOf(new Date(ymdStr + "T00:00:00"));
+  const now = mondayOf(new Date());
+  return Math.round((target.getTime() - now.getTime()) / (7 * 86_400_000));
+}
+/** Index Lu→Di (0…6) d'une date (YYYY-MM-DD). */
+function weekdayIndexOf(ymdStr: string): number {
+  const d = new Date(ymdStr + "T00:00:00").getDay();
+  return d === 0 ? 6 : d - 1;
+}
 
 /* ─── Types ─── */
 type ProfileData = {
@@ -317,6 +344,8 @@ export default function WeeklyProgramme() {
   const [tuto, setTuto] = useState<string | null>(null);
   // Jour dont on a lancé la séance dans le lecteur guidé (null = fermé)
   const [launchDay, setLaunchDay] = useState<PlanningDay | null>(null);
+  // Semaine consultée : 0 = cette semaine, +1 = la prochaine, etc.
+  const [weekOffset, setWeekOffset] = useState(0);
 
   /* ── Charge le lieu + matériel enregistrés ── */
   useEffect(() => {
@@ -373,8 +402,8 @@ export default function WeeklyProgramme() {
     setHomeEquip(equip);
   }, [user]);
 
-  // Today's day index (0 = Lundi … 6 = Dimanche), fallback to 0
-  const todayIndex = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
+  // Today's day index (0 = Lundi … 6 = Dimanche)
+  const todayIndex = todayWeekIndex();
   const [selectedDay, setSelectedDay] = useState(todayIndex);
 
   /* ── Fetch profile ── */
@@ -410,7 +439,8 @@ export default function WeeklyProgramme() {
       };
       setLoading(true);
       try {
-        const week = force ? await regenerateWeek(user.id, gen) : await ensureWeek(user.id, gen);
+        const dates = weekDatesForOffset(weekOffset);
+        const week = force ? await regenerateWeek(user.id, gen, dates) : await ensureWeek(user.id, gen, dates);
         setDays(week);
         setError(null);
       } catch (e) {
@@ -420,7 +450,7 @@ export default function WeeklyProgramme() {
         setLoading(false);
       }
     },
-    [user, profile]
+    [user, profile, weekOffset]
   );
 
   /* Régénère un programme différent (incrémente le variant) — réservé au Premium */
@@ -445,12 +475,22 @@ export default function WeeklyProgramme() {
     }
   }, [profileLoaded, profile, location, homeEquip, generate]);
 
-  /* ── Recharge le planning quand il est modifié ailleurs (ex: coach IA) ── */
+  /* ── Recharge le planning quand il est modifié ailleurs (ex: coach IA).
+        Si l'événement porte une date (déplacement / nouvelle séance), on SAUTE
+        sur la bonne semaine + jour pour que la modif soit visible. ── */
   useEffect(() => {
-    const handler = () => { void generate(location, homeEquip, false); };
+    const handler = (e: Event) => {
+      const date = (e as CustomEvent<{ date?: string }>).detail?.date;
+      if (date) {
+        const targetOffset = weekOffsetOf(date);
+        setSelectedDay(weekdayIndexOf(date));
+        if (targetOffset !== weekOffset) { setWeekOffset(targetOffset); return; } // l'effet rechargera
+      }
+      void generate(location, homeEquip, false); // même semaine → rafraîchit
+    };
     window.addEventListener("programme-updated", handler);
     return () => window.removeEventListener("programme-updated", handler);
-  }, [generate, location, homeEquip]);
+  }, [generate, location, homeEquip, weekOffset]);
 
   /* ── Refs (must be before any conditional return — Rules of Hooks) ── */
   const trackRef = useRef<HTMLDivElement>(null);
@@ -566,8 +606,42 @@ export default function WeeklyProgramme() {
   // Centre de chaque segment sur une grille de 7 (ex: jour 0 → 7.1%, jour 6 → 92.9%)
   const pct = ((selectedDay + 0.5) / 7) * 100;
 
+  // Navigation entre semaines (consultation des séances déplacées plus loin)
+  const goWeek = (delta: number) => {
+    const next = Math.max(0, Math.min(MAX_WEEK_AHEAD, weekOffset + delta));
+    if (next === weekOffset) return;
+    setWeekOffset(next);
+    setSelectedDay(next === 0 ? todayIndex : 0);
+  };
+  const weekLabel = weekOffset === 0 ? "Cette semaine"
+    : weekOffset === 1 ? "Semaine prochaine"
+    : `Semaine du ${new Date(weekDatesForOffset(weekOffset)[0] + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
+
   return (
     <div className="flex flex-col gap-3">
+
+      {/* ── Navigation entre semaines ── */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => goWeek(-1)}
+          disabled={weekOffset <= 0}
+          aria-label="Semaine précédente"
+          className="w-7 h-7 rounded-xl flex items-center justify-center transition-opacity"
+          style={{ background: "rgba(167,139,250,0.1)", cursor: weekOffset <= 0 ? "default" : "pointer", opacity: weekOffset <= 0 ? 0.3 : 1 }}>
+          <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "#A78BFA" }} />
+        </button>
+        <span className="text-[12px] font-semibold" style={{ color: "#2D3748" }}>{weekLabel}</span>
+        <button
+          type="button"
+          onClick={() => goWeek(1)}
+          disabled={weekOffset >= MAX_WEEK_AHEAD}
+          aria-label="Semaine suivante"
+          className="w-7 h-7 rounded-xl flex items-center justify-center transition-opacity"
+          style={{ background: "rgba(167,139,250,0.1)", cursor: weekOffset >= MAX_WEEK_AHEAD ? "default" : "pointer", opacity: weekOffset >= MAX_WEEK_AHEAD ? 0.3 : 1 }}>
+          <ChevronRight size={15} strokeWidth={2.2} style={{ color: "#A78BFA" }} />
+        </button>
+      </div>
 
       {/* ── Slider jour ── */}
       <div className="flex flex-col gap-2">
