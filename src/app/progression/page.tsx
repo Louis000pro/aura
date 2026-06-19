@@ -2480,7 +2480,9 @@ function ProgressionPageContent() {
       difficulty: r.difficulty as WorkoutSession["difficulty"],
       exercises: r.exercises as number,
       muscles: (r.muscles as string[]) ?? [],
-      accent: r.accent as string,
+      // Répare les séances stockées avec accent "var(--accent)" (CSS invalide en
+      // concaténation → bouton « Commencer » invisible) : on retombe sur le hex.
+      accent: ((r.accent as string) ?? "").startsWith("#") ? (r.accent as string) : "#A78BFA",
       icon: r.icon as string,
       exerciseList: (r.exercise_list as Exercise[]) ?? [],
       visibility: (r.visibility as "private" | "friends" | "public") ?? "private",

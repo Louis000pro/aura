@@ -37,9 +37,11 @@ export interface ProposedSeance {
   exerciseList: ProposedExercise[];
 }
 
-// Mêmes conventions que la page Progression (CreateSessionModal)
+// HEX uniquement : les cartes de séance construisent leurs fonds par
+// concaténation (`${accent}dd`…), donc un "var(--accent)" casserait le CSS et
+// rendrait le bouton « Commencer » invisible. #A78BFA = valeur de --accent.
 export const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
-  force: "var(--accent)", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
+  force: "#A78BFA", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
 };
 export const ICON_NAME_BY_CATEGORY: Record<WorkoutCategory, string> = {
   force: "Dumbbell", cardio: "Flame", mobilite: "Wind", fullbody: "Layers",
