@@ -7,16 +7,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { User } from "@/context/AuthContext";
-import WorkoutGuideModal, { resolveSessionId, type Exercise } from "@/components/WorkoutGuideModal";
-
-/* Parse une ligne d'exercice du programme ("Développé couché 4x8") en Exercise */
-function parseProgrammeExercise(raw: string): Exercise {
-  const m = raw.match(/^(.+?)\s+(\d+)\s*[x×]\s*(.+)$/);
-  if (m) {
-    return { name: m[1].trim(), sets: parseInt(m[2]) || 3, reps: m[3].trim(), rest: 60, tip: "", benefit: "", muscles: [] };
-  }
-  return { name: raw.trim(), sets: 1, reps: "—", rest: 45, tip: "", benefit: "", muscles: [] };
-}
+import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import { ensureWeek, fetchDay, readLieu, ctxFromLieu, dayTitle, setDayStatus, todayYmd, type GenInput } from "@/lib/planning";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 type WorkoutSummary = {
@@ -25,7 +17,8 @@ type WorkoutSummary = {
   difficulty: string;
   category: string;
   id: string;
-  exercices: string[];
+  date: string;
+  exerciseList: Exercise[];
 };
 
 type DailyPerf = {
@@ -131,33 +124,55 @@ export default function DailyDrawer({
     else videoElRef.current.pause();
   }, [activeIdx, open]);
 
-  /* ─ Charge séance du jour depuis le programme localStorage ─ */
+  /* ─ Charge la séance du jour depuis le planning (base Supabase) ─ */
   useEffect(() => {
     if (!open || !user) return;
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-    const key = `aura_programme_${user.id}_w${week}_${now.getFullYear()}`;
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      const jours = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-      const today = jours[now.getDay()];
-      const todayJour = data.semaine?.find((d: { jour: string }) => d.jour === today);
-      if (todayJour && todayJour.type !== "Repos") {
+    let cancelled = false;
+    (async () => {
+      const today = todayYmd();
+      let day = await fetchDay(user.id, today);
+      // Pas encore amorcé (l'utilisateur n'a pas ouvert son planning) → on amorce si le lieu est connu
+      if (!day) {
+        const { location, equip } = readLieu(user.id);
+        if (location) {
+          const supabase = createClient();
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (prof) {
+            let variant = 0;
+            try { variant = parseInt(localStorage.getItem(`vaiiya_prog_variant_${user.id}`) || "0") || 0; } catch { /* ignore */ }
+            const gen: GenInput = {
+              ctx: ctxFromLieu(location, equip),
+              sessions: (prof.onboarding_sessions_week as number) ?? 3,
+              goals: (prof.onboarding_goals as string[]) ?? [],
+              level: (prof.onboarding_level as string) ?? null,
+              variant,
+              seed: user.id,
+            };
+            const wk = await ensureWeek(user.id, gen);
+            day = wk.find((d) => d.date === today) ?? null;
+          }
+        }
+      }
+      if (cancelled) return;
+      if (day && day.type !== "Repos" && day.exerciseList.length > 0) {
         setTodayWorkout({
-          id:         todayJour.id ?? "session-today",
-          title:      todayJour.titre || todayJour.type,
-          duration:   parseInt(todayJour.duree) || 45,
-          difficulty: todayJour.niveau || "Intermédiaire",
-          category:   todayJour.type,
-          exercices:  Array.isArray(todayJour.exercices) ? todayJour.exercices : [],
+          id:         `planning-${day.date}`,
+          date:       day.date,
+          title:      dayTitle(day),
+          duration:   day.type === "HIIT" ? 30 : 45,
+          difficulty: day.difficulty,
+          category:   day.type,
+          exerciseList: day.exerciseList,
         });
       } else {
         setTodayWorkout(null);
       }
-    } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
   }, [open, user]);
 
   /* ─ Charge perfs du jour : compare stats aujourd'hui vs hier ─ */
@@ -660,14 +675,15 @@ export default function DailyDrawer({
           {/* Guide de séance lancé */}
           {showGuide && todayWorkout && (
             <WorkoutGuideModal
-              sessionId={resolveSessionId(todayWorkout.title) ?? todayWorkout.id ?? "custom"}
+              sessionId={todayWorkout.id}
               title={todayWorkout.title}
               accent="#A78BFA"
               duration={todayWorkout.duration}
               difficulty={todayWorkout.difficulty}
               category={todayWorkout.category}
-              exerciseList={todayWorkout.exercices.map(parseProgrammeExercise)}
+              exerciseList={todayWorkout.exerciseList}
               onClose={() => setShowGuide(false)}
+              onComplete={() => { if (user) void setDayStatus(user.id, todayWorkout.date, "done"); }}
             />
           )}
         </>

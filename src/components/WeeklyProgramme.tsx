@@ -8,23 +8,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import WorkoutGuideModal from "@/components/WorkoutGuideModal";
+import {
+  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle,
+  type PlanningDay, type GenInput,
+} from "@/lib/planning";
 
 /* ─── Types ─── */
-type WorkoutDay = {
-  jour: string;
-  type: "Repos" | "Cardio" | "Force" | "Mobilité" | "HIIT" | "Endurance" | "Full Body" | "Haut du corps" | "Bas du corps" | string;
-  titre: string;
-  exercices: string[];
-  duree: string;
-};
-
-type Programme = {
-  semaine: WorkoutDay[];
-  v?: number; // version du générateur local (pour migrer les anciens caches IA)
-};
-
-const LOCAL_PROG_VERSION = 2;
-
 type ProfileData = {
   onboarding_level: string | null;
   onboarding_sessions_week: number | null;
@@ -59,149 +49,7 @@ const goalLabels: Record<string, string> = {
   souplesse: "souplesse",
 };
 
-/* ─── Cache helpers ─── */
-function getCacheKey(userId: string): string {
-  const now = new Date();
-  // ISO week number
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const week = Math.ceil(((now.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-  return `aura_programme_${userId}_w${week}_${now.getFullYear()}`;
-}
-
-function loadFromCache(key: string): Programme | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as Programme;
-  } catch {
-    return null;
-  }
-}
-
-function saveToCache(key: string, data: Programme): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch { /* ignore */ }
-}
-
-/* ── Overrides : modifs faites via le coach IA (ex: "mercredi pecs").
-   Stockés séparément du programme généré → la régénération locale ne les écrase JAMAIS. ── */
-function getOverrides(userId: string): Record<string, WorkoutDay> {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem(`vaiiya_prog_overrides_${userId}`) || "{}"); }
-  catch { return {}; }
-}
-
-function applyOverrides(programme: Programme, userId: string): Programme {
-  const ov = getOverrides(userId);
-  if (!ov || Object.keys(ov).length === 0) return programme;
-  const semaine = programme.semaine.map((d) => (ov[d.jour] ? { ...d, ...ov[d.jour] } : d));
-  return { ...programme, semaine };
-}
-
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-/* ═══════════════════════════════════════════════════════════════════
-   Génération LOCALE des séances (sans IA, instantané)
-   ═══════════════════════════════════════════════════════════════════ */
-type Ctx = "salle" | "halteres" | "poids";
-
-// Banque d'exercices par contexte (matériel) et par type de séance
-const EX: Record<Ctx, Record<string, string[]>> = {
-  salle: {
-    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
-    "Haut du corps": ["Développé couché", "Tirage poitrine", "Développé épaules machine", "Rowing assis poulie", "Pec deck", "Tirage vertical", "Élévations latérales", "Curl haltères", "Extensions triceps poulie"],
-    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
-    "Push": ["Développé couché", "Développé incliné haltères", "Développé épaules machine", "Pec deck", "Élévations latérales", "Extensions triceps poulie", "Dips machine"],
-    "Pull": ["Tirage vertical", "Rowing assis poulie", "Tirage poitrine", "Rowing haltère", "Curl barre EZ", "Curl haltères", "Face pull poulie", "Tirage horizontal"],
-    "Cardio / HIIT": ["Tapis course 20 min", "Vélo 15 min", "Rameur 10 min", "Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s"],
-  },
-  halteres: {
-    "Full Body": ["Squat haltères", "Développé couché haltères", "Rowing haltère", "Développé épaules haltères", "Fentes haltères", "Curl haltères", "Pompes", "Gainage 3x45s"],
-    "Haut du corps": ["Développé couché haltères", "Rowing haltère", "Développé épaules haltères", "Élévations latérales", "Curl haltères", "Extensions triceps haltère", "Pompes", "Oiseau haltères"],
-    "Bas du corps": ["Squat haltères", "Fentes haltères", "Soulevé de terre roumain haltères", "Hip thrust haltère", "Mollets haltères", "Squat bulgare", "Fentes marchées"],
-    "Push": ["Développé couché haltères", "Développé épaules haltères", "Élévations latérales", "Pompes", "Extensions triceps haltère", "Développé incliné haltères"],
-    "Pull": ["Rowing haltère", "Tirage menton haltères", "Curl haltères", "Oiseau haltères", "Curl marteau", "Rowing buste penché"],
-    "Cardio / HIIT": ["Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s", "Jumping jacks 4x40s", "Squats sautés 4x20", "Gainage dynamique 4x45s"],
-  },
-  poids: {
-    "Full Body": ["Pompes", "Squats", "Fentes", "Gainage 3x45s", "Dips sur chaise", "Superman 3x15", "Mountain climbers 3x30s", "Chaise contre le mur 3x45s"],
-    "Haut du corps": ["Pompes", "Pompes diamant", "Dips sur chaise", "Pompes inclinées", "Pike push-ups", "Gainage 3x45s", "Superman 3x15", "Pompes serrées"],
-    "Bas du corps": ["Squats", "Fentes", "Fentes sautées", "Squats sautés", "Chaise contre le mur 3x45s", "Mollets debout", "Pont fessier 4x15", "Squat bulgare"],
-    "Push": ["Pompes", "Pike push-ups", "Dips sur chaise", "Pompes diamant", "Pompes inclinées", "Gainage 3x45s"],
-    "Pull": ["Tractions (ou rowing serviette)", "Rowing inversé sous table", "Superman 3x15", "Gainage dorsal 3x40s", "Bird dog 3x12", "Pont fessier 4x15"],
-    "Cardio / HIIT": ["Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s", "Jumping jacks 4x40s", "Squats sautés 4x20", "Montées de genoux 4x40s"],
-  },
-};
-
-// Répartition des séances sur la semaine (indices de jours d'entraînement, 0=Lundi)
-const REST_PATTERN: Record<number, number[]> = {
-  1: [0], 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 4, 5], 6: [0, 1, 2, 4, 5, 6],
-};
-function buildSplit(sessions: number): string[] {
-  if (sessions <= 1) return ["Full Body"];
-  if (sessions === 2) return ["Haut du corps", "Bas du corps"];
-  if (sessions === 3) return ["Full Body", "Haut du corps", "Bas du corps"];
-  if (sessions === 4) return ["Haut du corps", "Bas du corps", "Push", "Pull"];
-  if (sessions === 5) return ["Push", "Pull", "Bas du corps", "Haut du corps", "Cardio / HIIT"];
-  return ["Push", "Pull", "Bas du corps", "Haut du corps", "Full Body", "Cardio / HIIT"];
-}
-function repSchemeFor(goals: string[]): string {
-  const g = goals.join(" ").toLowerCase();
-  if (g.includes("force")) return "5x5";
-  if (g.includes("masse")) return "4x10";
-  if (g.includes("poids") || g.includes("endurance") || g.includes("souplesse")) return "3x15";
-  return "4x12";
-}
-
-/* PRNG déterministe */
-function hashStr(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
-function mulberry32(a: number) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-function shuffleArr<T>(arr: T[], rng: () => number): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-
-/* Construit un programme hebdo local, instantané, adapté au matériel + objectifs */
-function buildLocalProgramme(ctx: Ctx, sessionsRaw: number, goals: string[], variant: number, seedBase: string): Programme {
-  const sessions = Math.max(1, Math.min(6, sessionsRaw || 3));
-  const rng = mulberry32(hashStr(`${seedBase}-${ctx}-s${sessions}-v${variant}`));
-  const split = buildSplit(sessions);
-  const trainingDays = REST_PATTERN[sessions] ?? [0, 2, 4];
-  const reps = repSchemeFor(goals);
-
-  const semaine: WorkoutDay[] = DAY_LABELS.map((jour, dayIdx) => {
-    const pos = trainingDays.indexOf(dayIdx);
-    if (pos === -1) return { jour, type: "Repos", titre: "", exercices: [], duree: "" };
-    const sessionType = split[pos % split.length];
-    const isCardio = sessionType.includes("Cardio");
-    const bank = EX[ctx][sessionType] ?? EX[ctx]["Full Body"];
-    const picked = shuffleArr(bank, rng).slice(0, 5);
-    const exercices = picked.map((ex) => (/\d/.test(ex) ? ex : `${ex} ${reps}`));
-    return {
-      jour,
-      type: isCardio ? "HIIT" : "Force",
-      titre: sessionType,
-      exercices,
-      duree: isCardio ? "30 min" : "45 min",
-    };
-  });
-  return { semaine, v: LOCAL_PROG_VERSION };
-}
 
 /* ─── Skeleton inline ─── */
 function SkeletonDetail() {
@@ -314,46 +162,60 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
 }
 
 /* ─── Day detail panel ─── */
-function DayDetail({ day, onTuto }: { day: WorkoutDay; onTuto: (ex: string) => void }) {
+function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: string) => void; onStart: () => void }) {
   const isRest = day.type.toLowerCase() === "repos";
   return (
-    <motion.div key={day.jour}
+    <motion.div key={day.date}
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2, ease: "easeOut" }}
       className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2 flex-wrap">
         <span style={getBadgeStyle(day.type)}>{day.type}</span>
-        {day.duree && !isRest && (
-          <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{day.duree}</span>
+        {!isRest && (
+          <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{day.difficulty}</span>
         )}
       </div>
-      {!isRest && day.titre && (
-        <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{day.titre}</p>
+      {!isRest && day.title && (
+        <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{day.title}</p>
       )}
       {isRest && (
         <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Journée de récupération — repose-toi bien 💤</p>
       )}
-      {!isRest && day.exercices && day.exercices.length > 0 && (
-        <div className="flex flex-col gap-1.5 mt-0.5">
-          {day.exercices.map((ex, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onTuto(ex)}
-              className="flex items-center gap-2 w-full text-left rounded-xl px-2 py-1.5 -mx-1 cursor-pointer transition-colors"
-              style={{ background: "rgba(167,139,250,0.05)" }}
-              aria-label={`Voir le tuto : ${ex}`}
-            >
-              <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.8 }} />
-              <p className="text-[11px] leading-snug flex-1" style={{ color: "#4A5568" }}>{ex}</p>
-              <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
-                style={{ background: "rgba(167,139,250,0.12)" }}>
-                <Play size={9} strokeWidth={2.5} style={{ color: "#A78BFA" }} fill="#A78BFA" />
-                <span className="text-[9px] font-semibold" style={{ color: "#A78BFA" }}>Tuto</span>
-              </span>
-            </button>
-          ))}
-        </div>
+      {!isRest && day.exerciseList.length > 0 && (
+        <>
+          <div className="flex flex-col gap-1.5 mt-0.5">
+            {day.exerciseList.map((ex, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onTuto(ex.name)}
+                className="flex items-center gap-2 w-full text-left rounded-xl px-2 py-1.5 -mx-1 cursor-pointer transition-colors"
+                style={{ background: "rgba(167,139,250,0.05)" }}
+                aria-label={`Voir le tuto : ${ex.name}`}
+              >
+                <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.8 }} />
+                <p className="text-[11px] leading-snug flex-1" style={{ color: "#4A5568" }}>{ex.name}</p>
+                <span className="text-[9px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{ex.sets}×{ex.reps}</span>
+                <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
+                  style={{ background: "rgba(167,139,250,0.12)" }}>
+                  <Play size={9} strokeWidth={2.5} style={{ color: "#A78BFA" }} fill="#A78BFA" />
+                  <span className="text-[9px] font-semibold" style={{ color: "#A78BFA" }}>Tuto</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* Lancer la séance du jour sélectionné */}
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.98 }}
+            onClick={onStart}
+            className="mt-1 w-full flex items-center justify-center gap-2 py-3 rounded-2xl cursor-pointer"
+            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 6px 18px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.85)" }}
+          >
+            <Play size={13} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 1 }} fill="#2D3748" />
+            <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Commencer</span>
+          </motion.button>
+        </>
       )}
     </motion.div>
   );
@@ -443,7 +305,7 @@ export default function WeeklyProgramme() {
   const isPremium = !!(user?.is_admin || user?.is_premium);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [programme, setProgramme] = useState<Programme | null>(null);
+  const [days, setDays] = useState<PlanningDay[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Lieu d'entraînement (salle / maison) — demandé par le coach avant génération
@@ -453,6 +315,8 @@ export default function WeeklyProgramme() {
   const forceNextRef = useRef(false);
   // Exercice dont on affiche le tuto vidéo (null = fermé)
   const [tuto, setTuto] = useState<string | null>(null);
+  // Jour dont on a lancé la séance dans le lecteur guidé (null = fermé)
+  const [launchDay, setLaunchDay] = useState<PlanningDay | null>(null);
 
   /* ── Charge le lieu + matériel enregistrés ── */
   useEffect(() => {
@@ -530,32 +394,31 @@ export default function WeeklyProgramme() {
       });
   }, [user]);
 
-  /* ── Generate programme ── */
+  /* ── Charge / amorce le planning de la semaine depuis la base ── */
   const generate = useCallback(
-    (loc: "salle" | "maison" | null, equip: "halteres" | "poids" | null, force = false) => {
+    async (loc: "salle" | "maison" | null, equip: "halteres" | "poids" | null, force = false) => {
       if (!user || !profile) return;
-
-      // Cache d'abord (préserve les modifs faites via le coach) sauf si forcé.
-      // Un ancien cache IA (sans marqueur v=2) est ignoré → régénération locale.
-      const cacheKey = getCacheKey(user.id);
-      if (!force) {
-        const cached = loadFromCache(cacheKey);
-        if (cached && (cached as Programme).v === LOCAL_PROG_VERSION) { setProgramme(applyOverrides(cached, user.id)); return; }
-      }
-
-      const ctx: Ctx = loc === "salle" ? "salle" : equip === "halteres" ? "halteres" : "poids";
-      const sessions = profile.onboarding_sessions_week ?? 3;
-      const goals = (profile.onboarding_goals ?? []).map((g) => goalLabels[g] ?? g);
       let variant = 0;
       try { variant = parseInt(localStorage.getItem(`vaiiya_prog_variant_${user.id}`) || "0") || 0; } catch { /* ignore */ }
-
-      // Génération locale instantanée (aucune IA)
-      const programme = buildLocalProgramme(ctx, sessions, goals, variant, user.id);
-      saveToCache(cacheKey, programme);          // on cache la base SANS les overrides
-      setProgramme(applyOverrides(programme, user.id)); // mais on affiche AVEC les modifs IA
-      setError(null);
-      setLoading(false);
-      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated"));
+      const gen: GenInput = {
+        ctx: ctxFromLieu(loc, equip),
+        sessions: profile.onboarding_sessions_week ?? 3,
+        goals: (profile.onboarding_goals ?? []).map((g) => goalLabels[g] ?? g),
+        level: profile.onboarding_level,
+        variant,
+        seed: user.id,
+      };
+      setLoading(true);
+      try {
+        const week = force ? await regenerateWeek(user.id, gen) : await ensureWeek(user.id, gen);
+        setDays(week);
+        setError(null);
+      } catch (e) {
+        console.error("Planning load error", e);
+        setError("Impossible de charger ton planning.");
+      } finally {
+        setLoading(false);
+      }
     },
     [user, profile]
   );
@@ -582,18 +445,12 @@ export default function WeeklyProgramme() {
     }
   }, [profileLoaded, profile, location, homeEquip, generate]);
 
-  /* ── Recharge depuis le cache quand l'IA modifie le programme ── */
+  /* ── Recharge le planning quand il est modifié ailleurs (ex: coach IA) ── */
   useEffect(() => {
-    const handler = () => {
-      if (!user) return;
-      const key = getCacheKey(user.id);
-      const base = loadFromCache(key);
-      if (base) setProgramme(applyOverrides(base, user.id));
-      else setProgramme((prev) => (prev ? applyOverrides(prev, user.id) : prev));
-    };
+    const handler = () => { void generate(location, homeEquip, false); };
     window.addEventListener("programme-updated", handler);
     return () => window.removeEventListener("programme-updated", handler);
-  }, [user]);
+  }, [generate, location, homeEquip]);
 
   /* ── Refs (must be before any conditional return — Rules of Hooks) ── */
   const trackRef = useRef<HTMLDivElement>(null);
@@ -686,7 +543,7 @@ export default function WeeklyProgramme() {
     return <HomeEquipQuestion onChoose={chooseHomeEquip} onBack={resetLocation} />;
   }
 
-  const currentDay = programme?.semaine?.[selectedDay];
+  const currentDay = days?.[selectedDay];
 
   const getDayFromX = (clientX: number): number => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -746,7 +603,7 @@ export default function WeeklyProgramme() {
         </div>
 
         {/* Lieu + Régénérer */}
-        {programme && !loading && (
+        {days && !loading && (
           <div className="flex justify-between items-center">
             <button
               onClick={resetLocation}
@@ -782,17 +639,41 @@ export default function WeeklyProgramme() {
         )}
 
         {/* Skeleton */}
-        {(loading || (!programme && profileLoaded && hasOnboardingData)) && <SkeletonDetail />}
+        {(loading || (!days && profileLoaded && hasOnboardingData)) && <SkeletonDetail />}
 
         {/* Contenu */}
         <AnimatePresence mode="wait">
-          {!loading && currentDay && <DayDetail key={selectedDay} day={currentDay} onTuto={setTuto} />}
+          {!loading && currentDay && (
+            <DayDetail
+              key={selectedDay}
+              day={currentDay}
+              onTuto={setTuto}
+              onStart={() => setLaunchDay(currentDay)}
+            />
+          )}
         </AnimatePresence>
       </div>
 
       {/* Modal tuto vidéo de l'exercice sélectionné */}
       <AnimatePresence>
         {tuto && <ExerciseTutorial exercise={tuto} onClose={() => setTuto(null)} />}
+      </AnimatePresence>
+
+      {/* Lecteur guidé de la séance du jour sélectionné */}
+      <AnimatePresence>
+        {launchDay && (
+          <WorkoutGuideModal
+            sessionId={`planning-${launchDay.date}`}
+            title={dayTitle(launchDay)}
+            accent="#A78BFA"
+            duration={launchDay.type === "HIIT" ? 30 : 45}
+            difficulty={launchDay.difficulty}
+            category={launchDay.type}
+            exerciseList={launchDay.exerciseList}
+            onClose={() => setLaunchDay(null)}
+            onComplete={() => { if (user) void setDayStatus(user.id, launchDay.date, "done"); }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
