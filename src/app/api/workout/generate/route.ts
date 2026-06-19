@@ -67,6 +67,7 @@ Retourne un JSON avec exactement ce format :
 }
 
 Regles :
+- NOM DES EXERCICES (CRITIQUE) : pour "name", utilise TOUJOURS le nom standard et reconnaissable de l exercice, celui qu un debutant trouverait sur YouTube et qu on emploie en salle (ex : "Développé couché", "Curl haltères", "Fentes avant", "Pompes diamant", "Dips sur banc", "Gainage planche"). JAMAIS de nom invente, poetique ou metaphorique (INTERDIT : "Bras de guerrier", "Gainage du dragon", "Dips entre deux chaises"). Si c est une variante, garde le nom de base reconnaissable suivi de la precision (ex : "Squat sauté", "Pompes inclinées"). Un nom clair = l utilisateur sait quoi faire et trouve une video de demo.
 - Tu es libre de choisir le nombre d exercices, les sets, reps, rest et restAfter selon ce qui est le plus efficace sportivement pour chaque exercice
 - Le niveau "${difficulty ?? "Intermediaire"}" influence la complexite et l intensite des exercices choisis :
   * Debutant    : variantes accessibles et simples

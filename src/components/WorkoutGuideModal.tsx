@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
-  Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck,
+  Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck, ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -479,6 +479,7 @@ export default function WorkoutGuideModal({
   const [elapsed,       setElapsed]       = useState(0);
   const [paused,        setPaused]        = useState(false);
   const [showInfo,      setShowInfo]      = useState(false);
+  const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
   const [sessionSaved,  setSessionSaved]  = useState(false);
 
@@ -781,25 +782,64 @@ export default function WorkoutGuideModal({
                   </div>
                 </div>
 
-                {/* Exercise list */}
+                {/* Exercise list — chaque exo est dépliable (technique + démo vidéo) */}
                 <div>
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-3 px-1" style={{ color: "#A0AEC0" }}>
-                    Au programme
-                  </p>
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                      Au programme
+                    </p>
+                    <p className="text-[10px] font-light" style={{ color: "#A78BFA" }}>
+                      Touche un exo pour la démo
+                    </p>
+                  </div>
                   <div className="flex flex-col gap-1.5">
-                    {exercises.map((ex, i) => (
-                      <div key={i} className="flex items-center gap-3 rounded-2xl px-4 py-3"
-                        style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(167,139,250,0.08)", boxShadow: "0 1px 4px rgba(167,139,250,0.05)" }}>
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                          style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}>
-                          {i + 1}
+                    {exercises.map((ex, i) => {
+                      const open = introOpen === i;
+                      return (
+                        <div key={i} className="rounded-2xl overflow-hidden"
+                          style={{ background: "rgba(255,255,255,0.6)", border: `1px solid ${open ? "rgba(167,139,250,0.25)" : "rgba(167,139,250,0.08)"}`, boxShadow: "0 1px 4px rgba(167,139,250,0.05)" }}>
+                          <button
+                            onClick={() => setIntroOpen(open ? null : i)}
+                            className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer text-left"
+                            aria-expanded={open}
+                          >
+                            <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}>
+                              {i + 1}
+                            </div>
+                            <p className="flex-1 text-sm font-light truncate" style={{ color: "#2D3748" }}>{ex.name}</p>
+                            <p className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>
+                              {ex.sets}×{ex.reps}
+                            </p>
+                            <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex-shrink-0 flex">
+                              <ChevronDown size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                            </motion.span>
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {open && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.25 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-4 pb-4 pt-1 flex flex-col gap-3">
+                                  {/* Technique */}
+                                  <div className="rounded-xl p-3"
+                                    style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.1)" }}>
+                                    <p className="text-[9px] font-bold tracking-widest uppercase mb-1.5" style={{ color: "#A78BFA" }}>
+                                      Comment faire
+                                    </p>
+                                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "#4A5568" }}>{ex.tip}</p>
+                                  </div>
+                                  {/* Démo vidéo (chargée à l'ouverture seulement) */}
+                                  <ExerciseVideo exerciseName={ex.name} />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                        <p className="flex-1 text-sm font-light truncate" style={{ color: "#2D3748" }}>{ex.name}</p>
-                        <p className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>
-                          {ex.sets}×{ex.reps}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>
