@@ -659,22 +659,26 @@ export default function WeeklyProgramme() {
         {tuto && <ExerciseTutorial exercise={tuto} onClose={() => setTuto(null)} />}
       </AnimatePresence>
 
-      {/* Lecteur guidé de la séance du jour sélectionné */}
-      <AnimatePresence>
-        {launchDay && (
-          <WorkoutGuideModal
-            sessionId={`planning-${launchDay.date}`}
-            title={dayTitle(launchDay)}
-            accent="#A78BFA"
-            duration={launchDay.type === "HIIT" ? 30 : 45}
-            difficulty={launchDay.difficulty}
-            category={launchDay.type}
-            exerciseList={launchDay.exerciseList}
-            onClose={() => setLaunchDay(null)}
-            onComplete={() => { if (user) void setDayStatus(user.id, launchDay.date, "done"); }}
-          />
-        )}
-      </AnimatePresence>
+      {/* Lecteur guidé de la séance — porté dans <body> pour échapper aux
+          transforms du drawer parent (sinon le `fixed` se cale sur le drawer). */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {launchDay && (
+            <WorkoutGuideModal
+              sessionId={`planning-${launchDay.date}`}
+              title={dayTitle(launchDay)}
+              accent="#A78BFA"
+              duration={launchDay.type === "HIIT" ? 30 : 45}
+              difficulty={launchDay.difficulty}
+              category={launchDay.type}
+              exerciseList={launchDay.exerciseList}
+              onClose={() => setLaunchDay(null)}
+              onComplete={() => { if (user) void setDayStatus(user.id, launchDay.date, "done"); }}
+            />
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 }
