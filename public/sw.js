@@ -1,7 +1,8 @@
-// Vaiiya Service Worker — v9 (icônes agrandies)
+// Vaiiya Service Worker — v10 (HTML réseau-strict : déploiements toujours frais en ligne)
 // Stratégie :
-//   - Navigation (HTML) → Stale-While-Revalidate : on sert la page en CACHE
-//     immédiatement (lancement instantané), puis on rafraîchit en arrière-plan.
+//   - Navigation (HTML) → Réseau STRICT d'abord : on sert toujours la page
+//     fraîche quand on est en ligne (un déploiement est visible immédiatement),
+//     cache en secours UNIQUEMENT si le réseau échoue (hors-ligne).
 //   - _next/static/ (chunks hashés, immuables) → Cache-first, cache PERMANENT
 //     (jamais purgé → une page en cache trouve toujours ses chunks).
 //   - Images/fonts → Stale-While-Revalidate.
@@ -62,21 +63,19 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  // 3. Navigations HTML → Réseau d'abord (timeout 2,5s), secours cache.
-  //    → les déploiements apparaissent immédiatement quand il y a du réseau,
-  //      et l'app reste instantanée hors-ligne / réseau lent.
+  // 3. Navigations HTML → Réseau STRICT d'abord, secours cache UNIQUEMENT si le
+  //    réseau échoue (hors-ligne). Plus de timeout : un déploiement est donc
+  //    TOUJOURS visible dès qu'on est en ligne (fini le cache périmé servi sur
+  //    réseau lent / VPN). L'app reste fonctionnelle hors-ligne via le cache.
   if (e.request.mode === "navigate") {
     e.respondWith((async () => {
       const cache = await caches.open(HTML_CACHE);
       try {
-        const net = await Promise.race([
-          fetch(e.request),
-          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 2500)),
-        ]);
+        const net = await fetch(e.request);
         if (net && net.ok) cache.put(e.request, net.clone());
         return net;
       } catch {
-        return (await cache.match(e.request)) || (await cache.match("/")) || fetch(e.request);
+        return (await cache.match(e.request)) || (await cache.match("/")) || Response.error();
       }
     })());
     return;
