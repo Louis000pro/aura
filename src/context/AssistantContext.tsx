@@ -22,11 +22,23 @@ import { createClient } from "@/lib/supabase";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
+import {
+  resolveWhen, dayLabelLong, dayTitle, fetchDay, saveDay, ctxFromLieu, readLieu,
+  PLANNING_TYPE_BY_CATEGORY, type PlanningDay,
+} from "@/lib/planning";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
   | { type: "forget"; keywords?: string }
   | { type: "none" };
+
+/** Changement de planning proposé par l'IA, en attente de confirmation. */
+type PendingPlan = {
+  title: string;            // titre de la carte (nom de la séance ou jour déplacé)
+  summary: string;          // ligne contexte ("📅 vendredi 20 juin · à la maison")
+  writes: PlanningDay[];    // jours à écrire en base à la confirmation
+  preview: PlanningDay | null; // jour dont on prévisualise les exercices
+};
 
 export type AssistantMsg = {
   role: "user" | "assistant";
@@ -57,9 +69,12 @@ type AssistantContextValue = {
   pseudo?: string;
   memoryNotice: string | null;
   pendingSeance: ProposedSeance | null;
+  pendingPlan: PendingPlan | null;
   actionLoading: boolean;
   confirmSeance: () => void;
   cancelSeance: () => void;
+  confirmPlan: () => void;
+  cancelPlan: () => void;
 };
 
 const Ctx = createContext<AssistantContextValue | null>(null);
@@ -84,6 +99,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
   const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const userContextRef = useRef<UserContext | null>(null);
@@ -262,6 +278,114 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id]);
 
+  /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
+     Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
+  const preparePlanAction = useCallback(async (action: {
+    intent?: string; when?: string; to?: string; location?: string;
+    muscles?: unknown; category?: string; description?: string;
+  }) => {
+    if (!user?.id) return;
+
+    // DÉPLACEMENT : pas de génération, on copie la séance vers le jour cible
+    // et on libère (Repos) le jour source.
+    if (action.intent === "plan_move") {
+      const from = resolveWhen(action.when || "aujourd_hui");
+      const to = action.to ? resolveWhen(action.to) : null;
+      if (!from || !to || from === to) return;
+      const src = await fetchDay(user.id, from);
+      if (!src || src.type.toLowerCase() === "repos" || src.exerciseList.length === 0) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Il n'y a pas de séance à déplacer le ${dayLabelLong(from)} 🤔`, id: uid() }]);
+        return;
+      }
+      const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
+      const restDay: PlanningDay = { date: from, type: "Repos", title: "", difficulty: src.difficulty, location: src.location, exerciseList: [], sessionId: null, status: "planned" };
+      setPendingPlan({
+        title: dayTitle(src),
+        summary: `📅 ${dayLabelLong(from)} → ${dayLabelLong(to)}`,
+        writes: [movedDay, restDay],
+        preview: movedDay,
+      });
+      return;
+    }
+
+    // SET / LOCATION : on génère une vraie séance pour le jour cible.
+    const when = resolveWhen(action.when || "aujourd_hui");
+    if (!when) return;
+
+    const saved = readLieu(user.id);
+    let location: "salle" | "maison" | null = saved.location;
+    let equip: "halteres" | "poids" | null = saved.equip;
+    if (action.intent === "plan_location") {
+      location = action.location === "salle" ? "salle" : "maison";
+      if (location === "maison" && equip !== "halteres") equip = "poids";
+    }
+    const ctx = ctxFromLieu(location, equip);
+
+    const category = normalizeWorkoutCategory(action.category);
+    const muscles: string[] = Array.isArray(action.muscles)
+      ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
+      : [];
+    let baseDesc = (action.description || "").trim();
+    if (action.intent === "plan_location") {
+      const existing = await fetchDay(user.id, when);
+      baseDesc = existing && existing.title ? existing.title : "séance complète";
+    }
+
+    setActionLoading(true);
+    setPendingPlan(null);
+    try {
+      const difficulty = levelToDifficulty(userContextRef.current?.level);
+      const lieuTxt = location === "maison"
+        ? (equip === "halteres" ? " à la maison avec haltères" : " à la maison au poids du corps")
+        : " en salle de sport";
+      const description = `${baseDesc || "séance complète"}${lieuTxt}`.slice(0, 400);
+
+      const genRes = await fetch("/api/workout/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description, category, difficulty, muscles }),
+      });
+      if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
+      const data = await genRes.json();
+      if (!data || data.error) throw new Error("generation: " + (data?.error ?? "réponse vide"));
+
+      const seance = assembleSeance({
+        title: data.title,
+        category,
+        difficulty,
+        muscles: (Array.isArray(data.muscles) && data.muscles.length > 0) ? data.muscles : muscles,
+        rawExercises: Array.isArray(data.exercises) ? data.exercises : [],
+      });
+
+      const day: PlanningDay = {
+        date: when,
+        type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
+        title: seance.title,
+        difficulty,
+        location: ctx,
+        exerciseList: seance.exerciseList.map((e) => ({
+          name: e.name, sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter,
+          tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],
+        })),
+        sessionId: null,
+        status: "planned",
+      };
+
+      const locTxt = location === "maison" ? "à la maison" : "en salle";
+      setPendingPlan({
+        title: seance.title,
+        summary: `📅 ${dayLabelLong(when)} · ${locTxt}`,
+        writes: [day],
+        preview: day,
+      });
+    } catch (e) {
+      const detail = (e as { message?: string })?.message ?? String(e);
+      setMessages((prev) => [...prev, { role: "assistant" as const, content: `⚠️ Modification du planning échouée — ${detail}`, id: uid() }]);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [user?.id]);
+
   /* ── Analyse unifiée : UN seul appel 8b décide s'il y a un fait à retenir
      ET/OU une action (créer une séance) → moitié moins d'appels Groq ── */
   const analyzeMessage = useCallback(async (text: string, context: string) => {
@@ -269,7 +393,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     let parsed: {
       memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string };
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string };
     } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
@@ -288,9 +412,18 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       void persistMemoryAction(mem);
     }
 
-    // 2) Action : créer une séance → génération + carte de confirmation
+    // 2) Action
     const action = parsed.action;
-    if (!action || action.intent !== "create_seance") return;
+    if (!action || !action.intent) return;
+
+    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu d'un jour)
+    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move") {
+      void preparePlanAction(action);
+      return;
+    }
+
+    // 2b) Création d'une séance réutilisable (bibliothèque) → génération + carte
+    if (action.intent !== "create_seance") return;
 
     // Coordination avec le chat : si le lieu d'entraînement est inconnu, le chat
     // pose d'abord la question (« salle ou maison ? »). On NE génère donc PAS la
@@ -348,7 +481,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, persistMemoryAction]);
+  }, [user?.id, persistMemoryAction, preparePlanAction]);
 
   /* ── Envoi d'un message ── */
   const sendMessage = useCallback(async (text: string) => {
@@ -488,6 +621,22 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   const cancelSeance = useCallback(() => setPendingSeance(null), []);
 
+  /* ── Validation de la carte planning : écrit les jours en base (aucune écriture sans clic) ── */
+  const confirmPlan = useCallback(async () => {
+    if (!user?.id || !pendingPlan) return;
+    try {
+      for (const w of pendingPlan.writes) await saveDay(user.id, w);
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated"));
+      setPendingPlan(null);
+      setMemoryNotice("Planning mis à jour ✓");
+      setTimeout(() => setIsOpen(false), 900);
+    } catch {
+      setMemoryNotice("Oups, impossible de mettre à jour le planning.");
+    }
+  }, [user?.id, pendingPlan]);
+
+  const cancelPlan = useCallback(() => setPendingPlan(null), []);
+
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   // La notice mémoire ("Je m'en souviendrai") s'efface seule
@@ -498,7 +647,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, actionLoading, confirmSeance, cancelSeance }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan }}>
       {children}
     </Ctx.Provider>
   );

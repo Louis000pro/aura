@@ -8,7 +8,11 @@ export const ANALYZE_SYSTEM = `Tu analyses le DERNIER message d'un utilisateur �
 Réponds UNIQUEMENT par cet objet JSON (rien autour) :
 {
   "memory": null | {"type":"save","category":"sante|nutrition|planning|objectif|preference","fact":"<fait court, 3e personne>"} | {"type":"forget","keywords":"<mots-clés>"},
-  "action": null | {"intent":"create_seance","description":"<reformulation courte>","muscles":["<muscles en français>"],"category":"force|cardio|mobilite|fullbody","difficulty":"Débutant|Intermédiaire|Avancé"}
+  "action": null
+    | {"intent":"create_seance","description":"<reformulation courte>","muscles":["<muscles en français>"],"category":"force|cardio|mobilite|fullbody","difficulty":"Débutant|Intermédiaire|Avancé"}
+    | {"intent":"plan_set","when":"<jour>","muscles":["<muscles>"],"category":"force|cardio|mobilite|fullbody","description":"<court>"}
+    | {"intent":"plan_move","when":"<jour source>","to":"<jour destination>"}
+    | {"intent":"plan_location","when":"<jour>","location":"salle|maison"}
 }
 
 MÉMOIRE — quand remplir "memory" :
@@ -16,10 +20,23 @@ MÉMOIRE — quand remplir "memory" :
 - "forget" si l'utilisateur demande explicitement d'oublier quelque chose.
 - null pour le temporaire / banal / une simple question.
 
-ACTION — quand remplir "action" :
-- "create_seance" si l'utilisateur veut qu'on lui CRÉE / GÉNÈRE / AJOUTE / ENREGISTRE une séance d'entraînement (ex: "crée-moi une séance pecs", "fais-moi une séance jambes de 30 min", "ajoute une séance dos à mes séances").
-- LE CONTEXTE COMPTE : si le coach vient de demander une précision pour préparer une séance (lieu, matériel, durée, niveau…) et que l'utilisateur répond (ex: "à la maison", "sans matériel", "30 min", "en salle"), c'est TOUJOURS "create_seance". Reprends alors les muscles / l'objectif mentionnés plus tôt dans le contexte.
-- Une simple QUESTION sur l'entraînement ("c'est quoi une bonne séance pecs ?") = null.
-- "muscles", "category", "difficulty" sont OPTIONNELS : déduis-les du message ET du contexte (ex: si "pecs" a été dit plus tôt, mets muscles:["pectoraux"]).
+ACTION — un seul "intent" à la fois. Distingue bien :
+
+• "create_seance" = créer une séance RÉUTILISABLE dans sa bibliothèque, SANS référence à un jour du planning (ex: "crée-moi une séance pecs", "fais-moi une séance jambes de 30 min", "ajoute une séance dos à mes séances").
+  - CONTEXTE : si le coach vient de demander une précision pour préparer une séance (lieu, matériel, durée…) et que l'utilisateur répond ("à la maison", "sans matériel", "30 min", "en salle"), c'est create_seance. Reprends les muscles/objectif du contexte.
+
+• "plan_set" = DÉFINIR / REMPLACER la séance d'un JOUR précis du planning (ex: "remplace aujourd'hui par du dos", "mets du pecs jeudi", "dans 2 jours je veux jambes", "ma séance de demain ce sera bras"). Renseigne "when" (le jour) + muscles/category/description de la séance voulue.
+
+• "plan_move" = DÉPLACER / DÉCALER / REPOUSSER la séance d'un jour vers un autre (ex: "repousse ma séance à demain", "décale la séance d'aujourd'hui à vendredi", "bouge ça à dans 2 jours"). "when" = jour source (si non précisé → "aujourd_hui"), "to" = jour destination.
+
+• "plan_location" = changer le LIEU d'un jour du planning (ex: "vendredi je suis à la maison", "demain je m'entraîne en salle", "mardi ce sera chez moi"). "when" = le jour, "location" = "salle" ou "maison".
+
+FORMAT de "<jour>" (obligatoire pour les actions plan_*) — une de ces valeurs :
+"aujourd_hui", "demain", "apres_demain", "dans_N_jours" (ex: "dans_2_jours", "dans_3_jours"), "semaine_prochaine", ou un nom de jour en minuscule sans accent : "lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche".
+
+NUANCES :
+- Une simple QUESTION ("c'est quoi une bonne séance pecs ?", "je m'entraîne quel jour ?") = action null.
+- "muscles","category","difficulty" sont OPTIONNELS pour create_seance et plan_set : déduis-les du message ET du contexte.
+- Ne confonds pas create_seance (bibliothèque, pas de jour) et plan_set (un jour précis du planning est mentionné).
 
 RÈGLES : n'invente jamais. Les deux champs sont indépendants (l'un peut être non-null et l'autre null). Si rien : {"memory":null,"action":null}.`;

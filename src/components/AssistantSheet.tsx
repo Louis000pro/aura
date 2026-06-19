@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, X, Mic, Square, Dumbbell, Check } from "lucide-react";
+import { Send, Sparkles, X, Mic, Square, Dumbbell, Check, CalendarDays } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
@@ -25,7 +25,7 @@ const SUGGESTIONS = [
 ];
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, actionLoading, confirmSeance, cancelSeance } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan } = useAssistant();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,11 +42,11 @@ export default function AssistantSheet() {
     // La carte de séance s'anime et grandit après le 1er rendu : on re-scroll
     // une fois sa hauteur stabilisée pour que ses boutons (Créer/Annuler)
     // soient toujours visibles et cliquables.
-    if (pendingSeance) {
+    if (pendingSeance || pendingPlan) {
       const t = setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }), 360);
       return () => clearTimeout(t);
     }
-  }, [messages, isOpen, pendingSeance, actionLoading]);
+  }, [messages, isOpen, pendingSeance, pendingPlan, actionLoading]);
 
   // Échap pour fermer
   useEffect(() => {
@@ -253,6 +253,53 @@ export default function AssistantSheet() {
                       className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
                       style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
                       <Check size={15} strokeWidth={2.4} /> Créer la séance
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Carte de confirmation — modification du planning (aucune écriture sans clic) */}
+              {pendingPlan && (
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="w-full rounded-3xl overflow-hidden"
+                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
+                      <CalendarDays size={16} strokeWidth={1.8} style={{ color: "#fff" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Modifier le planning</p>
+                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingPlan.title}</p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 pt-2.5 pb-1">
+                    <p className="text-[12px] font-medium" style={{ color: "var(--text-2)" }}>{pendingPlan.summary}</p>
+                  </div>
+
+                  {pendingPlan.preview && pendingPlan.preview.exerciseList.length > 0 && (
+                    <div className="px-4 pb-2 pt-1 flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 150, scrollbarWidth: "none" }}>
+                      {pendingPlan.preview.exerciseList.map((ex, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
+                          style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
+                          <span className="text-[13px] font-light truncate" style={{ color: "var(--text-1)" }}>{ex.name}</span>
+                          <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{ex.sets} × {ex.reps}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 px-4 py-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={cancelPlan}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
+                      Annuler
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={confirmPlan}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+                      <Check size={15} strokeWidth={2.4} /> Confirmer
                     </motion.button>
                   </div>
                 </motion.div>

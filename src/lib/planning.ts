@@ -13,7 +13,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
-import { levelToDifficulty, type WorkoutDifficulty } from "@/lib/assistantActions";
+import { levelToDifficulty, type WorkoutDifficulty, type WorkoutCategory } from "@/lib/assistantActions";
 import type { Exercise } from "@/components/WorkoutGuideModal";
 
 export type Ctx = "salle" | "halteres" | "poids";
@@ -327,4 +327,41 @@ export function readVariant(userId: string): number {
   if (typeof window === "undefined") return 0;
   try { return parseInt(localStorage.getItem(`vaiiya_prog_variant_${userId}`) || "0", 10) || 0; }
   catch { return 0; }
+}
+
+/* ═══════════════════════════ Pilotage par l'IA (Phase 2) ═══════════════════════════ */
+
+/** Type d'affichage (badge) d'un jour selon la catégorie de séance générée. */
+export const PLANNING_TYPE_BY_CATEGORY: Record<WorkoutCategory, string> = {
+  force: "Force", cardio: "Cardio", mobilite: "Mobilité", fullbody: "Full Body",
+};
+
+const WEEKDAYS_FR = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+
+/**
+ * Résout un descripteur de jour produit par l'IA en date réelle (YYYY-MM-DD).
+ * Accepte : aujourd_hui, demain, apres_demain, dans_N_jours, semaine_prochaine,
+ * ou un nom de jour (lundi…dimanche → prochaine occurrence, aujourd'hui inclus).
+ * Retourne null si non résolu.
+ */
+export function resolveWhen(tokenRaw: string, ref: Date = new Date()): string | null {
+  const t = (tokenRaw || "")
+    .toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[\s'-]+/g, "_").replace(/^le_/, "").trim();
+  const base = new Date(ref); base.setHours(0, 0, 0, 0);
+  const add = (n: number) => { const d = new Date(base); d.setDate(base.getDate() + n); return ymd(d); };
+  if (t === "aujourd_hui" || t === "aujourdhui" || t === "ce_jour") return ymd(base);
+  if (t === "demain") return add(1);
+  if (t === "apres_demain") return add(2);
+  if (t === "semaine_prochaine") return add(7);
+  const m = t.match(/^dans_(\d+)_jour/);
+  if (m) return add(parseInt(m[1], 10) || 0);
+  const wd = WEEKDAYS_FR.indexOf(t);
+  if (wd >= 0) return add((wd - base.getDay() + 7) % 7);
+  return null;
+}
+
+/** Libellé long FR d'une date (« vendredi 20 juin »). */
+export function dayLabelLong(date: string): string {
+  return new Date(date + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 }
