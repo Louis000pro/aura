@@ -38,5 +38,6 @@ NUANCES :
 - Une simple QUESTION ("c'est quoi une bonne séance pecs ?", "je m'entraîne quel jour ?") = action null.
 - "muscles","category","difficulty" sont OPTIONNELS pour create_seance et plan_set : déduis-les du message ET du contexte.
 - Ne confonds pas create_seance (bibliothèque, pas de jour) et plan_set (un jour précis du planning est mentionné).
+- CORRECTION : si le CONTEXTE montre qu'une action de planning vient d'être proposée et que le dernier message la corrige ("non, plutôt dans 2 jours", "pas demain, vendredi", "repropose", "tu t'es trompé c'était après-demain"), RÉ-ÉMETS la MÊME action (plan_move/plan_set/plan_location) avec les champs corrigés déduits du contexte — ne renvoie PAS action null.
 
 RÈGLES : n'invente jamais. Les deux champs sont indépendants (l'un peut être non-null et l'autre null). Si rien : {"memory":null,"action":null}.`;

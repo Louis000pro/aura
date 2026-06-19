@@ -28,26 +28,39 @@ export async function POST(req: NextRequest) {
   }
   if (!message.trim()) return Response.json({ memory: null, action: null });
 
+  const messages = [
+    { role: "system" as const, content: SYSTEM },
+    {
+      role: "user" as const,
+      content: context
+        ? `Contexte (derniers échanges) :\n${context}\n\nDernier message de l'utilisateur (à analyser) : ${message}`
+        : `Message de l'utilisateur : ${message}`,
+    },
+  ];
+  const ask = () => llm.chat.completions.create({
+    model: CHAT_MODEL,
+    messages,
+    temperature: 0,
+    max_tokens: 280,
+    response_format: { type: "json_object" },
+  });
+
+  // Mistral palier gratuit = 1 req/s : une correction rapide (« non, dans 2
+  // jours ») télescope la requête de chat et se prend un 429. On retente UNE
+  // fois après la fenêtre de débit — sinon l'action est perdue et « la carte
+  // ne s'ouvre pas » alors que l'utilisateur l'a explicitement demandée.
   try {
-    const completion = await llm.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        { role: "system", content: SYSTEM },
-        {
-          role: "user",
-          content: context
-            ? `Contexte (derniers échanges) :\n${context}\n\nDernier message de l'utilisateur (à analyser) : ${message}`
-            : `Message de l'utilisateur : ${message}`,
-        },
-      ],
-      temperature: 0,
-      max_tokens: 280,
-      response_format: { type: "json_object" },
-    });
+    let completion;
+    try {
+      completion = await ask();
+    } catch {
+      await new Promise((r) => setTimeout(r, 1300));
+      completion = await ask();
+    }
     const raw = completion.choices[0]?.message?.content ?? '{"memory":null,"action":null}';
     return new Response(raw, { headers: { "Content-Type": "application/json; charset=utf-8" } });
   } catch (err) {
-    console.warn("[assistant/analyze] échec:", (err as { message?: string })?.message);
+    console.warn("[assistant/analyze] échec après retry:", (err as { message?: string })?.message);
     return Response.json({ memory: null, action: null });
   }
 }

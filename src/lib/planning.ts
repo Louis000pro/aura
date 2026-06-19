@@ -285,6 +285,25 @@ export async function fetchDay(userId: string, date: string): Promise<PlanningDa
   return data ? rowToDay(data as PlanningRow) : null;
 }
 
+/** Récupère plusieurs jours en UNE requête, indexés par date (YYYY-MM-DD). */
+export async function fetchRange(userId: string, dates: string[]): Promise<Record<string, PlanningDay>> {
+  if (dates.length === 0) return {};
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("planning_days")
+    .select("date, type, title, difficulty, location, exercise_list, session_id, status")
+    .eq("user_id", userId)
+    .in("date", dates);
+  const out: Record<string, PlanningDay> = {};
+  for (const row of (data ?? [])) { const d = rowToDay(row as PlanningRow); out[d.date] = d; }
+  return out;
+}
+
+/** Vrai si le jour porte une vraie séance (ni vide, ni Repos). */
+export function hasSeance(day: PlanningDay | null | undefined): day is PlanningDay {
+  return !!day && day.type.toLowerCase() !== "repos" && day.exerciseList.length > 0;
+}
+
 /** Enregistre / remplace un jour (utilisé par l'IA en Phase 2). */
 export async function saveDay(userId: string, day: PlanningDay): Promise<void> {
   const supabase = createClient();

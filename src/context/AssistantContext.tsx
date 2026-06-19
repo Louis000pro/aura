@@ -23,7 +23,8 @@ import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import {
-  resolveWhen, dayLabelLong, dayTitle, fetchDay, saveDay, ctxFromLieu, readLieu,
+  resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
+  ctxFromLieu, readLieu, weekDates, todayYmd,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay,
 } from "@/lib/planning";
 
@@ -287,14 +288,31 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id) return;
 
     // DÉPLACEMENT : pas de génération, on copie la séance vers le jour cible
-    // et on libère (Repos) le jour source.
+    // et on libère (Repos) le jour source. Aucun échec silencieux : chaque
+    // impasse renvoie un message clair (sinon « la carte ne s'ouvre pas »).
     if (action.intent === "plan_move") {
-      const from = resolveWhen(action.when || "aujourd_hui");
       const to = action.to ? resolveWhen(action.to) : null;
-      if (!from || !to || from === to) return;
-      const src = await fetchDay(user.id, from);
-      if (!src || src.type.toLowerCase() === "repos" || src.exerciseList.length === 0) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Il n'y a pas de séance à déplacer le ${dayLabelLong(from)} 🤔`, id: uid() }]);
+      if (!to) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: "Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅", id: uid() }]);
+        return;
+      }
+      // Jour source : celui indiqué s'il porte une séance ; sinon le prochain
+      // jour d'entraînement à venir cette semaine (« déplace ma séance dans 2
+      // jours » sans préciser le départ doit marcher même si aujourd'hui = repos).
+      let from = action.when ? resolveWhen(action.when) : null;
+      let src = from ? await fetchDay(user.id, from) : null;
+      if (!hasSeance(src)) {
+        const upcoming = weekDates().filter((d) => d >= todayYmd() && d !== to);
+        const found = await fetchRange(user.id, upcoming);
+        const next = upcoming.find((d) => hasSeance(found[d]));
+        if (next) { from = next; src = found[next]; }
+      }
+      if (!hasSeance(src) || !from) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à ${dayLabelLong(to)} ».`, id: uid() }]);
+        return;
+      }
+      if (from === to) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: `La séance est déjà prévue le ${dayLabelLong(to)} 🙂`, id: uid() }]);
         return;
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
