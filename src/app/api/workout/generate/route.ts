@@ -31,6 +31,22 @@ Ajuste le nombre d exercices, les sets, reps, rest et restAfter en consequence.
 Calcule mentalement le total avant de repondre et verifie qu il est proche de ${targetSeconds}s.`
       : "";
 
+    // Contrainte de MATERIEL deduite du lieu mentionne dans la description
+    // (meme texte que les callers : "en salle de sport" / "a la maison avec
+    // halteres" / "a la maison au poids du corps").
+    const lieuLc = String(description).toLowerCase();
+    let equipmentConstraint = "";
+    if (/salle|gym|basic\s*fit/.test(lieuLc)) {
+      equipmentConstraint = `
+LIEU : SALLE de sport equipee — tout le materiel est disponible (machines, barres, halteres, poulies, banc, barre de traction). Tu peux tout utiliser.`;
+    } else if (/halt[èe]re/.test(lieuLc)) {
+      equipmentConstraint = `
+MATERIEL (STRICT) : a la MAISON avec des HALTERES. Tu peux utiliser des halteres + le poids du corps UNIQUEMENT. INTERDIT : machines, poulies, barre, banc de muscu, barre de traction, kettlebell, et tout exercice de salle.`;
+    } else if (/poids\s*du\s*corps|sans\s*mat|maison|chez\s*(soi|moi)|domicile/.test(lieuLc)) {
+      equipmentConstraint = `
+MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel — poids du corps UNIQUEMENT. INTERDIT formellement : halteres, barre, machine, poulie, kettlebell, elastique, banc, AINSI QUE tout exercice suspendu necessitant une barre de traction (PAS de tractions, PAS de releves de jambes suspendus) ou un poids additionnel (PAS de "leste", PAS de "charge"). Uniquement des exercices au sol ou debout, faisables dans une piece.`;
+    }
+
     const response = await llm.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
@@ -45,7 +61,7 @@ Calcule mentalement le total avant de repondre et verifie qu il est proche de ${
 Description : "${description}"
 Categorie : ${category ?? "force"}
 Niveau : ${difficulty ?? "Intermediaire"}${Array.isArray(muscles) && muscles.length > 0 ? `
-Muscles cibles par l utilisateur : ${muscles.join(", ")} — la seance DOIT travailler prioritairement ces muscles.` : ""}
+Muscles cibles par l utilisateur : ${muscles.join(", ")} — la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}
 ${durationConstraint}
 
 Retourne un JSON avec exactement ce format :
@@ -67,6 +83,7 @@ Retourne un JSON avec exactement ce format :
 }
 
 Regles :
+- MATERIEL (ABSOLU) : respecte la contrainte de LIEU/MATERIEL ci-dessus. Ne propose JAMAIS un exercice impossible avec le materiel indique (au poids du corps : aucun exercice avec barre/halteres/machine, ni suspendu a une barre, ni leste/charge).
 - NOM DES EXERCICES (CRITIQUE) : pour "name", utilise TOUJOURS le nom standard et reconnaissable de l exercice, celui qu un debutant trouverait sur YouTube et qu on emploie en salle (ex : "Développé couché", "Curl haltères", "Fentes avant", "Pompes diamant", "Dips sur banc", "Gainage planche"). JAMAIS de nom invente, poetique ou metaphorique (INTERDIT : "Bras de guerrier", "Gainage du dragon", "Dips entre deux chaises"). Si c est une variante, garde le nom de base reconnaissable suivi de la precision (ex : "Squat sauté", "Pompes inclinées"). Un nom clair = l utilisateur sait quoi faire et trouve une video de demo.
 - Tu es libre de choisir le nombre d exercices, les sets, reps, rest et restAfter selon ce qui est le plus efficace sportivement pour chaque exercice
 - Le niveau "${difficulty ?? "Intermediaire"}" influence la complexite et l intensite des exercices choisis :

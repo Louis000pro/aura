@@ -451,7 +451,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
         : [];
 
-      const lieuTxt = lieu === "maison" ? " à la maison" : " en salle de sport";
+      let equip: string | null = null;
+      try { equip = localStorage.getItem(`vaiiya_lieu_equip_${user.id}`); } catch { /* ignore */ }
+      const lieuTxt = lieu === "maison"
+        ? (equip === "halteres" ? " à la maison avec haltères" : " à la maison au poids du corps")
+        : " en salle de sport";
       const description = `${action.description || text}${lieuTxt}`.slice(0, 400);
 
       const genRes = await fetch("/api/workout/generate", {
