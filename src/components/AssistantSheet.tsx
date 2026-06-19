@@ -191,6 +191,13 @@ export default function AssistantSheet() {
                   </motion.div>
                 ))}
               </AnimatePresence>
+            </div>
+
+            {/* Zone d'action ÉPINGLÉE au-dessus de la saisie : la carte reste
+                TOUJOURS entièrement visible (boutons compris), quelle que soit
+                la longueur de la conversation — elle n'est plus écrasée par le
+                fil de messages qui, lui, se réduit (flex-1) pour lui faire place. */}
+            <div className="flex-shrink-0 px-3 pb-1 flex flex-col gap-2">
 
               {/* Génération en cours */}
               {actionLoading && (
