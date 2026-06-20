@@ -553,7 +553,7 @@ export default function HomeOrb({
           className="text-[11px] font-medium tracking-[0.18em] uppercase text-center leading-snug"
           style={{ color: "var(--text-soft)", lineHeight: 1.5, width: "min(80vw, 260px)" }}
         >
-          {state === "idle" && "Appuie pour écrire · Maintiens pour parler"}
+          {state === "idle" && (<>Appuie pour écrire<br />Maintiens pour parler</>)}
           {state === "pressing" && "Maintiens pour parler…"}
           {state === "recording" && "Relâche pour envoyer"}
           {state === "processing" && "Transcription…"}
