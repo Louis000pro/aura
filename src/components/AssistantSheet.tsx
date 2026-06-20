@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, X, Mic, Square, Dumbbell, Check, CalendarDays } from "lucide-react";
+import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
@@ -103,10 +103,9 @@ export default function AssistantSheet() {
               </div>
               <div className="flex items-center gap-3 px-4 pb-3 pt-1"
                 style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}>
-                  <Sparkles size={16} strokeWidth={1.6} style={{ color: "#fff" }} />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/nav-orb.png" alt="" draggable={false}
+                  className="w-9 h-9 flex-shrink-0 object-contain select-none" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>Vaiiya ✦</p>
                   <p className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>Ton assistant — partout, tout le temps</p>
@@ -126,9 +125,10 @@ export default function AssistantSheet() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col items-center justify-center gap-5 flex-1 text-center px-4">
                   <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-16 h-16 rounded-[24px] flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.3)" }}>
-                    <Sparkles size={26} strokeWidth={1.3} style={{ color: "#fff" }} />
+                    className="w-20 h-20 flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/nav-orb.png" alt="" draggable={false}
+                      className="w-20 h-20 object-contain select-none" />
                   </motion.div>
                   <div>
                     <p className="text-base font-semibold mb-1" style={{ color: "var(--text-0)" }}>
@@ -161,10 +161,9 @@ export default function AssistantSheet() {
                     transition={{ duration: 0.26, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
                     {msg.role === "assistant" && (
-                      <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mb-0.5"
-                        style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
-                        <Sparkles size={12} strokeWidth={1.8} style={{ color: "#fff" }} />
-                      </div>
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src="/nav-orb.png" alt="" draggable={false}
+                        className="w-7 h-7 flex-shrink-0 object-contain select-none mb-0.5" />
                     )}
                     <div className="px-4 py-2.5 rounded-3xl text-[14px] font-light leading-relaxed"
                       style={{
