@@ -24,7 +24,7 @@ import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory }
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import {
   resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
-  ctxFromLieu, readLieu, weekDates, todayYmd,
+  ctxFromLieu, readLieu, weekDates, todayYmd, normalizeExercises,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay,
 } from "@/lib/planning";
 
@@ -286,6 +286,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     muscles?: unknown; category?: string; description?: string; title?: string;
   }) => {
     if (!user?.id) return;
+    // Réponse courte du coach dans le fil (chaque impasse est explicite, jamais muette).
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
 
     // DÉPLACEMENT : pas de génération, on copie la séance vers le jour cible
     // et on libère (Repos) le jour source. Aucun échec silencieux : chaque
@@ -293,7 +295,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (action.intent === "plan_move") {
       const to = action.to ? resolveWhen(action.to) : null;
       if (!to) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: "Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅", id: uid() }]);
+        say("Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅");
         return;
       }
       // Jour source : celui indiqué s'il porte une séance ; sinon le prochain
@@ -308,11 +310,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         if (next) { from = next; src = found[next]; }
       }
       if (!hasSeance(src) || !from) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à ${dayLabelLong(to)} ».`, id: uid() }]);
+        say(`Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à ${dayLabelLong(to)} ».`);
         return;
       }
       if (from === to) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: `La séance est déjà prévue le ${dayLabelLong(to)} 🙂`, id: uid() }]);
+        say(`La séance est déjà prévue le ${dayLabelLong(to)} 🙂`);
         return;
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
@@ -331,12 +333,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (action.intent === "plan_library") {
       const day = resolveWhen(action.when || "aujourd_hui");
       if (!day) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: "Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅", id: uid() }]);
+        say("Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅");
         return;
       }
       const title = (action.title || "").trim();
       if (!title) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: "Quelle séance de ta bibliothèque veux-tu programmer ? Donne-moi son nom 🙂", id: uid() }]);
+        say("Quelle séance de ta bibliothèque veux-tu programmer ? Donne-moi son nom 🙂");
         return;
       }
       const supabase = createClient();
@@ -349,11 +351,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .limit(1);
       const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
       if (!row) {
-        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Je ne trouve pas de séance « ${title} » dans ta bibliothèque 🤔 Vérifie le nom, ou demande-moi de la créer.`, id: uid() }]);
+        say(`Je ne trouve pas de séance « ${title} » dans ta bibliothèque 🤔 Vérifie le nom, ou demande-moi de la créer.`);
         return;
       }
       const category = normalizeWorkoutCategory(row.category);
-      const exList = Array.isArray(row.exercise_list) ? (row.exercise_list as Array<Record<string, unknown>>) : [];
       const saved = readLieu(user.id);
       const libDay: PlanningDay = {
         date: day,
@@ -361,16 +362,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         title: row.title,
         difficulty: normalizeDifficulty(row.difficulty),
         location: ctxFromLieu(saved.location, saved.equip),
-        exerciseList: exList.map((e) => ({
-          name: String(e.name ?? ""),
-          sets: Number(e.sets) || 3,
-          reps: String(e.reps ?? "10"),
-          rest: Number(e.rest) || 60,
-          restAfter: Number(e.restAfter) || 90,
-          tip: typeof e.tip === "string" ? e.tip : "",
-          benefit: typeof e.benefit === "string" ? e.benefit : "",
-          muscles: Array.isArray(e.muscles) ? (e.muscles as string[]) : [],
-        })),
+        exerciseList: normalizeExercises(row.exercise_list),
         sessionId: row.id,
         status: "planned",
       };
@@ -438,10 +430,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         title: seance.title,
         difficulty,
         location: ctx,
-        exerciseList: seance.exerciseList.map((e) => ({
-          name: e.name, sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter,
-          tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],
-        })),
+        exerciseList: normalizeExercises(seance.exerciseList),
         sessionId: null,
         status: "planned",
       };
@@ -455,7 +444,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (e) {
       const detail = (e as { message?: string })?.message ?? String(e);
-      setMessages((prev) => [...prev, { role: "assistant" as const, content: `⚠️ Modification du planning échouée — ${detail}`, id: uid() }]);
+      say(`⚠️ Modification du planning échouée — ${detail}`);
     } finally {
       setActionLoading(false);
     }

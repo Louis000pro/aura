@@ -10,36 +10,13 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
-  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle, weekDates, todayWeekIndex,
+  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle,
+  weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
-/** Dates (Lu→Di) de la semaine décalée de `offset` semaines vs aujourd'hui. */
-function weekDatesForOffset(offset: number): string[] {
-  const ref = new Date();
-  ref.setDate(ref.getDate() + offset * 7);
-  return weekDates(ref);
-}
 /** Nombre max de semaines en avant qu'on autorise à consulter. */
 const MAX_WEEK_AHEAD = 6;
-
-/** Lundi (minuit) de la semaine contenant `d`. */
-function mondayOf(d: Date): Date {
-  const x = new Date(d); const day = x.getDay();
-  x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + (day === 0 ? -6 : 1 - day));
-  return x;
-}
-/** Décalage en semaines d'une date (YYYY-MM-DD) vs la semaine courante. */
-function weekOffsetOf(ymdStr: string): number {
-  const target = mondayOf(new Date(ymdStr + "T00:00:00"));
-  const now = mondayOf(new Date());
-  return Math.round((target.getTime() - now.getTime()) / (7 * 86_400_000));
-}
-/** Index Lu→Di (0…6) d'une date (YYYY-MM-DD). */
-function weekdayIndexOf(ymdStr: string): number {
-  const d = new Date(ymdStr + "T00:00:00").getDay();
-  return d === 0 ? 6 : d - 1;
-}
 
 /* ─── Types ─── */
 type ProfileData = {
@@ -483,7 +460,7 @@ export default function WeeklyProgramme() {
       const date = (e as CustomEvent<{ date?: string }>).detail?.date;
       if (date) {
         const targetOffset = weekOffsetOf(date);
-        setSelectedDay(weekdayIndexOf(date));
+        setSelectedDay(weekdayIndex(date));
         if (targetOffset !== weekOffset) { setWeekOffset(targetOffset); return; } // l'effet rechargera
       }
       void generate(location, homeEquip, false); // même semaine → rafraîchit

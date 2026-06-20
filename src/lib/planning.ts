@@ -125,26 +125,64 @@ function toExercise(raw: string, scheme: string): Exercise {
   return { name: withReps.trim(), sets: 3, reps: "10", rest: 60, restAfter: 90, tip: "", benefit: "", muscles: [] };
 }
 
+/* Normalise une liste d'exercices STRUCTURÉS (sortie LLM ou ligne Supabase
+   `exercise_list`) en Exercise[] propre, avec valeurs par défaut sûres. */
+export function normalizeExercises(raw: unknown): Exercise[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((x) => {
+      const e = (x ?? {}) as Record<string, unknown>;
+      return {
+        name: String(e.name ?? "").trim(),
+        sets: Number(e.sets) || 3,
+        reps: String(e.reps ?? "10"),
+        rest: Number(e.rest) || 60,
+        restAfter: Number(e.restAfter) || 90,
+        tip: typeof e.tip === "string" ? e.tip : "",
+        benefit: typeof e.benefit === "string" ? e.benefit : "",
+        muscles: Array.isArray(e.muscles) ? (e.muscles as string[]) : [],
+      };
+    })
+    .filter((e) => e.name);
+}
+
 /* ═══════════════════════════ Dates ═══════════════════════════ */
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+/** Lundi (minuit local) de la semaine contenant `ref`. */
+function mondayOf(ref: Date = new Date()): Date {
+  const d = new Date(ref);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + (d.getDay() === 0 ? -6 : 1 - d.getDay())); // Dim=0 → -6, sinon 1-jour
+  return d;
+}
 /** Les 7 dates (Lundi → Dimanche) de la semaine contenant `ref`. */
 export function weekDates(ref: Date = new Date()): string[] {
-  const d = new Date(ref);
-  const day = d.getDay();                       // 0 = Dimanche … 6 = Samedi
-  const diffToMon = day === 0 ? -6 : 1 - day;
-  const monday = new Date(d);
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(d.getDate() + diffToMon);
+  const monday = mondayOf(ref);
   return Array.from({ length: 7 }, (_, i) => {
     const x = new Date(monday); x.setDate(monday.getDate() + i); return ymd(x);
   });
 }
+/** Les 7 dates de la semaine décalée de `offset` semaines vs aujourd'hui. */
+export function weekDatesForOffset(offset: number): string[] {
+  const ref = new Date(); ref.setDate(ref.getDate() + offset * 7);
+  return weekDates(ref);
+}
+/** Décalage en semaines d'une date (YYYY-MM-DD) vs la semaine courante. */
+export function weekOffsetOf(date: string): number {
+  const diff = mondayOf(new Date(date + "T00:00:00")).getTime() - mondayOf().getTime();
+  return Math.round(diff / (7 * 86_400_000));
+}
 /** Date du jour (YYYY-MM-DD, heure locale). */
 export function todayYmd(): string { return ymd(new Date()); }
+/** Index Lu→Di (0…6) d'une date (YYYY-MM-DD). */
+export function weekdayIndex(date: string): number {
+  const d = new Date(date + "T00:00:00").getDay();
+  return d === 0 ? 6 : d - 1;
+}
 /** Index du jour courant dans la semaine (0 = Lundi … 6 = Dimanche). */
-export function todayWeekIndex(): number { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; }
+export function todayWeekIndex(): number { return weekdayIndex(todayYmd()); }
 
 /* ═══════════════════════════ Génération ═══════════════════════════ */
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
