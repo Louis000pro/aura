@@ -115,11 +115,14 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
           draggable={false}
           className="absolute pointer-events-none select-none"
           style={{
-            width: "114%", height: "114%", left: "-7%", top: "-7%",
+            width: "106%", height: "106%", left: "-3%", top: "-3%",
             objectFit: "contain",
+            // Calmée pour se fondre dans l'UI (moins voyante que les icônes ne
+            // sont fines/plates) : AUCUN halo au repos, juste une ombre douce et
+            // une légère désaturation. Le glow ne revient qu'à l'enregistrement.
             filter: recording
-              ? "drop-shadow(0 0 10px rgba(167,139,250,0.65))"
-              : "drop-shadow(0 3px 7px rgba(139,92,246,0.40))",
+              ? "drop-shadow(0 0 8px rgba(167,139,250,0.5))"
+              : "saturate(0.9) drop-shadow(0 1px 3px rgba(80,60,130,0.20))",
           }}
         />
 
