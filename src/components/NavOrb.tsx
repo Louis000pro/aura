@@ -9,9 +9,10 @@
    • Tap court  → ouvre le chat global (bottom sheet).
    • Appui long → enregistrement vocal → transcription → message envoyé.
 
-   Visuel : PNG transparent (public/nav-orb.png) — verre violet + rubans
-   façon Siri + halo doré, redimensionné en 256px (~12 Ko). Les animations
-   (scale/pulses/vumètre/spinner) restent en CSS par-dessus.
+   Visuel : PNG transparent (public/nav-orb.png) — verre givré lavande pâle +
+   swirl doux + touche d'or (version « douce », pensée pour se fondre dans l'UI),
+   redimensionné en 256px. Les animations (scale/pulses/vumètre/spinner) restent
+   en CSS par-dessus.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useRef, useState } from "react";
@@ -117,12 +118,12 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
           style={{
             width: "106%", height: "106%", left: "-3%", top: "-3%",
             objectFit: "contain",
-            // Calmée pour se fondre dans l'UI (moins voyante que les icônes ne
-            // sont fines/plates) : AUCUN halo au repos, juste une ombre douce et
-            // une légère désaturation. Le glow ne revient qu'à l'enregistrement.
+            // L'image est déjà douce/givrée (faite pour se fondre dans l'UI) :
+            // pas de désaturation ni de halo au repos, juste une ombre légère.
+            // Le glow ne revient qu'à l'enregistrement (retour visuel).
             filter: recording
-              ? "drop-shadow(0 0 8px rgba(167,139,250,0.5))"
-              : "saturate(0.9) drop-shadow(0 1px 3px rgba(80,60,130,0.20))",
+              ? "drop-shadow(0 0 8px rgba(167,139,250,0.45))"
+              : "drop-shadow(0 1px 3px rgba(120,100,160,0.18))",
           }}
         />
 
