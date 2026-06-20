@@ -220,9 +220,7 @@ export default function Navigation() {
 
             {/* 3. Orbe assistant (centre, mise en avant) */}
             <div className="flex-1 flex items-center justify-center" data-tour-anchor="nav-assistant">
-              <div className="-translate-y-2">
-                <NavOrb size={48} />
-              </div>
+              <NavOrb size={48} />
             </div>
 
             {/* 4. Communauté */}
