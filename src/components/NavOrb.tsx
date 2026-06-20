@@ -9,13 +9,14 @@
    • Tap court  → ouvre le chat global (bottom sheet).
    • Appui long → enregistrement vocal → transcription → message envoyé.
 
-   Identité de marque (lavande → violet → or) sans le coût GPU de la
-   grande orbe d'accueil.
+   Visuel : PNG transparent (public/nav-orb.png) — verre violet + rubans
+   façon Siri + halo doré, redimensionné en 256px (~12 Ko). Les animations
+   (scale/pulses/vumètre/spinner) restent en CSS par-dessus.
    ════════════════════════════════════════════════════════════════════ */
 
 import { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Mic } from "lucide-react";
+import { Mic } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 
@@ -91,15 +92,8 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
         onClick={onClick}
         onContextMenu={(e) => e.preventDefault()}
         aria-label="Assistant Vaiiya — appuie pour écrire, maintiens pour parler"
-        className="relative rounded-full overflow-hidden cursor-pointer outline-none"
-        style={{
-          width: size, height: size,
-          // Sphère figée — lavande → violet → or (identité de marque)
-          background: "radial-gradient(circle at 38% 30%, #F6EEFF 0%, #C9B3FF 38%, #8B5CF6 100%)",
-          boxShadow: recording
-            ? "0 0 0 0 rgba(0,0,0,0), 0 6px 22px rgba(167,139,250,0.55), inset 0 2px 4px rgba(255,255,255,0.85)"
-            : "0 4px 16px rgba(167,139,250,0.45), 0 1px 4px rgba(224,174,58,0.18), inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -3px 8px rgba(139,92,246,0.25)",
-        }}
+        className="relative cursor-pointer outline-none"
+        style={{ width: size, height: size }}
         // Anime UNIQUEMENT à l'activation (sinon parfaitement figée)
         animate={
           recording  ? { scale: [1, 1.06, 1] } :
@@ -112,17 +106,22 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
           { duration: 0.18 }
         }
       >
-        {/* Reflet spéculaire haut-gauche (3D verre) — statique */}
-        <span className="absolute pointer-events-none" style={{
-          top: "-12%", left: "-12%", width: "70%", height: "70%",
-          background: "radial-gradient(circle at 32% 32%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.12) 38%, transparent 62%)",
-          borderRadius: "50%",
-        }} />
-        {/* Liseré or chaud, statique */}
-        <span className="absolute inset-0 rounded-full pointer-events-none" style={{
-          background: "conic-gradient(from 210deg, transparent 0deg, rgba(224,174,58,0.28) 50deg, transparent 120deg)",
-          mixBlendMode: "screen",
-        }} />
+        {/* Orbe (PNG transparent : verre + rubans + halo baked-in). Léger
+            agrandissement pour remplir l'emplacement + glow violet doux. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/nav-orb.png"
+          alt=""
+          draggable={false}
+          className="absolute pointer-events-none select-none"
+          style={{
+            width: "114%", height: "114%", left: "-7%", top: "-7%",
+            objectFit: "contain",
+            filter: recording
+              ? "drop-shadow(0 0 10px rgba(167,139,250,0.65))"
+              : "drop-shadow(0 3px 7px rgba(139,92,246,0.40))",
+          }}
+        />
 
         {/* Contenu central */}
         <span className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2 }}>
@@ -144,12 +143,7 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
                 style={{ filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.6))" }}>
                 <Mic size={size * 0.4} strokeWidth={2} style={{ color: "#fff" }} />
               </motion.span>
-            ) : (
-              <motion.span key="idle" initial={{ opacity: 0 }} animate={{ opacity: 0.92 }} exit={{ opacity: 0 }}
-                style={{ filter: "drop-shadow(0 1px 2px rgba(124,92,250,0.5))" }}>
-                <Sparkles size={size * 0.42} strokeWidth={1.6} style={{ color: "#fff" }} />
-              </motion.span>
-            )}
+            ) : null}
           </AnimatePresence>
         </span>
       </motion.button>
