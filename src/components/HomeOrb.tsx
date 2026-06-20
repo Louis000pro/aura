@@ -550,8 +550,8 @@ export default function HomeOrb({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25 }}
-          className="text-[11px] font-medium tracking-[0.18em] uppercase text-center"
-          style={{ color: "var(--text-soft)" }}
+          className="text-[11px] font-medium tracking-[0.18em] uppercase text-center leading-snug"
+          style={{ color: "var(--text-soft)", lineHeight: 1.5, width: "min(80vw, 260px)" }}
         >
           {state === "idle" && "Appuie pour écrire · Maintiens pour parler"}
           {state === "pressing" && "Maintiens pour parler…"}
