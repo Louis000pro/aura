@@ -116,14 +116,12 @@ export default function NavOrb({ size = 52 }: { size?: number }) {
           draggable={false}
           className="absolute pointer-events-none select-none"
           style={{
-            width: "106%", height: "106%", left: "-3%", top: "-3%",
+            width: "100%", height: "100%", left: 0, top: 0,
             objectFit: "contain",
-            // L'image est déjà douce/givrée (faite pour se fondre dans l'UI) :
-            // pas de désaturation ni de halo au repos, juste une ombre légère.
-            // Le glow ne revient qu'à l'enregistrement (retour visuel).
-            filter: recording
-              ? "drop-shadow(0 0 8px rgba(167,139,250,0.45))"
-              : "drop-shadow(0 1px 3px rgba(120,100,160,0.18))",
+            // Posée À PLAT comme les icônes de la nav : AUCUNE ombre au repos
+            // (sinon elle « flotte » au-dessus de la barre et ressort). Le glow
+            // n'apparaît qu'à l'enregistrement (retour visuel).
+            filter: recording ? "drop-shadow(0 0 8px rgba(167,139,250,0.45))" : "none",
           }}
         />
 
