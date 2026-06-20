@@ -283,7 +283,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
   const preparePlanAction = useCallback(async (action: {
     intent?: string; when?: string; to?: string; location?: string;
-    muscles?: unknown; category?: string; description?: string;
+    muscles?: unknown; category?: string; description?: string; title?: string;
   }) => {
     if (!user?.id) return;
 
@@ -322,6 +322,63 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         summary: `📅 ${dayLabelLong(from)} → ${dayLabelLong(to)}`,
         writes: [movedDay, restDay],
         preview: movedDay,
+      });
+      return;
+    }
+
+    // BIBLIOTHÈQUE → PLANNING : poser une séance DÉJÀ créée sur un jour (pas de
+    // génération : on copie la séance existante et on la lie via session_id).
+    if (action.intent === "plan_library") {
+      const day = resolveWhen(action.when || "aujourd_hui");
+      if (!day) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: "Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅", id: uid() }]);
+        return;
+      }
+      const title = (action.title || "").trim();
+      if (!title) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: "Quelle séance de ta bibliothèque veux-tu programmer ? Donne-moi son nom 🙂", id: uid() }]);
+        return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("custom_sessions")
+        .select("id, title, category, difficulty, exercise_list")
+        .eq("user_id", user.id)
+        .ilike("title", `%${title}%`)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
+      if (!row) {
+        setMessages((prev) => [...prev, { role: "assistant" as const, content: `Je ne trouve pas de séance « ${title} » dans ta bibliothèque 🤔 Vérifie le nom, ou demande-moi de la créer.`, id: uid() }]);
+        return;
+      }
+      const category = normalizeWorkoutCategory(row.category);
+      const exList = Array.isArray(row.exercise_list) ? (row.exercise_list as Array<Record<string, unknown>>) : [];
+      const saved = readLieu(user.id);
+      const libDay: PlanningDay = {
+        date: day,
+        type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
+        title: row.title,
+        difficulty: normalizeDifficulty(row.difficulty),
+        location: ctxFromLieu(saved.location, saved.equip),
+        exerciseList: exList.map((e) => ({
+          name: String(e.name ?? ""),
+          sets: Number(e.sets) || 3,
+          reps: String(e.reps ?? "10"),
+          rest: Number(e.rest) || 60,
+          restAfter: Number(e.restAfter) || 90,
+          tip: typeof e.tip === "string" ? e.tip : "",
+          benefit: typeof e.benefit === "string" ? e.benefit : "",
+          muscles: Array.isArray(e.muscles) ? (e.muscles as string[]) : [],
+        })),
+        sessionId: row.id,
+        status: "planned",
+      };
+      setPendingPlan({
+        title: row.title,
+        summary: `📅 ${dayLabelLong(day)} · depuis ta bibliothèque`,
+        writes: [libDay],
+        preview: libDay,
       });
       return;
     }
@@ -411,7 +468,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     let parsed: {
       memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string };
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string };
     } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
@@ -434,8 +491,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const action = parsed.action;
     if (!action || !action.intent) return;
 
-    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu d'un jour)
-    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move") {
+    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio)
+    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_library") {
       void preparePlanAction(action);
       return;
     }

@@ -13,6 +13,7 @@ Réponds UNIQUEMENT par cet objet JSON (rien autour) :
     | {"intent":"plan_set","when":"<jour>","muscles":["<muscles>"],"category":"force|cardio|mobilite|fullbody","description":"<court>"}
     | {"intent":"plan_move","when":"<jour source>","to":"<jour destination>"}
     | {"intent":"plan_location","when":"<jour>","location":"salle|maison"}
+    | {"intent":"plan_library","when":"<jour>","title":"<nom de la séance de la bibliothèque>"}
 }
 
 MÉMOIRE — quand remplir "memory" :
@@ -30,6 +31,8 @@ ACTION — un seul "intent" à la fois. Distingue bien :
 • "plan_move" = DÉPLACER / DÉCALER / REPOUSSER la séance d'un jour vers un autre (ex: "repousse ma séance à demain", "décale la séance d'aujourd'hui à vendredi", "bouge ça à dans 2 jours"). "when" = jour source (si non précisé → "aujourd_hui"), "to" = jour destination.
 
 • "plan_location" = changer le LIEU d'un jour du planning (ex: "vendredi je suis à la maison", "demain je m'entraîne en salle", "mardi ce sera chez moi"). "when" = le jour, "location" = "salle" ou "maison".
+
+• "plan_library" = PLACER une séance qui EXISTE DÉJÀ dans la bibliothèque de l'utilisateur sur un jour du planning (ex: "mets ma séance Pompes perso mardi", "programme ma séance Cardio du soir demain", "ajoute ma séance jambes vendredi au planning"). "when" = le jour, "title" = le NOM de la séance tel que mentionné (sans "ma séance"). Signal clé : l'utilisateur désigne une séance QU'IL A DÉJÀ ("ma séance X", "ma séance nommée X") + un jour. À NE PAS confondre avec plan_set qui GÉNÈRE une nouvelle séance à partir de muscles/objectif.
 
 FORMAT de "<jour>" (obligatoire pour les actions plan_*) — une de ces valeurs :
 "aujourd_hui", "demain", "apres_demain", "dans_N_jours" (ex: "dans_2_jours", "dans_3_jours"), "semaine_prochaine", ou un nom de jour en minuscule sans accent : "lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche".
