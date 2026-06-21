@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, UserPlus, Bell, CheckCheck, Repeat2, AtSign } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import AnnouncementCard from "@/components/AnnouncementCard";
+import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 type NotifType = "follow" | "like" | "comment" | "repost" | "mention";
@@ -174,6 +176,13 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Nouveautés (récap de mise à jour) — gate localStorage, côté client
+  const [unseenAnn, setUnseenAnn] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setUnseenAnn(getUnseenAnnouncementIds());
+    markAnnouncementsSeen(); // ouvrir la page = avoir vu les nouveautés
+  }, []);
+
   /* Fetch + mark-as-read on mount */
   const fetchAndMarkRead = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -299,6 +308,15 @@ export default function NotificationsPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Nouveautés (récap de mise à jour) — épinglées en haut */}
+        {ANNOUNCEMENTS.length > 0 && (
+          <div className="flex flex-col gap-3 mb-6">
+            {ANNOUNCEMENTS.map((a) => (
+              <AnnouncementCard key={a.id} announcement={a} unseen={unseenAnn.has(a.id)} />
+            ))}
+          </div>
+        )}
 
         {/* Loading skeleton */}
         <AnimatePresence mode="popLayout">

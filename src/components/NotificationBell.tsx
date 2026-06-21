@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import AnnouncementCard from "@/components/AnnouncementCard";
+import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
 type NotifType = "follow" | "like" | "comment" | "repost";
 
@@ -67,10 +69,18 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef  = useRef<HTMLDivElement>(null);
 
-  const unread = notifs.filter((n) => !n.read).length;
+  // Annonces « Nouveautés » non vues (gate localStorage, côté client)
+  const [unseenAnn, setUnseenAnn] = useState<Set<string>>(new Set());
+  const [annAck, setAnnAck] = useState(false); // ouvertes pendant cette session
+
+  const unreadNotifs = notifs.filter((n) => !n.read).length;
+  const badgeCount = unreadNotifs + (annAck ? 0 : unseenAnn.size);
 
   // S'assure qu'on est côté client avant de monter le portail
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    setUnseenAnn(getUnseenAnnouncementIds());
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -172,10 +182,16 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
     if (next) calcPos();
     setOpen(next);
 
-    if (next && unread > 0 && user) {
-      const supabase = createClient();
-      await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
-      setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (next) {
+      // Ouvrir la cloche = avoir vu les nouveautés (la pastille retombe,
+      // mais les cartes restent surlignées « NOUVEAU » durant la session)
+      if (unseenAnn.size > 0) { markAnnouncementsSeen(); setAnnAck(true); }
+
+      if (unreadNotifs > 0 && user) {
+        const supabase = createClient();
+        await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
+        setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      }
     }
   };
 
@@ -214,15 +230,24 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "#2D3748" }}>
               🔔 Notifications
             </span>
-            {unread > 0 && (
+            {unreadNotifs > 0 && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(212,192,255,0.3)", color: "#A78BFA" }}>
-                {unread} nouvelle{unread > 1 ? "s" : ""}
+                {unreadNotifs} nouvelle{unreadNotifs > 1 ? "s" : ""}
               </span>
             )}
           </div>
 
           {/* List */}
           <div className="max-h-[320px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {/* Nouveautés (récap de mise à jour) épinglées en haut */}
+            {ANNOUNCEMENTS.length > 0 && (
+              <div className="px-3 pt-3 pb-1 flex flex-col gap-2">
+                {ANNOUNCEMENTS.map((a) => (
+                  <AnnouncementCard key={a.id} announcement={a} unseen={unseenAnn.has(a.id)} compact />
+                ))}
+              </div>
+            )}
+
             {notifs.length === 0 ? (
               <div className="flex flex-col items-center py-10 gap-2">
                 <span className="text-3xl">🔔</span>
@@ -300,7 +325,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
       >
         <Bell size={18} strokeWidth={1.5} style={{ color: open ? "#A78BFA" : "#A0AEC0" }} />
         <AnimatePresence>
-          {unread > 0 && (
+          {badgeCount > 0 && (
             <motion.span
               key="badge"
               initial={{ scale: 0 }}
@@ -310,7 +335,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[8px] font-bold"
               style={{ background: "#A78BFA", color: "#fff" }}
             >
-              {unread > 9 ? "9+" : unread}
+              {badgeCount > 9 ? "9+" : badgeCount}
             </motion.span>
           )}
         </AnimatePresence>
