@@ -29,7 +29,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
   {
     id: "2026-06-21-maj-ia-planning",
     date: "2026-06-21",
-    title: "La plus grosse mise à jour de Vaiiya 💜",
+    title: "La première mise à jour de Vaiiya 💜",
     intro: "Merci d'être là. Voici tout ce qui change aujourd'hui :",
     items: [
       {
