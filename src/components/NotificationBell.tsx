@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Bell, Heart, MessageCircle, Repeat2, UserPlus } from "lucide-react";
+import { Bell, Heart, MessageCircle, Repeat2, UserPlus, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -75,6 +75,8 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
 
   const unreadNotifs = notifs.filter((n) => !n.read).length;
   const badgeCount = unreadNotifs + (annAck ? 0 : unseenAnn.size);
+  // Mise à jour non vue → la cloche scintille pour attirer l'œil
+  const announceGlow = !annAck && unseenAnn.size > 0;
 
   // S'assure qu'on est côté client avant de monter le portail
   useEffect(() => {
@@ -323,7 +325,49 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
         aria-label="Notifications"
         title="Notifications"
       >
-        <Bell size={18} strokeWidth={1.5} style={{ color: open ? "#A78BFA" : "#A0AEC0" }} />
+        {/* Halo pulsant — uniquement quand une mise à jour n'a pas été vue */}
+        <AnimatePresence>
+          {announceGlow && (
+            <motion.span
+              key="ann-glow"
+              aria-hidden
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{ background: "radial-gradient(circle, rgba(167,139,250,0.5) 0%, transparent 70%)" }}
+              initial={{ opacity: 0 }}
+              animate={{ scale: [1, 1.4, 1], opacity: [0.55, 0, 0.55] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Cloche — sonne périodiquement + se teinte en violet si nouveauté */}
+        <motion.span
+          className="relative"
+          style={{ display: "inline-flex", transformOrigin: "50% 0%" }}
+          animate={announceGlow ? { rotate: [0, -14, 12, -9, 7, -4, 0] } : { rotate: 0 }}
+          transition={announceGlow ? { duration: 1.2, repeat: Infinity, repeatDelay: 1.8, ease: "easeInOut" } : { duration: 0.2 }}
+        >
+          <Bell size={18} strokeWidth={1.5} style={{ color: open || announceGlow ? "#A78BFA" : "#A0AEC0" }} />
+        </motion.span>
+
+        {/* Étincelle qui scintille à côté de la cloche */}
+        <AnimatePresence>
+          {announceGlow && (
+            <motion.span
+              key="ann-sparkle"
+              aria-hidden
+              className="absolute -top-1 -left-1 pointer-events-none"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 1, 0.6, 1, 0], opacity: [0, 1, 0.7, 1, 0], rotate: [0, 20, -10, 15, 0] }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Sparkles size={11} strokeWidth={2.2} style={{ color: "#F5D77A", fill: "#F5D77A" }} />
+            </motion.span>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {badgeCount > 0 && (
             <motion.span
