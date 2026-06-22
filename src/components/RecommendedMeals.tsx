@@ -6,6 +6,7 @@ import { RefreshCw, Lock, Plus, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { calculateGoals, type OnboardingProfile } from "@/lib/nutritionGoals";
 
 /* ─── Types ─── */
 type MealItem = { type: string; nom: string; calories: number };
@@ -377,6 +378,32 @@ export default function RecommendedMeals() {
   const dietKey = [...diet].sort().join(",");
   const dietPools = useMemo(() => filterPoolsByDiet(diet), [dietKey]); // eslint-disable-line
 
+  /* « Adapté à ta journée » : calories restantes aujourd'hui */
+  const [goalCals, setGoalCals] = useState(0);
+  const [consumedToday, setConsumedToday] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    let onboarding: OnboardingProfile = null;
+    try {
+      const raw = localStorage.getItem(`aura_onboarding_${user.pseudo}`);
+      if (raw) onboarding = JSON.parse(raw);
+    } catch { /* ignore */ }
+    setGoalCals(calculateGoals(onboarding).calories);
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    createClient()
+      .from("nutrition_logs")
+      .select("calories")
+      .eq("user_id", user.id)
+      .eq("date", todayStr)
+      .then(({ data }) => {
+        setConsumedToday(((data ?? []) as { calories: number }[]).reduce((s, r) => s + (r.calories || 0), 0));
+      });
+  }, [user]);
+  const remainingToday = Math.max(goalCals - consumedToday, 0);
+
   /* Plan construit instantanément (mémo simple) */
   const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant, dietPools, dietKey) : null;
 
@@ -463,6 +490,18 @@ export default function RecommendedMeals() {
           );
         })}
       </div>
+
+      {/* Adapté à ta journée — calories restantes aujourd'hui */}
+      {goalCals > 0 && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl"
+          style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.18)" }}>
+          <span className="text-[11px] font-medium" style={{ color: "#718096" }}>Aujourd&apos;hui</span>
+          <span className="text-[11px] font-semibold" style={{ color: remainingToday > 0 ? "#A78BFA" : "#D4A843" }}>
+            {remainingToday > 0 ? `≈ ${remainingToday.toLocaleString("fr-FR")} kcal restantes` : "Objectif atteint 🎉"}
+            <span className="font-normal" style={{ color: "#A0AEC0" }}> / {goalCals.toLocaleString("fr-FR")}</span>
+          </span>
+        </div>
+      )}
 
       {/* Slider jour */}
       <div className="flex flex-col gap-2">
