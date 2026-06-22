@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen } from "lucide-react";
+import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, History } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 
@@ -41,6 +41,8 @@ type DaySummary = {
   meal_count: number;
   water_ml: number;
 };
+
+type RecentMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const MEAL_META: Record<MealType, { label: string; icon: string }> = {
@@ -1958,6 +1960,31 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   const totalFats  = meals.reduce((s, m) => s + m.fats, 0);
   const remaining  = Math.max(goals.calories - totalCals, 0);
 
+  /* ── Repas récents (ajout rapide en 1 tap) ─── */
+  const [recentMeals, setRecentMeals] = useState<RecentMeal[]>([]);
+  const loadRecents = useCallback(async () => {
+    if (!user) { setRecentMeals([]); return; }
+    const { data } = await supabase
+      .from("nutrition_logs")
+      .select("food_name, calories, proteins, carbs, fats")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .order("time", { ascending: false })
+      .limit(60);
+    if (!data) return;
+    const seen = new Set<string>();
+    const uniq: RecentMeal[] = [];
+    for (const r of data as { food_name: string; calories: number; proteins: number; carbs: number; fats: number }[]) {
+      const key = (r.food_name ?? "").trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      uniq.push({ name: r.food_name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats });
+      if (uniq.length >= 8) break;
+    }
+    setRecentMeals(uniq);
+  }, [user]); // eslint-disable-line
+  useEffect(() => { loadRecents(); }, [loadRecents]);
+
   useEffect(() => { setWeekDays(getMondayWeek(today)); }, []); // eslint-disable-line
 
   /* ── Chargement Supabase ─── */
@@ -2031,6 +2058,18 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
     else showToast("Erreur lors de l'ajout");
     setShowManual(false);
+  };
+
+  /* ── Ajout rapide depuis les repas récents (1 tap) ─── */
+  const quickAddRecent = async (r: RecentMeal) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: getMealTypeFromTime(),
+      food_name: r.name, calories: r.calories, proteins: r.proteins,
+      carbs: r.carbs, fats: r.fats, has_photo: false, time: nowHHMM(),
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${r.name} ajouté ✓`); void loadRecents(); }
+    else showToast("Erreur lors de l'ajout");
   };
 
   /* ── Suppression repas ─── */
@@ -2333,6 +2372,35 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
               </motion.button>
             </div>
           </div>
+
+          {/* Ajout rapide — repas récents en 1 tap */}
+          {recentMeals.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center gap-1.5 mb-2">
+                <History size={11} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                  Ajout rapide
+                </p>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+                {recentMeals.map((r, i) => (
+                  <motion.button key={i} whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.03 }}
+                    onClick={() => quickAddRecent(r)}
+                    className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer"
+                    style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(167,139,250,0.15)" }}>
+                      <Plus size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-medium leading-tight" style={{ color: "#2D3748", whiteSpace: "nowrap" }}>{r.name}</p>
+                      <p className="text-[9px] leading-tight" style={{ color: "#A0AEC0" }}>{r.calories} kcal</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Empty state */}
           {meals.length === 0 ? (

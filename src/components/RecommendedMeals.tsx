@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Lock } from "lucide-react";
+import { RefreshCw, Lock, Plus, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -229,7 +229,10 @@ function buildLocalPlan(userId: string, mealsCount: number, variant: number): Me
 }
 
 /* ─── Repas du jour sélectionné ─── */
-function DayMeals({ day }: { day: MealDay }) {
+function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
+  day: MealDay; dayIndex: number; canEat: boolean;
+  addedKeys: Set<string>; onEat: (m: MealItem) => void;
+}) {
   const total = (day.repas ?? []).reduce((s, m) => s + (m.calories || 0), 0);
   return (
     <motion.div key={day.jour}
@@ -239,19 +242,37 @@ function DayMeals({ day }: { day: MealDay }) {
       {total > 0 && (
         <p className="text-[10px] font-semibold self-end" style={{ color: "#D4A843" }}>~{total} kcal / jour</p>
       )}
-      {(day.repas ?? []).map((m, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
-          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.25)" }}>
-          <span className="text-lg flex-shrink-0">{MEAL_EMOJI[m.type] ?? "🍽️"}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
-            <p className="text-[13px] font-medium leading-snug" style={{ color: "#2D3748" }}>{m.nom}</p>
+      {(day.repas ?? []).map((m, i) => {
+        const added = addedKeys.has(`${dayIndex}-${m.type}-${m.nom}`);
+        return (
+          <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.25)" }}>
+            <span className="text-lg flex-shrink-0">{MEAL_EMOJI[m.type] ?? "🍽️"}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
+              <p className="text-[13px] font-medium leading-snug" style={{ color: "#2D3748" }}>{m.nom}</p>
+            </div>
+            {m.calories > 0 && (
+              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>{m.calories} kcal</span>
+            )}
+            {canEat && (
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => onEat(m)}
+                title="Ajouter à mon journal"
+                className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{
+                  background: added ? "rgba(52,211,153,0.18)" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                  boxShadow: added ? "none" : "inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}>
+                {added
+                  ? <Check size={13} strokeWidth={2.5} style={{ color: "#34D399" }} />
+                  : <Plus size={13} strokeWidth={2.5} style={{ color: "#2D3748" }} />}
+              </motion.button>
+            )}
           </div>
-          {m.calories > 0 && (
-            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>{m.calories} kcal</span>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </motion.div>
   );
 }
@@ -308,6 +329,35 @@ export default function RecommendedMeals() {
   }, [selectedDay]);
 
   const currentDay = plan?.semaine?.[selectedDay];
+
+  /* ── « Manger ça » : logge le plat suggéré dans le journal du jour ── */
+  const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
+  const eatMeal = useCallback(async (m: MealItem) => {
+    if (!user) return;
+    const key = `${selectedDay}-${m.type}-${m.nom}`;
+    const cal = m.calories || 0;
+    // Le journal ne regroupe que 4 types → on rabat « collation » sur « goûter »
+    const mealType = m.type === "collation" ? "gouter" : m.type;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const { error } = await createClient().from("nutrition_logs").insert({
+      user_id: user.id,
+      date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+      meal_type: mealType,
+      food_name: m.nom,
+      calories: cal,
+      // Macros estimées depuis les calories (20% P / 50% G / 30% L) — ajustables ensuite
+      proteins: Math.round((cal * 0.20) / 4),
+      carbs: Math.round((cal * 0.50) / 4),
+      fats: Math.round((cal * 0.30) / 9),
+      has_photo: false,
+      time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    });
+    if (!error) {
+      setAddedKeys((prev) => new Set(prev).add(key));
+      setTimeout(() => setAddedKeys((prev) => { const n = new Set(prev); n.delete(key); return n; }), 2200);
+    }
+  }, [user, selectedDay]);
 
   const getDayFromX = (clientX: number): number => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -367,7 +417,7 @@ export default function RecommendedMeals() {
       {/* Repas du jour */}
       <div className="min-h-[100px]">
         <AnimatePresence mode="wait">
-          {currentDay && <DayMeals key={`${selectedDay}-${variant}`} day={currentDay} />}
+          {currentDay && <DayMeals key={`${selectedDay}-${variant}`} day={currentDay} dayIndex={selectedDay} canEat={!!user} addedKeys={addedKeys} onEat={eatMeal} />}
         </AnimatePresence>
       </div>
     </div>
