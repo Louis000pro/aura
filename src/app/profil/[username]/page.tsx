@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import VideoPlayer from "@/components/VideoPlayer";
+import FollowListModal from "@/components/FollowListModal";
 import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
 
 function formatViews(n: number): string {
@@ -234,6 +235,7 @@ export default function PublicProfilePage() {
   const [recentSessions, setRecentSessions] = useState<DbSession[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [profileStories, setProfileStories] = useState<HighlightItem[]>([]);
   const [viewingStories, setViewingStories] = useState<HighlightViewData | null>(null);
@@ -850,17 +852,18 @@ export default function PublicProfilePage() {
           className="flex items-center mt-5 pt-4 relative z-10"
           style={{ borderTop: "1px solid rgba(167,139,250,0.1)" }}
         >
-          {[
-            { label: "Posts", value: String(postCount) },
+          {([
+            { label: "Posts", value: String(postCount), tab: null },
             {
               label: "Abonnés",
               value:
                 followerCount >= 1000
                   ? `${(followerCount / 1000).toFixed(1)}k`
                   : String(followerCount),
+              tab: "Abonnés",
             },
-            { label: "Abonnements", value: String(followingCount) },
-          ].map(({ label, value }, i) => (
+            { label: "Abonnements", value: String(followingCount), tab: "Abonnements" },
+          ] as { label: string; value: string; tab: "Abonnés" | "Abonnements" | null }[]).map(({ label, value, tab }, i) => (
             <div key={label} className="flex items-center flex-1">
               {i > 0 && (
                 <div
@@ -868,7 +871,12 @@ export default function PublicProfilePage() {
                   style={{ background: "rgba(167,139,250,0.15)" }}
                 />
               )}
-              <div className="flex-1 flex flex-col items-center py-1">
+              <motion.div
+                onClick={() => tab && setShowFollowList(tab)}
+                whileTap={tab ? { scale: 0.94 } : undefined}
+                whileHover={tab ? { backgroundColor: "rgba(167,139,250,0.07)" } : undefined}
+                className={`flex-1 flex flex-col items-center py-1 rounded-xl ${tab ? "cursor-pointer" : ""}`}
+              >
                 <span className="text-xl font-light" style={{ color: "#2D3748" }}>
                   {value}
                 </span>
@@ -878,7 +886,7 @@ export default function PublicProfilePage() {
                 >
                   {label}
                 </span>
-              </div>
+              </motion.div>
             </div>
           ))}
         </div>
@@ -1512,6 +1520,17 @@ export default function PublicProfilePage() {
             highlight={viewingStories}
             isOwner={false}
             onClose={() => setViewingStories(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Liste des abonnés / abonnements (cliquable depuis les stats) */}
+      <AnimatePresence>
+        {showFollowList && profile && (
+          <FollowListModal
+            type={showFollowList}
+            ownerId={profile.id}
+            onClose={() => setShowFollowList(null)}
           />
         )}
       </AnimatePresence>
