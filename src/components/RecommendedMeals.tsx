@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Lock, Plus, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -157,6 +157,52 @@ const POOLS: Record<string, { nom: string; calories: number; i?: boolean }[]> = 
   ],
 };
 
+/* ─── Filtre régime / allergies (heuristique basée sur le nom du plat) ─── */
+export type DietKey = "vegetarien" | "vegan" | "sans-gluten" | "sans-lactose";
+
+export const DIET_OPTIONS: { key: DietKey; label: string; emoji: string }[] = [
+  { key: "vegetarien",   label: "Végé",         emoji: "🌱" },
+  { key: "vegan",        label: "Vegan",        emoji: "🌿" },
+  { key: "sans-gluten",  label: "Sans gluten",  emoji: "🌾" },
+  { key: "sans-lactose", label: "Sans lactose", emoji: "🥛" },
+];
+
+function norm(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+const KW_MEAT = ["poulet", "dinde", "escalope", "steak", "boeuf", "jambon", "bacon", "lardons", "saumon", "thon", "poisson", "pane", "bolognaise", "carbonara", "parmentier", "chili con carne", "tacos", "burger", "croque", "poke", "boulettes", "hache", "cantonais", "crevette", "viande"];
+const KW_ANIMAL = ["oeuf", "omelette", "fromage", "yaourt", "lait", "creme", "beurre", "skyr", "miel", "brioche", "croissant", "crepe", "pancake", "quiche", "gratin", "granola", "chocolat chaud", "madeleine", "pain perdu", "cookies", "muesli", "cesar", "flan"];
+const KW_GLUTEN = ["pates", "pate ", "pain", "tartine", "baguette", "croissant", "brioche", "crepe", "pancake", "biscuit", "cookies", "cereales", "muesli", "granola", "lasagnes", "burger", "sandwich", "wrap", "couscous", "boulgour", "gnocchis", "quiche", "tarte", "madeleine", "croque", "nouilles", "pain perdu", "toasts", "semoule"];
+const KW_LACTOSE = ["fromage", "yaourt", "lait", "creme", "beurre", "skyr", "gratin", "croque", "quiche", "brioche", "chocolat chaud", "glace", "carbonara", "lasagnes", "flan", "madeleine", "cookies", "pancake", "crepe", "granola", "muesli"];
+
+function classifyMeal(nom: string): { veg: boolean; vegan: boolean; gluten: boolean; lactose: boolean } {
+  const n = norm(nom);
+  const has = (arr: string[]) => arr.some((k) => n.includes(k));
+  const veg = !has(KW_MEAT);
+  return { veg, vegan: veg && !has(KW_ANIMAL), gluten: has(KW_GLUTEN), lactose: has(KW_LACTOSE) };
+}
+
+function matchesDiet(nom: string, active: Set<DietKey>): boolean {
+  if (active.size === 0) return true;
+  const t = classifyMeal(nom);
+  if (active.has("vegetarien") && !t.veg) return false;
+  if (active.has("vegan") && !t.vegan) return false;
+  if (active.has("sans-gluten") && t.gluten) return false;
+  if (active.has("sans-lactose") && t.lactose) return false;
+  return true;
+}
+
+/* Filtre chaque pool selon le régime actif (garde le pool complet si le filtre le vide). */
+function filterPoolsByDiet(active: Set<DietKey>): typeof POOLS {
+  if (active.size === 0) return POOLS;
+  const out = {} as typeof POOLS;
+  for (const type of Object.keys(POOLS)) {
+    const filtered = POOLS[type].filter((m) => matchesDiet(m.nom, active));
+    out[type] = filtered.length >= 2 ? filtered : POOLS[type];
+  }
+  return out;
+}
+
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 /* ─── PRNG déterministe (seed → suite stable) ─── */
@@ -192,14 +238,14 @@ function weekNumber(): number {
 /* ─── Construit le plan local (instantané, sans IA, sans doublon dans la semaine) ───
    Équilibré : max 2 plats "plaisir" (i:true, ex. steak frites, burger) sur la semaine. */
 const INDULGENT_MAX = 2;
-function buildLocalPlan(userId: string, mealsCount: number, variant: number): MealPlan {
+function buildLocalPlan(userId: string, mealsCount: number, variant: number, pools: typeof POOLS, dietKey: string): MealPlan {
   const types = mealTypesForCount(mealsCount);
-  const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}`));
+  const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}-${dietKey}`));
 
   const shuffled: Record<string, { nom: string; calories: number; i?: boolean }[]> = {};
   const cursor: Record<string, number> = {};
   for (const t of types) {
-    if (!shuffled[t]) { shuffled[t] = shuffle(POOLS[t] ?? [], rng); cursor[t] = 0; }
+    if (!shuffled[t]) { shuffled[t] = shuffle(pools[t] ?? [], rng); cursor[t] = 0; }
   }
 
   let indulgentBudget = INDULGENT_MAX;
@@ -311,8 +357,28 @@ export default function RecommendedMeals() {
     } catch { /* ignore */ }
   }, [user]);
 
+  /* Régime / allergies (filtre des suggestions, persistant en local) */
+  const [diet, setDiet] = useState<Set<DietKey>>(new Set());
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const raw = localStorage.getItem(`vaiiya_diet_${user.id}`);
+      if (raw) setDiet(new Set(JSON.parse(raw) as DietKey[]));
+    } catch { /* ignore */ }
+  }, [user]);
+  const toggleDiet = (key: DietKey) => {
+    setDiet((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      if (user) { try { localStorage.setItem(`vaiiya_diet_${user.id}`, JSON.stringify([...next])); } catch { /* ignore */ } }
+      return next;
+    });
+  };
+  const dietKey = [...diet].sort().join(",");
+  const dietPools = useMemo(() => filterPoolsByDiet(diet), [dietKey]); // eslint-disable-line
+
   /* Plan construit instantanément (mémo simple) */
-  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant) : null;
+  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant, dietPools, dietKey) : null;
 
   const regenerate = useCallback(() => {
     // Régénérer = réservé au Premium (le gratuit garde la sélection du jour)
@@ -378,6 +444,26 @@ export default function RecommendedMeals() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Filtre régime / allergies */}
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+        {DIET_OPTIONS.map(({ key, label, emoji }) => {
+          const on = diet.has(key);
+          return (
+            <button key={key} onClick={() => toggleDiet(key)}
+              className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full cursor-pointer select-none"
+              style={{
+                background: on ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)",
+                border: on ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(212,192,255,0.35)",
+                color: on ? "#2D3748" : "#A0AEC0",
+                fontSize: 10, fontWeight: 600, transition: "all 0.15s",
+              }}>
+              <span style={{ fontSize: 11 }}>{emoji}</span>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Slider jour */}
       <div className="flex flex-col gap-2">
         <div className="flex overflow-x-auto gap-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
