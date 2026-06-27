@@ -19,6 +19,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { calculateGoals } from "@/lib/nutritionGoals";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
@@ -54,7 +55,7 @@ interface UserContext {
   mealsPerDay?: string; diet?: string; skipped?: boolean;
 }
 interface LiveStats {
-  calories?: number; proteins?: number; streak?: number;
+  calories?: number; calorieGoal?: number; proteins?: number; proteinGoal?: number; streak?: number;
   lastWeight?: number; recentSessions?: string[];
 }
 
@@ -156,6 +157,21 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       userContextRef.current = { pseudo: user.pseudo, skipped: true };
     }
 
+    // Objectif du jour calculé depuis le MÊME profil central que l'écran Nutrition
+    // → l'IA et l'app affichent toujours la même cible (fini les chiffres qui divergent).
+    const hasBodyProfile = !!(profile && (profile.onboarding_age || profile.onboarding_weight || profile.onboarding_level));
+    const dayGoals = hasBodyProfile
+      ? calculateGoals({
+          age: profile!.onboarding_age?.toString(),
+          weight: profile!.onboarding_weight?.toString(),
+          height: profile!.onboarding_height?.toString(),
+          gender: profile!.onboarding_gender ?? undefined,
+          goals: profile!.onboarding_goals ?? [],
+          level: profile!.onboarding_level ?? undefined,
+          sessionsPerWeek: profile!.onboarding_sessions_week?.toString(),
+        })
+      : null;
+
     const today = todayISODate();
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
@@ -194,7 +210,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     liveStatsRef.current = {
       calories: Math.round(totalCalories),
+      calorieGoal: dayGoals?.calories,
       proteins: Math.round(totalProteins),
+      proteinGoal: dayGoals?.proteins,
       streak: streak > 0 ? streak : undefined,
       lastWeight: weightHistory[0]?.weight_kg ?? undefined,
       recentSessions: recentSessions.length > 0 ? recentSessions : undefined,

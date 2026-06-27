@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, History } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
-import { calculateGoals } from "@/lib/nutritionGoals";
+import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -1537,15 +1537,8 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   const [loading, setLoading]   = useState(true);
   const [regDate, setRegDate]   = useState<Date | null>(null);
 
-  /* Onboarding profile + calculated goals */
-  const [onboardingProfile, setOnboardingProfile] = useState<Parameters<typeof calculateGoals>[0]>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`aura_onboarding_${user?.pseudo}`);
-      if (raw) setOnboardingProfile(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, [user?.pseudo]);
-  const goals = useMemo(() => calculateGoals(onboardingProfile), [onboardingProfile]);
+  /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
+  const { goals } = useNutritionGoals();
 
   /* Registration date */
   useEffect(() => {
@@ -1904,16 +1897,8 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   const waterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const waterInitialized = useRef(false);
 
-  /* Onboarding profile + calculated goals */
-  const [onboardingProfile, setOnboardingProfile] = useState<Parameters<typeof calculateGoals>[0]>(null);
-  useEffect(() => {
-    if (!user?.pseudo) return;
-    try {
-      const raw = localStorage.getItem(`aura_onboarding_${user.pseudo}`);
-      if (raw) setOnboardingProfile(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, [user?.pseudo]);
-  const goals = useMemo(() => calculateGoals(onboardingProfile), [onboardingProfile]);
+  /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
+  const { goals } = useNutritionGoals();
 
   /* Derived stats */
   const totalCals  = meals.reduce((s, m) => s + m.calories, 0);

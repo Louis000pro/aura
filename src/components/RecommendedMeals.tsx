@@ -6,7 +6,7 @@ import { RefreshCw, Lock, Plus, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { calculateGoals, type OnboardingProfile } from "@/lib/nutritionGoals";
+import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 
 /* ─── Types ─── */
 type MealItem = { type: string; nom: string; calories: number };
@@ -378,18 +378,14 @@ export default function RecommendedMeals() {
   const dietKey = [...diet].sort().join(",");
   const dietPools = useMemo(() => filterPoolsByDiet(diet), [dietKey]); // eslint-disable-line
 
-  /* « Adapté à ta journée » : calories restantes aujourd'hui */
-  const [goalCals, setGoalCals] = useState(0);
+  /* Objectif du jour — depuis le profil central (base), partagé avec l'IA. */
+  const { goals } = useNutritionGoals();
+  const goalCals = goals.calories;
+
+  /* « Adapté à ta journée » : calories déjà consommées aujourd'hui */
   const [consumedToday, setConsumedToday] = useState(0);
   useEffect(() => {
     if (!user) return;
-    let onboarding: OnboardingProfile = null;
-    try {
-      const raw = localStorage.getItem(`aura_onboarding_${user.pseudo}`);
-      if (raw) onboarding = JSON.parse(raw);
-    } catch { /* ignore */ }
-    setGoalCals(calculateGoals(onboarding).calories);
-
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

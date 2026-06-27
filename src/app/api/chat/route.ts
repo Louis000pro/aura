@@ -45,6 +45,7 @@ interface LiveStats {
   calories?: number;
   calorieGoal?: number;
   proteins?: number;
+  proteinGoal?: number;
   steps?: number;
   sleepHours?: number;
   score?: number;
@@ -196,8 +197,8 @@ ${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemo
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
 Statistiques du jour :
-- Calories : ${live.calories ?? "—"} kcal${live.calorieGoal ? ` / objectif ${live.calorieGoal} kcal` : ""}
-- Protéines : ${live.proteins ?? "—"} g
+- Calories : ${live.calories ?? "—"} kcal${live.calorieGoal ? ` / objectif ${live.calorieGoal} kcal (reste ${Math.max(live.calorieGoal - (live.calories ?? 0), 0)} kcal)` : ""}
+- Protéines : ${live.proteins ?? "—"} g${live.proteinGoal ? ` / objectif ${live.proteinGoal} g` : ""}
 - Pas : ${live.steps ? `${live.steps} / 10 000` : "—"}
 - Sommeil : ${live.sleepHours ? `${Math.floor(live.sleepHours)}h${String(Math.round((live.sleepHours % 1) * 60)).padStart(2, "0")}` : "—"}
 - Score du jour : ${live.score ?? "—"}/100
