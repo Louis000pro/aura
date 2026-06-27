@@ -73,9 +73,45 @@ export function useNutritionProfile(): OnboardingProfile {
   return profile;
 }
 
-/** Objectif du jour calculé depuis le profil central : { calories, proteins, carbs, fats, burned }. */
+/** Dernière pesée (weight_logs) = poids ACTUEL, source unique du poids.
+    Se rafraîchit sur l'événement « vaiiya:weighin » (émis à chaque pesée) →
+    l'objectif se recalcule en direct sans recharger la page. */
+export function useLatestWeight(): number | null {
+  const { user } = useAuth();
+  const [weight, setWeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    const load = () => {
+      createClient()
+        .from("weight_logs")
+        .select("weight_kg")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!cancelled && data) setWeight((data as { weight_kg: number }).weight_kg);
+        });
+    };
+    load();
+    window.addEventListener("vaiiya:weighin", load);
+    return () => { cancelled = true; window.removeEventListener("vaiiya:weighin", load); };
+  }, [user?.id]);
+
+  return weight;
+}
+
+/** Objectif du jour : profil central + DERNIÈRE pesée → { calories, proteins, carbs, fats, burned }.
+    Se peser met donc à jour l'objectif automatiquement (le poids du jour prime). */
 export function useNutritionGoals() {
   const profile = useNutritionProfile();
-  const goals = useMemo(() => calculateGoals(profile), [profile]);
-  return { profile, goals };
+  const latestWeight = useLatestWeight();
+  const goals = useMemo(() => {
+    const merged: OnboardingProfile =
+      latestWeight != null ? { ...(profile ?? {}), weight: String(latestWeight) } : profile;
+    return calculateGoals(merged);
+  }, [profile, latestWeight]);
+  return { profile, goals, latestWeight };
 }

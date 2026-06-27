@@ -157,21 +157,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       userContextRef.current = { pseudo: user.pseudo, skipped: true };
     }
 
-    // Objectif du jour calculé depuis le MÊME profil central que l'écran Nutrition
-    // → l'IA et l'app affichent toujours la même cible (fini les chiffres qui divergent).
-    const hasBodyProfile = !!(profile && (profile.onboarding_age || profile.onboarding_weight || profile.onboarding_level));
-    const dayGoals = hasBodyProfile
-      ? calculateGoals({
-          age: profile!.onboarding_age?.toString(),
-          weight: profile!.onboarding_weight?.toString(),
-          height: profile!.onboarding_height?.toString(),
-          gender: profile!.onboarding_gender ?? undefined,
-          goals: profile!.onboarding_goals ?? [],
-          level: profile!.onboarding_level ?? undefined,
-          sessionsPerWeek: profile!.onboarding_sessions_week?.toString(),
-        })
-      : null;
-
     const today = todayISODate();
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
@@ -207,6 +192,22 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
       return `${dayNames[d.getDay()]} : ${s.title}${s.duration_minutes ? ` (${s.duration_minutes} min)` : ""}`;
     });
+
+    // Objectif du jour : même calcul que l'écran Nutrition, basé sur le profil
+    // central + la DERNIÈRE pesée (weight_logs) → se peser met à jour la cible.
+    const hasBodyProfile = !!(profile && (profile.onboarding_age || profile.onboarding_weight || profile.onboarding_level));
+    const currentWeight = weightHistory[0]?.weight_kg ?? profile?.onboarding_weight ?? null;
+    const dayGoals = hasBodyProfile
+      ? calculateGoals({
+          age: profile!.onboarding_age?.toString(),
+          weight: currentWeight != null ? String(currentWeight) : undefined,
+          height: profile!.onboarding_height?.toString(),
+          gender: profile!.onboarding_gender ?? undefined,
+          goals: profile!.onboarding_goals ?? [],
+          level: profile!.onboarding_level ?? undefined,
+          sessionsPerWeek: profile!.onboarding_sessions_week?.toString(),
+        })
+      : null;
 
     liveStatsRef.current = {
       calories: Math.round(totalCalories),

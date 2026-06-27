@@ -176,6 +176,19 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
       onboarding_diet: diet,
       onboarding_completed: isCompleted,
     }, { onConflict: "id" });
+
+    // Le poids saisi ici est AUSSI une pesée du jour → une seule source de poids
+    // (weight_logs), et l'objectif lit toujours la dernière pesée.
+    if (weight) {
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      await supabase.from("weight_logs").upsert(
+        { user_id: user.id, date: dateStr, weight_kg: parseFloat(weight) },
+        { onConflict: "user_id,date" }
+      );
+    }
+
     setSaving(false);
     setSuccess(true);
     setShowCelebration(true);
