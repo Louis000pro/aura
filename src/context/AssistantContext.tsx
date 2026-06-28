@@ -256,6 +256,29 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     memoriesRef.current = (memoriesRes.data ?? []) as AiMemory[];
   }, [user?.id, user?.pseudo]);
 
+  /* Repère nutrition OPTIONNEL pour la génération de séance — renvoie une courte
+     note SEULEMENT si l'utilisateur suit sa nutrition aujourd'hui ET qu'un signal
+     clair existe. Sinon null → séance générée comme d'habitude, jamais de pénalité.
+     C'est un BONUS, pas une condition (même esprit que la règle côté /api/chat). */
+  const buildNutritionNote = useCallback((): string | null => {
+    const ls = liveStatsRef.current;
+    const rich = richProfileRef.current as { todayDate?: string; mealsDetail?: { date: string }[] } | null;
+    const goal = ls?.calorieGoal;
+    const consumed = ls?.calories;
+    if (!goal || consumed == null) return null;
+    const today = rich?.todayDate;
+    const mealsToday = (rich?.mealsDetail ?? []).filter((m) => m.date === today).length;
+    if (mealsToday === 0) return null; // ne note pas ses repas aujourd'hui → on n'y touche pas
+    const ratio = consumed / goal;
+    if (ratio >= 0.9) {
+      return `L'utilisateur est bien rechargé aujourd'hui (~${consumed}/${goal} kcal mangées). Tu PEUX te permettre une séance un peu plus intense si c'est pertinent.`;
+    }
+    if (new Date().getHours() >= 16 && ratio <= 0.5) {
+      return `L'utilisateur a peu mangé aujourd'hui (~${consumed}/${goal} kcal). Tu PEUX privilégier une séance un peu plus courte ou d'intensité modérée.`;
+    }
+    return null;
+  }, []);
+
   /* ── Mémoire long terme : persiste une action d'extraction (save / forget) ── */
   const persistMemoryAction = useCallback(async (action: MemoryAction) => {
     if (!user?.id) return;
@@ -425,11 +448,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         ? (equip === "halteres" ? " à la maison avec haltères" : " à la maison au poids du corps")
         : " en salle de sport";
       const description = `${baseDesc || "séance complète"}${lieuTxt}`.slice(0, 400);
+      // Bonus nutrition uniquement si on planifie AUJOURD'HUI (jamais un jour futur)
+      const nutritionNote = when === richProfileRef.current?.todayDate ? buildNutritionNote() : null;
 
       const genRes = await fetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, category, difficulty, muscles }),
+        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote }),
       });
       if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();
@@ -467,7 +492,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, buildNutritionNote]);
 
   /* ── Analyse unifiée : UN seul appel 8b décide s'il y a un fait à retenir
      ET/OU une action (créer une séance) → moitié moins d'appels Groq ── */
@@ -540,11 +565,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         ? (equip === "halteres" ? " à la maison avec haltères" : " à la maison au poids du corps")
         : " en salle de sport";
       const description = `${action.description || text}${lieuTxt}`.slice(0, 400);
+      // Bonus nutrition : créer une séance = pour maintenant (aujourd'hui)
+      const nutritionNote = buildNutritionNote();
 
       const genRes = await fetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description, category, difficulty, muscles }),
+        body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote }),
       });
       if (!genRes.ok) throw new Error("generation HTTP " + genRes.status);
       const data = await genRes.json();
@@ -568,7 +595,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, persistMemoryAction, preparePlanAction]);
+  }, [user?.id, persistMemoryAction, preparePlanAction, buildNutritionNote]);
 
   /* ── Envoi d'un message ── */
   const sendMessage = useCallback(async (text: string) => {

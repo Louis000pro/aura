@@ -6,7 +6,7 @@ export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    const { description, category, difficulty, muscles } = await req.json();
+    const { description, category, difficulty, muscles, nutritionNote } = await req.json();
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
     if (!hasLLMKey())
@@ -47,6 +47,14 @@ MATERIEL (STRICT) : a la MAISON avec des HALTERES. Tu peux utiliser des halteres
 MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel — poids du corps UNIQUEMENT. INTERDIT formellement : halteres, barre, machine, poulie, kettlebell, elastique, banc, AINSI QUE tout exercice suspendu necessitant une barre de traction (PAS de tractions, PAS de releves de jambes suspendus) ou un poids additionnel (PAS de "leste", PAS de "charge"). Uniquement des exercices au sol ou debout, faisables dans une piece.`;
     }
 
+    // Bonus nutrition OPTIONNEL : présent seulement si le caller a un signal clair
+    // pour AUJOURD'HUI. Soft par construction — jamais une contrainte dure.
+    const nutritionConstraint = (typeof nutritionNote === "string" && nutritionNote.trim())
+      ? `
+NUTRITION (BONUS OPTIONNEL — jamais une contrainte) : ${nutritionNote.trim()}
+Tu PEUX t en servir pour un LEGER ajustement (intensite, volume ou duree) ou pour enrichir un "tip". Ne reduis JAMAIS la qualite de la seance et n en fais pas le sujet.`
+      : "";
+
     const response = await llm.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
@@ -61,7 +69,7 @@ MATERIEL (STRICT) : a la MAISON, SANS AUCUN materiel — poids du corps UNIQUEME
 Description : "${description}"
 Categorie : ${category ?? "force"}
 Niveau : ${difficulty ?? "Intermediaire"}${Array.isArray(muscles) && muscles.length > 0 ? `
-Muscles cibles par l utilisateur : ${muscles.join(", ")} — la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}
+Muscles cibles par l utilisateur : ${muscles.join(", ")} — la seance DOIT travailler prioritairement ces muscles.` : ""}${equipmentConstraint}${nutritionConstraint}
 ${durationConstraint}
 
 Retourne un JSON avec exactement ce format :
