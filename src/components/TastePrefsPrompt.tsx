@@ -202,8 +202,9 @@ export default function TastePrefsPrompt() {
               Quelques questions rapides pour te proposer des repas qui te ressemblent vraiment.
             </p>
 
-            {/* Contenu scrollable */}
-            <div className="overflow-y-auto -mx-1 px-1" style={{ scrollbarWidth: "thin" }}>
+            {/* Contenu scrollable (fondu en bas = indice qu'il y a plus dessous) */}
+            <div className="relative flex-1 min-h-0">
+              <div className="h-full overflow-y-auto -mx-1 px-1 pb-1" style={{ scrollbarWidth: "thin" }}>
               <Question label="Tu aimes cuisiner ?">
                 <Segmented options={Q_COOKING} value={cooking} onSelect={setCooking} />
               </Question>
@@ -264,6 +265,9 @@ export default function TastePrefsPrompt() {
                   </button>
                 </div>
               </Question>
+              </div>
+              <div aria-hidden className="pointer-events-none absolute left-0 right-0 bottom-0 h-6"
+                style={{ background: "linear-gradient(to top, #FFFFFF, rgba(255,255,255,0))" }} />
             </div>
 
             {/* Pied (fixe) */}
