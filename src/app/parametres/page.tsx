@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
 import AiMemoryManager from "@/components/AiMemoryManager";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles, Gauge } from "lucide-react";
+import TasteProfileModal from "@/components/TasteProfileModal";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles, Gauge, Utensils } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -616,6 +617,7 @@ export default function ParametresPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
   const [showMemoryModal, setShowMemoryModal]     = useState(false);
+  const [showTasteModal, setShowTasteModal]       = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [pushLoading, setPushLoading]             = useState(false);
   const [pushEnabled, setPushEnabled]             = useState(false);
@@ -685,6 +687,13 @@ export default function ParametresPage() {
             sublabel="Âge, poids, objectifs fitness, niveau, alimentation"
             onClick={() => setShowProfileModal(true)}
             iconBg="linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.5), rgba(var(--cream-mid-rgb),0.3))"
+          />
+          <Row
+            icon={Utensils}
+            label="Mes goûts cuisine"
+            sublabel="Cuisine, temps, ingrédients, plats préférés — pour personnaliser ton menu"
+            onClick={() => setShowTasteModal(true)}
+            iconBg="linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.4), rgba(var(--violet-mid-rgb),0.3))"
           />
         </div>
 
@@ -952,6 +961,7 @@ export default function ParametresPage() {
         {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
         {showDeleteModal   && <DeleteAccountModal  onClose={() => setShowDeleteModal(false)} />}
         {showMemoryModal   && <AiMemoryManager     onClose={() => setShowMemoryModal(false)} />}
+        {showTasteModal    && <TasteProfileModal   onClose={() => setShowTasteModal(false)} onSaved={() => showToast("Goûts enregistrés ✓")} />}
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}

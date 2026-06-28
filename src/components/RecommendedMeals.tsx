@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
+import { loadTasteProfileLocal, tasteSignature } from "@/lib/tasteProfile";
 
 /* ─── Types ─── */
 type PoolItem = { nom: string; calories: number; proteins?: number; carbs?: number; fats?: number; i?: boolean; prepMin?: number; difficulty?: string };
@@ -388,9 +389,19 @@ export default function RecommendedMeals() {
      Si dispo, elle remplace le catalogue figé ; sinon on garde le secours. ─── */
   const [aiPools, setAiPools] = useState<Pools | null>(null);
   const [menuLoading, setMenuLoading] = useState(false);
+  // Re-générer le menu quand les goûts changent (popup ou Paramètres).
+  const [tasteVersion, setTasteVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setTasteVersion((v) => v + 1);
+    window.addEventListener("vaiiya:taste", bump);
+    return () => window.removeEventListener("vaiiya:taste", bump);
+  }, []);
   useEffect(() => {
     if (!user) { setAiPools(null); return; }
-    const cacheKey = `vaiiya_menu_pool_${user.id}_w${weekNumber()}_m${mealsCount}_${dietKey || "all"}`;
+    // Profil de goûts (popup ou Paramètres) — local, lecture immédiate.
+    const taste = loadTasteProfileLocal(user.id);
+    // La signature des goûts entre dans la clé → éditer ses goûts régénère le menu.
+    const cacheKey = `vaiiya_menu_pool_${user.id}_w${weekNumber()}_m${mealsCount}_${dietKey || "all"}_t${tasteSignature(taste)}`;
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) { setAiPools(JSON.parse(cached) as Pools); return; }
@@ -400,9 +411,6 @@ export default function RecommendedMeals() {
     let cancelled = false;
     setMenuLoading(true);
     (async () => {
-      // Profil de goûts (popup) — local pour l'instant.
-      let taste: unknown = null;
-      try { const raw = localStorage.getItem(`vaiiya_taste_profile_${user.id}`); if (raw) taste = JSON.parse(raw); } catch { /* ignore */ }
       // Coups de cœur = plats les plus fréquents de l'historique réel.
       let favorites: string[] = [];
       try {
@@ -456,7 +464,7 @@ export default function RecommendedMeals() {
       finally { if (!cancelled) setMenuLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [user, mealsCount, goalCals, dietKey]); // eslint-disable-line
+  }, [user, mealsCount, goalCals, dietKey, tasteVersion]); // eslint-disable-line
 
   /* « Adapté à ta journée » : calories déjà consommées aujourd'hui */
   const [consumedToday, setConsumedToday] = useState(0);

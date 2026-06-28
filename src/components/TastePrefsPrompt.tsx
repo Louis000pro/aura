@@ -18,15 +18,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import {
+  type TasteProfile,
+  Q_COOKING, Q_TIME, Q_INGREDIENTS,
+  BASE_GROUPS, KNOWN_BASES,
+  isTasteComplete, saveTasteProfile, tasteTodayStr,
+} from "@/lib/tasteProfile";
 
 const DAYS_BEFORE_ASKING = 7;   // ~1 semaine d'utilisation avant de demander
 const WEIGHIN_DAYS = 30;        // priorité au rendez-vous poids (pas de double popup)
 
-function todayStr(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
 function addDaysStr(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -37,49 +38,6 @@ function daysSince(dateStr: string): number {
   const then = new Date(dateStr + "T00:00:00").getTime();
   return Math.floor((Date.now() - then) / 86400000);
 }
-
-/* ─── Questions à choix unique ─── */
-const Q_COOKING = ["J'adore", "Un peu", "Le moins possible"];
-const Q_TIME = ["≤ 15 min", "~30 min", "J'ai le temps"];
-const Q_INGREDIENTS = ["Je trouve de tout", "Ça dépend", "Je fais simple"];
-
-/* ─── Bases préférées (choix multiple) ─── */
-const BASE_GROUPS: { group: string; items: { label: string; emoji: string }[] }[] = [
-  { group: "Protéines", items: [
-    { label: "Poulet / volaille", emoji: "🍗" },
-    { label: "Viande rouge", emoji: "🥩" },
-    { label: "Porc / charcuterie", emoji: "🥓" },
-    { label: "Poisson", emoji: "🐟" },
-    { label: "Fruits de mer", emoji: "🦐" },
-    { label: "Œufs", emoji: "🥚" },
-    { label: "Légumineuses", emoji: "🫘" },
-    { label: "Tofu / soja", emoji: "🌱" },
-  ] },
-  { group: "Féculents", items: [
-    { label: "Riz", emoji: "🍚" },
-    { label: "Pâtes", emoji: "🍝" },
-    { label: "Pommes de terre", emoji: "🥔" },
-    { label: "Pain", emoji: "🍞" },
-    { label: "Semoule / couscous", emoji: "🌾" },
-    { label: "Quinoa / boulgour", emoji: "🥣" },
-    { label: "Avoine / céréales", emoji: "🥣" },
-  ] },
-  { group: "Légumes & laitages", items: [
-    { label: "Légumes verts", emoji: "🥦" },
-    { label: "Salade / crudités", emoji: "🥗" },
-    { label: "Fromage", emoji: "🧀" },
-    { label: "Yaourt / fromage blanc", emoji: "🥛" },
-  ] },
-];
-const KNOWN_BASES = new Set(BASE_GROUPS.flatMap((g) => g.items.map((i) => i.label)));
-
-export type TasteProfile = {
-  cooking: string | null;
-  time: string | null;
-  ingredients: string | null;
-  bases: string[];
-  updatedAt: string;
-};
 
 export default function TastePrefsPrompt() {
   const { user } = useAuth();
@@ -101,11 +59,11 @@ export default function TastePrefsPrompt() {
       if (localStorage.getItem(`vaiiya_taste_profile_${user.id}`)) return;
       // « Plus tard » → on attend la date snoozée.
       const snooze = localStorage.getItem(`vaiiya_taste_snooze_${user.id}`);
-      if (snooze && snooze > todayStr()) return;
+      if (snooze && snooze > tasteTodayStr()) return;
       // Repère « première visite nutrition » → démarre le compte à rebours.
       const firstKey = `vaiiya_taste_firstseen_${user.id}`;
       const first = localStorage.getItem(firstKey);
-      if (!first) { localStorage.setItem(firstKey, todayStr()); return; }
+      if (!first) { localStorage.setItem(firstKey, tasteTodayStr()); return; }
       if (daysSince(first) < DAYS_BEFORE_ASKING) return;
     } catch { return; }
 
@@ -114,7 +72,7 @@ export default function TastePrefsPrompt() {
     let weighinSnoozed = false;
     try {
       const ws = localStorage.getItem(`vaiiya_weighin_snooze_${user.id}`);
-      weighinSnoozed = !!(ws && ws > todayStr());
+      weighinSnoozed = !!(ws && ws > tasteTodayStr());
     } catch { /* ignore */ }
 
     createClient()
@@ -151,16 +109,13 @@ export default function TastePrefsPrompt() {
     setCustom("");
   };
 
-  const canSave = !!(cooking && time && ingredients);
+  const canSave = isTasteComplete({ cooking, time, ingredients });
 
   const save = async () => {
     if (!user?.id || !canSave) return;
     setSaving(true);
-    const profile: TasteProfile = { cooking, time, ingredients, bases, updatedAt: todayStr() };
-    try { localStorage.setItem(`vaiiya_taste_profile_${user.id}`, JSON.stringify(profile)); } catch { /* ignore */ }
-    // Best-effort : sync en base si la colonne existe (sinon ignoré, le local suffit).
-    try { await createClient().from("profiles").update({ taste_profile: profile }).eq("id", user.id); } catch { /* ignore */ }
-    try { window.dispatchEvent(new Event("vaiiya:taste")); } catch { /* ignore */ }
+    const profile: TasteProfile = { cooking, time, ingredients, bases, updatedAt: tasteTodayStr() };
+    await saveTasteProfile(user.id, profile);
     setSaving(false);
     setShow(false);
   };
