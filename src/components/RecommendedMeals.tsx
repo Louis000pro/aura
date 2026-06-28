@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import { loadTasteProfileLocal, tasteSignature } from "@/lib/tasteProfile";
+import { macrosForDish } from "@/lib/macros";
 
 /* ─── Types ─── */
 type PoolItem = { nom: string; calories: number; proteins?: number; carbs?: number; fats?: number; i?: boolean; prepMin?: number; difficulty?: string };
@@ -294,6 +295,8 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
       )}
       {(day.repas ?? []).map((m, i) => {
         const added = addedKeys.has(`${dayIndex}-${m.type}-${m.nom}`);
+        // Macros estimées (cohérentes avec les calories) — affichées avec « ≈ ».
+        const mac = m.calories > 0 ? macrosForDish(m.nom, m.calories, m.proteins, m.carbs, m.fats) : null;
         return (
           <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
             style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.25)" }}>
@@ -301,6 +304,11 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
             <div className="flex-1 min-w-0">
               <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
               <p className="text-[13px] font-medium leading-snug" style={{ color: "#2D3748" }}>{m.nom}</p>
+              {mac && (
+                <p className="text-[9px] leading-tight mt-0.5" style={{ color: "#A0AEC0" }}>
+                  ≈ {mac.proteins}g protéines · {mac.carbs}g glucides · {mac.fats}g lipides
+                </p>
+              )}
             </div>
             {m.calories > 0 && (
               <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>{m.calories} kcal</span>
@@ -524,16 +532,17 @@ export default function RecommendedMeals() {
     const mealType = m.type === "collation" ? "gouter" : m.type;
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
+    // Macros cohérentes : IA recalée sur les calories, sinon estimées depuis le nom.
+    const mac = macrosForDish(m.nom, cal, m.proteins, m.carbs, m.fats);
     const { error } = await createClient().from("nutrition_logs").insert({
       user_id: user.id,
       date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
       meal_type: mealType,
       food_name: m.nom,
       calories: cal,
-      // Vraies macros si le plat IA les fournit, sinon estimées (20% P / 50% G / 30% L).
-      proteins: m.proteins ?? Math.round((cal * 0.20) / 4),
-      carbs: m.carbs ?? Math.round((cal * 0.50) / 4),
-      fats: m.fats ?? Math.round((cal * 0.30) / 9),
+      proteins: mac.proteins,
+      carbs: mac.carbs,
+      fats: mac.fats,
       has_photo: false,
       time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
     });
