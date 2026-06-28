@@ -123,11 +123,11 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
 }
 
 /* ─── MacroBar ──────────────────────────────────────────────────────── */
-function MacroBar({ label, consumed, goal, color }: { label: string; consumed: number; goal: number; color: string }) {
+function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?: string; consumed: number; goal: number; color: string }) {
   const pct = Math.min(Math.round((consumed / goal) * 100), 100);
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
           <span className="text-sm font-medium" style={{ color: "#4A5568" }}>{label}</span>
@@ -137,6 +137,9 @@ function MacroBar({ label, consumed, goal, color }: { label: string; consumed: n
           {consumed}g <span className="font-normal text-xs" style={{ color: "#A0AEC0" }}>/ {goal}g</span>
         </span>
       </div>
+      {hint && (
+        <p className="text-[11px] leading-snug mb-2 ml-4" style={{ color: "#A0AEC0" }}>{hint}</p>
+      )}
       <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
         <motion.div className="h-full rounded-full" style={{ background: color }}
           initial={{ width: 0 }}
@@ -2244,18 +2247,23 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="rounded-3xl p-5" style={CARD}>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-                MACROS DU JOUR
-              </p>
-              <button className="text-xs font-semibold cursor-pointer" style={{ color: "#A78BFA" }}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                  MACROS DU JOUR
+                </p>
+                <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>
+                  Les 3 familles d&apos;aliments qui composent ton assiette
+                </p>
+              </div>
+              <button className="text-xs font-semibold cursor-pointer flex-shrink-0" style={{ color: "#A78BFA" }}>
                 Ajuster
               </button>
             </div>
             <div className="flex flex-col gap-4">
-              <MacroBar label="Protéines" consumed={totalProt}  goal={goals.proteins} color="#A78BFA" />
-              <MacroBar label="Glucides"  consumed={totalCarbs} goal={goals.carbs}    color="#7B5CC4" />
-              <MacroBar label="Lipides"   consumed={totalFats}  goal={goals.fats}     color="#D4A843" />
+              <MacroBar label="Protéines" hint="Pour construire tes muscles"     consumed={totalProt}  goal={goals.proteins} color="#A78BFA" />
+              <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#7B5CC4" />
+              <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#D4A843" />
               <div style={{ height: 1, background: "rgba(167,139,250,0.08)" }} />
               <HydrationWidget
                 waterMl={waterMl}
