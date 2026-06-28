@@ -140,7 +140,7 @@ export default function TastePrefsPrompt() {
             initial={{ opacity: 0, y: 80, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 40, scale: 0.97 }}
             transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-3xl md:rounded-3xl bg-white px-6 pt-7 pb-8 md:pb-7 flex flex-col"
+            className="w-full max-w-sm rounded-t-3xl md:rounded-3xl bg-white px-6 pt-7 pb-8 md:pb-7 flex flex-col overflow-hidden"
             style={{ boxShadow: "0 -8px 40px rgba(167,139,250,0.18)", maxHeight: "86vh" }}
           >
             <div className="flex items-center justify-between mb-1 flex-shrink-0">
@@ -163,8 +163,8 @@ export default function TastePrefsPrompt() {
             </p>
 
             {/* Contenu scrollable (fondu en bas = indice qu'il y a plus dessous) */}
-            <div className="relative flex-1 min-h-0">
-              <div className="h-full overflow-y-auto -mx-1 px-1 pb-1" style={{ scrollbarWidth: "thin" }}>
+            <div className="relative flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 pb-1" style={{ scrollbarWidth: "thin" }}>
               <Question label="Tu aimes cuisiner ?">
                 <Segmented options={Q_COOKING} value={cooking} onSelect={setCooking} />
               </Question>
