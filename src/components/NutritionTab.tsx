@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, History } from "lucide-react";
+import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
@@ -44,7 +44,7 @@ type DaySummary = {
   water_ml: number;
 };
 
-type RecentMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
+type RecentMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const MEAL_META: Record<MealType, { label: string; icon: string }> = {
@@ -1923,7 +1923,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   const totalFats  = meals.reduce((s, m) => s + m.fats, 0);
   const remaining  = Math.max(goals.calories - totalCals, 0);
 
-  /* ── Repas récents (ajout rapide en 1 tap) ─── */
+  /* ── Coups de cœur : tes plats les plus souvent enregistrés (ajout en 1 tap).
+     Classés par FRÉQUENCE (et non plus par simple récence) ; la récence
+     départage. Macros = celles de la dernière fois que tu l'as mangé. ─── */
   const [recentMeals, setRecentMeals] = useState<RecentMeal[]>([]);
   const loadRecents = useCallback(async () => {
     if (!user) { setRecentMeals([]); return; }
@@ -1933,18 +1935,23 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
       .eq("user_id", user.id)
       .order("date", { ascending: false })
       .order("time", { ascending: false })
-      .limit(60);
+      .limit(200);
     if (!data) return;
-    const seen = new Set<string>();
-    const uniq: RecentMeal[] = [];
-    for (const r of data as { food_name: string; calories: number; proteins: number; carbs: number; fats: number }[]) {
+    // Regroupe par nom : compte la fréquence, garde les macros de l'occurrence la
+    // plus récente (les lignes arrivent déjà du plus récent au plus ancien).
+    const byName = new Map<string, RecentMeal & { rank: number }>();
+    (data as { food_name: string; calories: number; proteins: number; carbs: number; fats: number }[]).forEach((r, i) => {
       const key = (r.food_name ?? "").trim().toLowerCase();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      uniq.push({ name: r.food_name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats });
-      if (uniq.length >= 8) break;
-    }
-    setRecentMeals(uniq);
+      if (!key) return;
+      const existing = byName.get(key);
+      if (existing) { existing.count = (existing.count ?? 1) + 1; }
+      else { byName.set(key, { name: r.food_name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats, count: 1, rank: i }); }
+    });
+    const ranked = [...byName.values()]
+      .sort((a, b) => ((b.count ?? 1) - (a.count ?? 1)) || (a.rank - b.rank))
+      .slice(0, 8)
+      .map(({ name, calories, proteins, carbs, fats, count }) => ({ name, calories, proteins, carbs, fats, count }));
+    setRecentMeals(ranked);
   }, [user]); // eslint-disable-line
   useEffect(() => { loadRecents(); }, [loadRecents]);
 
@@ -2349,9 +2356,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
           {recentMeals.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center gap-1.5 mb-2">
-                <History size={11} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <Heart size={11} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-                  Ajout rapide
+                  Tes coups de cœur
                 </p>
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
@@ -2366,7 +2373,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                     </div>
                     <div className="text-left">
                       <p className="text-xs font-medium leading-tight" style={{ color: "#2D3748", whiteSpace: "nowrap" }}>{r.name}</p>
-                      <p className="text-[9px] leading-tight" style={{ color: "#A0AEC0" }}>{r.calories} kcal</p>
+                      <p className="text-[9px] leading-tight" style={{ color: "#A0AEC0" }}>
+                        {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
+                      </p>
                     </div>
                   </motion.button>
                 ))}
