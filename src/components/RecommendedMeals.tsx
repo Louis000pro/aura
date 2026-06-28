@@ -9,7 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 
 /* ─── Types ─── */
-type MealItem = { type: string; nom: string; calories: number };
+type PoolItem = { nom: string; calories: number; proteins?: number; carbs?: number; fats?: number; i?: boolean; prepMin?: number; difficulty?: string };
+type Pools = Record<string, PoolItem[]>;
+type MealItem = { type: string; nom: string; calories: number; proteins?: number; carbs?: number; fats?: number };
 type MealDay = { jour: string; repas: MealItem[] };
 type MealPlan = { semaine: MealDay[] };
 
@@ -33,7 +35,7 @@ function mealTypesForCount(n: number): string[] {
 }
 
 /* ─── Banque de repas connus de tous ─── */
-const POOLS: Record<string, { nom: string; calories: number; i?: boolean }[]> = {
+const POOLS: Pools = {
   "petit-dejeuner": [
     { nom: "Tartines beurre & confiture", calories: 350 },
     { nom: "Bol de céréales + lait", calories: 320 },
@@ -194,9 +196,9 @@ function matchesDiet(nom: string, active: Set<DietKey>): boolean {
 }
 
 /* Filtre chaque pool selon le régime actif (garde le pool complet si le filtre le vide). */
-function filterPoolsByDiet(active: Set<DietKey>): typeof POOLS {
+function filterPoolsByDiet(active: Set<DietKey>): Pools {
   if (active.size === 0) return POOLS;
-  const out = {} as typeof POOLS;
+  const out = {} as Pools;
   for (const type of Object.keys(POOLS)) {
     const filtered = POOLS[type].filter((m) => matchesDiet(m.nom, active));
     out[type] = filtered.length >= 2 ? filtered : POOLS[type];
@@ -239,11 +241,11 @@ function weekNumber(): number {
 /* ─── Construit le plan local (instantané, sans IA, sans doublon dans la semaine) ───
    Équilibré : max 2 plats "plaisir" (i:true, ex. steak frites, burger) sur la semaine. */
 const INDULGENT_MAX = 2;
-function buildLocalPlan(userId: string, mealsCount: number, variant: number, pools: typeof POOLS, dietKey: string): MealPlan {
+function buildLocalPlan(userId: string, mealsCount: number, variant: number, pools: Pools, dietKey: string): MealPlan {
   const types = mealTypesForCount(mealsCount);
   const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}-${dietKey}`));
 
-  const shuffled: Record<string, { nom: string; calories: number; i?: boolean }[]> = {};
+  const shuffled: Record<string, PoolItem[]> = {};
   const cursor: Record<string, number> = {};
   for (const t of types) {
     if (!shuffled[t]) { shuffled[t] = shuffle(pools[t] ?? [], rng); cursor[t] = 0; }
@@ -258,7 +260,7 @@ function buildLocalPlan(userId: string, mealsCount: number, variant: number, poo
       const pool = shuffled[t];
       if (!pool.length) { semaine[d].repas.push({ type: t, nom: "Repas équilibré", calories: 400 }); continue; }
 
-      let chosen: { nom: string; calories: number; i?: boolean } | null = null;
+      let chosen: PoolItem | null = null;
       // On avance dans la liste mélangée ; on saute les plats "plaisir" si le budget est épuisé
       for (let scanned = 0; scanned < pool.length; scanned++) {
         const item = pool[cursor[t] % pool.length];
@@ -269,7 +271,7 @@ function buildLocalPlan(userId: string, mealsCount: number, variant: number, poo
         break;
       }
       if (!chosen) { chosen = pool[cursor[t] % pool.length]; cursor[t]++; }
-      semaine[d].repas.push({ type: t, nom: chosen.nom, calories: chosen.calories });
+      semaine[d].repas.push({ type: t, nom: chosen.nom, calories: chosen.calories, proteins: chosen.proteins, carbs: chosen.carbs, fats: chosen.fats });
     }
   }
   return { semaine };
@@ -382,6 +384,80 @@ export default function RecommendedMeals() {
   const { goals } = useNutritionGoals();
   const goalCals = goals.calories;
 
+  /* ── Banque de plats PERSONNALISÉE par l'IA (cache 1 semaine).
+     Si dispo, elle remplace le catalogue figé ; sinon on garde le secours. ─── */
+  const [aiPools, setAiPools] = useState<Pools | null>(null);
+  const [menuLoading, setMenuLoading] = useState(false);
+  useEffect(() => {
+    if (!user) { setAiPools(null); return; }
+    const cacheKey = `vaiiya_menu_pool_${user.id}_w${weekNumber()}_m${mealsCount}_${dietKey || "all"}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) { setAiPools(JSON.parse(cached) as Pools); return; }
+    } catch { /* ignore */ }
+    if (goalCals <= 0) return; // on attend de connaître l'objectif avant de générer
+
+    let cancelled = false;
+    setMenuLoading(true);
+    (async () => {
+      // Profil de goûts (popup) — local pour l'instant.
+      let taste: unknown = null;
+      try { const raw = localStorage.getItem(`vaiiya_taste_profile_${user.id}`); if (raw) taste = JSON.parse(raw); } catch { /* ignore */ }
+      // Coups de cœur = plats les plus fréquents de l'historique réel.
+      let favorites: string[] = [];
+      try {
+        const { data } = await createClient()
+          .from("nutrition_logs").select("food_name")
+          .eq("user_id", user.id).order("date", { ascending: false }).limit(150);
+        const counts = new Map<string, number>();
+        ((data ?? []) as { food_name?: string }[]).forEach((r) => {
+          const k = (r.food_name ?? "").trim();
+          if (k) counts.set(k, (counts.get(k) ?? 0) + 1);
+        });
+        favorites = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n]) => n);
+      } catch { /* ignore */ }
+
+      try {
+        const res = await fetch("/api/nutrition/menu", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mealTypes: mealTypesForCount(mealsCount), perType: 8,
+            calorieTarget: goalCals, diet: [...diet], taste, favorites,
+          }),
+        });
+        const json = await res.json();
+        if (cancelled || !res.ok || !json?.pools || typeof json.pools !== "object") return;
+        // Normalise (indulgent → i, nombres arrondis, plats vides filtrés).
+        const rawPools = json.pools as Record<string, unknown>;
+        const norm: Pools = {};
+        const num = (v: unknown) => (v == null || isNaN(Number(v)) ? undefined : Math.round(Number(v)));
+        for (const t of Object.keys(rawPools)) {
+          const arr = rawPools[t];
+          if (!Array.isArray(arr)) continue;
+          const items: PoolItem[] = [];
+          for (const raw of arr) {
+            const x = (raw ?? {}) as Record<string, unknown>;
+            const nom = typeof x.nom === "string" ? x.nom.trim() : "";
+            if (!nom) continue;
+            items.push({
+              nom, calories: num(x.calories) ?? 0,
+              proteins: num(x.proteins), carbs: num(x.carbs), fats: num(x.fats),
+              i: x.indulgent === true || x.i === true,
+              prepMin: num(x.prepMin),
+              difficulty: typeof x.difficulty === "string" ? x.difficulty : undefined,
+            });
+          }
+          if (items.length) norm[t] = items;
+        }
+        if (!Object.keys(norm).length) return;
+        setAiPools(norm);
+        try { localStorage.setItem(cacheKey, JSON.stringify(norm)); } catch { /* ignore */ }
+      } catch { /* secours = catalogue figé */ }
+      finally { if (!cancelled) setMenuLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [user, mealsCount, goalCals, dietKey]); // eslint-disable-line
+
   /* « Adapté à ta journée » : calories déjà consommées aujourd'hui */
   const [consumedToday, setConsumedToday] = useState(0);
   useEffect(() => {
@@ -400,8 +476,19 @@ export default function RecommendedMeals() {
   }, [user]);
   const remainingToday = Math.max(goalCals - consumedToday, 0);
 
+  /* Banque active : l'IA si dispo (par type, avec assez de plats), sinon le secours. */
+  const activePools: Pools = useMemo(() => {
+    if (!aiPools) return dietPools;
+    const merged: Pools = {};
+    for (const t of mealTypesForCount(mealsCount)) {
+      const ai = aiPools[t];
+      merged[t] = Array.isArray(ai) && ai.length >= 2 ? ai : (dietPools[t] ?? []);
+    }
+    return merged;
+  }, [aiPools, dietPools, mealsCount]);
+
   /* Plan construit instantanément (mémo simple) */
-  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant, dietPools, dietKey) : null;
+  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant, activePools, dietKey) : null;
 
   const regenerate = useCallback(() => {
     // Régénérer = réservé au Premium (le gratuit garde la sélection du jour)
@@ -435,10 +522,10 @@ export default function RecommendedMeals() {
       meal_type: mealType,
       food_name: m.nom,
       calories: cal,
-      // Macros estimées depuis les calories (20% P / 50% G / 30% L) — ajustables ensuite
-      proteins: Math.round((cal * 0.20) / 4),
-      carbs: Math.round((cal * 0.50) / 4),
-      fats: Math.round((cal * 0.30) / 9),
+      // Vraies macros si le plat IA les fournit, sinon estimées (20% P / 50% G / 30% L).
+      proteins: m.proteins ?? Math.round((cal * 0.20) / 4),
+      carbs: m.carbs ?? Math.round((cal * 0.50) / 4),
+      fats: m.fats ?? Math.round((cal * 0.30) / 9),
       has_photo: false,
       time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
     });
@@ -526,7 +613,12 @@ export default function RecommendedMeals() {
             style={{ width: `${pct}%`, background: "linear-gradient(90deg, #D4A843, #A78BFA)", transition: "width 0.12s ease" }} />
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          {menuLoading ? (
+            <span className="flex items-center gap-1 text-[9px] font-medium" style={{ color: "#A78BFA" }}>
+              <RefreshCw size={9} strokeWidth={2.5} className="animate-spin" /> L&apos;IA prépare tes plats…
+            </span>
+          ) : <span />}
           <button onClick={regenerate}
             className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "#A0AEC0" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
             {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
