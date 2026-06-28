@@ -150,6 +150,15 @@ function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?
   );
 }
 
+/* ─── MacroLegend — rappel du sens des mots, en une ligne ──────────── */
+function MacroLegend() {
+  return (
+    <p className="text-[10px] text-center leading-snug" style={{ color: "#A0AEC0" }}>
+      Protéines = muscles · Glucides = énergie · Lipides = graisses utiles
+    </p>
+  );
+}
+
 /* ─── HydrationWidget — icônes SVG ─────────────────────────────────── */
 const PetitVerreIcon = () => (
   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
@@ -586,6 +595,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                       </div>
                     ))}
                   </div>
+                  <div className="mt-2.5"><MacroLegend /></div>
 
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-1.5">
@@ -1109,6 +1119,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           </div>
                         ))}
                       </div>
+                      <div className="mt-2.5"><MacroLegend /></div>
                     </div>
 
                     {/* Type de repas */}
@@ -1233,6 +1244,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     </div>
                   ))}
                 </div>
+                <div className="mt-2"><MacroLegend /></div>
 
                 {/* Meal type */}
                 <div>
@@ -2240,6 +2252,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                   </div>
                 ))}
               </div>
+              <p className="text-[11px] text-center leading-snug px-2" style={{ color: "#A0AEC0" }}>
+                Restant = ce qu&apos;il te reste à manger · Brûlé = dépensé en bougeant
+              </p>
             </div>
           </motion.div>
 
