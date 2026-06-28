@@ -1956,6 +1956,49 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   }, [user]); // eslint-disable-line
   useEffect(() => { loadRecents(); }, [loadRecents]);
 
+  /* ── Plats épinglés (favoris manuels) — localStorage : passent devant, jamais évincés ── */
+  const [pinned, setPinned] = useState<RecentMeal[]>([]);
+  const [pinHintSeen, setPinHintSeen] = useState(true); // true par défaut → pas de flash avant lecture
+  useEffect(() => {
+    if (!user) { setPinned([]); return; }
+    try { const raw = localStorage.getItem(`vaiiya_pinned_meals_${user.id}`); setPinned(raw ? JSON.parse(raw) : []); } catch { setPinned([]); }
+    try { setPinHintSeen(!!localStorage.getItem(`vaiiya_pin_hint_seen_${user.id}`)); } catch { /* ignore */ }
+  }, [user]);
+
+  const normName = (s: string) => s.trim().toLowerCase();
+  const isPinned = (name: string) => pinned.some((p) => normName(p.name) === normName(name));
+  const togglePin = (r: RecentMeal) => {
+    if (!user) return;
+    const exists = isPinned(r.name);
+    const next = exists
+      ? pinned.filter((p) => normName(p.name) !== normName(r.name))
+      : [...pinned, { name: r.name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats }];
+    setPinned(next);
+    try { localStorage.setItem(`vaiiya_pinned_meals_${user.id}`, JSON.stringify(next)); } catch { /* ignore */ }
+    if (!pinHintSeen) { setPinHintSeen(true); try { localStorage.setItem(`vaiiya_pin_hint_seen_${user.id}`, "1"); } catch { /* ignore */ } }
+    showToast(exists ? `${r.name} retiré des favoris` : `${r.name} épinglé ✓`);
+  };
+
+  // Affichage : épinglés d'abord, puis le reste par fréquence (sans doublon).
+  const displayRecents = useMemo(() => {
+    const keys = new Set(pinned.map((p) => normName(p.name)));
+    const rest = recentMeals.filter((r) => !keys.has(normName(r.name)));
+    return [...pinned, ...rest].slice(0, 12);
+  }, [pinned, recentMeals]);
+
+  // Appui long = épingler/désépingler ; tap simple = ajouter (sans déclencher les deux).
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const startPress = (r: RecentMeal) => {
+    longPressFired.current = false;
+    pressTimer.current = setTimeout(() => { longPressFired.current = true; togglePin(r); }, 480);
+  };
+  const cancelPress = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
+  const onChipTap = (r: RecentMeal) => {
+    if (longPressFired.current) { longPressFired.current = false; return; } // l'appui long a déjà agi
+    void quickAddRecent(r);
+  };
+
   useEffect(() => { setWeekDays(getMondayWeek(today)); }, []); // eslint-disable-line
 
   /* ── Chargement Supabase ─── */
@@ -2354,33 +2397,51 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
             </div>
           </div>
 
-          {/* Ajout rapide — repas récents en 1 tap */}
-          {recentMeals.length > 0 && (
+          {/* Ajout rapide — coups de cœur (fréquence) + épinglés (appui long) en 1 tap */}
+          {displayRecents.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center gap-1.5 mb-2">
                 <Heart size={11} strokeWidth={2} style={{ color: "#A0AEC0" }} />
                 <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
                   Tes coups de cœur
                 </p>
+                {!pinHintSeen && (
+                  <span className="text-[9px] font-normal tracking-normal" style={{ color: "#C4B5FD", textTransform: "none" }}>
+                    · appui long pour épingler
+                  </span>
+                )}
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-                {recentMeals.map((r, i) => (
-                  <motion.button key={i} whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.03 }}
-                    onClick={() => quickAddRecent(r)}
-                    className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", border: "1px solid rgba(212,192,255,0.4)" }}>
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.15)" }}>
-                      <Plus size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs font-medium leading-tight" style={{ color: "#2D3748", whiteSpace: "nowrap" }}>{r.name}</p>
-                      <p className="text-[9px] leading-tight" style={{ color: "#A0AEC0" }}>
-                        {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
-                      </p>
-                    </div>
-                  </motion.button>
-                ))}
+                {displayRecents.map((r, i) => {
+                  const pin = isPinned(r.name);
+                  return (
+                    <motion.button key={i} whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.03 }}
+                      onPointerDown={() => startPress(r)} onPointerUp={cancelPress}
+                      onPointerLeave={cancelPress} onPointerMove={cancelPress}
+                      onContextMenu={(e) => e.preventDefault()}
+                      onClick={() => onChipTap(r)}
+                      className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer"
+                      style={{
+                        background: pin ? "rgba(244,194,231,0.30)" : "rgba(240,235,255,0.6)",
+                        border: pin ? "1px solid rgba(236,153,201,0.55)" : "1px solid rgba(212,192,255,0.4)",
+                        WebkitTouchCallout: "none",
+                      }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "rgba(167,139,250,0.15)" }}>
+                        <Plus size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-medium leading-tight flex items-center gap-1" style={{ color: "#2D3748", whiteSpace: "nowrap" }}>
+                          {pin && <Heart size={9} strokeWidth={2.5} style={{ color: "#EC4899", fill: "#EC4899" }} />}
+                          {r.name}
+                        </p>
+                        <p className="text-[9px] leading-tight" style={{ color: "#A0AEC0" }}>
+                          {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
+                        </p>
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           )}
