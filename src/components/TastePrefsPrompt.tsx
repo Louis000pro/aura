@@ -172,20 +172,20 @@ export default function TastePrefsPrompt() {
 
               <Question label="Tes bases préférées ?">
                 {BASE_GROUPS.map((g) => (
-                  <div key={g.group} className="mb-2.5">
-                    <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "#CBD5E0" }}>{g.group}</p>
-                    <div className="flex flex-wrap gap-1.5">
+                  <div key={g.group} className="mb-2">
+                    <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#CBD5E0" }}>{g.group}</p>
+                    <div className="flex flex-wrap gap-1">
                       {g.items.map((it) => {
                         const on = bases.includes(it.label);
                         return (
                           <button key={it.label} onClick={() => toggleBase(it.label)} type="button"
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full cursor-pointer select-none"
+                            className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none"
                             style={{
                               background: on ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)",
                               border: on ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(212,192,255,0.35)",
                               color: on ? "#2D3748" : "#718096", fontSize: 11, fontWeight: 500,
                             }}>
-                            <span style={{ fontSize: 12 }}>{it.emoji}</span>{it.label}
+                            <span style={{ fontSize: 11 }}>{it.emoji}</span>{it.label}
                           </button>
                         );
                       })}
@@ -195,10 +195,10 @@ export default function TastePrefsPrompt() {
 
                 {/* Ajouts libres */}
                 {customBases.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
+                  <div className="flex flex-wrap gap-1 mb-2">
                     {customBases.map((b) => (
                       <button key={b} onClick={() => toggleBase(b)} type="button"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full cursor-pointer select-none"
+                        className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none"
                         style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", border: "1px solid rgba(167,139,250,0.4)", color: "#2D3748", fontSize: 11, fontWeight: 500 }}>
                         {b}<X size={11} strokeWidth={2.5} />
                       </button>

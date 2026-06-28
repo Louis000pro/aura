@@ -128,9 +128,9 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
 
               <Field label="Tes bases préférées">
                 {BASE_GROUPS.map((g) => (
-                  <div key={g.group} className="mb-3">
-                    <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>{g.group}</p>
-                    <div className="flex flex-wrap gap-1.5">
+                  <div key={g.group} className="mb-2">
+                    <p className="text-[9px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>{g.group}</p>
+                    <div className="flex flex-wrap gap-1">
                       {g.items.map((it) => (
                         <Chip key={it.label} on={bases.includes(it.label)} onClick={() => toggleBase(it.label)}>
                           <span style={{ fontSize: 12 }}>{it.emoji}</span>{it.label}
@@ -141,7 +141,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
                 ))}
 
                 {customBases.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
+                  <div className="flex flex-wrap gap-1 mb-2">
                     {customBases.map((b) => (
                       <Chip key={b} on onClick={() => toggleBase(b)}>
                         {b}<X size={11} strokeWidth={2.5} />
@@ -220,7 +220,7 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <motion.button whileTap={{ scale: 0.93 }} onClick={onClick} type="button"
-      className="flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer select-none text-xs font-medium"
+      className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none text-xs font-medium"
       style={on
         ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3)" }
         : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.15)" }
