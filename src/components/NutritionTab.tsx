@@ -1979,11 +1979,12 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
     showToast(exists ? `${r.name} retiré des favoris` : `${r.name} épinglé ✓`);
   };
 
-  // Affichage : épinglés d'abord, puis le reste par fréquence (sans doublon).
+  // Affichage : épinglés d'abord (jamais coupés), puis le reste par fréquence.
+  // Plafonné pour rester une vraie shortlist (tout visible, sans défilement).
   const displayRecents = useMemo(() => {
     const keys = new Set(pinned.map((p) => normName(p.name)));
     const rest = recentMeals.filter((r) => !keys.has(normName(r.name)));
-    return [...pinned, ...rest].slice(0, 12);
+    return [...pinned, ...rest].slice(0, Math.max(8, pinned.length));
   }, [pinned, recentMeals]);
 
   // Appui long = épingler/désépingler ; tap simple = ajouter (sans déclencher les deux).
@@ -2411,7 +2412,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                   </span>
                 )}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              <div className="flex flex-wrap gap-2">
                 {displayRecents.map((r, i) => {
                   const pin = isPinned(r.name);
                   return (
