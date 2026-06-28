@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import WeighInPrompt from "@/components/WeighInPrompt";
+import TastePrefsPrompt from "@/components/TastePrefsPrompt";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -2064,6 +2065,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   return (
     <div className={showBackButton ? "min-h-screen px-4 pt-10 pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10" : "w-full px-0 pt-4 pb-12"}>
       <WeighInPrompt />
+      <TastePrefsPrompt />
 
       {/* ── Header ────────────────────────────────────────────── */}
       <motion.div
