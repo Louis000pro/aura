@@ -3,9 +3,9 @@
 /* ════════════════════════════════════════════════════════════════════
    TastePrefsPrompt — le « rendez-vous goûts ».
 
-   Dans l'onglet Nutrition, ~1 semaine après que l'utilisateur a commencé à
-   l'utiliser, on lui demande GENTIMENT ses préférences de cuisine : aime-t-il
-   cuisiner, a-t-il le temps, accès aux ingrédients, et ses bases préférées.
+   Dans l'onglet Nutrition, une fois que l'utilisateur a noté au moins 3 repas
+   (= il utilise vraiment la nutrition), on lui demande GENTIMENT ses préférences
+   de cuisine : aime-t-il cuisiner, a-t-il le temps, accès aux ingrédients, bases.
    Ça construit un « profil de goûts » qui nourrira ensuite les recommandations
    de plats (menu généré par l'IA). Stocké en local + best-effort en base
    (profiles.taste_profile). Voir [[nutrition-unification-refonte]].
@@ -25,7 +25,7 @@ import {
   isTasteComplete, saveTasteProfile, tasteTodayStr,
 } from "@/lib/tasteProfile";
 
-const DAYS_BEFORE_ASKING = 7;   // ~1 semaine d'utilisation avant de demander
+const MEALS_BEFORE_ASKING = 3;  // on ne demande qu'après quelques repas notés (engagement réel)
 const WEIGHIN_DAYS = 30;        // priorité au rendez-vous poids (pas de double popup)
 
 function addDaysStr(days: number): string {
@@ -60,34 +60,39 @@ export default function TastePrefsPrompt() {
       // « Plus tard » → on attend la date snoozée.
       const snooze = localStorage.getItem(`vaiiya_taste_snooze_${user.id}`);
       if (snooze && snooze > tasteTodayStr()) return;
-      // Repère « première visite nutrition » → démarre le compte à rebours.
-      const firstKey = `vaiiya_taste_firstseen_${user.id}`;
-      const first = localStorage.getItem(firstKey);
-      if (!first) { localStorage.setItem(firstKey, tasteTodayStr()); return; }
-      if (daysSince(first) < DAYS_BEFORE_ASKING) return;
     } catch { return; }
 
-    // Priorité au rendez-vous poids : si une pesée est due, on laisse passer le
-    // WeighInPrompt cette fois et on réessaiera à la prochaine visite.
+    // Priorité au rendez-vous poids (pas de double popup) : si une pesée est snoozée
+    // on l'ignore, sinon on regardera si une pesée est due plus bas.
     let weighinSnoozed = false;
     try {
       const ws = localStorage.getItem(`vaiiya_weighin_snooze_${user.id}`);
       weighinSnoozed = !!(ws && ws > tasteTodayStr());
     } catch { /* ignore */ }
 
-    createClient()
-      .from("weight_logs")
-      .select("date")
-      .eq("user_id", user.id)
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        const row = data as { date: string } | null;
-        const weighinDue = !weighinSnoozed && (!row || daysSince(row.date) >= WEIGHIN_DAYS);
-        if (!weighinDue) setShow(true);
-      });
+    const supabase = createClient();
+    (async () => {
+      // On ne demande qu'aux gens qui utilisent VRAIMENT la nutrition : ≥ 3 repas notés.
+      // Les curieux de passage ne sont jamais embêtés, et la perso s'active vite.
+      const { count } = await supabase
+        .from("nutrition_logs")
+        .select("user_id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (cancelled || (count ?? 0) < MEALS_BEFORE_ASKING) return;
+
+      // Pesée due ? → on laisse passer le WeighInPrompt cette fois et on réessaiera.
+      const { data } = await supabase
+        .from("weight_logs")
+        .select("date")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      const row = data as { date: string } | null;
+      const weighinDue = !weighinSnoozed && (!row || daysSince(row.date) >= WEIGHIN_DAYS);
+      if (!weighinDue) setShow(true);
+    })();
 
     return () => { cancelled = true; };
   }, [user?.id]);
