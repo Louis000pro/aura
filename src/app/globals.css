@@ -100,9 +100,11 @@
   /* Perf scroll : le navigateur saute le rendu des cartes hors écran */
   .cv-auto { content-visibility: auto; contain-intrinsic-size: 0 480px; }
 
-  /* Masque la barre du bas quand le chat IA est ouvert (évite la superposition) */
+  /* Masque la barre du bas quand le chat IA OU une modale plein écran est ouvert
+     (évite la superposition de la nav par-dessus le pied de la modale sur mobile) */
   .mobile-nav { transition: transform 0.25s ease, opacity 0.2s ease; }
-  body.chat-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
+  body.chat-open .mobile-nav,
+  body.modal-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
 
   /* Liquid glass — barres de navigation (frosté translucide, style iOS/Instagram) */
   .nav-glass {

@@ -1721,6 +1721,14 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
   // Durée calculée automatiquement depuis les exercices
   const duration = calcDuration(exForms);
 
+  // Tant que la modale est ouverte, on masque la barre de navigation du bas :
+  // sur mobile elle se superposait au pied de la modale (compositing du translateZ
+  // de la nav), rendant le bouton « Créer la séance » inaccessible.
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
   const handleAiGenerate = async () => {
     if (!aiDescription.trim()) return;
     setAiLoading(true);
@@ -2179,7 +2187,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4" style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
+        <div className="px-6 pt-4" style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleCreate}

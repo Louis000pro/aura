@@ -487,6 +487,13 @@ export default function WorkoutGuideModal({
 
   const pausedAtRef = useRef<number>(0);
 
+  /* ── Masque la barre de navigation du bas tant que la séance guidée est ouverte
+        (sinon, sur mobile, elle se superpose au bas de la modale). ── */
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
   /* ── Notify parent + auto-save session when workout is done ── */
   useEffect(() => {
     if (phase !== "done") return;
