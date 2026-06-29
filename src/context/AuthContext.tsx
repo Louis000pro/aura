@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase";
+import { identifyUser, resetUser } from "@/lib/analytics";
 import type { Session, User as SBUser } from "@supabase/supabase-js";
 
 export type User = {
@@ -165,6 +166,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // PostHog : rattache les sessions/replays au compte (connexion) et délie à
+  // la déconnexion. On n'envoie que le pseudo (pas l'email) côté vie privée.
+  useEffect(() => {
+    if (user?.id) identifyUser(user.id, { pseudo: user.pseudo });
+    else resetUser();
+  }, [user?.id, user?.pseudo]);
 
   const signUp: AuthCtx["signUp"] = async ({ pseudo, name, lastName, email, password }) => {
     // Normalise les espaces (évite les pseudos "  La France  " qui cassent les URLs/profils)
