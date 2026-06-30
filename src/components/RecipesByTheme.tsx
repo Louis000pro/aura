@@ -10,7 +10,7 @@
    et le total du jour se met à jour en direct. Voir [[nutrition-unification-refonte]].
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, X, Plus, Loader2, Check, RefreshCw, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -47,6 +47,14 @@ export default function RecipesByTheme({
   const [error, setError] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [added, setAdded] = useState(false);
+
+  // Pendant que la fiche est ouverte, on masque la barre du bas (sinon elle se
+  // superpose au bouton « Ajouter » sur mobile — même garde-fou que les modales).
+  useEffect(() => {
+    if (open) document.body.classList.add("modal-open");
+    else document.body.classList.remove("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, [open]);
 
   const generate = async (theme: string) => {
     setOpen(true); setActiveTheme(theme); setLoading(true); setError(false); setRecipe(null); setAdded(false);
