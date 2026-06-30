@@ -28,6 +28,55 @@ const TABS: (TabItem & { tourAnchor?: string })[] = [
   { href: "/profil",      label: "Profil",      icon: User,        tourAnchor: "nav-profil" },
 ];
 
+/* ── Contenu du menu « avatar » — partagé entre la sidebar desktop et le header
+      mobile (évite de dupliquer les liens). Inclut « Mon profil » car le profil
+      n'est plus un onglet de la barre du bas. ── */
+function UserMenuItems({
+  user, isAdmin, onClose, onLogout,
+}: {
+  user: { pseudo?: string; name?: string; email?: string };
+  isAdmin: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  const itemCls = "flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors";
+  return (
+    <>
+      <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+        <p className="text-sm font-black tracking-tight" style={{ color: "var(--text-0)" }}>
+          {user.pseudo ?? user.name ?? "Utilisateur"}
+        </p>
+        <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
+      </div>
+      <Link href="/profil" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
+        <User size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
+        Mon profil
+      </Link>
+      <Link href="/premium" onClick={onClose} className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-purple-50 transition-colors" style={{ color: "#7C5CFA" }}>
+        <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
+        Vaiiya Premium ✦
+      </Link>
+      <Link href="/parametres" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
+        <Settings size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
+        Paramètres
+      </Link>
+      {isAdmin && (
+        <Link href="/admin" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
+          <Shield size={14} strokeWidth={2} style={{ color: "var(--gold)" }} />
+          Administration
+        </Link>
+      )}
+      <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+      <button onClick={() => { onClose(); onLogout(); }}
+        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold w-full text-left hover:bg-red-50 transition-colors"
+        style={{ color: "#EF4444" }}>
+        <LogOut size={14} strokeWidth={2} />
+        Déconnexion
+      </button>
+    </>
+  );
+}
+
 export default function Navigation() {
   const pathname   = usePathname();
   const router     = useRouter();
@@ -37,6 +86,7 @@ export default function Navigation() {
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   /* ── DMs non lus ── */
   useEffect(() => {
@@ -58,8 +108,9 @@ export default function Navigation() {
   /* ── Fermer le menu user si clic extérieur ── */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
-        setUserMenu(false);
+      const t = e.target as Node;
+      if (userMenuRef.current?.contains(t) || mobileMenuRef.current?.contains(t)) return;
+      setUserMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -209,6 +260,42 @@ export default function Navigation() {
 
   return (
     <>
+      {/* ══ Header mobile — cloche + avatar (profil), flottant en haut à droite.
+            Pas sur /profil : cette page a déjà son propre cluster en haut à droite. ══ */}
+      {user && pathname !== "/profil" && (
+        <div className="md:hidden fixed top-0 right-0 z-40 flex items-center gap-2 px-3"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          <NotificationBell side="top" />
+          <div ref={mobileMenuRef} className="relative">
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setUserMenu((v) => !v)}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black cursor-pointer overflow-hidden"
+              style={{
+                background: userMenu ? "linear-gradient(135deg,#C4A8FF,var(--accent))" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                color: "var(--text-1)",
+                border: "2px solid rgba(var(--surface-rgb),0.85)",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
+              }}
+              aria-label="Menu utilisateur">
+              {user.avatar
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img loading="lazy" decoding="async" src={user.avatar} alt="" className="w-full h-full object-cover" />
+                : <span style={{ color: userMenu ? "white" : "#3D2F6B" }}>{avatarLetter}</span>}
+            </motion.button>
+            <AnimatePresence>
+              {userMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+                  className="absolute top-[46px] right-0 rounded-2xl overflow-hidden z-50 min-w-[210px]"
+                  style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(0,0,0,0.1)", border: "1px solid rgba(196,168,255,0.2)" }}>
+                  <UserMenuItems user={user} isAdmin={isAdmin} onClose={() => setUserMenu(false)} onLogout={handleLogout} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+
       {/* ══ Mobile Bottom Bar — 5 emplacements : Accueil / Progression / Orbe IA / Communauté / Profil ══ */}
       <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
@@ -270,49 +357,7 @@ export default function Navigation() {
                       border: "1px solid rgba(196,168,255,0.2)",
                     }}
                   >
-                    {/* User info */}
-                    <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-                      <p className="text-sm font-black tracking-tight" style={{ color: "var(--text-0)" }}>
-                        {user.pseudo ?? user.name ?? "Utilisateur"}
-                      </p>
-                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
-                    </div>
-
-                    {/* Vaiiya Premium */}
-                    <Link href="/premium" onClick={() => setUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-purple-50 transition-colors"
-                      style={{ color: "#7C5CFA" }}>
-                      <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
-                      Vaiiya Premium ✦
-                    </Link>
-
-                    {/* Paramètres */}
-                    <Link href="/parametres" onClick={() => setUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors"
-                      style={{ color: "var(--text-1)" }}>
-                      <Settings size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
-                      Paramètres
-                    </Link>
-
-                    {/* Admin (teyprox@gmail.com ou is_admin) */}
-                    {isAdmin && (
-                      <Link href="/admin" onClick={() => setUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors"
-                        style={{ color: "var(--text-1)" }}>
-                        <Shield size={14} strokeWidth={2} style={{ color: "var(--gold)" }} />
-                        Administration
-                      </Link>
-                    )}
-
-                    <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
-
-                    {/* Déconnexion */}
-                    <button onClick={() => { setUserMenu(false); handleLogout(); }}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold w-full text-left hover:bg-red-50 transition-colors"
-                      style={{ color: "#EF4444" }}>
-                      <LogOut size={14} strokeWidth={2} />
-                      Déconnexion
-                    </button>
+                    <UserMenuItems user={user} isAdmin={isAdmin} onClose={() => setUserMenu(false)} onLogout={handleLogout} />
                   </motion.div>
                 )}
               </AnimatePresence>

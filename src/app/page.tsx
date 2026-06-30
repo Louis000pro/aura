@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import HomeOrb from "@/components/HomeOrb";
 import StatsDrawer from "@/components/StatsDrawer";
 import DailyDrawer from "@/components/DailyDrawer";
-import NotificationBell from "@/components/NotificationBell";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
 import LandingStory, { DISCOVER_ANCHOR } from "@/components/Landing/LandingStory";
@@ -1011,9 +1010,7 @@ function Dashboard() {
               {user?.pseudo ?? user?.name ?? ""}
             </h1>
           </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <NotificationBell side="bottom" />
-          </div>
+          {/* Cloche + avatar désormais fournis par le header global (Navigation). */}
         </div>
 
         {/* Bloc bas : label au-dessus + 3 cadrans, ancré en bas (assez d'air, rien de coupé) */}
