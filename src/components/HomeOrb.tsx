@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
+import { usePerfMode } from "@/lib/perfMode";
 
 /* ─── Détection geste : tap court vs long press ────────────────────────
    - Tap court  (<350 ms) → ouvre le chat
@@ -45,6 +46,10 @@ export default function HomeOrb({
   const [state, setState] = useState<OrbState>("idle");
   const [levels, setLevels] = useState<number[]>([0, 0, 0, 0, 0]);
   const [error, setError] = useState<string | null>(null);
+  // Appareil faible → orbe allégée (2 blobs animés au lieu de 5, sans sheen ni
+  // arcs SVG) : animer des calques floutés + blend-mode est le plus coûteux pour
+  // le GPU. Le rendu premium reste intact sur les appareils capables.
+  const lite = usePerfMode();
 
   const pressStartRef = useRef<number>(0);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -214,7 +219,8 @@ export default function HomeOrb({
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      {/* ─── Anneaux extérieurs irréguliers (très subtils) — toujours affichés ─── */}
+      {/* ─── Anneaux extérieurs irréguliers (très subtils) — masqués en allégé ─── */}
+      {!lite && (
       <svg
         className="absolute pointer-events-none"
         width={accentSize}
@@ -257,6 +263,7 @@ export default function HomeOrb({
           style={{ transformOrigin: `${accentSize / 2}px ${accentSize / 2}px` }}
         />
       </svg>
+      )}
 
       {/* Pulses pendant recording */}
       <AnimatePresence>
@@ -363,7 +370,8 @@ export default function HomeOrb({
           }}
         />
 
-        {/* Blobs 3-5 + sheen rotatif — toujours affichés (orbe premium colorée) */}
+        {/* Blobs 3-5 + sheen rotatif — masqués en allégé (animer flou+blend = coûteux) */}
+        {!lite && (
         <>
         {/* Blob 3 — Pêche corail */}
         <motion.div
@@ -451,6 +459,7 @@ export default function HomeOrb({
           transition={{ duration: 14 * speedMult, repeat: Infinity, ease: "linear" }}
         />
         </>
+        )}
 
         {/* ═══ GLASS HIGHLIGHT (effet 3D verre) ═══ */}
         {/* Reflet brillant en haut-gauche pour sphère */}
