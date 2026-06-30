@@ -23,8 +23,9 @@ export type Macros = { proteins: number; carbs: number; fats: number };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/* Normalise pour la détection : minuscules, œ→oe, accents retirés. */
-function normalize(s: string): string {
+/* Normalise pour la détection : minuscules, œ→oe, accents retirés.
+   Exporté : sert aussi au filtre régime des plats suggérés (RecommendedMeals). */
+export function normalizeAccents(s: string): string {
   return (s || "").toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
@@ -61,7 +62,7 @@ export function reconcileMacros(calories: number, p: number, c: number, f: numbe
 /* (B) Estime un profil P/G/L à partir du nom du plat + des calories. */
 export function estimateMacros(name: string, calories: number): Macros {
   if (calories <= 0) return { proteins: 0, carbs: 0, fats: 0 };
-  const n = normalize(name);
+  const n = normalizeAccents(name);
   const hit = (arr: string[]) => arr.some((k) => n.includes(k));
 
   // Fractions caloriques de départ (base équilibrée), nudgées par les indices.

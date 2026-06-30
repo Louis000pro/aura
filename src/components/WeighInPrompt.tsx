@@ -15,24 +15,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Scale, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { localDateStr, addDaysStr, daysSince } from "@/lib/dates";
 
 const DAYS_BETWEEN = 30;
-
-function todayStr(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-function addDaysStr(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-function daysSince(dateStr: string): number {
-  const then = new Date(dateStr + "T00:00:00").getTime();
-  return Math.floor((Date.now() - then) / 86400000);
-}
 
 export default function WeighInPrompt() {
   const { user } = useAuth();
@@ -48,7 +33,7 @@ export default function WeighInPrompt() {
     // « Plus tard » : on ne redemande pas avant la date snoozée.
     try {
       const snooze = localStorage.getItem(`vaiiya_weighin_snooze_${user.id}`);
-      if (snooze && snooze > todayStr()) return;
+      if (snooze && snooze > localDateStr()) return;
     } catch { /* ignore */ }
 
     createClient()
@@ -80,7 +65,7 @@ export default function WeighInPrompt() {
     if (!user?.id || !kg || kg < 20 || kg > 400) return;
     setSaving(true);
     const { error } = await createClient().from("weight_logs").upsert(
-      { user_id: user.id, date: todayStr(), weight_kg: kg },
+      { user_id: user.id, date: localDateStr(), weight_kg: kg },
       { onConflict: "user_id,date" }
     );
     setSaving(false);

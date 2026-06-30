@@ -53,3 +53,31 @@ export function calculateGoals(profile: OnboardingProfile) {
 
   return { calories: tdee, proteins, carbs: Math.max(50, carbs), fats, burned };
 }
+
+/** Mappe une ligne `profiles` (colonnes onboarding_*) vers le format de calculateGoals. */
+export function rowToProfile(d: Record<string, unknown> | null): OnboardingProfile {
+  if (!d) return null;
+  const s = (v: unknown) => (v != null && v !== "" ? String(v) : undefined);
+  return {
+    age: s(d.onboarding_age),
+    weight: s(d.onboarding_weight),
+    height: s(d.onboarding_height),
+    gender: (d.onboarding_gender as string) ?? undefined,
+    goals: (d.onboarding_goals as string[]) ?? [],
+    level: (d.onboarding_level as string) ?? undefined,
+    sessionsPerWeek: s(d.onboarding_sessions_week),
+  };
+}
+
+/** Objectif depuis un profil + la DERNIÈRE pesée (qui prime sur le poids du profil).
+    Source unique de la règle « se peser ajuste l'objectif » — partagée écran ⇄ IA. */
+export function goalsFromProfile(profile: OnboardingProfile, latestWeightKg?: number | null) {
+  const merged: OnboardingProfile =
+    latestWeightKg != null ? { ...(profile ?? {}), weight: String(latestWeightKg) } : profile;
+  return calculateGoals(merged);
+}
+
+/** Idem, mais depuis une ligne `profiles` brute (chemin IA, hors React). */
+export function goalsFromRow(row: Record<string, unknown> | null, latestWeightKg?: number | null) {
+  return goalsFromProfile(rowToProfile(row), latestWeightKg);
+}

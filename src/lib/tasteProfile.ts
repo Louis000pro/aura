@@ -11,6 +11,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { createClient } from "@/lib/supabase";
+import { localDateStr } from "@/lib/dates";
 
 export type TasteProfile = {
   cooking: string | null;
@@ -61,9 +62,7 @@ export function isTasteComplete(p: Pick<TasteProfile, "cooking" | "time" | "ingr
 }
 
 export function tasteTodayStr(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return localDateStr();
 }
 
 /* Signature courte (pour invalider le cache du menu quand les goûts changent). */

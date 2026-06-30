@@ -19,7 +19,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
-import { calculateGoals } from "@/lib/nutritionGoals";
+import { goalsFromRow } from "@/lib/nutritionGoals";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
@@ -193,20 +193,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return `${dayNames[d.getDay()]} : ${s.title}${s.duration_minutes ? ` (${s.duration_minutes} min)` : ""}`;
     });
 
-    // Objectif du jour : même calcul que l'écran Nutrition, basé sur le profil
-    // central + la DERNIÈRE pesée (weight_logs) → se peser met à jour la cible.
+    // Objectif du jour : même calcul partagé que l'écran Nutrition (profil central
+    // + dernière pesée qui prime) → l'IA et l'écran ne peuvent plus diverger.
     const hasBodyProfile = !!(profile && (profile.onboarding_age || profile.onboarding_weight || profile.onboarding_level));
-    const currentWeight = weightHistory[0]?.weight_kg ?? profile?.onboarding_weight ?? null;
     const dayGoals = hasBodyProfile
-      ? calculateGoals({
-          age: profile!.onboarding_age?.toString(),
-          weight: currentWeight != null ? String(currentWeight) : undefined,
-          height: profile!.onboarding_height?.toString(),
-          gender: profile!.onboarding_gender ?? undefined,
-          goals: profile!.onboarding_goals ?? [],
-          level: profile!.onboarding_level ?? undefined,
-          sessionsPerWeek: profile!.onboarding_sessions_week?.toString(),
-        })
+      ? goalsFromRow(profile as Record<string, unknown>, weightHistory[0]?.weight_kg ?? null)
       : null;
 
     liveStatsRef.current = {

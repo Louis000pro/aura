@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import { loadTasteProfileLocal, tasteSignature } from "@/lib/tasteProfile";
-import { macrosForDish } from "@/lib/macros";
+import { macrosForDish, normalizeAccents } from "@/lib/macros";
+import { localDateStr } from "@/lib/dates";
 
 /* ─── Types ─── */
 type PoolItem = { nom: string; calories: number; proteins?: number; carbs?: number; fats?: number; i?: boolean; prepMin?: number; difficulty?: string };
@@ -172,16 +173,13 @@ export const DIET_OPTIONS: { key: DietKey; label: string; emoji: string }[] = [
   { key: "sans-lactose", label: "Sans lactose", emoji: "🥛" },
 ];
 
-function norm(s: string): string {
-  return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-}
-const KW_MEAT = ["poulet", "dinde", "escalope", "steak", "boeuf", "jambon", "bacon", "lardons", "saumon", "thon", "poisson", "pane", "bolognaise", "carbonara", "parmentier", "chili con carne", "tacos", "burger", "croque", "poke", "boulettes", "hache", "cantonais", "crevette", "viande"];
+const KW_MEAT =["poulet", "dinde", "escalope", "steak", "boeuf", "jambon", "bacon", "lardons", "saumon", "thon", "poisson", "pane", "bolognaise", "carbonara", "parmentier", "chili con carne", "tacos", "burger", "croque", "poke", "boulettes", "hache", "cantonais", "crevette", "viande"];
 const KW_ANIMAL = ["oeuf", "omelette", "fromage", "yaourt", "lait", "creme", "beurre", "skyr", "miel", "brioche", "croissant", "crepe", "pancake", "quiche", "gratin", "granola", "chocolat chaud", "madeleine", "pain perdu", "cookies", "muesli", "cesar", "flan"];
 const KW_GLUTEN = ["pates", "pate ", "pain", "tartine", "baguette", "croissant", "brioche", "crepe", "pancake", "biscuit", "cookies", "cereales", "muesli", "granola", "lasagnes", "burger", "sandwich", "wrap", "couscous", "boulgour", "gnocchis", "quiche", "tarte", "madeleine", "croque", "nouilles", "pain perdu", "toasts", "semoule"];
 const KW_LACTOSE = ["fromage", "yaourt", "lait", "creme", "beurre", "skyr", "gratin", "croque", "quiche", "brioche", "chocolat chaud", "glace", "carbonara", "lasagnes", "flan", "madeleine", "cookies", "pancake", "crepe", "granola", "muesli"];
 
 function classifyMeal(nom: string): { veg: boolean; vegan: boolean; gluten: boolean; lactose: boolean } {
-  const n = norm(nom);
+  const n = normalizeAccents(nom);
   const has = (arr: string[]) => arr.some((k) => n.includes(k));
   const veg = !has(KW_MEAT);
   return { veg, vegan: veg && !has(KW_ANIMAL), gluten: has(KW_GLUTEN), lactose: has(KW_LACTOSE) };
@@ -340,6 +338,7 @@ export default function RecommendedMeals() {
   const { user } = useAuth();
   const router = useRouter();
   const isPremium = !!(user?.is_admin || user?.is_premium);
+  const supabase = useMemo(() => createClient(), []); // une seule instance réutilisée
   const [mealsCount, setMealsCount] = useState(4);
   const [variant, setVariant] = useState(0);
 
@@ -352,13 +351,12 @@ export default function RecommendedMeals() {
   /* Charge le nombre de repas/jour depuis le profil (sinon 4 par défaut) */
   useEffect(() => {
     if (!user) return;
-    const supabase = createClient();
     supabase.from("profiles").select("onboarding_meals_day").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
         const n = data?.onboarding_meals_day;
         if (n && n >= 2) setMealsCount(Math.min(6, n));
       });
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Variant persistant (Régénérer) */
   useEffect(() => {
@@ -422,7 +420,7 @@ export default function RecommendedMeals() {
       // Coups de cœur = plats les plus fréquents de l'historique réel.
       let favorites: string[] = [];
       try {
-        const { data } = await createClient()
+        const { data } = await supabase
           .from("nutrition_logs").select("food_name")
           .eq("user_id", user.id).order("date", { ascending: false }).limit(150);
         const counts = new Map<string, number>();
@@ -478,18 +476,15 @@ export default function RecommendedMeals() {
   const [consumedToday, setConsumedToday] = useState(0);
   useEffect(() => {
     if (!user) return;
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-    createClient()
+    supabase
       .from("nutrition_logs")
       .select("calories")
       .eq("user_id", user.id)
-      .eq("date", todayStr)
+      .eq("date", localDateStr())
       .then(({ data }) => {
         setConsumedToday(((data ?? []) as { calories: number }[]).reduce((s, r) => s + (r.calories || 0), 0));
       });
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   const remainingToday = Math.max(goalCals - consumedToday, 0);
 
   /* Banque active : l'IA si dispo (par type, avec assez de plats), sinon le secours. */
@@ -534,9 +529,9 @@ export default function RecommendedMeals() {
     const pad = (n: number) => String(n).padStart(2, "0");
     // Macros cohérentes : IA recalée sur les calories, sinon estimées depuis le nom.
     const mac = macrosForDish(m.nom, cal, m.proteins, m.carbs, m.fats);
-    const { error } = await createClient().from("nutrition_logs").insert({
+    const { error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id,
-      date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+      date: localDateStr(),
       meal_type: mealType,
       food_name: m.nom,
       calories: cal,

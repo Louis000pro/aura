@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Plus } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { addDaysStr, daysSince } from "@/lib/dates";
 import {
   type TasteProfile,
   Q_COOKING, Q_TIME, Q_INGREDIENTS,
@@ -27,17 +28,6 @@ import {
 
 const MEALS_BEFORE_ASKING = 3;  // on ne demande qu'après quelques repas notés (engagement réel)
 const WEIGHIN_DAYS = 30;        // priorité au rendez-vous poids (pas de double popup)
-
-function addDaysStr(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-function daysSince(dateStr: string): number {
-  const then = new Date(dateStr + "T00:00:00").getTime();
-  return Math.floor((Date.now() - then) / 86400000);
-}
 
 export default function TastePrefsPrompt() {
   const { user } = useAuth();

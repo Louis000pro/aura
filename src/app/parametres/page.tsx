@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { localDateStr } from "@/lib/dates";
 import { useTheme, type ThemePreference } from "@/hooks/useTheme";
 import { useVisualQuality, type VisualQuality } from "@/lib/perfMode";
 import { useGuidedTour } from "@/context/GuidedTourContext";
@@ -181,11 +182,8 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
     // Le poids saisi ici est AUSSI une pesée du jour → une seule source de poids
     // (weight_logs), et l'objectif lit toujours la dernière pesée.
     if (weight) {
-      const d = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       await supabase.from("weight_logs").upsert(
-        { user_id: user.id, date: dateStr, weight_kg: parseFloat(weight) },
+        { user_id: user.id, date: localDateStr(), weight_kg: parseFloat(weight) },
         { onConflict: "user_id,date" }
       );
     }

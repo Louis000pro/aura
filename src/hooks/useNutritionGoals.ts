@@ -17,30 +17,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
-import { calculateGoals, type OnboardingProfile } from "@/lib/nutritionGoals";
+import { goalsFromProfile, rowToProfile, type OnboardingProfile } from "@/lib/nutritionGoals";
 
 const CACHE_PREFIX = "vaiiya_profile_cache_";
 
 const PROFILE_COLS =
   "onboarding_age, onboarding_height, onboarding_weight, onboarding_gender, onboarding_goals, onboarding_level, onboarding_sessions_week";
 
-/** Convertit une ligne `profiles` (colonnes onboarding_*) vers le format attendu par calculateGoals. */
-function rowToProfile(d: Record<string, unknown> | null): OnboardingProfile {
-  if (!d) return null;
-  const s = (v: unknown) => (v != null && v !== "" ? String(v) : undefined);
-  return {
-    age: s(d.onboarding_age),
-    weight: s(d.onboarding_weight),
-    height: s(d.onboarding_height),
-    gender: (d.onboarding_gender as string) ?? undefined,
-    goals: (d.onboarding_goals as string[]) ?? [],
-    level: (d.onboarding_level as string) ?? undefined,
-    sessionsPerWeek: s(d.onboarding_sessions_week),
-  };
-}
-
 /** Le profil corporel central (base d'abord, cache local pour l'affichage instantané). */
-export function useNutritionProfile(): OnboardingProfile {
+function useNutritionProfile(): OnboardingProfile {
   const { user } = useAuth();
   const [profile, setProfile] = useState<OnboardingProfile>(null);
 
@@ -76,7 +61,7 @@ export function useNutritionProfile(): OnboardingProfile {
 /** Dernière pesée (weight_logs) = poids ACTUEL, source unique du poids.
     Se rafraîchit sur l'événement « vaiiya:weighin » (émis à chaque pesée) →
     l'objectif se recalcule en direct sans recharger la page. */
-export function useLatestWeight(): number | null {
+function useLatestWeight(): number | null {
   const { user } = useAuth();
   const [weight, setWeight] = useState<number | null>(null);
 
@@ -108,10 +93,6 @@ export function useLatestWeight(): number | null {
 export function useNutritionGoals() {
   const profile = useNutritionProfile();
   const latestWeight = useLatestWeight();
-  const goals = useMemo(() => {
-    const merged: OnboardingProfile =
-      latestWeight != null ? { ...(profile ?? {}), weight: String(latestWeight) } : profile;
-    return calculateGoals(merged);
-  }, [profile, latestWeight]);
-  return { profile, goals, latestWeight };
+  const goals = useMemo(() => goalsFromProfile(profile, latestWeight), [profile, latestWeight]);
+  return { goals };
 }
