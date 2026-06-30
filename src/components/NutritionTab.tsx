@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
+import RecipesByTheme from "@/components/RecipesByTheme";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -2087,6 +2088,18 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
     else showToast("Erreur lors de l'ajout");
   };
 
+  /* ── Ajout d'une recette (IA) au journal du jour — même flux que ci-dessus ─── */
+  const addRecipeMeal = async (m: { name: string; calories: number; proteins: number; carbs: number; fats: number }) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: getMealTypeFromTime(),
+      food_name: m.name, calories: m.calories, proteins: m.proteins,
+      carbs: m.carbs, fats: m.fats, has_photo: false, time: nowHHMM(),
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${m.name} ajouté ✓`); void loadRecents(); }
+    else showToast("Erreur lors de l'ajout");
+  };
+
   /* ── Suppression repas ─── */
   const deleteMeal = async (id: string) => {
     await supabase.from("nutrition_logs").delete().eq("id", id);
@@ -2446,6 +2459,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
               </div>
             </div>
           )}
+
+          {/* Recettes par thème — générées par l'IA, ajoutables au journal du jour */}
+          <RecipesByTheme onAdd={addRecipeMeal} />
 
           {/* Empty state */}
           {meals.length === 0 ? (
