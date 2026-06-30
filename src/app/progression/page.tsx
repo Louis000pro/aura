@@ -3325,7 +3325,7 @@ function ProgressionPageContent() {
           exit={{ opacity: 0, x: 16 }}
           transition={{ duration: 0.3 }}
         >
-          <NutritionTab showBackButton={false} />
+          <NutritionTab fullPage={false} />
         </motion.div>
       )}
 
