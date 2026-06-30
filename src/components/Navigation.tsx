@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, TrendingUp, Users, User, LogIn, LogOut,
+  Home, TrendingUp, Dumbbell, Utensils, Users, User, LogIn, LogOut,
   Settings, Shield, ChevronRight, Crown,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -23,9 +23,9 @@ type TabItem = {
 
 const TABS: (TabItem & { tourAnchor?: string })[] = [
   { href: "/",            label: "Accueil",     icon: Home,        tourAnchor: "nav-accueil" },
-  { href: "/progression", label: "Progression", icon: TrendingUp,  tourAnchor: "nav-progression" },
+  { href: "/progression", label: "Progression", icon: Dumbbell,    tourAnchor: "nav-progression" },
+  { href: "/nutrition",   label: "Nutrition",   icon: Utensils,    tourAnchor: "nav-nutrition" },
   { href: "/communaute",  label: "Communauté",  icon: Users,       tourAnchor: "nav-communaute" },
-  { href: "/profil",      label: "Profil",      icon: User,        tourAnchor: "nav-profil" },
 ];
 
 /* ── Contenu du menu « avatar » — partagé entre la sidebar desktop et le header
@@ -128,7 +128,7 @@ export default function Navigation() {
 
   const handleLogout = () => { logout(); router.push("/"); };
 
-  const isProgActive = pathname === "/progression" || pathname === "/nutrition";
+  const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
   const isAdmin = user?.is_admin || user?.email === "teyprox@gmail.com";
 
@@ -148,7 +148,7 @@ export default function Navigation() {
       return (
         <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
           <motion.div
-            className="flex items-center justify-center py-3 px-1 rounded-xl cursor-pointer relative"
+            className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl cursor-pointer relative"
             whileTap={{ scale: 0.85 }} transition={{ duration: 0.12 }}
           >
             {isActive && (
@@ -166,6 +166,11 @@ export default function Navigation() {
                 </motion.span>
               )}
             </div>
+            {/* Libellé : uniquement l'onglet actif (option B). Hauteur réservée → icônes alignées. */}
+            <span className="relative z-10 text-[9px] font-semibold leading-none truncate max-w-full"
+              style={{ height: 10, color: "var(--nav-fg-active)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
+              {label}
+            </span>
           </motion.div>
         </Link>
       );
@@ -266,7 +271,7 @@ export default function Navigation() {
         <div className="md:hidden fixed top-0 right-0 z-40 flex items-center gap-2 px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <NotificationBell side="top" />
-          <div ref={mobileMenuRef} className="relative">
+          <div ref={mobileMenuRef} className="relative" data-tour-anchor="nav-profil">
             <motion.button whileTap={{ scale: 0.9 }} onClick={() => setUserMenu((v) => !v)}
               className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black cursor-pointer overflow-hidden"
               style={{
@@ -296,7 +301,7 @@ export default function Navigation() {
         </div>
       )}
 
-      {/* ══ Mobile Bottom Bar — 5 emplacements : Accueil / Progression / Orbe IA / Communauté / Profil ══ */}
+      {/* ══ Mobile Bottom Bar — Accueil / Progression / Orbe IA / Nutrition / Communauté ══ */}
       <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
           <div className="flex items-center justify-around">
@@ -310,9 +315,9 @@ export default function Navigation() {
               <NavOrb size={48} />
             </div>
 
-            {/* 4. Communauté */}
+            {/* 4. Nutrition */}
             <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
-            {/* 5. Profil */}
+            {/* 5. Communauté */}
             <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
           </div>
         </div>
@@ -342,7 +347,7 @@ export default function Navigation() {
 
           {/* Avatar utilisateur — ouvre le menu */}
           {user ? (
-            <div ref={userMenuRef} className="relative flex justify-center">
+            <div ref={userMenuRef} className="relative flex justify-center" data-tour-anchor="nav-profil">
               <AnimatePresence>
                 {userMenu && (
                   <motion.div
