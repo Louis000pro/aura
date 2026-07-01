@@ -103,7 +103,7 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
             <stop offset="100%" stopColor="var(--gold)" />
           </linearGradient>
         </defs>
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--surface-rgb),0.35)" strokeWidth={strokeW} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--accent-rgb),0.18)" strokeWidth={strokeW} />
         <motion.circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="url(#scoreGrad)" strokeWidth={strokeW} strokeLinecap="round"
           strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: circumference * (1 - score / 100) }}
@@ -1019,7 +1019,7 @@ function Dashboard() {
           onClick={() => setShowStatsDrawer(true)}
           data-tour-anchor="stats"
           className="w-full text-left rounded-3xl p-4 outline-none active:opacity-95 transition-opacity"
-          style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
+          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
         >
           <div className="flex items-center justify-between mb-4">
             <p className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>Aujourd&apos;hui</p>
@@ -1048,15 +1048,15 @@ function Dashboard() {
             </div>
             <div className="flex-1 grid grid-cols-2 gap-2.5">
               {/* Série (mise en avant) */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "0 6px 18px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-1)" }}><Flame size={12} strokeWidth={2} />Série</span>
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(var(--gold-rgb),0.14)", border: "1px solid rgba(var(--gold-rgb),0.32)" }}>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-1)" }}><Flame size={12} strokeWidth={2} style={{ color: "var(--gold)" }} />Série</span>
                 <p className="mt-1 text-xl font-extrabold leading-none" style={{ color: "var(--text-1)" }}>
                   {liveStats.loaded && liveStats.streak > 0 ? liveStats.streak : "—"}
                   {liveStats.streak > 0 && <span className="text-[11px] font-medium ml-1">{liveStats.streak > 1 ? "jours" : "jour"}</span>}
                 </p>
               </div>
               {/* Séances */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--surface-rgb),0.9)" }}>
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgb(var(--tint-violet-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
                 <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}><Dumbbell size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />Séances</span>
                 <p className="mt-1 text-xl font-semibold leading-none" style={{ color: "var(--text-1)" }}>
                   {liveStats.loaded ? liveStats.sessionsWeek : "—"}
@@ -1084,7 +1084,7 @@ function Dashboard() {
           data-tour-anchor="votd"
           aria-label="Ouvrir Du Jour"
           className="w-full rounded-3xl p-2.5 flex items-stretch gap-3 outline-none active:opacity-95 transition-opacity overflow-hidden"
-          style={{ background: "rgba(var(--surface-rgb),0.96)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.12), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
+          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
         >
           <div className="relative overflow-hidden rounded-2xl flex-shrink-0" style={{ width: 66, height: 92, background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)" }}>
             {dailyVideoUrl ? (

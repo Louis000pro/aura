@@ -15,11 +15,12 @@ import type { PerformanceType } from "@/components/PerformanceCard";
 /* ─── Types & helpers partagés ──────────────────────────── */
 export type WeightEntry = { date: string; weight: number; id?: string };
 
+/* Carte pleine (aplat solide) — direction « clarté » : plus de verre translucide
+   ni de flou (rendait le mode sombre boueux). Fond opaque + hairline discret. */
 export const CHART_CARD = {
-  background: "rgba(var(--surface-rgb),0.78)",
-  backdropFilter: "blur(10px)",
-  border: "1px solid rgba(var(--surface-rgb),0.9)",
-  boxShadow: "0 4px 32px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
+  background: "rgb(var(--surface-rgb))",
+  border: "1px solid rgba(var(--accent-rgb),0.12)",
+  boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
 };
 
 /* ─── PRChart ────────────────────────────────────────────── */
