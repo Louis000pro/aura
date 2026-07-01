@@ -109,14 +109,14 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
           transition={{ duration: 1.4, ease: "easeOut", delay: 0.2 }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>CONSOMMÉ</p>
+        <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>CONSOMMÉ</p>
         <motion.p
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="text-[2.5rem] font-light leading-none" style={{ color: "#2D3748" }}>
+          className="text-[2.5rem] font-light leading-none" style={{ color: "var(--text-1)" }}>
           {consumed.toLocaleString("fr-FR")}
         </motion.p>
-        <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>
+        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>
           kcal sur {goal.toLocaleString("fr-FR")}
         </p>
       </div>
@@ -132,15 +132,15 @@ function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-          <span className="text-sm font-medium" style={{ color: "#4A5568" }}>{label}</span>
-          <span className="text-xs" style={{ color: "#A0AEC0" }}>{pct}%</span>
+          <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
+          <span className="text-xs" style={{ color: "var(--text-3)" }}>{pct}%</span>
         </div>
-        <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-          {consumed}g <span className="font-normal text-xs" style={{ color: "#A0AEC0" }}>/ {goal}g</span>
+        <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+          {consumed}g <span className="font-normal text-xs" style={{ color: "var(--text-3)" }}>/ {goal}g</span>
         </span>
       </div>
       {hint && (
-        <p className="text-[11px] leading-snug mb-2 ml-4" style={{ color: "#A0AEC0" }}>{hint}</p>
+        <p className="text-[11px] leading-snug mb-2 ml-4" style={{ color: "var(--text-3)" }}>{hint}</p>
       )}
       <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
         <motion.div className="h-full rounded-full" style={{ background: color }}
@@ -155,7 +155,7 @@ function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?
 /* ─── MacroLegend — rappel du sens des mots, en une ligne ──────────── */
 function MacroLegend() {
   return (
-    <p className="text-[10px] text-center leading-snug" style={{ color: "#A0AEC0" }}>
+    <p className="text-[10px] text-center leading-snug" style={{ color: "var(--text-3)" }}>
       Protéines = muscles · Glucides = énergie · Lipides = graisses utiles
     </p>
   );
@@ -235,7 +235,7 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Droplets size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-          <span className="text-sm font-medium" style={{ color: "#4A5568" }}>Hydratation</span>
+          <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Hydratation</span>
         </div>
         <div className="flex items-center gap-2">
           <motion.button
@@ -257,9 +257,9 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
             <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>−</span>
           </motion.button>
 
-          <span className="text-sm font-semibold tabular-nums text-center" style={{ color: "#2D3748", minWidth: 110 }}>
+          <span className="text-sm font-semibold tabular-nums text-center" style={{ color: "var(--text-1)", minWidth: 110 }}>
             {waterMl.toLocaleString("fr-FR")}{" "}
-            <span className="text-xs font-normal" style={{ color: "#A0AEC0" }}>
+            <span className="text-xs font-normal" style={{ color: "var(--text-3)" }}>
               / {goalMl.toLocaleString("fr-FR")} ml
             </span>
           </span>
@@ -331,7 +331,7 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
             }}
           >
             <Icon />
-            <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{label}</span>
+            <span className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
           </motion.button>
         ))}
       </div>
@@ -421,9 +421,9 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
   const reset = () => { setPhase("select"); setPhotoUrl(null); setEditData(null); setError(null); };
 
   const CARD_STYLE = {
-    background: "rgba(255,255,255,0.96)",
+    background: "rgba(var(--surface-rgb),0.96)",
     backdropFilter: "blur(12px)",
-    border: "1px solid rgba(255,255,255,0.9)",
+    border: "1px solid rgba(var(--surface-rgb),0.9)",
     boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
@@ -448,8 +448,8 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>IA Nutrition</p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
+            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>
               {phase === "analyzing" ? "Analyse en cours…"
                 : phase === "result"   ? "Repas identifié ✓"
                 : phase === "edit"     ? "Modifier"
@@ -459,7 +459,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
             style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -490,11 +490,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                     className="w-full py-5 rounded-2xl flex flex-col items-center gap-2 cursor-pointer"
                     style={{
                       background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 20px rgba(167,139,250,0.25)",
+                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 20px rgba(167,139,250,0.25)",
                     }}>
-                    <Camera size={26} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                    <span className="font-semibold text-sm" style={{ color: "#2D3748" }}>Prendre une photo</span>
-                    <span className="text-[10px] font-light" style={{ color: "#718096" }}>
+                    <Camera size={26} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
+                    <span className="font-semibold text-sm" style={{ color: "var(--text-1)" }}>Prendre une photo</span>
+                    <span className="text-[10px] font-light" style={{ color: "var(--text-2)" }}>
                       Pointe l&apos;appareil vers ton repas
                     </span>
                   </motion.button>
@@ -507,11 +507,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                       border: "1px solid rgba(212,192,255,0.5)",
                     }}>
                     <Upload size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                    <span className="font-medium text-sm" style={{ color: "#4A5568" }}>Choisir dans la galerie</span>
+                    <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
                   </motion.button>
                 </div>
 
-                <p className="text-[11px] text-center mt-4 font-light" style={{ color: "#A0AEC0" }}>
+                <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
                   L&apos;IA détecte les aliments et estime les calories & macros automatiquement
                 </p>
               </motion.div>
@@ -527,7 +527,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img loading="lazy" decoding="async" src={photoUrl} alt="repas" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-                      style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(6px)" }}>
+                      style={{ background: "rgba(var(--surface-rgb),0.55)", backdropFilter: "blur(6px)" }}>
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
@@ -536,7 +536,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                       <motion.p
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 1.6, repeat: Infinity }}
-                        className="text-xs font-medium" style={{ color: "#4A5568" }}>
+                        className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
                         Identification des aliments…
                       </motion.p>
                     </div>
@@ -569,18 +569,18 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-base leading-tight" style={{ color: "#2D3748" }}>
+                      <p className="font-semibold text-base leading-tight" style={{ color: "var(--text-1)" }}>
                         {editData.foodName}
                       </p>
                       {editData.description && (
-                        <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>
+                        <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>
                           {editData.description}
                         </p>
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{editData.calories}</p>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                     </div>
                   </div>
 
@@ -591,9 +591,9 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                       { label: "Lipides",   val: editData.fats,     color: "#D4A843" },
                     ].map(({ label, val, color }) => (
                       <div key={label} className="text-center rounded-xl py-2.5"
-                        style={{ background: "rgba(255,255,255,0.75)" }}>
+                        style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
                         <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
                       </div>
                     ))}
                   </div>
@@ -602,7 +602,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-1.5">
                       <span style={{ fontSize: 14 }}>{MEAL_META[editData.mealType]?.icon}</span>
-                      <span className="text-xs font-medium" style={{ color: "#718096" }}>
+                      <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
                         {MEAL_META[editData.mealType]?.label}
                       </span>
                     </div>
@@ -618,7 +618,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 <div className="flex gap-2">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    style={{ background: "rgba(240,235,255,0.6)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.4)" }}>
                     Reprendre
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
@@ -626,8 +626,8 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                     className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                     style={{
                       background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      color: "#2D3748",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                      color: "var(--text-1)",
+                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                     }}>
                     Ajouter à mes repas ✓
                   </motion.button>
@@ -650,7 +650,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 ].map(({ key, label, type }) => (
                   <div key={key}>
                     <label className="text-[10px] font-semibold tracking-widest uppercase mb-1 block"
-                      style={{ color: "#A0AEC0" }}>{label}</label>
+                      style={{ color: "var(--text-3)" }}>{label}</label>
                     <input
                       type={type}
                       value={editData[key as keyof AnalysisResult] as string | number}
@@ -659,14 +659,14 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                         [key]: type === "number" ? (parseInt(e.target.value) || 0) : e.target.value,
                       } : prev)}
                       className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
                     />
                   </div>
                 ))}
 
                 <div>
                   <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                    style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                    style={{ color: "var(--text-3)" }}>TYPE DE REPAS</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(Object.keys(MEAL_META) as MealType[]).map(mt => (
                       <motion.button key={mt} whileTap={{ scale: 0.95 }}
@@ -679,7 +679,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                           border: editData.mealType === mt
                             ? "1px solid rgba(167,139,250,0.4)"
                             : "1px solid rgba(212,192,255,0.3)",
-                          color: editData.mealType === mt ? "#2D3748" : "#718096",
+                          color: editData.mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
                         <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
                         <span>{MEAL_META[mt].label}</span>
@@ -693,8 +693,8 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
                   style={{
                     background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                    color: "#2D3748",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                    color: "var(--text-1)",
+                    boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                   }}>
                   Valider les modifications
                 </motion.button>
@@ -887,9 +887,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   };
 
   const CARD_STYLE = {
-    background: "rgba(255,255,255,0.96)",
+    background: "rgba(var(--surface-rgb),0.96)",
     backdropFilter: "blur(12px)",
-    border: "1px solid rgba(255,255,255,0.9)",
+    border: "1px solid rgba(var(--surface-rgb),0.9)",
     boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
@@ -918,10 +918,10 @@ function BarcodeScannerModal({ onClose, onAdd }: {
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
               Scanner
             </p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
+            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>
               {phase === "scan"     ? "Scanner un code-barres"
                : phase === "loading" ? "Recherche du produit…"
                : phase === "fallback"
@@ -932,7 +932,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
             style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -979,7 +979,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   </div>
                 </div>
 
-                <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
+                <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>
                   Centre le code-barres entre les repères — détection automatique
                 </p>
               </motion.div>
@@ -996,7 +996,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <Loader2 size={36} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
                 </motion.div>
                 <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.6, repeat: Infinity }}
-                  className="text-xs font-medium" style={{ color: "#4A5568" }}>
+                  className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
                   Recherche dans Open Food Facts…
                 </motion.p>
               </motion.div>
@@ -1026,7 +1026,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <>
                     <div>
                       <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                        style={{ color: "#A0AEC0" }}>NOM DU PRODUIT</label>
+                        style={{ color: "var(--text-3)" }}>NOM DU PRODUIT</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -1036,7 +1036,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           placeholder="Ex : Yaourt grec Fage 0%, 150g…"
                           autoFocus
                           className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
                         />
                         <motion.button
                           whileTap={{ scale: 0.93 }}
@@ -1047,8 +1047,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             background: fallbackName.trim() && !estimating
                               ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
                               : "rgba(220,220,220,0.4)",
-                            color: fallbackName.trim() && !estimating ? "#2D3748" : "#A0AEC0",
-                            boxShadow: fallbackName.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                            color: fallbackName.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
+                            boxShadow: fallbackName.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
                             minWidth: 80, justifyContent: "center",
                           }}>
                           {estimating
@@ -1058,7 +1058,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             : <>✨ Estimer</>}
                         </motion.button>
                       </div>
-                      <p className="text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+                      <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
                         Précise la marque et la quantité pour une meilleure estimation
                       </p>
                     </div>
@@ -1078,7 +1078,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.95 }} onClick={onClose}
                         className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.4)", color: "#718096", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        style={{ background: "rgba(240,235,255,0.4)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.3)" }}>
                         Annuler
                       </motion.button>
                     </div>
@@ -1099,13 +1099,13 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                               style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}>✨ IA</span>
                           </div>
-                          <p className="font-semibold text-sm leading-tight" style={{ color: "#2D3748" }}>
+                          <p className="font-semibold text-sm leading-tight" style={{ color: "var(--text-1)" }}>
                             {estimated.foodName}
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{estimated.calories}</p>
-                          <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                          <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -1115,9 +1115,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           { label: "Lipides",   val: estimated.fats,     color: "#D4A843" },
                         ].map(({ label, val, color }) => (
                           <div key={label} className="text-center rounded-xl py-2.5"
-                            style={{ background: "rgba(255,255,255,0.75)" }}>
+                            style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
                             <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
-                            <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
                           </div>
                         ))}
                       </div>
@@ -1127,7 +1127,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     {/* Type de repas */}
                     <div>
                       <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                        style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                        style={{ color: "var(--text-3)" }}>TYPE DE REPAS</label>
                       <div className="grid grid-cols-2 gap-1.5">
                         {(Object.keys(MEAL_META) as MealType[]).map(mt => (
                           <motion.button key={mt} whileTap={{ scale: 0.95 }}
@@ -1136,7 +1136,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             style={{
                               background: estimateMealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
                               border: estimateMealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
-                              color: estimateMealType === mt ? "#2D3748" : "#718096",
+                              color: estimateMealType === mt ? "var(--text-1)" : "var(--text-2)",
                             }}>
                             <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
                             <span>{MEAL_META[mt].label}</span>
@@ -1149,7 +1149,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       <motion.button whileTap={{ scale: 0.95 }}
                         onClick={() => { setEstimated(null); setError(null); }}
                         className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                        style={{ background: "rgba(240,235,255,0.6)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.4)" }}>
                         Modifier
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
@@ -1157,8 +1157,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                         style={{
                           background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                          color: "#2D3748",
-                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                          color: "var(--text-1)",
+                          boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                         }}>
                         Ajouter à mes repas ✓
                       </motion.button>
@@ -1189,14 +1189,14 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-tight" style={{ color: "#2D3748" }}>
+                    <p className="font-semibold text-sm leading-tight" style={{ color: "var(--text-1)" }}>
                       {product.name}
                     </p>
                     {product.brand && (
-                      <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{product.brand}</p>
+                      <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>{product.brand}</p>
                     )}
                     {product.quantity && (
-                      <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{product.quantity}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{product.quantity}</p>
                     )}
                   </div>
                 </div>
@@ -1204,7 +1204,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 {/* Quantity stepper */}
                 <div>
                   <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block"
-                    style={{ color: "#A0AEC0" }}>QUANTITÉ</label>
+                    style={{ color: "var(--text-3)" }}>QUANTITÉ</label>
                   <div className="flex items-center gap-2">
                     <motion.button whileTap={{ scale: 0.86 }}
                       onClick={() => adjustGrams(-10)}
@@ -1217,9 +1217,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         type="number" value={grams} min="1" max="2000"
                         onChange={e => setGrams(e.target.value)}
                         className="flex-1 text-center py-2 rounded-xl text-sm font-semibold outline-none"
-                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
                       />
-                      <span className="text-sm font-light" style={{ color: "#A0AEC0" }}>g</span>
+                      <span className="text-sm font-light" style={{ color: "var(--text-3)" }}>g</span>
                     </div>
                     <motion.button whileTap={{ scale: 0.86 }}
                       onClick={() => adjustGrams(10)}
@@ -1239,9 +1239,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     { label: "Lipides", val: `${computedMacros.fats}`, unit: "g", color: "#D4A843" },
                   ].map(({ label, val, unit, color }) => (
                     <div key={label} className="text-center rounded-xl py-2.5"
-                      style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(212,192,255,0.15)" }}>
+                      style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(212,192,255,0.15)" }}>
                       <p className="text-sm font-semibold" style={{ color }}>{val}</p>
-                      <p className="text-[9px] mt-0.5" style={{ color: "#A0AEC0" }}>{unit}</p>
+                      <p className="text-[9px] mt-0.5" style={{ color: "var(--text-3)" }}>{unit}</p>
                       <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
                     </div>
                   ))}
@@ -1251,7 +1251,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 {/* Meal type */}
                 <div>
                   <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                    style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                    style={{ color: "var(--text-3)" }}>TYPE DE REPAS</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {(Object.keys(MEAL_META) as MealType[]).map(mt => (
                       <motion.button key={mt} whileTap={{ scale: 0.95 }}
@@ -1260,7 +1260,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         style={{
                           background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
                           border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
-                          color: mealType === mt ? "#2D3748" : "#718096",
+                          color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
                         <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
                         <span>{MEAL_META[mt].label}</span>
@@ -1273,7 +1273,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 <div className="flex gap-2">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    style={{ background: "rgba(240,235,255,0.6)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.4)" }}>
                     Rescanner
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
@@ -1281,8 +1281,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                     style={{
                       background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      color: "#2D3748",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                      color: "var(--text-1)",
+                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                     }}>
                     Ajouter à mes repas ✓
                   </motion.button>
@@ -1367,9 +1367,9 @@ function ManualModal({ onClose, onAdd }: {
         transition={{ type: "spring", damping: 26, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl p-5 overflow-x-hidden"
         style={{
-          background: "rgba(255,255,255,0.96)",
+          background: "rgba(var(--surface-rgb),0.96)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
           boxShadow: "0 20px 60px rgba(167,139,250,0.15)",
           maxHeight: "90dvh",
           overflowY: "auto",
@@ -1378,13 +1378,13 @@ function ManualModal({ onClose, onAdd }: {
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>IA Nutrition</p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Décrire un repas</h2>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
+            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Décrire un repas</h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
             style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -1392,7 +1392,7 @@ function ManualModal({ onClose, onAdd }: {
 
           {/* Champ description + bouton estimer */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Ce que tu as mangé
             </label>
             <div className="flex gap-2">
@@ -1403,7 +1403,7 @@ function ManualModal({ onClose, onAdd }: {
                 placeholder="Ex : 5 madeleines et un bol de lait…"
                 autoFocus
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
               />
               <motion.button
                 whileTap={{ scale: 0.93 }}
@@ -1414,8 +1414,8 @@ function ManualModal({ onClose, onAdd }: {
                   background: name.trim() && !estimating
                     ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
                     : "rgba(220,220,220,0.4)",
-                  color: name.trim() && !estimating ? "#2D3748" : "#A0AEC0",
-                  boxShadow: name.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                  color: name.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
+                  boxShadow: name.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
                   minWidth: 80,
                   justifyContent: "center",
                 }}>
@@ -1428,7 +1428,7 @@ function ManualModal({ onClose, onAdd }: {
                 )}
               </motion.button>
             </div>
-            <p className="text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
               L&apos;IA calcule automatiquement les calories & macros — ou appuie sur Entrée
             </p>
           </div>
@@ -1465,7 +1465,7 @@ function ManualModal({ onClose, onAdd }: {
             ].map(({ label, val, set, ph }) => (
               <div key={label}>
                 <label className="text-[10px] font-semibold tracking-widest uppercase mb-1 block"
-                  style={{ color: "#A0AEC0" }}>{label}</label>
+                  style={{ color: "var(--text-3)" }}>{label}</label>
                 <motion.input
                   type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
                   animate={estimated && val ? { borderColor: "rgba(167,139,250,0.5)" } : {}}
@@ -1473,7 +1473,7 @@ function ManualModal({ onClose, onAdd }: {
                   style={{
                     background: estimated && val ? "rgba(240,235,255,0.6)" : "rgba(240,235,255,0.5)",
                     border: "1px solid rgba(212,192,255,0.5)",
-                    color: "#2D3748",
+                    color: "var(--text-1)",
                   }}
                 />
               </div>
@@ -1482,7 +1482,7 @@ function ManualModal({ onClose, onAdd }: {
 
           {/* Type de repas */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Type de repas
             </label>
             <div className="grid grid-cols-2 gap-1.5">
@@ -1493,7 +1493,7 @@ function ManualModal({ onClose, onAdd }: {
                   style={{
                     background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
                     border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
-                    color: mealType === mt ? "#2D3748" : "#718096",
+                    color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                   }}>
                   <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
                   <span>{MEAL_META[mt].label}</span>
@@ -1508,8 +1508,8 @@ function ManualModal({ onClose, onAdd }: {
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
             background: valid ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.45)",
-            color: valid ? "#2D3748" : "#A0AEC0",
-            boxShadow: valid ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+            color: valid ? "var(--text-1)" : "var(--text-3)",
+            boxShadow: valid ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
           }}>
           Enregistrer
         </motion.button>
@@ -1683,17 +1683,17 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           disabled={!canPrev}
           className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
           style={{ background: canPrev ? "rgba(240,235,255,0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
-            border: "1px solid rgba(212,192,255,0.3)", boxShadow: canPrev ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}
+            border: "1px solid rgba(212,192,255,0.3)", boxShadow: canPrev ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
         >
-          <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+          <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </motion.button>
 
         <div className="text-center">
-          <p className="text-base font-semibold" style={{ color: "#2D3748" }}>
+          <p className="text-base font-semibold" style={{ color: "var(--text-1)" }}>
             {MONTHS_FR[calMonth.getMonth()]} {calMonth.getFullYear()}
           </p>
           {regDate && (
-            <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
               Suivi depuis le {regDate.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}
             </p>
           )}
@@ -1716,9 +1716,9 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             disabled={!canNext}
             className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
             style={{ background: canNext ? "rgba(240,235,255,0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
-              border: "1px solid rgba(212,192,255,0.3)", boxShadow: canNext ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}
+              border: "1px solid rgba(212,192,255,0.3)", boxShadow: canNext ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
           >
-            <ChevronRight size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+            <ChevronRight size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
           </motion.button>
         </div>
       </div>
@@ -1735,7 +1735,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           <div className="grid grid-cols-7 mb-1.5">
             {WEEK_SHORT.map((d) => (
               <div key={d} className="flex justify-center py-1">
-                <span className="text-[10px] font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>{d}</span>
+                <span className="text-[10px] font-semibold tracking-wide" style={{ color: "var(--text-3)" }}>{d}</span>
               </div>
             ))}
           </div>
@@ -1777,14 +1777,14 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                     >
                       {/* Date number */}
                       <span className="text-[11px] font-bold leading-none"
-                        style={{ color: highContrast ? "#fff" : isToday ? "#7C3AED" : "#2D3748" }}>
+                        style={{ color: highContrast ? "#fff" : isToday ? "#7C3AED" : "var(--text-1)" }}>
                         {day.getDate()}
                       </span>
 
                       {/* Calories */}
                       {hasData && (
                         <span className="text-[9px] font-semibold leading-none mt-0.5"
-                          style={{ color: highContrast ? "rgba(255,255,255,0.9)" : "#6B5FC0" }}>
+                          style={{ color: highContrast ? "rgba(var(--surface-rgb),0.9)" : "#6B5FC0" }}>
                           {s.total_calories >= 1000
                             ? `${(s.total_calories/1000).toFixed(1)}k`
                             : `${s.total_calories}`}
@@ -1795,10 +1795,10 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       {hasData && (
                         <div className="w-full px-1 mt-auto pt-0.5">
                           <div className="h-0.5 rounded-full overflow-hidden"
-                            style={{ background: highContrast ? "rgba(255,255,255,0.2)" : "rgba(167,139,250,0.15)" }}>
+                            style={{ background: highContrast ? "rgba(var(--surface-rgb),0.2)" : "rgba(167,139,250,0.15)" }}>
                             <div className="h-full rounded-full"
                               style={{ width: `${Math.min(pct*100,100)}%`,
-                                background: highContrast ? "rgba(255,255,255,0.7)" : "rgba(167,139,250,0.8)" }} />
+                                background: highContrast ? "rgba(var(--surface-rgb),0.7)" : "rgba(167,139,250,0.8)" }} />
                           </div>
                         </div>
                       )}
@@ -1806,7 +1806,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       {/* Water dot */}
                       {!!s && s.water_ml >= 500 && (
                         <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
-                          style={{ background: highContrast ? "rgba(255,255,255,0.8)" : "#38BDF8" }} />
+                          style={{ background: highContrast ? "rgba(var(--surface-rgb),0.8)" : "#38BDF8" }} />
                       )}
 
                       {/* Today ring */}
@@ -1831,19 +1831,19 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             ].map(({ c, l }) => (
               <div key={l} className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ background: c }} />
-                <span className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>{l}</span>
+                <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{l}</span>
               </div>
             ))}
             <div className="flex items-center gap-1 ml-auto">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#38BDF8" }} />
-              <span className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>eau ≥ 500 ml</span>
+              <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>eau ≥ 500 ml</span>
             </div>
           </div>
 
           {/* Monthly stats tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             {[
-              { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "#2D3748" },
+              { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
               { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "#A78BFA" },
               { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "#D4A843" },
               { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#38BDF8" },
@@ -1851,14 +1851,14 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               <motion.div key={label}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-1.5 p-3.5 rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.9)",
-                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+                style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.9)",
+                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(167,139,250,0.06), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
                 <span className="text-base">{icon}</span>
                 <div>
                   <span className="text-lg font-light leading-none" style={{ color }}>{val}</span>
-                  {unit && <span className="text-[10px] font-light ml-1" style={{ color: "#A0AEC0" }}>{unit}</span>}
+                  {unit && <span className="text-[10px] font-light ml-1" style={{ color: "var(--text-3)" }}>{unit}</span>}
                 </div>
-                <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{label}</p>
+                <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{label}</p>
               </motion.div>
             ))}
           </div>
@@ -1870,12 +1870,12 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               className="mt-4 p-4 rounded-2xl"
               style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.22) 0%,rgba(245,230,163,0.16) 100%)",
                 border: "1px solid rgba(167,139,250,0.14)", backdropFilter: "blur(12px)" }}>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>
                 Depuis l'inscription
               </p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[
-                  { val: allTracked.length, unit: "jours", label: "trackés",   color: "#2D3748" },
+                  { val: allTracked.length, unit: "jours", label: "trackés",   color: "var(--text-1)" },
                   { val: bestStreak,        unit: "jours", label: "meil. série",color: "#A78BFA" },
                   { val: globalAvgCal > 0 ? globalAvgCal.toLocaleString("fr-FR") : "—",
                     unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "#D4A843" },
@@ -1883,9 +1883,9 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                   <div key={label}>
                     <p className="text-xl font-extralight leading-tight" style={{ color }}>
                       {val}
-                      <span className="text-xs font-light ml-0.5" style={{ color: "#A0AEC0" }}>{unit}</span>
+                      <span className="text-xs font-light ml-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>
                     </p>
-                    <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
+                    <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
                   </div>
                 ))}
               </div>
@@ -2113,10 +2113,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
     .filter(g => g.meals.length > 0);
 
   const CARD = {
-    background: "rgba(255,255,255,0.78)",
+    background: "rgba(var(--surface-rgb),0.78)",
     backdropFilter: "blur(10px)",
-    border: "1px solid rgba(255,255,255,0.9)",
-    boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+    border: "1px solid rgba(var(--surface-rgb),0.9)",
+    boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
   };
 
   return (
@@ -2140,10 +2140,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               Progression
             </button>
           )}
-          <p className="text-xs font-semibold tracking-widest uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+          <p className="text-xs font-semibold tracking-widest uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
             {today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
-          <h1 className="text-3xl font-extralight" style={{ color: "#2D3748" }}>
+          <h1 className="text-3xl font-extralight" style={{ color: "var(--text-1)" }}>
             Suivi{" "}
             <em className="not-italic font-light" style={{
               background: "linear-gradient(135deg,#A78BFA,#D4A843)",
@@ -2185,10 +2185,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
             style={{
               background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)",
+              boxShadow: "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
             }}>
-            <Camera size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#2D3748" }}>
+            <Camera size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
+            <span className="text-xs font-semibold hidden sm:block" style={{ color: "var(--text-1)" }}>
               Photo IA
             </span>
           </motion.button>
@@ -2212,8 +2212,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all duration-200"
               style={{
                 background: active ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(240,235,255,0.6)",
-                color: active ? "#2D3748" : "#A0AEC0",
-                boxShadow: active ? "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                color: active ? "var(--text-1)" : "var(--text-3)",
+                boxShadow: active ? "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
                 border: active ? "none" : "1px solid rgba(212,192,255,0.3)",
               }}
             >
@@ -2256,14 +2256,14 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 boxShadow: isSel ? "0 4px 14px rgba(167,139,250,0.38)" : "none",
               }}>
               <span className="text-[9px] font-semibold"
-                style={{ color: isSel ? "rgba(255,255,255,0.65)" : "#A0AEC0" }}>
+                style={{ color: isSel ? "rgba(var(--surface-rgb),0.65)" : "var(--text-3)" }}>
                 {DAY_LABELS[i]}
               </span>
-              <span className="text-sm font-semibold" style={{ color: isSel ? "#fff" : "#2D3748" }}>
+              <span className="text-sm font-semibold" style={{ color: isSel ? "#fff" : "var(--text-1)" }}>
                 {day.getDate()}
               </span>
               <div className="w-1 h-1 rounded-full" style={{
-                background: isSel ? "rgba(255,255,255,0.55)" : (isPast || isToday) ? "#A78BFA" : "transparent",
+                background: isSel ? "rgba(var(--surface-rgb),0.55)" : (isPast || isToday) ? "#A78BFA" : "transparent",
               }} />
             </motion.button>
           );
@@ -2272,7 +2272,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
 
       {/* ── Statut ──────────────────────────────────────────────── */}
       {calView === "journal" && isLoading && (
-        <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "#A0AEC0" }}>
+        <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "var(--text-3)" }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
             <Loader2 size={14} strokeWidth={1.5} />
           </motion.div>
@@ -2306,19 +2306,19 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 {[
                   { label: "RESTANT", val: remaining, color: "#A78BFA" },
                   { label: "BRÛLÉ",   val: goals.burned, color: "#D4A843" },
-                  { label: "OBJECTIF",val: goals.calories, color: "#2D3748" },
+                  { label: "OBJECTIF",val: goals.calories, color: "var(--text-1)" },
                 ].map(({ label, val, color }) => (
                   <div key={label}>
                     <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5"
-                      style={{ color: "#A0AEC0" }}>{label}</p>
+                      style={{ color: "var(--text-3)" }}>{label}</p>
                     <p className="text-lg font-light leading-tight" style={{ color }}>
                       {val.toLocaleString("fr-FR")}
                     </p>
-                    <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-center leading-snug px-2" style={{ color: "#A0AEC0" }}>
+              <p className="text-[11px] text-center leading-snug px-2" style={{ color: "var(--text-3)" }}>
                 Restant = ce qu&apos;il te reste à manger · Brûlé = dépensé en bougeant
               </p>
             </div>
@@ -2330,10 +2330,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             className="rounded-3xl p-5" style={CARD}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                   MACROS DU JOUR
                 </p>
-                <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>
+                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                   Les 3 familles d&apos;aliments qui composent ton assiette
                 </p>
               </div>
@@ -2364,10 +2364,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                 REPAS DU JOUR
               </p>
-              <p className="text-sm font-light mt-0.5" style={{ color: "#718096" }}>
+              <p className="text-sm font-light mt-0.5" style={{ color: "var(--text-2)" }}>
                 {totalCals} kcal consommés
               </p>
             </div>
@@ -2390,8 +2390,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
                   background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                  color: "#2D3748",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                  color: "var(--text-1)",
+                  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}>
                 <Camera size={12} strokeWidth={2} />
                 Photo IA
@@ -2402,7 +2402,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
                   background: "rgba(240,235,255,0.7)",
-                  color: "#718096",
+                  color: "var(--text-2)",
                   border: "1px solid rgba(212,192,255,0.4)",
                 }}>
                 <Plus size={12} strokeWidth={2.5} />
@@ -2415,8 +2415,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           {displayRecents.length > 0 && (
             <div className="mb-5">
               <div className="flex items-center gap-1.5 mb-2">
-                <Heart size={11} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                <Heart size={11} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                   Tes coups de cœur
                 </p>
                 {!pinHintSeen && (
@@ -2445,11 +2445,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                         <Plus size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
                       </div>
                       <div className="text-left">
-                        <p className="text-xs font-medium leading-tight flex items-center gap-1" style={{ color: "#2D3748", whiteSpace: "nowrap" }}>
+                        <p className="text-xs font-medium leading-tight flex items-center gap-1" style={{ color: "var(--text-1)", whiteSpace: "nowrap" }}>
                           {pin && <Heart size={9} strokeWidth={2.5} style={{ color: "#EC4899", fill: "#EC4899" }} />}
                           {r.name}
                         </p>
-                        <p className="text-[9px] leading-tight" style={{ color: "#A0AEC0" }}>
+                        <p className="text-[9px] leading-tight" style={{ color: "var(--text-3)" }}>
                           {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
                         </p>
                       </div>
@@ -2471,10 +2471,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 <Camera size={24} strokeWidth={1.5} style={{ color: "#C4B5FD" }} />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
                   Aucun repas enregistré
                 </p>
-                <p className="text-xs mt-1 font-light max-w-xs" style={{ color: "#A0AEC0" }}>
+                <p className="text-xs mt-1 font-light max-w-xs" style={{ color: "var(--text-3)" }}>
                   Prends une photo — l&apos;IA identifie les aliments et remplit tout automatiquement
                 </p>
               </div>
@@ -2483,8 +2483,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                 style={{
                   background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                  color: "#2D3748",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                  color: "var(--text-1)",
+                  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}>
                 <Camera size={16} strokeWidth={1.5} />
                 Analyser mon premier repas
@@ -2500,9 +2500,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                     {/* Group header */}
                     <div className="flex items-center gap-2 mb-3">
                       <span style={{ fontSize: 15 }}>{group.icon}</span>
-                      <p className="text-sm font-semibold" style={{ color: "#4A5568" }}>{group.label}</p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-2)" }}>{group.label}</p>
                       <div className="flex-1 h-px" style={{ background: "rgba(167,139,250,0.1)" }} />
-                      <p className="text-xs font-medium" style={{ color: "#A0AEC0" }}>
+                      <p className="text-xs font-medium" style={{ color: "var(--text-3)" }}>
                         {group.meals.reduce((s, m) => s + m.calories, 0)} kcal
                       </p>
                     </div>
@@ -2531,11 +2531,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
 
                           {/* Info */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-tight truncate" style={{ color: "#2D3748" }}>
+                            <p className="text-sm font-medium leading-tight truncate" style={{ color: "var(--text-1)" }}>
                               {meal.name}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{meal.time}</span>
+                              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{meal.time}</span>
                               {meal.proteins > 0 && (
                                 <>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full"
@@ -2558,8 +2558,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                           {/* Calories + delete */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="text-right">
-                              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{meal.calories}</p>
-                              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{meal.calories}</p>
+                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                             </div>
                             <motion.button whileTap={{ scale: 0.85 }}
                               onClick={() => deleteMeal(meal.id)}
@@ -2599,14 +2599,14 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             transition={{ type: "spring", bounce: 0.4 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
-              background: "rgba(255,255,255,0.92)",
+              background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.9)",
+              border: "1px solid rgba(var(--surface-rgb),0.9)",
               boxShadow: "0 8px 32px rgba(167,139,250,0.2)",
               whiteSpace: "nowrap",
             }}>
             <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
-            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
+            <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>
