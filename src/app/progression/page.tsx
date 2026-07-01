@@ -5,16 +5,13 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import {
   Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
-  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
+  Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
   X, CameraOff, Square, RefreshCw, Plus, Trash2, Pencil,
   Globe, Lock, Users,
 } from "lucide-react";
-import { WeightChart, VolumeChart, PRChart, WorkoutWeekCard, type WeightEntry } from "@/components/charts/ProgressionCharts";
+import { type WeightEntry } from "@/components/charts/ProgressionCharts";
 import SharePerformanceModal from "@/components/SharePerformanceModal";
-import NutritionTab from "@/components/NutritionTab";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
-import ExerciseAnalyzer from "@/components/ExerciseAnalyzer";
-import Badges from "@/components/Badges";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
 import BodyAvatar from "@/components/BodyAvatar";
@@ -1863,236 +1860,11 @@ function ProgressionPageContent() {
         className="mb-6"
       >
         <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
-          Votre Journey
+          Ton entraînement
         </p>
-        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Ma Progression</h1>
+        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Mes Séances</h1>
       </motion.div>
 
-      {/* ── Tab switcher ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="flex gap-2 mb-8 overflow-x-auto whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0"
-        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
-      >
-        {([
-          { key: "progression",    label: "Progression" },
-          { key: "mes-seances",    label: "Mes Séances" },
-          { key: "nutrition",      label: "Nutrition" },
-          { key: "analyse",        label: "Analyse" },
-          { key: "badges",         label: "Badges" },
-        ] as const).map(({ key, label }) => (
-          <motion.button
-            key={key}
-            data-tour-anchor={`prog-tab-${key}`}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab(key)}
-            className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex-shrink-0"
-            style={activeTab === key
-              ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 2px 12px rgba(var(--accent-rgb),0.2)" }
-              : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.7)" }
-            }
-          >
-            {label}
-          </motion.button>
-        ))}
-      </motion.div>
-
-      <AnimatePresence mode="wait">
-
-      {/* ══════════ TAB PROGRESSION ══════════ */}
-      {activeTab === "progression" && (
-        <motion.div
-          key="progression-tab"
-          data-tour-anchor="prog-content-progression"
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col gap-0"
-        >
-
-      {/* ── Graphiques ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.05 }}
-        className="mb-8 max-w-5xl"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-              Analyse
-            </p>
-            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Statistiques</h2>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <WeightChart
-            data={weights}
-            range={weightRange}
-            onRangeChange={setWeightRange}
-            onAdd={addWeight}
-            onDelete={deleteWeight}
-            onUpdate={updateWeight}
-            goalType={fitnessGoal}
-          />
-          <WorkoutWeekCard sessions={displayTimeline} />
-          <PRChart
-            prs={prs}
-            onAdd={async (exercise, value, unit) => {
-              if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-              const supabase = createClient();
-              const { error } = await supabase.from("personal_records").insert({
-                user_id: user.id, exercise, value, unit, date: toDateStr(new Date()),
-              });
-              if (!error) { showToast("Record enregistré !"); fetchPRs(); }
-              else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
-            }}
-            onDelete={async (id) => {
-              if (!user) return;
-              const supabase = createClient();
-              const { error } = await supabase.from("personal_records").delete().eq("id", id).eq("user_id", user.id);
-              if (!error) { showToast("Record supprimé"); fetchPRs(); }
-            }}
-          />
-          <VolumeChart data={weeklyVolume} />
-        </div>
-      </motion.div>
-
-
-      {/* ── Timeline ── */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col gap-6"
-      >
-        <motion.div variants={itemVariants}>
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
-            Historique
-          </p>
-          <h2 className="text-lg font-light mb-4" style={{ color: "var(--text-1)" }}>Activité récente</h2>
-        </motion.div>
-
-        {displayTimeline.length === 0 && (
-          <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
-              style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.3),rgba(var(--cream-mid-rgb),0.3))" }}>
-              🏋️
-            </div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Aucune activité encore</p>
-            <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Lance ta première séance pour<br/>commencer ton historique !</p>
-          </motion.div>
-        )}
-
-        {Object.entries(groups).map(([date, events]) => (
-          <div key={date}>
-            <motion.p
-              variants={itemVariants}
-              className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3"
-              style={{ color: "var(--text-3)" }}
-            >
-              {date}
-            </motion.p>
-            <div className="relative flex flex-col gap-3">
-              <div
-                className="absolute left-[19px] top-6 bottom-0 w-px"
-                style={{ background: "linear-gradient(to bottom, rgba(var(--violet-mid-rgb),0.6), rgba(var(--cream-mid-rgb),0.6), transparent)" }}
-              />
-              {events.map((event, i) => {
-                const EvIcon = eventIcons[event.type];
-                return (
-                  <motion.div key={i} variants={itemVariants} className="flex items-start gap-4 group">
-                    <div className="relative flex-shrink-0 mt-1">
-                      <div className={`${event.cardClass} lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center`}>
-                        <EvIcon size={14} strokeWidth={1.5} style={{ color: event.dot }} />
-                      </div>
-                    </div>
-                    <div className="lg-surface lg-highlight relative flex-1 rounded-2xl overflow-hidden">
-                      {/* Header row */}
-                      <div className="flex items-center justify-between gap-2 p-4 pb-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{event.title}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Clock size={9} style={{ color: "var(--text-3)" }} />
-                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{event.time}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <motion.button
-                            whileTap={{ scale: 0.92 }}
-                            onClick={() => setShareData(event.performance)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer"
-                            style={{
-                              background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
-                              boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 2px 8px rgba(var(--accent-rgb),0.15)",
-                            }}
-                          >
-                            <Share2 size={10} strokeWidth={2} style={{ color: "var(--text-1)" }} />
-                            <span className="text-[10px] font-semibold" style={{ color: "var(--text-1)" }}>Partager</span>
-                          </motion.button>
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setExpandedEvent(expandedEvent === (event.id ?? event.title + event.date) ? null : (event.id ?? event.title + event.date))}
-                            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-                            style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
-                          >
-                            <motion.div animate={{ rotate: expandedEvent === (event.id ?? event.title + event.date) ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                              <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
-                            </motion.div>
-                          </motion.button>
-                        </div>
-                      </div>
-                      {/* Desc */}
-                      <p className="text-xs px-4 pb-3 font-light" style={{ color: "var(--text-2)" }}>{event.desc}</p>
-                      {/* Expandable exercises */}
-                      <AnimatePresence initial={false}>
-                        {expandedEvent === (event.id ?? event.title + event.date) && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.22 }}
-                            style={{ overflow: "hidden", borderTop: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}
-                          >
-                            <div className="px-4 py-3 flex flex-col gap-1.5">
-                              {(() => {
-                                const exs = event.id ? (eventExercises[event.id] ?? []) : [];
-                                if (exs.length === 0) {
-                                  return <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Aucun exercice enregistré pour cette séance.</p>;
-                                }
-                                return exs.map((ex, j) => (
-                                  <div key={j} className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: event.dot }} />
-                                    <p className="text-xs font-medium flex-1" style={{ color: "var(--text-1)" }}>{ex.name}</p>
-                                    {(ex.sets || ex.reps || ex.weight) && (
-                                      <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
-                                        {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
-                                      </p>
-                                    )}
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </motion.div>
-
-        </motion.div>
-      )}
-
-      {/* ══════════ TAB MES SÉANCES ══════════ */}
-      {activeTab === "mes-seances" && (
         <motion.div
           key="mes-seances-tab"
           initial={{ opacity: 0, x: 16 }}
@@ -2575,52 +2347,7 @@ function ProgressionPageContent() {
           </motion.div>
 
         </motion.div>
-      )}
 
-      {/* ══════════ TAB NUTRITION ══════════ */}
-      {activeTab === "nutrition" && (
-        <motion.div
-          key="nutrition-tab"
-          data-tour-anchor="prog-content-nutrition"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-        >
-          <NutritionTab fullPage={false} />
-        </motion.div>
-      )}
-
-
-      {/* ══════════ TAB ANALYSE ══════════ */}
-      {activeTab === "analyse" && (
-        <motion.div
-          key="analyse-tab"
-          data-tour-anchor="prog-content-analyse"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-        >
-          <ExerciseAnalyzer />
-        </motion.div>
-      )}
-
-      {/* ══════════ TAB BADGES ══════════ */}
-      {activeTab === "badges" && (
-        <motion.div
-          key="badges-tab"
-          data-tour-anchor="prog-content-badges"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Badges />
-        </motion.div>
-      )}
-
-      </AnimatePresence>
 
       <SharePerformanceModal
         open={shareData !== null}
