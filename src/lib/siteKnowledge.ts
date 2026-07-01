@@ -54,6 +54,19 @@ export const SITE_FEATURES: SiteFeature[] = [
     keywords: ["séance", "seance", "entraînement", "entrainement", "workout", "programme", "muscu", "musculation", "exercices"],
   },
   {
+    key: "analyse",
+    title: "Analyse de posture (caméra)",
+    route: "/analyse",
+    summary:
+      "Outil d'analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l'appareil, gratuit et illimité — n'utilise pas le coach IA.",
+    actions: [
+      "lancer l'analyse de posture en temps réel",
+      "corriger sa technique sur un exercice",
+      "compter ses répétitions à la caméra",
+    ],
+    keywords: ["analyse", "posture", "technique", "forme", "mouvement", "camera", "caméra", "corriger", "squat", "pompes", "curl", "fente", "gainage", "repetitions", "répétitions", "reps"],
+  },
+  {
     key: "repas",
     title: "Repas recommandés",
     route: "/",
