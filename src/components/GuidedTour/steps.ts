@@ -94,19 +94,6 @@ export const TOUR_STEPS: TourStep[] = [
     chapter: { name: "L'Accueil", tagline: "Ton point de départ, chaque jour" },
   },
   {
-    id: "orb",
-    type: "spotlight",
-    anchorId: "orb",
-    breadcrumb: "Accueil",
-    title: "Ton coach IA, toujours là",
-    description:
-      "Une question, un doute, un objectif ? Touche l'orbe et parle-lui. Il te répond, te conseille, et te construit des programmes calibrés sur toi.",
-    shape: "circle",
-    padding: 28,
-    tooltipPosition: "top",
-    route: "/",
-  },
-  {
     id: "votd",
     type: "spotlight",
     anchorId: "votd",

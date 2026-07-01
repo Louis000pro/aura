@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
+import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import HomeOrb from "@/components/HomeOrb";
+import ProgressionStats from "@/components/ProgressionStats";
 import StatsDrawer from "@/components/StatsDrawer";
 import DailyDrawer from "@/components/DailyDrawer";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
@@ -549,7 +549,7 @@ function LandingPage() {
 // (aligné sur plans.ts free.limits.chatPerDay = 5 et l'affichage page /premium)
 const DAILY_AI_LIMIT = 5;
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
-let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
+let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
 
 function Dashboard() {
   const now = new Date();
@@ -578,7 +578,7 @@ function Dashboard() {
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
   const [dailyVideoUrl, setDailyVideoUrl] = useState<string | null>(null);
-  void mobilePanel; void setMobilePanel; void logout; void router; // legacy refs, unused dans la nouvelle layout
+  void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
   const [showObjectif, setShowObjectif] = useState(false);
@@ -633,7 +633,7 @@ function Dashboard() {
     const today = new Date().toISOString().slice(0, 10);
     supabase
       .from("daily_stats")
-      .select("score, calories, steps, sleep_hours, streak")
+      .select("score, calories, burned, steps, sleep_hours, streak")
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle()
@@ -644,6 +644,7 @@ function Dashboard() {
             ...prev,
             score:      data.score       ?? 0,
             calories:   data.calories    ?? 0,
+            burned:     data.burned      ?? 0,
             steps:      data.steps       ?? 0,
             sleepHours: data.sleep_hours ?? 0,
             streak:     data.streak      ?? 0,
@@ -657,6 +658,7 @@ function Dashboard() {
               ...prev,
               score:      computed.score,
               calories:   computed.calories,
+              burned:     computed.burned,
               steps:      computed.steps,
               sleepHours: computed.sleepHours,
               streak:     computed.streak,
@@ -989,287 +991,139 @@ function Dashboard() {
     () => { setShowChat(true); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
     () => { setShowChat(true); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
   ];
-  void quickActionHandlers;
+  void quickActionHandlers; void handleVoiceTranscript;
 
   return (
-    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-y-hidden overscroll-none" style={{ background: "var(--page-bg)", height: "100dvh" }}>
-
-      {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
-      <button
-        type="button"
-        onClick={() => setShowStatsDrawer(true)}
-        data-tour-anchor="stats"
-        className="relative w-full flex-shrink-0 outline-none active:opacity-95 transition-opacity"
-        style={{ height: "31%" }}
+    <div
+      className="fixed inset-0 md:left-[88px] overflow-y-auto overscroll-none"
+      style={{ background: "var(--page-bg)", height: "100dvh", WebkitOverflowScrolling: "touch" }}
+    >
+      <div
+        className="mx-auto w-full max-w-2xl px-4 flex flex-col gap-4"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 62px)",
+          paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
+        }}
       >
-        {/* Header en haut : greeting + avatar (remonté un peu pour dégager le label) */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5" style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}>
-          <div className="text-left">
-            <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
-            <h1 className="text-xl font-light mt-0.5" style={{ color: "var(--text-0)" }}>
-              {user?.pseudo ?? user?.name ?? ""}
-            </h1>
+        {/* ── Salutation ── */}
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
+          <h1 className="text-2xl font-light mt-0.5" style={{ color: "var(--text-0)" }}>
+            {user?.pseudo ?? user?.name ?? ""}
+          </h1>
+        </div>
+
+        {/* ── Aujourd'hui → séances & repas recommandés (StatsDrawer) ── */}
+        <button
+          type="button"
+          onClick={() => setShowStatsDrawer(true)}
+          data-tour-anchor="stats"
+          className="w-full text-left rounded-3xl p-4 outline-none active:opacity-95 transition-opacity"
+          style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>Aujourd&apos;hui</p>
+            <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
+              <Dumbbell size={11} strokeWidth={2} />
+              Séances &amp; repas
+              <ChevronDown size={12} strokeWidth={2.5} />
+            </span>
           </div>
-          {/* Cloche + avatar désormais fournis par le header global (Navigation). */}
-        </div>
-
-        {/* Bloc bas : label au-dessus + 3 cadrans, ancré en bas (assez d'air, rien de coupé) */}
-        <div className="absolute bottom-7 left-0 right-0 px-5 flex flex-col items-center gap-2.5">
-          {/* Label compact (une seule ligne) : indique clairement le tap */}
-          <motion.div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full whitespace-nowrap"
-            style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.18)" }}
-            animate={{ y: [0, 1.5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-            <Dumbbell size={11} strokeWidth={2} style={{ color: "var(--accent)" }} />
-            <span className="text-[11px] font-bold tracking-wide" style={{ color: "var(--text-soft)" }}>Séances &amp; repas recommandés</span>
-            <ChevronDown size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
-          </motion.div>
-
-          {/* 3 mini-cadrans : Score · Série · Séances */}
-          <div className="w-full grid grid-cols-3 gap-2">
-          {[
-            { label: "Score",   icon: Sparkles, value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—", unit: liveStats.score > 0 ? "/100" : "" },
-            { label: "Série",   icon: Flame,    value: liveStats.loaded && liveStats.streak > 0 ? `${liveStats.streak}` : "—", unit: liveStats.streak > 0 ? (liveStats.streak > 1 ? "jours" : "jour") : "" },
-            { label: "Séances", icon: Dumbbell, value: liveStats.loaded ? `${liveStats.sessionsWeek}` : "—", unit: "/ sem" },
-          ].map((s, i) => {
-            const Icon = s.icon;
-            const isHero = i === 1; // Série mis en avant avec la DA du site
-            const isScore = i === 0;
-            const bumping = isScore && scoreBump != null;
-            return (
-              <motion.div key={s.label}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0, scale: bumping ? [isHero ? 1.07 : 1, 1.22, isHero ? 1.07 : 1] : (isHero ? 1.07 : 1) }}
-                transition={bumping ? { duration: 0.6, ease: "easeOut" } : { delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
-                className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1 relative"
-                style={isHero
-                  ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", border: "1px solid rgba(var(--surface-rgb),0.95)", boxShadow: "0 10px 28px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(var(--surface-rgb),0.95)", zIndex: 2 }
-                  : { background: bumping ? "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.85) 0%, rgba(var(--cream-mid-rgb),0.7) 100%)" : "rgba(var(--surface-rgb),0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: bumping ? "0 0 22px rgba(var(--accent-rgb),0.6), 0 6px 18px rgba(var(--gold-rgb),0.35)" : "0 4px 16px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)", zIndex: bumping ? 3 : 1, transition: "box-shadow 0.4s, background 0.4s" }}>
-
-                {/* +N qui s'envole quand le score monte */}
-                <AnimatePresence>
-                  {bumping && (
-                    <motion.div
-                      key="bump"
-                      initial={{ opacity: 0, y: 4, scale: 0.6 }}
-                      animate={{ opacity: 1, y: -26, scale: 1 }}
-                      exit={{ opacity: 0, y: -40 }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                      className="absolute left-1/2 -translate-x-1/2 -top-1 pointer-events-none px-2 py-0.5 rounded-full text-[11px] font-extrabold"
-                      style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.5)", whiteSpace: "nowrap" }}
-                    >
-                      +{scoreBump}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: isHero ? "rgba(var(--surface-rgb),0.6)" : "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.95) 0%, rgba(var(--tint-cream-rgb),0.95) 100%)" }}>
-                  {isHero ? (
-                    <motion.div
-                      style={{ display: "flex" }}
-                      animate={{
-                        scale: [1, 1.15, 1],
-                        filter: [
-                          "drop-shadow(0 0 2px rgba(240,180,41,0.7))",
-                          "drop-shadow(0 0 7px rgba(240,180,41,1)) drop-shadow(0 0 13px rgba(232,140,20,0.75))",
-                          "drop-shadow(0 0 2px rgba(240,180,41,0.7))",
-                        ],
-                      }}
-                      transition={{ duration: 1.7, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <Icon size={15} strokeWidth={2} style={{ color: "#E8A11E" }} fill="#F0B429" />
-                    </motion.div>
-                  ) : (
-                    <Icon size={13} strokeWidth={1.5}
-                      style={{ color: bumping ? "var(--gold)" : "var(--accent)", filter: bumping ? "drop-shadow(0 0 6px rgba(var(--gold-rgb),0.9))" : "none", transition: "color 0.3s" }}
-                      fill="none" />
-                  )}
-                </div>
-                <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.label}</p>
-                <div className="flex items-baseline gap-0.5">
-                  <span className={`${isHero ? "text-lg font-extrabold" : "text-base font-semibold"} leading-none`} style={{ color: "var(--text-1)" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.unit}</span>}
-                </div>
-              </motion.div>
-            );
-          })}
-          </div>
-        </div>
-
-        {/* Croissant SVG (courbe douce qui s'incurve vers le bas) — étendu jusqu'à la sidebar sur desktop */}
-        <svg className="absolute -bottom-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
-          <defs>
-            <linearGradient id="topCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(var(--violet-mid-rgb),0.5)" />
-              <stop offset="100%" stopColor="rgba(var(--cream-mid-rgb),0.0)" />
-            </linearGradient>
-          </defs>
-          <path d="M 0 0 Q 50 10 100 0 L 100 6 L 0 6 Z" fill="url(#topCrescentGrad)" />
-        </svg>
-
-      </button>
-
-      {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[34dvh]">
-        <div data-tour-anchor="orb" style={{ display: "inline-block", lineHeight: 0 }}>
-          <HomeOrb
-            onTap={() => setShowChat(true)}
-            onTranscript={handleVoiceTranscript}
-            size={isMobile ? 138 : 176}
-          />
-        </div>
-      </div>
-
-      {/* ────────────────── BOTTOM : VOTD carte large + croissant — AU-DESSUS de la nav ─ */}
-      <button
-        type="button"
-        onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[32dvh]"
-        style={{ bottom: "calc(70px + env(safe-area-inset-bottom))" }}
-        aria-label="Ouvrir Du Jour"
-      >
-        {/* Croissant SVG (courbe douce qui s'incurve vers le haut) — étendu jusqu'à la sidebar sur desktop */}
-        <svg className="absolute -top-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
-          <defs>
-            <linearGradient id="bottomCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(var(--cream-mid-rgb),0.0)" />
-              <stop offset="100%" stopColor="rgba(var(--violet-mid-rgb),0.5)" />
-            </linearGradient>
-          </defs>
-          <path d="M 0 6 Q 50 -4 100 6 L 100 0 L 0 0 Z" fill="url(#bottomCrescentGrad)" />
-        </svg>
-
-        {/* Hint chevron */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
-          <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(var(--accent-rgb),0.55)" }} />
-        </div>
-
-        {/* VOTD carte horizontale large — vidéo à gauche + texte à droite (centrée verticalement dans la demi-lune) */}
-        <div className="absolute inset-x-4 top-[9dvh] bottom-0 flex items-center justify-center">
-          <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
-            data-tour-anchor="votd"
-            className="relative w-full pointer-events-none"
-            style={{ maxWidth: 600 }}>
-
-            {/* ✦ Barre LED le long du contour — masque "border-only", aucun débordement */}
-            <div
-              className="absolute inset-0 pointer-events-none overflow-hidden"
-              style={{
-                zIndex: 5,
-                borderRadius: 28,
-                padding: 2, // épaisseur de la barre lumineuse
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                maskComposite: "exclude",
-              } as React.CSSProperties}
-            >
-              {/* Contour de marque FIXE (dégradé doux, couvre tout le rectangle) */}
-              <div
-                className="absolute inset-0"
-                style={{ background: "linear-gradient(120deg, var(--accent) 0%, #C4A8FF 30%, var(--cream-mid) 65%, #FFB088 100%)", opacity: 0.55 }}
-              />
-              {/* UN seul reflet lumineux qui glisse autour, doucement */}
-              <motion.div
-                className="absolute"
-                style={{
-                  top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(var(--surface-rgb),0.85) 340deg, rgba(var(--violet-mid-rgb),0.5) 352deg, transparent 360deg)",
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
-              />
+          <div className="flex items-center gap-4">
+            <div className="relative flex-shrink-0">
+              <ScoreRing score={liveStats.loaded ? liveStats.score : 0} size={82} />
+              <AnimatePresence>
+                {scoreBump != null && (
+                  <motion.div key="bump"
+                    initial={{ opacity: 0, y: 6, scale: 0.6 }}
+                    animate={{ opacity: 1, y: -8, scale: 1 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="absolute -top-1 left-1/2 -translate-x-1/2 pointer-events-none px-2 py-0.5 rounded-full text-[11px] font-extrabold"
+                    style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.5)", whiteSpace: "nowrap" }}>
+                    +{scoreBump}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-
-            {/* La carte (au-dessus de l'anneau) */}
-            <div
-            className="relative flex items-stretch gap-4 p-2.5 rounded-[28px] w-full overflow-hidden"
-            style={{
-              background: "rgba(var(--surface-rgb),0.96)",
-              backdropFilter: "blur(14px)",
-              boxShadow: "0 12px 36px rgba(var(--accent-rgb),0.22), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
-            }}>
-
-            {/* Reflet brillant qui balaie la carte (shimmer) */}
-            <motion.div
-              className="absolute top-0 bottom-0 pointer-events-none"
-              style={{
-                width: "45%",
-                background: "linear-gradient(105deg, transparent 0%, rgba(var(--surface-rgb),0.55) 50%, transparent 100%)",
-                filter: "blur(2px)",
-              }}
-              animate={{ left: ["-50%", "140%"] }}
-              transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
-            />
-            {/* Vidéo verticale à gauche — plus grande */}
-            <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
-              style={{
-                width: isMobile ? 62 : 118, height: isMobile ? 98 : 182,
-                background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
-                boxShadow: "inset 0 0 0 1px rgba(var(--surface-rgb),0.18)",
-              }}>
-              {dailyVideoUrl ? (
-                <video
-                  src={dailyVideoUrl}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  muted
-                  loop
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.18)", backdropFilter: "blur(4px)" }}>
-                    <Play size={24} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 3 }} fill="#FFFFFF" />
-                  </div>
-                </div>
-              )}
-              {/* Indicateur LIVE en haut */}
-              {dailyVideoUrl && (
-                <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#FC8181", boxShadow: "0 0 5px rgba(252,129,129,0.9)" }} />
-                  <span className="text-[8px] font-bold tracking-widest text-white">LIVE</span>
-                </div>
-              )}
-              {/* Petit bouton play overlay quand vidéo */}
-              {dailyVideoUrl && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.32)", backdropFilter: "blur(2px)" }}>
-                    <Play size={18} strokeWidth={2} style={{ color: "#fff", marginLeft: 2 }} fill="#fff" />
-                  </div>
-                </div>
-              )}
-              {/* Gradient noir bas pour lisibilité éventuelle */}
-              <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
-                style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.45))" }} />
-            </div>
-
-            {/* Texte à droite */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center py-1 pr-2">
-              <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--accent)" }}>
-                Du jour
-              </p>
-              <p className="text-xl font-light leading-tight" style={{ color: "var(--text-0)" }}>
-                Vidéo · Séance · Perf
-              </p>
-              <p className="text-[11px] font-light mt-1.5 leading-snug" style={{ color: "var(--text-soft)" }}>
-                Tap pour explorer ton contenu
-              </p>
-              <div className="flex items-center gap-2 mt-2.5">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                  style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.25)" }}>
-                  <Play size={11} strokeWidth={2.5} style={{ color: "var(--text-1)", marginLeft: 0.5 }} fill="var(--text-1)" />
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text-1)" }}>Voir</span>
-                </div>
-                <ChevronUp size={13} strokeWidth={2} style={{ color: "rgba(var(--accent-rgb),0.7)" }} />
+            <div className="flex-1 grid grid-cols-2 gap-2.5">
+              {/* Série (mise en avant) */}
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "0 6px 18px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-1)" }}><Flame size={12} strokeWidth={2} />Série</span>
+                <p className="mt-1 text-xl font-extrabold leading-none" style={{ color: "var(--text-1)" }}>
+                  {liveStats.loaded && liveStats.streak > 0 ? liveStats.streak : "—"}
+                  {liveStats.streak > 0 && <span className="text-[11px] font-medium ml-1">{liveStats.streak > 1 ? "jours" : "jour"}</span>}
+                </p>
+              </div>
+              {/* Séances */}
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--surface-rgb),0.9)" }}>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}><Dumbbell size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />Séances</span>
+                <p className="mt-1 text-xl font-semibold leading-none" style={{ color: "var(--text-1)" }}>
+                  {liveStats.loaded ? liveStats.sessionsWeek : "—"}
+                  <span className="text-[11px] font-medium ml-1" style={{ color: "var(--text-3)" }}>/ sem</span>
+                </p>
               </div>
             </div>
-            </div>{/* fin carte intérieure */}
-          </motion.div>
-        </div>
-      </button>
+          </div>
+          {/* Calories mangées / brûlées */}
+          <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}>
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-soft)" }}>
+              <Flame size={12} strokeWidth={2} style={{ color: "var(--gold)" }} />
+              {liveStats.calories > 0 ? `${liveStats.calories.toLocaleString("fr-FR")} kcal mangées` : "Aucun repas loggé"}
+            </span>
+            {liveStats.burned > 0 && (
+              <span className="text-xs" style={{ color: "var(--text-soft)" }}>{liveStats.burned.toLocaleString("fr-FR")} kcal brûlées</span>
+            )}
+          </div>
+        </button>
+
+        {/* ── Du jour (vidéo) → DailyDrawer ── */}
+        <button
+          type="button"
+          onClick={() => setShowDailyDrawer(true)}
+          data-tour-anchor="votd"
+          aria-label="Ouvrir Du Jour"
+          className="w-full rounded-3xl p-2.5 flex items-stretch gap-3 outline-none active:opacity-95 transition-opacity overflow-hidden"
+          style={{ background: "rgba(var(--surface-rgb),0.96)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.12), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
+        >
+          <div className="relative overflow-hidden rounded-2xl flex-shrink-0" style={{ width: 66, height: 92, background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)" }}>
+            {dailyVideoUrl ? (
+              <video src={dailyVideoUrl} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline preload="auto" />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Play size={20} strokeWidth={2} style={{ color: "#fff", marginLeft: 2 }} fill="#fff" />
+              </div>
+            )}
+            {dailyVideoUrl && (
+              <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.55)" }}>
+                <div className="w-1 h-1 rounded-full" style={{ background: "#FC8181" }} />
+                <span className="text-[7px] font-bold tracking-widest text-white">LIVE</span>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+            <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--accent)" }}>Du jour</p>
+            <p className="text-lg font-light leading-tight" style={{ color: "var(--text-0)" }}>Vidéo · Séance · Perf</p>
+            <p className="text-[11px] font-light mt-1" style={{ color: "var(--text-soft)" }}>Tap pour explorer ton contenu</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "var(--gold)", boxShadow: "0 2px 8px rgba(var(--gold-rgb),0.35)" }}>
+                <Play size={10} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 0.5 }} fill="#fff" />
+                <span className="text-[11px] font-bold text-white">Voir</span>
+              </span>
+              <ChevronRight size={14} strokeWidth={2} style={{ color: "rgba(var(--accent-rgb),0.6)" }} />
+            </div>
+          </div>
+        </button>
+
+        {/* ── Ta progression (courbes remontées de l'onglet Progression) ── */}
+        <section className="mt-2">
+          <div className="mb-3 px-1">
+            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>Analyse</p>
+            <h2 className="text-lg font-light" style={{ color: "var(--text-0)" }}>Ta progression</h2>
+          </div>
+          <ProgressionStats onToast={showToast} />
+        </section>
+      </div>
 
       {/* ────────────────── DRAWER STATS (top → down) — carousel 3 zones ── */}
       <StatsDrawer
@@ -1337,7 +1191,7 @@ function Dashboard() {
             showToast(`${meal.name} enregistré ✓`);
             // Recalcule le score → il monte en direct (déclenche l'animation)
             computeAndSaveScore(user.id, supabase)
-              .then((c) => setLiveStats(prev => ({ ...prev, score: c.score, calories: c.calories, loaded: true })))
+              .then((c) => setLiveStats(prev => ({ ...prev, score: c.score, calories: c.calories, burned: c.burned, loaded: true })))
               .catch(() => {});
           }
         }} />}
