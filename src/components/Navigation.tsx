@@ -148,17 +148,13 @@ export default function Navigation() {
       return (
         <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
           <motion.div
-            className="flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl cursor-pointer relative"
-            whileTap={{ scale: 0.85 }} transition={{ duration: 0.12 }}
+            className="flex flex-col items-center justify-center gap-1 py-1 px-1 cursor-pointer relative"
+            whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
           >
-            {isActive && (
-              <motion.div layoutId="mobile-pill" className="absolute inset-0 rounded-xl"
-                style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
-                transition={{ type: "spring", stiffness: 500, damping: 35 }} />
-            )}
-            <div className="relative z-10">
-              <Icon size={22} strokeWidth={isActive ? 2.4 : 2} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", transition: "all 0.2s ease" }} />
-              {badge && !isActive && (
+            <div className="relative">
+              <Icon size={23} strokeWidth={isActive ? 2.5 : 2}
+                style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
+              {badge && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
                   style={{ background: "var(--accent)", color: "#fff" }}>
@@ -167,8 +163,8 @@ export default function Navigation() {
               )}
             </div>
             {/* Libellé : uniquement l'onglet actif (option B). Hauteur réservée → icônes alignées. */}
-            <span className="relative z-10 text-[9px] font-semibold leading-none truncate max-w-full"
-              style={{ height: 10, color: "var(--nav-fg-active)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
+            <span className="text-[9px] font-bold leading-none truncate max-w-full"
+              style={{ height: 10, color: "var(--gold)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
               {label}
             </span>
           </motion.div>
@@ -301,25 +297,32 @@ export default function Navigation() {
         </div>
       )}
 
-      {/* ══ Mobile Bottom Bar — Accueil / Progression / Orbe IA / Nutrition / Communauté ══ */}
-      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
-          <div className="flex items-center justify-around">
-            {/* 1. Accueil */}
-            <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
-            {/* 2. Progression */}
-            <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
+      {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou) ══ */}
+      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+        <div
+          className="relative flex items-stretch justify-around px-1"
+          style={{
+            background: "rgb(var(--surface-rgb))",
+            borderTop: "1px solid rgba(var(--accent-rgb),0.14)",
+            boxShadow: "0 -6px 24px rgba(var(--accent-rgb),0.10)",
+            paddingTop: 9,
+            paddingBottom: "calc(9px + env(safe-area-inset-bottom))",
+          }}
+        >
+          {/* 1. Accueil */}
+          <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
+          {/* 2. Progression */}
+          <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
 
-            {/* 3. Orbe assistant (centre, mise en avant) */}
-            <div className="flex-1 flex items-center justify-center" data-tour-anchor="nav-assistant">
-              <NavOrb size={48} />
-            </div>
-
-            {/* 4. Nutrition */}
-            <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
-            {/* 5. Communauté */}
-            <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
+          {/* 3. Orbe assistant (centre, mise en avant) */}
+          <div className="flex-1 flex items-center justify-center" data-tour-anchor="nav-assistant">
+            <NavOrb size={48} />
           </div>
+
+          {/* 4. Nutrition */}
+          <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
+          {/* 5. Communauté */}
+          <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
         </div>
       </nav>
 
