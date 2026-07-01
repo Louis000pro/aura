@@ -315,8 +315,8 @@ export function VolumeChart({ data }: { data: Array<{ label: string; cals: numbe
             <defs>
               {data.map((_, i) => (
                 <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={i === data.length - 1 ? "var(--accent)" : "#C4B5FD"} stopOpacity="1" />
-                  <stop offset="100%" stopColor={i === data.length - 1 ? "#818CF8" : "var(--accent)"} stopOpacity={i === data.length - 1 ? "0.9" : "0.5"} />
+                  <stop offset="0%" stopColor="#6FB0FF" stopOpacity={i === data.length - 1 ? "1" : "0.55"} />
+                  <stop offset="100%" stopColor="#2E6BE0" stopOpacity={i === data.length - 1 ? "0.95" : "0.4"} />
                 </linearGradient>
               ))}
             </defs>
@@ -380,8 +380,8 @@ export function WeightChart({
 
   const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
   const current = pts.at(-1)?.weight ?? null;
-  const lineColor = goalType === "masse" ? "#34D399" : "var(--accent)";
-  const gradColor = goalType === "masse" ? "#34D399" : "var(--accent)";
+  const lineColor = "#2BD4A0";   // Poids = teal (palette multicolore du dashboard)
+  const gradColor = "#2BD4A0";
 
   const W = 320, H = 110, PX = 32, PY = 14;
   const ws   = pts.map(p => p.weight);
@@ -451,8 +451,8 @@ export function WeightChart({
                 <button key={r} onClick={() => onRangeChange(r)}
                   className="px-2.5 py-1 text-[10px] font-semibold cursor-pointer"
                   style={{
-                    background: range === r ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "transparent",
-                    color: range === r ? "var(--text-1)" : "var(--text-3)",
+                    background: range === r ? "linear-gradient(135deg,#2BD4A0,#12A87E)" : "transparent",
+                    color: range === r ? "#06231B" : "var(--text-3)",
                   }}>
                   {r === "week" ? "7j" : "30j"}
                 </button>

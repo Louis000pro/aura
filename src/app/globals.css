@@ -66,16 +66,18 @@
   --accent: #C3AEFF;        --accent-rgb: 195, 174, 255;   /* violet adouci */
   --gold:   #E6C56E;        --gold-rgb:   230, 197, 110;
   --gold-soft: #3A2D12;     /* aplat doré profond & chaud (carte « Série ») */
-  --surface-rgb:     50, 42, 84;       /* panneau violet surélevé (un poil plus clair → cartes qui ressortent) */
-  --tint-violet-rgb: 58, 49, 94;
-  --tint-cream-rgb:  54, 46, 82;
+  --surface-rgb:     22, 18, 30;       /* carte sombre sur fond noir (distincte, discrète) */
+  --tint-violet-rgb: 40, 33, 60;
+  --tint-cream-rgb:  40, 33, 55;
   --violet-mid: #5A4B92;    --violet-mid-rgb: 90, 75, 146;
   --cream-mid:  #6E5CA0;    --cream-mid-rgb:  110, 92, 160;
   --glass-sheen: 188, 176, 236;
   --nav-fg-active: #F4F1FF;
   --nav-fg-inactive: #B3ABD2;
-  --page-bg: radial-gradient(120% 80% at 50% -6%, #2A2050 0%, #1A1338 44%, #130E28 100%);
-  --html-bg: #130E28;
+  /* Fond « complètement noir » (choix utilisateur) — un souffle de violet tout
+     en haut pour la profondeur, puis noir franc → les dégradés colorés claquent. */
+  --page-bg: radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000000 100%);
+  --html-bg: #000000;
 }
 
 @layer base {

@@ -99,8 +99,8 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
         <defs>
           <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="var(--accent)" />
-            <stop offset="100%" stopColor="var(--gold)" />
+            <stop offset="0%" stopColor="#FFD34E" />
+            <stop offset="100%" stopColor="#FF7A1A" />
           </linearGradient>
         </defs>
         <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--accent-rgb),0.18)" strokeWidth={strokeW} />
@@ -1048,32 +1048,32 @@ function Dashboard() {
               </AnimatePresence>
             </div>
             <div className="flex-1 grid grid-cols-2 gap-2.5">
-              {/* Série (mise en avant) */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "var(--gold-soft)", border: "1px solid rgba(var(--gold-rgb),0.4)", boxShadow: "0 4px 16px rgba(var(--gold-rgb),0.18)" }}>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-1)" }}><Flame size={12} strokeWidth={2} style={{ color: "var(--gold)" }} />Série</span>
-                <p className="mt-1 text-xl font-extrabold leading-none" style={{ color: "var(--text-1)" }}>
+              {/* Série — dégradé orange (flamme) */}
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 5px 16px rgba(232,98,12,0.4)" }}>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "#fff" }}><Flame size={12} strokeWidth={2} />Série</span>
+                <p className="mt-1 text-xl font-extrabold leading-none" style={{ color: "#fff" }}>
                   {liveStats.loaded && liveStats.streak > 0 ? liveStats.streak : "—"}
-                  {liveStats.streak > 0 && <span className="text-[11px] font-medium ml-1">{liveStats.streak > 1 ? "jours" : "jour"}</span>}
+                  {liveStats.streak > 0 && <span className="text-[11px] font-medium ml-1" style={{ opacity: 0.85 }}>{liveStats.streak > 1 ? "jours" : "jour"}</span>}
                 </p>
               </div>
-              {/* Séances */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgb(var(--tint-violet-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}><Dumbbell size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />Séances</span>
-                <p className="mt-1 text-xl font-semibold leading-none" style={{ color: "var(--text-1)" }}>
+              {/* Séances — dégradé violet → magenta */}
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 5px 16px rgba(147,60,200,0.4)" }}>
+                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "#fff" }}><Dumbbell size={12} strokeWidth={2} />Séances</span>
+                <p className="mt-1 text-xl font-semibold leading-none" style={{ color: "#fff" }}>
                   {liveStats.loaded ? liveStats.sessionsWeek : "—"}
-                  <span className="text-[11px] font-medium ml-1" style={{ color: "var(--text-3)" }}>/ sem</span>
+                  <span className="text-[11px] font-medium ml-1" style={{ opacity: 0.85 }}>/ sem</span>
                 </p>
               </div>
             </div>
           </div>
           {/* Calories mangées / brûlées */}
           <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}>
-            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-soft)" }}>
-              <Flame size={12} strokeWidth={2} style={{ color: "var(--gold)" }} />
+            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#FF8A66" }}>
+              <Flame size={12} strokeWidth={2} />
               {liveStats.calories > 0 ? `${liveStats.calories.toLocaleString("fr-FR")} kcal mangées` : "Aucun repas loggé"}
             </span>
             {liveStats.burned > 0 && (
-              <span className="text-xs" style={{ color: "var(--text-soft)" }}>{liveStats.burned.toLocaleString("fr-FR")} kcal brûlées</span>
+              <span className="text-xs font-medium" style={{ color: "#6FB0FF" }}>{liveStats.burned.toLocaleString("fr-FR")} kcal brûlées</span>
             )}
           </div>
         </button>
@@ -1103,11 +1103,11 @@ function Dashboard() {
             )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-            <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--accent)" }}>Du jour</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#FF9A3D" }}>Du jour</p>
             <p className="text-lg font-light leading-tight" style={{ color: "var(--text-0)" }}>Vidéo · Séance · Perf</p>
             <p className="text-[11px] font-light mt-1" style={{ color: "var(--text-soft)" }}>Tap pour explorer ton contenu</p>
             <div className="flex items-center gap-2 mt-2">
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "var(--gold)", boxShadow: "0 2px 8px rgba(var(--gold-rgb),0.35)" }}>
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 3px 12px rgba(232,98,12,0.4)" }}>
                 <Play size={10} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 0.5 }} fill="#fff" />
                 <span className="text-[11px] font-bold text-white">Voir</span>
               </span>
