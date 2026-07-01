@@ -20,7 +20,7 @@ export type WeightEntry = { date: string; weight: number; id?: string };
 export const CHART_CARD = {
   background: "rgb(var(--surface-rgb))",
   border: "1px solid rgba(var(--accent-rgb),0.12)",
-  boxShadow: "0 2px 14px rgba(0,0,0,0.05)",
+  boxShadow: "0 4px 22px rgba(var(--accent-rgb),0.10)",
 };
 
 /* ─── PRChart ────────────────────────────────────────────── */

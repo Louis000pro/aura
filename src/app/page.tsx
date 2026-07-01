@@ -105,6 +105,7 @@ function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
         </defs>
         <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--accent-rgb),0.18)" strokeWidth={strokeW} />
         <motion.circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="url(#scoreGrad)" strokeWidth={strokeW} strokeLinecap="round"
+          style={{ filter: "drop-shadow(0 0 5px rgba(var(--gold-rgb),0.55))" }}
           strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: circumference * (1 - score / 100) }}
           transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }} />
@@ -1019,7 +1020,7 @@ function Dashboard() {
           onClick={() => setShowStatsDrawer(true)}
           data-tour-anchor="stats"
           className="w-full text-left rounded-3xl p-4 outline-none active:opacity-95 transition-opacity"
-          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
+          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)" }}
         >
           <div className="flex items-center justify-between mb-4">
             <p className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>Aujourd&apos;hui</p>
@@ -1048,7 +1049,7 @@ function Dashboard() {
             </div>
             <div className="flex-1 grid grid-cols-2 gap-2.5">
               {/* Série (mise en avant) */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "rgba(var(--gold-rgb),0.14)", border: "1px solid rgba(var(--gold-rgb),0.32)" }}>
+              <div className="rounded-2xl px-3 py-2.5" style={{ background: "var(--gold-soft)", border: "1px solid rgba(var(--gold-rgb),0.4)", boxShadow: "0 4px 16px rgba(var(--gold-rgb),0.18)" }}>
                 <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-1)" }}><Flame size={12} strokeWidth={2} style={{ color: "var(--gold)" }} />Série</span>
                 <p className="mt-1 text-xl font-extrabold leading-none" style={{ color: "var(--text-1)" }}>
                   {liveStats.loaded && liveStats.streak > 0 ? liveStats.streak : "—"}
@@ -1084,7 +1085,7 @@ function Dashboard() {
           data-tour-anchor="votd"
           aria-label="Ouvrir Du Jour"
           className="w-full rounded-3xl p-2.5 flex items-stretch gap-3 outline-none active:opacity-95 transition-opacity overflow-hidden"
-          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
+          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)" }}
         >
           <div className="relative overflow-hidden rounded-2xl flex-shrink-0" style={{ width: 66, height: 92, background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)" }}>
             {dailyVideoUrl ? (
