@@ -95,14 +95,15 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
       <svg width="216" height="216" viewBox="0 0 216 216" style={{ transform: "rotate(-90deg)" }}>
         <defs>
           <linearGradient id="caloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stopColor="#A78BFA" />
-            <stop offset="55%"  stopColor="#C49BE8" />
-            <stop offset="100%" stopColor="#D4A843" />
+            <stop offset="0%"   stopColor="#FF7A1A" />
+            <stop offset="52%"  stopColor="#F5B120" />
+            <stop offset="100%" stopColor="#8B5CF6" />
           </linearGradient>
         </defs>
-        <circle cx="108" cy="108" r={R} fill="none" stroke="rgba(167,139,250,0.10)" strokeWidth={SW} />
+        <circle cx="108" cy="108" r={R} fill="none" stroke="rgba(var(--accent-rgb),0.16)" strokeWidth={SW} />
         <motion.circle cx="108" cy="108" r={R} fill="none"
           stroke="url(#caloGrad)" strokeWidth={SW} strokeLinecap="round"
+          style={{ filter: "drop-shadow(0 0 7px rgba(255,140,30,0.5))" }}
           strokeDasharray={C}
           initial={{ strokeDashoffset: C }}
           animate={{ strokeDashoffset: C * (1 - pct) }}
@@ -142,7 +143,7 @@ function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?
       {hint && (
         <p className="text-[11px] leading-snug mb-2 ml-4" style={{ color: "var(--text-3)" }}>{hint}</p>
       )}
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.14)" }}>
         <motion.div className="h-full rounded-full" style={{ background: color }}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
@@ -234,7 +235,7 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
       {/* Header + stepper */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Droplets size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+          <Droplets size={15} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
           <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Hydratation</span>
         </div>
         <div className="flex items-center gap-2">
@@ -249,12 +250,12 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
             onTouchCancel={stopHold}
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{
-              background: "rgba(167,139,250,0.10)",
-              border: "1px solid rgba(167,139,250,0.20)",
+              background: "rgba(var(--accent-rgb),0.10)",
+              border: "1px solid rgba(var(--accent-rgb),0.20)",
               opacity: waterMl === 0 ? 0.35 : 1,
             }}
           >
-            <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>−</span>
+            <span className="text-sm font-bold leading-none" style={{ color: "var(--accent)" }}>−</span>
           </motion.button>
 
           <span className="text-sm font-semibold tabular-nums text-center" style={{ color: "var(--text-1)", minWidth: 110 }}>
@@ -273,9 +274,9 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
             onTouchEnd={stopHold}
             onTouchCancel={stopHold}
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.20)" }}
+            style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.20)" }}
           >
-            <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
+            <span className="text-sm font-bold leading-none" style={{ color: "var(--accent)" }}>+</span>
           </motion.button>
         </div>
       </div>
@@ -292,10 +293,10 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
         onPointerMove={(e) => { if (e.buttons) applyFromX(e.clientX); }}
       >
         {/* Track */}
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.10)" }}>
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.10)" }}>
           <motion.div
             className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg,#A78BFA 0%,#7B5CC4 100%)" }}
+            style={{ background: "linear-gradient(90deg,var(--accent) 0%,#7B5CC4 100%)" }}
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.15, ease: "easeOut" }}
           />
@@ -305,8 +306,8 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
           <motion.div
             className="absolute top-1/2 w-3.5 h-3.5 rounded-full pointer-events-none"
             style={{
-              background: "linear-gradient(135deg,#A78BFA,#7B5CC4)",
-              boxShadow: "0 0 0 3px rgba(167,139,250,0.25), 0 1px 4px rgba(80,40,150,0.2)",
+              background: "linear-gradient(135deg,var(--accent),#7B5CC4)",
+              boxShadow: "0 0 0 3px rgba(var(--accent-rgb),0.25), 0 1px 4px rgba(80,40,150,0.2)",
               translateY: "-50%",
             }}
             animate={{ left: `calc(${pct}% - 7px)` }}
@@ -325,9 +326,9 @@ function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
             onClick={() => onAdd(ml)}
             className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl cursor-pointer"
             style={{
-              background: "rgba(167,139,250,0.07)",
-              border: "1px solid rgba(167,139,250,0.15)",
-              color: "#A78BFA",
+              background: "rgba(var(--accent-rgb),0.07)",
+              border: "1px solid rgba(var(--accent-rgb),0.15)",
+              color: "var(--accent)",
             }}
           >
             <Icon />
@@ -421,10 +422,9 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
   const reset = () => { setPhase("select"); setPhotoUrl(null); setEditData(null); setError(null); };
 
   const CARD_STYLE = {
-    background: "rgba(var(--surface-rgb),0.96)",
-    backdropFilter: "blur(12px)",
-    border: "1px solid rgba(var(--surface-rgb),0.9)",
-    boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.14)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -433,7 +433,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(16px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(16px)" }}
       onClick={onClose}>
 
       <motion.div
@@ -458,7 +458,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
@@ -489,8 +489,8 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                     onClick={() => camRef.current?.click()}
                     className="w-full py-5 rounded-2xl flex flex-col items-center gap-2 cursor-pointer"
                     style={{
-                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 20px rgba(167,139,250,0.25)",
+                      background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 20px rgba(var(--accent-rgb),0.25)",
                     }}>
                     <Camera size={26} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                     <span className="font-semibold text-sm" style={{ color: "var(--text-1)" }}>Prendre une photo</span>
@@ -503,10 +503,10 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                     onClick={() => fileRef.current?.click()}
                     className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
                     style={{
-                      background: "rgba(240,235,255,0.6)",
-                      border: "1px solid rgba(212,192,255,0.5)",
+                      background: "rgba(var(--tint-violet-rgb),0.6)",
+                      border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
                     }}>
-                    <Upload size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                    <Upload size={15} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                     <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
                   </motion.button>
                 </div>
@@ -531,7 +531,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                        <Loader2 size={36} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                        <Loader2 size={36} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                       </motion.div>
                       <motion.p
                         animate={{ opacity: [0.5, 1, 0.5] }}
@@ -545,7 +545,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 <div className="flex gap-4 w-full">
                   {["Calories", "Protéines", "Glucides"].map(l => (
                     <div key={l} className="flex-1 h-8 rounded-xl animate-pulse"
-                      style={{ background: "rgba(167,139,250,0.08)" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.08)" }} />
                   ))}
                 </div>
               </motion.div>
@@ -566,7 +566,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
                 {/* Food card */}
                 <div className="rounded-2xl p-4"
-                  style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-base leading-tight" style={{ color: "var(--text-1)" }}>
@@ -579,16 +579,16 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{editData.calories}</p>
+                      <p className="text-2xl font-light" style={{ color: "var(--accent)" }}>{editData.calories}</p>
                       <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { label: "Protéines", val: editData.proteins, color: "#A78BFA" },
+                      { label: "Protéines", val: editData.proteins, color: "var(--accent)" },
                       { label: "Glucides",  val: editData.carbs,    color: "#7B5CC4" },
-                      { label: "Lipides",   val: editData.fats,     color: "#D4A843" },
+                      { label: "Lipides",   val: editData.fats,     color: "var(--gold)" },
                     ].map(({ label, val, color }) => (
                       <div key={label} className="text-center rounded-xl py-2.5"
                         style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
@@ -609,7 +609,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                     <motion.button whileTap={{ scale: 0.9 }}
                       onClick={() => setPhase("edit")}
                       className="flex items-center gap-1 text-xs cursor-pointer"
-                      style={{ color: "#A78BFA" }}>
+                      style={{ color: "var(--accent)" }}>
                       <Edit2 size={10} strokeWidth={2} /> Modifier
                     </motion.button>
                   </div>
@@ -618,14 +618,14 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 <div className="flex gap-2">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                     Reprendre
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
                     className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                     style={{
-                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                      background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
                       color: "var(--text-1)",
                       boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                     }}>
@@ -659,7 +659,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                         [key]: type === "number" ? (parseInt(e.target.value) || 0) : e.target.value,
                       } : prev)}
                       className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                     />
                   </div>
                 ))}
@@ -674,11 +674,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                         className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                         style={{
                           background: editData.mealType === mt
-                            ? "linear-gradient(135deg,rgba(167,139,250,0.2),rgba(212,168,67,0.12))"
-                            : "rgba(240,235,255,0.4)",
+                            ? "linear-gradient(135deg,rgba(var(--accent-rgb),0.2),rgba(var(--gold-rgb),0.12))"
+                            : "rgba(var(--tint-violet-rgb),0.4)",
                           border: editData.mealType === mt
-                            ? "1px solid rgba(167,139,250,0.4)"
-                            : "1px solid rgba(212,192,255,0.3)",
+                            ? "1px solid rgba(var(--accent-rgb),0.4)"
+                            : "1px solid rgba(var(--violet-mid-rgb),0.3)",
                           color: editData.mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
                         <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
@@ -692,7 +692,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   onClick={() => setPhase("result")}
                   className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
                   style={{
-                    background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                    background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
                     color: "var(--text-1)",
                     boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                   }}>
@@ -887,10 +887,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   };
 
   const CARD_STYLE = {
-    background: "rgba(var(--surface-rgb),0.96)",
-    backdropFilter: "blur(12px)",
-    border: "1px solid rgba(var(--surface-rgb),0.9)",
-    boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.14)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -903,7 +902,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(16px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(16px)" }}
       onClick={onClose}>
 
       <motion.div
@@ -931,7 +930,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
@@ -966,12 +965,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         ["bottom-0 right-0","border-b-2 border-r-2 rounded-br-lg"]
                       ].map(([pos, cls], i) => (
                         <div key={i} className={`absolute w-6 h-6 ${pos} ${cls}`}
-                          style={{ borderColor: "#A78BFA" }} />
+                          style={{ borderColor: "var(--accent)" }} />
                       ))}
                       {/* Animated scan line */}
                       <motion.div
                         className="absolute left-1 right-1 h-px"
-                        style={{ background: "linear-gradient(90deg,transparent,#A78BFA,transparent)" }}
+                        style={{ background: "linear-gradient(90deg,transparent,var(--accent),transparent)" }}
                         animate={{ top: ["10%", "90%", "10%"] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                       />
@@ -993,7 +992,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                  <Loader2 size={36} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  <Loader2 size={36} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </motion.div>
                 <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.6, repeat: Infinity }}
                   className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
@@ -1011,7 +1010,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 {/* Bandeau d'info */}
                 {!estimated && (
                   <div className="flex items-start gap-2.5 px-3 py-3 rounded-2xl"
-                    style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
+                    style={{ background: "rgba(var(--gold-rgb),0.08)", border: "1px solid rgba(var(--gold-rgb),0.2)" }}>
                     <span className="text-sm mt-0.5">⚠️</span>
                     <p className="text-xs font-light leading-relaxed" style={{ color: "#92400E" }}>
                       {fallbackName
@@ -1036,7 +1035,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           placeholder="Ex : Yaourt grec Fage 0%, 150g…"
                           autoFocus
                           className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
+                          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                         />
                         <motion.button
                           whileTap={{ scale: 0.93 }}
@@ -1045,7 +1044,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                           style={{
                             background: fallbackName.trim() && !estimating
-                              ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
+                              ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
                               : "rgba(220,220,220,0.4)",
                             color: fallbackName.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
                             boxShadow: fallbackName.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
@@ -1073,12 +1072,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     <div className="flex gap-2 mt-1">
                       <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
                         className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.6)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
                         ↩ Rescanner
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.95 }} onClick={onClose}
                         className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.4)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.4)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                         Annuler
                       </motion.button>
                     </div>
@@ -1092,27 +1091,27 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                     {/* Macros estimées */}
                     <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-0.5">
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}>✨ IA</span>
+                              style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}>✨ IA</span>
                           </div>
                           <p className="font-semibold text-sm leading-tight" style={{ color: "var(--text-1)" }}>
                             {estimated.foodName}
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{estimated.calories}</p>
+                          <p className="text-2xl font-light" style={{ color: "var(--accent)" }}>{estimated.calories}</p>
                           <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          { label: "Protéines", val: estimated.proteins, color: "#A78BFA" },
+                          { label: "Protéines", val: estimated.proteins, color: "var(--accent)" },
                           { label: "Glucides",  val: estimated.carbs,    color: "#7B5CC4" },
-                          { label: "Lipides",   val: estimated.fats,     color: "#D4A843" },
+                          { label: "Lipides",   val: estimated.fats,     color: "var(--gold)" },
                         ].map(({ label, val, color }) => (
                           <div key={label} className="text-center rounded-xl py-2.5"
                             style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
@@ -1134,8 +1133,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             onClick={() => setEstimateMealType(mt)}
                             className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                             style={{
-                              background: estimateMealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
-                              border: estimateMealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
+                              background: estimateMealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
+                              border: estimateMealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
                               color: estimateMealType === mt ? "var(--text-1)" : "var(--text-2)",
                             }}>
                             <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
@@ -1149,14 +1148,14 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       <motion.button whileTap={{ scale: 0.95 }}
                         onClick={() => { setEstimated(null); setError(null); }}
                         className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.6)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.4)" }}>
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                         Modifier
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                         onClick={handleConfirmEstimate}
                         className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                         style={{
-                          background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                          background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
                           color: "var(--text-1)",
                           boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                         }}>
@@ -1176,7 +1175,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                 {/* Product card */}
                 <div className="flex items-center gap-3 p-3 rounded-2xl"
-                  style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   {product.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img loading="lazy" decoding="async" src={product.image} alt={product.name}
@@ -1184,8 +1183,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       style={{ background: "#fff" }} />
                   ) : (
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.1)" }}>
-                      <Barcode size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+                      <Barcode size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
@@ -1209,23 +1208,23 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     <motion.button whileTap={{ scale: 0.86 }}
                       onClick={() => adjustGrams(-10)}
                       className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <Minus size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+                      <Minus size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                     </motion.button>
                     <div className="flex-1 flex items-center gap-1">
                       <input
                         type="number" value={grams} min="1" max="2000"
                         onChange={e => setGrams(e.target.value)}
                         className="flex-1 text-center py-2 rounded-xl text-sm font-semibold outline-none"
-                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                       />
                       <span className="text-sm font-light" style={{ color: "var(--text-3)" }}>g</span>
                     </div>
                     <motion.button whileTap={{ scale: 0.86 }}
                       onClick={() => adjustGrams(10)}
                       className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <Plus size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+                      <Plus size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                     </motion.button>
                   </div>
                 </div>
@@ -1233,13 +1232,13 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 {/* Computed macros */}
                 <div className="grid grid-cols-4 gap-1.5">
                   {[
-                    { label: "Calories", val: `${computedMacros.calories}`, unit: "kcal", color: "#A78BFA" },
-                    { label: "Protéines", val: `${computedMacros.proteins}`, unit: "g", color: "#A78BFA" },
+                    { label: "Calories", val: `${computedMacros.calories}`, unit: "kcal", color: "var(--accent)" },
+                    { label: "Protéines", val: `${computedMacros.proteins}`, unit: "g", color: "var(--accent)" },
                     { label: "Glucides", val: `${computedMacros.carbs}`, unit: "g", color: "#7B5CC4" },
-                    { label: "Lipides", val: `${computedMacros.fats}`, unit: "g", color: "#D4A843" },
+                    { label: "Lipides", val: `${computedMacros.fats}`, unit: "g", color: "var(--gold)" },
                   ].map(({ label, val, unit, color }) => (
                     <div key={label} className="text-center rounded-xl py-2.5"
-                      style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(212,192,255,0.15)" }}>
+                      style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}>
                       <p className="text-sm font-semibold" style={{ color }}>{val}</p>
                       <p className="text-[9px] mt-0.5" style={{ color: "var(--text-3)" }}>{unit}</p>
                       <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
@@ -1258,8 +1257,8 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         onClick={() => setMealType(mt)}
                         className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                         style={{
-                          background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
-                          border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
+                          background: mealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
+                          border: mealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
                           color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
                         <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
@@ -1273,14 +1272,14 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 <div className="flex gap-2">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "var(--text-2)", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                     Rescanner
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
                     className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                     style={{
-                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                      background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
                       color: "var(--text-1)",
                       boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                     }}>
@@ -1358,7 +1357,7 @@ function ManualModal({ onClose, onAdd }: {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.45)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.45)", backdropFilter: "blur(12px)" }}
       onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.96 }}
@@ -1370,7 +1369,7 @@ function ManualModal({ onClose, onAdd }: {
           background: "rgba(var(--surface-rgb),0.96)",
           backdropFilter: "blur(12px)",
           border: "1px solid rgba(var(--surface-rgb),0.9)",
-          boxShadow: "0 20px 60px rgba(167,139,250,0.15)",
+          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)",
           maxHeight: "90dvh",
           overflowY: "auto",
         }}
@@ -1383,7 +1382,7 @@ function ManualModal({ onClose, onAdd }: {
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
@@ -1403,7 +1402,7 @@ function ManualModal({ onClose, onAdd }: {
                 placeholder="Ex : 5 madeleines et un bol de lait…"
                 autoFocus
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "var(--text-1)" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
               />
               <motion.button
                 whileTap={{ scale: 0.93 }}
@@ -1412,7 +1411,7 @@ function ManualModal({ onClose, onAdd }: {
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                 style={{
                   background: name.trim() && !estimating
-                    ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
+                    ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
                     : "rgba(220,220,220,0.4)",
                   color: name.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
                   boxShadow: name.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
@@ -1446,9 +1445,9 @@ function ManualModal({ onClose, onAdd }: {
               <motion.div
                 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                <Check size={12} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
-                <span className="text-xs font-medium" style={{ color: "#A78BFA" }}>
+                style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
+                <Check size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                <span className="text-xs font-medium" style={{ color: "var(--accent)" }}>
                   Estimation IA — vérifie et modifie si besoin
                 </span>
               </motion.div>
@@ -1468,11 +1467,11 @@ function ManualModal({ onClose, onAdd }: {
                   style={{ color: "var(--text-3)" }}>{label}</label>
                 <motion.input
                   type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                  animate={estimated && val ? { borderColor: "rgba(167,139,250,0.5)" } : {}}
+                  animate={estimated && val ? { borderColor: "rgba(var(--accent-rgb),0.5)" } : {}}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                   style={{
-                    background: estimated && val ? "rgba(240,235,255,0.6)" : "rgba(240,235,255,0.5)",
-                    border: "1px solid rgba(212,192,255,0.5)",
+                    background: estimated && val ? "rgba(var(--tint-violet-rgb),0.6)" : "rgba(var(--tint-violet-rgb),0.5)",
+                    border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
                     color: "var(--text-1)",
                   }}
                 />
@@ -1491,8 +1490,8 @@ function ManualModal({ onClose, onAdd }: {
                   onClick={() => setMealType(mt)}
                   className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                   style={{
-                    background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
-                    border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
+                    background: mealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
+                    border: mealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
                     color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                   }}>
                   <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
@@ -1507,7 +1506,7 @@ function ManualModal({ onClose, onAdd }: {
           onClick={submit} disabled={!valid}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
-            background: valid ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.45)",
+            background: valid ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.45)",
             color: valid ? "var(--text-1)" : "var(--text-3)",
             boxShadow: valid ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
           }}>
@@ -1539,11 +1538,11 @@ const WEEK_SHORT = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 
 function calBg(pct: number): React.CSSProperties {
   if (pct <= 0)   return {};
-  if (pct < 0.25) return { background: "rgba(212,192,255,0.28)" };
-  if (pct < 0.50) return { background: "rgba(167,139,250,0.38)" };
-  if (pct < 0.75) return { background: "rgba(167,139,250,0.58)" };
-  if (pct < 0.90) return { background: "rgba(167,139,250,0.76)" };
-  return { background: "linear-gradient(135deg,rgba(167,139,250,0.9) 0%,rgba(212,168,67,0.75) 100%)" };
+  if (pct < 0.25) return { background: "rgba(var(--violet-mid-rgb),0.28)" };
+  if (pct < 0.50) return { background: "rgba(var(--accent-rgb),0.38)" };
+  if (pct < 0.75) return { background: "rgba(var(--accent-rgb),0.58)" };
+  if (pct < 0.90) return { background: "rgba(var(--accent-rgb),0.76)" };
+  return { background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.9) 0%,rgba(var(--gold-rgb),0.75) 100%)" };
 }
 
 function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void }) {
@@ -1682,8 +1681,8 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           onClick={() => canPrev && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1))}
           disabled={!canPrev}
           className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
-          style={{ background: canPrev ? "rgba(240,235,255,0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
-            border: "1px solid rgba(212,192,255,0.3)", boxShadow: canPrev ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
+          style={{ background: canPrev ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
+            border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canPrev ? "0 2px 8px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
         >
           <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </motion.button>
@@ -1705,7 +1704,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               whileTap={{ scale: 0.9 }}
               onClick={() => setCalMonth(new Date(today.getFullYear(), today.getMonth(), 1))}
               className="text-[10px] font-semibold px-2.5 py-1.5 rounded-xl cursor-pointer"
-              style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}
+              style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)" }}
             >
               Auj.
             </motion.button>
@@ -1715,8 +1714,8 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             onClick={() => canNext && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1))}
             disabled={!canNext}
             className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: canNext ? "rgba(240,235,255,0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
-              border: "1px solid rgba(212,192,255,0.3)", boxShadow: canNext ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
+            style={{ background: canNext ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
+              border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canNext ? "0 2px 8px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
           >
             <ChevronRight size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
           </motion.button>
@@ -1726,7 +1725,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
       {loading ? (
         <div className="flex justify-center py-16">
           <motion.div className="w-5 h-5 rounded-full border-2"
-            style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+            style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
             animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
         </div>
       ) : (
@@ -1769,10 +1768,10 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                         cursor: isClickable ? "pointer" : "default",
                         opacity: !inMonth || isBeforeReg ? 0.2 : isFuture ? 0.4 : 1,
                         border: isToday
-                          ? "2px solid rgba(167,139,250,0.8)"
-                          : hasData ? "1px solid rgba(167,139,250,0.15)" : "1px solid rgba(212,192,255,0.12)",
+                          ? "2px solid rgba(var(--accent-rgb),0.8)"
+                          : hasData ? "1px solid rgba(var(--accent-rgb),0.15)" : "1px solid rgba(var(--violet-mid-rgb),0.12)",
                         ...calBg(pct),
-                        ...(isToday && !hasData ? { background: "rgba(240,235,255,0.5)" } : {}),
+                        ...(isToday && !hasData ? { background: "rgba(var(--tint-violet-rgb),0.5)" } : {}),
                       }}
                     >
                       {/* Date number */}
@@ -1795,10 +1794,10 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       {hasData && (
                         <div className="w-full px-1 mt-auto pt-0.5">
                           <div className="h-0.5 rounded-full overflow-hidden"
-                            style={{ background: highContrast ? "rgba(var(--surface-rgb),0.2)" : "rgba(167,139,250,0.15)" }}>
+                            style={{ background: highContrast ? "rgba(var(--surface-rgb),0.2)" : "rgba(var(--accent-rgb),0.15)" }}>
                             <div className="h-full rounded-full"
                               style={{ width: `${Math.min(pct*100,100)}%`,
-                                background: highContrast ? "rgba(var(--surface-rgb),0.7)" : "rgba(167,139,250,0.8)" }} />
+                                background: highContrast ? "rgba(var(--surface-rgb),0.7)" : "rgba(var(--accent-rgb),0.8)" }} />
                           </div>
                         </div>
                       )}
@@ -1812,7 +1811,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       {/* Today ring */}
                       {isToday && (
                         <div className="absolute inset-0 rounded-[10px] pointer-events-none"
-                          style={{ boxShadow: "inset 0 0 0 2px rgba(167,139,250,0.8)" }} />
+                          style={{ boxShadow: "inset 0 0 0 2px rgba(var(--accent-rgb),0.8)" }} />
                       )}
                     </motion.button>
                   );
@@ -1824,10 +1823,10 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           {/* Legend */}
           <div className="flex items-center gap-3 mt-3 flex-wrap">
             {[
-              { c: "rgba(212,192,255,0.4)",  l: "< 25 %"  },
-              { c: "rgba(167,139,250,0.45)", l: "25–50 %"  },
-              { c: "rgba(167,139,250,0.68)", l: "50–75 %"  },
-              { c: "linear-gradient(90deg,rgba(167,139,250,0.9),rgba(212,168,67,0.85))", l: "≥ 90 %" },
+              { c: "rgba(var(--violet-mid-rgb),0.4)",  l: "< 25 %"  },
+              { c: "rgba(var(--accent-rgb),0.45)", l: "25–50 %"  },
+              { c: "rgba(var(--accent-rgb),0.68)", l: "50–75 %"  },
+              { c: "linear-gradient(90deg,rgba(var(--accent-rgb),0.9),rgba(var(--gold-rgb),0.85))", l: "≥ 90 %" },
             ].map(({ c, l }) => (
               <div key={l} className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ background: c }} />
@@ -1844,15 +1843,15 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             {[
               { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
-              { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "#A78BFA" },
-              { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "#D4A843" },
+              { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "var(--accent)" },
+              { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "var(--gold)" },
               { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#38BDF8" },
             ].map(({ icon, label, val, unit, color }) => (
               <motion.div key={label}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-1.5 p-3.5 rounded-2xl"
                 style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.9)",
-                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(167,139,250,0.06), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
+                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.06), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
                 <span className="text-base">{icon}</span>
                 <div>
                   <span className="text-lg font-light leading-none" style={{ color }}>{val}</span>
@@ -1868,17 +1867,17 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             <motion.div
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="mt-4 p-4 rounded-2xl"
-              style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.22) 0%,rgba(245,230,163,0.16) 100%)",
-                border: "1px solid rgba(167,139,250,0.14)", backdropFilter: "blur(12px)" }}>
+              style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.22) 0%,rgba(var(--cream-mid-rgb),0.16) 100%)",
+                border: "1px solid rgba(var(--accent-rgb),0.14)", backdropFilter: "blur(12px)" }}>
               <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>
                 Depuis l'inscription
               </p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[
                   { val: allTracked.length, unit: "jours", label: "trackés",   color: "var(--text-1)" },
-                  { val: bestStreak,        unit: "jours", label: "meil. série",color: "#A78BFA" },
+                  { val: bestStreak,        unit: "jours", label: "meil. série",color: "var(--accent)" },
                   { val: globalAvgCal > 0 ? globalAvgCal.toLocaleString("fr-FR") : "—",
-                    unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "#D4A843" },
+                    unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "var(--gold)" },
                 ].map(({ val, unit, label, color }) => (
                   <div key={label}>
                     <p className="text-xl font-extralight leading-tight" style={{ color }}>
@@ -2113,10 +2112,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
     .filter(g => g.meals.length > 0);
 
   const CARD = {
-    background: "rgba(var(--surface-rgb),0.78)",
-    backdropFilter: "blur(10px)",
-    border: "1px solid rgba(var(--surface-rgb),0.9)",
-    boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.12)",
+    boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)",
   };
 
   return (
@@ -2134,7 +2132,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             <button
               onClick={() => window.history.back()}
               className="flex items-center gap-1.5 mb-3 text-xs font-semibold"
-              style={{ color: "#A78BFA" }}
+              style={{ color: "var(--accent)" }}
             >
               <ChevronLeft size={14} strokeWidth={2.5} />
               Progression
@@ -2146,7 +2144,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           <h1 className="text-3xl font-extralight" style={{ color: "var(--text-1)" }}>
             Suivi{" "}
             <em className="not-italic font-light" style={{
-              background: "linear-gradient(135deg,#A78BFA,#D4A843)",
+              background: "linear-gradient(135deg,var(--accent),var(--gold))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
             }}>
@@ -2158,9 +2156,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           <motion.div
             initial={{ scale: 0.8 }} animate={{ scale: 1 }}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full"
-            style={{ background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)" }}>
-            <span style={{ color: "#D4A843", fontSize: 11 }}>★</span>
-            <span className="text-xs font-semibold" style={{ color: "#D4A843" }}>14 j</span>
+            style={{ background: "rgba(var(--gold-rgb),0.12)", border: "1px solid rgba(var(--gold-rgb),0.25)" }}>
+            <span style={{ color: "var(--gold)", fontSize: 11 }}>★</span>
+            <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>14 j</span>
           </motion.div>
           {/* Barcode CTA */}
           <motion.button
@@ -2168,12 +2166,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             onClick={() => setShowBarcode(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
             style={{
-              background: "rgba(240,235,255,0.85)",
-              border: "1px solid rgba(167,139,250,0.3)",
-              boxShadow: "0 2px 10px rgba(167,139,250,0.15)",
+              background: "rgba(var(--accent-rgb),0.12)",
+              border: "1px solid rgba(var(--accent-rgb),0.3)",
             }}>
-            <Barcode size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#A78BFA" }}>
+            <Barcode size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+            <span className="text-xs font-semibold hidden sm:block" style={{ color: "var(--accent)" }}>
               Code-barres
             </span>
           </motion.button>
@@ -2184,11 +2181,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             onClick={() => setShowPhoto(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
             style={{
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+              boxShadow: "0 4px 16px rgba(147,60,200,0.45)",
             }}>
-            <Camera size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "var(--text-1)" }}>
+            <Camera size={16} strokeWidth={1.5} style={{ color: "#fff" }} />
+            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#fff" }}>
               Photo IA
             </span>
           </motion.button>
@@ -2211,10 +2208,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               onClick={() => setCalView(v)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all duration-200"
               style={{
-                background: active ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(240,235,255,0.6)",
-                color: active ? "var(--text-1)" : "var(--text-3)",
-                boxShadow: active ? "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
-                border: active ? "none" : "1px solid rgba(212,192,255,0.3)",
+                background: active ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--accent-rgb),0.10)",
+                color: active ? "#fff" : "var(--text-3)",
+                boxShadow: active ? "0 4px 14px rgba(147,60,200,0.4)" : "none",
+                border: active ? "none" : "1px solid rgba(var(--accent-rgb),0.2)",
               }}
             >
               <Icon size={13} strokeWidth={1.8} />
@@ -2252,8 +2249,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               onClick={() => setSelectedDate(day)}
               className="flex flex-col items-center gap-1 w-10 py-2 rounded-2xl cursor-pointer"
               style={{
-                background: isSel ? "linear-gradient(135deg,#A78BFA 0%,#9270E0 100%)" : "transparent",
-                boxShadow: isSel ? "0 4px 14px rgba(167,139,250,0.38)" : "none",
+                background: isSel ? "linear-gradient(135deg,var(--accent) 0%,#9270E0 100%)" : "transparent",
+                boxShadow: isSel ? "0 4px 14px rgba(var(--accent-rgb),0.38)" : "none",
               }}>
               <span className="text-[9px] font-semibold"
                 style={{ color: isSel ? "rgba(var(--surface-rgb),0.65)" : "var(--text-3)" }}>
@@ -2263,7 +2260,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 {day.getDate()}
               </span>
               <div className="w-1 h-1 rounded-full" style={{
-                background: isSel ? "rgba(var(--surface-rgb),0.55)" : (isPast || isToday) ? "#A78BFA" : "transparent",
+                background: isSel ? "rgba(var(--surface-rgb),0.55)" : (isPast || isToday) ? "var(--accent)" : "transparent",
               }} />
             </motion.button>
           );
@@ -2281,9 +2278,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       )}
       {calView === "journal" && !user && !isLoading && (
         <div className="max-w-5xl mb-4 px-4 py-3 rounded-2xl flex items-center gap-3"
-          style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
+          style={{ background: "rgba(var(--gold-rgb),0.08)", border: "1px solid rgba(var(--gold-rgb),0.2)" }}>
           <span style={{ fontSize: 16 }}>🔒</span>
-          <p className="text-xs font-medium" style={{ color: "#D4A843" }}>
+          <p className="text-xs font-medium" style={{ color: "var(--gold)" }}>
             Connecte-toi pour synchroniser tes repas sur tous tes appareils
           </p>
         </div>
@@ -2304,9 +2301,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               <CalorieRing consumed={totalCals} goal={goals.calories} />
               <div className="w-full grid grid-cols-3 gap-2 text-center">
                 {[
-                  { label: "RESTANT", val: remaining, color: "#A78BFA" },
-                  { label: "BRÛLÉ",   val: goals.burned, color: "#D4A843" },
-                  { label: "OBJECTIF",val: goals.calories, color: "var(--text-1)" },
+                  { label: "RESTANT", val: remaining, color: "#2BD4A0" },
+                  { label: "BRÛLÉ",   val: goals.burned, color: "#FF7A1A" },
+                  { label: "OBJECTIF",val: goals.calories, color: "#B79CFF" },
                 ].map(({ label, val, color }) => (
                   <div key={label}>
                     <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5"
@@ -2337,15 +2334,15 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                   Les 3 familles d&apos;aliments qui composent ton assiette
                 </p>
               </div>
-              <button className="text-xs font-semibold cursor-pointer flex-shrink-0" style={{ color: "#A78BFA" }}>
+              <button className="text-xs font-semibold cursor-pointer flex-shrink-0" style={{ color: "var(--accent)" }}>
                 Ajuster
               </button>
             </div>
             <div className="flex flex-col gap-4">
-              <MacroBar label="Protéines" hint="Pour construire tes muscles"     consumed={totalProt}  goal={goals.proteins} color="#A78BFA" />
-              <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#7B5CC4" />
-              <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#D4A843" />
-              <div style={{ height: 1, background: "rgba(167,139,250,0.08)" }} />
+              <MacroBar label="Protéines" hint="Pour construire tes muscles"     consumed={totalProt}  goal={goals.proteins} color="#B79CFF" />
+              <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#FF9A3D" />
+              <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#2BD4A0" />
+              <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.08)" }} />
               <HydrationWidget
                 waterMl={waterMl}
                 goalMl={2000}
@@ -2377,9 +2374,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 onClick={() => setShowBarcode(true)}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
-                  background: "rgba(240,235,255,0.7)",
-                  color: "#A78BFA",
-                  border: "1px solid rgba(167,139,250,0.25)",
+                  background: "rgba(var(--tint-violet-rgb),0.7)",
+                  color: "var(--accent)",
+                  border: "1px solid rgba(var(--accent-rgb),0.25)",
                 }}>
                 <Barcode size={12} strokeWidth={2} />
                 Scanner
@@ -2389,7 +2386,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 onClick={() => setShowPhoto(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                  background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
                   color: "var(--text-1)",
                   boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}>
@@ -2401,9 +2398,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 onClick={() => setShowManual(true)}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
-                  background: "rgba(240,235,255,0.7)",
+                  background: "rgba(var(--tint-violet-rgb),0.7)",
                   color: "var(--text-2)",
-                  border: "1px solid rgba(212,192,255,0.4)",
+                  border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
                 }}>
                 <Plus size={12} strokeWidth={2.5} />
                 Manuel
@@ -2436,13 +2433,13 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                       onClick={() => onChipTap(r)}
                       className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer"
                       style={{
-                        background: pin ? "rgba(244,194,231,0.30)" : "rgba(240,235,255,0.6)",
-                        border: pin ? "1px solid rgba(236,153,201,0.55)" : "1px solid rgba(212,192,255,0.4)",
+                        background: pin ? "rgba(244,194,231,0.30)" : "rgba(var(--tint-violet-rgb),0.6)",
+                        border: pin ? "1px solid rgba(236,153,201,0.55)" : "1px solid rgba(var(--violet-mid-rgb),0.4)",
                         WebkitTouchCallout: "none",
                       }}>
                       <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: "rgba(167,139,250,0.15)" }}>
-                        <Plus size={11} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+                        style={{ background: "rgba(var(--accent-rgb),0.15)" }}>
+                        <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-medium leading-tight flex items-center gap-1" style={{ color: "var(--text-1)", whiteSpace: "nowrap" }}>
@@ -2467,7 +2464,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           {meals.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 gap-4">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(167,139,250,0.08)" }}>
+                style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
                 <Camera size={24} strokeWidth={1.5} style={{ color: "#C4B5FD" }} />
               </div>
               <div className="text-center">
@@ -2482,7 +2479,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                 onClick={() => setShowPhoto(true)}
                 className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                  background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
                   color: "var(--text-1)",
                   boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}>
@@ -2501,7 +2498,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                     <div className="flex items-center gap-2 mb-3">
                       <span style={{ fontSize: 15 }}>{group.icon}</span>
                       <p className="text-sm font-semibold" style={{ color: "var(--text-2)" }}>{group.label}</p>
-                      <div className="flex-1 h-px" style={{ background: "rgba(167,139,250,0.1)" }} />
+                      <div className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
                       <p className="text-xs font-medium" style={{ color: "var(--text-3)" }}>
                         {group.meals.reduce((s, m) => s + m.calories, 0)} kcal
                       </p>
@@ -2517,14 +2514,14 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                           className="flex items-center gap-3 p-3 rounded-2xl group"
                           style={{
                             background: "rgba(250,249,255,0.7)",
-                            border: "1px solid rgba(167,139,250,0.06)",
+                            border: "1px solid rgba(var(--accent-rgb),0.06)",
                           }}>
 
                           {/* Icon */}
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: meal.hasPhoto ? "rgba(167,139,250,0.12)" : "rgba(167,139,250,0.07)" }}>
+                            style={{ background: meal.hasPhoto ? "rgba(var(--accent-rgb),0.12)" : "rgba(var(--accent-rgb),0.07)" }}>
                             {meal.hasPhoto
-                              ? <Camera size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                              ? <Camera size={14} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                               : <span style={{ fontSize: 15 }}>{group.icon}</span>
                             }
                           </div>
@@ -2539,7 +2536,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                               {meal.proteins > 0 && (
                                 <>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full"
-                                    style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA" }}>
+                                    style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)" }}>
                                     P {meal.proteins}g
                                   </span>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full"
@@ -2547,7 +2544,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                                     G {meal.carbs}g
                                   </span>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full hidden sm:inline-block"
-                                    style={{ background: "rgba(212,168,67,0.1)", color: "#D4A843" }}>
+                                    style={{ background: "rgba(var(--gold-rgb),0.1)", color: "var(--gold)" }}>
                                     L {meal.fats}g
                                   </span>
                                 </>
@@ -2602,10 +2599,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(10px)",
               border: "1px solid rgba(var(--surface-rgb),0.9)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.2)",
+              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)",
               whiteSpace: "nowrap",
             }}>
-            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
+            <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
             <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
           </motion.div>
         )}
