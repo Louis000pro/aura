@@ -4200,11 +4200,12 @@ function CommunautePageInner() {
             </h1>
           </Link>
         ) : (
-          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
+          <h1 className="text-2xl font-extralight tracking-tight min-w-0 truncate" style={{ color: "var(--text-1)" }}>
             Communauté
           </h1>
         )}
-        <div className="flex items-center gap-2">
+        {/* mr mobile : réserve la place du header global (cloche + avatar en haut à droite) pour éviter le chevauchement */}
+        <div className="flex items-center gap-2 flex-shrink-0 mr-[90px] md:mr-0">
           {view === "thread" ? (
             <motion.button
               whileTap={{ scale: 0.9 }}
