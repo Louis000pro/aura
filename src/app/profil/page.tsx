@@ -8,8 +8,9 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
-  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2,
+  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2, Award,
 } from "lucide-react";
+import Badges from "@/components/Badges";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import VideoPlayer from "@/components/VideoPlayer";
 import FollowListModal from "@/components/FollowListModal";
@@ -1370,7 +1371,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages" | "enregistres">("performances");
+  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages" | "enregistres" | "badges">("performances");
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
@@ -2068,6 +2069,7 @@ export default function ProfilPage() {
             { id: "seances"      as const, Icon: Film,     label: "Vidéos" },
             { id: "enregistres"  as const, Icon: Bookmark, label: "Enregistrés" },
             { id: "reglages"     as const, Icon: Dumbbell, label: "Séances" },
+            { id: "badges"       as const, Icon: Award,    label: "Badges" },
           ]).map(({ id, Icon, label }) => (
             <motion.button
               key={id}
@@ -2431,6 +2433,19 @@ export default function ProfilPage() {
                 ))}
               </div>
             )}
+          </motion.div>
+        )}
+
+        {activeTab === "badges" && (
+          <motion.div
+            key="badges"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-3xl mx-auto"
+          >
+            <Badges />
           </motion.div>
         )}
 
