@@ -33,16 +33,16 @@ type Tab = "tout" | "comptes" | "seances";
 /* ─── Hardcoded trending tags ────────────────────────────────── */
 const TRENDING_TAGS = [
   { tag: "#Force",     icon: <Dumbbell size={14} strokeWidth={1.5} />,  color: "#A78BFA" },
-  { tag: "#Cardio",    icon: <Activity  size={14} strokeWidth={1.5} />,  color: "#F97316" },
-  { tag: "#Nutrition", icon: <Salad     size={14} strokeWidth={1.5} />,  color: "#22C55E" },
-  { tag: "#Mobilité",  icon: <Zap       size={14} strokeWidth={1.5} />,  color: "#EAB308" },
+  { tag: "#Cardio",    icon: <Activity  size={14} strokeWidth={1.5} />,  color: "#E8620C" },
+  { tag: "#Nutrition", icon: <Salad     size={14} strokeWidth={1.5} />,  color: "#2BD4A0" },
+  { tag: "#Mobilité",  icon: <Zap       size={14} strokeWidth={1.5} />,  color: "#2BD4A0" },
 ];
 
 /* ─── Difficulty pill ────────────────────────────────────────── */
 const DIFFICULTY_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  debutant:      { bg: "rgba(34,197,94,0.12)",  color: "#16A34A", label: "Débutant" },
-  intermédiaire: { bg: "rgba(234,179,8,0.12)",  color: "#B45309", label: "Intermédiaire" },
-  intermediaire: { bg: "rgba(234,179,8,0.12)",  color: "#B45309", label: "Intermédiaire" },
+  debutant:      { bg: "rgba(43,212,160,0.12)",  color: "#2BD4A0", label: "Débutant" },
+  intermédiaire: { bg: "rgba(232,98,12,0.12)",  color: "#E8620C", label: "Intermédiaire" },
+  intermediaire: { bg: "rgba(232,98,12,0.12)",  color: "#E8620C", label: "Intermédiaire" },
   avancé:        { bg: "rgba(239,68,68,0.12)",  color: "#DC2626", label: "Avancé" },
   avance:        { bg: "rgba(239,68,68,0.12)",  color: "#DC2626", label: "Avancé" },
 };

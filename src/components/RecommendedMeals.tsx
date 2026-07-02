@@ -318,11 +318,11 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
                 title="Ajouter à mon journal"
                 className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                 style={{
-                  background: added ? "rgba(52,211,153,0.18)" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
+                  background: added ? "rgba(43,212,160,0.18)" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
                   boxShadow: added ? "none" : "inset 0 1px 0 rgba(255,255,255,0.8)",
                 }}>
                 {added
-                  ? <Check size={13} strokeWidth={2.5} style={{ color: "#34D399" }} />
+                  ? <Check size={13} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />
                   : <Plus size={13} strokeWidth={2.5} style={{ color: "#2D3748" }} />}
               </motion.button>
             )}

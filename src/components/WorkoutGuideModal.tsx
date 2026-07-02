@@ -983,9 +983,9 @@ export default function WorkoutGuideModal({
                             initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                             className="px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase"
                             style={{
-                              background: hiitSub === "work" ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)",
-                              color:      hiitSub === "work" ? "#EF4444"              : "#10B981",
-                              border: `1px solid ${hiitSub === "work" ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)"}`,
+                              background: hiitSub === "work" ? "rgba(239,68,68,0.08)" : "rgba(43,212,160,0.08)",
+                              color:      hiitSub === "work" ? "#EF4444"              : "#2BD4A0",
+                              border: `1px solid ${hiitSub === "work" ? "rgba(239,68,68,0.2)" : "rgba(43,212,160,0.2)"}`,
                             }}
                           >
                             {hiitSub === "work" ? "⚡ Effort !" : "✓ Repos"}
@@ -1000,7 +1000,7 @@ export default function WorkoutGuideModal({
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                             <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(167,139,250,0.12)" strokeWidth="5" />
                             <motion.circle cx="50" cy="50" r={CR} fill="none"
-                              stroke={isHiit ? (hiitSub === "work" ? "#EF4444" : "#10B981") : accent}
+                              stroke={isHiit ? (hiitSub === "work" ? "#EF4444" : "#2BD4A0") : accent}
                               strokeWidth="5" strokeLinecap="round"
                               strokeDasharray={CC}
                               animate={{ strokeDashoffset: paused ? undefined : autoOffset }}
@@ -1198,10 +1198,10 @@ export default function WorkoutGuideModal({
                     <motion.div
                       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl"
-                      style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}
+                      style={{ background: "rgba(43,212,160,0.08)", border: "1px solid rgba(43,212,160,0.2)" }}
                     >
-                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "#10B981" }} />
-                      <span className="text-[11px] font-medium" style={{ color: "#10B981" }}>
+                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "#2BD4A0" }} />
+                      <span className="text-[11px] font-medium" style={{ color: "#2BD4A0" }}>
                         Séance enregistrée dans ton profil
                       </span>
                     </motion.div>
@@ -1311,7 +1311,7 @@ export default function WorkoutGuideModal({
                 {shareStatus === "done" && (
                   <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                     className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
-                    style={{ background: "rgba(16,185,129,0.08)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}
+                    style={{ background: "rgba(43,212,160,0.08)", color: "#2BD4A0", border: "1px solid rgba(43,212,160,0.2)" }}
                   >
                     ✓ Séance publiée — visible par tes amis
                   </motion.div>

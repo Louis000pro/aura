@@ -73,9 +73,9 @@ function notifText(n: Notification): string {
 function TypeBadge({ type }: { type: NotifType }) {
   const cfgMap = {
     like:    { icon: <Heart size={9} fill="currentColor" />, bg: "#FEE2E2", color: "#EF4444" },
-    comment: { icon: <MessageCircle size={9} />,            bg: "#DBEAFE", color: "#3B82F6" },
+    comment: { icon: <MessageCircle size={9} />,            bg: "#DBEAFE", color: "#8B5CF6" },
     follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(212,192,255,0.6)", color: "#A78BFA" },
-    repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(52,211,153,0.2)",   color: "#34D399" },
+    repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(43,212,160,0.2)",   color: "#2BD4A0" },
     mention: { icon: <AtSign size={9} />,                   bg: "rgba(212,192,255,0.6)",  color: "#A78BFA" },
   };
   const cfg = cfgMap[type] ?? cfgMap.like;

@@ -129,17 +129,19 @@ const CHALLENGES: Challenge[] = [
 
 /* ─── Style helpers ─────────────────────────────────────── */
 const categoryConfig: Record<ChallengeCategory, { label: string; color: string; bg: string }> = {
-  musculation: { label: "Musculation", color: "#A78BFA", bg: "rgba(167,139,250,0.15)" },
-  cardio:      { label: "Cardio",      color: "#F87171", bg: "rgba(248,113,113,0.15)" },
-  yoga:        { label: "Yoga",        color: "#34D399", bg: "rgba(52,211,153,0.15)"  },
-  nutrition:   { label: "Nutrition",   color: "#FBBF24", bg: "rgba(251,191,36,0.15)"  },
-  mobilite:    { label: "Mobilité",    color: "#60A5FA", bg: "rgba(96,165,250,0.15)"  },
-  course:      { label: "Course",      color: "#38BDF8", bg: "rgba(56,189,248,0.15)"  },
+  // Système D — musculation = violet, cardio/course = orange (énergie), yoga/mobilité/nutrition = teal (corps/bien-être)
+  musculation: { label: "Musculation", color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
+  cardio:      { label: "Cardio",      color: "#E8620C", bg: "rgba(232,98,12,0.15)"  },
+  yoga:        { label: "Yoga",        color: "#2BD4A0", bg: "rgba(43,212,160,0.15)" },
+  nutrition:   { label: "Nutrition",   color: "#2BD4A0", bg: "rgba(43,212,160,0.15)" },
+  mobilite:    { label: "Mobilité",    color: "#2BD4A0", bg: "rgba(43,212,160,0.15)" },
+  course:      { label: "Course",      color: "#E8620C", bg: "rgba(232,98,12,0.15)"  },
 };
 
 const difficultyConfig: Record<ChallengeDifficulty, { label: string; color: string; bg: string }> = {
-  facile:    { label: "Facile",    color: "#34D399", bg: "rgba(52,211,153,0.15)"  },
-  moyen:     { label: "Moyen",     color: "#FBBF24", bg: "rgba(251,191,36,0.15)"  },
+  // Système D — échelle d'intensité : facile = teal, moyen = orange, difficile = rouge (danger conservé)
+  facile:    { label: "Facile",    color: "#2BD4A0", bg: "rgba(43,212,160,0.15)"  },
+  moyen:     { label: "Moyen",     color: "#E8620C", bg: "rgba(232,98,12,0.15)"   },
   difficile: { label: "Difficile", color: "#F87171", bg: "rgba(248,113,113,0.15)" },
 };
 

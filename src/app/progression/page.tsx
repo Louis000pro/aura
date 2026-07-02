@@ -399,7 +399,7 @@ function CameraCapture({
               onClick={startRecording}
               className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
               style={{
-                background: "linear-gradient(135deg, #FBBF24dd, #F59E0Bdd)",
+                background: "linear-gradient(135deg, #F5B120dd, #E8620Cdd)",
                 boxShadow: "0 0 0 4px rgba(251,191,36,0.22), 0 6px 20px rgba(251,191,36,0.30)",
               }}
               aria-label="Démarrer l'enregistrement"

@@ -1805,7 +1805,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       {/* Water dot */}
                       {!!s && s.water_ml >= 500 && (
                         <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
-                          style={{ background: highContrast ? "rgba(var(--surface-rgb),0.8)" : "#38BDF8" }} />
+                          style={{ background: highContrast ? "rgba(var(--surface-rgb),0.8)" : "#2BD4A0" }} />
                       )}
 
                       {/* Today ring */}
@@ -1834,7 +1834,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               </div>
             ))}
             <div className="flex items-center gap-1 ml-auto">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#38BDF8" }} />
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#2BD4A0" }} />
               <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>eau ≥ 500 ml</span>
             </div>
           </div>
@@ -1845,7 +1845,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
               { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "var(--accent)" },
               { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "var(--gold)" },
-              { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#38BDF8" },
+              { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#2BD4A0" },
             ].map(({ icon, label, val, unit, color }) => (
               <motion.div key={label}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -2443,7 +2443,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
                       </div>
                       <div className="text-left">
                         <p className="text-xs font-medium leading-tight flex items-center gap-1" style={{ color: "var(--text-1)", whiteSpace: "nowrap" }}>
-                          {pin && <Heart size={9} strokeWidth={2.5} style={{ color: "#EC4899", fill: "#EC4899" }} />}
+                          {pin && <Heart size={9} strokeWidth={2.5} style={{ color: "#8B5CF6", fill: "#8B5CF6" }} />}
                           {r.name}
                         </p>
                         <p className="text-[9px] leading-tight" style={{ color: "var(--text-3)" }}>

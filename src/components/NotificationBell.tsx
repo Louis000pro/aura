@@ -35,8 +35,8 @@ function notifLabel(n: Notif): string {
 function NotifIcon({ type }: { type: NotifType }) {
   const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
     like:    { icon: <Heart size={9} fill="currentColor" />,    bg: "#FEE2E2", color: "#EF4444" },
-    comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#3B82F6" },
-    repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#10B981" },
+    comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#8B5CF6" },
+    repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#2BD4A0" },
     follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(212,192,255,0.6)", color: "#A78BFA" },
   };
   const c = cfg[type];

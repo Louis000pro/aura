@@ -189,8 +189,8 @@ function runAnalysis(id: ExerciseId, lm: Landmark[], phase: "up" | "down"): Anal
 
 /* ─── Feedback icon ──────────────────────────────────────────────── */
 function FeedIcon({ type }: { type: MsgType }) {
-  if (type === "good")  return <CheckCircle  size={14} style={{ color: "#059669", flexShrink: 0 }} />;
-  if (type === "warn")  return <AlertTriangle size={14} style={{ color: "#D97706", flexShrink: 0 }} />;
+  if (type === "good")  return <CheckCircle  size={14} style={{ color: "#12A87E", flexShrink: 0 }} />;
+  if (type === "warn")  return <AlertTriangle size={14} style={{ color: "#E8620C", flexShrink: 0 }} />;
   return <XCircle size={14} style={{ color: "#DC2626", flexShrink: 0 }} />;
 }
 
@@ -405,7 +405,7 @@ export default function ExerciseAnalyzer() {
     reset();
   };
 
-  const scoreColor = score >= 80 ? "#34D399" : score >= 55 ? "#FBBF24" : "#F87171";
+  const scoreColor = score >= 80 ? "#2BD4A0" : score >= 55 ? "#E8620C" : "#F87171";
   const ex = EXERCISES.find(e => e.id === selected)!;
 
   return (
@@ -504,7 +504,7 @@ export default function ExerciseAnalyzer() {
           <motion.div key={phase} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
             className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-widest"
             style={{
-              background: phase === "down" ? "rgba(99,102,241,0.82)" : "rgba(52,211,153,0.82)",
+              background: phase === "down" ? "rgba(99,102,241,0.82)" : "rgba(43,212,160,0.82)",
               color: "#fff", backdropFilter: "blur(6px)",
             }}>
             {phase === "down" ? "BAS" : "HAUT"}
@@ -541,11 +541,11 @@ export default function ExerciseAnalyzer() {
               transition={{ duration: 0.2 }}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl"
               style={{
-                background: msg.type === "good" ? "rgba(52,211,153,0.08)" : msg.type === "warn" ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)",
-                border: `1px solid ${msg.type === "good" ? "rgba(52,211,153,0.25)" : msg.type === "warn" ? "rgba(251,191,36,0.25)" : "rgba(248,113,113,0.25)"}`,
+                background: msg.type === "good" ? "rgba(43,212,160,0.08)" : msg.type === "warn" ? "rgba(232,98,12,0.08)" : "rgba(248,113,113,0.08)",
+                border: `1px solid ${msg.type === "good" ? "rgba(43,212,160,0.25)" : msg.type === "warn" ? "rgba(232,98,12,0.25)" : "rgba(248,113,113,0.25)"}`,
               }}>
               <FeedIcon type={msg.type} />
-              <p className="text-sm font-medium" style={{ color: msg.type === "good" ? "#059669" : msg.type === "warn" ? "#D97706" : "#DC2626" }}>
+              <p className="text-sm font-medium" style={{ color: msg.type === "good" ? "#12A87E" : msg.type === "warn" ? "#E8620C" : "#DC2626" }}>
                 {msg.text}
               </p>
             </motion.div>

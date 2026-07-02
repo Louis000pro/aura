@@ -1147,7 +1147,7 @@ export default function PublicProfilePage() {
                       <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
                         onClick={() => toggleRepost(post.id)} className="flex items-center cursor-pointer">
                         <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                          <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "#2D3748" }} />
+                          <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#2BD4A0" : "#2D3748" }} />
                         </motion.div>
                       </motion.button>
 
@@ -1443,7 +1443,7 @@ export default function PublicProfilePage() {
                           <Repeat2
                             size={20}
                             strokeWidth={1.5}
-                            style={{ color: reposted ? "#34D399" : "#2D3748" }}
+                            style={{ color: reposted ? "#2BD4A0" : "#2D3748" }}
                           />
                         </motion.div>
                       </motion.button>

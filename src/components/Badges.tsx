@@ -235,7 +235,7 @@ const rarityConfig = {
   common:    { label: "Commun",    color: "var(--text-3)", glow: "rgba(160,174,192,0.4)",  gradient: "linear-gradient(135deg, rgba(240,240,240,0.9), rgba(220,220,220,0.9))" },
   rare:      { label: "Rare",      color: "var(--accent)", glow: "rgba(var(--accent-rgb),0.5)",  gradient: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.9), rgba(var(--accent-rgb),0.7))" },
   epic:      { label: "Épique",    color: "var(--gold)", glow: "rgba(var(--gold-rgb),0.5)",   gradient: "linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.9), rgba(var(--gold-rgb),0.7))" },
-  legendary: { label: "Légendaire",color: "#F97316", glow: "rgba(249,115,22,0.55)",  gradient: "linear-gradient(135deg, rgba(254,215,170,0.9), rgba(249,115,22,0.7))" },
+  legendary: { label: "Légendaire",color: "#E8620C", glow: "rgba(249,115,22,0.55)",  gradient: "linear-gradient(135deg, rgba(254,215,170,0.9), rgba(249,115,22,0.7))" },
 };
 
 /* ─── Category tabs ─────────────────────────────────────── */

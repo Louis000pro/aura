@@ -458,8 +458,8 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
           {replySent ? (
             <div className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl"
               style={{ background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.35)" }}>
-              <Check size={16} strokeWidth={2} style={{ color: "#6EE7B7" }} />
-              <span className="text-sm font-medium" style={{ color: "#6EE7B7" }}>Réponse envoyée</span>
+              <Check size={16} strokeWidth={2} style={{ color: "#2BD4A0" }} />
+              <span className="text-sm font-medium" style={{ color: "#2BD4A0" }}>Réponse envoyée</span>
             </div>
           ) : (
             <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--surface-rgb),0.1)", border: "1px solid rgba(var(--surface-rgb),0.15)" }}>

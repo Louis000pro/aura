@@ -172,7 +172,7 @@ export default function OnboardingWrapper() {
                   <button
                     onClick={() => { setShowBubble(false); setShowModal(true); }}
                     className="font-bold cursor-pointer underline underline-offset-2"
-                    style={{ color: "#3B82F6" }}
+                    style={{ color: "#8B5CF6" }}
                   >
                     objectifs
                   </button>
