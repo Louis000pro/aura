@@ -62,63 +62,63 @@ const workoutSessions: WorkoutSession[] = [
     title: "Démo Avatars 3D ✦", subtitle: "17 animations 3D — match exact",
     duration: 30, difficulty: "Débutant", exercises: 17,
     muscles: ["Corps entier"],
-    accent: "var(--accent)", icon: Sparkles,
+    accent: "#8B5CF6", icon: Sparkles,
   },
   {
     id: "force-haut", category: "force",
     title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
-    accent: "var(--accent)", icon: Dumbbell,
+    accent: "#8B5CF6", icon: Dumbbell,
   },
   {
     id: "fullbody-deb", category: "fullbody",
     title: "Full Body Débutant", subtitle: "Corps complet · Sans matériel",
     duration: 35, difficulty: "Débutant", exercises: 7,
     muscles: ["Corps entier"],
-    accent: "var(--gold)", icon: Layers,
+    accent: "#8B5CF6", icon: Layers,
   },
   {
     id: "hiit", category: "cardio",
     title: "HIIT Brûle-Graisses", subtitle: "Cardio intensif · 20 / 10 sec",
     duration: 25, difficulty: "Avancé", exercises: 8,
     muscles: ["Cardio", "Corps entier"],
-    accent: "#FBBF24", icon: Flame,
+    accent: "#E8620C", icon: Flame,
   },
   {
     id: "jambes", category: "force",
     title: "Jambes & Fessiers", subtitle: "Squats · Fentes · Hip Thrust",
     duration: 50, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Quadriceps", "Fessiers"],
-    accent: "var(--accent)", icon: Dumbbell,
+    accent: "#8B5CF6", icon: Dumbbell,
   },
   {
     id: "mobilite", category: "mobilite",
     title: "Mobilité Matinale", subtitle: "Yoga flow · Étirements actifs",
     duration: 20, difficulty: "Débutant", exercises: 10,
     muscles: ["Mobilité", "Souplesse"],
-    accent: "#34D399", icon: Wind,
+    accent: "#2BD4A0", icon: Wind,
   },
   {
     id: "dos-biceps", category: "force",
     title: "Dos & Biceps", subtitle: "Tractions · Rowing · Curls",
     duration: 40, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Dos", "Biceps"],
-    accent: "#60A5FA", icon: Dumbbell,
+    accent: "#8B5CF6", icon: Dumbbell,
   },
   {
     id: "core", category: "fullbody",
     title: "Core & Gainage", subtitle: "Planche · Crunchs · Relevés",
     duration: 30, difficulty: "Intermédiaire", exercises: 8,
     muscles: ["Abdominaux", "Lombaires"],
-    accent: "#FB923C", icon: Sparkles,
+    accent: "#8B5CF6", icon: Sparkles,
   },
   {
     id: "cardio-endurance", category: "cardio",
     title: "Endurance Cardio", subtitle: "Fractionné modéré · Zone 2",
     duration: 40, difficulty: "Débutant", exercises: 4,
     muscles: ["Cardio"],
-    accent: "#38BDF8", icon: Wind,
+    accent: "#E8620C", icon: Wind,
   },
 ];
 
@@ -597,7 +597,7 @@ function WorkoutCard({
           </div>
           <span
             className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-            style={{ background: `${difficultyColor[session.difficulty]}18`, color: difficultyColor[session.difficulty] }}
+            style={{ background: `${session.accent}18`, color: session.accent }}
           >
             {session.difficulty}
           </span>
@@ -719,7 +719,7 @@ function LibraryCard({
             </div>
             <span
               className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-              style={{ background: `${difficultyColor[session.difficulty]}18`, color: difficultyColor[session.difficulty] }}
+              style={{ background: `${session.accent}18`, color: session.accent }}
             >
               {session.difficulty}
             </span>
@@ -913,8 +913,10 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
 
 /* ─── Custom session type & creation modal ────────────────── */
 
+// Système D — chaque catégorie = un rôle couleur : force/fullbody = violet (action),
+// cardio = orange (énergie), mobilité = teal (corps/récupération).
 const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
-  force: "var(--accent)", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
+  force: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0", fullbody: "#8B5CF6",
 };
 const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
   force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
@@ -2254,8 +2256,9 @@ function ProgressionPageContent() {
                 const dur = s.elapsed_seconds > 0
                   ? `${Math.floor(s.elapsed_seconds / 60)} min`
                   : s.duration_minutes > 0 ? `${s.duration_minutes} min` : null;
+                // Système D : force/sport = violet (action), cardio/hiit = orange (énergie), mobilité/yoga = teal (corps)
                 const catColors: Record<string, string> = {
-                  force: "var(--accent)", cardio: "#34D399", mobilite: "#FBBF24", yoga: "#F9A8D4", hiit: "#F87171", sport: "#60A5FA",
+                  force: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0", yoga: "#2BD4A0", hiit: "#E8620C", sport: "#8B5CF6",
                 };
                 const catColor = catColors[s.category] ?? "var(--text-3)";
 
