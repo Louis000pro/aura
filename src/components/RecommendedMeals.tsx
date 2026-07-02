@@ -622,7 +622,7 @@ export default function RecommendedMeals() {
           style={{ height: 5, background: "rgba(var(--gold-rgb),0.12)" }}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove}>
           <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
-            style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--gold), var(--accent))", transition: "width 0.12s ease" }} />
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--violet-mid), var(--accent))", transition: "width 0.12s ease" }} />
         </div>
 
         <div className="flex items-center justify-between">

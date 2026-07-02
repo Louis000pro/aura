@@ -1080,7 +1080,7 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
           disabled={!name.trim() || saving || uploading}
           className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
           style={{
-            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.5)",
+            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,var(--accent) 100%)" : "rgba(220,220,220,0.5)",
             color: name.trim() ? "#3D2F6B" : "var(--text-3)",
             boxShadow: name.trim() ? "0 4px 18px rgba(var(--accent-rgb),0.3)" : "none",
             opacity: saving || uploading ? 0.7 : 1,
@@ -1333,7 +1333,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
             disabled={!name.trim() || saving}
             className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
             style={{
-              background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)",
+              background: "linear-gradient(135deg,#C4A8FF 0%,var(--accent) 100%)",
               color: "#3D2F6B",
               boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.3)",
               opacity: saving ? 0.7 : 1,
@@ -2017,7 +2017,7 @@ export default function ProfilPage() {
                   whileTap={{ scale: 0.93 }}
                   onClick={() => openHighlightViewer(h)}
                   className="cursor-pointer"
-                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.25)" }}
+                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,var(--accent) 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.25)" }}
                 >
                   <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
                     <div
@@ -2043,7 +2043,7 @@ export default function ProfilPage() {
                   whileTap={{ scale: 0.85 }}
                   onClick={(e) => { e.stopPropagation(); setEditHighlight(h); }}
                   className="absolute -bottom-0.5 -right-0.5 w-[20px] h-[20px] rounded-full flex items-center justify-center cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#C4A8FF,var(--cream-mid))", border: "2.5px solid white", boxShadow: "0 1px 6px rgba(var(--accent-rgb),0.4)" }}
+                  style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))", border: "2.5px solid white", boxShadow: "0 1px 6px rgba(var(--accent-rgb),0.4)" }}
                 >
                   <Pencil size={8} strokeWidth={3} style={{ color: "#3D2F6B" }} />
                 </motion.button>

@@ -272,7 +272,7 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
       <div className="flex items-start gap-2.5 rounded-2xl px-3.5 py-3"
         style={{ background: "rgba(var(--gold-rgb),0.08)", border: "1px solid rgba(var(--gold-rgb),0.18)" }}>
         <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-          style={{ background: "linear-gradient(135deg,var(--cream-mid),var(--violet-mid))" }}>
+          style={{ background: "linear-gradient(135deg,#C4A8FF,var(--violet-mid))" }}>
           <Dumbbell size={13} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
         </div>
         <p className="text-[13px] font-light leading-snug" style={{ color: "var(--text-1)" }}>

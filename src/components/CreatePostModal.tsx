@@ -259,7 +259,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
                   <Image size={18} strokeWidth={1.5} style={{ color: "#7C5CFA" }} />
                 </div>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#FDE68A,var(--cream-mid))" }}>
+                  style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))" }}>
                   <Video size={18} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
                 </div>
               </div>
