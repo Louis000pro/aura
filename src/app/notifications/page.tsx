@@ -74,9 +74,9 @@ function TypeBadge({ type }: { type: NotifType }) {
   const cfgMap = {
     like:    { icon: <Heart size={9} fill="currentColor" />, bg: "#FEE2E2", color: "#EF4444" },
     comment: { icon: <MessageCircle size={9} />,            bg: "#DBEAFE", color: "#8B5CF6" },
-    follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(212,192,255,0.6)", color: "#A78BFA" },
+    follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
     repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(43,212,160,0.2)",   color: "#2BD4A0" },
-    mention: { icon: <AtSign size={9} />,                   bg: "rgba(212,192,255,0.6)",  color: "#A78BFA" },
+    mention: { icon: <AtSign size={9} />,                   bg: "rgba(var(--violet-mid-rgb),0.6)",  color: "var(--accent)" },
   };
   const cfg = cfgMap[type] ?? cfgMap.like;
 
@@ -96,9 +96,9 @@ function Avatar({ pseudo, avatarUrl, type }: { pseudo: string; avatarUrl: string
       <div
         className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center text-base font-semibold"
         style={{
-          background: avatarUrl ? "transparent" : "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-          color: "#2D3748",
-          boxShadow: "0 2px 8px rgba(167,139,250,0.25)",
+          background: avatarUrl ? "transparent" : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+          color: "var(--text-1)",
+          boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.25)",
         }}
       >
         {avatarUrl
@@ -115,14 +115,14 @@ function SkeletonRow() {
   return (
     <motion.div
       className="flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-2"
-      style={{ background: "rgba(255,255,255,0.55)" }}
+      style={{ background: "rgba(var(--surface-rgb),0.55)" }}
       animate={{ opacity: [0.5, 1, 0.5] }}
       transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
     >
-      <div className="w-11 h-11 rounded-full flex-shrink-0" style={{ background: "rgba(167,139,250,0.15)" }} />
+      <div className="w-11 h-11 rounded-full flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.15)" }} />
       <div className="flex-1 space-y-2">
-        <div className="h-3 rounded-full w-3/4" style={{ background: "rgba(167,139,250,0.15)" }} />
-        <div className="h-2.5 rounded-full w-1/3" style={{ background: "rgba(167,139,250,0.1)" }} />
+        <div className="h-3 rounded-full w-3/4" style={{ background: "rgba(var(--accent-rgb),0.15)" }} />
+        <div className="h-2.5 rounded-full w-1/3" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
       </div>
     </motion.div>
   );
@@ -145,24 +145,24 @@ function EmptyState() {
       >
         <div
           className="w-24 h-24 rounded-3xl flex items-center justify-center text-4xl"
-          style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.4) 100%)" }}
+          style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.4) 100%)" }}
         >
-          <Bell size={38} strokeWidth={1.2} style={{ color: "#A78BFA" }} />
+          <Bell size={38} strokeWidth={1.2} style={{ color: "var(--accent)" }} />
         </div>
         {/* decorative dots */}
         <span
           className="absolute top-1 right-0 w-3 h-3 rounded-full"
-          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}
+          style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}
         />
         <span
           className="absolute bottom-0 left-1 w-2 h-2 rounded-full"
-          style={{ background: "rgba(167,139,250,0.4)" }}
+          style={{ background: "rgba(var(--accent-rgb),0.4)" }}
         />
       </motion.div>
 
       <div className="text-center space-y-1">
-        <p className="text-sm font-medium" style={{ color: "#2D3748" }}>Aucune notification</p>
-        <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>
+        <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Aucune notification</p>
+        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>
           Les interactions de ta communauté<br />apparaîtront ici
         </p>
       </div>
@@ -277,11 +277,11 @@ export default function NotificationsPage() {
           <div>
             <p
               className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1"
-              style={{ color: "#A0AEC0" }}
+              style={{ color: "var(--text-3)" }}
             >
               Activité
             </p>
-            <h1 className="text-2xl font-extralight" style={{ color: "#2D3748" }}>
+            <h1 className="text-2xl font-extralight" style={{ color: "var(--text-1)" }}>
               Notifications
             </h1>
           </div>
@@ -297,9 +297,9 @@ export default function NotificationsPage() {
                 onClick={markAllRead}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium cursor-pointer"
                 style={{
-                  background: "rgba(167,139,250,0.12)",
-                  color: "#A78BFA",
-                  border: "1px solid rgba(167,139,250,0.25)",
+                  background: "rgba(var(--accent-rgb),0.12)",
+                  color: "var(--accent)",
+                  border: "1px solid rgba(var(--accent-rgb),0.25)",
                 }}
               >
                 <CheckCheck size={13} strokeWidth={2} />
@@ -342,7 +342,7 @@ export default function NotificationsPage() {
               {/* Group label */}
               <p
                 className="text-[10px] font-semibold tracking-widest uppercase mb-2 ml-1"
-                style={{ color: "#A0AEC0" }}
+                style={{ color: "var(--text-3)" }}
               >
                 {group.label}
               </p>
@@ -357,15 +357,15 @@ export default function NotificationsPage() {
                   className="flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-2 relative cursor-pointer"
                   style={{
                     background: notif.read
-                      ? "rgba(255,255,255,0.55)"
-                      : "rgba(255,255,255,0.8)",
+                      ? "rgba(var(--surface-rgb),0.55)"
+                      : "rgba(var(--surface-rgb),0.8)",
                     backdropFilter: "blur(10px)",
                     border: notif.read
-                      ? "1px solid rgba(255,255,255,0.65)"
-                      : "1px solid rgba(167,139,250,0.3)",
+                      ? "1px solid rgba(var(--surface-rgb),0.65)"
+                      : "1px solid rgba(var(--accent-rgb),0.3)",
                     boxShadow: notif.read
-                      ? "inset 0 1px 0 rgba(255,255,255,0.8)"
-                      : "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 12px rgba(167,139,250,0.1)",
+                      ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)"
+                      : "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 2px 12px rgba(var(--accent-rgb),0.1)",
                   }}
                 >
                   <Avatar
@@ -375,7 +375,7 @@ export default function NotificationsPage() {
                   />
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] leading-snug" style={{ color: "#2D3748" }}>
+                    <p className="text-[13px] leading-snug" style={{ color: "var(--text-1)" }}>
                       <span className="font-semibold">@{notif.from_pseudo}</span>
                       {" "}
                       <span className="font-light">
@@ -386,7 +386,7 @@ export default function NotificationsPage() {
                         {notif.type === "mention" && "t'a mentionné dans un commentaire"}
                       </span>
                     </p>
-                    <p className="text-[11px] mt-0.5" style={{ color: "#A0AEC0" }}>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                       {relativeTime(notif.created_at)}
                     </p>
                   </div>
@@ -400,7 +400,7 @@ export default function NotificationsPage() {
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
                         className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg,#A78BFA,#D4C0FF)" }}
+                        style={{ background: "linear-gradient(135deg,var(--accent),var(--violet-mid))" }}
                       />
                     )}
                   </AnimatePresence>

@@ -86,7 +86,7 @@ function AnimatedModel({
         materials.forEach((mat) => {
           if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
             (mat as THREE.MeshStandardMaterial).color?.set(
-              accent === "#A78BFA" ? "#C4B0FF" : "#E8D87F"
+              accent === "var(--accent)" ? "#C4B0FF" : "#E8D87F"
             );
           }
         });
@@ -125,7 +125,7 @@ function AnimatedModel({
 /* ─── Composant public ────────────────────────────────────────────────── */
 export default function AnimatedAvatar({
   exerciseName,
-  accent = "#A78BFA",
+  accent = "var(--accent)",
   size = 130,
 }: {
   exerciseName: string;
@@ -150,7 +150,7 @@ export default function AnimatedAvatar({
           className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-light"
           style={{
             background: `linear-gradient(135deg, ${accent}40 0%, ${accent}20 100%)`,
-            color: "#2D3748",
+            color: "var(--text-1)",
           }}
         >
           ✦
@@ -159,7 +159,7 @@ export default function AnimatedAvatar({
            style={{ color: `${accent}99` }}>
           Animation
         </p>
-        <p className="text-[8px] font-light text-center px-2" style={{ color: "#A0AEC0" }}>
+        <p className="text-[8px] font-light text-center px-2" style={{ color: "var(--text-3)" }}>
           bientôt
         </p>
       </div>
@@ -172,8 +172,8 @@ export default function AnimatedAvatar({
       style={{
         width: size,
         height,
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(var(--surface-rgb),0.04)",
+        border: "1px solid rgba(var(--surface-rgb),0.08)",
       }}
     >
       <div

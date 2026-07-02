@@ -45,7 +45,7 @@ const CHALLENGES: Challenge[] = [
     category: "musculation",
     difficulty: "moyen",
     duration: "30j",
-    gradient: "linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)",
+    gradient: "linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%)",
     emoji: "🏋️",
   },
   {
@@ -56,7 +56,7 @@ const CHALLENGES: Challenge[] = [
     category: "musculation",
     difficulty: "facile",
     duration: "7j",
-    gradient: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
+    gradient: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
     emoji: "💪",
   },
   {
@@ -146,11 +146,11 @@ const difficultyConfig: Record<ChallengeDifficulty, { label: string; color: stri
 };
 
 const sectionGradients = [
-  "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
-  "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
-  "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-  "linear-gradient(135deg, #F0EBFF 0%, #D4C0FF 100%)",
-  "linear-gradient(135deg, #FFFBF0 0%, #F5E6A3 100%)",
+  "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
+  "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
+  "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+  "linear-gradient(135deg, #F0EBFF 0%, var(--violet-mid) 100%)",
+  "linear-gradient(135deg, #FFFBF0 0%, var(--cream-mid) 100%)",
 ];
 
 function avatarGradient(id: string) {
@@ -178,7 +178,7 @@ function ProfileCard({
       <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-shrink-0">
         <div
           className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-base overflow-hidden"
-          style={{ background: profile.avatar_url ? "transparent" : avatarGradient(profile.id), color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}
+          style={{ background: profile.avatar_url ? "transparent" : avatarGradient(profile.id), color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
         >
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -190,16 +190,16 @@ function ProfileCard({
       </Link>
 
       <Link href={`/profil/${encodeURIComponent(profile.pseudo)}`} className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
+        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>
           {profile.full_name || profile.pseudo}
         </p>
-        <p className="text-[11px]" style={{ color: "#A78BFA" }}>@{profile.pseudo}</p>
+        <p className="text-[11px]" style={{ color: "var(--accent)" }}>@{profile.pseudo}</p>
         {showMutual && (profile.mutual_count ?? 0) > 0 ? (
-          <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>
+          <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>
             {profile.mutual_count} ami{(profile.mutual_count ?? 0) > 1 ? "s" : ""} en commun
           </p>
         ) : profile.bio ? (
-          <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>{profile.bio}</p>
+          <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-3)" }}>{profile.bio}</p>
         ) : null}
       </Link>
 
@@ -209,8 +209,8 @@ function ProfileCard({
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
         style={
           isFollowing
-            ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
-            : { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+            ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
+            : { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
         }
       >
         {isFollowing
@@ -239,10 +239,10 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
       animate={{ opacity: 1, y: 0 }}
       className="rounded-3xl overflow-hidden flex flex-col cv-auto"
       style={{
-        background: "rgba(255,255,255,0.8)",
+        background: "rgba(var(--surface-rgb),0.8)",
         backdropFilter: "blur(10px)",
-        border: "1px solid rgba(255,255,255,0.88)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 24px rgba(0,0,0,0.05)",
+        border: "1px solid rgba(var(--surface-rgb),0.88)",
+        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 4px 24px rgba(0,0,0,0.05)",
       }}
     >
       {/* Gradient header */}
@@ -252,7 +252,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
       >
         <div
           className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl leading-none"
-          style={{ background: "rgba(255,255,255,0.3)", backdropFilter: "blur(6px)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)" }}
+          style={{ background: "rgba(var(--surface-rgb),0.3)", backdropFilter: "blur(6px)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.6)" }}
         >
           {challenge.emoji}
         </div>
@@ -285,7 +285,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
 
       {/* Body */}
       <div className="px-4 py-3 flex flex-col gap-3">
-        <p className="text-xs font-light leading-relaxed" style={{ color: "#4A5568" }}>
+        <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
           {challenge.description}
         </p>
 
@@ -297,7 +297,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
             >
               <Users size={10} strokeWidth={2} style={{ color: cat.color }} />
             </div>
-            <span className="text-[11px] font-semibold" style={{ color: "#718096" }}>
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>
               {count.toLocaleString("fr-FR")} participant{count > 1 ? "s" : ""}
             </span>
           </div>
@@ -308,7 +308,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer"
             style={
               joined
-                ? { background: "rgba(240,235,255,0.8)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }
+                ? { background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.25)" }
                 : { background: challenge.gradient, color: "#fff", boxShadow: "0 3px 12px rgba(0,0,0,0.15)" }
             }
           >
@@ -333,16 +333,16 @@ function HashtagChip({ tag, count }: { tag: string; count: number }) {
       whileTap={{ scale: 0.95 }}
       className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl cursor-pointer flex-shrink-0"
       style={{
-        background: "rgba(255,255,255,0.7)",
-        border: "1px solid rgba(255,255,255,0.85)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+        background: "rgba(var(--surface-rgb),0.7)",
+        border: "1px solid rgba(var(--surface-rgb),0.85)",
+        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
       }}
     >
-      <Hash size={10} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
-      <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>{tag}</span>
+      <Hash size={10} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+      <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>{tag}</span>
       <span
         className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-        style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}
+        style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
       >
         {count}
       </span>
@@ -534,10 +534,10 @@ export default function DecouvertePage() {
         className="flex items-center justify-between mb-6"
       >
         <div>
-          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
+          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>
             Communauté
           </p>
-          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
+          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
             Découverte
           </h1>
         </div>
@@ -547,7 +547,7 @@ export default function DecouvertePage() {
             className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
             aria-label="Retour"
           >
-            <ArrowLeft size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+            <ArrowLeft size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
           </motion.div>
         </Link>
       </motion.div>
@@ -566,8 +566,8 @@ export default function DecouvertePage() {
             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl text-[10px] font-semibold cursor-pointer transition-all"
             style={
               activeTab === id
-                ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                : { background: "rgba(255,255,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                : { background: "rgba(var(--surface-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
             }
           >
             <Icon size={13} strokeWidth={activeTab === id ? 2 : 1.5} />
@@ -592,8 +592,8 @@ export default function DecouvertePage() {
               {/* Trending hashtags */}
               <div className="mb-3">
                 <div className="flex items-center gap-2 mb-2 px-1">
-                  <TrendingUp size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                  <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#A0AEC0" }}>
+                  <TrendingUp size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                  <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>
                     Hashtags tendance
                   </p>
                 </div>
@@ -603,7 +603,7 @@ export default function DecouvertePage() {
                       <div
                         key={i}
                         className="h-7 rounded-2xl animate-pulse"
-                        style={{ width: w, background: "rgba(167,139,250,0.12)" }}
+                        style={{ width: w, background: "rgba(var(--accent-rgb),0.12)" }}
                       />
                     ))}
                   </div>
@@ -623,9 +623,9 @@ export default function DecouvertePage() {
               </div>
 
               {/* Divider */}
-              <div style={{ height: 1, background: "rgba(167,139,250,0.1)", marginBottom: 8 }} />
+              <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.1)", marginBottom: 8 }} />
 
-              <p className="text-[11px] font-light px-1 mb-1" style={{ color: "#A0AEC0" }}>
+              <p className="text-[11px] font-light px-1 mb-1" style={{ color: "var(--text-3)" }}>
                 Personnes suivies par ceux que tu suis déjà
               </p>
 
@@ -633,7 +633,7 @@ export default function DecouvertePage() {
                 <div className="flex justify-center py-16">
                   <motion.div
                     className="w-6 h-6 rounded-full border-2"
-                    style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                    style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                     animate={{ rotate: 360 }}
                     transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                   />
@@ -641,10 +641,10 @@ export default function DecouvertePage() {
               ) : displayed.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-4">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)" }}>
-                    <Users size={22} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                    style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.8) 0%, rgba(255,251,240,0.8) 100%)" }}>
+                    <Users size={22} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
                   </div>
-                  <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                  <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                     Suis des personnes pour voir leurs connexions
                   </p>
                 </div>
@@ -671,7 +671,7 @@ export default function DecouvertePage() {
           {/* ── Populaires / Nouveaux tabs ── */}
           {(activeTab === "populaires" || activeTab === "nouveaux") && (
             <>
-              <p className="text-[11px] font-light px-1 mb-1" style={{ color: "#A0AEC0" }}>
+              <p className="text-[11px] font-light px-1 mb-1" style={{ color: "var(--text-3)" }}>
                 {activeTab === "populaires"
                   ? "Les comptes les plus suivis sur Vaiiya"
                   : "Membres qui ont rejoint Vaiiya récemment"}
@@ -681,7 +681,7 @@ export default function DecouvertePage() {
                 <div className="flex justify-center py-16">
                   <motion.div
                     className="w-6 h-6 rounded-full border-2"
-                    style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+                    style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
                     animate={{ rotate: 360 }}
                     transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                   />
@@ -689,12 +689,12 @@ export default function DecouvertePage() {
               ) : displayed.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-4">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)" }}>
+                    style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.8) 0%, rgba(255,251,240,0.8) 100%)" }}>
                     {activeTab === "populaires"
-                      ? <TrendingUp size={22} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
-                      : <Sparkles size={22} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />}
+                      ? <TrendingUp size={22} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
+                      : <Sparkles size={22} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />}
                   </div>
-                  <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                  <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                     {activeTab === "populaires"
                       ? "Aucun compte pour l'instant"
                       : "Aucun nouveau membre récemment"}
@@ -728,12 +728,12 @@ export default function DecouvertePage() {
               className="flex flex-col items-center text-center py-16 px-6 gap-4"
             >
               <div className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, rgba(245,230,163,0.45), rgba(212,168,67,0.25))", border: "1px solid rgba(212,168,67,0.25)" }}>
-                <Swords size={26} strokeWidth={1.4} style={{ color: "#D4A843" }} />
+                style={{ background: "linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.45), rgba(var(--gold-rgb),0.25))", border: "1px solid rgba(var(--gold-rgb),0.25)" }}>
+                <Swords size={26} strokeWidth={1.4} style={{ color: "var(--gold)" }} />
               </div>
               <div>
-                <p className="text-lg font-light" style={{ color: "#2D3748" }}>Défis en maintenance</p>
-                <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "#A0AEC0" }}>
+                <p className="text-lg font-light" style={{ color: "var(--text-1)" }}>Défis en maintenance</p>
+                <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
                   On peaufine cette section pour te proposer des défis au top.<br />Reviens très vite ✨
                 </p>
               </div>
@@ -752,11 +752,11 @@ export default function DecouvertePage() {
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
-              background: "rgba(255,255,255,0.9)",
+              background: "rgba(var(--surface-rgb),0.9)",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(240,235,255,0.9)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
-              color: "#2D3748",
+              border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
+              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+              color: "var(--text-1)",
               whiteSpace: "nowrap",
             }}
           >
