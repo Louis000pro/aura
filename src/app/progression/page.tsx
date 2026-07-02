@@ -564,15 +564,14 @@ function WorkoutCard({
       style={{
         width: isDone ? 190 : 230,
         background: isDone
-          ? "rgba(var(--surface-rgb),0.45)"
-          : "rgba(var(--surface-rgb),0.75)",
-        backdropFilter: "blur(10px)",
+          ? "rgba(var(--surface-rgb),0.55)"
+          : "rgb(var(--surface-rgb))",
         border: isDone
-          ? "1px solid rgba(var(--surface-rgb),0.55)"
-          : "1px solid rgba(var(--surface-rgb),0.88)",
+          ? "1px solid rgba(var(--accent-rgb),0.08)"
+          : "1px solid rgba(var(--accent-rgb),0.14)",
         boxShadow: isDone
-          ? "0 4px 16px rgba(0,0,0,0.04)"
-          : "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 8px 32px rgba(0,0,0,0.06)",
+          ? "0 4px 16px rgba(var(--accent-rgb),0.05)"
+          : "0 6px 22px rgba(var(--accent-rgb),0.10)",
         filter: isDone ? "grayscale(0.35)" : "none",
         transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}
@@ -628,7 +627,7 @@ function WorkoutCard({
             <Clock size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
             <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
           </div>
-          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
+          <div className="w-px h-3" style={{ background: "rgba(var(--text-1-rgb),0.12)" }} />
           <div className="flex items-center gap-1">
             <Dumbbell size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
             <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
@@ -644,7 +643,7 @@ function WorkoutCard({
             isActive
               ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
               : isDone
-              ? { background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(0,0,0,0.07)" }
+              ? { background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(var(--text-1-rgb),0.10)" }
               : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
           }
         >
@@ -703,9 +702,9 @@ function LibraryCard({
       layout
       className="rounded-3xl overflow-hidden flex flex-col"
       style={{
-        background: "rgba(var(--surface-rgb),0.82)",
-        border: "1px solid rgba(var(--surface-rgb),0.92)",
-        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 4px 24px rgba(0,0,0,0.05)",
+        background: "rgb(var(--surface-rgb))",
+        border: "1px solid rgba(var(--accent-rgb),0.14)",
+        boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.10)",
       }}
     >
       {/* Colored header */}
@@ -1880,7 +1879,7 @@ function ProgressionPageContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className="mb-8 max-w-2xl rounded-3xl p-5"
-            style={{ background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}
+            style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.15)", boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.10)" }}
           >
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1970,9 +1969,9 @@ function ProgressionPageContent() {
             className="relative -mx-6 mb-10"
           >
             <div className="absolute left-0 top-0 bottom-4 w-8 z-10 pointer-events-none"
-              style={{ background: "linear-gradient(to right, rgba(248,247,252,0.9) 0%, transparent 100%)" }} />
+              style={{ background: "linear-gradient(to right, rgba(var(--page-fade-rgb),0.9) 0%, transparent 100%)" }} />
             <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
-              style={{ background: "linear-gradient(to left, rgba(248,247,252,0.95) 0%, transparent 100%)" }}>
+              style={{ background: "linear-gradient(to left, rgba(var(--page-fade-rgb),0.95) 0%, transparent 100%)" }}>
               <motion.button
                 animate={{ x: [0, 5, 0] }}
                 transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
@@ -1982,7 +1981,7 @@ function ProgressionPageContent() {
                 style={{ pointerEvents: "all", background: "none", border: "none", padding: 4 }}
                 aria-label="Défiler à droite"
               >
-                <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C8B8D8" }} />
+                <ChevronRight size={16} strokeWidth={2.5} style={{ color: "var(--text-3)" }} />
               </motion.button>
             </div>
 
@@ -2015,8 +2014,7 @@ function ProgressionPageContent() {
                 style={{
                   width: 180,
                   minHeight: 280,
-                  background: "rgba(var(--surface-rgb),0.5)",
-                  backdropFilter: "blur(10px)",
+                  background: "rgb(var(--surface-rgb))",
                   border: "2px dashed rgba(var(--accent-rgb),0.35)",
                 }}
               >
@@ -2241,7 +2239,7 @@ function ProgressionPageContent() {
 
             {historySessions.length === 0 && !historyLoading && (
               <div className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                style={{ background: "rgba(var(--surface-rgb),0.4)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}>
+                style={{ background: "rgba(var(--surface-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
                 <Dumbbell size={24} strokeWidth={1.4} style={{ color: "var(--violet-mid)" }} />
                 <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune séance enregistrée encore.</p>
               </div>
@@ -2268,7 +2266,7 @@ function ProgressionPageContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     className="rounded-2xl overflow-hidden cursor-pointer"
-                    style={{ background: "rgba(var(--surface-rgb),0.85)", border: "1px solid rgba(var(--violet-mid-rgb),0.18)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)" }}
+                    style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.09)" }}
                     onClick={() => setHistoryExpanded(isExpanded ? null : s.id)}
                   >
                     <div className="flex items-center gap-3 px-4 py-3">

@@ -53,6 +53,7 @@
   /* Fonds de page */
   --page-bg: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
   --html-bg: #F5F3FF;                  /* anti-flash au lancement PWA */
+  --page-fade-rgb: 248, 247, 252;      /* couleur des fondus de bord (carrousels) */
 }
 
 [data-theme="dark"] {
@@ -78,6 +79,7 @@
      en haut pour la profondeur, puis noir franc → les dégradés colorés claquent. */
   --page-bg: radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000000 100%);
   --html-bg: #000000;
+  --page-fade-rgb: 5, 2, 8;            /* fondus de bord → se fondent dans le noir */
 }
 
 @layer base {
