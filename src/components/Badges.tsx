@@ -232,9 +232,9 @@ const BADGES: BadgeDef[] = [
 
 /* ─── Rarity config ─────────────────────────────────────── */
 const rarityConfig = {
-  common:    { label: "Commun",    color: "#A0AEC0", glow: "rgba(160,174,192,0.4)",  gradient: "linear-gradient(135deg, rgba(240,240,240,0.9), rgba(220,220,220,0.9))" },
-  rare:      { label: "Rare",      color: "#A78BFA", glow: "rgba(167,139,250,0.5)",  gradient: "linear-gradient(135deg, rgba(212,192,255,0.9), rgba(167,139,250,0.7))" },
-  epic:      { label: "Épique",    color: "#D4A843", glow: "rgba(212,168,67,0.5)",   gradient: "linear-gradient(135deg, rgba(245,230,163,0.9), rgba(212,168,67,0.7))" },
+  common:    { label: "Commun",    color: "var(--text-3)", glow: "rgba(160,174,192,0.4)",  gradient: "linear-gradient(135deg, rgba(240,240,240,0.9), rgba(220,220,220,0.9))" },
+  rare:      { label: "Rare",      color: "var(--accent)", glow: "rgba(var(--accent-rgb),0.5)",  gradient: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.9), rgba(var(--accent-rgb),0.7))" },
+  epic:      { label: "Épique",    color: "var(--gold)", glow: "rgba(var(--gold-rgb),0.5)",   gradient: "linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.9), rgba(var(--gold-rgb),0.7))" },
   legendary: { label: "Légendaire",color: "#F97316", glow: "rgba(249,115,22,0.55)",  gradient: "linear-gradient(135deg, rgba(254,215,170,0.9), rgba(249,115,22,0.7))" },
 };
 
@@ -263,15 +263,15 @@ function BadgeCard({ badge, unlockedAt }: { badge: BadgeDef; unlockedAt?: string
       className="relative flex flex-col items-center gap-2 p-4 rounded-3xl overflow-hidden"
       style={{
         background: isUnlocked
-          ? "rgba(255,255,255,0.85)"
-          : "rgba(255,255,255,0.45)",
+          ? "rgba(var(--surface-rgb),0.85)"
+          : "rgba(var(--surface-rgb),0.45)",
         backdropFilter: "blur(10px)",
         border: isUnlocked
           ? `1px solid ${rarity.color}40`
-          : "1px solid rgba(255,255,255,0.6)",
+          : "1px solid rgba(var(--surface-rgb),0.6)",
         boxShadow: isUnlocked
-          ? `0 4px 24px ${rarity.glow}, inset 0 1px 0 rgba(255,255,255,0.95)`
-          : "inset 0 1px 0 rgba(255,255,255,0.7)",
+          ? `0 4px 24px ${rarity.glow}, inset 0 1px 0 rgba(var(--surface-rgb),0.95)`
+          : "inset 0 1px 0 rgba(var(--surface-rgb),0.7)",
       }}
     >
       {/* Shimmer for locked badges */}
@@ -279,7 +279,7 @@ function BadgeCard({ badge, unlockedAt }: { badge: BadgeDef; unlockedAt?: string
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%)",
+            background: "linear-gradient(105deg, transparent 40%, rgba(var(--surface-rgb),0.45) 50%, transparent 60%)",
             backgroundSize: "200% 100%",
           }}
           animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
@@ -311,12 +311,12 @@ function BadgeCard({ badge, unlockedAt }: { badge: BadgeDef; unlockedAt?: string
       >
         {!isUnlocked && (
           <div className="absolute inset-0 rounded-2xl flex items-center justify-center z-10"
-            style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(2px)" }}>
-            <Lock size={16} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--surface-rgb),0.55)", backdropFilter: "blur(2px)" }}>
+            <Lock size={16} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </div>
         )}
         {IconComp
-          ? <IconComp size={22} strokeWidth={1.6} style={{ color: isUnlocked ? "#fff" : "#A0AEC0" }} />
+          ? <IconComp size={22} strokeWidth={1.6} style={{ color: isUnlocked ? "#fff" : "var(--text-3)" }} />
           : <span className="text-2xl leading-none">{badge.icon as string}</span>
         }
       </div>
@@ -324,7 +324,7 @@ function BadgeCard({ badge, unlockedAt }: { badge: BadgeDef; unlockedAt?: string
       {/* Name */}
       <p
         className="text-xs font-semibold text-center leading-tight"
-        style={{ color: isUnlocked ? "#2D3748" : "#A0AEC0" }}
+        style={{ color: isUnlocked ? "var(--text-1)" : "var(--text-3)" }}
       >
         {badge.name}
       </p>
@@ -341,7 +341,7 @@ function BadgeCard({ badge, unlockedAt }: { badge: BadgeDef; unlockedAt?: string
       </span>
 
       {/* Unlock date or condition */}
-      <p className="text-[9px] text-center font-light leading-tight" style={{ color: "#A0AEC0" }}>
+      <p className="text-[9px] text-center font-light leading-tight" style={{ color: "var(--text-3)" }}>
         {isUnlocked
           ? `Débloqué le ${new Date(unlockedAt!).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}`
           : badge.conditionLabel
@@ -534,20 +534,20 @@ export default function Badges() {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-3xl p-5 flex items-center justify-between"
         style={{
-          background: "linear-gradient(135deg, rgba(212,192,255,0.45) 0%, rgba(245,230,163,0.45) 100%)",
-          border: "1px solid rgba(255,255,255,0.8)",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+          background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.45) 0%, rgba(var(--cream-mid-rgb),0.45) 100%)",
+          border: "1px solid rgba(var(--surface-rgb),0.8)",
+          boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
         }}
       >
         <div>
-          <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "#A0AEC0" }}>
+          <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>
             Badges débloqués
           </p>
           <div className="flex items-end gap-1.5 mt-0.5">
-            <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "#1A202C" }}>
+            <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>
               {unlockedCount}
             </span>
-            <span className="text-base font-light mb-0.5" style={{ color: "#A0AEC0" }}>
+            <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>
               / {BADGES.length}
             </span>
           </div>
@@ -556,17 +556,17 @@ export default function Badges() {
           <span className="text-3xl leading-none">🏆</span>
           <div
             className="h-1.5 rounded-full overflow-hidden"
-            style={{ width: 80, background: "rgba(255,255,255,0.5)" }}
+            style={{ width: 80, background: "rgba(var(--surface-rgb),0.5)" }}
           >
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${Math.round((unlockedCount / BADGES.length) * 100)}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="h-full rounded-full"
-              style={{ background: "linear-gradient(90deg, #D4C0FF, #F5E6A3)" }}
+              style={{ background: "linear-gradient(90deg, var(--violet-mid), var(--cream-mid))" }}
             />
           </div>
-          <p className="text-[9px] font-semibold" style={{ color: "#A0AEC0" }}>
+          <p className="text-[9px] font-semibold" style={{ color: "var(--text-3)" }}>
             {Math.round((unlockedCount / BADGES.length) * 100)}% complété
           </p>
         </div>
@@ -592,8 +592,8 @@ export default function Badges() {
               className="flex-shrink-0 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
               style={
                 activeCategory === id
-                  ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                  : { background: "rgba(255,255,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(255,255,255,0.6)" }
+                  ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                  : { background: "rgba(var(--surface-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
               }
             >
               {label}
@@ -608,7 +608,7 @@ export default function Badges() {
         <div className="flex justify-center py-16">
           <motion.div
             className="w-6 h-6 rounded-full border-2"
-            style={{ borderColor: "rgba(167,139,250,0.3)", borderTopColor: "#A78BFA" }}
+            style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
             animate={{ rotate: 360 }}
             transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
           />

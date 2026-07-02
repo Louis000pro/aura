@@ -408,7 +408,7 @@ function EditProfileModal({
       >
         {/* Handle (mobile) */}
         <div className="flex justify-center mb-4 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.22)" }} />
         </div>
 
         <div className="flex items-center justify-between mb-5">
@@ -662,7 +662,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.22)" }} />
         </div>
 
         {/* Header */}
@@ -900,7 +900,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
         exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -1033,7 +1033,7 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center mb-5 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.1)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.2)" }} />
         </div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Nouvelle catégorie</h2>
@@ -1225,7 +1225,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.1)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.2)" }} />
         </div>
 
         {/* Header */}
@@ -1940,7 +1940,7 @@ export default function ProfilPage() {
           className="flex items-stretch mb-3 rounded-3xl overflow-hidden"
           style={{
             background: "rgba(var(--surface-rgb),0.8)",
-            border: "1px solid rgba(var(--surface-rgb),0.9)",
+            border: "1px solid rgba(var(--accent-rgb),0.14)",
             boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
             backdropFilter: "blur(10px)",
           }}
@@ -1964,7 +1964,7 @@ export default function ProfilPage() {
                 <span className="text-[24px] font-black leading-none" style={{ color: "var(--text-0)", letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
-                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "#B0BBCA" }}>
+                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "var(--text-3)" }}>
                   {label}
                 </span>
               </motion.button>
@@ -2021,7 +2021,7 @@ export default function ProfilPage() {
                 >
                   <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
                     <div
-                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5),rgba(var(--cream-mid-rgb),0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
+                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5),rgba(var(--cream-mid-rgb),0.5))", color: "var(--accent)", fontSize: 20, fontWeight: 700 }}
                     >
                       {h.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
@@ -2076,11 +2076,11 @@ export default function ProfilPage() {
               onClick={() => setActiveTab(id)}
               className="flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"
               animate={{
-                background: activeTab === id ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "transparent",
-                color: activeTab === id ? "#3D2F6B" : "var(--text-3)",
+                background: activeTab === id ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "transparent",
+                color: activeTab === id ? "#fff" : "var(--text-3)",
               }}
               style={{
-                boxShadow: activeTab === id ? "0 2px 10px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
+                boxShadow: activeTab === id ? "0 3px 14px rgba(193,59,193,0.35)" : "none",
                 letterSpacing: "0.02em",
               }}
             >
@@ -2110,7 +2110,7 @@ export default function ProfilPage() {
                 style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                  <Camera size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
@@ -2135,7 +2135,7 @@ export default function ProfilPage() {
                     style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
                   >
                     <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                      <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                      <Camera size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                     </div>
                     <div className="text-center px-8">
                       <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
@@ -2153,7 +2153,7 @@ export default function ProfilPage() {
                         className="rounded-3xl overflow-hidden cv-auto"
                         style={{
                           background: "rgba(var(--surface-rgb),0.85)",
-                          border: "1px solid rgba(var(--surface-rgb),0.9)",
+                          border: "1px solid rgba(var(--accent-rgb),0.14)",
                           boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
                         }}
                       >
@@ -2339,7 +2339,7 @@ export default function ProfilPage() {
                   style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
                 >
                   <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                    <Film size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                    <Film size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                   </div>
                   <div className="text-center px-8">
                     <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune vidéo</p>
@@ -2393,7 +2393,7 @@ export default function ProfilPage() {
                 style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Bookmark size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                  <Bookmark size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun enregistrement</p>
@@ -2466,7 +2466,7 @@ export default function ProfilPage() {
                 style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Dumbbell size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                  <Dumbbell size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance enregistrée</p>
@@ -2488,7 +2488,7 @@ export default function ProfilPage() {
                       animate={{ opacity: 1, y: 0 }}
                     >
                       <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
-                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
