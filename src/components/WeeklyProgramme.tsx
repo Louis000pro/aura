@@ -27,17 +27,17 @@ type ProfileData = {
   onboarding_weight: number | null;
 };
 
-/* ─── Badge styles by type ─── */
+/* ─── Badge styles by type — Système D : type = rôle couleur (comme le catalogue) ─── */
 function getBadgeStyle(type: string): React.CSSProperties {
+  const base = { borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 } as const;
   const t = type.toLowerCase();
-  if (t === "repos") return { background: "rgba(var(--text-3-rgb),0.15)", color: "var(--text-2)", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "cardio" || t === "endurance") return { background: "rgba(96,165,250,0.15)", color: "#2563EB", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "force" || t === "haut du corps" || t === "bas du corps") return { background: "rgba(var(--accent-rgb),0.15)", color: "#7C3AED", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "hiit") return { background: "rgba(252,129,129,0.15)", color: "#DC2626", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "mobilité") return { background: "rgba(52,211,153,0.15)", color: "#059669", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "full body") return { background: "rgba(251,191,36,0.15)", color: "#D97706", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  // default
-  return { background: "rgba(var(--accent-rgb),0.15)", color: "#7C3AED", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
+  if (t === "repos") return { ...base, background: "rgba(var(--text-3-rgb),0.15)", color: "var(--text-2)" };
+  // cardio / endurance / HIIT = énergie = orange
+  if (t === "cardio" || t === "endurance" || t === "hiit") return { ...base, background: "rgba(232,98,12,0.14)", color: "#E8620C" };
+  // mobilité = corps / récup = teal
+  if (t === "mobilité") return { ...base, background: "rgba(43,212,160,0.15)", color: "#12A87E" };
+  // force / haut / bas / full body / défaut = résistance = violet (action)
+  return { ...base, background: "rgba(139,92,246,0.15)", color: "#8B5CF6" };
 }
 
 /* ─── Goal labels ─── */

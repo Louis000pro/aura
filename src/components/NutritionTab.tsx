@@ -95,9 +95,9 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
       <svg width="216" height="216" viewBox="0 0 216 216" style={{ transform: "rotate(-90deg)" }}>
         <defs>
           <linearGradient id="caloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stopColor="#FF7A1A" />
-            <stop offset="52%"  stopColor="#F5B120" />
-            <stop offset="100%" stopColor="#8B5CF6" />
+            <stop offset="0%"   stopColor="#FFD34E" />
+            <stop offset="52%"  stopColor="#FF9A3D" />
+            <stop offset="100%" stopColor="#FF7A1A" />
           </linearGradient>
         </defs>
         <circle cx="108" cy="108" r={R} fill="none" stroke="rgba(var(--accent-rgb),0.16)" strokeWidth={SW} />
