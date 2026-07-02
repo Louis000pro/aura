@@ -276,7 +276,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                       <div
                         className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
                         style={{
-                          background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                          background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                           color: "var(--text-1)",
                         }}
                       >

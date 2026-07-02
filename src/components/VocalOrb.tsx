@@ -216,7 +216,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
               state === "listening"
                 ? "radial-gradient(135deg at 30% 30%, var(--violet-mid) 0%, var(--cream-mid) 60%, #FFFBF0 100%)"
                 : state === "processing"
-                ? "radial-gradient(135deg at 30% 30%, var(--cream-mid) 0%, var(--violet-mid) 100%)"
+                ? "radial-gradient(135deg at 30% 30%, var(--accent) 0%, var(--violet-mid) 100%)"
                 : "radial-gradient(135deg at 30% 30%, #F0EBFF 0%, #FFFBF0 60%, #F0EBFF 100%)",
             boxShadow:
               state === "listening"

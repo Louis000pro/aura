@@ -592,7 +592,7 @@ export default function CoachPage() {
         <div
           className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{
-            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
             boxShadow:
               "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 12px rgba(var(--accent-rgb),0.25)",
           }}
@@ -653,7 +653,7 @@ export default function CoachPage() {
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
                 className="w-20 h-20 rounded-[28px] flex items-center justify-center"
                 style={{
-                  background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                  background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                   boxShadow:
                     "0 8px 32px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}
@@ -719,7 +719,7 @@ export default function CoachPage() {
                       }}
                     >
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}>
+                        style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}>
                         <UserCog size={15} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -752,7 +752,7 @@ export default function CoachPage() {
                   className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mb-0.5"
                   style={{
                     background:
-                      "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                      "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                     boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.2)",
                   }}
                 >

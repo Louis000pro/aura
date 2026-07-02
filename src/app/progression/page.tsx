@@ -384,7 +384,7 @@ function CameraCapture({
               onClick={takePhoto}
               className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
               style={{
-                background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                 boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.22), 0 6px 20px rgba(var(--accent-rgb),0.35)",
               }}
               aria-label="Prendre une photo"
@@ -438,7 +438,7 @@ function CameraCapture({
                 whileTap={{ scale: 0.95 }}
                 onClick={useCapture}
                 className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}
               >
                 <CheckCircle size={13} strokeWidth={2} style={{ color: "var(--text-1)" }} />
                 <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Utiliser</span>
@@ -1473,7 +1473,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
             className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
             style={{
               background: title.trim()
-                ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)"
+                ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)"
                 : "rgba(var(--tint-violet-rgb),0.5)",
               color: title.trim() ? "var(--text-1)" : "var(--text-3)",
               boxShadow: title.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
@@ -2210,7 +2210,7 @@ function ProgressionPageContent() {
                       onClick={() => setShowCreateModal(true)}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
                       style={{
-                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                         color: "var(--text-1)",
                         boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
                       }}

@@ -60,7 +60,7 @@ function ChatUI({
       <div className="relative px-5 pt-5 pb-3 flex items-center gap-3 flex-shrink-0"
         style={{ borderBottom: "1px solid rgba(var(--surface-rgb),0.45)" }}>
         <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 2px 8px rgba(var(--accent-rgb),0.2)" }}>
+          style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 2px 8px rgba(var(--accent-rgb),0.2)" }}>
           <Sparkles size={15} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </div>
         <div className="flex-1">
@@ -160,7 +160,7 @@ function ChatUI({
           />
           <motion.button whileTap={{ scale: 0.9 }} type="submit"
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }}
+            style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }}
             aria-label="Envoyer">
             <Send size={12} strokeWidth={2} style={{ color: "var(--text-1)" }} />
           </motion.button>

@@ -430,7 +430,7 @@ export default function DailyDrawer({
                           onClick={() => router.push(`/communaute?video=${dailyVideo.id}`)}
                           className="flex items-center gap-1.5 px-3.5 py-2 rounded-full flex-shrink-0"
                           style={{
-                            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                             boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(var(--surface-rgb),0.6)",
                           }}>
                           <Play size={12} strokeWidth={2.5} style={{ color: "var(--text-1)", marginLeft: 1 }} fill="currentColor" />
@@ -473,7 +473,7 @@ export default function DailyDrawer({
                         {/* Card séance hero */}
                         <div className="relative rounded-3xl p-5 flex-shrink-0"
                           style={{
-                            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                             boxShadow: "0 12px 36px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.85)",
                           }}>
                           <div className="flex items-start justify-between gap-3">
@@ -515,7 +515,7 @@ export default function DailyDrawer({
                           }}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}>
+                              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}>
                               <Play size={14} strokeWidth={2} style={{ color: "var(--text-1)", marginLeft: 2 }} fill="currentColor" />
                             </div>
                             <div className="text-left">
@@ -575,7 +575,7 @@ export default function DailyDrawer({
                           return (
                             <div className="relative rounded-3xl p-5 flex-shrink-0"
                               style={{
-                                background: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
+                                background: "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)",
                                 boxShadow: "0 12px 36px rgba(var(--gold-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.5)",
                               }}>
                               <div className="flex items-start justify-between gap-3">

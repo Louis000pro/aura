@@ -575,7 +575,7 @@ export default function PublicProfilePage() {
           onClick={() => router.back()}
           className="px-5 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
             color: "var(--text-1)",
           }}
         >
@@ -799,7 +799,7 @@ export default function PublicProfilePage() {
                         border: "1px solid rgba(var(--accent-rgb),0.2)",
                       }
                     : {
-                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                         color: "var(--text-1)",
                         boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 4px 14px rgba(var(--accent-rgb),0.25)",
                       }

@@ -214,7 +214,7 @@ export default function SharePerformanceModal({
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
                   transition={{ type: "spring", bounce: 0.5, delay: 0.1 }}
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}>
+                  style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}>
                   <Check size={24} strokeWidth={2} style={{ color: "var(--text-1)" }} />
                 </motion.div>
                 <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>Publié !</p>
@@ -478,7 +478,7 @@ export default function SharePerformanceModal({
                 <div className="px-5 pb-5">
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleShare} disabled={posting}
                     className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 16px rgba(var(--accent-rgb),0.25)", opacity: posting ? 0.7 : 1 }}>
+                    style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 16px rgba(var(--accent-rgb),0.25)", opacity: posting ? 0.7 : 1 }}>
                     {posting ? (
                       <motion.div className="w-4 h-4 rounded-full border-2"
                         style={{ borderColor: "rgba(45,55,72,0.3)", borderTopColor: "var(--text-1)" }}

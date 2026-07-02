@@ -56,7 +56,7 @@ const CHALLENGES: Challenge[] = [
     category: "musculation",
     difficulty: "facile",
     duration: "7j",
-    gradient: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
+    gradient: "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)",
     emoji: "💪",
   },
   {
@@ -147,10 +147,10 @@ const difficultyConfig: Record<ChallengeDifficulty, { label: string; color: stri
 
 const sectionGradients = [
   "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-  "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
-  "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+  "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)",
+  "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
   "linear-gradient(135deg, #F0EBFF 0%, var(--violet-mid) 100%)",
-  "linear-gradient(135deg, #FFFBF0 0%, var(--cream-mid) 100%)",
+  "linear-gradient(135deg, #F0EBFF 0%, var(--violet-mid) 100%)",
 ];
 
 function avatarGradient(id: string) {

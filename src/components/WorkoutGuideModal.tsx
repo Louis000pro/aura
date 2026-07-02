@@ -766,7 +766,7 @@ export default function WorkoutGuideModal({
                   }}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
+                      style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
                       <Zap size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                     </div>
                     <div>
@@ -1161,7 +1161,7 @@ export default function WorkoutGuideModal({
                   transition={{ type: "spring", stiffness: 260, delay: 0.1 }}
                   className="w-24 h-24 rounded-3xl flex items-center justify-center"
                   style={{
-                    background: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
+                    background: "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)",
                     boxShadow: "0 16px 48px rgba(var(--gold-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.4)",
                   }}
                 >
@@ -1225,7 +1225,7 @@ export default function WorkoutGuideModal({
                 onClick={startWorkout}
                 className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                  background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                   boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 20px rgba(var(--accent-rgb),0.25)",
                   color: "var(--text-1)",
                 }}

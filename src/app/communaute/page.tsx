@@ -109,8 +109,8 @@ function ProfileAvatar({ partner, size = 40 }: { partner: DMPartner; size?: numb
   const initial = (partner.pseudo ?? "?")[0]?.toUpperCase() ?? "?";
   const gradients = [
     "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-    "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
-    "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+    "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)",
+    "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
     "linear-gradient(135deg, rgba(var(--tint-violet-rgb),1) 0%, var(--violet-mid) 100%)",
     "linear-gradient(135deg, rgba(var(--tint-cream-rgb),1) 0%, var(--cream-mid) 100%)",
   ];
@@ -402,7 +402,7 @@ function StoryViewer({ stories, onClose }: { stories: RealStory[]; onClose: () =
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden font-semibold text-sm"
           style={{
-            background: profile?.avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+            background: profile?.avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
             outline: "2px solid rgba(var(--surface-rgb),0.6)",
             outlineOffset: 2,
             color: "var(--text-1)",
@@ -859,7 +859,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                     onClick={() => setSelectedEmoji(e)}
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-xl cursor-pointer"
                     style={{
-                      background: selectedEmoji === e ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
+                      background: selectedEmoji === e ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
                       border: selectedEmoji === e ? "1px solid rgba(var(--violet-mid-rgb),0.8)" : "1px solid transparent",
                     }}
                   >
@@ -882,7 +882,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 onClick={publishText}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
                 style={{
-                  background: textContent.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
+                  background: textContent.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
                   color: textContent.trim() ? "var(--text-1)" : "var(--text-3)",
                   boxShadow: textContent.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
                   cursor: textContent.trim() ? "pointer" : "not-allowed",
@@ -959,7 +959,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 onClick={publishMeal}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-opacity"
                 style={{
-                  background: mealTitle.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
+                  background: mealTitle.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" : "rgba(var(--tint-violet-rgb),0.6)",
                   color: mealTitle.trim() ? "var(--text-1)" : "var(--text-3)",
                   boxShadow: mealTitle.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
                   cursor: mealTitle.trim() ? "pointer" : "not-allowed",
@@ -1093,7 +1093,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", bounce: 0.6, delay: 0.1 }}
                 className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}
               >
                 <Check size={28} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
               </motion.div>
@@ -1270,9 +1270,9 @@ function ShareModal({ postCaption, onClose, onShareDM }: { postCaption?: string;
         <div className="grid grid-cols-4 gap-3 mb-5">
           {[
             { label: "DM", emoji: "💬", color: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", action: () => { onClose(); onShareDM?.(); } },
-            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)", action: onClose },
+            { label: "Story", emoji: "✨", color: "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)", action: onClose },
             { label: copied ? "Copié !" : "Copier", emoji: copied ? "✓" : "🔗", color: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),1) 0%, rgba(var(--tint-cream-rgb),1) 100%)", action: handleCopy },
-            { label: "Partager", emoji: "📤", color: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", action: handleNativeShare },
+            { label: "Partager", emoji: "📤", color: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", action: handleNativeShare },
           ].map(({ label, emoji, color, action }) => (
             <motion.button
               key={label}
@@ -4337,7 +4337,7 @@ function CommunautePageInner() {
                       whileTap={{ scale: 0.92 }}
                       className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden relative"
                       style={myGroup
-                        ? { boxShadow: "0 0 0 2.5px white, 0 0 0 4.5px var(--violet-mid)", background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }
+                        ? { boxShadow: "0 0 0 2.5px white, 0 0 0 4.5px var(--violet-mid)", background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }
                         : { background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.7) 0%, rgba(224,255,255,0.7) 100%)", border: "2px dashed rgba(var(--accent-rgb),0.5)" }
                       }
                     >
@@ -4412,7 +4412,7 @@ function CommunautePageInner() {
                           <div
                             className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden font-semibold text-lg"
                             style={{
-                              background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                              background: p?.avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                               boxShadow: `0 0 0 2px white, 0 0 0 4px ${(group[0]?.content_type === "photo" || group[0]?.content_type === "video" || group[0]?.content_type === ("image" as string)) ? "var(--accent)" : "var(--violet-mid)"}`,
                               color: "var(--text-1)",
                             }}
@@ -5276,7 +5276,7 @@ function CommunautePageInner() {
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowNewDM(true)}
                 className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
                 aria-label="Nouveau message"
               >
                 <Plus size={14} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />
@@ -5574,7 +5574,7 @@ function CommunautePageInner() {
                   disabled={dmSending}
                   className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 transition-all duration-200"
                   style={{
-                    background: dmInput.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" : "rgba(var(--tint-violet-rgb),0.5)",
+                    background: dmInput.trim() ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" : "rgba(var(--tint-violet-rgb),0.5)",
                     boxShadow: dmInput.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
                   }}
                   aria-label="Envoyer"
