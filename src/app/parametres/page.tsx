@@ -58,7 +58,7 @@ function Row({
     >
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: iconBg ?? (danger ? "linear-gradient(135deg, rgba(252,165,165,0.4), rgba(248,113,113,0.3))" : "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.4), rgba(var(--cream-mid-rgb),0.3))") }}
+        style={{ background: danger ? "rgba(248,113,113,0.14)" : "rgba(var(--accent-rgb),0.14)", border: `1px solid ${danger ? "rgba(248,113,113,0.22)" : "rgba(var(--accent-rgb),0.18)"}` }}
       >
         <Icon size={16} strokeWidth={1.5} style={{ color: danger ? "#EF4444" : "var(--accent)" }} />
       </div>
@@ -252,7 +252,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                     <motion.button key={g} whileTap={{ scale: 0.95 }} onClick={() => setGender(g)}
                       className="flex-1 py-2.5 rounded-2xl text-xs font-semibold capitalize cursor-pointer transition-all"
                       style={gender === g
-                        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
                         : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                       }>
                       {g}
@@ -269,7 +269,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                     <motion.button key={key} whileTap={{ scale: 0.93 }} onClick={() => toggleGoal(key)}
                       className="px-3 py-1.5 rounded-xl text-xs font-medium cursor-pointer transition-all"
                       style={goals.includes(key)
-                        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", color: "#fff", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3)" }
+                        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.3)" }
                         : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.15)" }
                       }>
                       {label}
@@ -286,7 +286,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
                     <motion.button key={l} whileTap={{ scale: 0.95 }} onClick={() => setLevel(l)}
                       className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
                       style={level === l
-                        ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
                         : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                       }>
                       {l}
@@ -327,7 +327,7 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
               onClick={handleSave}
               disabled={saving}
               className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {saving ? "Enregistrement…" : "Enregistrer mon profil"}
             </motion.button>
@@ -494,7 +494,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
               onClick={handleSubmit}
               disabled={loading}
               className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
-              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
             >
               {loading ? "Mise à jour…" : "Mettre à jour"}
             </motion.button>
@@ -761,7 +761,7 @@ export default function ParametresPage() {
           >
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.4), rgba(var(--accent-rgb),0.2))" }}
+              style={{ background: "rgba(var(--accent-rgb),0.14)" }}
             >
               <Shield size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
             </div>
@@ -811,7 +811,7 @@ export default function ParametresPage() {
             <div className="flex items-center gap-3.5">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.35), rgba(var(--violet-mid-rgb),0.25))" }}
+                style={{ background: "rgba(var(--accent-rgb),0.14)" }}
               >
                 {isDark
                   ? <Moon size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
@@ -833,7 +833,7 @@ export default function ParametresPage() {
                   onClick={() => { setPreference(opt.key); showToast(`Thème : ${opt.label}`); }}
                   className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
                   style={preference === opt.key
-                    ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                    ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
                     : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                   }
                 >
@@ -856,7 +856,7 @@ export default function ParametresPage() {
             <div className="flex items-center gap-3.5">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.3), rgba(34,211,238,0.2))" }}
+                style={{ background: "rgba(var(--accent-rgb),0.14)" }}
               >
                 <Gauge size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
               </div>
@@ -875,7 +875,7 @@ export default function ParametresPage() {
                   onClick={() => { setQuality(opt.key); showToast(`Qualité : ${opt.label}`); }}
                   className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
                   style={quality === opt.key
-                    ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                    ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
                     : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }
                   }
                 >

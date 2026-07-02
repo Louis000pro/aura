@@ -192,8 +192,8 @@ function PremiumInner() {
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id}
                       className="py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60"
                       style={{
-                        background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "linear-gradient(135deg,#C4A8FF,#A78BFA)",
-                        boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
+                        background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+                        boxShadow: highlight ? "0 8px 24px rgba(193,59,193,0.4)" : "0 8px 24px rgba(139,92,246,0.3)",
                       }}>
                       {loading === id ? "Redirection…" : "Démarrer mes 3 jours gratuits"}
                     </motion.button>
