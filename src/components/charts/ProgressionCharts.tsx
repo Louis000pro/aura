@@ -106,7 +106,7 @@ export function PRChart({
                 <span className="text-xs font-semibold mb-1 ml-1 px-1.5 py-0.5 rounded-lg"
                   style={{
                     background: delta >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
-                    color: delta >= 0 ? "#059669" : "#DC2626",
+                    color: delta >= 0 ? "#12A87E" : "#DC2626",
                   }}>
                   {delta >= 0 ? "+" : ""}{delta.toFixed(1)}
                 </span>
@@ -127,7 +127,7 @@ export function PRChart({
             <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
               className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
               style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)" }}>
-              <span className="text-sm font-bold leading-none" style={{ color: "#34D399" }}>+</span>
+              <span className="text-sm font-bold leading-none" style={{ color: "#2BD4A0" }}>+</span>
             </motion.button>
           </div>
         </div>
@@ -164,7 +164,7 @@ export function PRChart({
                 </select>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd} disabled={saving}
                   className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#6EE7B7,#34D399)", color: "white" }}>
+                  style={{ background: "linear-gradient(135deg,#4FE3B4,#2BD4A0)", color: "white" }}>
                   {saving ? "…" : "OK"}
                 </motion.button>
               </div>
@@ -178,7 +178,7 @@ export function PRChart({
         <div className="flex flex-col items-center justify-center py-10 gap-3 px-4">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
             style={{ background: "rgba(52,211,153,0.08)" }}>
-            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#34D399" }} />
+            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#2BD4A0" }} />
           </div>
           <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>
             {exercises.length === 0
@@ -191,9 +191,9 @@ export function PRChart({
           <svg width="100%" viewBox={`0 0 ${W} ${H + 16}`} style={{ overflow: "visible" }}>
             <defs>
               <linearGradient id="prAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34D399" stopOpacity="0.28" />
-                <stop offset="60%" stopColor="#34D399" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#34D399" stopOpacity="0" />
+                <stop offset="0%" stopColor="#2BD4A0" stopOpacity="0.28" />
+                <stop offset="60%" stopColor="#2BD4A0" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#2BD4A0" stopOpacity="0" />
               </linearGradient>
               <filter id="prGlow">
                 <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
@@ -212,7 +212,7 @@ export function PRChart({
             })}
             {areaPath && <path d={areaPath} fill="url(#prAreaGrad)" />}
             {linePath && pts.length >= 2 && (
-              <path d={linePath} fill="none" stroke="#34D399" strokeWidth="2.8"
+              <path d={linePath} fill="none" stroke="#2BD4A0" strokeWidth="2.8"
                 strokeLinecap="round" strokeLinejoin="round" filter="url(#prGlow)" />
             )}
             {pts.map((p, i) => {
@@ -220,13 +220,13 @@ export function PRChart({
               const cx = tx(i), cy = ty(p.value);
               return isLast ? (
                 <g key={i}>
-                  <circle cx={cx} cy={cy} r={11} fill="#34D399" fillOpacity="0.1" />
-                  <circle cx={cx} cy={cy} r={6} fill="#34D399"
+                  <circle cx={cx} cy={cy} r={11} fill="#2BD4A0" fillOpacity="0.1" />
+                  <circle cx={cx} cy={cy} r={6} fill="#2BD4A0"
                     style={{ filter: "drop-shadow(0 0 6px rgba(52,211,153,0.7))" }} />
                   <circle cx={cx} cy={cy} r={2.5} fill="white" />
                 </g>
               ) : (
-                <circle key={i} cx={cx} cy={cy} r={3} fill="white" stroke="#34D399" strokeWidth="1.8" />
+                <circle key={i} cx={cx} cy={cy} r={3} fill="white" stroke="#2BD4A0" strokeWidth="1.8" />
               );
             })}
             {pts.length >= 2 && [0, pts.length - 1].map(i => {
@@ -315,8 +315,8 @@ export function VolumeChart({ data }: { data: Array<{ label: string; cals: numbe
             <defs>
               {data.map((_, i) => (
                 <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6FB0FF" stopOpacity={i === data.length - 1 ? "1" : "0.55"} />
-                  <stop offset="100%" stopColor="#2E6BE0" stopOpacity={i === data.length - 1 ? "0.95" : "0.4"} />
+                  <stop offset="0%" stopColor="#F5B120" stopOpacity={i === data.length - 1 ? "1" : "0.55"} />
+                  <stop offset="100%" stopColor="#E8620C" stopOpacity={i === data.length - 1 ? "0.95" : "0.4"} />
                 </linearGradient>
               ))}
             </defs>

@@ -1068,12 +1068,12 @@ function Dashboard() {
           </div>
           {/* Calories mangées / brûlées */}
           <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}>
-            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#FF8A66" }}>
+            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#FF9A3D" }}>
               <Flame size={12} strokeWidth={2} />
               {liveStats.calories > 0 ? `${liveStats.calories.toLocaleString("fr-FR")} kcal mangées` : "Aucun repas loggé"}
             </span>
             {liveStats.burned > 0 && (
-              <span className="text-xs font-medium" style={{ color: "#6FB0FF" }}>{liveStats.burned.toLocaleString("fr-FR")} kcal brûlées</span>
+              <span className="text-xs font-medium" style={{ color: "#E8620C" }}>{liveStats.burned.toLocaleString("fr-FR")} kcal brûlées</span>
             )}
           </div>
         </button>
@@ -1103,11 +1103,11 @@ function Dashboard() {
             )}
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-            <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "#FF9A3D" }}>Du jour</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--text-3)" }}>Du jour</p>
             <p className="text-lg font-light leading-tight" style={{ color: "var(--text-0)" }}>Vidéo · Séance · Perf</p>
             <p className="text-[11px] font-light mt-1" style={{ color: "var(--text-soft)" }}>Tap pour explorer ton contenu</p>
             <div className="flex items-center gap-2 mt-2">
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 3px 12px rgba(232,98,12,0.4)" }}>
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 3px 12px rgba(193,59,193,0.4)" }}>
                 <Play size={10} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 0.5 }} fill="#fff" />
                 <span className="text-[11px] font-bold text-white">Voir</span>
               </span>
