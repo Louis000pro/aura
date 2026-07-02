@@ -97,7 +97,7 @@ function PremiumInner() {
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col"
-      style={{ background: "linear-gradient(180deg,#faf8ff 0%,#f4eeff 50%,#ece4ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
+      style={{ background: "var(--page-bg)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
       <motion.div className="absolute rounded-full pointer-events-none"
@@ -116,18 +116,18 @@ function PremiumInner() {
           className="text-center mb-4 md:mb-8 flex-shrink-0">
           <span className="inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full"
             style={{ color: "#7C5CFA", background: "rgba(167,139,250,0.12)" }}>VAIIYA PREMIUM ✦</span>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "#2D2150" }}>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "var(--text-0)" }}>
             Passe au niveau supérieur
           </h1>
-          <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "#7C6BAA" }}>
-            Coach IA <strong style={{ color: "#6D28D9" }}>sans limite</strong>, programmes exclusifs, zéro pub.
-            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+          <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
+            Coach IA <strong style={{ color: "var(--accent)" }}>sans limite</strong>, programmes exclusifs, zéro pub.
+            <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
           </p>
         </motion.div>
 
         {msg && (
           <div className="max-w-md mx-auto mb-8 px-4 py-3 rounded-2xl text-center text-sm font-medium"
-            style={{ background: "rgba(167,139,250,0.12)", color: "#6D28D9", border: "1px solid rgba(167,139,250,0.25)" }}>
+            style={{ background: "rgba(167,139,250,0.12)", color: "var(--accent)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {msg}
           </div>
         )}
@@ -154,7 +154,7 @@ function PremiumInner() {
                   boxShadow: highlight ? "0 18px 50px -22px rgba(167,139,250,0.32)" : "0 10px 30px rgba(167,139,250,0.08)",
                 }}>
                 <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
-                  style={{ background: "rgba(255,255,255,0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
+                  style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
 
                   {highlight && (
                     <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white"
@@ -164,15 +164,15 @@ function PremiumInner() {
                   {/* Nom de l'offre */}
                   <div className="flex items-center gap-2 mb-3" style={{ color: highlight ? "#7C5CFA" : "#A78BFA" }}>
                     {ICONS[id]}
-                    <span className="text-lg font-extrabold" style={{ color: "#2D2150" }}>{p.name}</span>
+                    <span className="text-lg font-extrabold" style={{ color: "var(--text-0)" }}>{p.name}</span>
                   </div>
 
                   {/* Prix */}
                   <div className="flex items-end gap-1.5 flex-wrap mb-2.5">
-                    <span className="text-3xl md:text-4xl font-black" style={{ color: "#2D2150" }}>
+                    <span className="text-3xl md:text-4xl font-black" style={{ color: "var(--text-0)" }}>
                       {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                     </span>
-                    {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "#9488B5" }}>/mois</span>}
+                    {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
                     {p.priceCents > 0 && (
                       <span className="text-[11px] font-semibold mb-1.5 px-2 py-0.5 rounded-full"
                         style={{ background: "rgba(167,139,250,0.1)", color: "#7C5CFA" }}>
@@ -182,12 +182,12 @@ function PremiumInner() {
                   </div>
 
                   {/* Petite phrase entre le prix et le bouton (façon ChatGPT) */}
-                  <p className="text-sm font-light mb-4" style={{ color: "#7C6BAA", minHeight: 40 }}>{p.tagline}</p>
+                  <p className="text-sm font-light mb-4" style={{ color: "var(--text-soft)", minHeight: 40 }}>{p.tagline}</p>
 
                   {/* CTA — juste sous le prix */}
                   {id === "free" ? (
                     <div className="text-center py-3 rounded-2xl text-sm font-semibold"
-                      style={{ background: "rgba(240,235,255,0.7)", color: "#9488B5" }}>Ton offre actuelle</div>
+                      style={{ background: "rgba(240,235,255,0.7)", color: "var(--text-3)" }}>Ton offre actuelle</div>
                   ) : (
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id}
                       className="py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60"
@@ -205,7 +205,7 @@ function PremiumInner() {
                   {/* Avantages — listés en bas, tous visibles */}
                   <ul className="flex flex-col gap-2.5">
                     {p.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "#4A4060" }}>
+                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "var(--text-body)" }}>
                         <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                           style={{ background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "rgba(167,139,250,0.18)" }}>
                           <Check size={11} strokeWidth={3} style={{ color: highlight ? "#fff" : "#A78BFA" }} />
@@ -232,10 +232,10 @@ function PremiumInner() {
               className="rounded-full transition-all cursor-pointer"
               style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
           ))}
-          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "#9488B5" }}>3 offres · glisse pour comparer</span>
+          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>3 offres · glisse pour comparer</span>
         </div>
 
-        <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "#9488B5" }}>
+        <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
           <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
         </p>
       </div>
