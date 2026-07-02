@@ -130,10 +130,14 @@ const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
   { key: "fullbody", label: "Full Body" },
 ];
 
-const difficultyColor: Record<string, string> = {
-  "Débutant":      "#2BD4A0",
-  "Intermédiaire": "#FBBF24",
-  "Avancé":        "var(--accent)",
+// Système D — la couleur du TYPE (catégorie) sert d'accent (barre + badge + icône
+// + avatar). Résistance (force/full body) = violet, cardio = orange, mobilité = teal.
+// Le bouton « Commencer » reste toujours violet (action). Difficulté = neutre.
+const CATEGORY_COLOR: Record<WorkoutCategory, string> = {
+  force: "#8B5CF6", fullbody: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0",
+};
+const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
+  force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
 };
 
 /* ─── Icon resolver (Supabase stores icon name as string) ── */
@@ -552,6 +556,8 @@ function WorkoutCard({
   onStart?: (s: WorkoutSession) => void;
 }) {
   const Icon = session.icon;
+  const catColor = CATEGORY_COLOR[session.category] ?? "#8B5CF6";
+  const catLabel = CATEGORY_LABEL[session.category] ?? "";
 
   return (
     <motion.div
@@ -576,6 +582,8 @@ function WorkoutCard({
         transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
       }}
     >
+      {/* Barre d'accent de la catégorie (haut de carte) */}
+      <div style={{ height: 4, background: catColor }} />
       {/* Done ribbon */}
       {isDone && (
         <div
@@ -587,18 +595,21 @@ function WorkoutCard({
         </div>
       )}
       {/* Header */}
-      <div className="px-4 pt-4 pb-2" style={{ background: `${session.accent}14` }}>
+      <div className="px-4 pt-3 pb-2" style={{ background: `${catColor}14` }}>
         <div className="flex items-center gap-2 mb-1.5">
           <div
             className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `${session.accent}28`, border: `1px solid ${session.accent}45` }}
+            style={{ background: `${catColor}28`, border: `1px solid ${catColor}45` }}
           >
-            <Icon size={13} strokeWidth={1.5} style={{ color: session.accent }} />
+            <Icon size={13} strokeWidth={1.5} style={{ color: catColor }} />
           </div>
           <span
             className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-            style={{ background: `${session.accent}18`, color: session.accent }}
+            style={{ background: `${catColor}18`, color: catColor }}
           >
+            {catLabel}
+          </span>
+          <span className="text-[9px] font-semibold tracking-wider uppercase ml-auto" style={{ color: "var(--text-3)" }}>
             {session.difficulty}
           </span>
         </div>
@@ -609,12 +620,12 @@ function WorkoutCard({
       {/* Body avatar — full width, centered */}
       <div
         className="flex items-center justify-center py-3"
-        style={{ background: `${session.accent}08`, borderTop: `1px solid ${session.accent}18`, borderBottom: `1px solid ${session.accent}18` }}
+        style={{ background: `${catColor}08`, borderTop: `1px solid ${catColor}18`, borderBottom: `1px solid ${catColor}18` }}
       >
         <BodyAvatar
           gender={gender}
           muscles={session.muscles}
-          accent={session.accent}
+          accent={catColor}
           width={160}
         />
       </div>
@@ -641,17 +652,17 @@ function WorkoutCard({
           className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
           style={
             isActive
-              ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
+              ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }
               : isDone
               ? { background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(var(--text-1-rgb),0.10)" }
-              : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
+              : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 4px 14px rgba(139,92,246,0.4)" }
           }
         >
           <AnimatePresence mode="wait">
             {isActive ? (
               <motion.span key="on" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <CheckCircle size={12} strokeWidth={2} style={{ color: session.accent }} />
-                <span className="text-[11px] font-semibold" style={{ color: session.accent }}>En cours !</span>
+                <CheckCircle size={12} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "#8B5CF6" }}>En cours !</span>
               </motion.span>
             ) : isDone ? (
               <motion.span key="redo" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
@@ -693,6 +704,8 @@ function LibraryCard({
   const visKey = (session.visibility ?? "private") as keyof typeof VIS_CONFIG;
   const vis = VIS_CONFIG[visKey];
   const VisIcon = vis.icon;
+  const catColor = CATEGORY_COLOR[session.category] ?? "#8B5CF6";
+  const catLabel = CATEGORY_LABEL[session.category] ?? "";
 
   return (
     <motion.div
@@ -707,20 +720,25 @@ function LibraryCard({
         boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.10)",
       }}
     >
+      {/* Barre d'accent de la catégorie */}
+      <div style={{ height: 4, background: catColor }} />
       {/* Colored header */}
-      <div className="px-4 pt-4 pb-3" style={{ background: `${session.accent}10`, borderBottom: `1px solid ${session.accent}18` }}>
+      <div className="px-4 pt-3 pb-3" style={{ background: `${catColor}10`, borderBottom: `1px solid ${catColor}18` }}>
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-2 flex-wrap">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${session.accent}24`, border: `1px solid ${session.accent}44` }}
+              style={{ background: `${catColor}24`, border: `1px solid ${catColor}44` }}
             >
-              <Icon size={14} strokeWidth={1.5} style={{ color: session.accent }} />
+              <Icon size={14} strokeWidth={1.5} style={{ color: catColor }} />
             </div>
             <span
               className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-              style={{ background: `${session.accent}18`, color: session.accent }}
+              style={{ background: `${catColor}18`, color: catColor }}
             >
+              {catLabel}
+            </span>
+            <span className="text-[9px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>
               {session.difficulty}
             </span>
           </div>
@@ -752,7 +770,7 @@ function LibraryCard({
             <span
               key={m}
               className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: `${session.accent}16`, color: session.accent }}
+              style={{ background: `${catColor}16`, color: catColor }}
             >
               {m}
             </span>
@@ -774,7 +792,7 @@ function LibraryCard({
           <Clock size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
           <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
         </div>
-        <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
+        <div className="w-px h-3" style={{ background: "rgba(var(--text-1-rgb),0.12)" }} />
         <div className="flex items-center gap-1.5">
           <Dumbbell size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
           <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
@@ -789,14 +807,14 @@ function LibraryCard({
           className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
           style={
             isActive
-              ? { background: `${session.accent}22`, border: `1px solid ${session.accent}44` }
-              : { background: `linear-gradient(135deg, ${session.accent}ee, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
+              ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.35)" }
+              : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 4px 14px rgba(139,92,246,0.4)" }
           }
         >
           {isActive ? (
             <>
-              <CheckCircle size={13} strokeWidth={2} style={{ color: session.accent }} />
-              <span className="text-xs font-semibold" style={{ color: session.accent }}>En cours !</span>
+              <CheckCircle size={13} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+              <span className="text-xs font-semibold" style={{ color: "#8B5CF6" }}>En cours !</span>
             </>
           ) : (
             <>
@@ -1215,7 +1233,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                     <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
                       className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
                       style={difficulty === d
-                        ? { background: `${difficultyColor[d]}22`, color: difficultyColor[d], border: `1px solid ${difficultyColor[d]}44` }
+                        ? { background: "rgba(139,92,246,0.14)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.35)" }
                         : { background: "rgba(var(--surface-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
                       }>
                       {d}
