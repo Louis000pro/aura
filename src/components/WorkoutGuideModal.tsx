@@ -32,16 +32,16 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
 
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.12)" }}>
+      style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
       <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
         <span className="inline-flex items-center justify-center w-5 h-5 rounded-md" style={{ background: "#FF0000" }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
         </span>
-        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Référence humaine</p>
+        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Référence humaine</p>
       </div>
       {state === "loading" && (
-        <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.06)" }}>
-          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} />
+        <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.06)" }}>
+          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(var(--accent-rgb),0.25)", borderTopColor: "var(--accent)" }} />
         </div>
       )}
       {state === "ready" && videoId && (
@@ -59,7 +59,7 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
       {state === "none" && (
         <a href={ytSearch} target="_blank" rel="noopener noreferrer"
           className="aspect-video w-full flex flex-col items-center justify-center gap-2 text-center px-4"
-          style={{ background: "rgba(167,139,250,0.06)", color: "#A78BFA" }}>
+          style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)" }}>
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full" style={{ background: "#FF0000" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
           </span>
@@ -682,18 +682,18 @@ export default function WorkoutGuideModal({
         transition={{ type: "spring", stiffness: 380, damping: 36 }}
         className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden"
         style={{
-          background: "rgba(255,255,255,0.98)",
+          background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(24px)",
-          boxShadow: "0 -4px 60px rgba(167,139,250,0.12), 0 0 0 1px rgba(255,255,255,0.9)",
+          boxShadow: "0 -4px 60px rgba(var(--accent-rgb),0.12), 0 0 0 1px rgba(var(--surface-rgb),0.9)",
           maxHeight: "92dvh",
         }}
       >
         {/* ── Progress bar ── */}
         {phase !== "intro" && phase !== "done" && (
-          <div className="h-1" style={{ background: "rgba(167,139,250,0.1)" }}>
+          <div className="h-1" style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
             <motion.div
               className="h-full"
-              style={{ background: `linear-gradient(90deg, #A78BFA, ${accent})` }}
+              style={{ background: `linear-gradient(90deg, var(--accent), ${accent})` }}
               animate={{ width: `${progressPct}%` }}
               transition={{ duration: 0.5 }}
             />
@@ -703,7 +703,7 @@ export default function WorkoutGuideModal({
         {/* ── Header ── */}
         <div
           className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0"
-          style={{ borderBottom: (phase !== "intro" && phase !== "done") ? "1px solid rgba(167,139,250,0.08)" : "none" }}
+          style={{ borderBottom: (phase !== "intro" && phase !== "done") ? "1px solid rgba(var(--accent-rgb),0.08)" : "none" }}
         >
           <div>
             {(phase === "exercising" || phase === "resting") && (
@@ -711,14 +711,14 @@ export default function WorkoutGuideModal({
                 Exercice {exerciseIdx + 1} / {exercises.length}
               </p>
             )}
-            <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{title}</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{title}</p>
           </div>
           <div className="flex items-center gap-2">
             {phase !== "intro" && phase !== "done" && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                <Clock size={10} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                <span className="text-[11px] font-mono font-medium" style={{ color: "#A78BFA" }}>{fmt(elapsed)}</span>
+                style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
+                <Clock size={10} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                <span className="text-[11px] font-mono font-medium" style={{ color: "var(--accent)" }}>{fmt(elapsed)}</span>
               </div>
             )}
             {canPause && (
@@ -727,14 +727,14 @@ export default function WorkoutGuideModal({
                 onClick={togglePause}
                 className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
                 style={{
-                  background: paused ? "rgba(167,139,250,0.12)" : "rgba(0,0,0,0.04)",
-                  border: paused ? "1px solid rgba(167,139,250,0.25)" : "1px solid rgba(0,0,0,0.06)",
+                  background: paused ? "rgba(var(--accent-rgb),0.12)" : "rgba(0,0,0,0.04)",
+                  border: paused ? "1px solid rgba(var(--accent-rgb),0.25)" : "1px solid rgba(0,0,0,0.06)",
                 }}
                 aria-label={paused ? "Reprendre" : "Pause"}
               >
                 {paused
-                  ? <Play  size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                  : <Pause size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                  ? <Play  size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                  : <Pause size={13} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 }
               </motion.button>
             )}
@@ -743,7 +743,7 @@ export default function WorkoutGuideModal({
               className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
               style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)" }}
             >
-              <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+              <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
             </button>
           </div>
         </div>
@@ -761,17 +761,17 @@ export default function WorkoutGuideModal({
                 {/* Session info card */}
                 <div className="rounded-3xl p-5"
                   style={{
-                    background: "linear-gradient(135deg, rgba(212,192,255,0.25) 0%, rgba(245,230,163,0.25) 100%)",
-                    border: "1px solid rgba(167,139,250,0.2)",
+                    background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.25) 0%, rgba(var(--cream-mid-rgb),0.25) 100%)",
+                    border: "1px solid rgba(var(--accent-rgb),0.2)",
                   }}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                      <Zap size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                      style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
+                      <Zap size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                     </div>
                     <div>
-                      <p className="text-base font-medium" style={{ color: "#2D3748" }}>{title}</p>
-                      <p className="text-xs mt-0.5 font-light" style={{ color: "#A0AEC0" }}>{difficulty} · {duration} min</p>
+                      <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>{title}</p>
+                      <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-3)" }}>{difficulty} · {duration} min</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -781,9 +781,9 @@ export default function WorkoutGuideModal({
                       { label: "Durée est.",     value: `~${duration} min` },
                     ].map(({ label, value }) => (
                       <div key={label} className="rounded-2xl p-3 text-center"
-                        style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                        <p className="text-base font-light" style={{ color: "#2D3748" }}>{value}</p>
-                        <p className="text-[9px] font-semibold mt-1 tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</p>
+                        style={{ background: "rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
+                        <p className="text-base font-light" style={{ color: "var(--text-1)" }}>{value}</p>
+                        <p className="text-[9px] font-semibold mt-1 tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</p>
                       </div>
                     ))}
                   </div>
@@ -792,10 +792,10 @@ export default function WorkoutGuideModal({
                 {/* Exercise list — chaque exo est dépliable (technique + démo vidéo) */}
                 <div>
                   <div className="flex items-center justify-between mb-3 px-1">
-                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                       Au programme
                     </p>
-                    <p className="text-[10px] font-light" style={{ color: "#A78BFA" }}>
+                    <p className="text-[10px] font-light" style={{ color: "var(--accent)" }}>
                       Touche un exo pour la démo
                     </p>
                   </div>
@@ -804,22 +804,22 @@ export default function WorkoutGuideModal({
                       const open = introOpen === i;
                       return (
                         <div key={i} className="rounded-2xl overflow-hidden"
-                          style={{ background: "rgba(255,255,255,0.6)", border: `1px solid ${open ? "rgba(167,139,250,0.25)" : "rgba(167,139,250,0.08)"}`, boxShadow: "0 1px 4px rgba(167,139,250,0.05)" }}>
+                          style={{ background: "rgba(var(--surface-rgb),0.6)", border: `1px solid ${open ? "rgba(var(--accent-rgb),0.25)" : "rgba(var(--accent-rgb),0.08)"}`, boxShadow: "0 1px 4px rgba(var(--accent-rgb),0.05)" }}>
                           <button
                             onClick={() => setIntroOpen(open ? null : i)}
                             className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer text-left"
                             aria-expanded={open}
                           >
                             <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}>
+                              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}>
                               {i + 1}
                             </div>
-                            <p className="flex-1 text-sm font-light truncate" style={{ color: "#2D3748" }}>{ex.name}</p>
-                            <p className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>
+                            <p className="flex-1 text-sm font-light truncate" style={{ color: "var(--text-1)" }}>{ex.name}</p>
+                            <p className="text-[10px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>
                               {ex.sets}×{ex.reps}
                             </p>
                             <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex-shrink-0 flex">
-                              <ChevronDown size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                              <ChevronDown size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                             </motion.span>
                           </button>
                           <AnimatePresence initial={false}>
@@ -832,11 +832,11 @@ export default function WorkoutGuideModal({
                                 <div className="px-4 pb-4 pt-1 flex flex-col gap-3">
                                   {/* Technique */}
                                   <div className="rounded-xl p-3"
-                                    style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.1)" }}>
-                                    <p className="text-[9px] font-bold tracking-widest uppercase mb-1.5" style={{ color: "#A78BFA" }}>
+                                    style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}>
+                                    <p className="text-[9px] font-bold tracking-widest uppercase mb-1.5" style={{ color: "var(--accent)" }}>
                                       Comment faire
                                     </p>
-                                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "#4A5568" }}>{ex.tip}</p>
+                                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{ex.tip}</p>
                                   </div>
                                   {/* Démo vidéo (chargée à l'ouverture seulement) */}
                                   <ExerciseVideo exerciseName={ex.name} />
@@ -864,18 +864,18 @@ export default function WorkoutGuideModal({
                     <button
                       onClick={() => setShowInfo(false)}
                       className="flex items-center gap-1.5 text-xs font-medium cursor-pointer w-fit"
-                      style={{ color: "#A78BFA" }}
+                      style={{ color: "var(--accent)" }}
                     >
                       <ArrowLeft size={13} strokeWidth={2} />
                       Retour à l&apos;exercice
                     </button>
 
                     <div>
-                      <h2 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>{cur.name}</h2>
+                      <h2 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>{cur.name}</h2>
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {cur.muscles.map(m => (
                           <span key={m} className="px-2.5 py-1 rounded-xl text-[10px] font-semibold"
-                            style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>{m}</span>
+                            style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>{m}</span>
                         ))}
                       </div>
                     </div>
@@ -885,32 +885,32 @@ export default function WorkoutGuideModal({
 
                     {/* Benefit */}
                     <div className="rounded-2xl p-4"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(255,251,240,0.7) 100%)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: "#A78BFA" }}>
+                      style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.7) 0%, rgba(255,251,240,0.7) 100%)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+                      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: "var(--accent)" }}>
                         Bénéfice pour le corps
                       </p>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>
+                      <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
                         {cur.benefit}
                       </p>
                     </div>
 
                     {/* Technique */}
                     <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.1)" }}>
+                      style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>A</div>
-                        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+                          style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>A</div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
                           Technique
                         </p>
                       </div>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>{cur.tip}</p>
+                      <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{cur.tip}</p>
                     </div>
 
                     {/* Sets info */}
                     <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.1)" }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+                      style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}>
+                      <p className="text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>
                         Détail de la séance
                       </p>
                       <div className="flex gap-6">
@@ -920,8 +920,8 @@ export default function WorkoutGuideModal({
                           { label: "Repos",  value: cur.rest > 0 ? `${cur.rest}s` : "—" },
                         ].map(({ label, value }) => (
                           <div key={label}>
-                            <p className="text-lg font-light" style={{ color: "#2D3748" }}>{value}</p>
-                            <p className="text-[9px] font-semibold mt-0.5 tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</p>
+                            <p className="text-lg font-light" style={{ color: "var(--text-1)" }}>{value}</p>
+                            <p className="text-[9px] font-semibold mt-0.5 tracking-wider uppercase" style={{ color: "var(--text-3)" }}>{label}</p>
                           </div>
                         ))}
                       </div>
@@ -937,17 +937,17 @@ export default function WorkoutGuideModal({
                     {/* Name + help */}
                     <div>
                       <div className="flex items-start gap-2">
-                        <h2 className="text-4xl font-extralight leading-tight tracking-tight flex-1" style={{ color: "#2D3748" }}>
+                        <h2 className="text-4xl font-extralight leading-tight tracking-tight flex-1" style={{ color: "var(--text-1)" }}>
                           {cur.name}
                         </h2>
                         <motion.button
                           whileTap={{ scale: 0.88 }}
                           onClick={() => setShowInfo(true)}
                           className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer mt-1"
-                          style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}
+                          style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
                           aria-label="En savoir plus sur cet exercice"
                         >
-                          <HelpCircle size={13} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+                          <HelpCircle size={13} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
                         </motion.button>
                       </div>
                       {/* Set progress dots */}
@@ -960,16 +960,16 @@ export default function WorkoutGuideModal({
                                 width:  i === setIdx ? 20 : 8,
                                 height: 8,
                                 background: doneMap[exerciseIdx]?.[i]
-                                  ? `linear-gradient(90deg, ${accent}, #D4C0FF)`
+                                  ? `linear-gradient(90deg, ${accent}, var(--violet-mid))`
                                   : i === setIdx
                                   ? accent
-                                  : "rgba(167,139,250,0.2)",
+                                  : "rgba(var(--accent-rgb),0.2)",
                               }}
                               transition={{ duration: 0.25 }}
                             />
                           ))}
                         </div>
-                        <span className="text-xs font-medium" style={{ color: "#A0AEC0" }}>
+                        <span className="text-xs font-medium" style={{ color: "var(--text-3)" }}>
                           Série {setIdx + 1}/{cur.sets} · {cur.reps}
                         </span>
                       </div>
@@ -998,7 +998,7 @@ export default function WorkoutGuideModal({
                           aria-label={paused ? "Reprendre" : "Pause"}
                         >
                           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(167,139,250,0.12)" strokeWidth="5" />
+                            <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(var(--accent-rgb),0.12)" strokeWidth="5" />
                             <motion.circle cx="50" cy="50" r={CR} fill="none"
                               stroke={isHiit ? (hiitSub === "work" ? "#EF4444" : "#2BD4A0") : accent}
                               strokeWidth="5" strokeLinecap="round"
@@ -1010,9 +1010,9 @@ export default function WorkoutGuideModal({
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             {paused ? (
-                              <Play size={28} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                              <Play size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                             ) : (
-                              <span className="text-4xl font-extralight tabular-nums" style={{ color: "#2D3748" }}>
+                              <span className="text-4xl font-extralight tabular-nums" style={{ color: "var(--text-1)" }}>
                                 {autoCountdown}
                               </span>
                             )}
@@ -1027,10 +1027,10 @@ export default function WorkoutGuideModal({
                         <motion.div
                           initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                           className="flex items-center justify-center gap-2 rounded-2xl py-3"
-                          style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}
+                          style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}
                         >
-                          <Pause size={12} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                          <span className="text-xs font-semibold" style={{ color: "#A78BFA" }}>En pause</span>
+                          <Pause size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                          <span className="text-xs font-semibold" style={{ color: "var(--accent)" }}>En pause</span>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1042,21 +1042,21 @@ export default function WorkoutGuideModal({
                     <div className="flex flex-wrap gap-1.5">
                       {cur.muscles.map(m => (
                         <span key={m} className="px-2.5 py-1 rounded-xl text-[10px] font-semibold"
-                          style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.15)" }}>{m}</span>
+                          style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>{m}</span>
                       ))}
                     </div>
 
                     {/* Aura tip */}
                     <div className="rounded-2xl p-4"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(255,251,240,0.7) 100%)", border: "1px solid rgba(167,139,250,0.2)" }}>
+                      style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.7) 0%, rgba(255,251,240,0.7) 100%)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>A</div>
-                        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+                          style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>A</div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
                           Conseil Vaiiya
                         </p>
                       </div>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>{cur.tip}</p>
+                      <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{cur.tip}</p>
                     </div>
                   </motion.div>
                 )}
@@ -1071,8 +1071,8 @@ export default function WorkoutGuideModal({
               >
                 {/* Label pill */}
                 <div className="px-4 py-1.5 rounded-full"
-                  style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                  <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
+                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+                  <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
                     {paused ? "En pause" : restMode === "exercise" ? "Transition" : "Récupération"}
                   </p>
                 </div>
@@ -1085,9 +1085,9 @@ export default function WorkoutGuideModal({
                   aria-label={paused ? "Reprendre" : "Pause"}
                 >
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(167,139,250,0.12)" strokeWidth="6" />
+                    <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(var(--accent-rgb),0.12)" strokeWidth="6" />
                     <motion.circle cx="50" cy="50" r={CR} fill="none"
-                      stroke="#A78BFA" strokeWidth="6" strokeLinecap="round"
+                      stroke="var(--accent)" strokeWidth="6" strokeLinecap="round"
                       strokeDasharray={CC}
                       animate={{ strokeDashoffset: restOffset }}
                       transition={{ duration: 0.6 }}
@@ -1095,12 +1095,12 @@ export default function WorkoutGuideModal({
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     {paused
-                      ? <Play size={30} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                      ? <Play size={30} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                       : <>
-                          <span className="text-5xl font-extralight tabular-nums" style={{ color: "#2D3748" }}>
+                          <span className="text-5xl font-extralight tabular-nums" style={{ color: "var(--text-1)" }}>
                             {restCountdown}
                           </span>
-                          <span className="text-[10px] font-medium mt-0.5" style={{ color: "#A0AEC0" }}>sec</span>
+                          <span className="text-[10px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>sec</span>
                         </>
                     }
                   </div>
@@ -1115,11 +1115,11 @@ export default function WorkoutGuideModal({
                   const nextSub    = isLastSet ? "Prochain exercice" : `Série ${setIdx + 2}/${cur?.sets}`;
                   return nextLabel ? (
                     <div className="w-full rounded-2xl p-3.5 flex items-center gap-3"
-                      style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.12)" }}>
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#A0AEC0" }}>{nextSub}</p>
-                        <p className="text-sm font-medium mt-0.5" style={{ color: "#2D3748" }}>{nextLabel}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>{nextSub}</p>
+                        <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-1)" }}>{nextLabel}</p>
                       </div>
                     </div>
                   ) : null;
@@ -1130,7 +1130,7 @@ export default function WorkoutGuideModal({
                   <motion.button whileTap={{ scale: 0.95 }}
                     onClick={() => setRestCountdown(0)}
                     className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
-                    style={{ background: "rgba(0,0,0,0.04)", color: "#718096", border: "1px solid rgba(0,0,0,0.06)" }}
+                    style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-2)", border: "1px solid rgba(0,0,0,0.06)" }}
                   >
                     <SkipForward size={12} strokeWidth={2} />
                     Passer le repos
@@ -1139,7 +1139,7 @@ export default function WorkoutGuideModal({
                     <motion.button whileTap={{ scale: 0.95 }}
                       onClick={skipExercise}
                       className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1"
-                      style={{ color: "#A0AEC0" }}
+                      style={{ color: "var(--text-3)" }}
                     >
                       <SkipForward size={10} strokeWidth={2} />
                       Passer l&apos;exercice
@@ -1161,18 +1161,18 @@ export default function WorkoutGuideModal({
                   transition={{ type: "spring", stiffness: 260, delay: 0.1 }}
                   className="w-24 h-24 rounded-3xl flex items-center justify-center"
                   style={{
-                    background: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
-                    boxShadow: "0 16px 48px rgba(212,168,67,0.3), inset 0 1px 0 rgba(255,255,255,0.4)",
+                    background: "linear-gradient(135deg, var(--cream-mid) 0%, var(--gold) 100%)",
+                    boxShadow: "0 16px 48px rgba(var(--gold-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.4)",
                   }}
                 >
                   <Trophy size={40} strokeWidth={1.2} style={{ color: "#fff" }} />
                 </motion.div>
 
                 <div>
-                  <h2 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
+                  <h2 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
                     Séance terminée !
                   </h2>
-                  <p className="text-sm mt-2 font-light" style={{ color: "#A0AEC0" }}>
+                  <p className="text-sm mt-2 font-light" style={{ color: "var(--text-3)" }}>
                     Excellent travail — tu es plus fort qu&apos;hier 💪
                   </p>
                 </div>
@@ -1185,9 +1185,9 @@ export default function WorkoutGuideModal({
                     { label: "Séries",    value: String(totalSets) },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-2xl p-4"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)", border: "1px solid rgba(167,139,250,0.12)" }}>
-                      <p className="text-xl font-light" style={{ color: "#2D3748" }}>{value}</p>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mt-1" style={{ color: "#A0AEC0" }}>{label}</p>
+                      style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.8) 0%, rgba(255,251,240,0.8) 100%)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+                      <p className="text-xl font-light" style={{ color: "var(--text-1)" }}>{value}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider mt-1" style={{ color: "var(--text-3)" }}>{label}</p>
                     </div>
                   ))}
                 </div>
@@ -1215,7 +1215,7 @@ export default function WorkoutGuideModal({
 
         {/* ── Bottom CTA ── */}
         <div className="px-5 pb-6 pt-3 flex-shrink-0"
-          style={{ borderTop: "1px solid rgba(167,139,250,0.08)" }}>
+          style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}>
           <AnimatePresence mode="wait">
 
             {phase === "intro" && (
@@ -1225,9 +1225,9 @@ export default function WorkoutGuideModal({
                 onClick={startWorkout}
                 className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 20px rgba(167,139,250,0.25)",
-                  color: "#2D3748",
+                  background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 20px rgba(var(--accent-rgb),0.25)",
+                  color: "var(--text-1)",
                 }}
               >
                 <Zap size={16} strokeWidth={2} />
@@ -1244,7 +1244,7 @@ export default function WorkoutGuideModal({
                   className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
                   style={{
                     background: `linear-gradient(135deg, ${accent}dd 0%, ${accent}aa 100%)`,
-                    boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                    boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(var(--surface-rgb),0.3)`,
                     color: "#fff",
                   }}
                 >
@@ -1254,7 +1254,7 @@ export default function WorkoutGuideModal({
                 {exerciseIdx < exercises.length - 1 && (
                   <motion.button whileTap={{ scale: 0.95 }} onClick={skipExercise}
                     className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1.5"
-                    style={{ color: "#A0AEC0" }}
+                    style={{ color: "var(--text-3)" }}
                   >
                     <SkipForward size={10} strokeWidth={2} />
                     Passer l&apos;exercice
@@ -1269,7 +1269,7 @@ export default function WorkoutGuideModal({
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setAutoCountdown(0)}
                   className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
-                  style={{ background: "rgba(0,0,0,0.04)", color: "#718096", border: "1px solid rgba(0,0,0,0.06)" }}
+                  style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-2)", border: "1px solid rgba(0,0,0,0.06)" }}
                 >
                   <SkipForward size={13} strokeWidth={2} />
                   {isHiit && hiitSub === "work" ? "Passer l'effort" : "Passer"}
@@ -1277,7 +1277,7 @@ export default function WorkoutGuideModal({
                 {exerciseIdx < exercises.length - 1 && (
                   <motion.button whileTap={{ scale: 0.95 }} onClick={skipExercise}
                     className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1.5"
-                    style={{ color: "#A0AEC0" }}
+                    style={{ color: "var(--text-3)" }}
                   >
                     <SkipForward size={10} strokeWidth={2} />
                     Passer l&apos;exercice
@@ -1298,7 +1298,7 @@ export default function WorkoutGuideModal({
                     style={{
                       background: `linear-gradient(135deg, ${accent}dd 0%, ${accent}aa 100%)`,
                       color: "#fff",
-                      boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                      boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(var(--surface-rgb),0.3)`,
                       opacity: shareStatus === "saving" ? 0.7 : 1,
                     }}
                   >
@@ -1333,7 +1333,7 @@ export default function WorkoutGuideModal({
                   whileTap={{ scale: 0.97 }}
                   onClick={onClose}
                   className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                  style={{ background: "rgba(0,0,0,0.04)", color: "#2D3748", border: "1px solid rgba(0,0,0,0.06)" }}
+                  style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-1)", border: "1px solid rgba(0,0,0,0.06)" }}
                 >
                   Retour à la progression
                 </motion.button>

@@ -129,7 +129,7 @@ export default function StatsDrawer({
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 md:left-[88px] z-[55]"
-            style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(10px)" }}
           />
 
           {/* Drawer */}
@@ -141,19 +141,19 @@ export default function StatsDrawer({
           >
             <div className="relative h-full m-2 rounded-3xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.95)",
+                background: "rgba(var(--surface-rgb),0.95)",
                 backdropFilter: "blur(16px)",
-                border: "1px solid rgba(255,255,255,0.95)",
-                boxShadow: "0 20px 60px rgba(167,139,250,0.2)",
+                border: "1px solid rgba(var(--surface-rgb),0.95)",
+                boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.2)",
               }}>
 
               {/* Header sticky avec bouton close */}
               <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-5 pt-4 pb-2 pointer-events-none">
-                <h2 className="text-lg font-extralight pointer-events-auto" style={{ color: "#2D3748" }}>Aujourd'hui</h2>
+                <h2 className="text-lg font-extralight pointer-events-auto" style={{ color: "var(--text-1)" }}>Aujourd'hui</h2>
                 <button type="button" onClick={onClose}
                   className="w-9 h-9 rounded-full flex items-center justify-center pointer-events-auto"
-                  style={{ background: "rgba(167,139,250,0.12)" }}>
-                  <X size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                  style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                  <X size={16} strokeWidth={2} style={{ color: "var(--accent)" }} />
                 </button>
               </div>
 
@@ -170,8 +170,8 @@ export default function StatsDrawer({
                   style={{ scrollSnapAlign: "start", scrollSnapStop: "always" }}
                 >
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <Dumbbell size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                    <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                    <Dumbbell size={14} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                    <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                       Séance recommandée
                     </p>
                   </div>
@@ -182,8 +182,8 @@ export default function StatsDrawer({
                         {/* Plats recommandés — plan nutrition IA */}
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Utensils size={14} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-                            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                            <Utensils size={14} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+                            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                               Plats recommandés
                             </p>
                           </div>
@@ -191,7 +191,7 @@ export default function StatsDrawer({
                         </div>
                       </>
                     ) : (
-                      <p className="text-sm font-light text-center mt-8" style={{ color: "#A0AEC0" }}>Connecte-toi pour voir ton programme</p>
+                      <p className="text-sm font-light text-center mt-8" style={{ color: "var(--text-3)" }}>Connecte-toi pour voir ton programme</p>
                     )}
                   </div>
                 </section>
@@ -279,13 +279,13 @@ function PlatsZone({
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0 px-5">
         <div className="flex items-center gap-2">
-          <Utensils size={14} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+          <Utensils size={14} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
             Plats du jour
           </p>
         </div>
         {meals.length > 0 && (
-          <p className="text-[10px] font-semibold" style={{ color: "#A78BFA" }}>
+          <p className="text-[10px] font-semibold" style={{ color: "var(--accent)" }}>
             {totalCals} kcal · {totalProteins}g P
           </p>
         )}
@@ -338,8 +338,8 @@ function PlatsZone({
                 width: activeIdx === i ? 18 : 5,
                 height: 5,
                 background: activeIdx === i
-                  ? "linear-gradient(90deg, #A78BFA, #D4A843)"
-                  : "rgba(167,139,250,0.25)",
+                  ? "linear-gradient(90deg, var(--accent), var(--gold))"
+                  : "rgba(var(--accent-rgb),0.25)",
               }} />
           ))}
         </div>
@@ -349,21 +349,21 @@ function PlatsZone({
       {meals.length > 0 ? (
         <div className="flex gap-2 flex-shrink-0 px-5">
           {[
-            { label: "kcal", value: totalCals,           color: "#A78BFA" },
-            { label: "Prot", value: `${totalProteins}g`, color: "#D4A843" },
-            { label: "Repas", value: meals.length,       color: "#A78BFA" },
+            { label: "kcal", value: totalCals,           color: "var(--accent)" },
+            { label: "Prot", value: `${totalProteins}g`, color: "var(--gold)" },
+            { label: "Repas", value: meals.length,       color: "var(--accent)" },
           ].map(s => (
             <div key={s.label}
               className="flex-1 rounded-2xl p-2.5 text-center"
-              style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.25)" }}>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{s.label}</p>
+              style={{ background: "rgba(var(--surface-rgb),0.85)", border: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{s.label}</p>
               <p className="text-base font-semibold mt-0.5" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
         </div>
       ) : (
         <div className="flex-shrink-0 px-5 text-center">
-          <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>
+          <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>
             Tap l'assiette pour ajouter — photo, code-barres ou saisie
           </p>
         </div>
@@ -444,8 +444,8 @@ function PlateCard({
               <stop offset="100%" stopColor="#F0E8F5" />
             </radialGradient>
             <linearGradient id={`${plateId}-shine`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              <stop offset="0%" stopColor="rgba(var(--surface-rgb),0.7)" />
+              <stop offset="100%" stopColor="rgba(var(--surface-rgb),0)" />
             </linearGradient>
             {palette && (
               <>
@@ -468,9 +468,9 @@ function PlateCard({
           {/* Corps de l'assiette */}
           <circle cx="110" cy="110" r="105" fill={`url(#${plateId}-body)`} />
           <circle cx="110" cy="110" r="82" fill={`url(#${plateId}-inner)`} />
-          <circle cx="110" cy="110" r="82" fill="none" stroke="rgba(167,139,250,0.18)" strokeWidth="0.5" />
+          <circle cx="110" cy="110" r="82" fill="none" stroke="rgba(var(--accent-rgb),0.18)" strokeWidth="0.5" />
           <ellipse cx="85" cy="55" rx="55" ry="22" fill={`url(#${plateId}-shine)`} opacity="0.6" />
-          <ellipse cx="170" cy="100" rx="8" ry="35" fill="rgba(255,255,255,0.35)" />
+          <ellipse cx="170" cy="100" rx="8" ry="35" fill="rgba(var(--surface-rgb),0.35)" />
 
           {/* ─── Aliments si l'assiette est pleine ─── */}
           {!isAddCard && palette && (
@@ -532,12 +532,12 @@ function PlateCard({
               transform: "translate(-50%, -50%)",
               width: 56, height: 56,
               borderRadius: 18,
-              background: "linear-gradient(135deg, rgba(212,192,255,0.35), rgba(245,230,163,0.35))",
+              background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.35), rgba(var(--cream-mid-rgb),0.35))",
               backdropFilter: "blur(4px)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(167,139,250,0.18)",
+              boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.18)",
             }}>
-            <Camera size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            <Camera size={22} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
           </div>
         )}
       </motion.button>
@@ -546,10 +546,10 @@ function PlateCard({
       <div className="text-center">
         {isAddCard ? (
           <>
-            <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+            <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
               Nouvelle assiette
             </p>
-            <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+            <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
               Tap pour ajouter un repas
             </p>
           </>
@@ -557,11 +557,11 @@ function PlateCard({
           <>
             <div className="flex items-center justify-center gap-1.5">
               <span className="text-base">{MEAL_EMOJI[meal.mealType] ?? "🍽️"}</span>
-              <p className="text-sm font-semibold truncate max-w-[200px]" style={{ color: "#2D3748" }}>
+              <p className="text-sm font-semibold truncate max-w-[200px]" style={{ color: "var(--text-1)" }}>
                 {meal.name}
               </p>
             </div>
-            <p className="text-[11px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+            <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
               {MEAL_LABEL[meal.mealType] ?? "Repas"}
               {meal.time && ` · ${meal.time.substring(0, 5)}`}
               {` · ${meal.calories} kcal · ${meal.proteins}g prot`}
