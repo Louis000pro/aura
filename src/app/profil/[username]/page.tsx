@@ -133,19 +133,19 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
       transition={{ duration: 0.3 }}
       className="overflow-hidden"
     >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(240,235,255,0.8)" }}>
+      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(var(--tint-violet-rgb),0.8)" }}>
         <div className="flex flex-col gap-2 mb-3 max-h-40 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-3">
               <motion.div
                 className="w-4 h-4 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
             </div>
           ) : comments.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "#A0AEC0" }}>
+            <p className="text-xs text-center py-2" style={{ color: "var(--text-3)" }}>
               Sois le premier à commenter
             </p>
           ) : (
@@ -156,8 +156,8 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
                   style={{
                     background: c.author?.avatar_url
                       ? "transparent"
-                      : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                    color: "#2D3748",
+                      : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                    color: "var(--text-1)",
                   }}
                 >
                   {c.author?.avatar_url ? (
@@ -168,7 +168,7 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
                   )}
                 </div>
                 <div>
-                  <p className="text-xs" style={{ color: "#2D3748" }}>
+                  <p className="text-xs" style={{ color: "var(--text-1)" }}>
                     <span className="font-semibold mr-1">{c.author?.pseudo}</span>
                     <span className="font-light">{c.content}</span>
                   </p>
@@ -188,9 +188,9 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
             disabled={!user}
             className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
             style={{
-              background: "rgba(240,235,255,0.5)",
-              border: "1px solid rgba(212,192,255,0.5)",
-              color: "#2D3748",
+              background: "rgba(var(--tint-violet-rgb),0.5)",
+              border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
+              color: "var(--text-1)",
             }}
           />
           <motion.button
@@ -201,14 +201,14 @@ function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: strin
             style={{
               background:
                 input.trim() && user
-                  ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
-                  : "rgba(240,235,255,0.5)",
+                  ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
+                  : "rgba(var(--tint-violet-rgb),0.5)",
             }}
           >
             <Send
               size={12}
               strokeWidth={2}
-              style={{ color: input.trim() && user ? "#2D3748" : "#A0AEC0" }}
+              style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }}
             />
           </motion.button>
         </div>
@@ -547,7 +547,7 @@ export default function PublicProfilePage() {
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
           className="w-8 h-8 rounded-full border-2"
-          style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+          style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
@@ -560,14 +560,14 @@ export default function PublicProfilePage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6">
         <div
           className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
-          style={{ background: "rgba(240,235,255,0.6)" }}
+          style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }}
         >
           👤
         </div>
-        <p className="text-lg font-light" style={{ color: "#2D3748" }}>
+        <p className="text-lg font-light" style={{ color: "var(--text-1)" }}>
           Profil introuvable
         </p>
-        <p className="text-sm" style={{ color: "#A0AEC0" }}>
+        <p className="text-sm" style={{ color: "var(--text-3)" }}>
           @{username} n&apos;existe pas
         </p>
         <motion.button
@@ -575,8 +575,8 @@ export default function PublicProfilePage() {
           onClick={() => router.back()}
           className="px-5 py-2.5 rounded-2xl text-sm font-medium cursor-pointer"
           style={{
-            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-            color: "#2D3748",
+            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+            color: "var(--text-1)",
           }}
         >
           Retour
@@ -598,7 +598,7 @@ export default function PublicProfilePage() {
         style={{
           width: 320,
           height: 320,
-          background: "radial-gradient(circle, rgba(212,192,255,0.35) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.35) 0%, transparent 70%)",
           filter: "blur(70px)",
         }}
       />
@@ -607,7 +607,7 @@ export default function PublicProfilePage() {
         style={{
           width: 300,
           height: 300,
-          background: "radial-gradient(circle, rgba(245,230,163,0.3) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.3) 0%, transparent 70%)",
           filter: "blur(70px)",
         }}
       />
@@ -624,22 +624,22 @@ export default function PublicProfilePage() {
             style={{
               background: "rgba(250,248,255,0.92)",
               backdropFilter: "blur(16px)",
-              borderBottom: "1px solid rgba(212,192,255,0.2)",
+              borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.2)",
             }}
           >
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => router.back()} className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0" }}>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => router.back()} className="flex items-center gap-1 cursor-pointer" style={{ color: "var(--text-3)" }}>
               <ArrowLeft size={15} strokeWidth={1.5} />
             </motion.button>
             <div
               className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold flex-shrink-0"
-              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}
+              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
             >
               {displayAvatar
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img loading="lazy" decoding="async" src={displayAvatar} alt="" className="w-full h-full object-cover" />
                 : initial}
             </div>
-            <p className="text-sm font-semibold flex-1" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+            <p className="text-sm font-semibold flex-1" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
             {!isOwnProfile && user && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
@@ -647,8 +647,8 @@ export default function PublicProfilePage() {
                 disabled={followLoading}
                 className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
                 style={isFollowing
-                  ? { background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }
-                  : { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }
+                  ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
+                  : { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }
                 }
               >
                 {isFollowing ? "Suivi" : "Suivre"}
@@ -665,7 +665,7 @@ export default function PublicProfilePage() {
         onClick={() => router.back()}
         whileTap={{ scale: 0.93 }}
         className="flex items-center gap-2 mb-8 cursor-pointer"
-        style={{ color: "#A0AEC0" }}
+        style={{ color: "var(--text-3)" }}
       >
         <ArrowLeft size={16} strokeWidth={1.5} />
         <span className="text-sm font-medium">Retour</span>
@@ -679,13 +679,13 @@ export default function PublicProfilePage() {
         className="rounded-3xl p-6 mb-6 relative overflow-hidden"
         style={{
           background: "linear-gradient(135deg, #faf8ff 0%, #fffef8 100%)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 4px 32px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.95)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 4px 32px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
         }}
       >
         <motion.div
           className="absolute -top-12 -right-12 w-52 h-52 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(212,192,255,0.35) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.35) 0%, transparent 70%)" }}
           animate={{ scale: [1, 1.12, 1] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -700,11 +700,11 @@ export default function PublicProfilePage() {
               borderRadius: "50%",
               padding: 3,
               background: profileStories.length > 0
-                ? "linear-gradient(135deg,#A78BFA 0%,#F5E6A3 50%,#C4A8FF 100%)"
-                : "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
+                ? "linear-gradient(135deg,var(--accent) 0%,var(--cream-mid) 50%,#C4A8FF 100%)"
+                : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
               boxShadow: profileStories.length > 0
-                ? "0 6px 28px rgba(167,139,250,0.5)"
-                : "0 6px 24px rgba(167,139,250,0.28)",
+                ? "0 6px 28px rgba(var(--accent-rgb),0.5)"
+                : "0 6px 24px rgba(var(--accent-rgb),0.28)",
             }}
             whileHover={{ scale: profileStories.length > 0 ? 1.05 : 1 }}
             whileTap={{ scale: profileStories.length > 0 ? 0.95 : 1 }}
@@ -717,7 +717,7 @@ export default function PublicProfilePage() {
           >
             <div
               className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
-              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "#2D3748" }}
+              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "var(--text-1)" }}
             >
               {displayAvatar
                 // eslint-disable-next-line @next/next/no-img-element
@@ -727,7 +727,7 @@ export default function PublicProfilePage() {
             {/* Indicateur story */}
             {profileStories.length > 0 && (
               <div className="absolute -bottom-0.5 -right-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold"
-                style={{ background: "linear-gradient(135deg,#A78BFA,#F5E6A3)", color: "#3D2F6B", border: "2px solid white" }}>
+                style={{ background: "linear-gradient(135deg,var(--accent),var(--cream-mid))", color: "#3D2F6B", border: "2px solid white" }}>
                 STORY
               </div>
             )}
@@ -735,7 +735,7 @@ export default function PublicProfilePage() {
 
           {/* Pseudo + badge certifié */}
           <div className="flex items-center gap-2 justify-center">
-            <h1 className="text-[28px] font-black tracking-[-0.03em] leading-none" style={{ color: "#1A202C" }}>
+            <h1 className="text-[28px] font-black tracking-[-0.03em] leading-none" style={{ color: "var(--text-0)" }}>
               {displayPseudo}
             </h1>
             {isCertified && (
@@ -745,7 +745,7 @@ export default function PublicProfilePage() {
                 transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
                 className="flex-shrink-0 flex items-center justify-center rounded-full"
                 title="Compte certifié"
-                style={{ width: 22, height: 22, background: "linear-gradient(135deg,#A78BFA,#7C5CFA)", boxShadow: "0 2px 8px rgba(124,92,250,0.4)" }}
+                style={{ width: 22, height: 22, background: "linear-gradient(135deg,var(--accent),#7C5CFA)", boxShadow: "0 2px 8px rgba(124,92,250,0.4)" }}
               >
                 <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
                   <path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -756,14 +756,14 @@ export default function PublicProfilePage() {
 
           {/* Goals / titre */}
           {profile?.goals && profile.goals.length > 0 && (
-            <p className="text-sm mt-1.5 font-medium" style={{ color: "#718096" }}>
+            <p className="text-sm mt-1.5 font-medium" style={{ color: "var(--text-2)" }}>
               {profile.goals.join(" · ")}
             </p>
           )}
 
           {/* Bio */}
           {profile?.bio && (
-            <p className="text-sm mt-1.5 max-w-xs leading-relaxed" style={{ color: "#718096" }}>
+            <p className="text-sm mt-1.5 max-w-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
               {profile.bio}
             </p>
           )}
@@ -772,7 +772,7 @@ export default function PublicProfilePage() {
           {profile?.level && (
             <span
               className="inline-block mt-2 text-[10px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(212,192,255,0.3)", color: "#7C5CFA", border: "1px solid rgba(167,139,250,0.25)" }}
+              style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "#7C5CFA", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
             >
               {profile.level}
             </span>
@@ -794,14 +794,14 @@ export default function PublicProfilePage() {
                 style={
                   isFollowing
                     ? {
-                        background: "rgba(240,235,255,0.7)",
-                        color: "#A78BFA",
-                        border: "1px solid rgba(167,139,250,0.2)",
+                        background: "rgba(var(--tint-violet-rgb),0.7)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(var(--accent-rgb),0.2)",
                       }
                     : {
-                        background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                        color: "#2D3748",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 14px rgba(167,139,250,0.25)",
+                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                        color: "var(--text-1)",
+                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 4px 14px rgba(var(--accent-rgb),0.25)",
                       }
                 }
               >
@@ -818,9 +818,9 @@ export default function PublicProfilePage() {
                 onClick={() => profile && router.push(`/communaute?dm=${profile.id}&pseudo=${profile.pseudo}`)}
                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
                 style={{
-                  background: "rgba(255,255,255,0.7)",
-                  color: "#718096",
-                  border: "1px solid rgba(212,192,255,0.4)",
+                  background: "rgba(var(--surface-rgb),0.7)",
+                  color: "var(--text-2)",
+                  border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
                   backdropFilter: "blur(8px)",
                 }}
               >
@@ -836,9 +836,9 @@ export default function PublicProfilePage() {
               onClick={() => router.push("/profil")}
               className="px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer"
               style={{
-                background: "rgba(240,235,255,0.6)",
-                color: "#A78BFA",
-                border: "1px solid rgba(167,139,250,0.15)",
+                background: "rgba(var(--tint-violet-rgb),0.6)",
+                color: "var(--accent)",
+                border: "1px solid rgba(var(--accent-rgb),0.15)",
               }}
             >
               Modifier
@@ -850,7 +850,7 @@ export default function PublicProfilePage() {
         {/* Stats */}
         <div
           className="flex items-center mt-5 pt-4 relative z-10"
-          style={{ borderTop: "1px solid rgba(167,139,250,0.1)" }}
+          style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.1)" }}
         >
           {([
             { label: "Posts", value: String(postCount), tab: null },
@@ -868,21 +868,21 @@ export default function PublicProfilePage() {
               {i > 0 && (
                 <div
                   className="w-px self-stretch mx-2"
-                  style={{ background: "rgba(167,139,250,0.15)" }}
+                  style={{ background: "rgba(var(--accent-rgb),0.15)" }}
                 />
               )}
               <motion.div
                 onClick={() => tab && setShowFollowList(tab)}
                 whileTap={tab ? { scale: 0.94 } : undefined}
-                whileHover={tab ? { backgroundColor: "rgba(167,139,250,0.07)" } : undefined}
+                whileHover={tab ? { backgroundColor: "rgba(var(--accent-rgb),0.07)" } : undefined}
                 className={`flex-1 flex flex-col items-center py-1 rounded-xl ${tab ? "cursor-pointer" : ""}`}
               >
-                <span className="text-xl font-light" style={{ color: "#2D3748" }}>
+                <span className="text-xl font-light" style={{ color: "var(--text-1)" }}>
                   {value}
                 </span>
                 <span
                   className="text-[10px] font-semibold tracking-wider uppercase mt-0.5"
-                  style={{ color: "#A0AEC0" }}
+                  style={{ color: "var(--text-3)" }}
                 >
                   {label}
                 </span>
@@ -904,34 +904,34 @@ export default function PublicProfilePage() {
             icon: Dumbbell,
             label: "Séances totales",
             value: String(sessionCount),
-            color: "#A78BFA",
-            bg: "linear-gradient(135deg, rgba(212,192,255,0.45) 0%, rgba(167,139,250,0.2) 100%)",
+            color: "var(--accent)",
+            bg: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.45) 0%, rgba(var(--accent-rgb),0.2) 100%)",
           },
           {
             icon: Flame,
             label: "Streak",
             value: streak > 0 ? `${streak}j` : "—",
-            color: "#D4A843",
-            bg: "linear-gradient(135deg, rgba(245,230,163,0.45) 0%, rgba(212,168,67,0.2) 100%)",
+            color: "var(--gold)",
+            bg: "linear-gradient(135deg, rgba(var(--cream-mid-rgb),0.45) 0%, rgba(var(--gold-rgb),0.2) 100%)",
           },
         ].map(({ icon: Icon, label, value, color, bg }) => (
           <motion.div
             key={label}
             whileHover={{ y: -2, scale: 1.02 }}
             className="rounded-2xl p-4 flex items-center gap-3"
-            style={{ background: bg, border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}
+            style={{ background: bg, border: "1px solid rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
           >
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.6)" }}
+              style={{ background: "rgba(var(--surface-rgb),0.6)" }}
             >
               <Icon size={18} strokeWidth={1.5} style={{ color }} />
             </div>
             <div>
-              <p className="text-2xl font-light leading-none" style={{ color: "#2D3748" }}>
+              <p className="text-2xl font-light leading-none" style={{ color: "var(--text-1)" }}>
                 {value}
               </p>
-              <p className="text-[10px] font-medium mt-0.5" style={{ color: "#718096" }}>
+              <p className="text-[10px] font-medium mt-0.5" style={{ color: "var(--text-2)" }}>
                 {label}
               </p>
             </div>
@@ -962,11 +962,11 @@ export default function PublicProfilePage() {
                   whileTap={{ scale: 0.93 }}
                   onClick={() => openProfileHighlight(h)}
                   className="cursor-pointer"
-                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,#F5E6A3 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(167,139,250,0.25)" }}
+                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.25)" }}
                 >
                   <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
                     <div
-                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(212,192,255,0.5),rgba(245,230,163,0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
+                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5),rgba(var(--cream-mid-rgb),0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
                     >
                       {h.cover_url
                         // eslint-disable-next-line @next/next/no-img-element
@@ -976,14 +976,14 @@ export default function PublicProfilePage() {
                   </div>
                 </motion.div>
                 {viewerLoading && (
-                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.7)" }}>
+                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)" }}>
                     <motion.div className="w-5 h-5 rounded-full border-2"
-                      style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                      style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                       animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
                   </div>
                 )}
               </div>
-              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "#718096", letterSpacing: "0.02em" }}>{h.name}</span>
+              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "var(--text-2)", letterSpacing: "0.02em" }}>{h.name}</span>
             </motion.div>
           ))}
         </motion.div>
@@ -991,7 +991,7 @@ export default function PublicProfilePage() {
 
       {/* ── Tab switcher Posts / Séances ── */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6 mb-4">
-        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(167,139,250,0.12)" }}>
+        <div className="flex gap-1 p-1 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
           {([
             { key: "posts", label: "Posts", icon: Camera },
             { key: "videos", label: "Vidéos", icon: Film },
@@ -1000,8 +1000,8 @@ export default function PublicProfilePage() {
             <motion.button key={key} whileTap={{ scale: 0.96 }} onClick={() => setProfileTab(key)}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
               style={profileTab === key
-                ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                : { color: "#A0AEC0" }
+                ? { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                : { color: "var(--text-3)" }
               }
             >
               <Icon size={13} strokeWidth={1.8} />
@@ -1021,14 +1021,14 @@ export default function PublicProfilePage() {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-              style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+              style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
             >
-              <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                 <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
               </div>
               <div className="text-center px-8">
-                <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune publication</p>
-                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les publications apparaîtront ici dès qu&apos;il y en aura une.</p>
+                <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
+                <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Les publications apparaîtront ici dès qu&apos;il y en aura une.</p>
               </div>
             </motion.div>
           ) : (
@@ -1048,16 +1048,16 @@ export default function PublicProfilePage() {
                     transition={{ duration: 0.35, delay: idx * 0.06 }}
                     className="rounded-3xl overflow-hidden"
                     style={{
-                      background: "rgba(255,255,255,0.85)",
-                      border: "1px solid rgba(255,255,255,0.9)",
-                      boxShadow: "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,1)",
+                      background: "rgba(var(--surface-rgb),0.85)",
+                      border: "1px solid rgba(var(--surface-rgb),0.9)",
+                      boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
                     }}
                   >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 pt-4 pb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                          style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                          style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                           {displayAvatar
                             // eslint-disable-next-line @next/next/no-img-element
                             ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
@@ -1065,14 +1065,14 @@ export default function PublicProfilePage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
+                            <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
                             {isCertified && (
-                              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>
+                              <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--accent),#7C5CFA)" }}>
                                 <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                               </div>
                             )}
                           </div>
-                          <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                          <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
                             {(() => {
                               const diff = Date.now() - new Date(post.created_at).getTime();
                               const h = Math.floor(diff / 3600000);
@@ -1089,7 +1089,7 @@ export default function PublicProfilePage() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setSelectedPost(post)}
                         className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-                        style={{ background: "rgba(167,139,250,0.1)" }}
+                        style={{ background: "rgba(var(--accent-rgb),0.1)" }}
                       >
                         <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#7C5CFA" }} />
                       </motion.button>
@@ -1097,7 +1097,7 @@ export default function PublicProfilePage() {
 
                     {/* Caption */}
                     {post.caption && (
-                      <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "#2D3748" }}>
+                      <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
                         {post.caption}
                       </p>
                     )}
@@ -1115,7 +1115,7 @@ export default function PublicProfilePage() {
 
                     {/* Description */}
                     {post.description && (
-                      <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "#718096" }}>
+                      <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                         {post.description}
                       </p>
                     )}
@@ -1132,7 +1132,7 @@ export default function PublicProfilePage() {
                             transition={{ duration: 0.55, delay: i*0.04 }} />
                         ))}
                         <motion.div animate={liked ? { scale: [1,1.5,0.9,1.15,1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                          <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "#2D3748" }} />
+                          <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-1)" }} />
                         </motion.div>
                       </motion.button>
 
@@ -1140,32 +1140,32 @@ export default function PublicProfilePage() {
                       <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85, rotate: -15 }}
                         onClick={() => setOpenComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
                         className="flex items-center cursor-pointer">
-                        <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(167,139,250,0.2)" : "none"} style={{ color: commentsOpen ? "#A78BFA" : "#2D3748" }} />
+                        <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"} style={{ color: commentsOpen ? "var(--accent)" : "var(--text-1)" }} />
                       </motion.button>
 
                       {/* Repost */}
                       <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
                         onClick={() => toggleRepost(post.id)} className="flex items-center cursor-pointer">
                         <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                          <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#2BD4A0" : "#2D3748" }} />
+                          <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#2BD4A0" : "var(--text-1)" }} />
                         </motion.div>
                       </motion.button>
 
                       {/* Partager */}
                       <motion.button whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.85 }} className="flex items-center cursor-pointer">
-                        <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                        <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                       </motion.button>
                     </div>
 
                     {/* Stats */}
                     <div className="px-4 pt-2 pb-1">
                       {likesCount > 0 && (
-                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
                           {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
                         </p>
                       )}
-                      <motion.p whileHover={{ color: "#2D3748" }}
-                        className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "#A0AEC0" }}
+                      <motion.p whileHover={{ color: "var(--text-1)" }}
+                        className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "var(--text-3)" }}
                         onClick={() => setOpenComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}>
                         {commentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
                       </motion.p>
@@ -1199,14 +1199,14 @@ export default function PublicProfilePage() {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(255,255,255,0.85) 0%,rgba(240,235,255,0.5) 100%)", border: "1.5px dashed rgba(167,139,250,0.25)" }}
+                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.35) 100%)", boxShadow: "0 8px 32px rgba(167,139,250,0.15)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   <Film size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
                 </div>
                 <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "#2D3748" }}>Aucune vidéo</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "#A0AEC0" }}>Les publications vidéo apparaîtront ici automatiquement.</p>
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune vidéo</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Les publications vidéo apparaîtront ici automatiquement.</p>
                 </div>
               </motion.div>
             ) : (
@@ -1244,7 +1244,7 @@ export default function PublicProfilePage() {
           {recentSessions.length === 0 ? (
             <div className="flex flex-col items-center py-12 gap-3">
               <div className="text-4xl">🏋️</div>
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Aucune séance enregistrée</p>
+              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune séance enregistrée</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -1255,14 +1255,14 @@ export default function PublicProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.07 }}
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-                  style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)", backdropFilter: "blur(10px)" }}
+                  style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)", backdropFilter: "blur(10px)" }}
                 >
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }}>
-                    <Dumbbell size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                    <Dumbbell size={14} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "#2D3748" }}>{s.title}</p>
-                    <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>{formatDate(s.started_at)}</p>
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
+                    <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>{formatDate(s.started_at)}</p>
                   </div>
                 </motion.div>
               ))}
@@ -1290,7 +1290,7 @@ export default function PublicProfilePage() {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="w-full max-w-lg rounded-t-3xl overflow-hidden overflow-y-auto"
-              style={{ background: "rgba(255,255,255,0.97)", maxHeight: "90dvh" }}
+              style={{ background: "rgba(var(--surface-rgb),0.97)", maxHeight: "90dvh" }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Drag handle */}
@@ -1306,8 +1306,8 @@ export default function PublicProfilePage() {
                     style={{
                       background: displayAvatar
                         ? "transparent"
-                        : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                      color: "#2D3748",
+                        : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                      color: "var(--text-1)",
                     }}
                   >
                     {displayAvatar
@@ -1316,8 +1316,8 @@ export default function PublicProfilePage() {
                       : initial}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>@{displayPseudo}</p>
-                    <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
+                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
                       {(() => {
                         const diff = Date.now() - new Date(selectedPost.created_at).getTime();
                         const h = Math.floor(diff / 3600000);
@@ -1334,15 +1334,15 @@ export default function PublicProfilePage() {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSelectedPost(null)}
                   className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(240,235,255,0.8)" }}
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
                 >
-                  <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                  <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
                 </motion.button>
               </div>
 
               {/* Caption */}
               {selectedPost.caption && (
-                <p className="px-4 pb-2 text-sm font-semibold" style={{ color: "#2D3748" }}>
+                <p className="px-4 pb-2 text-sm font-semibold" style={{ color: "var(--text-1)" }}>
                   {selectedPost.caption}
                 </p>
               )}
@@ -1408,7 +1408,7 @@ export default function PublicProfilePage() {
                             size={20}
                             strokeWidth={liked ? 0 : 1.5}
                             fill={liked ? "#F43F5E" : "none"}
-                            style={{ color: liked ? "#F43F5E" : "#2D3748" }}
+                            style={{ color: liked ? "#F43F5E" : "var(--text-1)" }}
                           />
                         </motion.div>
                       </motion.button>
@@ -1427,8 +1427,8 @@ export default function PublicProfilePage() {
                         <MessageCircle
                           size={20}
                           strokeWidth={1.5}
-                          fill={commentsOpen ? "rgba(167,139,250,0.2)" : "none"}
-                          style={{ color: commentsOpen ? "#A78BFA" : "#2D3748" }}
+                          fill={commentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"}
+                          style={{ color: commentsOpen ? "var(--accent)" : "var(--text-1)" }}
                         />
                       </motion.button>
 
@@ -1443,19 +1443,19 @@ export default function PublicProfilePage() {
                           <Repeat2
                             size={20}
                             strokeWidth={1.5}
-                            style={{ color: reposted ? "#2BD4A0" : "#2D3748" }}
+                            style={{ color: reposted ? "#2BD4A0" : "var(--text-1)" }}
                           />
                         </motion.div>
                       </motion.button>
 
                       <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer">
-                        <Share2 size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                        <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                       </motion.button>
                     </div>
 
                     <div className="px-4 pt-2 pb-1">
                       {likesCount > 0 && (
-                        <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>
+                        <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
                           {likesCount} j&apos;aime
                           {repostsCount > 0
                             ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}`
@@ -1463,9 +1463,9 @@ export default function PublicProfilePage() {
                         </p>
                       )}
                       <motion.p
-                        whileHover={{ color: "#2D3748" }}
+                        whileHover={{ color: "var(--text-1)" }}
                         className="text-[11px] mt-1 cursor-pointer mb-3"
-                        style={{ color: "#A0AEC0" }}
+                        style={{ color: "var(--text-3)" }}
                         onClick={() =>
                           setOpenComments((p) => {
                             const n = new Set(p);
@@ -1502,15 +1502,15 @@ export default function PublicProfilePage() {
             transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
             className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
-              background: "rgba(255,255,255,0.95)",
+              background: "rgba(var(--surface-rgb),0.95)",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.9)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.2)",
+              border: "1px solid rgba(var(--surface-rgb),0.9)",
+              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)",
               whiteSpace: "nowrap",
             }}
           >
-            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
-            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>
+            <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
               {toast}
             </span>
           </motion.div>

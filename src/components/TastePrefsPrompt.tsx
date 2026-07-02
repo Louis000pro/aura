@@ -131,24 +131,24 @@ export default function TastePrefsPrompt() {
             transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm rounded-t-3xl md:rounded-3xl bg-white px-6 pt-7 pb-8 md:pb-7 flex flex-col overflow-hidden"
-            style={{ boxShadow: "0 -8px 40px rgba(167,139,250,0.18)", maxHeight: "86vh" }}
+            style={{ boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)", maxHeight: "86vh" }}
           >
             <div className="flex items-center justify-between mb-1 flex-shrink-0">
               <div
                 className="flex items-center justify-center rounded-2xl"
-                style={{ width: 44, height: 44, background: "linear-gradient(135deg,rgba(167,139,250,0.16),rgba(212,168,67,0.14))" }}
+                style={{ width: 44, height: 44, background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.16),rgba(var(--gold-rgb),0.14))" }}
               >
-                <Sparkles size={22} style={{ color: "#A78BFA" }} strokeWidth={2} />
+                <Sparkles size={22} style={{ color: "var(--accent)" }} strokeWidth={2} />
               </div>
               <button onClick={later} aria-label="Fermer" style={{ color: "#CBD5E0" }}>
                 <X size={20} />
               </button>
             </div>
 
-            <h2 className="text-xl font-light mt-3 flex-shrink-0" style={{ color: "#2D3748" }}>
+            <h2 className="text-xl font-light mt-3 flex-shrink-0" style={{ color: "var(--text-1)" }}>
               On personnalise tes plats ? ✨
             </h2>
-            <p className="text-sm mt-1.5 mb-4 flex-shrink-0" style={{ color: "#A0AEC0", lineHeight: 1.5 }}>
+            <p className="text-sm mt-1.5 mb-4 flex-shrink-0" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
               Quelques questions rapides pour te proposer des repas qui te ressemblent vraiment.
             </p>
 
@@ -176,9 +176,9 @@ export default function TastePrefsPrompt() {
                           <button key={it.label} onClick={() => toggleBase(it.label)} type="button"
                             className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none"
                             style={{
-                              background: on ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)",
-                              border: on ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(212,192,255,0.35)",
-                              color: on ? "#2D3748" : "#718096", fontSize: 11, fontWeight: 500,
+                              background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
+                              border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
+                              color: on ? "var(--text-1)" : "var(--text-2)", fontSize: 11, fontWeight: 500,
                             }}>
                             <span style={{ fontSize: 11 }}>{it.emoji}</span>{it.label}
                           </button>
@@ -194,7 +194,7 @@ export default function TastePrefsPrompt() {
                     {customBases.map((b) => (
                       <button key={b} onClick={() => toggleBase(b)} type="button"
                         className="flex items-center gap-1 px-2 py-1 rounded-full cursor-pointer select-none"
-                        style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", border: "1px solid rgba(167,139,250,0.4)", color: "#2D3748", fontSize: 11, fontWeight: 500 }}>
+                        style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", border: "1px solid rgba(var(--accent-rgb),0.4)", color: "var(--text-1)", fontSize: 11, fontWeight: 500 }}>
                         {b}<X size={11} strokeWidth={2.5} />
                       </button>
                     ))}
@@ -206,18 +206,18 @@ export default function TastePrefsPrompt() {
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
                     placeholder="Ajouter un aliment…"
                     className="flex-1 rounded-xl px-3 py-2 text-xs outline-none"
-                    style={{ border: "1.5px solid #E2E8F0", color: "#2D3748" }}
+                    style={{ border: "1.5px solid #E2E8F0", color: "var(--text-1)" }}
                   />
                   <button onClick={addCustom} type="button" aria-label="Ajouter"
                     className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-                    style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.25)" }}>
-                    <Plus size={15} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
+                    style={{ background: "rgba(var(--accent-rgb),0.12)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
+                    <Plus size={15} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
                   </button>
                 </div>
               </Question>
               </div>
               <div aria-hidden className="pointer-events-none absolute left-0 right-0 bottom-0 h-6"
-                style={{ background: "linear-gradient(to top, #FFFFFF, rgba(255,255,255,0))" }} />
+                style={{ background: "linear-gradient(to top, #FFFFFF, rgba(var(--surface-rgb),0))" }} />
             </div>
 
             {/* Pied (fixe) */}
@@ -226,11 +226,11 @@ export default function TastePrefsPrompt() {
                 onClick={save}
                 disabled={saving || !canSave}
                 className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-                style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
               >
                 {saving ? "..." : "Enregistrer mes goûts"}
               </button>
-              <button onClick={later} className="w-full mt-2 py-2.5 text-sm font-medium" style={{ color: "#A0AEC0" }}>
+              <button onClick={later} className="w-full mt-2 py-2.5 text-sm font-medium" style={{ color: "var(--text-3)" }}>
                 Plus tard
               </button>
             </div>
@@ -245,7 +245,7 @@ export default function TastePrefsPrompt() {
 function Question({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-4">
-      <p className="text-xs font-semibold mb-2" style={{ color: "#4A5568" }}>{label}</p>
+      <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-body)" }}>{label}</p>
       {children}
     </div>
   );
@@ -260,9 +260,9 @@ function Segmented({ options, value, onSelect }: { options: string[]; value: str
           <button key={o} onClick={() => onSelect(o)} type="button"
             className="flex-1 rounded-xl px-2 py-2 cursor-pointer select-none"
             style={{
-              background: on ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)",
-              border: on ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(212,192,255,0.35)",
-              color: on ? "#2D3748" : "#718096", fontSize: 11.5, fontWeight: 500,
+              background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
+              border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
+              color: on ? "var(--text-1)" : "var(--text-2)", fontSize: 11.5, fontWeight: 500,
             }}>
             {o}
           </button>

@@ -191,18 +191,18 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
         {state === "listening" && (
           <>
             <motion.div className="absolute rounded-full pointer-events-none"
-              style={{ width: 240, height: 240, background: "radial-gradient(circle, rgba(212,192,255,0.18) 0%, transparent 70%)" }}
+              style={{ width: 240, height: 240, background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.18) 0%, transparent 70%)" }}
               animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.2, 0.6] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} />
             <motion.div className="absolute rounded-full pointer-events-none"
-              style={{ width: 200, height: 200, background: "radial-gradient(circle, rgba(245,230,163,0.2) 0%, transparent 70%)" }}
+              style={{ width: 200, height: 200, background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.2) 0%, transparent 70%)" }}
               animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0.15, 0.5] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }} />
           </>
         )}
         {state === "idle" && (
           <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ width: 180, height: 180, background: "radial-gradient(circle, rgba(212,192,255,0.1) 0%, transparent 70%)" }}
+            style={{ width: 180, height: 180, background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.1) 0%, transparent 70%)" }}
             animate={{ scale: [1, 1.08, 1], opacity: [0.4, 0.1, 0.4] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} />
         )}
@@ -214,14 +214,14 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
             width: 140, height: 140,
             background:
               state === "listening"
-                ? "radial-gradient(135deg at 30% 30%, #D4C0FF 0%, #F5E6A3 60%, #FFFBF0 100%)"
+                ? "radial-gradient(135deg at 30% 30%, var(--violet-mid) 0%, var(--cream-mid) 60%, #FFFBF0 100%)"
                 : state === "processing"
-                ? "radial-gradient(135deg at 30% 30%, #F5E6A3 0%, #D4C0FF 100%)"
+                ? "radial-gradient(135deg at 30% 30%, var(--cream-mid) 0%, var(--violet-mid) 100%)"
                 : "radial-gradient(135deg at 30% 30%, #F0EBFF 0%, #FFFBF0 60%, #F0EBFF 100%)",
             boxShadow:
               state === "listening"
-                ? "0 0 64px 16px rgba(167,139,250,0.28), 0 0 120px 32px rgba(212,168,67,0.18), inset 0 1px 0 rgba(255,255,255,0.8)"
-                : "0 8px 48px 0 rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+                ? "0 0 64px 16px rgba(var(--accent-rgb),0.28), 0 0 120px 32px rgba(var(--gold-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.8)"
+                : "0 8px 48px 0 rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
           }}
           animate={
             state === "listening" ? { scale: [1, 1.04, 1] }
@@ -238,13 +238,13 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
           <AnimatePresence mode="wait">
             {state === "idle" && (
               <motion.div key="mic" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.2 }}>
-                <Mic size={36} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                <Mic size={36} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
               </motion.div>
             )}
             {state === "listening" && (
               <motion.div key="listening" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.2 }} className="flex items-center gap-[4px]">
                 {levels.map((lvl, i) => (
-                  <motion.span key={i} className="block w-[3px] rounded-full" style={{ background: "#2D3748" }}
+                  <motion.span key={i} className="block w-[3px] rounded-full" style={{ background: "var(--text-1)" }}
                     animate={{ height: `${Math.max(8, lvl * 36)}px` }}
                     transition={{ duration: 0.08, ease: "linear" }} />
                 ))}
@@ -253,7 +253,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
             {state === "processing" && (
               <motion.div key="processing" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, rotate: 360 }} exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ rotate: { duration: 1.5, repeat: Infinity, ease: "linear" }, opacity: { duration: 0.2 } }}>
-                <div className="w-8 h-8 rounded-full border-[2px]" style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }} />
+                <div className="w-8 h-8 rounded-full border-[2px]" style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "var(--text-1)" }} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -266,7 +266,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.3 }}
           className="text-sm font-light tracking-widest uppercase text-center"
-          style={{ color: "#A0AEC0", letterSpacing: "0.15em" }}>
+          style={{ color: "var(--text-3)", letterSpacing: "0.15em" }}>
           {state === "idle" && "Appuyez pour parler"}
           {state === "listening" && "Parlez… appuyez pour envoyer"}
           {state === "processing" && "Transcription en cours…"}
@@ -288,9 +288,9 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
             transition={{ duration: 0.25 }}
             onClick={stopListening}
             className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.75)", border: "1px solid rgba(212,192,255,0.5)", backdropFilter: "blur(12px)" }}>
-            <MicOff size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
-            <span className="text-xs font-medium" style={{ color: "#718096" }}>Terminer</span>
+            style={{ background: "rgba(var(--tint-violet-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", backdropFilter: "blur(12px)" }}>
+            <MicOff size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+            <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Terminer</span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -301,7 +301,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="text-xs text-center px-6 leading-relaxed"
-            style={{ color: "#A78BFA", maxWidth: 280 }}>
+            style={{ color: "var(--accent)", maxWidth: 280 }}>
             {error}
           </motion.p>
         )}

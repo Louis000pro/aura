@@ -134,7 +134,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
-      style={{ background: "rgba(240,235,255,0.85)", backdropFilter: "blur(10px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.85)", backdropFilter: "blur(10px)" }}
       onClick={onClose}
     >
       <motion.div
@@ -144,10 +144,10 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
         transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl p-6 flex flex-col gap-4"
         style={{
-          background: "rgba(255,255,255,0.96)",
+          background: "rgba(var(--surface-rgb),0.96)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 24px 64px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 24px 64px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
           maxHeight: "90dvh",
           overflowY: "auto",
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
@@ -156,11 +156,11 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Nouveau post</h2>
+          <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Nouveau post</h2>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -168,22 +168,22 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
         {user && (
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center text-sm font-semibold"
-              style={{ background: user.avatar ? "transparent" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+              style={{ background: user.avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
               {user.avatar
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img loading="lazy" decoding="async" src={user.avatar} alt={user.pseudo} className="w-full h-full object-cover" />
                 : user.pseudo?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div>
-              <p className="text-sm font-semibold leading-none" style={{ color: "#2D3748" }}>{user.name || user.pseudo}</p>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>@{user.pseudo}</p>
+              <p className="text-sm font-semibold leading-none" style={{ color: "var(--text-1)" }}>{user.name || user.pseudo}</p>
+              <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>@{user.pseudo}</p>
             </div>
           </div>
         )}
 
         {/* Caption */}
         <div className="relative rounded-2xl"
-          style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.4)" }}>
+          style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
           <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
@@ -191,18 +191,18 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
             rows={4}
             maxLength={MAX_CHARS}
             className="w-full bg-transparent text-sm outline-none px-4 pt-3 pb-7 rounded-2xl resize-none placeholder:font-light"
-            style={{ color: "#2D3748" }}
+            style={{ color: "var(--text-1)" }}
             autoFocus
           />
           <span className="absolute bottom-2.5 right-3 text-[11px] font-medium select-none"
-            style={{ color: remaining <= 30 ? (remaining < 0 ? "#FC8181" : "#D4A843") : "#C4C9D4" }}>
+            style={{ color: remaining <= 30 ? (remaining < 0 ? "#FC8181" : "var(--gold)") : "#C4C9D4" }}>
             {remaining}
           </span>
         </div>
 
         {/* Description (optionnelle) */}
         <div className="relative rounded-2xl"
-          style={{ background: "rgba(240,235,255,0.3)", border: "1px solid rgba(212,192,255,0.3)" }}>
+          style={{ background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -210,7 +210,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
             rows={2}
             maxLength={800}
             className="w-full bg-transparent text-sm outline-none px-4 pt-3 pb-3 rounded-2xl resize-none placeholder:font-light"
-            style={{ color: "#2D3748" }}
+            style={{ color: "var(--text-1)" }}
           />
         </div>
 
@@ -229,7 +229,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
                   return `${prev}${sep}${tag}`;
                 })}
                 className="px-2.5 py-1 rounded-full text-[11px] font-medium cursor-pointer"
-                style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}
+                style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
               >
                 {tag}
               </motion.button>
@@ -249,31 +249,31 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
               onClick={() => fileRef.current?.click()}
               className="relative rounded-2xl flex flex-col items-center justify-center gap-3 py-8 cursor-pointer transition-all"
               style={{
-                background: dragging ? "rgba(167,139,250,0.1)" : "rgba(240,235,255,0.4)",
-                border: `2px dashed ${dragging ? "#A78BFA" : "rgba(167,139,250,0.3)"}`,
+                background: dragging ? "rgba(var(--accent-rgb),0.1)" : "rgba(var(--tint-violet-rgb),0.4)",
+                border: `2px dashed ${dragging ? "var(--accent)" : "rgba(var(--accent-rgb),0.3)"}`,
               }}
             >
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#D4C0FF,#F0E6FF)" }}>
+                  style={{ background: "linear-gradient(135deg,var(--violet-mid),#F0E6FF)" }}>
                   <Image size={18} strokeWidth={1.5} style={{ color: "#7C5CFA" }} />
                 </div>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#FDE68A,#F5E6A3)" }}>
-                  <Video size={18} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+                  style={{ background: "linear-gradient(135deg,#FDE68A,var(--cream-mid))" }}>
+                  <Video size={18} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
                   {dragging ? "Dépose ici !" : "Ajoute une photo ou vidéo"}
                 </p>
-                <p className="text-xs mt-0.5 font-light" style={{ color: "#A0AEC0" }}>
+                <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-3)" }}>
                   Glisse-dépose ou clique · JPG, PNG, MP4, MOV · max 500 Mo
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl" style={{ background: "rgba(167,139,250,0.12)" }}>
-                <Upload size={12} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                <span className="text-xs font-semibold" style={{ color: "#A78BFA" }}>Choisir un fichier</span>
+              <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                <Upload size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                <span className="text-xs font-semibold" style={{ color: "var(--accent)" }}>Choisir un fichier</span>
               </div>
               <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
             </motion.div>
@@ -317,8 +317,8 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
               onClick={() => setAudience(key)}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all"
               style={audience === key
-                ? { background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
-                : { background: "rgba(240,235,255,0.5)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.3)" }
+                ? { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }
               }
             >
               <Icon size={11} strokeWidth={2} />
@@ -331,14 +331,14 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
         <AnimatePresence>
           {submitting && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <div className="rounded-full overflow-hidden" style={{ height: 4, background: "rgba(167,139,250,0.15)" }}>
+              <div className="rounded-full overflow-hidden" style={{ height: 4, background: "rgba(var(--accent-rgb),0.15)" }}>
                 <motion.div className="h-full rounded-full"
-                  style={{ background: "linear-gradient(90deg,#A78BFA,#F5E6A3)" }}
+                  style={{ background: "linear-gradient(90deg,var(--accent),var(--cream-mid))" }}
                   animate={{ width: `${uploadProgress}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
-              <p className="text-[10px] text-center mt-1 font-light" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] text-center mt-1 font-light" style={{ color: "var(--text-3)" }}>
                 {uploadProgress < 70 ? "Upload en cours…" : uploadProgress < 90 ? "Finalisation…" : "Publication…"}
               </p>
             </motion.div>
@@ -356,12 +356,12 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
           disabled={!canSubmit}
           className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all"
           style={canSubmit
-            ? { background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)", color: "#2D3748", boxShadow: "0 4px 16px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.8)" }
-            : { background: "rgba(240,235,255,0.6)", color: "#A0AEC0", cursor: "not-allowed" }
+            ? { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+            : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", cursor: "not-allowed" }
           }
         >
           {submitting
-            ? <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "#2D3748" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+            ? <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(45,55,72,0.2)", borderTopColor: "var(--text-1)" }} animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
             : <><Send size={14} strokeWidth={2} />Publier</>
           }
         </motion.button>

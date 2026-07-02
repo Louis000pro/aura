@@ -90,24 +90,24 @@ export default function WeighInPrompt() {
             transition={{ type: "spring", bounce: 0.28, duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm rounded-t-3xl md:rounded-3xl bg-white px-6 pt-7 pb-8 md:pb-7"
-            style={{ boxShadow: "0 -8px 40px rgba(167,139,250,0.18)" }}
+            style={{ boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
           >
             <div className="flex items-center justify-between mb-1">
               <div
                 className="flex items-center justify-center rounded-2xl"
-                style={{ width: 44, height: 44, background: "linear-gradient(135deg,rgba(167,139,250,0.16),rgba(212,168,67,0.14))" }}
+                style={{ width: 44, height: 44, background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.16),rgba(var(--gold-rgb),0.14))" }}
               >
-                <Scale size={22} style={{ color: "#A78BFA" }} strokeWidth={2} />
+                <Scale size={22} style={{ color: "var(--accent)" }} strokeWidth={2} />
               </div>
               <button onClick={later} aria-label="Fermer" style={{ color: "#CBD5E0" }}>
                 <X size={20} />
               </button>
             </div>
 
-            <h2 className="text-xl font-light mt-3" style={{ color: "#2D3748" }}>
+            <h2 className="text-xl font-light mt-3" style={{ color: "var(--text-1)" }}>
               On fait le point ? 💜
             </h2>
-            <p className="text-sm mt-1.5 mb-5" style={{ color: "#A0AEC0", lineHeight: 1.5 }}>
+            <p className="text-sm mt-1.5 mb-5" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
               Ça fait un moment — tu pèses combien aujourd&apos;hui&nbsp;? Ça garde ton objectif bien ajusté à toi.
             </p>
 
@@ -117,21 +117,21 @@ export default function WeighInPrompt() {
                 value={value} onChange={(e) => setValue(e.target.value)}
                 placeholder={lastWeight ? String(lastWeight) : "70"}
                 className="flex-1 rounded-2xl px-4 py-3 text-lg outline-none"
-                style={{ border: "1.5px solid #E2E8F0", color: "#2D3748" }}
+                style={{ border: "1.5px solid #E2E8F0", color: "var(--text-1)" }}
                 onKeyDown={(e) => { if (e.key === "Enter") save(); }}
               />
-              <span className="text-sm font-semibold" style={{ color: "#A0AEC0" }}>kg</span>
+              <span className="text-sm font-semibold" style={{ color: "var(--text-3)" }}>kg</span>
             </div>
 
             <button
               onClick={save}
               disabled={saving || !value}
               className="w-full rounded-2xl py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+              style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
             >
               {saving ? "..." : "Enregistrer"}
             </button>
-            <button onClick={later} className="w-full mt-2 py-2.5 text-sm font-medium" style={{ color: "#A0AEC0" }}>
+            <button onClick={later} className="w-full mt-2 py-2.5 text-sm font-medium" style={{ color: "var(--text-3)" }}>
               Plus tard
             </button>
           </motion.div>

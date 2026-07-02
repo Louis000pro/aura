@@ -236,7 +236,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
   };
 
   const canPublish = !!file && !publishing && (mode === "story" || !!title.trim());
-  const ACCENT = "#A78BFA";
+  const ACCENT = "var(--accent)";
 
   return (
     <motion.div
@@ -254,15 +254,15 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
         transition={{ type: "spring", bounce: 0.22, duration: 0.45 }}
         className="relative w-full md:max-w-md rounded-t-[32px] md:rounded-[28px] overflow-hidden"
         style={{
-          background: "rgba(255,255,255,0.98)",
-          boxShadow: "0 -8px 60px rgba(167,139,250,0.2), 0 40px 80px rgba(0,0,0,0.3)",
+          background: "rgba(var(--surface-rgb),0.98)",
+          boxShadow: "0 -8px 60px rgba(var(--accent-rgb),0.2), 0 40px 80px rgba(0,0,0,0.3)",
           maxHeight: "92dvh",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Header : close + onglets Instagram ── */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <span className="text-sm font-bold" style={{ color: "#1A202C" }}>
+          <span className="text-sm font-bold" style={{ color: "var(--text-0)" }}>
             {done ? "Publié !" : "Créer"}
           </span>
           <motion.button
@@ -271,14 +271,14 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
             className="w-9 h-9 rounded-full flex items-center justify-center"
             style={{ background: "rgba(0,0,0,0.05)" }}
           >
-            <X size={16} strokeWidth={2.5} style={{ color: "#718096" }} />
+            <X size={16} strokeWidth={2.5} style={{ color: "var(--text-2)" }} />
           </motion.button>
         </div>
 
         {!done && (
           /* Onglets segmentés (style Instagram) */
           <div className="px-5 pb-3">
-            <div className="relative flex p-1 rounded-2xl" style={{ background: "rgba(167,139,250,0.08)" }}>
+            <div className="relative flex p-1 rounded-2xl" style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
               {(["post", "story"] as Mode[]).map((m) => {
                 const active = mode === m;
                 return (
@@ -287,13 +287,13 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                     type="button"
                     onClick={() => switchMode(m)}
                     className="relative flex-1 py-2 rounded-xl text-[13px] font-bold z-10 transition-colors"
-                    style={{ color: active ? "#2D2150" : "#A0AEC0" }}
+                    style={{ color: active ? "#2D2150" : "var(--text-3)" }}
                   >
                     {active && (
                       <motion.div
                         layoutId="publish-tab"
                         className="absolute inset-0 rounded-xl"
-                        style={{ background: "#fff", boxShadow: "0 2px 8px rgba(167,139,250,0.18)" }}
+                        style={{ background: "rgb(var(--surface-rgb))", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.18)" }}
                         transition={{ type: "spring", stiffness: 480, damping: 36 }}
                       />
                     )}
@@ -325,8 +325,8 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                     maxHeight: mode === "story" ? 360 : undefined,
                     background: "#000",
                   } : {
-                    background: "rgba(167,139,250,0.05)",
-                    border: "2px dashed rgba(167,139,250,0.25)",
+                    background: "rgba(var(--accent-rgb),0.05)",
+                    border: "2px dashed rgba(var(--accent-rgb),0.25)",
                     padding: "28px 16px",
                   }}
                 >
@@ -343,23 +343,23 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                           type="button"
                           onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
                           className="flex-1 flex flex-col items-center gap-2 py-5 rounded-2xl"
-                          style={{ background: "#fff", border: "1.5px solid rgba(167,139,250,0.2)", boxShadow: "0 2px 10px rgba(167,139,250,0.08)" }}
+                          style={{ background: "rgb(var(--surface-rgb))", border: "1.5px solid rgba(var(--accent-rgb),0.2)", boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.08)" }}
                         >
                           <Camera size={26} strokeWidth={1.6} style={{ color: ACCENT }} />
-                          <span className="text-xs font-semibold" style={{ color: "#6B5BA0" }}>Prendre une photo</span>
+                          <span className="text-xs font-semibold" style={{ color: "var(--text-soft)" }}>Prendre une photo</span>
                         </button>
                         {/* Importer depuis la galerie */}
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}
                           className="flex-1 flex flex-col items-center gap-2 py-5 rounded-2xl"
-                          style={{ background: "#fff", border: "1.5px solid rgba(167,139,250,0.2)", boxShadow: "0 2px 10px rgba(167,139,250,0.08)" }}
+                          style={{ background: "rgb(var(--surface-rgb))", border: "1.5px solid rgba(var(--accent-rgb),0.2)", boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.08)" }}
                         >
                           <ImageDown size={26} strokeWidth={1.6} style={{ color: ACCENT }} />
-                          <span className="text-xs font-semibold" style={{ color: "#6B5BA0" }}>Importer</span>
+                          <span className="text-xs font-semibold" style={{ color: "var(--text-soft)" }}>Importer</span>
                         </button>
                       </div>
-                      <p className="text-[11px]" style={{ color: "#A0AEC0" }}>Photo ou vidéo</p>
+                      <p className="text-[11px]" style={{ color: "var(--text-3)" }}>Photo ou vidéo</p>
                     </div>
                   )}
                   {preview && (
@@ -374,7 +374,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
 
                 {/* ── Sélecteur de couverture (publications vidéo uniquement) ── */}
                 {preview && mediaType === "video" && mode === "post" && (
-                  <div className="rounded-2xl p-3.5" style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.14)" }}>
+                  <div className="rounded-2xl p-3.5" style={{ background: "rgba(var(--accent-rgb),0.06)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
                     {/* éléments cachés pour la capture */}
                     <video
                       ref={hiddenVideoRef}
@@ -395,11 +395,11 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={coverPreview} alt="Couverture" className="w-12 h-16 rounded-lg object-cover flex-shrink-0" style={{ background: "#000" }} />
                       ) : (
-                        <div className="w-12 h-16 rounded-lg flex-shrink-0" style={{ background: "rgba(167,139,250,0.12)" }} />
+                        <div className="w-12 h-16 rounded-lg flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }} />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold tracking-wide uppercase mb-1" style={{ color: "#6B5BA0" }}>Couverture de la vidéo</p>
-                        <p className="text-[11px] mb-2" style={{ color: "#A0AEC0" }}>Choisis le moment à afficher en miniature</p>
+                        <p className="text-[11px] font-bold tracking-wide uppercase mb-1" style={{ color: "var(--text-soft)" }}>Couverture de la vidéo</p>
+                        <p className="text-[11px] mb-2" style={{ color: "var(--text-3)" }}>Choisis le moment à afficher en miniature</p>
                         <input
                           type="range"
                           min={0}
@@ -407,10 +407,10 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                           step={0.1}
                           value={coverTime}
                           onChange={(e) => { const t = parseFloat(e.target.value); setCoverTime(t); captureFrame(t); }}
-                          className="w-full accent-[#A78BFA]"
-                          style={{ accentColor: "#A78BFA" }}
+                          className="w-full accent-[var(--accent)]"
+                          style={{ accentColor: "var(--accent)" }}
                         />
-                        <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>
+                        <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>
                           <span>{coverTime.toFixed(1)}s</span>
                           <span>{videoDuration ? videoDuration.toFixed(1) + "s" : "…"}</span>
                         </div>
@@ -421,7 +421,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
 
                 {/* Titre */}
                 <div>
-                  <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#718096", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--text-2)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                     {mode === "post" ? "Titre *" : "Titre (optionnel)"}
                   </label>
                   <input
@@ -430,14 +430,14 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                     placeholder={mode === "post" ? "Ex: PR au squat 180kg 💪" : "Ex: Séance du matin 🔥"}
                     maxLength={80}
                     className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none"
-                    style={{ background: "rgba(240,235,255,0.5)", border: "1.5px solid rgba(167,139,250,0.22)", color: "#2D3748" }}
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1.5px solid rgba(var(--accent-rgb),0.22)", color: "var(--text-1)" }}
                   />
                 </div>
 
                 {/* Description (publication uniquement) */}
                 {mode === "post" && (
                   <div>
-                    <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#718096", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--text-2)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                       Description
                     </label>
                     <textarea
@@ -447,9 +447,9 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                       maxLength={500}
                       rows={3}
                       className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none resize-none"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1.5px solid rgba(167,139,250,0.22)", color: "#2D3748" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1.5px solid rgba(var(--accent-rgb),0.22)", color: "var(--text-1)" }}
                     />
-                    <p className="text-right text-xs mt-1" style={{ color: "#A0AEC0" }}>{caption.length}/500</p>
+                    <p className="text-right text-xs mt-1" style={{ color: "var(--text-3)" }}>{caption.length}/500</p>
                   </div>
                 )}
 
@@ -463,9 +463,9 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                   disabled={!canPublish}
                   className="w-full py-4 rounded-2xl font-bold text-sm tracking-wide"
                   style={{
-                    background: canPublish ? "linear-gradient(135deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.22)",
-                    color: canPublish ? "#fff" : "rgba(167,139,250,0.6)",
-                    boxShadow: canPublish ? "0 8px 24px rgba(167,139,250,0.32)" : "none",
+                    background: canPublish ? "linear-gradient(135deg,var(--accent),var(--gold))" : "rgba(var(--accent-rgb),0.22)",
+                    color: canPublish ? "#fff" : "rgba(var(--accent-rgb),0.6)",
+                    boxShadow: canPublish ? "0 8px 24px rgba(var(--accent-rgb),0.32)" : "none",
                   }}
                 >
                   {publishing
@@ -478,8 +478,8 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
 
                 {/* Barre de progression d'upload (rassure pour les vidéos lourdes) */}
                 {publishing && progress > 0 && progress < 1 && (
-                  <div className="w-full h-1.5 rounded-full overflow-hidden -mt-2" style={{ background: "rgba(167,139,250,0.15)" }}>
-                    <div className="h-full rounded-full" style={{ width: `${Math.round(progress * 100)}%`, background: "linear-gradient(90deg,#A78BFA,#D4A843)", transition: "width 0.2s ease" }} />
+                  <div className="w-full h-1.5 rounded-full overflow-hidden -mt-2" style={{ background: "rgba(var(--accent-rgb),0.15)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${Math.round(progress * 100)}%`, background: "linear-gradient(90deg,var(--accent),var(--gold))", transition: "width 0.2s ease" }} />
                   </div>
                 )}
               </motion.div>
@@ -496,10 +496,10 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                   <CheckCircle2 size={72} strokeWidth={1.3} style={{ color: ACCENT }} />
                 </motion.div>
                 <div>
-                  <p className="text-2xl font-black tracking-tight" style={{ color: "#1A202C" }}>
+                  <p className="text-2xl font-black tracking-tight" style={{ color: "var(--text-0)" }}>
                     {done === "story" ? "Story publiée ! 🔥" : "Publication en ligne ! 🏆"}
                   </p>
-                  <p className="text-sm mt-2" style={{ color: "#718096" }}>
+                  <p className="text-sm mt-2" style={{ color: "var(--text-2)" }}>
                     {done === "story"
                       ? "Visible sur ton profil et dans la communauté pendant 24h"
                       : "Visible sur ton profil et dans la communauté"}
@@ -509,7 +509,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
                   whileTap={{ scale: 0.96 }}
                   onClick={onClose}
                   className="px-8 py-3.5 rounded-2xl font-bold text-sm"
-                  style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", boxShadow: "0 6px 20px rgba(167,139,250,0.3)" }}
+                  style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
                 >
                   Fermer
                 </motion.button>

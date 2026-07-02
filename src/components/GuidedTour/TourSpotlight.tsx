@@ -372,7 +372,7 @@ export default function TourSpotlight({
             className="absolute inset-0"
             style={{
               borderRadius: shape === "circle" ? "50%" : 20,
-              boxShadow: "0 0 26px rgba(167,139,250,0.6), 0 0 52px rgba(245,230,163,0.35)",
+              boxShadow: "0 0 26px rgba(var(--accent-rgb),0.6), 0 0 52px rgba(var(--cream-mid-rgb),0.35)",
             }}
             animate={{ opacity: [0.55, 1, 0.55] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
@@ -383,7 +383,7 @@ export default function TourSpotlight({
             style={{
               borderRadius: shape === "circle" ? "50%" : 20,
               padding: 3,
-              background: "linear-gradient(135deg, #A78BFA 0%, #C4A8FF 40%, #F5E6A3 100%)",
+              background: "linear-gradient(135deg, var(--accent) 0%, #C4A8FF 40%, var(--cream-mid) 100%)",
               WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
               WebkitMaskComposite: "xor",
               mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
@@ -417,13 +417,13 @@ export default function TourSpotlight({
           }
           transition={{ duration: 0.5, ease: EASE }}
           style={{
-            border: "1.5px solid rgba(255,255,255,0.9)",
-            boxShadow: "0 0 28px rgba(255,255,255,0.38), 0 0 64px rgba(167,139,250,0.3)",
+            border: "1.5px solid rgba(var(--surface-rgb),0.9)",
+            boxShadow: "0 0 28px rgba(var(--surface-rgb),0.38), 0 0 64px rgba(var(--accent-rgb),0.3)",
           }}
         >
           <motion.div
             className="absolute inset-0"
-            style={{ borderRadius: "inherit", boxShadow: "inset 0 0 16px rgba(212,192,255,0.35)" }}
+            style={{ borderRadius: "inherit", boxShadow: "inset 0 0 16px rgba(var(--violet-mid-rgb),0.35)" }}
             animate={{ opacity: [0.45, 1, 0.45] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
           />
@@ -452,7 +452,7 @@ export default function TourSpotlight({
               className="absolute inset-0"
               style={{
                 borderRadius: 18,
-                boxShadow: "0 0 22px rgba(167,139,250,0.55), 0 0 40px rgba(245,230,163,0.3)",
+                boxShadow: "0 0 22px rgba(var(--accent-rgb),0.55), 0 0 40px rgba(var(--cream-mid-rgb),0.3)",
               }}
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 1.9, repeat: Infinity, ease: "easeInOut" }}
@@ -463,7 +463,7 @@ export default function TourSpotlight({
               style={{
                 borderRadius: 18,
                 padding: 2.5,
-                background: "linear-gradient(135deg, #A78BFA 0%, #C4A8FF 40%, #F5E6A3 100%)",
+                background: "linear-gradient(135deg, var(--accent) 0%, #C4A8FF 40%, var(--cream-mid) 100%)",
                 WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
                 WebkitMaskComposite: "xor",
                 mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
@@ -499,13 +499,13 @@ export default function TourSpotlight({
           style={{
             padding: "9px 16px",
             borderRadius: 999,
-            background: "rgba(255,255,255,0.97)",
-            border: "1px solid rgba(212,192,255,0.6)",
-            boxShadow: "0 10px 32px rgba(26,21,53,0.35), 0 4px 14px rgba(167,139,250,0.25)",
+            background: "rgba(var(--surface-rgb),0.97)",
+            border: "1px solid rgba(var(--violet-mid-rgb),0.6)",
+            boxShadow: "0 10px 32px rgba(26,21,53,0.35), 0 4px 14px rgba(var(--accent-rgb),0.25)",
             whiteSpace: "nowrap",
           }}
         >
-          <span aria-hidden style={{ color: "#D4A843", fontSize: 12, lineHeight: 1 }}>✦</span>
+          <span aria-hidden style={{ color: "var(--gold)", fontSize: 12, lineHeight: 1 }}>✦</span>
           <span style={{ color: "#1A1535", fontSize: 13, fontWeight: 600, letterSpacing: "0.01em" }}>
             {focusLabel}
           </span>
@@ -523,12 +523,12 @@ export default function TourSpotlight({
         style={{
           width: tooltipWidth,
           borderRadius: 22,
-          background: "rgba(255,255,255,0.98)",
+          background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(212,192,255,0.5)",
+          border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
           boxShadow:
-            "0 24px 64px rgba(26,21,53,0.28), 0 6px 20px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
+            "0 24px 64px rgba(26,21,53,0.28), 0 6px 20px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
         }}
       >
         {/* Trait gradient violet → or — signature ADN */}
@@ -541,7 +541,7 @@ export default function TourSpotlight({
             right: 0,
             height: 3,
             background:
-              "linear-gradient(90deg, transparent 0%, #A78BFA 18%, #C4A8FF 45%, #F5E6A3 78%, transparent 100%)",
+              "linear-gradient(90deg, transparent 0%, var(--accent) 18%, #C4A8FF 45%, var(--cream-mid) 78%, transparent 100%)",
           }}
         />
 
@@ -562,8 +562,8 @@ export default function TourSpotlight({
                 borderRadius: 999,
                 marginBottom: 10,
                 background:
-                  "linear-gradient(135deg, rgba(212,192,255,0.25) 0%, rgba(245,230,163,0.22) 100%)",
-                border: "1px solid rgba(167,139,250,0.28)",
+                  "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.25) 0%, rgba(var(--cream-mid-rgb),0.22) 100%)",
+                border: "1px solid rgba(var(--accent-rgb),0.28)",
                 color: "#6B4FB8",
                 fontSize: 9.5,
                 fontWeight: 700,
@@ -578,11 +578,11 @@ export default function TourSpotlight({
             <span
               aria-hidden
               style={{
-                color: "#D4A843",
+                color: "var(--gold)",
                 fontSize: 14,
                 lineHeight: 1,
                 marginTop: 4,
-                textShadow: "0 1px 6px rgba(212,168,67,0.35)",
+                textShadow: "0 1px 6px rgba(var(--gold-rgb),0.35)",
               }}
             >
               ✦
@@ -626,8 +626,8 @@ export default function TourSpotlight({
                 width: 32,
                 height: 32,
                 borderRadius: 999,
-                background: "rgba(240,235,255,0.7)",
-                border: "1px solid rgba(167,139,250,0.22)",
+                background: "rgba(var(--tint-violet-rgb),0.7)",
+                border: "1px solid rgba(var(--accent-rgb),0.22)",
                 color: "#7C6BAA",
               }}
             >
@@ -646,8 +646,8 @@ export default function TourSpotlight({
               fontWeight: 600,
               letterSpacing: "0.01em",
               color: "#1A1535",
-              background: "linear-gradient(135deg, #D4C0FF 0%, #E8DDFF 45%, #F5E6A3 100%)",
-              boxShadow: "0 6px 18px rgba(167,139,250,0.32), inset 0 1px 0 rgba(255,255,255,0.9)",
+              background: "linear-gradient(135deg, var(--violet-mid) 0%, #E8DDFF 45%, var(--cream-mid) 100%)",
+              boxShadow: "0 6px 18px rgba(var(--accent-rgb),0.32), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
               border: "none",
             }}
           >

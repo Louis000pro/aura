@@ -213,7 +213,7 @@ export default function HomeOrb({
         style={{
           width: size + 90,
           height: size + 90,
-          background: "radial-gradient(circle, rgba(212,192,255,0.14) 0%, rgba(245,230,163,0.07) 50%, transparent 75%)",
+          background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.14) 0%, rgba(var(--cream-mid-rgb),0.07) 50%, transparent 75%)",
         }}
         animate={{ scale: [1, 1.04, 1], opacity: [0.55, 0.4, 0.55] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
@@ -238,7 +238,7 @@ export default function HomeOrb({
                 ${accentSize * 0.06} ${accentSize * 0.62},
                 ${accentSize * 0.08} ${accentSize * 0.42}`}
           fill="none"
-          stroke="rgba(167,139,250,0.22)"
+          stroke="rgba(var(--accent-rgb),0.22)"
           strokeWidth="0.7"
           strokeLinecap="round"
           animate={{ rotate: 360 }}
@@ -255,7 +255,7 @@ export default function HomeOrb({
                 ${accentSize * 0.9} ${accentSize * 0.28},
                 ${accentSize * 0.88} ${accentSize * 0.48}`}
           fill="none"
-          stroke="rgba(245,230,163,0.18)"
+          stroke="rgba(var(--cream-mid-rgb),0.18)"
           strokeWidth="0.6"
           strokeLinecap="round"
           animate={{ rotate: -360 }}
@@ -272,14 +272,14 @@ export default function HomeOrb({
             <motion.div
               key="pulse1"
               className="absolute rounded-full border pointer-events-none"
-              style={{ width: size, height: size, borderColor: "rgba(167,139,250,0.4)" }}
+              style={{ width: size, height: size, borderColor: "rgba(var(--accent-rgb),0.4)" }}
               animate={{ scale: [1, 1.55], opacity: [0.55, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
             />
             <motion.div
               key="pulse2"
               className="absolute rounded-full border pointer-events-none"
-              style={{ width: size, height: size, borderColor: "rgba(245,230,163,0.45)" }}
+              style={{ width: size, height: size, borderColor: "rgba(var(--cream-mid-rgb),0.45)" }}
               animate={{ scale: [1, 1.55], opacity: [0.55, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
             />
@@ -302,8 +302,8 @@ export default function HomeOrb({
           background: "radial-gradient(circle at 50% 42%, #F6EEFF 0%, #E9DBFB 60%, #DBC9F5 100%)",
           boxShadow:
             state === "recording"
-              ? "0 0 72px 18px rgba(167,139,250,0.38), 0 0 140px 36px rgba(212,168,67,0.22), inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -2px 8px rgba(167,139,250,0.15)"
-              : "0 16px 64px 0 rgba(167,139,250,0.3), 0 4px 16px rgba(212,168,67,0.12), inset 0 2px 4px rgba(255,255,255,0.95), inset 0 -2px 8px rgba(167,139,250,0.1)",
+              ? "0 0 72px 18px rgba(var(--accent-rgb),0.38), 0 0 140px 36px rgba(var(--gold-rgb),0.22), inset 0 2px 4px rgba(var(--surface-rgb),0.9), inset 0 -2px 8px rgba(var(--accent-rgb),0.15)"
+              : "0 16px 64px 0 rgba(var(--accent-rgb),0.3), 0 4px 16px rgba(var(--gold-rgb),0.12), inset 0 2px 4px rgba(var(--surface-rgb),0.95), inset 0 -2px 8px rgba(var(--accent-rgb),0.1)",
         }}
         animate={
           state === "recording" ? { scale: [1, 1.05, 1], y: 0 } :
@@ -452,7 +452,7 @@ export default function HomeOrb({
         <motion.div
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
-            background: "conic-gradient(from 0deg, transparent 0deg, rgba(167,139,250,0.18) 70deg, transparent 140deg, rgba(245,230,163,0.14) 220deg, transparent 300deg)",
+            background: "conic-gradient(from 0deg, transparent 0deg, rgba(var(--accent-rgb),0.18) 70deg, transparent 140deg, rgba(var(--cream-mid-rgb),0.14) 220deg, transparent 300deg)",
             mixBlendMode: "screen",
           }}
           animate={{ rotate: 360 }}
@@ -468,7 +468,7 @@ export default function HomeOrb({
           style={{
             top: "-10%", left: "-10%",
             width: "80%", height: "80%",
-            background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.15) 35%, transparent 60%)",
+            background: "radial-gradient(circle at 30% 30%, rgba(var(--surface-rgb),0.65) 0%, rgba(var(--surface-rgb),0.15) 35%, transparent 60%)",
             borderRadius: "50%",
           }}
         />
@@ -478,7 +478,7 @@ export default function HomeOrb({
           style={{
             top: "8%", left: "20%",
             width: "55%", height: "15%",
-            background: "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%)",
+            background: "linear-gradient(180deg, rgba(var(--surface-rgb),0.5) 0%, transparent 100%)",
             borderRadius: "50%",
             filter: "blur(4px)",
           }}
@@ -487,7 +487,7 @@ export default function HomeOrb({
         <div
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
-            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45), inset 0 -8px 24px rgba(139,92,246,0.12)",
+            boxShadow: "inset 0 0 0 1px rgba(var(--surface-rgb),0.45), inset 0 -8px 24px rgba(139,92,246,0.12)",
           }}
         />
 
@@ -501,7 +501,7 @@ export default function HomeOrb({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.15 }}
-                style={{ filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.6))" }}
+                style={{ filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.6))" }}
               >
                 <Mic size={30} strokeWidth={2} style={{ color: "#FFFFFF" }} />
               </motion.div>
@@ -514,7 +514,7 @@ export default function HomeOrb({
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.2 }}
                 className="flex items-center gap-[4px]"
-                style={{ filter: "drop-shadow(0 1px 2px rgba(255,255,255,0.6))" }}
+                style={{ filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.6))" }}
               >
                 {levels.map((lvl, i) => (
                   <motion.span
@@ -541,7 +541,7 @@ export default function HomeOrb({
                 <div
                   className="w-8 h-8 rounded-full border-[2px]"
                   style={{
-                    borderColor: "rgba(255,255,255,0.35)",
+                    borderColor: "rgba(var(--surface-rgb),0.35)",
                     borderTopColor: "#FFFFFF",
                   }}
                 />
@@ -578,7 +578,7 @@ export default function HomeOrb({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="text-[11px] text-center"
-            style={{ color: "#A78BFA" }}
+            style={{ color: "var(--accent)" }}
           >
             {error}
           </motion.p>

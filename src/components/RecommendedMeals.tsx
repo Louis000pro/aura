@@ -289,7 +289,7 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
       exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2, ease: "easeOut" }}
       className="flex flex-col gap-2">
       {total > 0 && (
-        <p className="text-[10px] font-semibold self-end" style={{ color: "#D4A843" }}>~{total} kcal / jour</p>
+        <p className="text-[10px] font-semibold self-end" style={{ color: "var(--gold)" }}>~{total} kcal / jour</p>
       )}
       {(day.repas ?? []).map((m, i) => {
         const added = addedKeys.has(`${dayIndex}-${m.type}-${m.nom}`);
@@ -297,19 +297,19 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
         const mac = m.calories > 0 ? macrosForDish(m.nom, m.calories, m.proteins, m.carbs, m.fats) : null;
         return (
           <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
-            style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.25)" }}>
+            style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
             <span className="text-lg flex-shrink-0">{MEAL_EMOJI[m.type] ?? "🍽️"}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
-              <p className="text-[13px] font-medium leading-snug" style={{ color: "#2D3748" }}>{m.nom}</p>
+              <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
+              <p className="text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>{m.nom}</p>
               {mac && (
-                <p className="text-[9px] leading-tight mt-0.5" style={{ color: "#A0AEC0" }}>
+                <p className="text-[9px] leading-tight mt-0.5" style={{ color: "var(--text-3)" }}>
                   ≈ {mac.proteins}g protéines · {mac.carbs}g glucides · {mac.fats}g lipides
                 </p>
               )}
             </div>
             {m.calories > 0 && (
-              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>{m.calories} kcal</span>
+              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{m.calories} kcal</span>
             )}
             {canEat && (
               <motion.button
@@ -318,12 +318,12 @@ function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
                 title="Ajouter à mon journal"
                 className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
                 style={{
-                  background: added ? "rgba(43,212,160,0.18)" : "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                  boxShadow: added ? "none" : "inset 0 1px 0 rgba(255,255,255,0.8)",
+                  background: added ? "rgba(43,212,160,0.18)" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                  boxShadow: added ? "none" : "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
                 }}>
                 {added
                   ? <Check size={13} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />
-                  : <Plus size={13} strokeWidth={2.5} style={{ color: "#2D3748" }} />}
+                  : <Plus size={13} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />}
               </motion.button>
             )}
           </div>
@@ -574,9 +574,9 @@ export default function RecommendedMeals() {
             <button key={key} onClick={() => toggleDiet(key)}
               className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full cursor-pointer select-none"
               style={{
-                background: on ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)" : "rgba(240,235,255,0.5)",
-                border: on ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(212,192,255,0.35)",
-                color: on ? "#2D3748" : "#A0AEC0",
+                background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
+                border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
+                color: on ? "var(--text-1)" : "var(--text-3)",
                 fontSize: 10, fontWeight: 600, transition: "all 0.15s",
               }}>
               <span style={{ fontSize: 11 }}>{emoji}</span>
@@ -589,11 +589,11 @@ export default function RecommendedMeals() {
       {/* Adapté à ta journée — calories restantes aujourd'hui */}
       {goalCals > 0 && (
         <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl"
-          style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.18)" }}>
-          <span className="text-[11px] font-medium" style={{ color: "#718096" }}>Aujourd&apos;hui</span>
-          <span className="text-[11px] font-semibold" style={{ color: remainingToday > 0 ? "#A78BFA" : "#D4A843" }}>
+          style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
+          <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>Aujourd&apos;hui</span>
+          <span className="text-[11px] font-semibold" style={{ color: remainingToday > 0 ? "var(--accent)" : "var(--gold)" }}>
             {remainingToday > 0 ? `≈ ${remainingToday.toLocaleString("fr-FR")} kcal restantes` : "Objectif atteint 🎉"}
-            <span className="font-normal" style={{ color: "#A0AEC0" }}> / {goalCals.toLocaleString("fr-FR")}</span>
+            <span className="font-normal" style={{ color: "var(--text-3)" }}> / {goalCals.toLocaleString("fr-FR")}</span>
           </span>
         </div>
       )}
@@ -607,7 +607,7 @@ export default function RecommendedMeals() {
               onClick={() => setSelectedDay(i)}
               className="flex-shrink-0 cursor-pointer select-none"
               style={{
-                color: i === selectedDay ? "#2D3748" : "#A0AEC0",
+                color: i === selectedDay ? "var(--text-1)" : "var(--text-3)",
                 fontWeight: i === selectedDay ? 600 : 400,
                 fontSize: 12, transition: "color 0.15s, font-weight 0.15s",
                 background: "none", border: "none", padding: 0,
@@ -619,20 +619,20 @@ export default function RecommendedMeals() {
 
         <div ref={trackRef}
           className="relative rounded-full cursor-pointer select-none touch-none"
-          style={{ height: 5, background: "rgba(212,168,67,0.12)" }}
+          style={{ height: 5, background: "rgba(var(--gold-rgb),0.12)" }}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove}>
           <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
-            style={{ width: `${pct}%`, background: "linear-gradient(90deg, #D4A843, #A78BFA)", transition: "width 0.12s ease" }} />
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--gold), var(--accent))", transition: "width 0.12s ease" }} />
         </div>
 
         <div className="flex items-center justify-between">
           {menuLoading ? (
-            <span className="flex items-center gap-1 text-[9px] font-medium" style={{ color: "#A78BFA" }}>
+            <span className="flex items-center gap-1 text-[9px] font-medium" style={{ color: "var(--accent)" }}>
               <RefreshCw size={9} strokeWidth={2.5} className="animate-spin" /> L&apos;IA prépare tes plats…
             </span>
           ) : <span />}
           <button onClick={regenerate}
-            className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "#A0AEC0" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
+            className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "var(--text-3)" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
             {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
             <span className="text-[9px] font-medium">{isPremium ? "Changer les repas" : "Changer les repas · Premium"}</span>
           </button>

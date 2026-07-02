@@ -542,7 +542,7 @@ export default function CoachPage() {
       className="fixed inset-0 md:left-[88px] flex flex-col"
       style={{
         background:
-          "linear-gradient(180deg, rgba(240,235,255,0.4) 0%, rgba(255,255,255,0) 60%), #FAFAFA",
+          "linear-gradient(180deg, rgba(var(--tint-violet-rgb),0.4) 0%, rgba(var(--surface-rgb),0) 60%), #FAFAFA",
       }}
     >
       {/* Decorative background blobs */}
@@ -550,7 +550,7 @@ export default function CoachPage() {
         className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(212,192,255,0.35) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.35) 0%, transparent 70%)",
           filter: "blur(60px)",
         }}
       />
@@ -558,7 +558,7 @@ export default function CoachPage() {
         className="pointer-events-none absolute -bottom-16 -right-16 w-72 h-72 rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(245,230,163,0.3) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.3) 0%, transparent 70%)",
           filter: "blur(50px)",
         }}
       />
@@ -568,8 +568,8 @@ export default function CoachPage() {
         className="relative flex-shrink-0 flex items-center gap-3 px-4 pb-3"
         style={{
           paddingTop: "calc(0.75rem + env(safe-area-inset-top))",
-          borderBottom: "1px solid rgba(212,192,255,0.2)",
-          background: "rgba(255,255,255,0.7)",
+          borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.2)",
+          background: "rgba(var(--surface-rgb),0.7)",
           backdropFilter: "blur(10px)",
         }}
       >
@@ -580,35 +580,35 @@ export default function CoachPage() {
           onClick={() => router.back()}
           className="w-9 h-9 flex items-center justify-center rounded-2xl flex-shrink-0 cursor-pointer"
           style={{
-            background: "rgba(240,235,255,0.8)",
-            border: "1px solid rgba(212,192,255,0.3)",
+            background: "rgba(var(--tint-violet-rgb),0.8)",
+            border: "1px solid rgba(var(--violet-mid-rgb),0.3)",
           }}
           aria-label="Retour"
         >
-          <ArrowLeft size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
+          <ArrowLeft size={16} strokeWidth={2} style={{ color: "var(--accent)" }} />
         </motion.button>
 
         {/* Avatar */}
         <div
           className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{
-            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
             boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 12px rgba(167,139,250,0.25)",
+              "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 12px rgba(var(--accent-rgb),0.25)",
           }}
         >
-          <Sparkles size={18} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+          <Sparkles size={18} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </div>
 
         {/* Title */}
         <div className="flex-1 min-w-0">
           <h1
             className="text-base font-semibold leading-tight tracking-tight"
-            style={{ color: "#2D3748" }}
+            style={{ color: "var(--text-1)" }}
           >
             Coach Vaiiya ✦
           </h1>
-          <p className="text-[11px] font-medium" style={{ color: "#A78BFA" }}>
+          <p className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>
             IA · Nutrition · Fitness
           </p>
         </div>
@@ -653,24 +653,24 @@ export default function CoachPage() {
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
                 className="w-20 h-20 rounded-[28px] flex items-center justify-center"
                 style={{
-                  background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
+                  background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
                   boxShadow:
-                    "0 8px 32px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)",
+                    "0 8px 32px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}
               >
-                <Sparkles size={32} strokeWidth={1.3} style={{ color: "#2D3748" }} />
+                <Sparkles size={32} strokeWidth={1.3} style={{ color: "var(--text-1)" }} />
               </motion.div>
 
               <div className="text-center px-6">
                 <p
                   className="text-lg font-semibold mb-1"
-                  style={{ color: "#2D3748" }}
+                  style={{ color: "var(--text-1)" }}
                 >
                   Bonjour{user?.pseudo ? `, ${user.pseudo}` : ""} ✦
                 </p>
                 <p
                   className="text-sm font-light leading-relaxed"
-                  style={{ color: "#718096" }}
+                  style={{ color: "var(--text-2)" }}
                 >
                   Pose ta question ou choisis un sujet pour commencer.
                 </p>
@@ -689,11 +689,11 @@ export default function CoachPage() {
                     onClick={() => sendMessage(suggestion)}
                     className="px-4 py-2.5 rounded-2xl text-sm font-medium cursor-pointer transition-colors"
                     style={{
-                      background: "rgba(255,255,255,0.85)",
-                      border: "1px solid rgba(212,192,255,0.5)",
+                      background: "rgba(var(--surface-rgb),0.85)",
+                      border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
                       color: "#5B4B8A",
                       boxShadow:
-                        "0 2px 8px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+                        "0 2px 8px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                     }}
                   >
                     {suggestion}
@@ -713,18 +713,18 @@ export default function CoachPage() {
                     <div
                       className="flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer"
                       style={{
-                        background: "linear-gradient(135deg, rgba(212,192,255,0.25) 0%, rgba(245,230,163,0.2) 100%)",
-                        border: "1px solid rgba(167,139,250,0.25)",
-                        boxShadow: "0 2px 12px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
+                        background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.25) 0%, rgba(var(--cream-mid-rgb),0.2) 100%)",
+                        border: "1px solid rgba(var(--accent-rgb),0.25)",
+                        boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
                       }}
                     >
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}>
-                        <UserCog size={15} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+                        style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}>
+                        <UserCog size={15} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold" style={{ color: "#2D3748" }}>Complète ton profil</p>
-                        <p className="text-[11px] font-light" style={{ color: "#A0AEC0" }}>Pour des plans vraiment personnalisés →</p>
+                        <p className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>Complète ton profil</p>
+                        <p className="text-[11px] font-light" style={{ color: "var(--text-3)" }}>Pour des plans vraiment personnalisés →</p>
                       </div>
                     </div>
                   </Link>
@@ -752,11 +752,11 @@ export default function CoachPage() {
                   className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mb-0.5"
                   style={{
                     background:
-                      "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                    boxShadow: "0 2px 8px rgba(167,139,250,0.2)",
+                      "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
+                    boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.2)",
                   }}
                 >
-                  <Sparkles size={12} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+                  <Sparkles size={12} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
                 </div>
               )}
 
@@ -770,20 +770,20 @@ export default function CoachPage() {
                   ...(msg.role === "user"
                     ? {
                         background:
-                          "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)",
+                          "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
                         color: "#ffffff",
                         borderBottomRightRadius: 8,
                         boxShadow:
-                          "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.3)",
+                          "0 4px 16px rgba(var(--accent-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.3)",
                       }
                     : {
-                        background: "rgba(255,255,255,0.92)",
+                        background: "rgba(var(--surface-rgb),0.92)",
                         backdropFilter: "blur(12px)",
-                        border: "1px solid rgba(255,255,255,0.85)",
-                        color: "#2D3748",
+                        border: "1px solid rgba(var(--surface-rgb),0.85)",
+                        color: "var(--text-1)",
                         borderBottomLeftRadius: 8,
                         boxShadow:
-                          "0 4px 16px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+                          "0 4px 16px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
                       }),
                 }}
               >
@@ -793,7 +793,7 @@ export default function CoachPage() {
                   <motion.span
                     animate={{ opacity: [1, 0, 1] }}
                     transition={{ duration: 0.8, repeat: Infinity }}
-                    style={{ color: "#A78BFA", marginLeft: 1 }}
+                    style={{ color: "var(--accent)", marginLeft: 1 }}
                   >
                     |
                   </motion.span>
@@ -805,7 +805,7 @@ export default function CoachPage() {
                       <motion.span
                         key={i}
                         className="block w-1.5 h-1.5 rounded-full"
-                        style={{ background: "#A0AEC0" }}
+                        style={{ background: "var(--text-3)" }}
                         animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
                         transition={{
                           duration: 0.9,
@@ -835,12 +835,12 @@ export default function CoachPage() {
                 whileTap={{ scale: 0.97 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-2xl cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg, rgba(212,192,255,0.3) 0%, rgba(245,230,163,0.25) 100%)",
-                  border: "1px solid rgba(167,139,250,0.3)",
-                  boxShadow: "0 2px 10px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
+                  background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.3) 0%, rgba(var(--cream-mid-rgb),0.25) 100%)",
+                  border: "1px solid rgba(var(--accent-rgb),0.3)",
+                  boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.12), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}
               >
-                <UserCog size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                <UserCog size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
                 <span className="text-[12px] font-semibold" style={{ color: "#7C3AED" }}>
                   Remplir mon profil →
                 </span>
@@ -857,9 +857,9 @@ export default function CoachPage() {
       <div
         className="relative flex-shrink-0 px-4 pb-safe-bottom pb-4 pt-3"
         style={{
-          background: "rgba(255,255,255,0.82)",
+          background: "rgba(var(--surface-rgb),0.82)",
           backdropFilter: "blur(10px)",
-          borderTop: "1px solid rgba(212,192,255,0.2)",
+          borderTop: "1px solid rgba(var(--violet-mid-rgb),0.2)",
         }}
       >
         {/* Voice recording indicator */}
@@ -897,9 +897,9 @@ export default function CoachPage() {
             className="flex-1 flex items-center px-4 py-3 rounded-3xl"
             style={{
               background: "rgba(245,243,255,0.9)",
-              border: "1px solid rgba(212,192,255,0.35)",
+              border: "1px solid rgba(var(--violet-mid-rgb),0.35)",
               boxShadow:
-                "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(167,139,250,0.06)",
+                "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 2px 8px rgba(var(--accent-rgb),0.06)",
             }}
           >
             <input
@@ -910,7 +910,7 @@ export default function CoachPage() {
               placeholder="Pose ta question…"
               disabled={isStreaming}
               className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#B8B0CC] disabled:opacity-50"
-              style={{ color: "#2D3748" }}
+              style={{ color: "var(--text-1)" }}
             />
           </div>
 
@@ -929,8 +929,8 @@ export default function CoachPage() {
                     border: "none",
                   }
                 : {
-                    background: "rgba(240,235,255,0.9)",
-                    border: "1px solid rgba(212,192,255,0.4)",
+                    background: "rgba(var(--tint-violet-rgb),0.9)",
+                    border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
                   }
             }
             aria-label={isRecording ? "Arrêter l'enregistrement" : "Enregistrement vocal"}
@@ -938,7 +938,7 @@ export default function CoachPage() {
             {isRecording ? (
               <MicOff size={17} strokeWidth={2} style={{ color: "#ffffff" }} />
             ) : (
-              <Mic size={17} strokeWidth={2} style={{ color: "#A78BFA" }} />
+              <Mic size={17} strokeWidth={2} style={{ color: "var(--accent)" }} />
             )}
           </motion.button>
 
@@ -952,11 +952,11 @@ export default function CoachPage() {
             style={{
               background:
                 input.trim() && !isStreaming
-                  ? "linear-gradient(135deg, #D4C0FF 0%, #A78BFA 100%)"
+                  ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)"
                   : "rgba(220,215,235,0.7)",
               boxShadow:
                 input.trim() && !isStreaming
-                  ? "0 4px 14px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.3)"
+                  ? "0 4px 14px rgba(var(--accent-rgb),0.35), inset 0 1px 0 rgba(var(--surface-rgb),0.3)"
                   : "none",
               border: "none",
               opacity: input.trim() && !isStreaming ? 1 : 0.55,
