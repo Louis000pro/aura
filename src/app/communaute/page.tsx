@@ -2988,7 +2988,7 @@ const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClic
         <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
           <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
             <svg width="29" height="29" viewBox="0 0 24 24" fill="none"
-              style={{ color: shared ? "#34D399" : icoColor, filter: icoShadow }}>
+              style={{ color: shared ? "#2BD4A0" : icoColor, filter: icoShadow }}>
               <line x1="22" y1="3" x2="9.218" y2="10.083" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round" />
               <polygon points="11.698 20.334 22 3.001 2 3.001 9.218 10.084 11.698 20.334" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round" fill="none" />
             </svg>
@@ -4823,7 +4823,7 @@ function CommunautePageInner() {
                       aria-label="Repartager"
                     >
                       <motion.div animate={repostedRealIds.has(post.id) ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                        <Repeat2 size={20} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "var(--text-1)" }} />
+                        <Repeat2 size={20} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#2BD4A0" : "var(--text-1)" }} />
                       </motion.div>
                     </motion.button>
 
@@ -4873,8 +4873,8 @@ function CommunautePageInner() {
                         </span>
                       )}
                       {repostsCount > 0 && (
-                        <span className="flex items-center gap-1 text-xs" style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "var(--text-2)" }}>
-                          <Repeat2 size={12} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#34D399" : "var(--text-2)" }} />
+                        <span className="flex items-center gap-1 text-xs" style={{ color: repostedRealIds.has(post.id) ? "#2BD4A0" : "var(--text-2)" }}>
+                          <Repeat2 size={12} strokeWidth={1.5} style={{ color: repostedRealIds.has(post.id) ? "#2BD4A0" : "var(--text-2)" }} />
                           {repostsCount} partage{repostsCount > 1 ? "s" : ""}
                         </span>
                       )}
@@ -5150,9 +5150,9 @@ function CommunautePageInner() {
                 </p>
                 <div className="flex flex-col gap-2">
                   {filteredResults.sessions.map((s) => {
-                    const catColors: Record<string, string> = { force: "var(--accent)", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C" };
-                    const accent = s.accent || catColors[s.category] || "var(--accent)";
-                    const diffColor: Record<string, string> = { "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "var(--accent)" };
+                    // Système D — couleur = type (résistance violet, cardio orange, mobilité teal), stockée ignorée
+                    const catColors: Record<string, string> = { force: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0", fullbody: "#8B5CF6" };
+                    const accent = catColors[s.category] || "#8B5CF6";
                     return (
                       <motion.div
                         key={s.id}
@@ -5175,7 +5175,7 @@ function CommunautePageInner() {
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{s.duration} min</span>
                               <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
-                              <span className="text-[10px] font-medium" style={{ color: diffColor[s.difficulty] ?? "var(--text-3)" }}>{s.difficulty}</span>
+                              <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>{s.difficulty}</span>
                               {s.muscles?.[0] && <>
                                 <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
                                 <span className="text-[10px] font-light truncate" style={{ color: "var(--text-3)" }}>{s.muscles.slice(0, 2).join(" · ")}</span>

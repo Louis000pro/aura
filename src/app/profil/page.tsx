@@ -968,8 +968,8 @@ const PROF_DIFF_COLOR: Record<string, string> = {
 };
 
 const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: string }> = {
-  friends: { label: "Amis",   icon: Users,  color: "#60A5FA" },
-  public:  { label: "Public", icon: Globe,  color: "#34D399" },
+  friends: { label: "Amis",   icon: Users,  color: "#8B5CF6" },
+  public:  { label: "Public", icon: Globe,  color: "#2BD4A0" },
 };
 
 type Highlight = { id: string; name: string; cover_url: string; user_id?: string };
@@ -2274,7 +2274,7 @@ export default function ProfilPage() {
                                 <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
                                   onClick={() => togglePostRepost(post.id)} className="flex items-center cursor-pointer">
                                   <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "var(--text-1)" }} />
+                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#2BD4A0" : "var(--text-1)" }} />
                                   </motion.div>
                                 </motion.button>
 
