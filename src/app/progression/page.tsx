@@ -83,7 +83,7 @@ const workoutSessions: WorkoutSession[] = [
     title: "HIIT Brûle-Graisses", subtitle: "Cardio intensif · 20 / 10 sec",
     duration: 25, difficulty: "Avancé", exercises: 8,
     muscles: ["Cardio", "Corps entier"],
-    accent: "#E8620C", icon: Flame,
+    accent: "#8B5CF6", icon: Flame,
   },
   {
     id: "jambes", category: "force",
@@ -97,7 +97,7 @@ const workoutSessions: WorkoutSession[] = [
     title: "Mobilité Matinale", subtitle: "Yoga flow · Étirements actifs",
     duration: 20, difficulty: "Débutant", exercises: 10,
     muscles: ["Mobilité", "Souplesse"],
-    accent: "#2BD4A0", icon: Wind,
+    accent: "#8B5CF6", icon: Wind,
   },
   {
     id: "dos-biceps", category: "force",
@@ -118,7 +118,7 @@ const workoutSessions: WorkoutSession[] = [
     title: "Endurance Cardio", subtitle: "Fractionné modéré · Zone 2",
     duration: 40, difficulty: "Débutant", exercises: 4,
     muscles: ["Cardio"],
-    accent: "#E8620C", icon: Wind,
+    accent: "#8B5CF6", icon: Wind,
   },
 ];
 
@@ -131,7 +131,7 @@ const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
 ];
 
 const difficultyColor: Record<string, string> = {
-  "Débutant":      "#34D399",
+  "Débutant":      "#2BD4A0",
   "Intermédiaire": "#FBBF24",
   "Avancé":        "var(--accent)",
 };
@@ -580,10 +580,10 @@ function WorkoutCard({
       {isDone && (
         <div
           className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full"
-          style={{ background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.35)" }}
+          style={{ background: "rgba(43,212,160,0.18)", border: "1px solid rgba(43,212,160,0.35)" }}
         >
-          <CheckCircle size={9} strokeWidth={2.5} style={{ color: "#34D399" }} />
-          <span className="text-[9px] font-bold tracking-wider uppercase" style={{ color: "#34D399" }}>Faite</span>
+          <CheckCircle size={9} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />
+          <span className="text-[9px] font-bold tracking-wider uppercase" style={{ color: "#2BD4A0" }}>Faite</span>
         </div>
       )}
       {/* Header */}
@@ -674,8 +674,8 @@ function WorkoutCard({
 /* ─── LibraryCard ───────────────────────────────────────── */
 const VIS_CONFIG = {
   private: { label: "Privée",  desc: "Visible par toi uniquement",    icon: Lock,  color: "var(--text-3)", bg: "rgba(var(--text-3-rgb),0.08)", border: "rgba(var(--text-3-rgb),0.2)" },
-  friends: { label: "Amis",    desc: "Visible par tes abonnés",       icon: Users, color: "#60A5FA", bg: "rgba(96,165,250,0.10)",  border: "rgba(96,165,250,0.25)" },
-  public:  { label: "Public",  desc: "Trouvable par tout le monde",   icon: Globe, color: "#34D399", bg: "rgba(52,211,153,0.10)",  border: "rgba(52,211,153,0.25)" },
+  friends: { label: "Amis",    desc: "Visible par tes abonnés",       icon: Users, color: "#8B5CF6", bg: "rgba(139,92,246,0.10)",  border: "rgba(139,92,246,0.25)" },
+  public:  { label: "Public",  desc: "Trouvable par tout le monde",   icon: Globe, color: "#2BD4A0", bg: "rgba(43,212,160,0.10)",  border: "rgba(43,212,160,0.25)" },
 } as const;
 
 function LibraryCard({
@@ -913,10 +913,10 @@ function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
 
 /* ─── Custom session type & creation modal ────────────────── */
 
-// Système D — chaque catégorie = un rôle couleur : force/fullbody = violet (action),
-// cardio = orange (énergie), mobilité = teal (corps/récupération).
+// Système D — les séances sont toutes le même type d'objet → toutes VIOLET (action).
+// La couleur ne code que les métriques (série/calories/poids) et l'état « fait » (teal).
 const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
-  force: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0", fullbody: "#8B5CF6",
+  force: "#8B5CF6", cardio: "#8B5CF6", mobilite: "#8B5CF6", fullbody: "#8B5CF6",
 };
 const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
   force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
@@ -1749,9 +1749,9 @@ function ProgressionPageContent() {
       difficulty: r.difficulty as WorkoutSession["difficulty"],
       exercises: r.exercises as number,
       muscles: (r.muscles as string[]) ?? [],
-      // Répare les séances stockées avec accent "var(--accent)" (CSS invalide en
-      // concaténation → bouton « Commencer » invisible) : on retombe sur le hex.
-      accent: ((r.accent as string) ?? "").startsWith("#") ? (r.accent as string) : "#A78BFA",
+      // Système D : toutes les séances = violet (action). On ignore la couleur
+      // stockée en base (qui variait au hasard) pour une bibliothèque homogène.
+      accent: "#8B5CF6",
       icon: r.icon as string,
       exerciseList: (r.exercise_list as Exercise[]) ?? [],
       visibility: (r.visibility as "private" | "friends" | "public") ?? "private",
@@ -2256,11 +2256,8 @@ function ProgressionPageContent() {
                 const dur = s.elapsed_seconds > 0
                   ? `${Math.floor(s.elapsed_seconds / 60)} min`
                   : s.duration_minutes > 0 ? `${s.duration_minutes} min` : null;
-                // Système D : force/sport = violet (action), cardio/hiit = orange (énergie), mobilité/yoga = teal (corps)
-                const catColors: Record<string, string> = {
-                  force: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0", yoga: "#2BD4A0", hiit: "#E8620C", sport: "#8B5CF6",
-                };
-                const catColor = catColors[s.category] ?? "var(--text-3)";
+                // Système D : toutes les séances = violet (action), peu importe la catégorie.
+                const catColor = "#8B5CF6";
 
                 return (
                   <motion.div
