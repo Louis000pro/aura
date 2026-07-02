@@ -834,7 +834,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 whileTap={{ scale: 0.97 }}
                 onClick={publishWorkout}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
               >
                 Publier la story
               </motion.button>
@@ -1000,7 +1000,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 whileTap={{ scale: 0.97 }}
                 onClick={publishMedia}
                 className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
               >
                 Publier la story
               </motion.button>
@@ -1026,7 +1026,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setStep("text-input")}
                   className="px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                  style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}
+                  style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}
                 >
                   Publier un texte à la place
                 </motion.button>
@@ -1125,7 +1125,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
                 whileTap={{ scale: 0.97 }}
                 onClick={onClose}
                 className="mt-1 px-6 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}
               >
                 Fermer
               </motion.button>
@@ -4638,7 +4638,7 @@ function CommunautePageInner() {
                         whileHover={{ scale: 1.1 }}
                         transition={{ type: "spring", bounce: 0.4 }}
                         className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
-                        style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}
+                        style={{ background: authorAvatar ? "transparent" : "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}
                       >
                         {authorAvatar
                           // eslint-disable-next-line @next/next/no-img-element
@@ -4999,7 +4999,7 @@ function CommunautePageInner() {
                   className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150"
                   style={
                     searchFilter === f
-                      ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                      ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
                       : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
                   }
                 >
@@ -5067,7 +5067,7 @@ function CommunautePageInner() {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                             style={isF
                               ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
-                              : { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                              : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
                             }
                           >
                             {isF ? <><UserCheck size={12} strokeWidth={2} /> Suivi</> : <><UserPlus size={12} strokeWidth={2} /> Suivre</>}
@@ -5125,7 +5125,7 @@ function CommunautePageInner() {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                             style={isF
                               ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
-                              : { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                              : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
                             }
                             aria-label={isF ? "Ne plus suivre" : "Suivre"}
                           >
@@ -5440,7 +5440,7 @@ function CommunautePageInner() {
                           <div
                             className="rounded-2xl text-sm font-light max-w-[260px] overflow-hidden"
                             style={isMe
-                              ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+                              ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", borderBottomRightRadius: 6, boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
                               : { background: "rgba(var(--surface-rgb),0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.7)", color: "var(--text-1)", borderBottomLeftRadius: 6 }
                             }
                           >

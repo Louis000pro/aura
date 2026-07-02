@@ -294,7 +294,7 @@ export default function DailyDrawer({
                       className="flex-1 py-2.5 rounded-2xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
                       style={
                         active
-                          ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }
+                          ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }
                           : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.25)" }
                       }>
                       <Icon size={13} strokeWidth={active ? 2 : 1.5} />
@@ -553,7 +553,7 @@ export default function DailyDrawer({
                         </div>
                         <Link href="/progression"
                           className="mt-2 px-4 py-2 rounded-2xl text-xs font-semibold"
-                          style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}>
+                          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                           Voir mon programme
                         </Link>
                       </div>

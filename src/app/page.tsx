@@ -198,7 +198,7 @@ function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: bo
             initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", bounce: 0.52, delay: 0.14 }}
             className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-4xl font-bold"
-            style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 14px 48px rgba(var(--accent-rgb),0.38), 0 4px 16px rgba(var(--gold-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }}
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 14px 48px rgba(var(--accent-rgb),0.38), 0 4px 16px rgba(var(--gold-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }}
           >
             {(pseudo || "?")[0]?.toUpperCase()}
           </motion.div>

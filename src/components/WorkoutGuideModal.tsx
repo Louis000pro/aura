@@ -811,7 +811,7 @@ export default function WorkoutGuideModal({
                             aria-expanded={open}
                           >
                             <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)" }}>
+                              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                               {i + 1}
                             </div>
                             <p className="flex-1 text-sm font-light truncate" style={{ color: "var(--text-1)" }}>{ex.name}</p>

@@ -210,7 +210,7 @@ function ProfileCard({
         style={
           isFollowing
             ? { background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }
-            : { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
+            : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
         }
       >
         {isFollowing
@@ -566,7 +566,7 @@ export default function DecouvertePage() {
             className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-2xl text-[10px] font-semibold cursor-pointer transition-all"
             style={
               activeTab === id
-                ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
                 : { background: "rgba(var(--surface-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
             }
           >

@@ -592,7 +592,7 @@ export default function Badges() {
               className="flex-shrink-0 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all"
               style={
                 activeCategory === id
-                  ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                  ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
                   : { background: "rgba(var(--surface-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
               }
             >
