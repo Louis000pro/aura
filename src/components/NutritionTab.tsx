@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, Heart } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
@@ -1393,15 +1393,13 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
     });
   }, [user]);
 
-  /* Load all nutrition + hydration data */
+  /* Load all nutrition data */
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     const supabase = createClient();
-    Promise.all([
-      supabase.from("nutrition_logs").select("date,calories,proteins,carbs,fats").eq("user_id", user.id),
-      supabase.from("hydration_logs").select("date,water_ml").eq("user_id", user.id),
-    ]).then(([{ data: nutr }, { data: hydr }]) => {
+    supabase.from("nutrition_logs").select("date,calories,proteins,carbs,fats").eq("user_id", user.id)
+      .then(({ data: nutr }) => {
       const map = new Map<string, DaySummary>();
       const blank = (): DaySummary => ({ date:"", total_calories:0, total_proteins:0, total_carbs:0, total_fats:0, meal_count:0, water_ml:0 });
 
@@ -1414,11 +1412,6 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           total_fats:     e.total_fats     + (r.fats     ?? 0),
           meal_count:     e.meal_count + 1,
         });
-      });
-
-      (hydr ?? []).forEach((r: { date:string; water_ml:number }) => {
-        const e = map.get(r.date) ?? { ...blank(), date: r.date };
-        map.set(r.date, { ...e, water_ml: r.water_ml });
       });
 
       setAllData(map);
@@ -1453,16 +1446,14 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   }, [calMonth, regDate, today]);
 
   /* Monthly stats — mémorisé */
-  const { trackedThisMonth, daysInMonth, avgCal, avgWater } = useMemo(() => {
+  const { trackedThisMonth, daysInMonth, avgCal } = useMemo(() => {
     const mk = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}`;
     const monthEntries = [...allData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
     const tracked = monthEntries.filter(d => d.meal_count > 0);
-    const waterArr = monthEntries.filter(d => d.water_ml > 0);
     return {
       trackedThisMonth: tracked.length,
       daysInMonth: new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate(),
       avgCal: tracked.length > 0 ? Math.round(tracked.reduce((s,d) => s + d.total_calories,0) / tracked.length) : 0,
-      avgWater: waterArr.length > 0 ? Math.round(waterArr.reduce((s,d) => s + d.water_ml,0) / waterArr.length) : 0,
     };
   }, [allData, calMonth]);
 
@@ -1625,12 +1616,6 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                         </div>
                       )}
 
-                      {/* Water dot */}
-                      {!!s && s.water_ml >= 500 && (
-                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
-                          style={{ background: highContrast ? "rgba(var(--surface-rgb),0.8)" : "#2BD4A0" }} />
-                      )}
-
                       {/* Today ring */}
                       {isToday && (
                         <div className="absolute inset-0 rounded-[10px] pointer-events-none"
@@ -1656,19 +1641,14 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                 <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{l}</span>
               </div>
             ))}
-            <div className="flex items-center gap-1 ml-auto">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#2BD4A0" }} />
-              <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>eau ≥ 500 ml</span>
-            </div>
           </div>
 
           {/* Monthly stats tiles */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <div className="grid grid-cols-3 gap-3 mt-4">
             {[
               { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
               { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "var(--accent)" },
               { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "var(--gold)" },
-              { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#2BD4A0" },
             ].map(({ icon, label, val, unit, color }) => (
               <motion.div key={label}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -1733,6 +1713,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [journalOpen, setJournalOpen] = useState(false); // journal relégué en pied, déplié à la demande
 
   /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
   const { goals } = useNutritionGoals();
@@ -2107,8 +2088,36 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
         </div>
       )}
 
-      {/* ── 2-column grid ──────────────────────────────────────── */}
+      {/* ── Journal du jour — relégué en pied, dépliable ────────── */}
       {calView === "journal" && (
+        <button
+          onClick={() => setJournalOpen((o) => !o)}
+          className="w-full max-w-5xl flex items-center justify-between px-5 py-4 rounded-3xl mb-4 cursor-pointer"
+          style={CARD}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+              <BookOpen size={16} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                Journal du jour
+              </p>
+              <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
+                {totalCals.toLocaleString("fr-FR")}
+                <span className="font-normal" style={{ color: "var(--text-3)" }}> / {goals.calories.toLocaleString("fr-FR")} kcal</span>
+              </p>
+            </div>
+          </div>
+          <motion.div animate={{ rotate: journalOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.div>
+        </button>
+      )}
+
+      {/* ── 2-column grid (détail du journal, déplié) ───────────── */}
+      {calView === "journal" && journalOpen && (
       <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 max-w-5xl">
 
         {/* LEFT — Ring + Macros */}
@@ -2142,7 +2151,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             </div>
           </motion.div>
 
-          {/* Macros + hydration */}
+          {/* Macros */}
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="rounded-3xl p-5" style={CARD}>
