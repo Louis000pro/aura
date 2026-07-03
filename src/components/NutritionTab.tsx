@@ -2075,13 +2075,15 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
         <div className="mb-6">
           <MealSituationHero
             name={user?.name}
+            userId={user?.id}
+            calorieTarget={goals.calories}
             onPhoto={() => setShowPhoto(true)}
             onBarcode={() => setShowBarcode(true)}
             onManual={() => setShowManual(true)}
-            onShowIdeas={() => document.getElementById("nutrition-idees")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
             classics={displayRecents}
             onQuickAdd={(r) => { void quickAddRecent(r); }}
+            onLogIdea={(m) => { void addRecipeMeal(m); }}
           />
         </div>
       )}
