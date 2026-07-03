@@ -18,10 +18,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
-  Plus, MessageSquare, ChevronRight, ChevronLeft, X, Clock, RefreshCw, Loader2, Check,
+  Plus, MessageSquare, ChevronRight, ChevronLeft, X, Clock, RefreshCw, Loader2, Check, Carrot,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
-import { fetchIdeas, mealTypeFromHour, type Idea } from "@/lib/mealIdeas";
+import { fetchIdeas, fetchIdeasFromIngredients, mealTypeFromHour, type Idea } from "@/lib/mealIdeas";
 
 type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -40,7 +40,7 @@ type Props = {
 };
 
 type SituationKey = "maison" | "resto" | "pouce";
-type SheetView = "menu" | "classics" | "ideas";
+type SheetView = "menu" | "classics" | "ideas" | "finish";
 
 const SITUATIONS: {
   key: SituationKey; label: string; sub: string;
@@ -90,23 +90,55 @@ export default function MealSituationHero({
   const [ideaIndex, setIdeaIndex] = useState(0);
   const [ideasLoading, setIdeasLoading] = useState(false);
   const [ideasQuick, setIdeasQuick] = useState(false);
+  const [ideaSource, setIdeaSource] = useState<"menu" | "finish">("menu");
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [ingInput, setIngInput] = useState("");
 
   const close = () => { setActive(null); setView("menu"); };
   const pick = (fn: () => void) => { close(); fn(); };
+
+  const readDiet = (): string[] => {
+    try {
+      if (userId) { const raw = localStorage.getItem(`vaiiya_diet_${userId}`); if (raw) return JSON.parse(raw); }
+    } catch { /* ignore */ }
+    return [];
+  };
 
   const openIdeas = async (quick: boolean) => {
     setIdeasQuick(quick);
     setIdeaIndex(0);
     setView("ideas");
-    if (ideas.length) return; // déjà chargées cette session
+    if (ideaSource === "menu" && ideas.length) return; // déjà chargées cette session
+    setIdeaSource("menu");
     setIdeasLoading(true);
     const taste = userId ? loadTasteProfileLocal(userId) : null;
-    let diet: string[] = [];
-    try {
-      if (userId) { const raw = localStorage.getItem(`vaiiya_diet_${userId}`); if (raw) diet = JSON.parse(raw); }
-    } catch { /* ignore */ }
     const favorites = classics.map((c) => c.name).slice(0, 10);
-    const list = await fetchIdeas({ mealType: mealTypeFromHour(), calorieTarget, taste, diet, favorites });
+    const list = await fetchIdeas({ mealType: mealTypeFromHour(), calorieTarget, taste, diet: readDiet(), favorites });
+    setIdeas(list);
+    setIdeasLoading(false);
+  };
+
+  const addIngredients = (raw: string) => {
+    const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!parts.length) return;
+    setIngredients((prev) => {
+      const seen = new Set(prev.map((p) => p.toLowerCase()));
+      const next = [...prev];
+      for (const p of parts) { if (!seen.has(p.toLowerCase())) { next.push(p); seen.add(p.toLowerCase()); } }
+      return next.slice(0, 15);
+    });
+    setIngInput("");
+  };
+
+  const generateFinish = async () => {
+    if (!ingredients.length) return;
+    setIdeasQuick(false);
+    setIdeaSource("finish");
+    setIdeaIndex(0);
+    setView("ideas");
+    setIdeasLoading(true);
+    const taste = userId ? loadTasteProfileLocal(userId) : null;
+    const list = await fetchIdeasFromIngredients({ ingredients, calorieTarget, mealType: mealTypeFromHour(), taste, diet: readDiet() });
     setIdeas(list);
     setIdeasLoading(false);
   };
@@ -116,6 +148,7 @@ export default function MealSituationHero({
     if (key === "maison") return [
       { label: "Une idée qui me tente", desc: "des plats adaptés à tes goûts", Icon: Sparkles, run: () => openIdeas(false) },
       { label: "Vite fait",            desc: "prêt en 15 min ou moins",        Icon: Clock,    run: () => openIdeas(true) },
+      { label: "J'ai des trucs à finir", desc: "un plat avec ce que tu as",    Icon: Carrot,   run: () => setView("finish") },
       { label: "Mes classiques",       desc: "tes plats les plus fréquents",   Icon: Heart,    run: () => setView("classics") },
       { label: "Ajouter à la main",    desc: "je sais déjà ce que je fais",    Icon: Plus,     run: () => pick(onManual) },
     ];
@@ -137,8 +170,17 @@ export default function MealSituationHero({
   const pool = shown.length ? shown : ideas;
   const dish = pool.length ? pool[ideaIndex % pool.length] : null;
 
-  const heading = view === "classics" ? "Mes classiques" : view === "ideas"
-    ? (ideasQuick ? "Vite fait" : "Une idée pour toi") : activeSituation?.label;
+  const ideaBadge = ideaSource === "finish" ? "avec ce que t'as" : "pour toi";
+  const baseSuggestions = (() => {
+    const t = userId ? loadTasteProfileLocal(userId) : null;
+    const fromTaste = (t?.bases ?? []).slice(0, 8);
+    return fromTaste.length ? fromTaste : ["Œufs", "Poulet", "Riz", "Pâtes", "Tomates", "Courgettes", "Fromage", "Épinards"];
+  })();
+  const heading =
+    view === "classics" ? "Mes classiques"
+    : view === "finish" ? "J'ai des trucs à finir"
+    : view === "ideas" ? (ideaSource === "finish" ? "Avec ce que t'as" : ideasQuick ? "Vite fait" : "Une idée pour toi")
+    : activeSituation?.label;
 
   return (
     <motion.div
@@ -234,7 +276,7 @@ export default function MealSituationHero({
               <div className="flex items-center justify-between p-5 pb-3">
                 <div className="flex items-center gap-2.5">
                   {view !== "menu" && (
-                    <button onClick={() => setView("menu")}
+                    <button onClick={() => setView(view === "ideas" && ideaSource === "finish" ? "finish" : "menu")}
                       className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
                       style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
                       <ChevronLeft size={15} strokeWidth={2} style={{ color: "var(--text-2)" }} />
@@ -310,6 +352,72 @@ export default function MealSituationHero({
                     </motion.div>
                   )}
 
+                  {/* ── J'ai des trucs à finir : saisie d'ingrédients ── */}
+                  {view === "finish" && (
+                    <motion.div key="finish"
+                      initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
+                      className="flex flex-col gap-3">
+                      <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                        Dis-moi ce que tu as sous la main, je te compose un plat — rien à acheter.
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          value={ingInput}
+                          onChange={(e) => setIngInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") addIngredients(ingInput); }}
+                          placeholder="Ex : courgettes, feta, œufs…"
+                          className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none"
+                          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
+                        />
+                        <motion.button whileTap={{ scale: 0.94 }} onClick={() => addIngredients(ingInput)}
+                          disabled={!ingInput.trim()}
+                          className="px-3.5 rounded-xl text-sm font-semibold cursor-pointer flex-shrink-0"
+                          style={{ background: ingInput.trim() ? "rgba(var(--accent-rgb),0.16)" : "rgba(var(--tint-violet-rgb),0.4)", color: "var(--accent)" }}>
+                          Ajouter
+                        </motion.button>
+                      </div>
+
+                      {ingredients.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {ingredients.map((ing) => (
+                            <button key={ing} onClick={() => setIngredients((prev) => prev.filter((x) => x !== ing))}
+                              className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-full text-xs cursor-pointer"
+                              style={{ background: "rgba(139,92,246,0.14)", color: "var(--text-1)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                              {ing}
+                              <X size={11} strokeWidth={2.5} style={{ color: "var(--text-3)" }} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Suggestions</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).map((s) => (
+                              <button key={s} onClick={() => addIngredients(s)}
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
+                                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                                <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} /> {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <motion.button whileTap={{ scale: 0.98 }} onClick={generateFinish}
+                        disabled={!ingredients.length}
+                        className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                        style={{
+                          background: ingredients.length ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+                          color: ingredients.length ? "#fff" : "var(--text-3)",
+                          boxShadow: ingredients.length ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+                        }}>
+                        <Carrot size={16} strokeWidth={2} /> Trouve-moi un plat
+                      </motion.button>
+                    </motion.div>
+                  )}
+
                   {/* ── Une idée / Vite fait : carte résultat immersive ── */}
                   {view === "ideas" && (
                     <motion.div key="ideas"
@@ -335,7 +443,7 @@ export default function MealSituationHero({
                             <div className="absolute flex items-center gap-1.5 px-2.5 py-1 rounded-full"
                               style={{ top: 12, left: 12, background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
                               <Sparkles size={12} style={{ color: "#fff" }} />
-                              <span className="text-[10px] font-medium" style={{ color: "#fff" }}>pour toi</span>
+                              <span className="text-[10px] font-medium" style={{ color: "#fff" }}>{ideaBadge}</span>
                             </div>
                             <div className="absolute inset-x-0 bottom-0" style={{
                               height: "62%",
@@ -355,7 +463,7 @@ export default function MealSituationHero({
                               </div>
                               <p className="text-[10.5px] mt-2" style={{ color: "rgba(255,255,255,0.85)" }}>
                                 {dish.prepMin ? `prêt en ${dish.prepMin} min` : "facile à préparer"}
-                                {dish.difficulty ? ` · ${dish.difficulty}` : ""}
+                                {ideaSource === "finish" ? " · rien à acheter" : dish.difficulty ? ` · ${dish.difficulty}` : ""}
                               </p>
                             </div>
                           </div>

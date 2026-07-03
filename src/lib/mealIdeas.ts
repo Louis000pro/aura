@@ -108,3 +108,36 @@ export async function fetchIdeas(params: {
   }
   return normalize(FALLBACK[mealType] ?? FALLBACK["diner"]);
 }
+
+/* « J'ai des trucs à finir » : plats composés à partir des ingrédients dispos. */
+export async function fetchIdeasFromIngredients(params: {
+  ingredients: string[];
+  calorieTarget: number;
+  mealType: string;
+  taste?: unknown;
+  diet?: string[];
+}): Promise<Idea[]> {
+  const { ingredients, calorieTarget, mealType, taste, diet = [] } = params;
+  try {
+    const res = await fetch("/api/nutrition/from-ingredients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ingredients, calorieTarget, mealType, taste, diet }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const dishes = json?.dishes;
+      if (Array.isArray(dishes) && dishes.length) {
+        const norm = normalize(dishes as RawIdea[]);
+        if (norm.length) return norm;
+      }
+    }
+  } catch {
+    /* secours ci-dessous */
+  }
+  // Secours : un plat générique composé à partir de ce qui a été saisi.
+  const label = ingredients.slice(0, 3).join(", ");
+  return normalize([
+    { nom: `Poêlée express (${label})`, calories: Math.round(calorieTarget / 3), prepMin: 15, difficulty: "facile" },
+  ]);
+}
