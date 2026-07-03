@@ -1906,6 +1906,24 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       <WeighInPrompt />
       <TastePrefsPrompt />
 
+      {/* ── On mange où ? — le nouveau #1 (dominant, tout en haut) ── */}
+      {calView === "journal" && (
+        <div className="mb-6">
+          <MealSituationHero
+            name={user?.name}
+            userId={user?.id}
+            calorieTarget={goals.calories}
+            onPhoto={() => setShowPhoto(true)}
+            onBarcode={() => setShowBarcode(true)}
+            onManual={() => setShowManual(true)}
+            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
+            classics={displayRecents}
+            onQuickAdd={(r) => { void quickAddRecent(r); }}
+            onLogIdea={(m) => { void addRecipeMeal(m); }}
+          />
+        </div>
+      )}
+
       {/* ── Header ────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
@@ -2050,24 +2068,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           );
         })}
       </motion.div>}
-
-      {/* ── On mange où ? — le nouveau #1 ───────────────────────── */}
-      {calView === "journal" && (
-        <div className="mb-6">
-          <MealSituationHero
-            name={user?.name}
-            userId={user?.id}
-            calorieTarget={goals.calories}
-            onPhoto={() => setShowPhoto(true)}
-            onBarcode={() => setShowBarcode(true)}
-            onManual={() => setShowManual(true)}
-            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
-            classics={displayRecents}
-            onQuickAdd={(r) => { void quickAddRecent(r); }}
-            onLogIdea={(m) => { void addRecipeMeal(m); }}
-          />
-        </div>
-      )}
 
       {/* ── Statut ──────────────────────────────────────────────── */}
       {calView === "journal" && isLoading && (

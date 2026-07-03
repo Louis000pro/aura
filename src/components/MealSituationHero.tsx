@@ -204,15 +204,15 @@ export default function MealSituationHero({
         Dis-moi où, je m&apos;occupe du reste.
       </p>
 
-      {/* Les 3 portes — cartes photo, légende sur l'image */}
+      {/* Les 3 portes — grandes cartes photo, légende sur l'image (dominantes) */}
       <div className="grid grid-cols-3 gap-2.5 mt-4">
         {SITUATIONS.map(({ key, label, sub, Icon, gradient, img }) => (
           <motion.button
             key={key}
-            whileTap={{ scale: 0.96 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => { setActive(key); setView("menu"); }}
-            className="relative overflow-hidden rounded-2xl cursor-pointer text-left"
-            style={{ minHeight: 172, background: gradient }}
+            className="relative overflow-hidden rounded-3xl cursor-pointer text-left"
+            style={{ minHeight: "56vh", background: gradient }}
           >
             {/* Vraie photo si présente (public/nutrition/<key>.jpg), sinon le dégradé */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -222,17 +222,17 @@ export default function MealSituationHero({
               className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Icône-texture discrète */}
-            <Icon size={30} strokeWidth={1.5}
-              className="absolute" style={{ top: 10, right: 10, color: "rgba(255,255,255,0.28)" }} />
+            <Icon size={34} strokeWidth={1.5}
+              className="absolute" style={{ top: 12, right: 12, color: "rgba(255,255,255,0.30)" }} />
             {/* Voile bas pour la lisibilité de la légende */}
             <div className="absolute inset-x-0 bottom-0" style={{
-              height: "62%",
-              background: "linear-gradient(to top,rgba(14,7,18,0.86),rgba(14,7,18,0.35) 55%,transparent)",
+              height: "46%",
+              background: "linear-gradient(to top,rgba(14,7,18,0.9),rgba(14,7,18,0.35) 58%,transparent)",
             }} />
             {/* Légende */}
-            <div className="absolute inset-x-0 bottom-0 p-3">
-              <p className="text-[13px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.82)" }}>{sub}</p>
+            <div className="absolute inset-x-0 bottom-0 p-3.5">
+              <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
+              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</p>
             </div>
           </motion.button>
         ))}
