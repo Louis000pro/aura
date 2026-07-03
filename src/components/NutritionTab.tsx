@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, Heart } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen, Heart } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
 import RecipesByTheme from "@/components/RecipesByTheme";
+import MealSituationHero from "@/components/MealSituationHero";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -159,184 +160,6 @@ function MacroLegend() {
     <p className="text-[10px] text-center leading-snug" style={{ color: "var(--text-3)" }}>
       Protéines = muscles · Glucides = énergie · Lipides = graisses utiles
     </p>
-  );
-}
-
-/* ─── HydrationWidget — icônes SVG ─────────────────────────────────── */
-const PetitVerreIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    {/* Verre court, large — forme trapèze */}
-    <path d="M2.5 4h10L11 12.5H4L2.5 4Z" />
-    {/* Niveau d'eau ~60% */}
-    <path d="M4.6 9.5h5.8" />
-  </svg>
-);
-
-const GrandVerreIcon = () => (
-  <svg width="15" height="17" viewBox="0 0 15 17" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    {/* Verre haut, effilé */}
-    <path d="M2.5 2h10L10.5 15H4.5L2.5 2Z" />
-    {/* Niveau d'eau ~60% */}
-    <path d="M4.4 10.5h6.2" />
-  </svg>
-);
-
-const BouteilleIcon = () => (
-  <svg width="13" height="18" viewBox="0 0 13 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    {/* Bouchon */}
-    <rect x="4.2" y="1" width="4.6" height="1.8" rx="0.6" />
-    {/* Col + épaules + corps */}
-    <path d="M4.2 2.8V5L2.5 6.8V15.2a1 1 0 001 1h6a1 1 0 001-1V6.8L8.8 5V2.8" />
-    {/* Niveau d'eau ~55% */}
-    <path d="M2.5 11.5h8" />
-  </svg>
-);
-
-/* ─── HydrationWidget ───────────────────────────────────────────────── */
-function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
-  waterMl: number; goalMl?: number;
-  onAdd: (ml: number) => void;
-  onRemove: (ml: number) => void;
-}) {
-  const pct = Math.min(Math.round((waterMl / goalMl) * 100), 100);
-  const holdRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const barRef   = useRef<HTMLDivElement>(null);
-  // Ref pour avoir la valeur courante dans les handlers sans re-registrer les events
-  const mlRef    = useRef(waterMl);
-  useEffect(() => { mlRef.current = waterMl; }, [waterMl]);
-
-  const applyFromX = (clientX: number) => {
-    if (!barRef.current) return;
-    const { left, width } = barRef.current.getBoundingClientRect();
-    const ratio  = Math.max(0, Math.min(1, (clientX - left) / width));
-    const target = Math.round((ratio * goalMl) / 10) * 10;
-    const delta  = target - mlRef.current;
-    if (delta > 0) onAdd(delta);
-    else if (delta < 0) onRemove(-delta);
-  };
-
-  const presets = [
-    { ml: 150, label: "150 ml", Icon: PetitVerreIcon },
-    { ml: 250, label: "250 ml", Icon: GrandVerreIcon },
-    { ml: 500, label: "500 ml", Icon: BouteilleIcon },
-  ] as const;
-
-  const startHold = (action: () => void) => {
-    action();
-    holdRef.current = setInterval(action, 110);
-  };
-
-  const stopHold = () => {
-    if (holdRef.current) { clearInterval(holdRef.current); holdRef.current = null; }
-  };
-
-  return (
-    <div className="flex flex-col gap-3">
-      {/* Header + stepper */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Droplets size={15} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-          <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Hydratation</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <motion.button
-            whileTap={{ scale: 0.86 }}
-            disabled={waterMl === 0}
-            onMouseDown={() => waterMl > 0 && startHold(() => onRemove(10))}
-            onMouseUp={stopHold}
-            onMouseLeave={stopHold}
-            onTouchStart={() => waterMl > 0 && startHold(() => onRemove(10))}
-            onTouchEnd={stopHold}
-            onTouchCancel={stopHold}
-            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{
-              background: "rgba(var(--accent-rgb),0.10)",
-              border: "1px solid rgba(var(--accent-rgb),0.20)",
-              opacity: waterMl === 0 ? 0.35 : 1,
-            }}
-          >
-            <span className="text-sm font-bold leading-none" style={{ color: "var(--accent)" }}>−</span>
-          </motion.button>
-
-          <span className="text-sm font-semibold tabular-nums text-center" style={{ color: "var(--text-1)", minWidth: 110 }}>
-            {waterMl.toLocaleString("fr-FR")}{" "}
-            <span className="text-xs font-normal" style={{ color: "var(--text-3)" }}>
-              / {goalMl.toLocaleString("fr-FR")} ml
-            </span>
-          </span>
-
-          <motion.button
-            whileTap={{ scale: 0.86 }}
-            onMouseDown={() => startHold(() => onAdd(10))}
-            onMouseUp={stopHold}
-            onMouseLeave={stopHold}
-            onTouchStart={() => startHold(() => onAdd(10))}
-            onTouchEnd={stopHold}
-            onTouchCancel={stopHold}
-            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.20)" }}
-          >
-            <span className="text-sm font-bold leading-none" style={{ color: "var(--accent)" }}>+</span>
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Barre interactive — clic ou glissement */}
-      <div
-        ref={barRef}
-        className="relative select-none cursor-ew-resize"
-        style={{ paddingBlock: 8 }}
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          applyFromX(e.clientX);
-        }}
-        onPointerMove={(e) => { if (e.buttons) applyFromX(e.clientX); }}
-      >
-        {/* Track */}
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.10)" }}>
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg,var(--accent) 0%,#7B5CC4 100%)" }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-          />
-        </div>
-        {/* Thumb */}
-        {pct > 0 && (
-          <motion.div
-            className="absolute top-1/2 w-3.5 h-3.5 rounded-full pointer-events-none"
-            style={{
-              background: "linear-gradient(135deg,var(--accent),#7B5CC4)",
-              boxShadow: "0 0 0 3px rgba(var(--accent-rgb),0.25), 0 1px 4px rgba(80,40,150,0.2)",
-              translateY: "-50%",
-            }}
-            animate={{ left: `calc(${pct}% - 7px)` }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-          />
-        )}
-      </div>
-
-      {/* Raccourcis rapides */}
-      <div className="grid grid-cols-3 gap-2">
-        {presets.map(({ ml, label, Icon }) => (
-          <motion.button
-            key={ml}
-            whileTap={{ scale: 0.91 }}
-            whileHover={{ scale: 1.04 }}
-            onClick={() => onAdd(ml)}
-            className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl cursor-pointer"
-            style={{
-              background: "rgba(var(--accent-rgb),0.07)",
-              border: "1px solid rgba(var(--accent-rgb),0.15)",
-              color: "var(--accent)",
-            }}
-          >
-            <Icon />
-            <span className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
-          </motion.button>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -1904,15 +1727,12 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const [calView, setCalView] = useState<"journal" | "calendrier">("journal");
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekDays, setWeekDays] = useState<Date[]>([]);
-  const [waterMl, setWaterMl] = useState(0);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [showBarcode, setShowBarcode] = useState(false);
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const waterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const waterInitialized = useRef(false);
 
   /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
   const { goals } = useNutritionGoals();
@@ -2006,32 +1826,15 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const loadData = useCallback(async (date: Date) => {
     if (!user) return;
     setIsLoading(true);
-    waterInitialized.current = false;
     const dateStr = toDateStr(date);
-    const [{ data: md }, { data: hd }] = await Promise.all([
-      supabase.from("nutrition_logs").select("*").eq("user_id", user.id).eq("date", dateStr).order("time", { ascending: true }),
-      supabase.from("hydration_logs").select("water_ml").eq("user_id", user.id).eq("date", dateStr).maybeSingle(),
-    ]);
+    const { data: md } = await supabase
+      .from("nutrition_logs").select("*")
+      .eq("user_id", user.id).eq("date", dateStr).order("time", { ascending: true });
     setMeals(md ? md.map(rowToMeal) : []);
-    setWaterMl(hd?.water_ml ?? 0);
-    waterInitialized.current = true;
     setIsLoading(false);
   }, [user]); // eslint-disable-line
 
   useEffect(() => { loadData(selectedDate); }, [selectedDate, user]); // eslint-disable-line
-
-  /* ── Sauvegarde hydratation debounce 800ms ─── */
-  useEffect(() => {
-    if (!user || !waterInitialized.current) return;
-    if (waterTimer.current) clearTimeout(waterTimer.current);
-    waterTimer.current = setTimeout(async () => {
-      await supabase.from("hydration_logs").upsert(
-        { user_id: user.id, date: toDateStr(selectedDate), water_ml: waterMl },
-        { onConflict: "user_id,date" }
-      );
-    }, 800);
-    return () => { if (waterTimer.current) clearTimeout(waterTimer.current); };
-  }, [waterMl]); // eslint-disable-line
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2800); };
 
@@ -2267,6 +2070,22 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
         })}
       </motion.div>}
 
+      {/* ── On mange où ? — le nouveau #1 ───────────────────────── */}
+      {calView === "journal" && (
+        <div className="mb-6">
+          <MealSituationHero
+            name={user?.name}
+            onPhoto={() => setShowPhoto(true)}
+            onBarcode={() => setShowBarcode(true)}
+            onManual={() => setShowManual(true)}
+            onShowIdeas={() => document.getElementById("nutrition-idees")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
+            classics={displayRecents}
+            onQuickAdd={(r) => { void quickAddRecent(r); }}
+          />
+        </div>
+      )}
+
       {/* ── Statut ──────────────────────────────────────────────── */}
       {calView === "journal" && isLoading && (
         <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "var(--text-3)" }}>
@@ -2342,13 +2161,6 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               <MacroBar label="Protéines" hint="Pour construire tes muscles"     consumed={totalProt}  goal={goals.proteins} color="#B79CFF" />
               <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#FF9A3D" />
               <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#2BD4A0" />
-              <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.08)" }} />
-              <HydrationWidget
-                waterMl={waterMl}
-                goalMl={2000}
-                onAdd={(ml) => setWaterMl(w => Math.min(w + ml, 5000))}
-                onRemove={(ml) => setWaterMl(w => Math.max(w - ml, 0))}
-              />
             </div>
           </motion.div>
         </div>
@@ -2458,7 +2270,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           )}
 
           {/* Recettes par thème — générées par l'IA, ajoutables au journal du jour */}
-          <RecipesByTheme onAdd={addRecipeMeal} />
+          <div id="nutrition-idees">
+            <RecipesByTheme onAdd={addRecipeMeal} />
+          </div>
 
           {/* Empty state */}
           {meals.length === 0 ? (
