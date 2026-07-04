@@ -1906,28 +1906,10 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
       <WeighInPrompt />
       <TastePrefsPrompt />
 
-      {/* ── On mange où ? — le nouveau #1 (dominant, tout en haut) ── */}
-      {calView === "journal" && (
-        <div className="mb-6">
-          <MealSituationHero
-            name={user?.name}
-            userId={user?.id}
-            calorieTarget={goals.calories}
-            onPhoto={() => setShowPhoto(true)}
-            onBarcode={() => setShowBarcode(true)}
-            onManual={() => setShowManual(true)}
-            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
-            classics={displayRecents}
-            onQuickAdd={(r) => { void quickAddRecent(r); }}
-            onLogIdea={(m) => { void addRecipeMeal(m); }}
-          />
-        </div>
-      )}
-
-      {/* ── Header ────────────────────────────────────────────── */}
+      {/* ── Titre « Suivi nutrition » (le seul titre qui fait sens, en tête) ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6 max-w-5xl">
+        className="flex items-center justify-between mb-5 max-w-5xl">
         <div>
           {/* Bouton retour vers Progression */}
           {showBackButton && (
@@ -1993,6 +1975,24 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           </motion.button>
         </div>
       </motion.div>
+
+      {/* ── On mange où ? — le nouveau #1 (dominant) ─────────── */}
+      {calView === "journal" && (
+        <div className="mb-6">
+          <MealSituationHero
+            name={user?.name}
+            userId={user?.id}
+            calorieTarget={goals.calories}
+            onPhoto={() => setShowPhoto(true)}
+            onBarcode={() => setShowBarcode(true)}
+            onManual={() => setShowManual(true)}
+            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
+            classics={displayRecents}
+            onQuickAdd={(r) => { void quickAddRecent(r); }}
+            onLogIdea={(m) => { void addRecipeMeal(m); }}
+          />
+        </div>
+      )}
 
       {/* ── Tab toggle: Journal / Calendrier ─────────────────── */}
       <motion.div
