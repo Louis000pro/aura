@@ -43,6 +43,7 @@ export type Recipe = {
 export function slugify(s: string): string {
   return s
     .toLowerCase()
+    .replace(/œ/g, "oe").replace(/æ/g, "ae")
     .normalize("NFD")
     .split("")
     .filter((c) => { const n = c.charCodeAt(0); return n < 0x300 || n > 0x36f; })
