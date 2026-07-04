@@ -4,17 +4,17 @@
    MealSituationHero — le nouveau #1 de la page nutrition.
 
    Question humaine « On mange où ? » → triple choix contextuel. Navigation
-   PAR CARTES, SUR PLACE : taper une situation ne fait rien surgir — les cartes
-   se transforment en sous-choix, sur la même page (drill-down + retour). Seuls
-   les vrais outils (Photo IA, code-barres, saisie manuelle) ouvrent leur écran.
-   Voir [[nutrition-onmangeou-redesign]].
+   PAR CARTES, SUR PLACE : chaque niveau = TOUJOURS 3 grandes cartes-images.
+   Taper une carte remplace les 3 par les 3 suivantes (drill-down + retour),
+   sur la même page — rien ne surgit par-dessus. Seuls les vrais outils (Photo
+   IA, code-barres, saisie) ouvrent leur écran. Voir [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
-  Plus, MessageSquare, ChevronRight, ChevronLeft, Clock, RefreshCw, Loader2, Check, Carrot,
+  Plus, MessageSquare, ChevronLeft, RefreshCw, Loader2, Check, Carrot,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { fetchIdeas, fetchIdeasFromIngredients, mealTypeFromHour, type Idea } from "@/lib/mealIdeas";
@@ -37,11 +37,9 @@ type Props = {
 
 type SituationKey = "maison" | "resto" | "pouce";
 type Screen = "menu" | "ideas" | "finish" | "classics";
+type Icon = typeof Home;
 
-const SITUATIONS: {
-  key: SituationKey; label: string; sub: string;
-  Icon: typeof Home; gradient: string; img: string;
-}[] = [
+const SITUATIONS: { key: SituationKey; label: string; sub: string; Icon: Icon; gradient: string; img: string }[] = [
   {
     key: "maison", label: "À la maison", sub: "je cuisine", Icon: Home,
     img: "/nutrition/maison.jpg",
@@ -59,7 +57,6 @@ const SITUATIONS: {
   },
 ];
 
-/* Dégradé « plat chaud » pour la carte résultat (photos réelles = plus tard). */
 const DISH_GRADIENT =
   "radial-gradient(circle at 28% 20%,#FFE0A0,transparent 45%),radial-gradient(circle at 74% 64%,#E8620C,transparent 52%),linear-gradient(158deg,#F19A3C,#9E3E0E)";
 
@@ -70,7 +67,29 @@ function greeting(): { hello: string; moment: string } {
   return { hello, moment };
 }
 
-type Action = { label: string; desc?: string; Icon: typeof Home; run: () => void };
+/* Grande carte-image réutilisée à chaque niveau (racine + sous-choix) */
+function PhotoCard({ label, sub, Icon, gradient, img, onClick }: {
+  label: string; sub: string; Icon: Icon; gradient: string; img: string; onClick: () => void;
+}) {
+  return (
+    <motion.button whileTap={{ scale: 0.97 }} onClick={onClick}
+      className="relative overflow-hidden rounded-3xl cursor-pointer text-left"
+      style={{ minHeight: "56vh", background: gradient }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
+        onError={(e) => { e.currentTarget.style.display = "none"; }}
+        className="absolute inset-0 w-full h-full object-cover" />
+      <Icon size={34} strokeWidth={1.5} className="absolute" style={{ top: 12, right: 12, color: "rgba(255,255,255,0.30)" }} />
+      <div className="absolute inset-x-0 bottom-0" style={{ height: "46%", background: "linear-gradient(to top,rgba(14,7,18,0.9),rgba(14,7,18,0.35) 58%,transparent)" }} />
+      <div className="absolute inset-x-0 bottom-0 p-3.5">
+        <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
+        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</p>
+      </div>
+    </motion.button>
+  );
+}
+
+type SubChoice = { key: string; label: string; sub: string; Icon: Icon; run: () => void };
 
 export default function MealSituationHero({
   name, userId, calorieTarget, onPhoto, onBarcode, onManual, onSkip,
@@ -94,7 +113,7 @@ export default function MealSituationHero({
     if (!sit) return reset();
     if (screen === "ideas") return setScreen(ideaSource === "finish" ? "finish" : "menu");
     if (screen === "finish" || screen === "classics") return setScreen("menu");
-    return reset(); // menu → racine
+    return reset();
   };
 
   const readDiet = (): string[] => {
@@ -143,22 +162,22 @@ export default function MealSituationHero({
     setIdeasLoading(false);
   };
 
-  const actionsFor = (key: SituationKey): Action[] => {
+  /* Exactement 3 sous-choix par situation (même structure que la racine) */
+  const subChoices = (key: SituationKey): SubChoice[] => {
     if (key === "maison") return [
-      { label: "Une idée qui me tente", desc: "des plats adaptés à tes goûts", Icon: Sparkles, run: () => openIdeas(false) },
-      { label: "Vite fait",             desc: "prêt en 15 min ou moins",       Icon: Clock,    run: () => openIdeas(true) },
-      { label: "J'ai des trucs à finir", desc: "un plat avec ce que tu as",    Icon: Carrot,   run: () => setScreen("finish") },
-      { label: "Mes classiques",        desc: "tes plats les plus fréquents",  Icon: Heart,    run: () => setScreen("classics") },
-      { label: "Ajouter à la main",     desc: "je sais déjà ce que je fais",   Icon: Plus,     run: onManual },
+      { key: "idee",       label: "Une idée",       sub: "qui me tente",    Icon: Sparkles, run: () => openIdeas(false) },
+      { key: "finir",      label: "À finir",        sub: "avec tes restes", Icon: Carrot,   run: () => setScreen("finish") },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,    run: () => setScreen("classics") },
     ];
     if (key === "resto") return [
-      { label: "Scanner mon assiette",       desc: "l'IA lit ton plat en photo", Icon: Camera,        run: onPhoto },
-      { label: "Décrire ce que j'ai mangé",  desc: "en quelques mots",           Icon: MessageSquare, run: onManual },
+      { key: "assiette",   label: "Mon assiette",   sub: "je la scanne",  Icon: Camera,        run: onPhoto },
+      { key: "decrire",    label: "Je décris",      sub: "en deux mots",  Icon: MessageSquare, run: onManual },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes", Icon: Heart,         run: () => setScreen("classics") },
     ];
     return [
-      { label: "Scanner un code-barres", desc: "produit emballé",        Icon: Barcode, run: onBarcode },
-      { label: "Prendre une photo",      desc: "l'IA estime les macros", Icon: Camera,  run: onPhoto },
-      { label: "À la main",              desc: "rapide",                 Icon: Plus,    run: onManual },
+      { key: "code",  label: "Code-barres", sub: "produit emballé", Icon: Barcode, run: onBarcode },
+      { key: "photo", label: "Une photo",   sub: "l'IA estime",     Icon: Camera,  run: onPhoto },
+      { key: "main",  label: "À la main",   sub: "rapide",          Icon: Plus,    run: onManual },
     ];
   };
 
@@ -223,44 +242,22 @@ export default function MealSituationHero({
           <motion.div key="root"
             initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
             className="grid grid-cols-3 gap-2.5 mt-4">
-            {SITUATIONS.map(({ key, label, sub, Icon, gradient, img }) => (
-              <motion.button key={key} whileTap={{ scale: 0.97 }}
-                onClick={() => { setSit(key); setScreen("menu"); }}
-                className="relative overflow-hidden rounded-3xl cursor-pointer text-left"
-                style={{ minHeight: "56vh", background: gradient }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img} alt="" aria-hidden loading="lazy" decoding="async"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  className="absolute inset-0 w-full h-full object-cover" />
-                <Icon size={34} strokeWidth={1.5} className="absolute" style={{ top: 12, right: 12, color: "rgba(255,255,255,0.30)" }} />
-                <div className="absolute inset-x-0 bottom-0" style={{ height: "46%", background: "linear-gradient(to top,rgba(14,7,18,0.9),rgba(14,7,18,0.35) 58%,transparent)" }} />
-                <div className="absolute inset-x-0 bottom-0 p-3.5">
-                  <p className="text-[15px] font-medium leading-tight" style={{ color: "#fff" }}>{label}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.85)" }}>{sub}</p>
-                </div>
-              </motion.button>
+            {SITUATIONS.map((s) => (
+              <PhotoCard key={s.key} label={s.label} sub={s.sub} Icon={s.Icon} gradient={s.gradient} img={s.img}
+                onClick={() => { setSit(s.key); setScreen("menu"); }} />
             ))}
           </motion.div>
         )}
 
-        {/* ── Sous-choix d'une situation (cartes, sur place) ── */}
+        {/* ── Sous-choix : encore 3 grandes cartes (même structure) ── */}
         {sit !== null && screen === "menu" && (
           <motion.div key={`menu-${sit}`}
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="flex flex-col gap-2.5 mt-4">
-            {actionsFor(sit).map(({ label, desc, Icon, run }) => (
-              <motion.button key={label} whileTap={{ scale: 0.98 }} onClick={run}
-                className="flex items-center gap-3.5 p-4 rounded-2xl cursor-pointer text-left"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.14)" }}>
-                  <Icon size={22} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-medium leading-tight" style={{ color: "var(--text-1)" }}>{label}</p>
-                  {desc && <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>{desc}</p>}
-                </div>
-                <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-              </motion.button>
+            className="grid grid-cols-3 gap-2.5 mt-4">
+            {subChoices(sit).map((c) => (
+              <PhotoCard key={c.key} label={c.label} sub={c.sub} Icon={c.Icon}
+                gradient={sitObj?.gradient ?? ""} img={`/nutrition/${sit}-${c.key}.jpg`}
+                onClick={c.run} />
             ))}
           </motion.div>
         )}
