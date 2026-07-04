@@ -14,7 +14,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
-  Plus, MessageSquare, ChevronLeft, RefreshCw, Loader2, Check, Carrot,
+  Plus, BookOpen, ShoppingBag, ChevronLeft, RefreshCw, Loader2, Check, Carrot,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { fetchIdeas, fetchIdeasFromIngredients, mealTypeFromHour, type Idea } from "@/lib/mealIdeas";
@@ -170,14 +170,14 @@ export default function MealSituationHero({
       { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,    run: () => setScreen("classics") },
     ];
     if (key === "resto") return [
-      { key: "assiette",   label: "Mon assiette",   sub: "je la scanne",  Icon: Camera,        run: onPhoto },
-      { key: "decrire",    label: "Je décris",      sub: "en deux mots",  Icon: MessageSquare, run: onManual },
-      { key: "classiques", label: "Mes classiques", sub: "mes habitudes", Icon: Heart,         run: () => setScreen("classics") },
+      { key: "assiette",  label: "Mon assiette",      sub: "je la scanne",       Icon: Camera,      run: onPhoto },
+      { key: "carte",     label: "La carte",          sub: "aide-moi à choisir", Icon: BookOpen,    run: onManual },
+      { key: "livraison", label: "Je me fais livrer", sub: "à la maison",        Icon: ShoppingBag, run: onManual },
     ];
     return [
-      { key: "code",  label: "Code-barres", sub: "produit emballé", Icon: Barcode, run: onBarcode },
-      { key: "photo", label: "Une photo",   sub: "l'IA estime",     Icon: Camera,  run: onPhoto },
-      { key: "main",  label: "À la main",   sub: "rapide",          Icon: Plus,    run: onManual },
+      { key: "code",       label: "Code-barres",    sub: "produit emballé", Icon: Barcode, run: onBarcode },
+      { key: "photo",      label: "Une photo",      sub: "l'IA estime",     Icon: Camera,  run: onPhoto },
+      { key: "classiques", label: "Mes classiques", sub: "mes habitudes",   Icon: Heart,   run: () => setScreen("classics") },
     ];
   };
 
