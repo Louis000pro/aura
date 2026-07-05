@@ -1011,6 +1011,15 @@ export const getRecipe = (id: string): Recipe | undefined => RECIPES.find((r) =>
 const norm = (s: string) => slugify(s);
 
 /* Recettes proposables pour un contexte (moment de repas, régime, « vite fait »). */
+/* Déjeuner et dîner sont interchangeables pour la suggestion : un plat proposé
+   le midi l'est aussi le soir, et inversement. Petit-déj et goûter restent stricts. */
+const MAIN_MEALS: MealType[] = ["dejeuner", "diner"];
+function mealMatches(recipeMeals: MealType[], wanted: MealType): boolean {
+  if (!recipeMeals.length) return true;
+  if (MAIN_MEALS.includes(wanted)) return recipeMeals.some((m) => MAIN_MEALS.includes(m));
+  return recipeMeals.includes(wanted);
+}
+
 export function pickRecipes(opts: {
   mealType?: MealType;
   diet?: string[];
@@ -1019,7 +1028,7 @@ export function pickRecipes(opts: {
   const { mealType, diet = [], quick = false } = opts;
   const dietSet = new Set(diet);
   return RECIPES.filter((r) => {
-    if (mealType && r.mealTypes.length && !r.mealTypes.includes(mealType)) return false;
+    if (mealType && !mealMatches(r.mealTypes, mealType)) return false;
     if (quick && r.prepMin + r.cookMin > 20) return false;
     for (const d of dietSet) if (!r.diet.includes(d as DietKey)) return false;
     return true;
