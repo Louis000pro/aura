@@ -14,10 +14,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
   Plus, BookOpen, ShoppingBag, ChevronLeft, Clock, Carrot,
+  Store, Flame, X, Loader2,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { pickRecipes, matchByIngredients, type Recipe, type MealType } from "@/lib/recipeBank";
 import RecipeSheet from "@/components/RecipeSheet";
+import OrderRecapSheet from "@/components/OrderRecapSheet";
+import {
+  estimateOrder, guessPlace, POPULAR_CHAINS, NIVEAU_LABEL,
+  type Niveau, type OrderCategory, type OrderEstimate,
+} from "@/lib/orderEstimate";
 
 type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -36,7 +42,7 @@ type Props = {
 };
 
 type SituationKey = "maison" | "resto" | "pouce";
-type Screen = "menu" | "finish" | "classics";
+type Screen = "menu" | "finish" | "classics" | "livraison" | "livraison-form" | "livraison-advisor";
 type Icon = typeof Home;
 
 const SITUATIONS: { key: SituationKey; label: string; sub: string; Icon: Icon; gradient: string; img: string }[] = [
@@ -108,12 +114,28 @@ export default function MealSituationHero({
   const [recipeIndex, setRecipeIndex] = useState(0);
   const [recipeOpen, setRecipeOpen] = useState(false);
 
+  // Flux « Je me fais livrer »
+  const [enseigne, setEnseigne] = useState("");
+  const [niveau, setNiveau] = useState<Niveau>("resto");
+  const [category, setCategory] = useState<OrderCategory>("bistro");
+  const [niveauTouched, setNiveauTouched] = useState(false);
+  const [items, setItems] = useState("");
+  const [extras, setExtras] = useState<string[]>([]);
+  const [estimating, setEstimating] = useState(false);
+  const [estErr, setEstErr] = useState<string | null>(null);
+  const [order, setOrder] = useState<OrderEstimate | null>(null);
+
   const { hello, moment } = greeting();
 
-  const reset = () => { setSit(null); setScreen("menu"); };
+  const resetLiv = () => {
+    setEnseigne(""); setItems(""); setExtras([]); setNiveau("resto");
+    setCategory("bistro"); setNiveauTouched(false); setOrder(null); setEstErr(null);
+  };
+  const reset = () => { setSit(null); setScreen("menu"); resetLiv(); };
   const goBack = () => {
     if (!sit) return reset();
-    if (screen === "finish" || screen === "classics") return setScreen("menu");
+    if (screen === "livraison-form" || screen === "livraison-advisor") return setScreen("livraison");
+    if (screen === "finish" || screen === "classics" || screen === "livraison") return setScreen("menu");
     return reset();
   };
 
@@ -149,6 +171,30 @@ export default function MealSituationHero({
     openRecipes(false, matchByIngredients(ingredients, readDiet()));
   };
 
+  /* ── « Je me fais livrer » ── */
+  const NIVEAUX: Niveau[] = ["fast-food", "resto", "healthy"];
+  const EXTRA_SUGG = ["Soda", "Dessert", "Sauce", "Café", "Frites"];
+  const setEnseigneSmart = (name: string) => {
+    setEnseigne(name);
+    if (!niveauTouched) { const g = guessPlace(name); setNiveau(g.niveau); setCategory(g.category); }
+  };
+  const pickChain = (name: string) => {
+    const g = guessPlace(name);
+    setEnseigne(name); setNiveau(g.niveau); setCategory(g.category); setNiveauTouched(false);
+  };
+  const cycleNiveau = () => { setNiveau((n) => NIVEAUX[(NIVEAUX.indexOf(n) + 1) % 3]); setNiveauTouched(true); };
+  const toggleExtra = (x: string) => setExtras((p) => (p.includes(x) ? p.filter((e) => e !== x) : [...p, x]));
+  const canEstimate = items.trim().length > 0 || extras.length > 0;
+  const runEstimate = async () => {
+    if (!canEstimate || estimating) return;
+    setEstimating(true); setEstErr(null);
+    try {
+      const est = await estimateOrder({ enseigne: enseigne.trim(), niveau, category, items, extras, origin: "livraison" });
+      setOrder(est);
+    } catch { setEstErr("Estimation impossible, réessaie."); }
+    finally { setEstimating(false); }
+  };
+
   /* Exactement 3 sous-choix par situation (même structure que la racine) */
   const subChoices = (key: SituationKey): SubChoice[] => {
     if (key === "maison") return [
@@ -159,7 +205,7 @@ export default function MealSituationHero({
     if (key === "resto") return [
       { key: "assiette",  label: "Mon assiette",      sub: "je la scanne",       Icon: Camera,      run: onPhoto },
       { key: "carte",     label: "La carte",          sub: "aide-moi à choisir", Icon: BookOpen,    run: onManual },
-      { key: "livraison", label: "Je me fais livrer", sub: "à la maison",        Icon: ShoppingBag, run: onManual },
+      { key: "livraison", label: "Je me fais livrer", sub: "à la maison",        Icon: ShoppingBag, run: () => setScreen("livraison") },
     ];
     return [
       { key: "code",       label: "Code-barres",    sub: "produit emballé", Icon: Barcode, run: onBarcode },
@@ -178,6 +224,9 @@ export default function MealSituationHero({
   const heading =
     screen === "finish" ? "J'ai des trucs à finir"
     : screen === "classics" ? "Mes classiques"
+    : screen === "livraison" ? "Je me fais livrer"
+    : screen === "livraison-form" ? "Je sais ce que je prends"
+    : screen === "livraison-advisor" ? "Conseille-moi"
     : sitObj?.label ?? "";
 
   const currentRecipe = recipeList[recipeIndex];
@@ -330,6 +379,125 @@ export default function MealSituationHero({
             </motion.button>
           </motion.div>
         )}
+
+        {/* Je me fais livrer — les 2 portes */}
+        {sit !== null && screen === "livraison" && (
+          <motion.div key="livraison"
+            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
+            className="grid grid-cols-2 gap-2.5 mt-4">
+            <PhotoCard label="Je sais ce que je prends" sub="log express" Icon={ShoppingBag}
+              gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-jesais.jpg"
+              onClick={() => setScreen("livraison-form")} />
+            <PhotoCard label="Conseille-moi" sub="l'IA choisit" Icon={Sparkles}
+              gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-conseil.jpg"
+              onClick={() => setScreen("livraison-advisor")} />
+          </motion.div>
+        )}
+
+        {/* Je me fais livrer → je sais ce que je prends */}
+        {sit !== null && screen === "livraison-form" && (
+          <motion.div key="livraison-form"
+            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
+            className="flex flex-col gap-3 mt-4">
+
+            {/* Enseigne + raccourcis */}
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Tu commandes où&nbsp;?</p>
+              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                <Store size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
+                <input value={enseigne} onChange={(e) => setEnseigneSmart(e.target.value)}
+                  placeholder="McDonald's, le resto du coin…"
+                  className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {POPULAR_CHAINS.slice(0, 6).map((c) => {
+                  const on = enseigne.trim().toLowerCase() === c.name.toLowerCase();
+                  return (
+                    <button key={c.name} onClick={() => pickChain(c.name)}
+                      className="px-2.5 py-1 rounded-full text-xs cursor-pointer"
+                      style={{
+                        background: on ? "rgba(139,92,246,0.16)" : "rgba(var(--tint-violet-rgb),0.5)",
+                        color: on ? "var(--text-1)" : "var(--text-2)",
+                        border: `1px solid ${on ? "rgba(139,92,246,0.4)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
+                      }}>{c.name}</button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Niveau détecté + corriger */}
+            {enseigne.trim() && (
+              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl"
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                <div className="flex items-center gap-1.5">
+                  <Flame size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                  <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>{NIVEAU_LABEL[niveau]} · estimation ajustée</span>
+                </div>
+                <button onClick={cycleNiveau} className="text-[11px] font-medium underline cursor-pointer" style={{ color: "var(--accent)" }}>changer</button>
+              </div>
+            )}
+
+            {/* Articles */}
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Qu&apos;est-ce que tu prends&nbsp;?</p>
+              <input value={items} onChange={(e) => setItems(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") runEstimate(); }}
+                placeholder="Ex : Big Mac, moyenne frites"
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
+            </div>
+
+            {/* Ajouts rapides */}
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Tu oublies rien&nbsp;?</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EXTRA_SUGG.map((x) => {
+                  const on = extras.includes(x);
+                  return (
+                    <button key={x} onClick={() => toggleExtra(x)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
+                      style={{
+                        background: on ? "rgba(139,92,246,0.16)" : "rgba(var(--tint-violet-rgb),0.5)",
+                        color: on ? "var(--text-1)" : "var(--text-2)",
+                        border: `1px solid ${on ? "rgba(139,92,246,0.4)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
+                      }}>
+                      {on ? <X size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} /> : <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} />}
+                      {x}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {estErr && <p className="text-xs" style={{ color: "#E53E3E" }}>⚠️ {estErr}</p>}
+
+            <motion.button whileTap={{ scale: 0.98 }} onClick={runEstimate} disabled={!canEstimate || estimating}
+              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+              style={{
+                background: canEstimate ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+                color: canEstimate ? "#fff" : "var(--text-3)",
+                boxShadow: canEstimate ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+              }}>
+              {estimating
+                ? <><Loader2 size={16} strokeWidth={2} className="animate-spin" /> Estimation…</>
+                : <>Estimer les macros</>}
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* Je me fais livrer → conseille-moi (placeholder, maquette à figer) */}
+        {sit !== null && screen === "livraison-advisor" && (
+          <motion.div key="livraison-advisor"
+            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
+            className="flex flex-col items-center text-center gap-2 mt-4 py-10">
+            <Sparkles size={26} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Bientôt</p>
+            <p className="text-xs font-light max-w-[240px]" style={{ color: "var(--text-3)" }}>
+              L&apos;IA te proposera quoi commander selon tes calories restantes et ton envie. On peaufine cet écran juste après.
+            </p>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Filet anti-culpabilité — uniquement à la racine */}
@@ -373,6 +541,20 @@ export default function MealSituationHero({
               </motion.div>
             </motion.div>
           )
+        )}
+      </AnimatePresence>
+
+      {/* Récap commande (livraison) */}
+      <AnimatePresence>
+        {order && (
+          <OrderRecapSheet
+            key="order"
+            estimate={order}
+            enseigne={enseigne.trim()}
+            origin="livraison"
+            onClose={() => setOrder(null)}
+            onLog={(m) => { onLogIdea(m); reset(); }}
+          />
         )}
       </AnimatePresence>
     </motion.div>
