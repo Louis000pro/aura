@@ -6,7 +6,7 @@ export const maxDuration = 20;
 
 export async function POST(req: Request) {
   try {
-    const { description, enseigne, origin } = await req.json();
+    const { description, enseigne, origin, niveau } = await req.json();
     if (!description?.trim()) return NextResponse.json({ error: "description manquante" }, { status: 400 });
     if (!process.env.GROQ_API_KEY) return NextResponse.json({ error: "GROQ_API_KEY manquante" }, { status: 500 });
 
@@ -16,12 +16,15 @@ export async function POST(req: Request) {
     // l'estimation (fast-food = plus gras & portions généreuses qu'un resto).
     const hasContext = typeof enseigne === "string" && enseigne.trim().length > 0;
     const originLabel = origin === "livraison" ? "en livraison" : origin === "surplace" ? "au restaurant" : "";
+    // Indice de niveau choisi par l'utilisateur (sélecteur visuel) : on le prend
+    // comme référence plutôt que de laisser l'IA deviner seule.
+    const niveauHint = niveau === "fast-food" || niveau === "resto" || niveau === "healthy" ? String(niveau) : "";
 
     const userContent = hasContext
       ? `Commande ${originLabel} chez « ${String(enseigne).trim()} ».
 Articles : "${description}"
 
-Tiens compte du NIVEAU de l'établissement pour ajuster l'estimation :
+${niveauHint ? `L'utilisateur indique un établissement de type « ${niveauHint} » — prends-le comme référence pour le niveau.\n` : ""}Tiens compte du NIVEAU de l'établissement pour ajuster l'estimation :
 - fast-food (McDonald's, Burger King, KFC, kebab, tacos…) = plus gras, plus salé, portions généreuses ;
 - restaurant classique / bistro = cuisine standard, portions correctes ;
 - enseigne "healthy" (poke, salad bar, jus…) = plus léger, plus de légumes.
@@ -35,7 +38,7 @@ Retourne UN JSON avec :
   "carbs": glucides totaux en g (entier),
   "fats": lipides totaux en g (entier),
   "enseigneLevel": "fast-food" | "resto" | "healthy" (ton estimation du niveau),
-  "category": "burger" | "pizza" | "asiatique" | "healthy" | "bistro" | "tacos" | "petit-dej" | "dessert" (la catégorie la plus proche),
+  "category": "burger" | "pizza" | "asiatique" | "bistro" | "tacos" | "petit-dej" | "dessert" (la catégorie la plus proche),
   "confidence": "high" | "medium" | "low"
 }
 

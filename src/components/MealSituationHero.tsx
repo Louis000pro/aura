@@ -14,15 +14,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
   Plus, BookOpen, ShoppingBag, ChevronLeft, Clock, Carrot,
-  Store, Flame, X, Loader2,
+  Store, Check, X, Loader2, Flame, ArrowRight, ArrowLeft,
+  CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
 import { pickRecipes, matchByIngredients, type Recipe, type MealType } from "@/lib/recipeBank";
 import RecipeSheet from "@/components/RecipeSheet";
 import OrderRecapSheet from "@/components/OrderRecapSheet";
 import {
-  estimateOrder, guessPlace, POPULAR_CHAINS, NIVEAU_LABEL,
-  type Niveau, type OrderCategory, type OrderEstimate,
+  estimateOrder, guessPlace, ambianceImg, CATEGORY_ORDER, CATEGORY_LABEL, EXTRAS_BY_CATEGORY,
+  type OrderCategory, type OrderEstimate,
 } from "@/lib/orderEstimate";
 
 type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
@@ -97,6 +98,29 @@ function PhotoCard({ label, sub, Icon, gradient, img, onClick }: {
   );
 }
 
+/* Barre d'étapes du flux guidé « Je me fais livrer » (Où · Quoi · Extras) */
+function StepBar({ cur }: { cur: 1 | 2 | 3 }) {
+  const seg = (n: 1 | 2 | 3, label: string) => (
+    <span className="flex items-center gap-1 font-semibold" style={{ color: n <= cur ? "var(--accent)" : "var(--text-3)" }}>
+      {n < cur ? <Check size={12} strokeWidth={3} /> : <span>{n}</span>} {label}
+    </span>
+  );
+  const bar = (on: boolean) => (
+    <span className="flex-1 rounded" style={{ height: 2, background: on ? "var(--accent)" : "rgba(var(--violet-mid-rgb),0.3)", opacity: on ? 0.55 : 1 }} />
+  );
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {seg(1, "Où")}{bar(cur > 1)}{seg(2, "Quoi")}{bar(cur > 2)}{seg(3, "Extras")}
+    </div>
+  );
+}
+
+/* Icônes des ajouts rapides (clé EXTRAS_BY_CATEGORY → composant lucide) */
+const EXTRA_ICON: Record<string, Icon> = {
+  soda: CupSoda, dessert: IceCreamCone, sauce: Droplet, cafe: Coffee,
+  soup: Soup, entree: Salad, jus: GlassWater, viennoiserie: Croissant,
+};
+
 type SubChoice = { key: string; label: string; sub: string; Icon: Icon; run: () => void };
 
 export default function MealSituationHero({
@@ -116,11 +140,11 @@ export default function MealSituationHero({
 
   // Flux « Je me fais livrer »
   const [enseigne, setEnseigne] = useState("");
-  const [niveau, setNiveau] = useState<Niveau>("resto");
-  const [category, setCategory] = useState<OrderCategory>("bistro");
-  const [niveauTouched, setNiveauTouched] = useState(false);
-  const [items, setItems] = useState("");
-  const [extras, setExtras] = useState<string[]>([]);
+  const [category, setCategory] = useState<OrderCategory>("burger");
+  const [categoryTouched, setCategoryTouched] = useState(false);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
+  const [articles, setArticles] = useState<string[]>([]);
+  const [articleInput, setArticleInput] = useState("");
   const [estimating, setEstimating] = useState(false);
   const [estErr, setEstErr] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderEstimate | null>(null);
@@ -128,13 +152,18 @@ export default function MealSituationHero({
   const { hello, moment } = greeting();
 
   const resetLiv = () => {
-    setEnseigne(""); setItems(""); setExtras([]); setNiveau("resto");
-    setCategory("bistro"); setNiveauTouched(false); setOrder(null); setEstErr(null);
+    setEnseigne(""); setArticles([]); setArticleInput("");
+    setCategory("burger"); setCategoryTouched(false);
+    setFormStep(1); setOrder(null); setEstErr(null);
   };
   const reset = () => { setSit(null); setScreen("menu"); resetLiv(); };
   const goBack = () => {
     if (!sit) return reset();
-    if (screen === "livraison-form" || screen === "livraison-advisor") return setScreen("livraison");
+    if (screen === "livraison-form") {
+      if (formStep > 1) return setFormStep((s) => (s - 1) as 1 | 2 | 3);
+      return setScreen("livraison");
+    }
+    if (screen === "livraison-advisor") return setScreen("livraison");
     if (screen === "finish" || screen === "classics" || screen === "livraison") return setScreen("menu");
     return reset();
   };
@@ -172,24 +201,26 @@ export default function MealSituationHero({
   };
 
   /* ── « Je me fais livrer » ── */
-  const NIVEAUX: Niveau[] = ["fast-food", "resto", "healthy"];
-  const EXTRA_SUGG = ["Soda", "Dessert", "Sauce", "Café", "Frites"];
   const setEnseigneSmart = (name: string) => {
     setEnseigne(name);
-    if (!niveauTouched) { const g = guessPlace(name); setNiveau(g.niveau); setCategory(g.category); }
+    if (!categoryTouched) { const g = guessPlace(name); setCategory(g.category); }
   };
-  const pickChain = (name: string) => {
-    const g = guessPlace(name);
-    setEnseigne(name); setNiveau(g.niveau); setCategory(g.category); setNiveauTouched(false);
+  const pickCategory = (c: OrderCategory) => { setCategory(c); setCategoryTouched(true); };
+  const addArticle = (raw: string) => {
+    const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!parts.length) return;
+    setArticles((prev) => [...prev, ...parts].slice(0, 20));
+    setArticleInput("");
   };
-  const cycleNiveau = () => { setNiveau((n) => NIVEAUX[(NIVEAUX.indexOf(n) + 1) % 3]); setNiveauTouched(true); };
-  const toggleExtra = (x: string) => setExtras((p) => (p.includes(x) ? p.filter((e) => e !== x) : [...p, x]));
-  const canEstimate = items.trim().length > 0 || extras.length > 0;
+  const removeArticle = (i: number) => setArticles((prev) => prev.filter((_, idx) => idx !== i));
+  const toggleExtra = (label: string) =>
+    setArticles((prev) => (prev.includes(label) ? prev.filter((a) => a !== label) : [...prev, label]));
+  const canEstimate = articles.length > 0;
   const runEstimate = async () => {
     if (!canEstimate || estimating) return;
     setEstimating(true); setEstErr(null);
     try {
-      const est = await estimateOrder({ enseigne: enseigne.trim(), niveau, category, items, extras, origin: "livraison" });
+      const est = await estimateOrder({ enseigne: enseigne.trim(), category, lockCategory: categoryTouched, articles, origin: "livraison" });
       setOrder(est);
     } catch { setEstErr("Estimation impossible, réessaie."); }
     finally { setEstimating(false); }
@@ -387,102 +418,179 @@ export default function MealSituationHero({
             className="grid grid-cols-2 gap-2.5 mt-4">
             <PhotoCard label="Je sais ce que je prends" sub="log express" Icon={ShoppingBag}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-jesais.jpg"
-              onClick={() => setScreen("livraison-form")} />
+              onClick={() => { setFormStep(1); setScreen("livraison-form"); }} />
             <PhotoCard label="Conseille-moi" sub="l'IA choisit" Icon={Sparkles}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-conseil.jpg"
               onClick={() => setScreen("livraison-advisor")} />
           </motion.div>
         )}
 
-        {/* Je me fais livrer → je sais ce que je prends */}
+        {/* Je me fais livrer → je sais ce que je prends (parcours guidé 3 étapes) */}
         {sit !== null && screen === "livraison-form" && (
           <motion.div key="livraison-form"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="flex flex-col gap-3 mt-4">
+            className="mt-4">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={`step-${formStep}`}
+                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.18 }}
+                className="flex flex-col gap-4">
 
-            {/* Enseigne + raccourcis */}
-            <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Tu commandes où&nbsp;?</p>
-              <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
-                <Store size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
-                <input value={enseigne} onChange={(e) => setEnseigneSmart(e.target.value)}
-                  placeholder="McDonald's, le resto du coin…"
-                  className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {POPULAR_CHAINS.slice(0, 6).map((c) => {
-                  const on = enseigne.trim().toLowerCase() === c.name.toLowerCase();
-                  return (
-                    <button key={c.name} onClick={() => pickChain(c.name)}
-                      className="px-2.5 py-1 rounded-full text-xs cursor-pointer"
+                <StepBar cur={formStep} />
+
+                {/* ── Étape 1 · Où : genre + nom de l'enseigne ── */}
+                {formStep === 1 && (<>
+                  <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu commandes où&nbsp;?</h3>
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Quel genre d&apos;endroit&nbsp;?</p>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {CATEGORY_ORDER.map((c) => {
+                        const on = category === c;
+                        return (
+                          <motion.button key={c} whileTap={{ scale: 0.94 }} onClick={() => pickCategory(c)}
+                            className="relative overflow-hidden rounded-xl cursor-pointer"
+                            style={{ aspectRatio: "5 / 4", outline: on ? "2px solid var(--accent)" : "1px solid rgba(var(--violet-mid-rgb),0.35)", outlineOffset: "-1px" }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={ambianceImg(c)} alt="" aria-hidden loading="lazy" decoding="async"
+                              className="absolute inset-0 w-full h-full object-cover" style={{ opacity: on ? 1 : 0.55 }} />
+                            <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.82),rgba(10,6,14,0.12))" }} />
+                            {on && (
+                              <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "var(--accent)" }}>
+                                <Check size={10} strokeWidth={3} style={{ color: "#fff" }} />
+                              </span>
+                            )}
+                            <span className="absolute inset-x-0 bottom-0 px-1 pb-1 text-[9px] font-semibold leading-tight text-center block" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
+                              {CATEGORY_LABEL[c]}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Son nom, pour affiner l&apos;estimation</p>
+                    <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <Store size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
+                      <input value={enseigne} onChange={(e) => setEnseigneSmart(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") setFormStep(2); }}
+                        placeholder="McDonald's, le resto du coin…"
+                        className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+                    </div>
+                  </div>
+                  <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFormStep(2)}
+                    className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                    Suivant <ArrowRight size={16} strokeWidth={2} />
+                  </motion.button>
+                </>)}
+
+                {/* ── Étape 2 · Quoi : panier vivant, un article à la fois ── */}
+                {formStep === 2 && (<>
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                      style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
+                      <Flame size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                      {enseigne.trim() ? `${enseigne.trim()} · ` : ""}{CATEGORY_LABEL[category]}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Qu&apos;est-ce que tu prends&nbsp;?</h3>
+                    <p className="text-xs font-light mt-1" style={{ color: "var(--text-3)" }}>Ajoute tes articles un par un — un seul suffit.</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {articles.map((a, i) => (
+                      <div key={`${a}-${i}`} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl"
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                        <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{a}</span>
+                        <button onClick={() => removeArticle(i)} aria-label="Retirer" className="cursor-pointer flex-shrink-0">
+                          <X size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
+                      style={{ border: "1px dashed rgba(var(--violet-mid-rgb),0.6)" }}>
+                      <button onClick={() => addArticle(articleInput)} aria-label="Ajouter" className="cursor-pointer flex-shrink-0">
+                        <Plus size={16} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                      </button>
+                      <input value={articleInput} onChange={(e) => setArticleInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") addArticle(articleInput); }}
+                        placeholder="Ajoute un article…"
+                        className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <motion.button whileTap={{ scale: 0.96 }} onClick={goBack} aria-label="Retour"
+                      className="px-4 rounded-2xl cursor-pointer flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
+                      <ArrowLeft size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFormStep(3)}
+                      className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                      Suivant <ArrowRight size={16} strokeWidth={2} />
+                    </motion.button>
+                  </div>
+                </>)}
+
+                {/* ── Étape 3 · Extras : ajouts rapides adaptés à l'endroit ── */}
+                {formStep === 3 && (<>
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                      style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
+                      <Flame size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                      {enseigne.trim() ? `${enseigne.trim()} · ` : ""}{CATEGORY_LABEL[category]}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-medium leading-snug" style={{ color: "var(--text-1)" }}>Tu oublies rien&nbsp;?</h3>
+                    <p className="text-xs font-light mt-1" style={{ color: "var(--text-3)" }}>Les petits plus qu&apos;on oublie souvent.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {EXTRAS_BY_CATEGORY[category].map((x) => {
+                      const on = articles.includes(x.label);
+                      const XIcon = EXTRA_ICON[x.icon] ?? Plus;
+                      return (
+                        <button key={x.label} onClick={() => toggleExtra(x.label)}
+                          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-left"
+                          style={{
+                            background: on ? "rgba(139,92,246,0.16)" : "rgba(var(--tint-violet-rgb),0.5)",
+                            border: `1px solid ${on ? "rgba(139,92,246,0.45)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
+                          }}>
+                          <XIcon size={17} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                          <span className="flex-1 text-sm" style={{ color: "var(--text-1)" }}>{x.label}</span>
+                          {on
+                            ? <Check size={15} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                            : <Plus size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {estErr && <p className="text-xs" style={{ color: "#E53E3E" }}>⚠️ {estErr}</p>}
+
+                  <div className="flex gap-2 mt-1">
+                    <motion.button whileTap={{ scale: 0.96 }} onClick={goBack} aria-label="Retour"
+                      className="px-4 rounded-2xl cursor-pointer flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
+                      <ArrowLeft size={16} strokeWidth={2} style={{ color: "var(--text-2)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.98 }} onClick={runEstimate} disabled={!canEstimate || estimating}
+                      className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
                       style={{
-                        background: on ? "rgba(139,92,246,0.16)" : "rgba(var(--tint-violet-rgb),0.5)",
-                        color: on ? "var(--text-1)" : "var(--text-2)",
-                        border: `1px solid ${on ? "rgba(139,92,246,0.4)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
-                      }}>{c.name}</button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Niveau détecté + corriger */}
-            {enseigne.trim() && (
-              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                <div className="flex items-center gap-1.5">
-                  <Flame size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
-                  <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>{NIVEAU_LABEL[niveau]} · estimation ajustée</span>
-                </div>
-                <button onClick={cycleNiveau} className="text-[11px] font-medium underline cursor-pointer" style={{ color: "var(--accent)" }}>changer</button>
-              </div>
-            )}
-
-            {/* Articles */}
-            <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Qu&apos;est-ce que tu prends&nbsp;?</p>
-              <input value={items} onChange={(e) => setItems(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") runEstimate(); }}
-                placeholder="Ex : Big Mac, moyenne frites"
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-            </div>
-
-            {/* Ajouts rapides */}
-            <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Tu oublies rien&nbsp;?</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EXTRA_SUGG.map((x) => {
-                  const on = extras.includes(x);
-                  return (
-                    <button key={x} onClick={() => toggleExtra(x)}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
-                      style={{
-                        background: on ? "rgba(139,92,246,0.16)" : "rgba(var(--tint-violet-rgb),0.5)",
-                        color: on ? "var(--text-1)" : "var(--text-2)",
-                        border: `1px solid ${on ? "rgba(139,92,246,0.4)" : "rgba(var(--violet-mid-rgb),0.35)"}`,
+                        background: canEstimate ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+                        color: canEstimate ? "#fff" : "var(--text-3)",
+                        boxShadow: canEstimate ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
                       }}>
-                      {on ? <X size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} /> : <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} />}
-                      {x}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      {estimating
+                        ? <><Loader2 size={16} strokeWidth={2} className="animate-spin" /> Estimation…</>
+                        : <>Estimer les macros</>}
+                    </motion.button>
+                  </div>
+                </>)}
 
-            {estErr && <p className="text-xs" style={{ color: "#E53E3E" }}>⚠️ {estErr}</p>}
-
-            <motion.button whileTap={{ scale: 0.98 }} onClick={runEstimate} disabled={!canEstimate || estimating}
-              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
-              style={{
-                background: canEstimate ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
-                color: canEstimate ? "#fff" : "var(--text-3)",
-                boxShadow: canEstimate ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
-              }}>
-              {estimating
-                ? <><Loader2 size={16} strokeWidth={2} className="animate-spin" /> Estimation…</>
-                : <>Estimer les macros</>}
-            </motion.button>
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         )}
 
