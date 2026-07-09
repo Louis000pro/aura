@@ -18,6 +18,19 @@ type LoggedMeal = { name: string; calories: number; proteins: number; carbs: num
 const DISH_GRADIENT =
   "radial-gradient(circle at 28% 20%,#FFE0A0,transparent 45%),radial-gradient(circle at 74% 64%,#E8620C,transparent 52%),linear-gradient(158deg,#F19A3C,#9E3E0E)";
 
+/* Bloc squelette : un voile violet qui balaie de gauche à droite (« il réfléchit »). */
+function Sk({ w = "100%", h, circle = false, r = 8 }: { w?: number | string; h: number; circle?: boolean; r?: number }) {
+  return (
+    <span className="relative block overflow-hidden"
+      style={{ width: circle ? h : w, height: h, borderRadius: circle ? 999 : r, background: "rgba(var(--violet-mid-rgb),0.22)", flexShrink: 0 }}>
+      <motion.span aria-hidden className="absolute inset-y-0 pointer-events-none"
+        style={{ width: "60%", background: "linear-gradient(90deg,transparent,rgba(var(--violet-mid-rgb),0.55),transparent)" }}
+        initial={{ x: "-100%" }} animate={{ x: "200%" }}
+        transition={{ duration: 1.45, repeat: Infinity, ease: "easeInOut" }} />
+    </span>
+  );
+}
+
 /* Vignette : la photo si elle existe, sinon une icône de secours dessous. */
 function Thumb({ src, kind }: { src: string; kind: "ing" | "ust" }) {
   const Fallback = kind === "ing" ? Carrot : Utensils;
@@ -83,8 +96,12 @@ export default function RecipeSheet({
       >
         {loading ? (
           <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-            {/* Squelette « il réfléchit » — même ossature que la fiche */}
-            <div className="relative animate-pulse" style={{ height: 200, background: "rgba(var(--tint-violet-rgb),0.7)" }}>
+            {/* Squelette « il réfléchit » — voile violet qui balaie, même ossature que la fiche */}
+            <div className="relative overflow-hidden" style={{ height: 200, background: "rgba(var(--violet-mid-rgb),0.22)" }}>
+              <motion.span aria-hidden className="absolute inset-y-0 pointer-events-none"
+                style={{ width: "60%", background: "linear-gradient(90deg,transparent,rgba(var(--violet-mid-rgb),0.55),transparent)" }}
+                initial={{ x: "-100%" }} animate={{ x: "200%" }}
+                transition={{ duration: 1.45, repeat: Infinity, ease: "easeInOut" }} />
               <button onClick={onClose} aria-label="Fermer"
                 className="absolute top-3 left-3 w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
                 style={{ background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
@@ -92,25 +109,23 @@ export default function RecipeSheet({
               </button>
             </div>
             <div className="px-5 pt-4 flex items-center gap-2">
-              <Sparkles size={15} strokeWidth={2} className="animate-pulse" style={{ color: "#8B5CF6" }} />
+              <Sparkles size={15} strokeWidth={2} style={{ color: "#8B5CF6" }} />
               <span className="text-[12.5px]" style={{ color: "var(--text-3)" }}>Je te prépare une idée…</span>
             </div>
             <div className="px-5 pt-3 flex flex-col gap-2">
-              <div className="animate-pulse rounded-md" style={{ height: 18, width: "68%", background: "rgba(var(--tint-violet-rgb),0.85)" }} />
-              <div className="animate-pulse rounded-md" style={{ height: 12, width: "90%", background: "rgba(var(--tint-violet-rgb),0.6)" }} />
+              <Sk h={18} w="68%" />
+              <Sk h={12} w="90%" />
             </div>
             <div className="flex justify-between gap-2 px-5 pt-5">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse rounded-full" style={{ width: 66, height: 66, background: "rgba(var(--tint-violet-rgb),0.7)" }} />
-              ))}
+              {[0, 1, 2, 3].map((i) => <Sk key={i} h={66} circle />)}
             </div>
-            <div className="mx-5 mt-5 animate-pulse rounded-2xl" style={{ height: 48, background: "rgba(var(--tint-violet-rgb),0.55)" }} />
+            <div className="px-5 pt-5"><Sk h={48} r={16} /></div>
             <div className="px-5 pt-5 flex flex-col gap-3.5 pb-6">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="animate-pulse rounded-full flex-shrink-0" style={{ width: 44, height: 44, background: "rgba(var(--tint-violet-rgb),0.7)" }} />
-                  <div className="animate-pulse rounded-md flex-1" style={{ height: 12, background: "rgba(var(--tint-violet-rgb),0.55)" }} />
-                  <div className="animate-pulse rounded-md" style={{ height: 12, width: 34, background: "rgba(var(--tint-violet-rgb),0.55)" }} />
+                  <Sk h={44} circle />
+                  <div className="flex-1"><Sk h={12} /></div>
+                  <Sk h={12} w={34} />
                 </div>
               ))}
             </div>
