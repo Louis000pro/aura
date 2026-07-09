@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, Bookmark, Minus, Plus, Check, RefreshCw, Utensils, Carrot } from "lucide-react";
+import { ChevronLeft, Bookmark, Minus, Plus, Check, RefreshCw, Utensils, Carrot, Sparkles } from "lucide-react";
 import { type Recipe, scaledQty, ingredientImg, utensilImg } from "@/lib/recipeBank";
 
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -34,9 +34,10 @@ function Thumb({ src, kind }: { src: string; kind: "ing" | "ust" }) {
 }
 
 export default function RecipeSheet({
-  recipe, onClose, onLog, onOther, hasOther,
+  recipe, loading = false, onClose, onLog, onOther, hasOther,
 }: {
   recipe: Recipe;
+  loading?: boolean;
   onClose: () => void;
   onLog: (m: LoggedMeal) => void;
   onOther?: () => void;
@@ -80,6 +81,42 @@ export default function RecipeSheet({
         className="w-full max-w-md rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
         style={{ background: "rgb(var(--surface-rgb))", maxHeight: "92dvh" }}
       >
+        {loading ? (
+          <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {/* Squelette « il réfléchit » — même ossature que la fiche */}
+            <div className="relative animate-pulse" style={{ height: 200, background: "rgba(var(--tint-violet-rgb),0.7)" }}>
+              <button onClick={onClose} aria-label="Fermer"
+                className="absolute top-3 left-3 w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+                style={{ background: "rgba(20,12,24,0.42)", backdropFilter: "blur(6px)" }}>
+                <ChevronLeft size={18} strokeWidth={2} style={{ color: "#fff" }} />
+              </button>
+            </div>
+            <div className="px-5 pt-4 flex items-center gap-2">
+              <Sparkles size={15} strokeWidth={2} className="animate-pulse" style={{ color: "#8B5CF6" }} />
+              <span className="text-[12.5px]" style={{ color: "var(--text-3)" }}>Je te prépare une idée…</span>
+            </div>
+            <div className="px-5 pt-3 flex flex-col gap-2">
+              <div className="animate-pulse rounded-md" style={{ height: 18, width: "68%", background: "rgba(var(--tint-violet-rgb),0.85)" }} />
+              <div className="animate-pulse rounded-md" style={{ height: 12, width: "90%", background: "rgba(var(--tint-violet-rgb),0.6)" }} />
+            </div>
+            <div className="flex justify-between gap-2 px-5 pt-5">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse rounded-full" style={{ width: 66, height: 66, background: "rgba(var(--tint-violet-rgb),0.7)" }} />
+              ))}
+            </div>
+            <div className="mx-5 mt-5 animate-pulse rounded-2xl" style={{ height: 48, background: "rgba(var(--tint-violet-rgb),0.55)" }} />
+            <div className="px-5 pt-5 flex flex-col gap-3.5 pb-6">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="animate-pulse rounded-full flex-shrink-0" style={{ width: 44, height: 44, background: "rgba(var(--tint-violet-rgb),0.7)" }} />
+                  <div className="animate-pulse rounded-md flex-1" style={{ height: 12, background: "rgba(var(--tint-violet-rgb),0.55)" }} />
+                  <div className="animate-pulse rounded-md" style={{ height: 12, width: 34, background: "rgba(var(--tint-violet-rgb),0.55)" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           {/* Héros photo */}
           <div className="relative" style={{ height: 200, background: DISH_GRADIENT }}>
@@ -211,6 +248,8 @@ export default function RecipeSheet({
             </button>
           )}
         </div>
+        </>
+        )}
       </motion.div>
     </motion.div>
   );

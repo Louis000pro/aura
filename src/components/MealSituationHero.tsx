@@ -9,7 +9,7 @@
    ouvrent la fiche complète (RecipeSheet). Voir [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
@@ -147,6 +147,9 @@ export default function MealSituationHero({
   const [recipeList, setRecipeList] = useState<Recipe[]>([]);
   const [recipeIndex, setRecipeIndex] = useState(0);
   const [recipeOpen, setRecipeOpen] = useState(false);
+  const [thinking, setThinking] = useState(false); // latence délibérée avant de révéler la fiche
+  const thinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (thinkTimer.current) clearTimeout(thinkTimer.current); }, []);
 
   // Flux « Je me fais livrer »
   const [enseigne, setEnseigne] = useState("");
@@ -198,13 +201,32 @@ export default function MealSituationHero({
     return [];
   };
 
+  // Latence délibérée : un court temps de « réflexion » (squelette de la fiche),
+  // plus long à la première idée qu'aux suivantes (« Autre »). Coupé si
+  // l'utilisateur préfère moins d'animations (prefers-reduced-motion).
+  const thinkFor = (first: boolean) => {
+    if (thinkTimer.current) clearTimeout(thinkTimer.current);
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setThinking(false); return; }
+    setThinking(true);
+    const ms = first ? 900 + Math.random() * 900 : 500 + Math.random() * 600;
+    thinkTimer.current = setTimeout(() => setThinking(false), ms);
+  };
+
   const openRecipes = (quick: boolean, list?: Recipe[]) => {
     const pool = list ?? pickRecipes({ mealType: mealTypeNow(), diet: readDiet(), quick });
     setRecipeList(pool);
     setRecipeIndex(0);
     setRecipeOpen(true);
+    if (pool.length > 0) thinkFor(true); else setThinking(false);
   };
-  const closeRecipe = () => { setRecipeOpen(false); reset(); };
+  const nextRecipe = () => { setRecipeIndex((i) => (i + 1) % recipeList.length); thinkFor(false); };
+  const closeRecipe = () => {
+    if (thinkTimer.current) clearTimeout(thinkTimer.current);
+    setThinking(false);
+    setRecipeOpen(false);
+    reset();
+  };
 
   const addIngredients = (raw: string) => {
     const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
@@ -800,9 +822,10 @@ export default function MealSituationHero({
             <RecipeSheet
               key="recipe"
               recipe={currentRecipe}
+              loading={thinking}
               onClose={closeRecipe}
               onLog={(m) => { onLogIdea(m); closeRecipe(); }}
-              onOther={recipeList.length > 1 ? () => setRecipeIndex((i) => (i + 1) % recipeList.length) : undefined}
+              onOther={recipeList.length > 1 ? nextRecipe : undefined}
               hasOther={recipeList.length > 1}
             />
           ) : (
