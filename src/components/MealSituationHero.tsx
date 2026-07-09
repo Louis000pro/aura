@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
   Plus, BookOpen, ShoppingBag, ChevronLeft, Clock, Carrot,
-  Store, Check, X, Loader2, Flame, ArrowRight, ArrowLeft,
+  Store, Check, X, Loader2, Flame, ArrowRight, ArrowLeft, ChefHat, Pencil, Search,
   CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
@@ -121,6 +121,16 @@ const EXTRA_ICON: Record<string, Icon> = {
   soup: Soup, entree: Salad, jus: GlassWater, viennoiserie: Croissant,
 };
 
+/* Portions imposées de « Estimer un reste » : image d'assiette (remplissage
+   croissant) + phrase envoyée à l'IA pour corriger la quantité (un reste n'est
+   presque jamais une pleine assiette). Voir public/nutrition/portions/. */
+type PortionKey = "petite" | "moyenne" | "grande";
+const PORTIONS: { key: PortionKey; label: string; sub: string; phrase: string }[] = [
+  { key: "petite",  label: "Petite",  sub: "½ assiette",   phrase: "petite portion, environ une demi-assiette" },
+  { key: "moyenne", label: "Moyenne", sub: "une assiette", phrase: "portion moyenne, une assiette normale" },
+  { key: "grande",  label: "Grande",  sub: "bien remplie", phrase: "grande portion, une assiette bien remplie" },
+];
+
 type SubChoice = { key: string; label: string; sub: string; Icon: Icon; run: () => void };
 
 export default function MealSituationHero({
@@ -149,6 +159,15 @@ export default function MealSituationHero({
   const [estErr, setEstErr] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderEstimate | null>(null);
 
+  // Flux « Estimer un reste » (à la maison → à finir)
+  const [finishMode, setFinishMode] = useState<"cuisiner" | "reste">("cuisiner");
+  const [restDish, setRestDish] = useState("");
+  const [portion, setPortion] = useState<PortionKey | null>(null);
+  const [restBusy, setRestBusy] = useState(false);
+  const [restErr, setRestErr] = useState<string | null>(null);
+  const [restResult, setRestResult] = useState<LoggedMeal | null>(null);
+  const [restEdit, setRestEdit] = useState(false);
+
   const { hello, moment } = greeting();
 
   const resetLiv = () => {
@@ -156,7 +175,11 @@ export default function MealSituationHero({
     setCategory("burger"); setCategoryTouched(false);
     setFormStep(1); setOrder(null); setEstErr(null);
   };
-  const reset = () => { setSit(null); setScreen("menu"); resetLiv(); };
+  const resetRest = () => {
+    setFinishMode("cuisiner"); setRestDish(""); setPortion(null);
+    setRestBusy(false); setRestErr(null); setRestResult(null); setRestEdit(false);
+  };
+  const reset = () => { setSit(null); setScreen("menu"); resetLiv(); resetRest(); };
   const goBack = () => {
     if (!sit) return reset();
     if (screen === "livraison-form") {
@@ -224,6 +247,30 @@ export default function MealSituationHero({
       setOrder(est);
     } catch { setEstErr("Estimation impossible, réessaie."); }
     finally { setEstimating(false); }
+  };
+
+  /* ── « Estimer un reste » ── */
+  const canEstimateRest = restDish.trim().length > 0 && portion !== null;
+  const estimateRest = async () => {
+    const dish = restDish.trim();
+    if (!dish || !portion || restBusy) return;
+    setRestBusy(true); setRestErr(null);
+    try {
+      const p = PORTIONS.find((x) => x.key === portion)!;
+      const res = await fetch("/api/nutrition/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: `${dish} — ${p.phrase}` }),
+      });
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      const n = (v: unknown) => Math.max(0, Math.round(Number(v)) || 0);
+      setRestResult({
+        name: typeof d.foodName === "string" && d.foodName.trim() ? d.foodName.trim() : dish,
+        calories: n(d.calories), proteins: n(d.proteins), carbs: n(d.carbs), fats: n(d.fats),
+      });
+    } catch { setRestErr("Estimation impossible, réessaie."); }
+    finally { setRestBusy(false); }
   };
 
   /* Exactement 3 sous-choix par situation (même structure que la racine) */
@@ -354,60 +401,189 @@ export default function MealSituationHero({
           </motion.div>
         )}
 
-        {/* J'ai des trucs à finir : saisie d'ingrédients */}
+        {/* À finir : cuisiner un plat (restes → recette) OU estimer un reste (plat déjà prêt) */}
         {sit !== null && screen === "finish" && (
           <motion.div key="finish"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
             className="flex flex-col gap-3 mt-4">
-            <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-              Dis-moi ce que tu as sous la main, je te trouve un plat — rien à acheter.
-            </p>
-            <div className="flex gap-2">
-              <input value={ingInput} onChange={(e) => setIngInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") addIngredients(ingInput); }}
-                placeholder="Ex : courgettes, feta, œufs…"
-                className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-              <motion.button whileTap={{ scale: 0.94 }} onClick={() => addIngredients(ingInput)} disabled={!ingInput.trim()}
-                className="px-3.5 rounded-xl text-sm font-semibold cursor-pointer flex-shrink-0"
-                style={{ background: ingInput.trim() ? "rgba(var(--accent-rgb),0.16)" : "rgba(var(--tint-violet-rgb),0.4)", color: "var(--accent)" }}>
-                Ajouter
-              </motion.button>
-            </div>
-            {ingredients.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {ingredients.map((ing) => (
-                  <button key={ing} onClick={() => setIngredients((prev) => prev.filter((x) => x !== ing))}
-                    className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-full text-xs cursor-pointer"
-                    style={{ background: "rgba(139,92,246,0.14)", color: "var(--text-1)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                    {ing}<span style={{ fontSize: 13, lineHeight: 1 }}>×</span>
+
+            {/* Bascule : cuisiner un plat / estimer un reste */}
+            <div className="flex gap-1 p-1 rounded-2xl"
+              style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+              {([
+                { key: "cuisiner" as const, label: "Cuisiner un plat", Icon: ChefHat },
+                { key: "reste" as const, label: "Estimer un reste", Icon: Soup },
+              ]).map((t) => {
+                const on = finishMode === t.key;
+                return (
+                  <button key={t.key} onClick={() => setFinishMode(t.key)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12.5px] font-semibold cursor-pointer"
+                    style={{ background: on ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "transparent", color: on ? "#fff" : "var(--text-3)" }}>
+                    <t.Icon size={15} strokeWidth={2} /> {t.label}
                   </button>
-                ))}
+                );
+              })}
+            </div>
+
+            {finishMode === "cuisiner" ? (<>
+              <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                Dis-moi ce que tu as sous la main, je te trouve un plat — rien à acheter.
+              </p>
+              <div className="flex gap-2">
+                <input value={ingInput} onChange={(e) => setIngInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") addIngredients(ingInput); }}
+                  placeholder="Ex : courgettes, feta, œufs…"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
+                <motion.button whileTap={{ scale: 0.94 }} onClick={() => addIngredients(ingInput)} disabled={!ingInput.trim()}
+                  className="px-3.5 rounded-xl text-sm font-semibold cursor-pointer flex-shrink-0"
+                  style={{ background: ingInput.trim() ? "rgba(var(--accent-rgb),0.16)" : "rgba(var(--tint-violet-rgb),0.4)", color: "var(--accent)" }}>
+                  Ajouter
+                </motion.button>
               </div>
-            )}
-            {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Suggestions</p>
+              {ingredients.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).map((s) => (
-                    <button key={s} onClick={() => addIngredients(s)}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                      <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} /> {s}
+                  {ingredients.map((ing) => (
+                    <button key={ing} onClick={() => setIngredients((prev) => prev.filter((x) => x !== ing))}
+                      className="flex items-center gap-1 pl-2.5 pr-2 py-1 rounded-full text-xs cursor-pointer"
+                      style={{ background: "rgba(139,92,246,0.14)", color: "var(--text-1)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                      {ing}<span style={{ fontSize: 13, lineHeight: 1 }}>×</span>
                     </button>
                   ))}
                 </div>
+              )}
+              {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Suggestions</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {baseSuggestions.filter((s) => !ingredients.some((i) => i.toLowerCase() === s.toLowerCase())).map((s) => (
+                      <button key={s} onClick={() => addIngredients(s)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs cursor-pointer"
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                        <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} /> {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <motion.button whileTap={{ scale: 0.98 }} onClick={generateFinish} disabled={!ingredients.length}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                style={{
+                  background: ingredients.length ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+                  color: ingredients.length ? "#fff" : "var(--text-3)",
+                  boxShadow: ingredients.length ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+                }}>
+                <Carrot size={16} strokeWidth={2} /> Trouve-moi un plat
+              </motion.button>
+            </>) : restResult ? (<>
+              {/* Carte résultat du reste (kcal + macros ajustables) */}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium self-start"
+                style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.4)", color: "var(--text-1)" }}>
+                <Home size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                Reste maison · portion {PORTIONS.find((p) => p.key === portion)?.label.toLowerCase()}
+              </span>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-lg font-medium leading-tight flex-1" style={{ color: "var(--text-1)" }}>{restResult.name}</h3>
+                <div className="text-right flex-shrink-0">
+                  {restEdit ? (
+                    <input type="number" inputMode="numeric" value={restResult.calories}
+                      onChange={(e) => setRestResult((r) => r ? { ...r, calories: Math.max(0, parseInt(e.target.value) || 0) } : r)}
+                      className="w-20 text-right text-2xl font-light outline-none rounded-lg px-1"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-1)" }} />
+                  ) : (
+                    <p className="text-[28px] font-light leading-none" style={{ color: "#E8620C" }}>{restResult.calories}</p>
+                  )}
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>kcal</p>
+                </div>
               </div>
-            )}
-            <motion.button whileTap={{ scale: 0.98 }} onClick={generateFinish} disabled={!ingredients.length}
-              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
-              style={{
-                background: ingredients.length ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
-                color: ingredients.length ? "#fff" : "var(--text-3)",
-                boxShadow: ingredients.length ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
-              }}>
-              <Carrot size={16} strokeWidth={2} /> Trouve-moi un plat
-            </motion.button>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Protéines", key: "proteins" as const, v: restResult.proteins, c: "#8B5CF6" },
+                  { label: "Glucides", key: "carbs" as const, v: restResult.carbs, c: "#EF9F27" },
+                  { label: "Lipides", key: "fats" as const, v: restResult.fats, c: "#2BD4A0" },
+                ].map((m) => (
+                  <div key={m.key} className="rounded-2xl py-3 flex flex-col items-center"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+                    {restEdit ? (
+                      <input type="number" inputMode="numeric" value={m.v}
+                        onChange={(e) => setRestResult((r) => r ? { ...r, [m.key]: Math.max(0, parseInt(e.target.value) || 0) } : r)}
+                        className="w-12 text-center text-[15px] font-semibold outline-none rounded"
+                        style={{ background: "rgb(var(--surface-rgb))", color: m.c }} />
+                    ) : (
+                      <span className="text-[15px] font-semibold" style={{ color: m.c }}>{m.v}g</span>
+                    )}
+                    <span className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{m.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between mt-0.5">
+                <button onClick={() => { setRestResult(null); setRestEdit(false); setRestErr(null); }}
+                  className="flex items-center gap-1 text-[11px] font-medium cursor-pointer" style={{ color: "var(--text-3)" }}>
+                  <ArrowLeft size={12} strokeWidth={2} /> Corriger
+                </button>
+                <button onClick={() => setRestEdit((e) => !e)}
+                  className="flex items-center gap-1 text-[11px] font-medium cursor-pointer" style={{ color: "var(--accent)" }}>
+                  <Pencil size={11} strokeWidth={2} /> {restEdit ? "Terminé" : "Ajuster"}
+                </button>
+              </div>
+              <motion.button whileTap={{ scale: 0.98 }} onClick={() => { if (restResult) { onLogIdea(restResult); reset(); } }}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                <Check size={17} strokeWidth={2.5} /> Ajouter à ma journée
+              </motion.button>
+            </>) : (<>
+              {/* Saisie : nom du plat + portion imposée */}
+              <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                Un reste au frigo&nbsp;? Dis-moi lequel, je l&apos;estime — même sans le peser.
+              </p>
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>C&apos;était quoi&nbsp;?</p>
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl"
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                  <Search size={15} strokeWidth={1.8} style={{ color: "var(--text-3)" }} />
+                  <input value={restDish} onChange={(e) => setRestDish(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && canEstimateRest) estimateRest(); }}
+                    placeholder="Gratin de courgettes, pâtes bolo…"
+                    className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--text-1)" }} />
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>Il en restait combien&nbsp;?</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {PORTIONS.map((p) => {
+                    const on = portion === p.key;
+                    return (
+                      <motion.button key={p.key} whileTap={{ scale: 0.95 }} onClick={() => setPortion(p.key)}
+                        className="relative flex flex-col items-center rounded-2xl px-1 pt-3 pb-2.5 cursor-pointer"
+                        style={{ background: on ? "rgba(139,92,246,0.14)" : "rgba(var(--tint-violet-rgb),0.5)", border: `${on ? "2px" : "1px"} solid ${on ? "var(--accent)" : "rgba(var(--violet-mid-rgb),0.35)"}` }}>
+                        {on && (
+                          <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: "var(--accent)" }}>
+                            <Check size={10} strokeWidth={3} style={{ color: "#fff" }} />
+                          </span>
+                        )}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/nutrition/portions/${p.key}.png`} alt="" aria-hidden loading="lazy" decoding="async"
+                          className="w-11 h-11 object-contain" style={{ opacity: on ? 1 : 0.9 }} />
+                        <span className="text-[12.5px] font-medium mt-1" style={{ color: "var(--text-1)" }}>{p.label}</span>
+                        <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{p.sub}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+              {restErr && <p className="text-xs" style={{ color: "#E53E3E" }}>⚠️ {restErr}</p>}
+              <motion.button whileTap={{ scale: 0.98 }} onClick={estimateRest} disabled={!canEstimateRest || restBusy}
+                className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 mt-1"
+                style={{
+                  background: canEstimateRest ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--tint-violet-rgb),0.5)",
+                  color: canEstimateRest ? "#fff" : "var(--text-3)",
+                  boxShadow: canEstimateRest ? "0 4px 16px rgba(147,60,200,0.4)" : "none",
+                }}>
+                {restBusy
+                  ? <><Loader2 size={16} strokeWidth={2} className="animate-spin" /> Estimation…</>
+                  : <>Estimer ce reste <ArrowRight size={16} strokeWidth={2} /></>}
+              </motion.button>
+            </>)}
           </motion.div>
         )}
 
