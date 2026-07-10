@@ -274,7 +274,7 @@ export default function PerformanceCard({
       {showBranding && (
         <div className="relative z-10 flex items-center justify-end mt-auto">
           <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "0.42em", textTransform: "uppercase", fontSize: isSmall ? "0.52rem" : "0.62rem", opacity: 0.85, textShadow: ts }}>
-            ✦ AURA
+            ✦ VAIIYA
           </span>
         </div>
       )}
