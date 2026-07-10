@@ -20,6 +20,7 @@ import {
   BASE_GROUPS, KNOWN_BASES,
   isTasteComplete, fetchTasteProfile, saveTasteProfile, tasteTodayStr,
 } from "@/lib/tasteProfile";
+import PlacesTop3Picker from "@/components/PlacesTop3Picker";
 
 export default function TasteProfileModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
   const [time, setTime] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState<string | null>(null);
   const [bases, setBases] = useState<string[]>([]);
+  const [places, setPlaces] = useState<string[]>([]);
   const [custom, setCustom] = useState("");
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
         setTime(p.time ?? null);
         setIngredients(p.ingredients ?? null);
         setBases(Array.isArray(p.bases) ? p.bases : []);
+        setPlaces(Array.isArray(p.places) ? p.places : []);
       }
       setLoading(false);
     });
@@ -66,7 +69,7 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
   const save = async () => {
     if (!user?.id || !canSave) return;
     setSaving(true);
-    const profile: TasteProfile = { cooking, time, ingredients, bases, updatedAt: tasteTodayStr() };
+    const profile: TasteProfile = { cooking, time, ingredients, bases, places, updatedAt: tasteTodayStr() };
     await saveTasteProfile(user.id, profile);
     setSaving(false);
     setSuccess(true);
@@ -124,6 +127,13 @@ export default function TasteProfileModal({ onClose, onSaved }: { onClose: () =>
               </Field>
               <Field label="Accès aux ingrédients ?">
                 <Segmented options={Q_INGREDIENTS} value={ingredients} onSelect={setIngredients} />
+              </Field>
+
+              <Field label="Ton top 3 des endroits">
+                <p className="text-[11px] font-light -mt-1 mb-1" style={{ color: "var(--text-3)" }}>
+                  Tape dans l&apos;ordre — ils orientent les conseils livraison.
+                </p>
+                <PlacesTop3Picker value={places} onChange={setPlaces} />
               </Field>
 
               <Field label="Tes bases préférées">

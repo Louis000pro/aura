@@ -13,7 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
-  Plus, BookOpen, ShoppingBag, ChevronLeft, Clock, Carrot,
+  Plus, BookOpen, ShoppingBag, ChevronLeft, ChevronRight, Clock, Carrot,
   Store, Check, X, Loader2, Flame, ArrowRight, ArrowLeft, ChefHat, Pencil, Search,
   CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";
@@ -25,6 +25,7 @@ import {
   estimateOrder, guessPlace, ambianceImg, CATEGORY_ORDER, CATEGORY_LABEL, EXTRAS_BY_CATEGORY,
   type OrderCategory, type OrderEstimate,
 } from "@/lib/orderEstimate";
+import { rankGenres, GENRE_PROFILE, type AdvisorNeeds, type RankedGenre } from "@/lib/orderAdvisor";
 
 type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
@@ -77,6 +78,11 @@ function greeting(): { hello: string; moment: string } {
 const mealTypeNow = (): MealType => {
   const h = new Date().getHours();
   return h < 10 ? "petit-dejeuner" : h < 15 ? "dejeuner" : h < 18 ? "gouter" : "diner";
+};
+
+/* Part typique du repas dans la journée (pour cibler « Conseille-moi »). */
+const MEAL_SHARE_ADVISOR: Record<MealType, number> = {
+  "petit-dejeuner": 0.25, "dejeuner": 0.35, "gouter": 0.1, "diner": 0.32,
 };
 
 /* Grande carte-image réutilisée à chaque niveau (racine + sous-choix) */
@@ -165,6 +171,10 @@ export default function MealSituationHero({
   const [estimating, setEstimating] = useState(false);
   const [estErr, setEstErr] = useState<string | null>(null);
   const [order, setOrder] = useState<OrderEstimate | null>(null);
+
+  // « Conseille-moi » : genres classés selon la journée (jitter figé au moment du calcul)
+  const [advice, setAdvice] = useState<RankedGenre[]>([]);
+  const [advisorNeeds, setAdvisorNeeds] = useState<AdvisorNeeds | null>(null);
 
   // Flux « Estimer un reste » (à la maison → à finir)
   const [finishMode, setFinishMode] = useState<"cuisiner" | "reste">("cuisiner");
@@ -293,6 +303,33 @@ export default function MealSituationHero({
       setOrder(est);
     } catch { setEstErr("Estimation impossible, réessaie."); }
     finally { setEstimating(false); }
+  };
+
+  /* ── « Conseille-moi » (livraison) ── */
+  const buildAdvisorNeeds = (): AdvisorNeeds => {
+    const g = goals ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+    const c = consumed ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+    const t = userId ? loadTasteProfileLocal(userId) : null;
+    return {
+      goalCalories: goals ? g.calories : 0,   // 0 = objectif inconnu → pas de « X kcal restantes »
+      remaining: Math.max(g.calories - c.calories, 0),
+      proteinRemaining: Math.max(g.proteins - c.proteins, 0),
+      mealShare: MEAL_SHARE_ADVISOR[mealTypeNow()],
+      likedPlaces: t?.places ?? [],
+    };
+  };
+  const openAdvisor = () => {
+    const needs = buildAdvisorNeeds();
+    setAdvisorNeeds(needs);
+    setAdvice(rankGenres(needs));
+    setScreen("livraison-advisor");
+  };
+  // Taper un genre conseillé → parcours d'estimation pré-rempli (genre + plat type),
+  // on saute à « Quoi ». Les macros réelles restent calculées par l'estimateur.
+  const startFromGenre = (c: OrderCategory) => {
+    setCategory(c); setCategoryTouched(true);
+    setEnseigne(""); setArticles([GENRE_PROFILE[c].article]); setArticleInput("");
+    setEstErr(null); setFormStep(2); setScreen("livraison-form");
   };
 
   /* ── « Estimer un reste » ── */
@@ -644,7 +681,7 @@ export default function MealSituationHero({
               onClick={() => { setFormStep(1); setScreen("livraison-form"); }} />
             <PhotoCard label="Conseille-moi" sub="l'IA choisit" Icon={Sparkles}
               gradient={sitObj?.gradient ?? ""} img="/nutrition/livraison-conseil.jpg"
-              onClick={() => setScreen("livraison-advisor")} />
+              onClick={openAdvisor} />
           </motion.div>
         )}
 
@@ -817,16 +854,95 @@ export default function MealSituationHero({
           </motion.div>
         )}
 
-        {/* Je me fais livrer → conseille-moi (placeholder, maquette à figer) */}
+        {/* Je me fais livrer → Conseille-moi : podium des genres classés selon la journée */}
         {sit !== null && screen === "livraison-advisor" && (
           <motion.div key="livraison-advisor"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-            className="flex flex-col items-center text-center gap-2 mt-4 py-10">
-            <Sparkles size={26} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Bientôt</p>
-            <p className="text-xs font-light max-w-[240px]" style={{ color: "var(--text-3)" }}>
-              L&apos;IA te proposera quoi commander selon tes calories restantes et ton envie. On peaufine cet écran juste après.
-            </p>
+            className="mt-4">
+            {advice.length === 0 ? (
+              <div className="flex flex-col items-center text-center gap-2 py-10">
+                <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Un instant…</p>
+              </div>
+            ) : (<>
+              {/* Contexte : ce que lit l'IA */}
+              <div className="flex items-center gap-1.5 mb-3">
+                <Sparkles size={14} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+                <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
+                  {advisorNeeds && advisorNeeds.goalCalories > 0 ? (
+                    <>Il te reste <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.remaining} kcal</span>
+                    {advisorNeeds.proteinRemaining >= 15 && <> · <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{advisorNeeds.proteinRemaining} g</span> de protéines à couvrir</>}</>
+                  ) : (
+                    <>{moment.charAt(0).toUpperCase() + moment.slice(1)}, voilà où je partirais.</>
+                  )}
+                </p>
+              </div>
+
+              {/* Reco #1 — carte pleine */}
+              {(() => {
+                const top = advice[0]; const p = top.profile;
+                return (
+                  <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--accent)" }}>
+                    <div className="relative" style={{ height: 92 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={ambianceImg(top.category)} alt="" aria-hidden loading="lazy" decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover" />
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.85),rgba(10,6,14,0.15))" }} />
+                      <span className="absolute top-2 left-2.5 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--accent)", color: "#fff" }}>Le mieux placé</span>
+                      <span className="absolute left-3 bottom-2 text-[12px] font-semibold" style={{ color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>
+                        {CATEGORY_LABEL[top.category]}
+                      </span>
+                    </div>
+                    <div className="p-3.5" style={{ background: "rgb(var(--surface-rgb))" }}>
+                      {top.reason && (
+                        <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 rounded-full"
+                          style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                          <Sparkles size={12} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+                          <span className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>{top.reason}</span>
+                        </div>
+                      )}
+                      <p className="text-[16px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>{p.title}</p>
+                      <p className="text-[12.5px] font-light mt-1 mb-3" style={{ color: "var(--text-3)", lineHeight: 1.5 }}>
+                        {p.vise}{p.saute ? ` · ${p.saute}` : ""}
+                      </p>
+                      <motion.button whileTap={{ scale: 0.98 }} onClick={() => startFromGenre(top.category)}
+                        className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 16px rgba(147,60,200,0.4)" }}>
+                        Je pars là-dessus <ArrowRight size={16} strokeWidth={2} />
+                      </motion.button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Alternatives — 2 lignes compactes */}
+              {advice.length > 1 && (<>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mt-4 mb-2 ml-0.5" style={{ color: "var(--text-3)" }}>Sinon, ça passe aussi</p>
+                <div className="flex flex-col gap-2">
+                  {advice.slice(1, 3).map((alt) => (
+                    <motion.button key={alt.category} whileTap={{ scale: 0.98 }} onClick={() => startFromGenre(alt.category)}
+                      className="flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer text-left"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={ambianceImg(alt.category)} alt="" aria-hidden loading="lazy" decoding="async"
+                          className="absolute inset-0 w-full h-full object-cover" />
+                        <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(10,6,14,0.5),transparent)" }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                          {CATEGORY_LABEL[alt.category]} · <span style={{ color: "var(--text-3)", fontWeight: 400 }}>{alt.profile.short}</span>
+                        </p>
+                        <p className="text-[11.5px] font-light truncate" style={{ color: "var(--text-3)" }}>{alt.reason ?? alt.profile.vise}</p>
+                      </div>
+                      <span className="text-[11px] flex-shrink-0" style={{ color: "var(--text-3)" }}>~{alt.profile.cal}</span>
+                      <ChevronRight size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: "var(--text-3)" }} />
+                    </motion.button>
+                  ))}
+                </div>
+              </>)}
+            </>)}
           </motion.div>
         )}
       </AnimatePresence>

@@ -25,6 +25,7 @@ import {
   BASE_GROUPS, KNOWN_BASES,
   isTasteComplete, saveTasteProfile, tasteTodayStr,
 } from "@/lib/tasteProfile";
+import PlacesTop3Picker from "@/components/PlacesTop3Picker";
 
 const MEALS_BEFORE_ASKING = 3;  // on ne demande qu'après quelques repas notés (engagement réel)
 const WEIGHIN_DAYS = 30;        // priorité au rendez-vous poids (pas de double popup)
@@ -38,6 +39,7 @@ export default function TastePrefsPrompt() {
   const [time, setTime] = useState<string | null>(null);
   const [ingredients, setIngredients] = useState<string | null>(null);
   const [bases, setBases] = useState<string[]>([]);
+  const [places, setPlaces] = useState<string[]>([]);
   const [custom, setCustom] = useState("");
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function TastePrefsPrompt() {
   const save = async () => {
     if (!user?.id || !canSave) return;
     setSaving(true);
-    const profile: TasteProfile = { cooking, time, ingredients, bases, updatedAt: tasteTodayStr() };
+    const profile: TasteProfile = { cooking, time, ingredients, bases, places, updatedAt: tasteTodayStr() };
     await saveTasteProfile(user.id, profile);
     setSaving(false);
     setShow(false);
@@ -163,6 +165,13 @@ export default function TastePrefsPrompt() {
               </Question>
               <Question label="Accès aux ingrédients ?">
                 <Segmented options={Q_INGREDIENTS} value={ingredients} onSelect={setIngredients} />
+              </Question>
+
+              <Question label="Ton top 3 des endroits ?">
+                <p className="text-[11px] -mt-1 mb-1.5" style={{ color: "var(--text-3)" }}>
+                  Tape dans l&apos;ordre — pour te conseiller quoi commander.
+                </p>
+                <PlacesTop3Picker value={places} onChange={setPlaces} />
               </Question>
 
               <Question label="Tes bases préférées ?">

@@ -12,12 +12,14 @@
 
 import { createClient } from "@/lib/supabase";
 import { localDateStr } from "@/lib/dates";
+import { CATEGORY_ORDER, CATEGORY_LABEL, ambianceImg, type OrderCategory } from "@/lib/orderEstimate";
 
 export type TasteProfile = {
   cooking: string | null;
   time: string | null;
   ingredients: string | null;
   bases: string[];
+  places: string[];   // top 3 des genres d'endroits préférés (ordonné), oriente « Conseille-moi »
   updatedAt: string;
 };
 
@@ -55,6 +57,14 @@ export const BASE_GROUPS: { group: string; items: { label: string; emoji: string
   ] },
 ];
 export const KNOWN_BASES = new Set(BASE_GROUPS.flatMap((g) => g.items.map((i) => i.label)));
+
+/* ─── Endroits préférés (top 3 ordonné) ───
+   Réutilise la source UNIQUE des genres de commande (orderEstimate) : mêmes
+   libellés, mêmes photos d'ambiance que le parcours livraison — zéro divergence.
+   Alimente le classement de « Conseille-moi » (bonus de goût dégressif). */
+export const MAX_PLACES = 3;
+export const PLACE_OPTIONS: { key: OrderCategory; label: string; img: string }[] =
+  CATEGORY_ORDER.map((c) => ({ key: c, label: CATEGORY_LABEL[c], img: ambianceImg(c) }));
 
 /* Au moins les 3 questions à choix unique remplies (les bases restent facultatives). */
 export function isTasteComplete(p: Pick<TasteProfile, "cooking" | "time" | "ingredients">): boolean {
