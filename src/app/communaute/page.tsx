@@ -4,10 +4,12 @@ import { useState, useMemo, useRef, useEffect, useCallback, memo, Suspense } fro
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX, ImageDown } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import PerfShareButton from "@/components/PerfShareButton";
+import { perfDataToShare } from "@/lib/perfShareExport";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import CreatePostModal from "@/components/CreatePostModal";
 import { createClient } from "@/lib/supabase";
@@ -4837,6 +4839,17 @@ function CommunautePageInner() {
                     >
                       <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                     </motion.button>
+
+                    {/* Partager en image (posts workout) → carte de perf Vaiiya */}
+                    {post.type === "workout" && (
+                      <PerfShareButton
+                        data={perfDataToShare(post.performance_data, { user: post.author?.pseudo })}
+                        ariaLabel="Partager en image"
+                        className="flex items-center cursor-pointer"
+                      >
+                        <ImageDown size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
+                      </PerfShareButton>
+                    )}
 
                     {isSaved && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="ml-auto">
