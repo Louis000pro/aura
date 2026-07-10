@@ -8,11 +8,12 @@ import {
   CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
-  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2, Award, ImageDown,
+  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2, Award,
 } from "lucide-react";
 import Badges from "@/components/Badges";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareButton from "@/components/PerfShareButton";
+import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
 import FollowListModal from "@/components/FollowListModal";
@@ -2690,26 +2691,33 @@ export default function ProfilPage() {
                       }
                     </div>
                   )}
-                  {/* PerformanceCard — taille complète dans le modal */}
-                  {selectedPost.performance_data && (["workout", "meal", "day"] as const).includes(
-                    (selectedPost.performance_data as { type?: string }).type as "workout" | "meal" | "day"
-                  ) && (
+                  {/* Séance → poster « aura » ; repas/jour → carte classique */}
+                  {selectedPost.type === "workout" && selectedPost.performance_data ? (
+                    <div className="px-4 pb-3 flex justify-center">
+                      <PerfShareCard
+                        data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })}
+                        width="min(320px, 100%)"
+                      />
+                    </div>
+                  ) : selectedPost.performance_data && (["meal", "day"] as const).includes(
+                    (selectedPost.performance_data as { type?: string }).type as "meal" | "day"
+                  ) ? (
                     <div className="px-4 pb-3">
                       <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" />
                     </div>
-                  )}
+                  ) : null}
 
-                  {/* Partager en image (posts workout) → carte de perf Vaiiya */}
+                  {/* Télécharger la carte de perf (posts workout) */}
                   {selectedPost.type === "workout" && selectedPost.performance_data && (
                     <div className="px-4 pb-3">
                       <PerfShareButton
                         data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })}
-                        ariaLabel="Partager en image"
+                        label="Télécharger la carte"
+                        iconSize={16}
+                        ariaLabel="Télécharger la carte de perf"
                         className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
                         style={{ background: "rgba(139,92,246,0.1)", color: "var(--accent)", border: "1px solid rgba(139,92,246,0.3)" }}
-                      >
-                        <ImageDown size={14} strokeWidth={2} /> Partager en image
-                      </PerfShareButton>
+                      />
                     </div>
                   )}
 

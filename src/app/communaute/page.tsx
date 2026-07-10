@@ -4,11 +4,12 @@ import { useState, useMemo, useRef, useEffect, useCallback, memo, Suspense } fro
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX, ImageDown } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareButton from "@/components/PerfShareButton";
+import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import CreatePostModal from "@/components/CreatePostModal";
@@ -4726,14 +4727,21 @@ function CommunautePageInner() {
                     </p>
                   )}
 
-                  {/* Performance Card — seulement si performance_data a un type reconnu */}
-                  {post.performance_data && (["workout", "meal", "day"] as const).includes(
-                    (post.performance_data as { type?: string }).type as "workout" | "meal" | "day"
-                  ) && (
+                  {/* Séance → poster « aura » partageable ; repas/jour → carte classique */}
+                  {post.type === "workout" && post.performance_data ? (
+                    <div className="px-4 flex justify-center">
+                      <PerfShareCard
+                        data={perfDataToShare(post.performance_data, { user: post.author?.pseudo })}
+                        width="min(330px, 100%)"
+                      />
+                    </div>
+                  ) : post.performance_data && (["meal", "day"] as const).includes(
+                    (post.performance_data as { type?: string }).type as "meal" | "day"
+                  ) ? (
                     <div className="px-4">
                       <PerformanceCard data={post.performance_data} size="md" interactive />
                     </div>
-                  )}
+                  ) : null}
 
                   {/* "Faire cette séance" — visible sur tous les posts workout */}
                   {post.type === "workout" && (() => {
@@ -4840,15 +4848,15 @@ function CommunautePageInner() {
                       <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                     </motion.button>
 
-                    {/* Partager en image (posts workout) → carte de perf Vaiiya */}
+                    {/* Télécharger la carte de perf Vaiiya (posts workout) */}
                     {post.type === "workout" && (
                       <PerfShareButton
                         data={perfDataToShare(post.performance_data, { user: post.author?.pseudo })}
-                        ariaLabel="Partager en image"
+                        ariaLabel="Télécharger la carte de perf"
+                        iconSize={20}
                         className="flex items-center cursor-pointer"
-                      >
-                        <ImageDown size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-                      </PerfShareButton>
+                        style={{ color: "var(--text-1)" }}
+                      />
                     )}
 
                     {isSaved && (

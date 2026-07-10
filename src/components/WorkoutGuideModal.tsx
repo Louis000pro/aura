@@ -4,11 +4,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, CheckCircle, Clock, Zap, Trophy, SkipForward,
-  Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck, ChevronDown, ImageDown,
+  Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck, ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import PerfShareButton from "@/components/PerfShareButton";
+import PerfShareCard from "@/components/PerfShareCard";
+import type { PerfShareData } from "@/lib/perfShareExport";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -551,6 +553,22 @@ export default function WorkoutGuideModal({
   const isHiit   = !!cur?.hiit;
   const isTimered = !!(cur?.auto || cur?.hiit);
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0);
+
+  /* ── Données du poster de perf « aura » (aperçu + export) ── */
+  const elapsedMinCard = Math.round(elapsed / 60) || 1;
+  const perfShareData: PerfShareData = {
+    brand: "✦ VAIIYA",
+    date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
+    category: title,
+    hero: { value: String(elapsedMinCard), unit: "min" },
+    subs: [
+      { v: String(exercises.length), l: "exos" },
+      { v: String(totalSets), l: "séries" },
+      { v: String(Math.round(elapsedMinCard * 6.5)), l: "kcal" },
+    ],
+    user: "",
+    bg: "/perf/aura.jpg",
+  };
 
   /* ── Elapsed clock ── */
   useEffect(() => {
@@ -1290,6 +1308,10 @@ export default function WorkoutGuideModal({
             {phase === "done" && (
               <motion.div key="done-actions" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-2.5">
+                {/* Aperçu du poster partageable */}
+                <div className="flex justify-center mb-1">
+                  <PerfShareCard data={perfShareData} width="min(220px, 60%)" />
+                </div>
                 {user && shareStatus !== "done" && (
                   <motion.button
                     whileTap={{ scale: 0.97 }}
@@ -1310,25 +1332,13 @@ export default function WorkoutGuideModal({
                   </motion.button>
                 )}
                 <PerfShareButton
-                  data={{
-                    brand: "✦ VAIIYA",
-                    date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
-                    category: title,
-                    hero: { value: String(Math.round(elapsed / 60) || 1), unit: "min" },
-                    subs: [
-                      { v: String(exercises.length), l: "exos" },
-                      { v: String(totalSets), l: "séries" },
-                      { v: String(Math.round((Math.round(elapsed / 60) || 1) * 6.5)), l: "kcal" },
-                    ],
-                    user: "",
-                    bg: "/perf/aura.jpg",
-                  }}
-                  ariaLabel="Partager en image"
+                  data={perfShareData}
+                  label="Télécharger la carte"
+                  iconSize={15}
+                  ariaLabel="Télécharger la carte de perf"
                   className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
                   style={{ background: "rgba(139,92,246,0.1)", color: "var(--accent)", border: "1px solid rgba(139,92,246,0.3)" }}
-                >
-                  <ImageDown size={15} strokeWidth={2} /> Partager en image
-                </PerfShareButton>
+                />
                 {shareStatus === "done" && (
                   <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                     className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
