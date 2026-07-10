@@ -18,7 +18,7 @@ import {
   CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
-import { pickRecipes, matchByIngredients, type Recipe, type MealType } from "@/lib/recipeBank";
+import { pickRecipes, matchByIngredients, rankRecipes, fitReason, type Recipe, type MealType, type DayNeeds } from "@/lib/recipeBank";
 import RecipeSheet from "@/components/RecipeSheet";
 import OrderRecapSheet from "@/components/OrderRecapSheet";
 import {
@@ -28,11 +28,14 @@ import {
 
 type Classic = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
 type LoggedMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number };
+type DayTotals = { calories: number; proteins: number; carbs: number; fats: number };
 
 type Props = {
   name?: string | null;
   userId?: string | null;
-  calorieTarget: number;
+  goals?: DayTotals;      // objectifs du jour
+  consumed?: DayTotals;   // déjà mangé aujourd'hui
+  eatenToday?: string[];  // noms des plats déjà loggés (anti-répétition)
   onPhoto: () => void;
   onBarcode: () => void;
   onManual: () => void;
@@ -134,7 +137,7 @@ const PORTIONS: { key: PortionKey; label: string; sub: string; phrase: string }[
 type SubChoice = { key: string; label: string; sub: string; Icon: Icon; run: () => void };
 
 export default function MealSituationHero({
-  name, userId, calorieTarget, onPhoto, onBarcode, onManual, onSkip,
+  name, userId, goals, consumed, eatenToday, onPhoto, onBarcode, onManual, onSkip,
   classics, onQuickAdd, onLogIdea,
 }: Props) {
   const [sit, setSit] = useState<SituationKey | null>(null);
@@ -147,6 +150,7 @@ export default function MealSituationHero({
   const [recipeList, setRecipeList] = useState<Recipe[]>([]);
   const [recipeIndex, setRecipeIndex] = useState(0);
   const [recipeOpen, setRecipeOpen] = useState(false);
+  const [recipeNeeds, setRecipeNeeds] = useState<DayNeeds | null>(null); // contexte du jour (« Une idée » seulement)
   const [thinking, setThinking] = useState(false); // latence délibérée avant de révéler la fiche
   const thinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (thinkTimer.current) clearTimeout(thinkTimer.current); }, []);
@@ -213,8 +217,28 @@ export default function MealSituationHero({
     thinkTimer.current = setTimeout(() => setThinking(false), ms);
   };
 
+  // Besoins de la journée pour classer « Une idée » (Levier A).
+  const buildDayNeeds = (): DayNeeds => {
+    const g = goals ?? { calories: 2000, proteins: 0, carbs: 0, fats: 0 };
+    const c = consumed ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+    const t = userId ? loadTasteProfileLocal(userId) : null;
+    return {
+      mealType: mealTypeNow(),
+      goalCalories: g.calories,
+      remaining: Math.max(g.calories - c.calories, 0),
+      proteinRemaining: Math.max(g.proteins - c.proteins, 0),
+      likedBases: t?.bases ?? [],
+      avoidNames: eatenToday ?? [],
+    };
+  };
+
   const openRecipes = (quick: boolean, list?: Recipe[]) => {
-    const pool = list ?? pickRecipes({ mealType: mealTypeNow(), diet: readDiet(), quick });
+    // « Une idée » (list absente) = on classe selon la journée ; « À finir » garde
+    // son propre classement par ingrédients.
+    const needs = list ? null : buildDayNeeds();
+    let pool = list ?? pickRecipes({ mealType: mealTypeNow(), diet: readDiet(), quick });
+    if (needs) pool = rankRecipes(pool, needs);
+    setRecipeNeeds(needs);
     setRecipeList(pool);
     setRecipeIndex(0);
     setRecipeOpen(true);
@@ -330,6 +354,7 @@ export default function MealSituationHero({
     : sitObj?.label ?? "";
 
   const currentRecipe = recipeList[recipeIndex];
+  const currentFit = recipeNeeds && currentRecipe ? fitReason(currentRecipe, recipeNeeds) : null;
 
   return (
     <motion.div
@@ -823,6 +848,7 @@ export default function MealSituationHero({
               key="recipe"
               recipe={currentRecipe}
               loading={thinking}
+              fitNote={currentFit}
               onClose={closeRecipe}
               onLog={(m) => { onLogIdea(m); closeRecipe(); }}
               onOther={recipeList.length > 1 ? nextRecipe : undefined}

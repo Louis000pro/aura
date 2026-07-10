@@ -47,10 +47,11 @@ function Thumb({ src, kind }: { src: string; kind: "ing" | "ust" }) {
 }
 
 export default function RecipeSheet({
-  recipe, loading = false, onClose, onLog, onOther, hasOther,
+  recipe, loading = false, fitNote, onClose, onLog, onOther, hasOther,
 }: {
   recipe: Recipe;
   loading?: boolean;
+  fitNote?: string | null;   // « pourquoi cette idée » — honnête, selon la journée
   onClose: () => void;
   onLog: (m: LoggedMeal) => void;
   onOther?: () => void;
@@ -153,6 +154,12 @@ export default function RecipeSheet({
 
           {/* Titre + tags */}
           <div className="px-5 pt-4">
+            {fitNote && (
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Sparkles size={13} strokeWidth={2} style={{ color: "#8B5CF6" }} />
+                <span className="text-[11.5px] font-semibold" style={{ color: "var(--accent)" }}>{fitNote}</span>
+              </div>
+            )}
             <h2 className="text-lg font-medium leading-tight" style={{ color: "var(--text-1)" }}>{recipe.nom}</h2>
             {recipe.description && <p className="text-xs mt-1.5" style={{ color: "var(--text-2)" }}>{recipe.description}</p>}
             <div className="flex flex-wrap gap-1.5 mt-3">

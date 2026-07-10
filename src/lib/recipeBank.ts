@@ -3016,6 +3016,109 @@ export function matchByIngredients(have: string[], diet: string[] = []): Recipe[
     .map((x) => x.r);
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   Levier A — classer « Une idée » selon les BESOINS DU JOUR.
+
+   Au lieu de proposer les recettes dans l'ordre de la banque, on les range par
+   pertinence pour l'instant présent : ce qu'il reste à manger aujourd'hui, le
+   besoin en protéines, les goûts, et on évite ce qui a déjà été mangé. « Autre »
+   descend simplement dans ce classement. Voir [[nutrition-unification-refonte]].
+   ════════════════════════════════════════════════════════════════════ */
+
+export type DayNeeds = {
+  mealType: MealType;
+  goalCalories: number;      // objectif calorique du jour
+  remaining: number;         // kcal encore disponibles aujourd'hui
+  proteinRemaining: number;  // g de protéines encore à couvrir
+  likedBases: string[];      // ingrédients aimés (profil de goûts)
+  avoidNames: string[];      // plats déjà mangés aujourd'hui (anti-répétition)
+};
+
+/* Part habituelle de chaque repas dans le budget de la journée (répartition FR). */
+const MEAL_SHARE: Record<MealType, number> = {
+  "petit-dejeuner": 0.25,
+  "dejeuner": 0.35,
+  "gouter": 0.10,
+  "diner": 0.30,
+};
+
+/* Calories « idéales » pour le repas qu'on propose maintenant : la part normale
+   de ce repas, jamais plus que ce qu'il reste dans la journée. */
+export function mealCalorieTarget(needs: DayNeeds): number {
+  const share = (MEAL_SHARE[needs.mealType] ?? 0.3) * needs.goalCalories;
+  return Math.max(0, Math.min(share, Math.max(needs.remaining, 0)));
+}
+
+/* Range un pool de recettes par fit avec la journée. Retourne une nouvelle liste
+   (la meilleure d'abord). Pool ≤ 1 ou objectif inconnu → inchangé. */
+export function rankRecipes(pool: Recipe[], needs: DayNeeds): Recipe[] {
+  if (pool.length <= 1 || needs.goalCalories <= 0) return pool;
+  const ideal = mealCalorieTarget(needs);
+  const liked = needs.likedBases.map(norm).filter(Boolean);
+  const avoid = needs.avoidNames.map(norm).filter(Boolean);
+  // densité de protéines souhaitée par le reste de la journée (g/kcal)
+  const wantProtDensity = needs.remaining > 0 ? needs.proteinRemaining / needs.remaining : 0;
+
+  return pool
+    .map((r, i) => {
+      // 1. Justesse calorique — domine. Tolérance ±300 kcal minimum.
+      const calGap = Math.abs(r.calories - ideal);
+      const calScore = ideal > 0 ? 1 - Math.min(calGap / Math.max(ideal, 300), 1) : 0.5;
+
+      // 2. Besoin en protéines — récompense la densité quand la journée est courte.
+      let protScore = 0;
+      if (wantProtDensity > 0) {
+        const rDensity = r.proteins / Math.max(r.calories, 1);
+        protScore = Math.min(rDensity / wantProtDensity, 1.5) / 1.5;
+      }
+
+      // 3. Goûts — part des ingrédients aimés (3+ = maxi).
+      let tasteScore = 0;
+      if (liked.length) {
+        const names = r.ingredients.map((it) => norm(it.nom));
+        const hits = names.filter((n) => liked.some((l) => n.includes(l) || l.includes(n))).length;
+        tasteScore = Math.min(hits / 3, 1);
+      }
+
+      // 4. Anti-répétition — plat déjà mangé aujourd'hui.
+      const rid = norm(r.nom);
+      const repeat = avoid.some((a) => a.includes(rid) || rid.includes(a)) ? 1 : 0;
+
+      // petit aléa pour départager les quasi-ex æquo (variété honnête, sans mentir sur le fit)
+      const jitter = Math.random() * 0.12;
+      const score = calScore * 3 + protScore * 1.2 + tasteScore * 0.8 - repeat * 2 + jitter;
+      return { r, score, i };
+    })
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map((x) => x.r);
+}
+
+/* Raison courte et HONNÊTE de pourquoi cette recette colle à la journée (ou null).
+   Une seule phrase, le signal le plus fort. Rien d'inventé : que des faits chiffrés. */
+export function fitReason(r: Recipe, needs: DayNeeds): string | null {
+  if (needs.goalCalories <= 0) return null;
+  const share = (MEAL_SHARE[needs.mealType] ?? 0.3) * needs.goalCalories;
+  const left = Math.max(needs.remaining, 0);
+  const ideal = mealCalorieTarget(needs);
+
+  if (ideal > 0) {
+    const gap = Math.abs(r.calories - ideal) / ideal;
+    if (gap <= 0.25) {
+      // s'il reste peu pour aujourd'hui, on le dit avec le chiffre
+      if (left < share && left >= 120) return `Pile dans tes ~${Math.round(left / 50) * 50} kcal restantes`;
+      return "Bien calibré pour ce repas";
+    }
+    if (r.calories <= ideal * 0.72) return "Léger, pour garder de la marge";
+  }
+
+  if (needs.remaining > 0 && needs.proteinRemaining >= 25) {
+    const rDensity = r.proteins / Math.max(r.calories, 1);
+    const wantDensity = needs.proteinRemaining / needs.remaining;
+    if (rDensity >= wantDensity * 1.1 && r.proteins >= 25) return "Riche en protéines pour ta journée";
+  }
+  return null;
+}
+
 /* Quantité mise à l'échelle du nombre de portions choisi. */
 export function scaledQty(ing: RecipeIngredient, portions: number, base: number): string {
   if (!ing.qte) return ing.unite ? ing.unite : "—";

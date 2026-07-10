@@ -1982,7 +1982,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           <MealSituationHero
             name={user?.name}
             userId={user?.id}
-            calorieTarget={goals.calories}
+            goals={goals}
+            consumed={{ calories: totalCals, proteins: totalProt, carbs: totalCarbs, fats: totalFats }}
+            eatenToday={meals.map((m) => m.name)}
             onPhoto={() => setShowPhoto(true)}
             onBarcode={() => setShowBarcode(true)}
             onManual={() => setShowManual(true)}
