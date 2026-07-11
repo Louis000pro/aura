@@ -2221,10 +2221,21 @@ export default function ProfilPage() {
                           </div>
                         )}
 
-                        {/* PerformanceCard — cliquable pour ouvrir le détail */}
-                        {post.performance_data && (["workout", "meal", "day"] as const).includes(
-                          (post.performance_data as { type?: string }).type as "workout" | "meal" | "day"
-                        ) && (
+                        {/* Séance → poster « aura » (cliquable → détail) ; repas/jour → carte classique */}
+                        {post.type === "workout" && post.performance_data ? (
+                          <motion.div
+                            className="px-4 mb-3 flex justify-center cursor-pointer"
+                            whileTap={{ scale: 0.985 }}
+                            onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
+                          >
+                            <PerfShareCard
+                              data={perfDataToShare(post.performance_data as PerformanceData, { user: displayPseudo })}
+                              width="min(330px, 100%)"
+                            />
+                          </motion.div>
+                        ) : post.performance_data && (["meal", "day"] as const).includes(
+                          (post.performance_data as { type?: string }).type as "meal" | "day"
+                        ) ? (
                           <motion.div
                             className="px-4 mb-3 cursor-pointer"
                             whileTap={{ scale: 0.985 }}
@@ -2232,7 +2243,7 @@ export default function ProfilPage() {
                           >
                             <PerformanceCard data={post.performance_data as PerformanceData} size="md" interactive />
                           </motion.div>
-                        )}
+                        ) : null}
 
                         {/* Description */}
                         {post.description && (
