@@ -512,23 +512,32 @@ export default function MealSituationHero({
                 Un tap pour le rajouter à ta journée.
               </p>
               <div className="grid grid-cols-2 gap-2">
-                {classics.map((r, i) => (
-                  <motion.button key={i} whileTap={{ scale: 0.97 }} onClick={() => { onQuickAdd(r); reset(); }}
-                    className="relative overflow-hidden text-left rounded-2xl p-3 pr-8 cursor-pointer"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                    <p className="text-[13.5px] font-semibold leading-tight"
-                      style={{ color: "var(--text-1)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: "2.4em" }}>
-                      {r.name}
-                    </p>
-                    <p className="text-[11.5px] font-semibold mt-1.5" style={{ color: "#E8620C", fontVariantNumeric: "tabular-nums" }}>
-                      {r.calories} kcal
-                    </p>
-                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                      <Plus size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
-                    </span>
-                  </motion.button>
-                ))}
+                {classics.map((r, i) => {
+                  // Liseré = macro dominante EN ÉNERGIE (P·4 / G·4 / L·9), triptyque Système D.
+                  // Sans macros connues → neutre. Colore sans juger (pas de rouge « mauvais »).
+                  const p = (r.proteins || 0) * 4, c = (r.carbs || 0) * 4, f = (r.fats || 0) * 9;
+                  const mx = Math.max(p, c, f);
+                  const accent = mx <= 0 ? "rgba(var(--violet-mid-rgb),0.55)"
+                    : mx === p ? "#8B5CF6" : mx === c ? "#EF9F27" : "#2BD4A0";
+                  return (
+                    <motion.button key={i} whileTap={{ scale: 0.97 }} onClick={() => { onQuickAdd(r); reset(); }}
+                      className="relative overflow-hidden text-left rounded-2xl p-3 pl-3.5 pr-8 cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                      <span aria-hidden className="absolute left-0 top-0 bottom-0" style={{ width: 4, background: accent }} />
+                      <p className="text-[13.5px] font-semibold leading-tight"
+                        style={{ color: "var(--text-1)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: "2.4em" }}>
+                        {r.name}
+                      </p>
+                      <p className="text-[11.5px] font-semibold mt-1.5" style={{ color: "#E8620C", fontVariantNumeric: "tabular-nums" }}>
+                        {r.calories} kcal
+                      </p>
+                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                        <Plus size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                      </span>
+                    </motion.button>
+                  );
+                })}
               </div>
             </>)}
           </motion.div>
