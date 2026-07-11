@@ -745,7 +745,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
       html5QrRef.current = scanner;
       scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 260, height: 130 }, aspectRatio: 1.7 },
+        // Pas de `qrbox` : la lib ne dessine pas son propre cadre → on garde
+        // seulement notre viseur (repères + balayage), cohérent avec la Photo IA.
+        { fps: 10, aspectRatio: 1 },
         (decodedText: string) => { lookupBarcode(decodedText); },
         () => { /* scan attempt, ignore errors */ }
       ).catch((err: unknown) => {
@@ -858,36 +860,32 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   </div>
                 )}
 
-                {/* Viseur caméra */}
+                {/* Viseur caméra LIVE — plein cadre, cohérent avec la Photo IA */}
                 <div className="relative rounded-2xl overflow-hidden"
-                  style={{ background: "linear-gradient(160deg,#2A2140,#140E22)", minHeight: 240 }}>
-                  <div id="aura-barcode-reader" ref={scannerRef} style={{ width: "100%" }} />
-                  {/* Viewfinder overlay */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="relative" style={{ width: 250, height: 120 }}>
-                      {/* Corner brackets */}
-                      {[["top-0 left-0","border-t-2 border-l-2 rounded-tl-lg"],
-                        ["top-0 right-0","border-t-2 border-r-2 rounded-tr-lg"],
-                        ["bottom-0 left-0","border-b-2 border-l-2 rounded-bl-lg"],
-                        ["bottom-0 right-0","border-b-2 border-r-2 rounded-br-lg"]
-                      ].map(([pos, cls], i) => (
-                        <div key={i} className={`absolute w-6 h-6 ${pos} ${cls}`}
-                          style={{ borderColor: "rgba(255,255,255,0.9)" }} />
-                      ))}
-                      {/* Balayage lumineux violet↗or (signature Vaiiya) */}
-                      <motion.div
-                        className="absolute left-1 right-1"
-                        style={{ height: 2, background: "linear-gradient(90deg,transparent,#FFD98A,var(--accent),transparent)", boxShadow: "0 0 10px rgba(255,217,138,0.6)" }}
-                        animate={{ top: ["8%", "88%", "8%"] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                    </div>
+                  style={{ background: "linear-gradient(160deg,#2A2140,#140E22)", height: 320 }}>
+                  {/* html5-qrcode injecte sa <video> ici → forcée en object-fit cover (globals.css) */}
+                  <div id="aura-barcode-reader" ref={scannerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  {/* repères d'angle (mêmes que la Photo IA) */}
+                  {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
+                    ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
+                    ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
+                    ["bottom-3 right-3", "border-b-2 border-r-2 rounded-br-xl"],
+                  ].map(([pos, cls], i) => (
+                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls} pointer-events-none`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
+                  ))}
+                  {/* Balayage lumineux violet↗or (signature Vaiiya) */}
+                  <motion.div
+                    className="absolute left-6 right-6 pointer-events-none"
+                    style={{ height: 2, background: "linear-gradient(90deg,transparent,#FFD98A,var(--accent),transparent)", boxShadow: "0 0 10px rgba(255,217,138,0.6)" }}
+                    animate={{ top: ["12%", "88%", "12%"] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
+                    style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                    Centre le code-barres
                   </div>
                 </div>
-
-                <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>
-                  Centre le code-barres entre les repères — détection automatique
-                </p>
               </motion.div>
             )}
 

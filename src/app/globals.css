@@ -112,6 +112,15 @@
   body.chat-open .mobile-nav,
   body.modal-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
 
+  /* Scanner code-barres : la <video> injectée par html5-qrcode remplit le viseur
+     (object-fit cover), comme le viseur caméra de la Photo IA. */
+  #aura-barcode-reader { line-height: 0; }
+  #aura-barcode-reader video {
+    position: absolute; inset: 0;
+    width: 100% !important; height: 100% !important;
+    object-fit: cover;
+  }
+
   /* Liquid glass — barres de navigation (frosté translucide, style iOS/Instagram) */
   .nav-glass {
     /* Surface unie translucide (fini le dégradé blanc diagonal) */
