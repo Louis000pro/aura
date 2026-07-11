@@ -174,6 +174,12 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
   const [camReady, setCamReady] = useState(false);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
+  // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
   const analyze = async (file: File) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -641,6 +647,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const html5QrRef = useRef<any>(null);
   const didStop = useRef(false);
+
+  // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
 
   const stopScanner = async () => {
     if (html5QrRef.current && !didStop.current) {
@@ -1182,6 +1194,12 @@ function ManualModal({ onClose, onAdd }: {
   const [estimating, setEstimating] = useState(false);
   const [estimated, setEstimated] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
+
+  // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
 
   const estimate = async () => {
     if (!name.trim()) return;
