@@ -42,6 +42,7 @@ type Props = {
   onPhoto: () => void;
   onBarcode: () => void;
   onManual: () => void;
+  onMenuScan: () => void;   // « La carte » du resto → photo + classement IA
   onSkip: () => void;
   classics: Classic[];
   onQuickAdd: (r: Classic) => void;
@@ -145,7 +146,7 @@ const PORTIONS: { key: PortionKey; label: string; sub: string; phrase: string }[
 type SubChoice = { key: string; label: string; sub: string; Icon: Icon; run: () => void };
 
 export default function MealSituationHero({
-  name, userId, goals, consumed, eatenToday, onPhoto, onBarcode, onManual, onSkip,
+  name, userId, goals, consumed, eatenToday, onPhoto, onBarcode, onManual, onMenuScan, onSkip,
   classics, onQuickAdd, onLogIdea,
 }: Props) {
   const [sit, setSit] = useState<SituationKey | null>(null);
@@ -401,7 +402,7 @@ export default function MealSituationHero({
     ];
     if (key === "resto") return [
       { key: "assiette",  label: "Mon assiette",      sub: "je la scanne",       Icon: Camera,      run: onPhoto },
-      { key: "carte",     label: "La carte",          sub: "aide-moi à choisir", Icon: BookOpen,    run: onManual },
+      { key: "carte",     label: "La carte",          sub: "je la photographie", Icon: BookOpen,    run: onMenuScan },
       { key: "livraison", label: "Je me fais livrer", sub: "à la maison",        Icon: ShoppingBag, run: () => setScreen("livraison") },
     ];
     return [
