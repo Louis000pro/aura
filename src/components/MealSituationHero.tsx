@@ -4,9 +4,10 @@
    MealSituationHero — le nouveau #1 de la page nutrition.
 
    Question « On mange où ? » → triple choix contextuel. Navigation PAR CARTES,
-   SUR PLACE (chaque niveau = 3 grandes cartes-images). « Une idée / Vite fait /
-   À finir » piochent dans la BANQUE DE RECETTES curée (src/lib/recipeBank.ts) et
-   ouvrent la fiche complète (RecipeSheet). Voir [[nutrition-onmangeou-redesign]].
+   SUR PLACE (chaque niveau = 3 grandes cartes-images). « Une idée » pioche dans
+   la BANQUE DE RECETTES curée (src/lib/recipeBank.ts → RecipeSheet). « À finir »
+   GÉNÈRE une recette à partir de tes restes via /api/nutrition/recipe (fiche
+   sans image = GeneratedRecipeSheet). Voir [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useEffect } from "react";
@@ -18,8 +19,9 @@ import {
   CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";
 import { loadTasteProfileLocal } from "@/lib/tasteProfile";
-import { pickRecipes, matchByIngredients, rankRecipes, fitReason, type Recipe, type MealType, type DayNeeds } from "@/lib/recipeBank";
+import { pickRecipes, rankRecipes, fitReason, type Recipe, type MealType, type DayNeeds } from "@/lib/recipeBank";
 import RecipeSheet from "@/components/RecipeSheet";
+import GeneratedRecipeSheet, { type GeneratedRecipe } from "@/components/GeneratedRecipeSheet";
 import OrderRecapSheet from "@/components/OrderRecapSheet";
 import {
   estimateOrder, guessPlace, ambianceImg, CATEGORY_ORDER, CATEGORY_LABEL, EXTRAS_BY_CATEGORY,
@@ -158,6 +160,12 @@ export default function MealSituationHero({
   const [recipeOpen, setRecipeOpen] = useState(false);
   const [recipeNeeds, setRecipeNeeds] = useState<DayNeeds | null>(null); // contexte du jour (« Une idée » seulement)
   const [thinking, setThinking] = useState(false); // latence délibérée avant de révéler la fiche
+
+  // « À finir » → recette GÉNÉRÉE par l'IA à partir des restes (fiche sans image)
+  const [genOpen, setGenOpen] = useState(false);
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState(false);
+  const [genRecipe, setGenRecipe] = useState<GeneratedRecipe | null>(null);
   const thinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (thinkTimer.current) clearTimeout(thinkTimer.current); }, []);
 
@@ -196,7 +204,12 @@ export default function MealSituationHero({
     setFinishMode("cuisiner"); setRestDish(""); setPortion(null);
     setRestBusy(false); setRestErr(null); setRestResult(null); setRestEdit(false);
   };
-  const reset = () => { setSit(null); setScreen("menu"); resetLiv(); resetRest(); };
+  const resetGen = () => { setGenOpen(false); setGenLoading(false); setGenError(false); setGenRecipe(null); };
+  const reset = () => {
+    setSit(null); setScreen("menu");
+    setIngredients([]); setIngInput("");
+    resetLiv(); resetRest(); resetGen();
+  };
   const goBack = () => {
     if (!sit) return reset();
     if (screen === "livraison-form") {
@@ -274,9 +287,32 @@ export default function MealSituationHero({
     setIngInput("");
   };
 
-  const generateFinish = () => {
-    if (!ingredients.length) return;
-    openRecipes(false, matchByIngredients(ingredients, readDiet()));
+  // « À finir » : l'IA écrit une recette RÉELLE à partir des restes (pas la banque).
+  // Cible kcal = part typique du repas dans la journée ; 1 portion (un plat pour soi).
+  const generateFinish = async () => {
+    if (!ingredients.length || genLoading) return;
+    setGenOpen(true); setGenLoading(true); setGenError(false); setGenRecipe(null);
+    try {
+      const taste = userId ? loadTasteProfileLocal(userId) : null;
+      const calorieTarget = goals?.calories
+        ? Math.round(goals.calories * MEAL_SHARE_ADVISOR[mealTypeNow()])
+        : null;
+      const res = await fetch("/api/nutrition/recipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ingredients, diet: readDiet(), taste,
+          mealType: mealTypeNow(), portions: 1, calorieTarget,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.recipe) throw new Error(json?.error || "Erreur");
+      setGenRecipe(json.recipe as GeneratedRecipe);
+    } catch {
+      setGenError(true);
+    } finally {
+      setGenLoading(false);
+    }
   };
 
   /* ── « Je me fais livrer » ── */
@@ -992,6 +1028,26 @@ export default function MealSituationHero({
           )
         )}
       </AnimatePresence>
+
+      {/* À finir · avec tes restes → recette générée par l'IA (sans image) */}
+      <GeneratedRecipeSheet
+        open={genOpen}
+        eyebrow="À finir · avec tes restes"
+        loading={genLoading}
+        error={genError}
+        recipe={genRecipe}
+        loadingTitle="Je cuisine avec tes restes…"
+        loadingHint="Un plat avec ce que tu as, rien à acheter…"
+        onClose={reset}
+        onRetry={generateFinish}
+        onOther={generateFinish}
+        onAdd={() => {
+          if (genRecipe) onLogIdea({
+            name: genRecipe.nom, calories: genRecipe.calories,
+            proteins: genRecipe.proteins, carbs: genRecipe.carbs, fats: genRecipe.fats,
+          });
+        }}
+      />
 
       {/* Récap commande (livraison) */}
       <AnimatePresence>

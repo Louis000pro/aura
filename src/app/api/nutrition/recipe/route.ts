@@ -8,8 +8,9 @@ export const maxDuration = 30;
 /* ════════════════════════════════════════════════════════════════════
    /api/nutrition/recipe — génère UNE recette complète et SÛRE.
 
-   À partir d'un plat (depuis les suggestions) OU d'un thème, l'IA rédige une
-   vraie recette ORIGINALE en français : ingrédients, étapes, macros par
+   À partir d'un plat (depuis les suggestions), d'un thème, OU des RESTES que
+   l'utilisateur a sous la main (« À finir » → body.ingredients), l'IA rédige
+   une vraie recette ORIGINALE en français : ingrédients, étapes, macros par
    portion. Tout est encadré côté sécurité alimentaire (l'inquiétude n°1 :
    pas de recette dangereuse) — voir le bloc de règles dans le prompt.
 
@@ -38,6 +39,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const dish = str(body.dish);
     const theme = str(body.theme);
+    // Restes de l'utilisateur (« À finir ») : on cuisine EN PRIORITE avec ça.
+    const leftovers = strArr(body.ingredients).slice(0, 15);
+    const mealType = str(body.mealType);
     const portions = Math.min(Math.max(num(body.portions, 2), 1), 8);
     const calorieTarget = body.calorieTarget ? Math.round(Number(body.calorieTarget)) : null;
     const diet: string[] = strArr(body.diet);
@@ -51,11 +55,14 @@ export async function POST(req: Request) {
       perso.push(`Ingredients de base preferes (a privilegier) : ${taste.bases.join(", ")}.`);
     if (diet.length) perso.push(`Regime/contraintes a respecter STRICTEMENT : ${diet.join(", ")}.`);
 
-    const cible = dish
-      ? `Ecris la recette du plat suivant : "${dish}".`
-      : theme
-        ? `Invente une recette appartenant au theme : "${theme}".`
-        : `Propose une recette equilibree, simple et grand public.`;
+    const cible = leftovers.length
+      ? `Compose une recette qui utilise EN PRIORITE ces ingredients que l'utilisateur a DEJA sous la main : ${leftovers.join(", ")}. Tu peux ne pas tous les utiliser s'ils ne vont pas ensemble, mais construis le plat autour d'eux. N'ajoute QUE des basiques de placard (huile, sel, poivre, epices, oignon, ail) : l'utilisateur ne doit RIEN acheter d'autre.`
+      : dish
+        ? `Ecris la recette du plat suivant : "${dish}".`
+        : theme
+          ? `Invente une recette appartenant au theme : "${theme}".`
+          : `Propose une recette equilibree, simple et grand public.`;
+    const mealLine = mealType ? `Type de repas vise : ${mealType}.` : "";
     const kcalLine = calorieTarget
       ? `Vise environ ${calorieTarget} kcal par portion.`
       : `Calories realistes pour une portion normale.`;
@@ -71,6 +78,7 @@ export async function POST(req: Request) {
         {
           role: "user",
           content: `${cible}
+${mealLine}
 ${kcalLine}
 Pour ${portions} portion(s).
 ${perso.length ? "Profil de l utilisateur :\n" + perso.join("\n") : ""}
