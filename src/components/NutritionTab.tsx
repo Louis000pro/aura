@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
@@ -10,6 +10,7 @@ import WeighInPrompt from "@/components/WeighInPrompt";
 import TastePrefsPrompt from "@/components/TastePrefsPrompt";
 import RecipesByTheme from "@/components/RecipesByTheme";
 import MealSituationHero from "@/components/MealSituationHero";
+import MacroTiles from "@/components/MacroTiles";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -272,11 +273,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
         <div className="flex items-center justify-between p-5 pb-4">
           <div>
             <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
-            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>
-              {phase === "analyzing" ? "Analyse en cours…"
-                : phase === "result"   ? "Repas identifié ✓"
-                : phase === "edit"     ? "Modifier"
-                : "Analyser un repas"}
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
+              {phase === "analyzing" ? "Je regarde…"
+                : phase === "result"   ? "Repas identifié"
+                : phase === "edit"     ? "Ajuster"
+                : "Snap ton assiette"}
             </h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -289,13 +290,13 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
         <div className="px-5 pb-6">
           <AnimatePresence mode="wait">
 
-            {/* SELECT */}
+            {/* SELECT — viseur immersif (tap = caméra) */}
             {phase === "select" && (
               <motion.div key="select"
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                 {error && (
                   <div className="mb-3 px-3 py-2.5 rounded-2xl text-xs font-medium"
-                    style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E", border: "1px solid rgba(252,129,129,0.2)" }}>
+                    style={{ background: "rgba(242,109,109,0.12)", color: "#F2685F", border: "1px solid rgba(242,109,109,0.28)" }}>
                     ⚠️ {error}
                   </div>
                 )}
@@ -307,68 +308,73 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 <input ref={fileRef} type="file" accept="image/*"
                   className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
 
-                <div className="flex flex-col gap-3">
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => camRef.current?.click()}
-                    className="w-full py-5 rounded-2xl flex flex-col items-center gap-2 cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 20px rgba(var(--accent-rgb),0.25)",
-                    }}>
-                    <Camera size={26} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-                    <span className="font-semibold text-sm" style={{ color: "var(--text-1)" }}>Prendre une photo</span>
-                    <span className="text-[10px] font-light" style={{ color: "var(--text-2)" }}>
-                      Pointe l&apos;appareil vers ton repas
-                    </span>
-                  </motion.button>
+                {/* Viseur — grand cadre façon appareil photo */}
+                <motion.button whileTap={{ scale: 0.98 }} onClick={() => camRef.current?.click()}
+                  className="relative w-full rounded-2xl overflow-hidden cursor-pointer"
+                  style={{ height: 300, background: "linear-gradient(160deg,#2A2140,#140E22)" }}>
+                  {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
+                    ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
+                    ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
+                    ["bottom-3 right-3", "border-b-2 border-r-2 rounded-br-xl"],
+                  ].map(([pos, cls], i) => (
+                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls}`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
+                  ))}
+                  <div className="absolute top-1/2 left-1/2 rounded-full" style={{ width: 150, height: 150, transform: "translate(-50%,-50%)", border: "1.5px dashed rgba(255,255,255,0.35)" }} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
+                      <Camera size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold" style={{ color: "#fff" }}>Prendre une photo</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>Pointe vers ton repas</p>
+                    </div>
+                  </div>
+                </motion.button>
 
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => fileRef.current?.click()}
-                    className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
-                    style={{
-                      background: "rgba(var(--tint-violet-rgb),0.6)",
-                      border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
-                    }}>
-                    <Upload size={15} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                    <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
-                  </motion.button>
-                </div>
+                {/* Galerie */}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileRef.current?.click()}
+                  className="w-full mt-3 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                  <Upload size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                  <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
+                </motion.button>
 
                 <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
-                  L&apos;IA détecte les aliments et estime les calories & macros automatiquement
+                  L&apos;IA détecte les aliments et estime calories &amp; macros automatiquement
                 </p>
               </motion.div>
             )}
 
-            {/* ANALYZING */}
+            {/* ANALYZING — l'IA regarde (balayage lumineux) */}
             {phase === "analyzing" && (
               <motion.div key="analyzing"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-4">
+                className="flex flex-col gap-4">
                 {photoUrl && (
-                  <div className="w-full h-44 rounded-2xl overflow-hidden relative">
+                  <div className="w-full rounded-2xl overflow-hidden relative" style={{ height: 300 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img loading="lazy" decoding="async" src={photoUrl} alt="repas" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-                      style={{ background: "rgba(var(--surface-rgb),0.55)", backdropFilter: "blur(6px)" }}>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                        <Loader2 size={36} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.05),rgba(8,4,14,0.5))" }} />
+                    {/* balayage */}
+                    <motion.div className="absolute left-0 right-0"
+                      style={{ height: 56, background: "linear-gradient(180deg,transparent,rgba(139,92,246,0.55) 60%,transparent)", boxShadow: "0 2px 12px rgba(255,217,138,0.55)" }}
+                      animate={{ top: ["4%", "82%", "4%"] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
+                    <div className="absolute left-0 right-0 flex items-center justify-center gap-2" style={{ bottom: 16 }}>
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
+                        <Sparkles size={16} style={{ color: "#FFD98A" }} />
                       </motion.div>
-                      <motion.p
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.6, repeat: Infinity }}
-                        className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
-                        Identification des aliments…
-                      </motion.p>
+                      <motion.span animate={{ opacity: [0.6, 1, 0.6] }} transition={{ duration: 1.6, repeat: Infinity }}
+                        className="text-xs font-semibold" style={{ color: "#fff" }}>
+                        J&apos;identifie les aliments…
+                      </motion.span>
                     </div>
                   </div>
                 )}
-                <div className="flex gap-4 w-full">
-                  {["Calories", "Protéines", "Glucides"].map(l => (
-                    <div key={l} className="flex-1 h-8 rounded-xl animate-pulse"
-                      style={{ background: "rgba(var(--accent-rgb),0.08)" }} />
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="rounded-2xl animate-pulse" style={{ height: 52, background: "rgba(var(--tint-violet-rgb),0.6)" }} />
                   ))}
                 </div>
               </motion.div>
@@ -387,58 +393,44 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   </div>
                 )}
 
-                {/* Food card */}
-                <div className="rounded-2xl p-4"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-base leading-tight" style={{ color: "var(--text-1)" }}>
-                        {editData.foodName}
+                {/* Titre + kcal */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-semibold tracking-widest uppercase flex items-center gap-1" style={{ color: "var(--text-3)" }}>
+                      <Check size={11} strokeWidth={3} style={{ color: "#2BD4A0" }} /> Repas identifié
+                    </p>
+                    <p className="font-semibold text-base leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+                      {editData.foodName}
+                    </p>
+                    {editData.description && (
+                      <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>
+                        {editData.description}
                       </p>
-                      {editData.description && (
-                        <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>
-                          {editData.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-2xl font-light" style={{ color: "var(--accent)" }}>{editData.calories}</p>
-                      <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: "Protéines", val: editData.proteins, color: "var(--accent)" },
-                      { label: "Glucides",  val: editData.carbs,    color: "#7B5CC4" },
-                      { label: "Lipides",   val: editData.fats,     color: "var(--gold)" },
-                    ].map(({ label, val, color }) => (
-                      <div key={label} className="text-center rounded-xl py-2.5"
-                        style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
-                        <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2.5"><MacroLegend /></div>
-
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-1.5">
-                      <span style={{ fontSize: 14 }}>{MEAL_META[editData.mealType]?.icon}</span>
-                      <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
-                        {MEAL_META[editData.mealType]?.label}
-                      </span>
-                    </div>
-                    <motion.button whileTap={{ scale: 0.9 }}
-                      onClick={() => setPhase("edit")}
-                      className="flex items-center gap-1 text-xs cursor-pointer"
-                      style={{ color: "var(--accent)" }}>
-                      <Edit2 size={10} strokeWidth={2} /> Modifier
-                    </motion.button>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[28px] font-light leading-none" style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{editData.calories}</p>
+                    <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                {/* Macros — composant partagé Système D */}
+                <MacroTiles proteins={editData.proteins} carbs={editData.carbs} fats={editData.fats} />
+
+                {/* Type de repas + ajuster */}
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}>
+                    <span style={{ fontSize: 13 }}>{MEAL_META[editData.mealType]?.icon}</span>
+                    {MEAL_META[editData.mealType]?.label}
+                  </span>
+                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPhase("edit")}
+                    className="flex items-center gap-1 text-xs font-medium cursor-pointer" style={{ color: "var(--accent)" }}>
+                    <Edit2 size={11} strokeWidth={2} /> estimation · ajuster
+                  </motion.button>
+                </div>
+
+                <div className="flex gap-2 mt-0.5">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
                     style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
@@ -446,13 +438,9 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
-                    className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                      color: "var(--text-1)",
-                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-                    }}>
-                    Ajouter à mes repas ✓
+                    className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                   </motion.button>
                 </div>
               </motion.div>
@@ -513,11 +501,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setPhase("result")}
-                  className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
+                  className="w-full py-3 rounded-2xl text-sm font-bold cursor-pointer mt-1"
                   style={{
-                    background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                    color: "var(--text-1)",
-                    boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
+                    background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+                    color: "#fff",
+                    boxShadow: "0 6px 18px rgba(139,92,246,0.4)",
                   }}>
                   Valider les modifications
                 </motion.button>
