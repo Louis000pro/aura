@@ -155,14 +155,6 @@ function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?
   );
 }
 
-/* ─── MacroLegend — rappel du sens des mots, en une ligne ──────────── */
-function MacroLegend() {
-  return (
-    <p className="text-[10px] text-center leading-snug" style={{ color: "var(--text-3)" }}>
-      Protéines = muscles · Glucides = énergie · Lipides = graisses utiles
-    </p>
-  );
-}
 
 /* ─── PhotoAnalysisModal ─────────────────────────────────────────────── */
 type PhotoPhase = "select" | "analyzing" | "result" | "edit";
@@ -525,9 +517,15 @@ interface BarcodeProduct {
   name: string;
   brand: string | null;
   image: string | null;
+  nutriscore: string | null;
   quantity: string | null;
   per100: { calories: number; proteins: number; carbs: number; fats: number; fiber: number };
 }
+
+/* Couleurs officielles du Nutri-Score (fixes, non liées au thème). */
+const NUTRISCORE_COLOR: Record<string, string> = {
+  A: "#038141", B: "#85BB2F", C: "#FECB02", D: "#EE8100", E: "#E63E11",
+};
 
 interface BarcodeEstimated {
   foodName: string;
@@ -731,12 +729,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
             <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
               Scanner
             </p>
-            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>
-              {phase === "scan"     ? "Scanner un code-barres"
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
+              {phase === "scan"     ? "Scanner un produit"
                : phase === "loading" ? "Recherche du produit…"
                : phase === "fallback"
-                 ? (estimated ? "Estimation IA ✓" : "Non référencé — estimer")
-               : "Produit identifié ✓"}
+                 ? (estimated ? "Produit estimé" : "Décris le produit")
+               : "Produit identifié"}
             </h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -757,18 +755,18 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                 {error && (
                   <div className="px-3 py-2.5 rounded-2xl text-xs font-medium"
-                    style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E", border: "1px solid rgba(252,129,129,0.2)" }}>
+                    style={{ background: "rgba(242,109,109,0.12)", color: "#F2685F", border: "1px solid rgba(242,109,109,0.28)" }}>
                     ⚠️ {error}
                   </div>
                 )}
 
-                {/* Camera viewport */}
+                {/* Viseur caméra */}
                 <div className="relative rounded-2xl overflow-hidden"
-                  style={{ background: "#1A202C", minHeight: 200 }}>
+                  style={{ background: "linear-gradient(160deg,#2A2140,#140E22)", minHeight: 240 }}>
                   <div id="aura-barcode-reader" ref={scannerRef} style={{ width: "100%" }} />
                   {/* Viewfinder overlay */}
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="relative" style={{ width: 260, height: 100 }}>
+                    <div className="relative" style={{ width: 250, height: 120 }}>
                       {/* Corner brackets */}
                       {[["top-0 left-0","border-t-2 border-l-2 rounded-tl-lg"],
                         ["top-0 right-0","border-t-2 border-r-2 rounded-tr-lg"],
@@ -776,13 +774,13 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                         ["bottom-0 right-0","border-b-2 border-r-2 rounded-br-lg"]
                       ].map(([pos, cls], i) => (
                         <div key={i} className={`absolute w-6 h-6 ${pos} ${cls}`}
-                          style={{ borderColor: "var(--accent)" }} />
+                          style={{ borderColor: "rgba(255,255,255,0.9)" }} />
                       ))}
-                      {/* Animated scan line */}
+                      {/* Balayage lumineux violet↗or (signature Vaiiya) */}
                       <motion.div
-                        className="absolute left-1 right-1 h-px"
-                        style={{ background: "linear-gradient(90deg,transparent,var(--accent),transparent)" }}
-                        animate={{ top: ["10%", "90%", "10%"] }}
+                        className="absolute left-1 right-1"
+                        style={{ height: 2, background: "linear-gradient(90deg,transparent,#FFD98A,var(--accent),transparent)", boxShadow: "0 0 10px rgba(255,217,138,0.6)" }}
+                        animate={{ top: ["8%", "88%", "8%"] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                       />
                     </div>
@@ -818,15 +816,15 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col gap-3">
 
-                {/* Bandeau d'info */}
+                {/* Bandeau d'info — ton positif, tokenisé (clair + sombre) */}
                 {!estimated && (
                   <div className="flex items-start gap-2.5 px-3 py-3 rounded-2xl"
-                    style={{ background: "rgba(var(--gold-rgb),0.08)", border: "1px solid rgba(var(--gold-rgb),0.2)" }}>
-                    <span className="text-sm mt-0.5">⚠️</span>
-                    <p className="text-xs font-light leading-relaxed" style={{ color: "#92400E" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                    <Sparkles size={15} strokeWidth={2} style={{ color: "var(--accent)", marginTop: 1, flexShrink: 0 }} />
+                    <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {fallbackName
-                        ? "Produit trouvé, mais sans données nutritionnelles. L'IA peut les estimer."
-                        : "Ce code-barres n'est pas dans notre base. Décris le produit pour que l'IA estime les macros."}
+                        ? "Trouvé, mais sans données nutritionnelles — décris-le, je m'occupe des chiffres."
+                        : "Pas encore dans la base — décris-le, je m'occupe des chiffres."}
                     </p>
                   </div>
                 )}
@@ -855,10 +853,10 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                           style={{
                             background: fallbackName.trim() && !estimating
-                              ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
-                              : "rgba(220,220,220,0.4)",
-                            color: fallbackName.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
-                            boxShadow: fallbackName.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
+                              ? "linear-gradient(135deg,#8B5CF6,#C13BC1)"
+                              : "rgba(var(--tint-violet-rgb),0.6)",
+                            color: fallbackName.trim() && !estimating ? "#fff" : "var(--text-3)",
+                            boxShadow: fallbackName.trim() && !estimating ? "0 4px 14px rgba(139,92,246,0.35)" : "none",
                             minWidth: 80, justifyContent: "center",
                           }}>
                           {estimating
@@ -900,39 +898,22 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col gap-3">
 
-                    {/* Macros estimées */}
-                    <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                              style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}>✨ IA</span>
-                          </div>
-                          <p className="font-semibold text-sm leading-tight" style={{ color: "var(--text-1)" }}>
-                            {estimated.foodName}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-2xl font-light" style={{ color: "var(--accent)" }}>{estimated.calories}</p>
-                          <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
-                        </div>
+                    {/* Estimation IA — mini fiche */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-semibold tracking-widest uppercase flex items-center gap-1" style={{ color: "var(--accent)" }}>
+                          <Sparkles size={11} strokeWidth={2} /> Estimé par l&apos;IA
+                        </p>
+                        <p className="font-semibold text-sm leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+                          {estimated.foodName}
+                        </p>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { label: "Protéines", val: estimated.proteins, color: "var(--accent)" },
-                          { label: "Glucides",  val: estimated.carbs,    color: "#7B5CC4" },
-                          { label: "Lipides",   val: estimated.fats,     color: "var(--gold)" },
-                        ].map(({ label, val, color }) => (
-                          <div key={label} className="text-center rounded-xl py-2.5"
-                            style={{ background: "rgba(var(--surface-rgb),0.75)" }}>
-                            <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
-                            <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
-                          </div>
-                        ))}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[26px] font-light leading-none" style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{estimated.calories}</p>
+                        <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                       </div>
-                      <div className="mt-2.5"><MacroLegend /></div>
                     </div>
+                    <MacroTiles proteins={estimated.proteins} carbs={estimated.carbs} fats={estimated.fats} />
 
                     {/* Type de repas */}
                     <div>
@@ -964,13 +945,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                         onClick={handleConfirmEstimate}
-                        className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                        style={{
-                          background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                          color: "var(--text-1)",
-                          boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-                        }}>
-                        Ajouter à mes repas ✓
+                        className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                        <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                       </motion.button>
                     </div>
                   </motion.div>
@@ -1009,6 +986,16 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{product.quantity}</p>
                     )}
                   </div>
+                  {/* Nutri-Score (si connu) */}
+                  {product.nutriscore && (
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <span className="text-[7px] font-bold tracking-widest" style={{ color: "var(--text-3)" }}>NUTRI</span>
+                      <span className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-black"
+                        style={{ background: NUTRISCORE_COLOR[product.nutriscore], color: "#fff" }}>
+                        {product.nutriscore}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Quantity stepper */}
@@ -1040,23 +1027,15 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   </div>
                 </div>
 
-                {/* Computed macros */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { label: "Calories", val: `${computedMacros.calories}`, unit: "kcal", color: "var(--accent)" },
-                    { label: "Protéines", val: `${computedMacros.proteins}`, unit: "g", color: "var(--accent)" },
-                    { label: "Glucides", val: `${computedMacros.carbs}`, unit: "g", color: "#7B5CC4" },
-                    { label: "Lipides", val: `${computedMacros.fats}`, unit: "g", color: "var(--gold)" },
-                  ].map(({ label, val, unit, color }) => (
-                    <div key={label} className="text-center rounded-xl py-2.5"
-                      style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}>
-                      <p className="text-sm font-semibold" style={{ color }}>{val}</p>
-                      <p className="text-[9px] mt-0.5" style={{ color: "var(--text-3)" }}>{unit}</p>
-                      <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
-                    </div>
-                  ))}
+                {/* Macros calculées pour la quantité */}
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Pour {grams} g</span>
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-2xl font-light" style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{computedMacros.calories}</span>
+                    <span className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</span>
+                  </span>
                 </div>
-                <div className="mt-2"><MacroLegend /></div>
+                <MacroTiles proteins={computedMacros.proteins} carbs={computedMacros.carbs} fats={computedMacros.fats} />
 
                 {/* Meal type */}
                 <div>
@@ -1088,13 +1067,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
-                    className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-                      color: "var(--text-1)",
-                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-                    }}>
-                    Ajouter à mes repas ✓
+                    className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                   </motion.button>
                 </div>
               </motion.div>
