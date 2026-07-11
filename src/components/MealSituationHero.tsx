@@ -492,32 +492,70 @@ export default function MealSituationHero({
           </motion.div>
         )}
 
-        {/* Mes classiques */}
+        {/* Mes classiques — tes plats les plus enregistrés, ajout en 1 tap */}
         {sit !== null && screen === "classics" && (
           <motion.div key="classics"
             initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
             className="flex flex-col gap-2 mt-4">
             {classics.length === 0 ? (
-              <p className="text-xs text-center py-8 font-light" style={{ color: "var(--text-3)" }}>
-                Tes plats habituels apparaîtront ici dès que tu en auras enregistré quelques-uns.
+              <div className="flex flex-col items-center text-center gap-2.5 py-9">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.28)" }}>
+                  <Heart size={20} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                </div>
+                <p className="text-xs font-light leading-relaxed max-w-[15rem]" style={{ color: "var(--text-3)" }}>
+                  Tes plats habituels apparaîtront ici dès que tu en auras enregistré quelques-uns.
+                </p>
+              </div>
+            ) : (<>
+              <p className="text-[11.5px] font-light -mt-1 mb-0.5 ml-0.5" style={{ color: "var(--text-3)" }}>
+                Un tap pour le rajouter à ta journée.
               </p>
-            ) : (
-              classics.map((r, i) => (
-                <motion.button key={i} whileTap={{ scale: 0.98 }} onClick={() => { onQuickAdd(r); reset(); }}
-                  className="flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer text-left"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.15)" }}>
-                    <Plus size={14} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-tight truncate" style={{ color: "var(--text-1)" }}>{r.name}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>
-                      {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
-                    </p>
-                  </div>
-                </motion.button>
-              ))
-            )}
+              {classics.map((r, i) => {
+                const habit = (r.count ?? 0) >= 2;
+                return (
+                  <motion.button key={i} whileTap={{ scale: 0.98 }} onClick={() => { onQuickAdd(r); reset(); }}
+                    className="flex items-center gap-3 p-2.5 pr-3 rounded-2xl cursor-pointer text-left"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                    {/* Médaillon énergie (kcal) */}
+                    <div className="flex flex-col items-center justify-center rounded-2xl flex-shrink-0"
+                      style={{ width: 50, height: 50, background: "rgba(232,98,12,0.10)", border: "1px solid rgba(232,98,12,0.24)" }}>
+                      <span className="text-[15px] font-extrabold leading-none" style={{ color: "#E8620C", fontVariantNumeric: "tabular-nums" }}>{r.calories}</span>
+                      <span className="text-[8px] mt-0.5 tracking-wide uppercase" style={{ color: "var(--text-3)" }}>kcal</span>
+                    </div>
+                    {/* Nom + macros */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{r.name}</p>
+                        {habit && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-[1px] rounded-full text-[9px] font-bold flex-shrink-0"
+                            style={{ background: "rgba(139,92,246,0.14)", color: "var(--accent)" }}>
+                            <Heart size={9} strokeWidth={2} fill="currentColor" /> {r.count}×
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2.5 mt-1">
+                        {[
+                          { v: r.proteins, c: "#8B5CF6" },
+                          { v: r.carbs, c: "#EF9F27" },
+                          { v: r.fats, c: "#2BD4A0" },
+                        ].map((m, mi) => (
+                          <span key={mi} className="inline-flex items-center gap-1 text-[10.5px]" style={{ color: "var(--text-3)" }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: m.c }} />
+                            <span style={{ fontVariantNumeric: "tabular-nums" }}>{m.v}g</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Ajout */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                      <Plus size={15} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </>)}
           </motion.div>
         )}
 
@@ -622,17 +660,18 @@ export default function MealSituationHero({
                   { label: "Glucides", key: "carbs" as const, v: restResult.carbs, c: "#EF9F27" },
                   { label: "Lipides", key: "fats" as const, v: restResult.fats, c: "#2BD4A0" },
                 ].map((m) => (
-                  <div key={m.key} className="rounded-2xl py-3 flex flex-col items-center"
+                  <div key={m.key} className="relative overflow-hidden rounded-2xl text-center pt-3 pb-2"
                     style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+                    <span aria-hidden className="absolute top-0 left-0 right-0" style={{ height: 3, background: m.c }} />
                     {restEdit ? (
                       <input type="number" inputMode="numeric" value={m.v}
                         onChange={(e) => setRestResult((r) => r ? { ...r, [m.key]: Math.max(0, parseInt(e.target.value) || 0) } : r)}
-                        className="w-12 text-center text-[15px] font-semibold outline-none rounded"
-                        style={{ background: "rgb(var(--surface-rgb))", color: m.c }} />
+                        className="w-12 mx-auto block text-center text-[15px] font-extrabold outline-none rounded"
+                        style={{ background: "rgb(var(--surface-rgb))", color: m.c, fontVariantNumeric: "tabular-nums" }} />
                     ) : (
-                      <span className="text-[15px] font-semibold" style={{ color: m.c }}>{m.v}g</span>
+                      <p className="font-extrabold" style={{ color: m.c, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{m.v}g</p>
                     )}
-                    <span className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{m.label}</span>
+                    <p style={{ color: "var(--text-3)", fontSize: 9.5, marginTop: 3 }}>{m.label}</p>
                   </div>
                 ))}
               </div>
