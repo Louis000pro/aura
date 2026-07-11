@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, Sparkles } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, Sparkles, SwitchCamera, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
@@ -168,7 +168,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
   const [editData, setEditData] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const camRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);          // fallback caméra native (si getUserMedia refusé)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [camReady, setCamReady] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   const analyze = async (file: File) => {
     const reader = new FileReader();
@@ -237,6 +241,53 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
   const reset = () => { setPhase("select"); setPhotoUrl(null); setEditData(null); setError(null); };
 
+  // ── Caméra live in-app (getUserMedia) — viseur + obturateur, comme le scanner code-barres.
+  const stopCam = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  };
+  const startCam = async (mode: "environment" | "user"): Promise<boolean> => {
+    if (!navigator.mediaDevices?.getUserMedia) { setCamReady(false); return false; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}); }
+      setCamReady(true);
+      return true;
+    } catch {
+      setCamReady(false);
+      return false;
+    }
+  };
+  const flipCam = async () => {
+    const next = facingMode === "environment" ? "user" : "environment";
+    stopCam();
+    if (await startCam(next)) setFacingMode(next);
+    else await startCam(facingMode); // pas de 2ᵉ caméra → on revient
+  };
+  const capturePhoto = () => {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      stopCam();
+      analyze(new File([blob], `repas-${Date.now()}.jpg`, { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  };
+
+  // Démarre la caméra sur l'écran de capture, la coupe ailleurs / à la fermeture.
+  useEffect(() => {
+    if (phase === "select") startCam(facingMode);
+    else stopCam();
+    return () => stopCam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   const CARD_STYLE = {
     background: "rgb(var(--surface-rgb))",
     border: "1px solid rgba(var(--accent-rgb),0.14)",
@@ -293,44 +344,79 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   </div>
                 )}
 
-                {/* Camera capture */}
+                {/* inputs cachés : caméra native (fallback) + galerie */}
                 <input ref={camRef} type="file" accept="image/*" capture="environment"
                   className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
-                {/* Gallery */}
                 <input ref={fileRef} type="file" accept="image/*"
                   className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
 
-                {/* Viseur — grand cadre façon appareil photo */}
-                <motion.button whileTap={{ scale: 0.98 }} onClick={() => camRef.current?.click()}
-                  className="relative w-full rounded-2xl overflow-hidden cursor-pointer"
-                  style={{ height: 300, background: "linear-gradient(160deg,#2A2140,#140E22)" }}>
+                {/* Viseur — caméra LIVE dans l'app */}
+                <div className="relative w-full rounded-2xl overflow-hidden"
+                  style={{ height: 320, background: "linear-gradient(160deg,#2A2140,#140E22)" }}>
+                  <video ref={videoRef} autoPlay playsInline muted
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: camReady ? 1 : 0, transition: "opacity .3s" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  {/* repères d'angle */}
                   {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
                     ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
                     ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
                     ["bottom-3 right-3", "border-b-2 border-r-2 rounded-br-xl"],
                   ].map(([pos, cls], i) => (
-                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls}`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
+                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls} pointer-events-none`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
                   ))}
-                  <div className="absolute top-1/2 left-1/2 rounded-full" style={{ width: 150, height: 150, transform: "translate(-50%,-50%)", border: "1.5px dashed rgba(255,255,255,0.35)" }} />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
-                      <Camera size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold" style={{ color: "#fff" }}>Prendre une photo</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>Pointe vers ton repas</p>
-                    </div>
-                  </div>
-                </motion.button>
 
-                {/* Galerie */}
-                <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileRef.current?.click()}
-                  className="w-full mt-3 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
-                  <Upload size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-                  <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
-                </motion.button>
+                  {camReady ? (
+                    <>
+                      <div className="absolute top-1/2 left-1/2 rounded-full pointer-events-none" style={{ width: 150, height: 150, transform: "translate(-50%,-50%)", border: "1.5px dashed rgba(255,255,255,0.4)" }} />
+                      <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
+                        style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                        Cadre ton assiette
+                      </div>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => camRef.current?.click()}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
+                        <Camera size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
+                      </div>
+                      <div className="text-center px-6">
+                        <p className="text-sm font-semibold" style={{ color: "#fff" }}>Prendre une photo</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>Autorise la caméra, ou touche pour l&apos;appareil photo</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+
+                {camReady ? (
+                  /* Barre d'obturateur : galerie · déclencheur · flip */
+                  <div className="flex items-center justify-between mt-4 px-6">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileRef.current?.click()}
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <ImageIcon size={19} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.92 }} onClick={capturePhoto}
+                      className="rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                      style={{ width: 68, height: 68, border: "3px solid rgba(var(--accent-rgb),0.35)" }}>
+                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.5)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={flipCam}
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <SwitchCamera size={19} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    </motion.button>
+                  </div>
+                ) : (
+                  /* Fallback : galerie */
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileRef.current?.click()}
+                    className="w-full mt-3 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                    <Upload size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
+                  </motion.button>
+                )}
 
                 <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
                   L&apos;IA détecte les aliments et estime calories &amp; macros automatiquement
