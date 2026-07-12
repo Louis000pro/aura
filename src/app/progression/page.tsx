@@ -1,44 +1,38 @@
-﻿"use client";
+"use client";
 
-import { Suspense, useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+/* ════════════════════════════════════════════════════════════════════
+   /progression — l'onglet ENTRAÎNEMENT (direction finale validée).
+
+   Philosophie : l'app RÉPOND quand elle sait, elle ne QUESTIONNE que
+   quand elle ne sait pas.
+   ① Héros « Aujourd'hui »   — la séance du jour, un seul geste.
+   ② « Pas ce qui était prévu ? » — J'improvise (IA) / Je choisis
+      (catalogue Vaiiya + bibliothèque perso FUSIONNÉS, badge Perso).
+   ③ « Ma semaine »          — 7 pastilles + « Organiser » (planning
+      complet — WeeklyProgramme — dans une sheet).
+   Tout le reste vit derrière un tap. L'historique a quitté la page.
+   ════════════════════════════════════════════════════════════════════ */
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
-  Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
-  X, CameraOff, Square, RefreshCw, Plus, Trash2, Pencil,
-  Globe, Lock, Users,
+  Clock, ChevronRight, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
+  Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
+  Moon, Zap, Home, Sun, CalendarDays,
 } from "lucide-react";
-import { type WeightEntry } from "@/components/charts/ProgressionCharts";
-import SharePerformanceModal from "@/components/SharePerformanceModal";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
-import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
-import BodyAvatar from "@/components/BodyAvatar";
-import { useProfileSettings } from "@/hooks/useProfileSettings";
 import { useAuth } from "@/context/AuthContext";
+import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
+import { levelToDifficulty } from "@/lib/assistantActions";
+import {
+  ensureWeek, setDayStatus, hasSeance, readLieu, readVariant, ctxFromLieu,
+  weekDates, todayYmd, todayWeekIndex, dayTitle, normalizeExercises,
+  type PlanningDay, type GenInput, type Ctx,
+} from "@/lib/planning";
 
-/* ─── DB types ───────────────────────────────────────────── */
-type DbWorkoutSession = {
-  id: string; user_id: string; title: string; category: string;
-  duration_minutes: number; calories_burned: number; started_at: string;
-};
-
-/* ─── Timeline data ─────────────────────────────────────── */
-type TimelineEvent = {
-  id?: string;
-  date: string; time: string; type: PerformanceType;
-  title: string; desc: string; cardClass: string; dot: string;
-  performance: PerformanceData;
-};
-
-
-const eventIcons: Record<PerformanceType, typeof Dumbbell> = {
-  workout: Dumbbell, meal: Apple, day: Sun,
-};
-
-/* ─── Workout sessions data ─────────────────────────────── */
+/* ─── Workout sessions data (catalogue Vaiiya) ─────────────── */
 type WorkoutCategory = "force" | "cardio" | "mobilite" | "fullbody";
 
 type WorkoutSession = {
@@ -51,7 +45,7 @@ type WorkoutSession = {
   exercises: number;
   muscles: string[];
   accent: string;
-  icon: typeof Dumbbell;
+  icon: typeof Dumbbell | string;   // composant (catalogue) ou nom stocké en base (perso)
   exerciseList?: Exercise[];
   visibility?: "private" | "friends" | "public";
 };
@@ -122,23 +116,20 @@ const workoutSessions: WorkoutSession[] = [
   },
 ];
 
-const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
-  { key: "tous",     label: "Tous" },
+const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
+  force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
+};
+
+/* Filtres de la sheet « Je choisis » — un SEUL jeu, catalogue + perso fusionnés */
+type ChooseFilter = "tous" | WorkoutCategory | "perso";
+const CHOOSE_FILTERS: { key: ChooseFilter; label: string }[] = [
+  { key: "tous",     label: "Toutes" },
   { key: "force",    label: "Force" },
   { key: "cardio",   label: "Cardio" },
   { key: "mobilite", label: "Mobilité" },
   { key: "fullbody", label: "Full Body" },
+  { key: "perso",    label: "Perso" },
 ];
-
-// Système D — la couleur du TYPE (catégorie) sert d'accent (barre + badge + icône
-// + avatar). Résistance (force/full body) = violet, cardio = orange, mobilité = teal.
-// Le bouton « Commencer » reste toujours violet (action). Difficulté = neutre.
-const CATEGORY_COLOR: Record<WorkoutCategory, string> = {
-  force: "#8B5CF6", fullbody: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0",
-};
-const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
-  force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
-};
 
 /* ─── Icon resolver (Supabase stores icon name as string) ── */
 const ICON_MAP: Record<string, typeof Dumbbell> = {
@@ -150,786 +141,821 @@ function resolveIcon(icon: unknown): typeof Dumbbell {
   return Dumbbell;
 }
 
-/* ─── Chart helpers ─────────────────────────────────────── */
-type CalorieDay  = { date: string; total: number; label: string };
+/* ─── Visibilité des séances perso ─────────────────────────── */
+const VIS_CONFIG = {
+  private: { label: "Privée", icon: Lock,  color: "var(--text-3)" },
+  friends: { label: "Amis",   icon: Users, color: "#8B5CF6" },
+  public:  { label: "Public", icon: Globe, color: "#2BD4A0" },
+} as const;
+type Visibility = keyof typeof VIS_CONFIG;
+const VIS_CYCLE: Record<Visibility, Visibility> = { private: "friends", friends: "public", public: "private" };
 
-function toDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+/* ─── Libellés FR des objectifs onboarding (même map que WeeklyProgramme) ── */
+const goalLabels: Record<string, string> = {
+  masse: "prise de masse",
+  prise_de_masse: "prise de masse",
+  poids: "perte de poids",
+  perte_de_poids: "perte de poids",
+  force: "force",
+  endurance: "endurance",
+  sante: "santé générale",
+  sante_generale: "santé générale",
+  souplesse: "souplesse",
+};
+
+/* ════════════════════════════════════════════════════════════════════
+   Ambiances visuelles — placeholders premium en dégradés (structure
+   prête à recevoir de vraies photos, comme /public/nutrition).
+   ════════════════════════════════════════════════════════════════════ */
+const ART: Record<string, string> = {
+  // splits du planning
+  push:     "radial-gradient(75% 55% at 82% 8%, rgba(239,159,39,.30), transparent 58%), radial-gradient(90% 75% at 12% 100%, rgba(139,92,246,.42), transparent 62%), linear-gradient(158deg,#2A2046 0%,#171129 55%,#0D0A16 100%)",
+  pull:     "radial-gradient(75% 55% at 80% 10%, rgba(193,59,193,.32), transparent 58%), radial-gradient(90% 75% at 10% 100%, rgba(139,92,246,.45), transparent 62%), linear-gradient(158deg,#251C42 0%,#151026 55%,#0C0915 100%)",
+  jambes:   "radial-gradient(75% 55% at 78% 6%, rgba(239,159,39,.22), transparent 55%), radial-gradient(95% 80% at 12% 100%, rgba(193,59,193,.38), transparent 62%), linear-gradient(158deg,#301B44 0%,#190F27 55%,#0E0916 100%)",
+  haut:     "radial-gradient(70% 50% at 84% 6%, rgba(239,159,39,.26), transparent 55%), radial-gradient(88% 72% at 8% 100%, rgba(139,92,246,.4), transparent 60%), linear-gradient(158deg,#282052 0%,#161129 55%,#0C0A18 100%)",
+  fullbody: "radial-gradient(80% 60% at 80% 5%, rgba(139,92,246,.34), transparent 58%), radial-gradient(80% 70% at 8% 100%, rgba(193,59,193,.24), transparent 60%), linear-gradient(158deg,#241E48 0%,#151129 55%,#0C0A16 100%)",
+  cardio:   "radial-gradient(80% 60% at 78% 8%, rgba(232,98,12,.4), transparent 58%), radial-gradient(85% 70% at 10% 100%, rgba(239,159,39,.24), transparent 62%), linear-gradient(158deg,#3A2418 0%,#1F120C 55%,#100906 100%)",
+  mobilite: "radial-gradient(80% 60% at 78% 8%, rgba(43,212,160,.28), transparent 58%), radial-gradient(85% 70% at 10% 100%, rgba(139,92,246,.2), transparent 62%), linear-gradient(158deg,#15342C 0%,#0E1F1C 55%,#080F0E 100%)",
+  // états du héros
+  repos:    "radial-gradient(75% 55% at 80% 0%, rgba(43,212,160,.18), transparent 60%), radial-gradient(90% 70% at 10% 100%, rgba(60,80,180,.28), transparent 65%), linear-gradient(160deg,#16203A 0%,#0D1120 60%,#0A0D18 100%)",
+  done:     "radial-gradient(80% 60% at 75% 5%, rgba(43,212,160,.32), transparent 60%), radial-gradient(80% 70% at 10% 100%, rgba(139,92,246,.25), transparent 65%), linear-gradient(160deg,#0F2A24 0%,#0C1620 65%,#0A0D16 100%)",
+  setup:    "radial-gradient(80% 60% at 80% 8%, rgba(193,59,193,.3), transparent 58%), radial-gradient(95% 80% at 8% 95%, rgba(139,92,246,.5), transparent 62%), linear-gradient(158deg,#2C1F52 0%,#150F28 60%,#0D0A18 100%)",
+  // cartes de bifurcation
+  improvise: "radial-gradient(80% 60% at 78% 10%, rgba(193,59,193,.35), transparent 60%), radial-gradient(90% 80% at 10% 90%, rgba(139,92,246,.5), transparent 65%), linear-gradient(150deg,#2B1F4E 0%,#130E22 70%)",
+  choisis:   "radial-gradient(70% 50% at 20% 0%, rgba(43,212,160,.14), transparent 60%), linear-gradient(150deg,#20304A 0%,#101A2C 40%,#0D1120 100%)",
+};
+
+/** Ambiance d'une séance du planning, selon son split / type. */
+function seanceArt(day: PlanningDay): string {
+  const t = (day.title || "").toLowerCase();
+  if (t.includes("push")) return ART.push;
+  if (t.includes("pull")) return ART.pull;
+  if (t.includes("bas"))  return ART.jambes;
+  if (t.includes("haut")) return ART.haut;
+  if (t.includes("cardio") || day.type === "HIIT") return ART.cardio;
+  return ART.fullbody;
 }
 
+/** Ambiance d'une tuile de séance (sheet « Je choisis »), selon sa catégorie. */
+const TILE_ART: Record<WorkoutCategory, string> = {
+  force: ART.push, fullbody: ART.fullbody, cardio: ART.cardio, mobilite: ART.mobilite,
+};
 
+/** Silhouette de barre olympique — signature visuelle des cartes séance. */
+function BarbellSilhouette({ style }: { style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 220 60" fill="none" stroke="currentColor" strokeWidth={7} strokeLinecap="round"
+      style={{ position: "absolute", width: 210, color: "#fff", opacity: 0.13, transform: "rotate(-7deg)", pointerEvents: "none", ...style }}
+      aria-hidden>
+      <path d="M30 30h160" />
+      <path d="M48 8v44M64 14v32M172 8v44M156 14v32" />
+    </svg>
+  );
+}
 
-/* ─── CameraCapture Modal ───────────────────────────────── */
-type CaptureMode = "photo" | "video";
-type CapturePhase = "loading" | "preview" | "recording" | "captured" | "error";
+/** Lieu lisible d'une séance du planning. */
+function lieuLabel(loc: Ctx | null): string {
+  if (loc === "salle") return "À la salle";
+  if (loc === "halteres") return "Maison · haltères";
+  if (loc === "poids") return "Maison · poids du corps";
+  return "";
+}
 
-function CameraCapture({
-  mode, label, onCapture, onClose,
-}: {
-  mode: CaptureMode;
-  label: string;
-  onCapture: (blob: Blob, objectUrl: string) => void;
+const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
+const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+/* ════════════════════════════════════════════════════════════════════
+   Sheet — enveloppe commune des bottom sheets (Organiser / Choisir /
+   Improviser). Masque la nav du bas tant qu'elle est ouverte.
+   ════════════════════════════════════════════════════════════════════ */
+function Sheet({ onClose, children, maxHeight = "88vh" }: {
   onClose: () => void;
+  children: React.ReactNode;
+  maxHeight?: string;
 }) {
-  const videoRef    = useRef<HTMLVideoElement>(null);
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const streamRef   = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef   = useRef<Blob[]>([]);
-  const capturedBlobRef = useRef<Blob | null>(null);
-  const capturedUrlRef  = useRef<string | null>(null);
-  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const [phase, setPhase]               = useState<CapturePhase>("loading");
-  const [capturedUrl, setCapturedUrl]   = useState<string | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
-
-  /* Start camera on mount */
   useEffect(() => {
-    let cancelled = false;
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: mode === "video",
-        });
-        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        setPhase("preview");
-      } catch {
-        if (!cancelled) setPhase("error");
-      }
-    }
-    startCamera();
-    return () => {
-      cancelled = true;
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (capturedUrlRef.current) URL.revokeObjectURL(capturedUrlRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
   }, []);
-
-  const takePhoto = () => {
-    const video  = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")?.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      capturedBlobRef.current = blob;
-      const url = URL.createObjectURL(blob);
-      capturedUrlRef.current = url;
-      setCapturedUrl(url);
-      setPhase("captured");
-      /* Freeze live feed */
-      streamRef.current?.getVideoTracks().forEach(t => { t.enabled = false; });
-    }, "image/jpeg", 0.92);
-  };
-
-  const startRecording = () => {
-    if (!streamRef.current) return;
-    chunksRef.current = [];
-    const recorder = new MediaRecorder(streamRef.current);
-    recorderRef.current = recorder;
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      capturedBlobRef.current = blob;
-      const url = URL.createObjectURL(blob);
-      capturedUrlRef.current = url;
-      setCapturedUrl(url);
-      setPhase("captured");
-    };
-    recorder.start();
-    setPhase("recording");
-    setRecordingTime(0);
-    timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-  };
-
-  const stopRecording = () => {
-    recorderRef.current?.stop();
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-  };
-
-  const retake = () => {
-    if (capturedUrlRef.current) { URL.revokeObjectURL(capturedUrlRef.current); capturedUrlRef.current = null; }
-    capturedBlobRef.current = null;
-    setCapturedUrl(null);
-    streamRef.current?.getVideoTracks().forEach(t => { t.enabled = true; });
-    setPhase("preview");
-  };
-
-  const useCapture = () => {
-    if (!capturedBlobRef.current || !capturedUrlRef.current) return;
-    onCapture(capturedBlobRef.current, capturedUrlRef.current);
-  };
-
-  const fmt = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(12,8,22,0.5)", backdropFilter: "blur(3px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <motion.div
-        initial={{ y: 48, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 48, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 36 }}
-        className="relative w-full max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "#1a1625", maxHeight: "92vh" }}
+        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.14)",
+          boxShadow: "0 -14px 44px rgba(0,0,0,0.35)",
+          maxHeight,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(var(--surface-rgb),0.12)" }}
-        >
-          <X size={16} strokeWidth={2} style={{ color: "#fff" }} />
-        </button>
-
-        {/* Title */}
-        <div className="px-5 pt-5 pb-3">
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-            {mode === "photo" ? "Scan Nutrition" : "Analyse Posture"}
-          </p>
-          <h3 className="text-base font-light mt-0.5" style={{ color: "#fff" }}>{label}</h3>
+        {/* Grabber */}
+        <div className="flex justify-center pt-2.5 pb-1 md:hidden flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
         </div>
-
-        {/* Viewfinder */}
-        <div
-          className="relative mx-4 rounded-2xl overflow-hidden"
-          style={{ aspectRatio: "4/3", background: "#0d0d1a" }}
-        >
-          {/* Live feed */}
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-            style={{ display: phase === "captured" ? "none" : "block" }}
-          />
-          {/* Captured photo preview */}
-          {phase === "captured" && capturedUrl && mode === "photo" && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img loading="lazy" decoding="async" src={capturedUrl} alt="Capture" className="w-full h-full object-cover" />
-          )}
-          {/* Captured video preview */}
-          {phase === "captured" && capturedUrl && mode === "video" && (
-            <video src={capturedUrl} controls className="w-full h-full object-cover" />
-          )}
-          {/* Loading spinner */}
-          {phase === "loading" && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                className="w-8 h-8 rounded-full border-2"
-                style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-            </div>
-          )}
-          {/* Error */}
-          {phase === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <CameraOff size={32} strokeWidth={1.5} style={{ color: "var(--text-2)" }} />
-              <p className="text-xs text-center px-6" style={{ color: "var(--text-2)" }}>
-                Accès à la caméra refusé.<br/>Vérifiez les permissions du navigateur.
-              </p>
-            </div>
-          )}
-          {/* Recording badge */}
-          {phase === "recording" && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.55)" }}>
-              <motion.div
-                className="w-2 h-2 rounded-full"
-                style={{ background: "#ef4444" }}
-                animate={{ opacity: [1, 0.2] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-              />
-              <span className="text-xs font-mono font-medium" style={{ color: "#fff" }}>{fmt(recordingTime)}</span>
-            </div>
-          )}
-          {/* Subtle grid overlay for photo mode */}
-          {(phase === "preview") && mode === "photo" && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb),0.12) 1px, transparent 1px)",
-                backgroundSize: "33.33% 33.33%",
-              }}
-            />
-          )}
-        </div>
-        <canvas ref={canvasRef} className="hidden" />
-
-        {/* Controls */}
-        <div className="px-5 py-5 flex items-center justify-center gap-3">
-          {phase === "preview" && mode === "photo" && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={takePhoto}
-              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-                boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.22), 0 6px 20px rgba(var(--accent-rgb),0.35)",
-              }}
-              aria-label="Prendre une photo"
-            >
-              <Camera size={22} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-            </motion.button>
-          )}
-
-          {phase === "preview" && mode === "video" && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={startRecording}
-              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, #F5B120dd, #E8620Cdd)",
-                boxShadow: "0 0 0 4px rgba(251,191,36,0.22), 0 6px 20px rgba(251,191,36,0.30)",
-              }}
-              aria-label="Démarrer l'enregistrement"
-            >
-              <Video size={22} strokeWidth={1.5} style={{ color: "#fff" }} />
-            </motion.button>
-          )}
-
-          {phase === "recording" && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={stopRecording}
-              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
-              style={{
-                background: "rgba(239,68,68,0.9)",
-                boxShadow: "0 0 0 4px rgba(239,68,68,0.22), 0 6px 20px rgba(239,68,68,0.35)",
-              }}
-              aria-label="Arrêter l'enregistrement"
-            >
-              <Square size={20} strokeWidth={2} fill="white" style={{ color: "#fff" }} />
-            </motion.button>
-          )}
-
-          {phase === "captured" && (
-            <>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={retake}
-                className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "rgba(var(--surface-rgb),0.07)", border: "1px solid rgba(var(--surface-rgb),0.11)" }}
-              >
-                <RefreshCw size={13} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--text-3)" }}>Reprendre</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={useCapture}
-                className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}
-              >
-                <CheckCircle size={13} strokeWidth={2} style={{ color: "var(--text-1)" }} />
-                <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Utiliser</span>
-              </motion.button>
-            </>
-          )}
-        </div>
+        {children}
       </motion.div>
     </motion.div>
   );
 }
 
-/* ─── UploadZone ────────────────────────────────────────── */
-type UploadState = "idle" | "uploading" | "done";
+/* ════════════════════════════════════════════════════════════════════
+   ① Héros « Aujourd'hui » — un seul emplacement, quatre vérités.
+   ════════════════════════════════════════════════════════════════════ */
+type HeroState = "loading" | "setup" | "seance" | "repos" | "done";
 
-function UploadZone({
-  icon: Icon, label, sublabel, accept, cardClass, captureMode, captureLabel,
+function TodayHero({
+  state, day, nextLabel, doneStats, onStart, onImprovise, onOrganise, onShift, onReplace,
 }: {
-  icon: typeof Camera; label: string; sublabel: string;
-  accept: string; cardClass: string;
-  captureMode: CaptureMode; captureLabel: string;
+  state: HeroState;
+  day: PlanningDay | null;
+  nextLabel: string | null;                       // « Jambes · demain » (état repos)
+  doneStats: { minutes: number; kcal: number } | null;
+  onStart: () => void;
+  onImprovise: () => void;
+  onOrganise: () => void;
+  onShift: () => void;
+  onReplace: () => void;
 }) {
-  const [uploadState, setUploadState] = useState<UploadState>("idle");
-  const [showCamera, setShowCamera]   = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
+  if (state === "loading") {
+    return (
+      <div className="rounded-3xl overflow-hidden relative" style={{ height: 340, background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+        <motion.div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb),0.08) 50%, transparent 70%)" }}
+          animate={{ x: ["-100%", "100%"] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+    );
+  }
 
-  const triggerUpload = () => {
-    setUploadState("uploading");
-    setTimeout(() => setUploadState("done"),  1800);
-    setTimeout(() => setUploadState("idle"),  4000);
-  };
-
-  const handleCapture = () => {
-    setShowCamera(false);
-    triggerUpload();
-  };
-
-  return (
-    <>
-      <motion.div
-        className={`${cardClass} lg-highlight relative flex-1 rounded-3xl p-5 flex flex-col items-center gap-3 overflow-hidden`}
-        style={{ minHeight: 160 }}
-        whileHover={{ y: -2 }}
-      >
-        <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={triggerUpload} />
-        <AnimatePresence mode="wait">
-          {uploadState === "idle" && (
-            <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 w-full">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
-                <Icon size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{label}</p>
-                <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>{sublabel}</p>
-              </div>
-              {/* Two action buttons */}
-              <div className="flex gap-2 w-full mt-1">
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => inputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
-                  style={{ background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}
-                >
-                  <Upload size={10} /><span>Importer</span>
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => setShowCamera(true)}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
-                  style={{ background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.28)" }}
-                >
-                  <Icon size={10} /><span>Capturer</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-          {uploadState === "uploading" && (
-            <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 justify-center h-full">
-              <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(var(--text-1-rgb),0.15)", borderTopColor: "var(--text-1)" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-              <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Analyse IA en cours…</p>
-            </motion.div>
-          )}
-          {uploadState === "done" && (
-            <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
-              <CheckCircle size={28} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-              <p className="text-xs font-medium" style={{ color: "var(--text-1)" }}>Analyse terminée !</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* Camera modal — rendered in portal-like position */}
-      <AnimatePresence>
-        {showCamera && (
-          <CameraCapture
-            mode={captureMode}
-            label={captureLabel}
-            onCapture={handleCapture}
-            onClose={() => setShowCamera(false)}
-          />
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
-
-/* ─── WorkoutCard ───────────────────────────────────────── */
-function WorkoutCard({
-  session, gender, isActive, isDone, onStart,
-}: {
-  session: WorkoutSession;
-  gender: "homme" | "femme";
-  isActive: boolean;
-  isDone?: boolean;
-  onStart?: (s: WorkoutSession) => void;
-}) {
-  const Icon = session.icon;
-  const catColor = CATEGORY_COLOR[session.category] ?? "#8B5CF6";
-  const catLabel = CATEGORY_LABEL[session.category] ?? "";
+  const art =
+    state === "setup" ? ART.setup
+    : state === "done" ? ART.done
+    : state === "repos" ? ART.repos
+    : day ? seanceArt(day) : ART.fullbody;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: isDone ? 0.48 : 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      whileHover={{ y: isDone ? 0 : -3, transition: { duration: 0.2 } }}
-      layout
-      className="flex-shrink-0 rounded-3xl overflow-hidden flex flex-col relative"
-      style={{
-        width: isDone ? 190 : 230,
-        background: isDone
-          ? "rgba(var(--surface-rgb),0.55)"
-          : "rgb(var(--surface-rgb))",
-        border: isDone
-          ? "1px solid rgba(var(--accent-rgb),0.08)"
-          : "1px solid rgba(var(--accent-rgb),0.14)",
-        boxShadow: isDone
-          ? "0 4px 16px rgba(var(--accent-rgb),0.05)"
-          : "0 6px 22px rgba(var(--accent-rgb),0.10)",
-        filter: isDone ? "grayscale(0.35)" : "none",
-        transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
-      }}
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="rounded-3xl overflow-hidden relative"
+      style={{ minHeight: state === "seance" ? 360 : 300, background: art, boxShadow: "0 14px 40px rgba(var(--accent-rgb),0.22)" }}
     >
-      {/* Barre d'accent de la catégorie (haut de carte) */}
-      <div style={{ height: 4, background: catColor }} />
-      {/* Done ribbon */}
-      {isDone && (
-        <div
-          className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full"
-          style={{ background: "rgba(43,212,160,0.18)", border: "1px solid rgba(43,212,160,0.35)" }}
-        >
-          <CheckCircle size={9} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />
-          <span className="text-[9px] font-bold tracking-wider uppercase" style={{ color: "#2BD4A0" }}>Faite</span>
+      {(state === "seance" || state === "done") && (
+        <BarbellSilhouette style={{ left: -14, top: state === "seance" ? 96 : 76 }} />
+      )}
+
+      {/* Chips du haut */}
+      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
+        <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
+          style={{ background: "rgba(10,8,18,0.42)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}>
+          {state === "setup" ? "Première fois ici" : "Aujourd'hui"}
+        </span>
+        {state === "seance" && (
+          <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
+            style={{ background: "rgba(139,92,246,0.32)", color: "#E9DFFF", border: "1px solid rgba(196,168,255,0.45)", backdropFilter: "blur(6px)" }}>
+            ✦ Planifié
+          </span>
+        )}
+        {state === "done" && (
+          <span className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", boxShadow: "0 8px 22px rgba(43,212,160,0.45)" }}>
+            <Check size={18} strokeWidth={3.2} style={{ color: "#06281E" }} />
+          </span>
+        )}
+        {state === "repos" && <Moon size={22} strokeWidth={1.6} style={{ color: "#9FD8C6", opacity: 0.85 }} />}
+        {state === "setup" && <Sparkles size={22} strokeWidth={1.6} style={{ color: "#E4D6FF" }} />}
+      </div>
+
+      {/* Légende sur l'image (style validé nutrition) */}
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-16"
+        style={{ background: "linear-gradient(to top, rgba(8,6,14,0.92) 30%, rgba(8,6,14,0.5) 70%, transparent)" }}>
+
+        {state === "seance" && day && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#C9B8FF" }}>
+              {day.type}{lieuLabel(day.location) ? ` · ${lieuLabel(day.location)}` : ""}
+            </p>
+            <h2 className="text-[27px] leading-tight font-extralight text-white">{dayTitle(day)}</h2>
+            <div className="flex items-center gap-2 mt-2 mb-3.5 text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.82)" }}>
+              <Clock size={12} strokeWidth={2} />
+              <span>{day.type === "HIIT" ? 30 : 45} min</span>
+              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
+              <span>{day.exerciseList.length} exercices</span>
+              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
+              <Zap size={12} strokeWidth={2} style={{ color: "#EF9F27" }} fill="#EF9F27" />
+              <span>{day.difficulty}</span>
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onStart}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}
+            >
+              <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
+            </motion.button>
+            <div className="flex justify-center gap-5 mt-2.5">
+              <button onClick={onShift} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
+                style={{ color: "rgba(255,255,255,0.6)" }}>
+                Décaler
+              </button>
+              <button onClick={onReplace} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none flex items-center gap-1"
+                style={{ color: "rgba(255,255,255,0.6)" }}>
+                <span style={{ color: "#C9B8FF" }}>✦</span> Remplacer
+              </button>
+            </div>
+          </>
+        )}
+
+        {state === "repos" && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#9FD8C6" }}>
+              Aujourd&apos;hui
+            </p>
+            <h2 className="text-[27px] leading-tight font-extralight text-white">Repos.</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+              Ton corps construit pendant que tu récupères.
+              {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onImprovise}
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
+            >
+              ✦ J&apos;ai quand même envie de bouger
+            </motion.button>
+          </>
+        )}
+
+        {state === "done" && day && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#7FE8C8" }}>
+              Aujourd&apos;hui · fait
+            </p>
+            <h2 className="text-[27px] leading-tight font-extralight text-white">C&apos;est fait.</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5" style={{ color: "rgba(255,255,255,0.72)" }}>
+              {dayTitle(day)}
+              {doneStats && doneStats.minutes > 0 && <> · {doneStats.minutes} min</>}
+              {doneStats && doneStats.kcal > 0 && <> · <b className="font-bold" style={{ color: "#EF9F27" }}>{doneStats.kcal} kcal</b></>}
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onStart}
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
+            >
+              <Play size={12} strokeWidth={2.5} fill="#fff" /> Refaire la séance
+            </motion.button>
+          </>
+        )}
+
+        {state === "setup" && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#C9B8FF" }}>
+              On fait connaissance
+            </p>
+            {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
+            <h2 className="text-[26px] leading-tight font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+              Quelques questions, et l&apos;IA construit ta semaine idéale.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onOrganise}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}
+            >
+              ✦ Créer mon planning
+            </motion.button>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ② Cartes de bifurcation — J'improvise / Je choisis
+   ════════════════════════════════════════════════════════════════════ */
+function ForkCard({ kind, count, onClick }: {
+  kind: "improvise" | "choisis";
+  count?: number;
+  onClick: () => void;
+}) {
+  const isIA = kind === "improvise";
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0"
+      style={{ height: 148, background: isIA ? ART.improvise : ART.choisis, boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
+    >
+      {isIA ? (
+        <>
+          <Sparkles size={24} strokeWidth={1.5} className="absolute top-3 right-3" style={{ color: "#E4D6FF", opacity: 0.9 }} />
+          <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
+        </>
+      ) : (
+        /* Deck de mini-cartes — « tes séances t'attendent » */
+        <div className="absolute top-3.5 left-3 right-3 h-[58px] pointer-events-none">
+          <div className="absolute rounded-[10px]" style={{ inset: "13px 42% 0 0", background: "linear-gradient(140deg,#5B4295,#2A1F4A)", border: "1px solid rgba(255,255,255,0.18)", transform: "rotate(-3deg)" }} />
+          <div className="absolute rounded-[10px]" style={{ inset: "6px 21% 6px 21%", background: "linear-gradient(140deg,#8A5A2E,#3A2716)", border: "1px solid rgba(255,255,255,0.18)", transform: "rotate(2deg)" }} />
+          <div className="absolute rounded-[10px]" style={{ inset: "0 0 13px 42%", background: "linear-gradient(140deg,#1F6E58,#122E29)", border: "1px solid rgba(255,255,255,0.18)", transform: "rotate(-1deg)" }} />
         </div>
       )}
-      {/* Header */}
-      <div className="px-4 pt-3 pb-2" style={{ background: `${catColor}14` }}>
-        <div className="flex items-center gap-2 mb-1.5">
-          <div
-            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `${catColor}28`, border: `1px solid ${catColor}45` }}
-          >
-            <Icon size={13} strokeWidth={1.5} style={{ color: catColor }} />
-          </div>
-          <span
-            className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-            style={{ background: `${catColor}18`, color: catColor }}
-          >
-            {catLabel}
-          </span>
-          <span className="text-[9px] font-semibold tracking-wider uppercase ml-auto" style={{ color: "var(--text-3)" }}>
-            {session.difficulty}
-          </span>
-        </div>
-        <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>{session.title}</p>
-        <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-2)" }}>{session.subtitle}</p>
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
+        style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
+        <p className="text-[8.5px] font-extrabold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#C9B8FF" }}>
+          {isIA ? "L'IA s'adapte" : "Mes séances"}
+        </p>
+        <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J'improvise" : "Je choisis"}</p>
+        <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
+          {isIA ? "Ton temps, ton matériel — elle crée" : `${count ?? 0} séances, prêtes à lancer`}
+        </p>
+      </div>
+    </motion.button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ③ Ma semaine — 7 pastilles + « Organiser ». Une phrase qui raconte,
+   pas un tableau.
+   ════════════════════════════════════════════════════════════════════ */
+function WeekStrip({ week, todayIdx, onOrganise }: {
+  week: PlanningDay[] | null;
+  todayIdx: number;
+  onOrganise: () => void;
+}) {
+  const doneCount = week?.filter((d) => d.status === "done").length ?? 0;
+  const todayDay = week?.[todayIdx] ?? null;
+
+  let story: React.ReactNode = null;
+  if (week) {
+    if (todayDay?.status === "done") {
+      story = <><b style={{ color: "#2BD4A0", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — dont celle d&apos;aujourd&apos;hui. 💪</>;
+    } else if (hasSeance(todayDay)) {
+      story = doneCount > 0
+        ? <><b style={{ color: "#2BD4A0", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
+        : <>Ta semaine commence — <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
+    } else {
+      story = doneCount > 0
+        ? <><b style={{ color: "#2BD4A0", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — repos aujourd&apos;hui.</>
+        : <>Repos aujourd&apos;hui — ta semaine se construit.</>;
+    }
+  }
+
+  return (
+    <div className="rounded-[20px] px-4 pt-3.5 pb-3"
+      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.08)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</p>
+        <button onClick={onOrganise}
+          className="flex items-center gap-1 text-[11.5px] font-bold cursor-pointer bg-transparent border-none p-0"
+          style={{ color: "var(--accent)" }}>
+          <CalendarDays size={12} strokeWidth={2.2} />
+          Organiser
+          <ChevronRight size={11} strokeWidth={2.6} />
+        </button>
       </div>
 
-      {/* Body avatar — full width, centered */}
-      <div
-        className="flex items-center justify-center py-3"
-        style={{ background: `${catColor}08`, borderTop: `1px solid ${catColor}18`, borderBottom: `1px solid ${catColor}18` }}
+      <div className="flex justify-between">
+        {DAY_LETTERS.map((letter, i) => {
+          const d = week?.[i] ?? null;
+          const isToday = i === todayIdx;
+          const isDone = d?.status === "done";
+          const isRest = !!d && d.type.toLowerCase() === "repos";
+          const isPast = i < todayIdx;
+
+          let inner: React.ReactNode;
+          let dotStyle: React.CSSProperties;
+          if (isToday) {
+            inner = letter;
+            dotStyle = {
+              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff",
+              boxShadow: "0 0 0 2.5px rgb(var(--surface-rgb)), 0 0 0 4.5px rgba(139,92,246,0.5), 0 6px 14px rgba(139,92,246,0.35)",
+            };
+            if (isDone) {
+              inner = <Check size={13} strokeWidth={3} />;
+              dotStyle = {
+                background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", color: "#06281E",
+                boxShadow: "0 0 0 2.5px rgb(var(--surface-rgb)), 0 0 0 4.5px rgba(43,212,160,0.5), 0 6px 14px rgba(43,212,160,0.35)",
+              };
+            }
+          } else if (isDone) {
+            inner = <Check size={13} strokeWidth={3} />;
+            dotStyle = { background: "rgba(43,212,160,0.16)", color: "#2BD4A0", border: "1.5px solid rgba(43,212,160,0.45)" };
+          } else if (isRest) {
+            inner = "–";
+            dotStyle = { background: "transparent", color: "var(--text-3)", border: "1.5px dashed rgba(var(--accent-rgb),0.22)" };
+          } else {
+            // séance planifiée (passée non faite = discret, aucune culpabilité)
+            inner = letter;
+            dotStyle = isPast
+              ? { background: "rgba(var(--tint-violet-rgb),0.35)", color: "var(--text-3)", border: "1.5px solid transparent", opacity: 0.55 }
+              : { background: "rgba(var(--tint-violet-rgb),0.55)", color: "var(--text-2)", border: "1.5px solid rgba(var(--accent-rgb),0.22)" };
+          }
+
+          return (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <span className="w-[33px] h-[33px] rounded-full flex items-center justify-center text-[11px] font-extrabold" style={dotStyle}>
+                {inner}
+              </span>
+              <span className="text-[9px] font-bold tracking-wide" style={{ color: "var(--text-3)" }}>{letter}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {story && (
+        <p className="text-[11px] font-medium mt-2.5" style={{ color: "var(--text-3)" }}>{story}</p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « Je choisis » — catalogue Vaiiya + bibliothèque perso FUSIONNÉS.
+   Un seul jeu de filtres, badge « Perso » doré, actions perso sous la tuile.
+   ════════════════════════════════════════════════════════════════════ */
+type MergedSession = WorkoutSession & { perso: boolean };
+
+function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }: {
+  session: MergedSession;
+  onStart: (s: MergedSession) => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: Visibility) => void;
+}) {
+  const Icon = resolveIcon(session.icon);
+  const visKey = (session.visibility ?? "private") as Visibility;
+  const vis = VIS_CONFIG[visKey];
+  const VisIcon = vis.icon;
+  const diffShort = session.difficulty === "Intermédiaire" ? "Inter." : session.difficulty;
+
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}>
+      {/* La tuile = un seul geste : lancer */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => onStart(session)}
+        className="w-full rounded-2xl overflow-hidden relative cursor-pointer text-left border-none p-0 block"
+        style={{ height: 118, background: TILE_ART[session.category] ?? ART.fullbody }}
+        aria-label={`Lancer : ${session.title}`}
       >
-        <BodyAvatar
-          gender={gender}
-          muscles={session.muscles}
-          accent={catColor}
-          width={160}
-        />
+        <div className="absolute top-2 left-2.5 flex items-center gap-1.5">
+          <Icon size={13} strokeWidth={1.8} style={{ color: "rgba(255,255,255,0.85)" }} />
+          <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>
+            {CATEGORY_LABEL[session.category]}
+          </span>
+        </div>
+        {session.perso && (
+          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[8px] font-black tracking-[0.12em] uppercase"
+            style={{ color: "#EFB83B", border: "1px solid rgba(239,184,59,0.65)", background: "rgba(20,14,4,0.5)", backdropFilter: "blur(4px)" }}>
+            Perso
+          </span>
+        )}
+        <div className="absolute inset-x-0 bottom-0 px-2.5 pb-2 pt-7"
+          style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 30%, transparent)" }}>
+          <p className="text-[12.5px] font-bold text-white leading-tight truncate">{session.title}</p>
+          <p className="text-[9.5px] font-medium mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>
+            {session.duration} min · {diffShort}
+          </p>
+        </div>
+      </motion.button>
+
+      {/* Actions perso — hors de la zone de tap (fini les sélections accidentelles) */}
+      {session.perso && (
+        <div className="flex items-center gap-1 mt-1.5 px-0.5">
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => onEdit(session)}
+            className="flex-1 h-7 rounded-lg flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
+            aria-label="Modifier">
+            <Pencil size={11} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => onVisibilityChange(session.id, VIS_CYCLE[visKey])}
+            className="flex-1 h-7 rounded-lg flex items-center justify-center gap-1 cursor-pointer"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}
+            aria-label={`Visibilité : ${vis.label} (toucher pour changer)`}>
+            <VisIcon size={10} strokeWidth={2} style={{ color: vis.color }} />
+            <span className="text-[8.5px] font-bold" style={{ color: vis.color }}>{vis.label}</span>
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(session.id)}
+            className="flex-1 h-7 rounded-lg flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(252,129,129,0.09)", border: "1px solid rgba(252,129,129,0.2)" }}
+            aria-label="Supprimer">
+            <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+          </motion.button>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, onDelete, onVisibilityChange }: {
+  sessions: MergedSession[];
+  loading: boolean;
+  onClose: () => void;
+  onStart: (s: MergedSession) => void;
+  onCreate: () => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: Visibility) => void;
+}) {
+  const [filter, setFilter] = useState<ChooseFilter>("tous");
+  const filtered = sessions.filter((s) =>
+    filter === "tous" ? true : filter === "perso" ? s.perso : s.category === filter
+  );
+
+  return (
+    <Sheet onClose={onClose}>
+      {/* Header */}
+      <div className="px-5 pt-2 pb-3 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[19px] font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
+            Mes séances
+            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.13)", color: "var(--accent)" }}>
+              {sessions.length}
+            </span>
+          </h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
+        </div>
+        <p className="text-[11.5px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
+          Vaiiya + les tiennes, au même endroit.
+        </p>
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-3 flex flex-col gap-2.5">
-        {/* Stats */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <Clock size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-            <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
+      {/* Filtres — UN seul jeu */}
+      <div className="flex gap-1.5 px-5 pb-3 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: "none" }}>
+        {CHOOSE_FILTERS.map(({ key, label }) => (
+          <button key={key} onClick={() => setFilter(key)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold cursor-pointer transition-all duration-150"
+            style={filter === key
+              ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }
+              : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Grille */}
+      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
+        {loading ? (
+          <div className="flex items-center gap-2 py-6">
+            <motion.div className="w-4 h-4 rounded-full border-2"
+              style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
+              animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
+            <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement de tes séances…</span>
           </div>
-          <div className="w-px h-3" style={{ background: "rgba(var(--text-1-rgb),0.12)" }} />
-          <div className="flex items-center gap-1">
-            <Dumbbell size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-            <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5 items-start">
+            <AnimatePresence mode="popLayout">
+              {filtered.map((s) => (
+                <SessionTile key={s.id} session={s}
+                  onStart={onStart} onEdit={onEdit} onDelete={onDelete} onVisibilityChange={onVisibilityChange} />
+              ))}
+            </AnimatePresence>
+            {/* Créer la mienne */}
+            <motion.button
+              layout whileTap={{ scale: 0.96 }} onClick={onCreate}
+              className="rounded-2xl flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+              style={{ height: 118, background: "transparent", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+            >
+              <span className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+                <Plus size={15} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+              </span>
+              <span className="text-[11px] font-bold" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+            </motion.button>
+            {filtered.length === 0 && filter === "perso" && (
+              <p className="col-span-2 text-center text-xs font-light py-4" style={{ color: "var(--text-3)" }}>
+                Pas encore de séance à toi — crée la première juste au-dessus. ✦
+              </p>
+            )}
           </div>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « J'improvise » — 2 réponses (temps + lieu), l'IA crée.
+   ════════════════════════════════════════════════════════════════════ */
+const IMPRO_TIMES = [15, 30, 45, 60] as const;
+type ImproPlace = "salle" | "maison" | "dehors";
+
+function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, onLaunch }: {
+  defaultPlace: ImproPlace;
+  defaultHalteres: boolean;
+  difficulty: string;
+  onClose: () => void;
+  onLaunch: (t: { id: string; title: string; duration: number; difficulty: string; category: string; exerciseList: Exercise[] }) => void;
+}) {
+  const [time, setTime] = useState<number>(30);
+  const [place, setPlace] = useState<ImproPlace>(defaultPlace);
+  const [halteres, setHalteres] = useState(defaultHalteres);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    // Même vocabulaire de lieu que le reste de l'app → la route applique
+    // ses contraintes strictes de matériel.
+    const lieuTxt =
+      place === "salle" ? "en salle de sport"
+      : place === "dehors" ? "en extérieur (parc), sans matériel, au poids du corps"
+      : halteres ? "à la maison avec haltères"
+      : "à la maison au poids du corps, sans matériel";
+    try {
+      const res = await fetch("/api/workout/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: `Séance improvisée de ${time} min ${lieuTxt}. Équilibrée et efficace, pour une envie spontanée de bouger.`,
+          category: "fullbody",
+          difficulty,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? "Erreur serveur");
+      const exerciseList = normalizeExercises(data.exercises);
+      if (exerciseList.length === 0) throw new Error("Séance vide");
+      onLaunch({
+        id: `improv-${Date.now()}`,
+        title: typeof data.title === "string" && data.title.trim() ? data.title.trim() : "Séance improvisée",
+        duration: time,
+        difficulty,
+        category: "Full Body",
+        exerciseList,
+      });
+    } catch {
+      setError("L'IA n'a pas répondu — réessaie.");
+      setLoading(false);
+    }
+  };
+
+  const placeMeta: { key: ImproPlace; label: string; icon: typeof Dumbbell }[] = [
+    { key: "salle",  label: "Salle",  icon: Dumbbell },
+    { key: "maison", label: "Maison", icon: Home },
+    { key: "dehors", label: "Dehors", icon: Sun },
+  ];
+
+  return (
+    <Sheet onClose={onClose} maxHeight="80vh">
+      <div className="px-5 pt-2 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[19px] font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
+            <span style={{ color: "var(--accent)" }}>✦</span> J&apos;improvise
+          </h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
         </div>
+        <p className="text-[11.5px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
+          Dis-moi ta réalité, je m&apos;occupe du reste.
+        </p>
+      </div>
+
+      <div className="px-5 overflow-y-auto" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
+        {/* Temps */}
+        <p className="text-[9.5px] font-extrabold tracking-[0.2em] uppercase mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+          Tu as combien de temps ?
+        </p>
+        <div className="flex gap-2">
+          {IMPRO_TIMES.map((t) => (
+            <motion.button key={t} whileTap={{ scale: 0.94 }} onClick={() => setTime(t)}
+              className="flex-1 py-2.5 rounded-[13px] cursor-pointer text-center"
+              style={time === t
+                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 16px rgba(139,92,246,0.35)", border: "1px solid transparent" }
+                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+              <span className="text-[13px] font-extrabold block leading-none" style={{ color: time === t ? "#fff" : "var(--text-3)" }}>
+                {t === 60 ? "60+" : t}
+              </span>
+              <span className="text-[8.5px] font-semibold" style={{ color: time === t ? "rgba(255,255,255,0.75)" : "var(--text-3)", opacity: 0.85 }}>min</span>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Lieu */}
+        <p className="text-[9.5px] font-extrabold tracking-[0.2em] uppercase mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+          Tu es où ?
+        </p>
+        <div className="flex gap-2">
+          {placeMeta.map(({ key, label, icon: PIcon }) => (
+            <motion.button key={key} whileTap={{ scale: 0.94 }} onClick={() => setPlace(key)}
+              className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-[15px] cursor-pointer"
+              style={place === key
+                ? { background: "rgba(var(--accent-rgb),0.13)", border: "1.5px solid var(--accent)", boxShadow: "0 0 0 3px rgba(var(--accent-rgb),0.14)" }
+                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1.5px solid rgba(var(--accent-rgb),0.14)" }}>
+              <PIcon size={17} strokeWidth={1.8} style={{ color: place === key ? "var(--accent)" : "var(--text-3)" }} />
+              <span className="text-[11px] font-bold" style={{ color: place === key ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Matériel — seulement pertinent à la maison */}
+        <AnimatePresence initial={false}>
+          {place === "maison" && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22 }} style={{ overflow: "hidden" }}>
+              <button onClick={() => setHalteres((v) => !v)}
+                className="inline-flex items-center gap-2 mt-3 px-3 py-2 rounded-full cursor-pointer"
+                style={halteres
+                  ? { background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }
+                  : { background: "rgba(43,212,160,0.1)", border: "1px solid rgba(43,212,160,0.4)" }}>
+                <span className="text-[11px] font-bold" style={{ color: halteres ? "#8B5CF6" : "#12A87E" }}>
+                  {halteres ? "J'ai des haltères" : "Sans matériel — poids du corps"}
+                </span>
+                <span className="relative block w-[26px] h-[15px] rounded-full" style={{ background: halteres ? "#8B5CF6" : "#2BD4A0" }}>
+                  <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full bg-white transition-all duration-150"
+                    style={{ left: halteres ? 13 : 2 }} />
+                </span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {error && (
+          <p className="text-[11px] font-medium mt-3" style={{ color: "#FC8181" }}>{error}</p>
+        )}
 
         {/* CTA */}
         <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => onStart?.(session)}
-          className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-          style={
-            isActive
-              ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.3)" }
-              : isDone
-              ? { background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(var(--text-1-rgb),0.10)" }
-              : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 4px 14px rgba(139,92,246,0.4)" }
-          }
+          whileTap={{ scale: loading ? 1 : 0.97 }}
+          onClick={generate}
+          disabled={loading}
+          className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[14.5px] font-extrabold text-white"
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.4)", opacity: loading ? 0.85 : 1 }}
         >
-          <AnimatePresence mode="wait">
-            {isActive ? (
-              <motion.span key="on" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <CheckCircle size={12} strokeWidth={2} style={{ color: "#8B5CF6" }} />
-                <span className="text-[11px] font-semibold" style={{ color: "#8B5CF6" }}>En cours !</span>
-              </motion.span>
-            ) : isDone ? (
-              <motion.span key="redo" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <RefreshCw size={10} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Refaire</span>
-              </motion.span>
-            ) : (
-              <motion.span key="off" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <Play size={11} strokeWidth={2.5} style={{ color: "#fff" }} />
-                <span className="text-[11px] font-semibold" style={{ color: "#fff" }}>Commencer</span>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── LibraryCard ───────────────────────────────────────── */
-const VIS_CONFIG = {
-  private: { label: "Privée",  desc: "Visible par toi uniquement",    icon: Lock,  color: "var(--text-3)", bg: "rgba(var(--text-3-rgb),0.08)", border: "rgba(var(--text-3-rgb),0.2)" },
-  friends: { label: "Amis",    desc: "Visible par tes abonnés",       icon: Users, color: "#8B5CF6", bg: "rgba(139,92,246,0.10)",  border: "rgba(139,92,246,0.25)" },
-  public:  { label: "Public",  desc: "Trouvable par tout le monde",   icon: Globe, color: "#2BD4A0", bg: "rgba(43,212,160,0.10)",  border: "rgba(43,212,160,0.25)" },
-} as const;
-
-function LibraryCard({
-  session, isActive, onStart, onEdit, onDelete, onVisibilityChange,
-}: {
-  session: WorkoutSession;
-  isActive: boolean;
-  onStart: (s: WorkoutSession) => void;
-  onEdit: (s: WorkoutSession) => void;
-  onDelete: (id: string) => void;
-  onVisibilityChange: (id: string, vis: "private" | "friends" | "public") => void;
-}) {
-  const [visOpen, setVisOpen] = useState(false);
-  const Icon = resolveIcon(session.icon);
-  const visKey = (session.visibility ?? "private") as keyof typeof VIS_CONFIG;
-  const vis = VIS_CONFIG[visKey];
-  const VisIcon = vis.icon;
-  const catColor = CATEGORY_COLOR[session.category] ?? "#8B5CF6";
-  const catLabel = CATEGORY_LABEL[session.category] ?? "";
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      layout
-      className="rounded-3xl overflow-hidden flex flex-col"
-      style={{
-        background: "rgb(var(--surface-rgb))",
-        border: "1px solid rgba(var(--accent-rgb),0.14)",
-        boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.10)",
-      }}
-    >
-      {/* Barre d'accent de la catégorie */}
-      <div style={{ height: 4, background: catColor }} />
-      {/* Colored header */}
-      <div className="px-4 pt-3 pb-3" style={{ background: `${catColor}10`, borderBottom: `1px solid ${catColor}18` }}>
-        <div className="flex items-start justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${catColor}24`, border: `1px solid ${catColor}44` }}
-            >
-              <Icon size={14} strokeWidth={1.5} style={{ color: catColor }} />
-            </div>
-            <span
-              className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-              style={{ background: `${catColor}18`, color: catColor }}
-            >
-              {catLabel}
-            </span>
-            <span className="text-[9px] font-semibold tracking-wider uppercase" style={{ color: "var(--text-3)" }}>
-              {session.difficulty}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <motion.button
-              whileTap={{ scale: 0.88 }}
-              onClick={() => onEdit(session)}
-              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(var(--accent-rgb),0.12)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
-              aria-label="Modifier"
-            >
-              <Pencil size={11} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.88 }}
-              onClick={() => onDelete(session.id)}
-              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(252,129,129,0.1)", border: "1px solid rgba(252,129,129,0.2)" }}
-              aria-label="Supprimer"
-            >
-              <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-            </motion.button>
-          </div>
-        </div>
-        <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "var(--text-1)" }}>{session.title}</h3>
-        {/* Muscle tags */}
-        <div className="flex flex-wrap gap-1">
-          {session.muscles.slice(0, 3).map(m => (
-            <span
-              key={m}
-              className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: `${catColor}16`, color: catColor }}
-            >
-              {m}
-            </span>
-          ))}
-          {session.muscles.length > 3 && (
-            <span
-              className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: "rgba(var(--text-3-rgb),0.12)", color: "var(--text-3)" }}
-            >
-              +{session.muscles.length - 3}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div className="flex items-center gap-3 px-4 py-2.5 flex-1" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.5)" }}>
-        <div className="flex items-center gap-1.5">
-          <Clock size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-          <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
-        </div>
-        <div className="w-px h-3" style={{ background: "rgba(var(--text-1-rgb),0.12)" }} />
-        <div className="flex items-center gap-1.5">
-          <Dumbbell size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-          <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="px-4 pt-3 pb-2">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={() => onStart(session)}
-          className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
-          style={
-            isActive
-              ? { background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.35)" }
-              : { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 4px 14px rgba(139,92,246,0.4)" }
-          }
-        >
-          {isActive ? (
+          {loading ? (
             <>
-              <CheckCircle size={13} strokeWidth={2} style={{ color: "#8B5CF6" }} />
-              <span className="text-xs font-semibold" style={{ color: "#8B5CF6" }}>En cours !</span>
+              <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} className="flex">
+                <Sparkles size={15} strokeWidth={2} />
+              </motion.span>
+              L&apos;IA compose ta séance…
             </>
           ) : (
-            <>
-              <Play size={12} strokeWidth={2.5} style={{ color: "#fff" }} />
-              <span className="text-xs font-semibold" style={{ color: "#fff" }}>Commencer</span>
-            </>
+            <>✦ Prépare ma séance</>
           )}
         </motion.button>
       </div>
-
-      {/* Visibility picker */}
-      <div className="px-4 pb-3 relative">
-        <motion.button
-          whileTap={{ scale: 0.94 }}
-          onClick={() => setVisOpen(v => !v)}
-          className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer"
-          style={{ background: vis.bg, color: vis.color, border: `1px solid ${vis.border}` }}
-        >
-          <VisIcon size={10} strokeWidth={2} />
-          <span>{vis.label}</span>
-          <motion.span
-            className="ml-auto opacity-50 text-[9px]"
-            animate={{ rotate: visOpen ? 180 : 0 }}
-            transition={{ duration: 0.15 }}
-          >▾</motion.span>
-        </motion.button>
-
-        <AnimatePresence>
-          {visOpen && (
-            <>
-              {/* Backdrop */}
-              <div className="fixed inset-0 z-40" onClick={() => setVisOpen(false)} />
-              <motion.div
-                initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full mb-1 left-0 right-0 rounded-2xl overflow-hidden z-50"
-                style={{
-                  background: "rgba(var(--surface-rgb),0.97)",
-                  backdropFilter: "blur(10px)",
-                  border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-                }}
-                onClick={e => e.stopPropagation()}
-              >
-                {(["private", "friends", "public"] as const).map(key => {
-                  const cfg = VIS_CONFIG[key];
-                  const CfgIcon = cfg.icon;
-                  const isCurrent = visKey === key;
-                  return (
-                    <motion.button
-                      key={key}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => { onVisibilityChange(session.id, key); setVisOpen(false); }}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-left cursor-pointer"
-                      style={isCurrent ? { background: `${cfg.color}12` } : { background: "transparent" }}
-                    >
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${cfg.color}18` }}
-                      >
-                        <CfgIcon size={12} strokeWidth={2} style={{ color: cfg.color }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold" style={{ color: isCurrent ? cfg.color : "var(--text-1)" }}>{cfg.label}</p>
-                        <p className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{cfg.desc}</p>
-                      </div>
-                      {isCurrent && <Check size={11} strokeWidth={2.5} style={{ color: cfg.color }} />}
-                    </motion.button>
-                  );
-                })}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+    </Sheet>
   );
 }
 
-/* ─── Animation variants ────────────────────────────────── */
-const containerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-const itemVariants: Variants = {
-  hidden: { opacity: 0, x: -16 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: "easeOut" } },
-};
-
-/* ─── Helpers ──────────────────────────────────────────── */
-function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
-  const d = new Date(s.started_at);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
-  const date = isToday ? "Aujourd'hui" : isYesterday ? "Hier" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-  const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-  return {
-    id: s.id,
-    date, time, type: "workout", title: s.title,
-    desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
-    cardClass: "lg-turquoise", dot: "var(--gold)",
-    performance: {
-      type: "workout", title: s.title, date: `${date} · ${time}`,
-      metrics: [
-        { label: "Durée", value: String(s.duration_minutes), unit: "min" },
-        ...(s.calories_burned ? [{ label: "Calories", value: String(s.calories_burned), unit: "kcal" }] : []),
-      ],
-    },
-  };
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « Organiser » — le planning complet (WeeklyProgramme) : semaines,
+   jours, tutos, régénération, lieu. La page reste au présent, la
+   préparation vit ici.
+   ════════════════════════════════════════════════════════════════════ */
+function OrganiserSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <Sheet onClose={onClose} maxHeight="92vh">
+      <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "var(--text-3)" }}>
+            Piloté par l&apos;IA ✦
+          </p>
+          <h2 className="text-[19px] font-light mt-0.5" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
+        </div>
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+          style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+          <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+        </motion.button>
+      </div>
+      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+        <WeeklyProgramme />
+        <p className="text-[11px] font-light mt-4 leading-snug" style={{ color: "var(--text-3)" }}>
+          Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
+        </p>
+      </div>
+    </Sheet>
+  );
 }
 
-/* ─── Custom session type & creation modal ────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+   Création / édition de séance perso (modale existante, conservée telle
+   quelle — l'IA peut aussi la remplir).
+   ════════════════════════════════════════════════════════════════════ */
 
 // Système D — les séances sont toutes le même type d'objet → toutes VIOLET (action).
 // La couleur ne code que les métriques (série/calories/poids) et l'état « fait » (teal).
@@ -1181,7 +1207,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
                   Génération en cours…
                 </>
               ) : (
-                <>✦ Générer la séance avec l'IA</>
+                <>✦ Générer la séance avec l&apos;IA</>
               )}
             </motion.button>
           </div>
@@ -1487,265 +1513,151 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
   );
 }
 
-/* ─── Page ──────────────────────────────────────────────── */
-type ProgressionTab = "progression" | "mes-seances" | "nutrition" | "analyse" | "badges";
-const VALID_TABS: ProgressionTab[] = ["progression", "mes-seances", "nutrition", "analyse", "badges"];
+/* ════════════════════════════════════════════════════════════════════
+   Page — Entraînement. La page vit au PRÉSENT : plus de sous-onglets,
+   plus d'historique ici.
+   ════════════════════════════════════════════════════════════════════ */
 
-/**
- * Wrapper avec Suspense — useSearchParams() exige un boundary Suspense
- * en Next 14+, sinon le build statique échoue.
- */
+/** Séance prête à être lancée dans le lecteur guidé, quelle que soit sa source. */
+type LaunchTarget = {
+  id: string;
+  title: string;
+  duration: number;
+  difficulty: string;
+  category?: string;
+  exerciseList?: Exercise[];
+  planningDate?: string;   // présent = séance du planning → marquer « done » à la fin
+};
+
 export default function ProgressionPage() {
-  return (
-    <Suspense fallback={null}>
-      <ProgressionPageContent />
-    </Suspense>
-  );
-}
+  const { user } = useAuth();
+  const { open: openAssistant } = useAssistant();
 
-function ProgressionPageContent() {
-  // Lecture du sous-onglet via query param (?tab=mes-seances) — utilisé par la visite guidée
-  const searchParams = useSearchParams();
-  const initialTab = (() => {
-    const t = searchParams.get("tab");
-    return (t && (VALID_TABS as string[]).includes(t)) ? (t as ProgressionTab) : "progression";
-  })();
-  const [activeTab, setActiveTab]           = useState<ProgressionTab>(initialTab);
-  // Si l'URL change après le mount (navigation pendant la visite guidée), suivre le param
-  useEffect(() => {
-    const t = searchParams.get("tab");
-    if (t && (VALID_TABS as string[]).includes(t) && t !== activeTab) {
-      setActiveTab(t as ProgressionTab);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-  const [shareData, setShareData]           = useState<PerformanceData | null>(null);
-  const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
-  const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
-  const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
-  const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
-  const [loadingCustom, setLoadingCustom]   = useState(false);
+  /* ── Planning de la semaine (source de vérité du héros + du bandeau) ── */
+  const [week, setWeek] = useState<PlanningDay[] | null>(null);
+  const [heroReady, setHeroReady] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [profileLevel, setProfileLevel] = useState<string | null>(null);
+
+  /* ── UI ── */
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser">(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
+  const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
-  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-  const [eventExercises, setEventExercises] = useState<Record<string, Array<{ name: string; sets?: number; reps?: number; weight?: number }>>>({});
-  const [libraryFilter, setLibraryFilter] = useState<"tous" | WorkoutCategory>("tous");
-  const { settings } = useProfileSettings();
-  const { user } = useAuth();
-
-  // Lire l'objectif fitness depuis l'onboarding (localStorage)
-  const [fitnessGoal, setFitnessGoal] = useState<"masse" | "poids" | null>(null);
-  useEffect(() => {
-    try {
-      const pseudo = user?.pseudo;
-      if (!pseudo) return;
-      const raw = localStorage.getItem(`aura_onboarding_${pseudo}`);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { goals?: string[] };
-      const goals = parsed.goals ?? [];
-      if (goals.includes("masse") && !goals.includes("poids")) setFitnessGoal("masse");
-      else if (goals.includes("poids") && !goals.includes("masse")) setFitnessGoal("poids");
-      else setFitnessGoal(null);
-    } catch { /* ignore */ }
-  }, [user?.pseudo]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") =>
-    scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
-  const handleVisibilityChange = useCallback(async (sessionId: string, vis: "private" | "friends" | "public") => {
-    if (user) {
-      const supabase = createClient();
-      await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+  /* ── Bibliothèque perso ── */
+  const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
+  const [loadingCustom, setLoadingCustom] = useState(false);
+
+  /* ── Stats du jour (état « fait » du héros) ── */
+  const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
+
+  const today = todayYmd();
+  const todayIdx = todayWeekIndex();
+
+  /* ── Charge la semaine — même recette que WeeklyProgramme (idempotent) ── */
+  const loadWeek = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
+      || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
+    const { location, equip } = readLieu(user.id);
+    const lieuReady = location === "salle" || (location === "maison" && !!equip);
+    setProfileLevel(prof?.onboarding_level ?? null);
+
+    if (!hasOnboarding || !lieuReady) {
+      // L'app ne sait pas encore → héros en mode question (« On s'entraîne comment ? »)
+      setNeedsSetup(true);
+      setWeek(null);
+      setHeroReady(true);
+      return;
     }
-    setCustomSessions(prev => prev.map(s => s.id === sessionId ? { ...s, visibility: vis } : s));
-    const labels = { private: "Séance privée ✓", friends: "Visible par tes amis ✓", public: "Séance publiée 🌐" };
-    showToast(labels[vis]);
-  }, [user]); // eslint-disable-line
 
-  // Charts state
-  const [weights, setWeights]         = useState<WeightEntry[]>([]);
-  const [weightRange, setWeightRange] = useState<"week" | "month">("week");
-  const [calorieWeek, setCalorieWeek] = useState<CalorieDay[]>([]);
-
-  // ── Mensurations state ──────────────────────────────────────
-  type Measurement = { id: string; date: string; chest_cm?: number | null; waist_cm?: number | null; hips_cm?: number | null; arms_cm?: number | null; thighs_cm?: number | null; neck_cm?: number | null; body_fat?: number | null };
-  const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [newMeas, setNewMeas] = useState({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" });
-  const [savingMeas, setSavingMeas] = useState(false);
-
-  // ── Personal Records state ──────────────────────────────────
-  type PR = { id: string; exercise: string; value: number; unit: string; reps?: number | null; date: string; note?: string | null };
-  const [prs, setPrs] = useState<PR[]>([]);
-  const [newPR, setNewPR] = useState({ exercise: "", value: "", unit: "kg", reps: "", note: "" });
-  const [savingPR, setSavingPR] = useState(false);
-  const [prFilter, setPrFilter] = useState("");
-
-  // ── Session history ──────────────────────────────────────
-  type HistorySession = {
-    id: string; title: string; category: string;
-    duration_minutes: number; calories_burned: number; elapsed_seconds: number;
-    started_at: string;
-    exercises: Array<{ name: string; sets?: number; reps?: number; weight?: number }>;
-  };
-  const [historySessions, setHistorySessions] = useState<HistorySession[]>([]);
-  const [historyLoading,  setHistoryLoading]  = useState(false);
-  const [historyPage,     setHistoryPage]     = useState(0);
-  const [historyHasMore,  setHistoryHasMore]  = useState(true);
-  const [historyExpanded, setHistoryExpanded] = useState<string | null>(null);
-
-  // ── Weekly volume (for chart) ────────────────────────────
-  type WeekVolume = { label: string; cals: number; sessions: number };
-  const [weeklyVolume, setWeeklyVolume] = useState<WeekVolume[]>([]);
-
-  const commonExercises = ["Développé couché", "Squat", "Soulevé de terre", "Développé militaire", "Rowing barre", "Tractions", "Dips", "Curl biceps", "Extension triceps", "Leg press"];
-
-  const fetchMeasurements = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data } = await supabase.from("body_measurements").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(20);
-    if (data) setMeasurements(data as Measurement[]);
-  }, [user]);
-
-  const fetchPRs = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data } = await supabase.from("personal_records").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(100);
-    if (data) setPrs(data as PR[]);
-  }, [user]);
-
-  useEffect(() => { fetchPRs(); }, [fetchPRs]);
-
-  const saveMeasurement = async () => {
-    if (!user) return;
-    setSavingMeas(true);
-    const supabase = createClient();
-    const today = toDateStr(new Date());
-    const payload = {
-      user_id: user.id, date: today,
-      chest_cm:  newMeas.chest   ? parseFloat(newMeas.chest)   : null,
-      waist_cm:  newMeas.waist   ? parseFloat(newMeas.waist)   : null,
-      hips_cm:   newMeas.hips    ? parseFloat(newMeas.hips)    : null,
-      arms_cm:   newMeas.arms    ? parseFloat(newMeas.arms)    : null,
-      thighs_cm: newMeas.thighs  ? parseFloat(newMeas.thighs)  : null,
-      neck_cm:   newMeas.neck    ? parseFloat(newMeas.neck)    : null,
-      body_fat:  newMeas.body_fat ? parseFloat(newMeas.body_fat) : null,
+    const gen: GenInput = {
+      ctx: ctxFromLieu(location, equip),
+      sessions: prof!.onboarding_sessions_week ?? 3,
+      goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
+      level: prof!.onboarding_level,
+      variant: readVariant(user.id),
+      seed: user.id,
     };
-    const { error } = await supabase.from("body_measurements").upsert(payload, { onConflict: "user_id,date" });
-    setSavingMeas(false);
-    if (!error) { showToast("Mensurations enregistrées ✓"); setNewMeas({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" }); fetchMeasurements(); }
-    else { console.error("save measurements:", error); showToast("Enregistrement impossible, réessaie"); }
-  };
-
-  const savePR = async () => {
-    if (!user || !newPR.exercise || !newPR.value) return;
-    setSavingPR(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("personal_records").insert({
-      user_id: user.id, exercise: newPR.exercise, value: parseFloat(newPR.value),
-      unit: newPR.unit, reps: newPR.reps ? parseInt(newPR.reps) : null,
-      note: newPR.note || null, date: toDateStr(new Date()),
-    });
-    setSavingPR(false);
-    if (!error) { showToast("Record enregistré 🏆"); setNewPR({ exercise: "", value: "", unit: "kg", reps: "", note: "" }); fetchPRs(); }
-    else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
-  };
-
-  const fetchHistory = useCallback(async (page = 0, append = false) => {
-    if (!user) return;
-    setHistoryLoading(true);
-    const supabase = createClient();
-    const PAGE = 20;
-    const { data, error } = await supabase
-      .from("workout_sessions")
-      .select("id, title, category, duration_minutes, calories_burned, elapsed_seconds, started_at, exercises")
-      .eq("user_id", user.id)
-      .order("started_at", { ascending: false })
-      .range(page * PAGE, page * PAGE + PAGE - 1);
-    setHistoryLoading(false);
-    if (error || !data) return;
-    const mapped = data.map((r: Record<string, unknown>) => ({
-      id: r.id as string,
-      title: r.title as string,
-      category: r.category as string,
-      duration_minutes: (r.duration_minutes as number) ?? 0,
-      calories_burned: (r.calories_burned as number) ?? 0,
-      elapsed_seconds: (r.elapsed_seconds as number) ?? 0,
-      started_at: r.started_at as string,
-      exercises: (r.exercises as Array<{ name: string; sets?: number; reps?: number; weight?: number }>) ?? [],
-    }));
-    setHistorySessions(prev => append ? [...prev, ...mapped] : mapped);
-    setHistoryHasMore(data.length === PAGE);
-    setHistoryPage(page);
-  }, [user]);
-
-  const fetchWeeklyVolume = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const eightWeeksAgo = new Date();
-    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 55);
-    const { data } = await supabase
-      .from("workout_sessions")
-      .select("started_at, calories_burned")
-      .eq("user_id", user.id)
-      .gte("started_at", eightWeeksAgo.toISOString())
-      .order("started_at", { ascending: true });
-    if (!data) return;
-    // Group by week (Mon-Sun)
-    const weekMap = new Map<string, { cals: number; sessions: number }>();
-    data.forEach((r: { started_at: string; calories_burned: number }) => {
-      const d = new Date(r.started_at);
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d);
-      monday.setDate(diff);
-      const key = monday.toISOString().slice(0, 10);
-      const cur = weekMap.get(key) ?? { cals: 0, sessions: 0 };
-      weekMap.set(key, { cals: cur.cals + (r.calories_burned ?? 0), sessions: cur.sessions + 1 });
-    });
-    const now = new Date();
-    const result: WeekVolume[] = [];
-    for (let i = 7; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i * 7);
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d);
-      monday.setDate(diff);
-      const key = monday.toISOString().slice(0, 10);
-      const month = monday.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-      const w = weekMap.get(key) ?? { cals: 0, sessions: 0 };
-      result.push({ label: month, ...w });
+    try {
+      const days = await ensureWeek(user.id, gen, weekDates());
+      setWeek(days);
+      setNeedsSetup(false);
+    } catch (e) {
+      console.error("Planning load error", e);
     }
-    setWeeklyVolume(result);
+    setHeroReady(true);
   }, [user]);
 
-  const fetchSessions = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("workout_sessions")
-      .select("id, user_id, title, category, duration_minutes, calories_burned, started_at, exercises, elapsed_seconds")
-      .eq("user_id", user.id)
-      .order("started_at", { ascending: false })
-      .limit(15);
-    if (!error && data && data.length > 0) {
-      setRealTimeline(data.map(dbSessionToEvent));
-      const exMap: Record<string, Array<{ name: string; sets?: number; reps?: number; weight?: number }>> = {};
-      data.forEach((r: Record<string, unknown>) => {
-        exMap[r.id as string] = (r.exercises as Array<{ name: string; sets?: number; reps?: number; weight?: number }>) ?? [];
-      });
-      setEventExercises(exMap);
+  useEffect(() => { void loadWeek(); }, [loadWeek]);
+
+  /* Recharge si le planning ou le lieu changent ailleurs (orbe, Organiser…) */
+  useEffect(() => {
+    const handler = () => { void loadWeek(); };
+    window.addEventListener("programme-updated", handler);
+    window.addEventListener("lieu-updated", handler);
+    return () => {
+      window.removeEventListener("programme-updated", handler);
+      window.removeEventListener("lieu-updated", handler);
+    };
+  }, [loadWeek]);
+
+  /* ── État du héros ── */
+  const todayDay = week?.[todayIdx] ?? null;
+  const heroState: HeroState = !heroReady ? "loading"
+    : needsSetup ? "setup"
+    : todayDay?.status === "done" ? "done"
+    : hasSeance(todayDay) ? "seance"
+    : "repos";
+
+  /* Prochaine séance de la semaine (état repos) — « Jambes · demain » */
+  const nextLabel = useMemo(() => {
+    if (!week) return null;
+    for (let i = todayIdx + 1; i < 7; i++) {
+      if (hasSeance(week[i]) && week[i].status !== "done") {
+        const when = i === todayIdx + 1 ? "demain" : DAY_FULL[i];
+        return `${dayTitle(week[i])} · ${when}`;
+      }
     }
-  }, [user]);
+    return null;
+  }, [week, todayIdx]);
 
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
-  useEffect(() => { fetchHistory(0); }, [fetchHistory]);
-  useEffect(() => { fetchWeeklyVolume(); }, [fetchWeeklyVolume]);
+  /* Durée / kcal de la séance faite aujourd'hui (une seule petite requête) */
+  useEffect(() => {
+    if (heroState !== "done" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const startOfDay = new Date(today + "T00:00:00").toISOString();
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("duration_minutes, elapsed_seconds, calories_burned")
+        .eq("user_id", user.id)
+        .gte("started_at", startOfDay)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled && data) {
+        setDoneStats({
+          minutes: data.elapsed_seconds ? Math.max(1, Math.round(data.elapsed_seconds / 60)) : (data.duration_minutes ?? 0),
+          kcal: data.calories_burned ?? 0,
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [heroState, user, today]);
 
-  // ── Charger les séances personnalisées depuis Supabase ──
+  /* ── Bibliothèque perso (Supabase) ── */
   const fetchCustomSessions = useCallback(async () => {
     if (!user) return;
     setLoadingCustom(true);
@@ -1767,678 +1679,249 @@ function ProgressionPageContent() {
       difficulty: r.difficulty as WorkoutSession["difficulty"],
       exercises: r.exercises as number,
       muscles: (r.muscles as string[]) ?? [],
-      // Système D : toutes les séances = violet (action). On ignore la couleur
-      // stockée en base (qui variait au hasard) pour une bibliothèque homogène.
+      // Système D : toutes les séances = violet (action).
       accent: "#8B5CF6",
       icon: r.icon as string,
       exerciseList: (r.exercise_list as Exercise[]) ?? [],
-      visibility: (r.visibility as "private" | "friends" | "public") ?? "private",
+      visibility: (r.visibility as Visibility) ?? "private",
     })));
   }, [user]);
 
-  useEffect(() => { fetchCustomSessions(); }, [fetchCustomSessions]);
+  useEffect(() => { void fetchCustomSessions(); }, [fetchCustomSessions]);
 
-  const fetchProgressData = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 29);
-    const sevenAgo  = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6);
-    const [{ data: wData }, { data: cData }] = await Promise.all([
-      supabase.from("weight_logs").select("date, weight_kg")
-        .eq("user_id", user.id).gte("date", toDateStr(thirtyAgo))
-        .order("date", { ascending: true }),
-      supabase.from("nutrition_logs").select("date, calories")
-        .eq("user_id", user.id).gte("date", toDateStr(sevenAgo)),
-    ]);
-    if (wData) setWeights(wData.map((r: { date: string; weight_kg: number }) => ({ date: r.date, weight: r.weight_kg })));
-    const dayNames = ["D", "L", "M", "M", "J", "V", "S"];
-    const calMap: Record<string, number> = {};
-    (cData ?? []).forEach((r: { date: string; calories: number }) => {
-      calMap[r.date] = (calMap[r.date] ?? 0) + r.calories;
+  /* Catalogue + perso fusionnés — les tiennes d'abord, c'est TA bibliothèque */
+  const allSessions = useMemo<MergedSession[]>(() => [
+    ...customSessions.map((s) => ({ ...s, perso: true })),
+    ...workoutSessions.map((s) => ({ ...s, perso: false })),
+  ], [customSessions]);
+
+  /* ── Lancements ── */
+  const startToday = () => {
+    if (!todayDay || !hasSeance(todayDay)) return;
+    setActiveWorkout({
+      id: `planning-${todayDay.date}`,
+      title: dayTitle(todayDay),
+      duration: todayDay.type === "HIIT" ? 30 : 45,
+      difficulty: todayDay.difficulty,
+      category: todayDay.type,
+      exerciseList: todayDay.exerciseList,
+      planningDate: todayDay.date,
     });
-    setCalorieWeek(Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (6 - i));
-      const ds = toDateStr(d);
-      return { date: ds, total: calMap[ds] ?? 0, label: dayNames[d.getDay()] };
-    }));
-  }, [user]); // eslint-disable-line
-
-  useEffect(() => { fetchProgressData(); }, [fetchProgressData]);
-
-  const addWeight = async (kg: number) => {
-    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-    const supabase = createClient();
-    const today = toDateStr(new Date());
-    const { error } = await supabase.from("weight_logs").upsert(
-      { user_id: user.id, date: today, weight_kg: kg },
-      { onConflict: "user_id,date" }
-    );
-    if (!error) {
-      setWeights(prev => {
-        const filtered = prev.filter(w => w.date !== today);
-        return [...filtered, { date: today, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
-      });
-      showToast(`Poids enregistré : ${kg} kg ✓`);
-    }
   };
 
-  const deleteWeight = async (date: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("weight_logs")
-      .delete().eq("user_id", user.id).eq("date", date);
-    if (!error) {
-      setWeights(prev => prev.filter(w => w.date !== date));
-      showToast("Entrée supprimée");
-    }
-  };
-
-  const updateWeight = async (date: string, kg: number) => {
-    if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("weight_logs")
-      .update({ weight_kg: kg })
-      .eq("user_id", user.id).eq("date", date);
-    if (!error) {
-      setWeights(prev => prev.map(w => w.date === date ? { ...w, weight: kg } : w));
-      showToast(`Poids mis à jour : ${kg} kg ✓`);
-    }
-  };
-
-  const handleStartWorkout = (session: WorkoutSession) => {
-    /* Open the guided workout modal — DB save happens on completion inside WorkoutGuideModal */
-    setActiveWorkout(session);
-    showToast(`${session.title} démarrée ✓`);
-  };
-
-  const displayTimeline = realTimeline;
-
-  const filteredSessions = workoutSessions
-    .filter((s) => categoryFilter === "tous" || s.category === categoryFilter)
-    .sort((a, b) => {
-      const aD = completedWorkouts.has(a.id) ? 1 : 0;
-      const bD = completedWorkouts.has(b.id) ? 1 : 0;
-      return aD - bD;
+  const startSession = (s: MergedSession) => {
+    setSheet(null);
+    setActiveWorkout({
+      id: s.id,
+      title: s.title,
+      duration: s.duration,
+      difficulty: s.difficulty,
+      category: s.category,
+      exerciseList: s.exerciseList,
     });
+    showToast(`${s.title} démarrée ✓`);
+  };
 
-  const groups = displayTimeline.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
-    (acc[event.date] = acc[event.date] || []).push(event);
-    return acc;
-  }, {});
+  const handleWorkoutComplete = (target: LaunchTarget) => {
+    if (target.planningDate && user) {
+      void setDayStatus(user.id, target.planningDate, "done");
+      setWeek((prev) => prev?.map((d) => d.date === target.planningDate ? { ...d, status: "done" as const } : d) ?? prev);
+    }
+  };
+
+  /* ── Actions bibliothèque perso ── */
+  const handleVisibilityChange = useCallback(async (sessionId: string, vis: Visibility) => {
+    if (user) {
+      const supabase = createClient();
+      await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+    }
+    setCustomSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, visibility: vis } : s));
+    const labels = { private: "Séance privée ✓", friends: "Visible par tes amis ✓", public: "Séance publiée 🌐" };
+    showToast(labels[vis]);
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    if (user) {
+      const supabase = createClient();
+      await supabase.from("custom_sessions").delete().eq("id", id);
+    }
+    setCustomSessions((p) => p.filter((cs) => cs.id !== id));
+    showToast("Séance supprimée");
+  };
+
+  const handleCreateOrEdit = async (s: WorkoutSession) => {
+    const supabase = createClient();
+    const existingSession = customSessions.find((cs) => cs.id === s.id);
+    const row = {
+      id: s.id,
+      user_id: user?.id,
+      title: s.title,
+      subtitle: s.subtitle,
+      category: s.category,
+      duration: s.duration,
+      difficulty: s.difficulty,
+      exercises: s.exercises,
+      muscles: s.muscles,
+      accent: s.accent,
+      icon: s.icon,
+      exercise_list: s.exerciseList ?? [],
+      visibility: existingSession?.visibility ?? "private",
+      updated_at: new Date().toISOString(),
+    };
+    if (editSession) {
+      if (user) {
+        const { error } = await supabase.from("custom_sessions").update(row).eq("id", s.id);
+        if (error) { console.error(error); showToast("Erreur lors de la modification"); return; }
+      }
+      setCustomSessions((p) => p.map((cs) => cs.id === s.id ? s : cs));
+      showToast(`"${s.title}" modifiée ✓`);
+    } else {
+      if (user) {
+        const { error } = await supabase.from("custom_sessions").insert(row);
+        if (error) { console.error(error); showToast("Erreur lors de la création"); return; }
+      }
+      setCustomSessions((p) => [s, ...p]);
+      showToast(`"${s.title}" créée ✓`);
+    }
+    setEditSession(null);
+  };
+
+  /* ── Bifurcation : le libellé vit avec la réalité du jour ── */
+  const askLabel =
+    heroState === "done" ? "Encore de l'énergie ?"
+    : heroState === "repos" ? "Envie de bouger quand même ?"
+    : heroState === "setup" ? "Ou directement :"
+    : "Pas ce qui était prévu ?";
+
+  /* Défauts « J'improvise » depuis le lieu connu */
+  const lieu = user ? readLieu(user.id) : { location: null, equip: null };
+  const improDefaultPlace: ImproPlace = lieu.location === "salle" ? "salle" : "maison";
+  const improDefaultHalteres = lieu.equip === "halteres";
+
+  /* En-tête : la date du jour — cette page vit au présent */
+  const dateLabel = useMemo(() => {
+    const s = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col px-4 pt-10 pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10 relative overflow-x-hidden">
-      {/* ── Contenu ── */}
-      <div className="relative flex flex-col flex-1">
+    <div className="min-h-screen flex flex-col px-5 pt-10 pb-36 md:pl-28 md:pr-8 md:pt-12 md:pb-16 relative overflow-x-hidden">
+      <div className="w-full max-w-xl flex flex-col">
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-6"
-      >
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
-          Ton entraînement
-        </p>
-        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Mes Séances</h1>
-      </motion.div>
-
+        {/* ── En-tête : date + titre ── */}
         <motion.div
-          key="mes-seances-tab"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col gap-0"
+          initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          className="mb-5"
         >
-
-          {/* ── Mon planning de la semaine (source de vérité, piloté par l'IA) ── */}
-          <motion.section
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mb-8 max-w-2xl rounded-3xl p-5"
-            style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.15)", boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.10)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-                  Cette semaine
-                </p>
-                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Mon planning</h2>
-              </div>
-              <span
-                className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
-              >
-                Piloté par l&apos;IA ✦
-              </span>
-            </div>
-            <WeeklyProgramme />
-            <p className="text-[11px] font-light mt-3 leading-snug" style={{ color: "var(--text-3)" }}>
-              C&apos;est ce que tu suis cette semaine. Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
-            </p>
-          </motion.section>
-
-          {/* Section header */}
-          <motion.div
-            data-tour-anchor="prog-seances-catalogue"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center justify-between mb-6 max-w-5xl"
-          >
-            <div>
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-                Catalogue
-              </p>
-              <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Séances Vaiiya</h2>
-            </div>
-            <span
-              className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
-            >
-              {workoutSessions.length} séances
-            </span>
-          </motion.div>
-
-          {/* Category filter + arrow buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-            className="flex items-center gap-2 mb-4 max-w-5xl"
-          >
-            <div className="flex gap-2 flex-1 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-              {categoryFilters.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setCategoryFilter(key)}
-                  className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                  style={
-                    categoryFilter === key
-                      ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                      : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
-                  }
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="hidden md:flex gap-1 flex-shrink-0">
-              {([{ dir: "left" as const, Icon: ChevronLeft }, { dir: "right" as const, Icon: ChevronRight }]).map(({ dir, Icon }) => (
-                <motion.button
-                  key={dir}
-                  whileTap={{ scale: 0.88 }}
-                  onClick={() => scroll(dir)}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.8)" }}
-                >
-                  <Icon size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Cards carousel */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="relative -mx-6 mb-10"
-          >
-            <div className="absolute left-0 top-0 bottom-4 w-8 z-10 pointer-events-none"
-              style={{ background: "linear-gradient(to right, rgba(var(--page-fade-rgb),0.9) 0%, transparent 100%)" }} />
-            <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
-              style={{ background: "linear-gradient(to left, rgba(var(--page-fade-rgb),0.95) 0%, transparent 100%)" }}>
-              <motion.button
-                animate={{ x: [0, 5, 0] }}
-                transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                onClick={() => scroll("right")}
-                whileTap={{ scale: 0.85 }}
-                className="cursor-pointer"
-                style={{ pointerEvents: "all", background: "none", border: "none", padding: 4 }}
-                aria-label="Défiler à droite"
-              >
-                <ChevronRight size={16} strokeWidth={2.5} style={{ color: "var(--text-3)" }} />
-              </motion.button>
-            </div>
-
-            <div
-              ref={scrollRef}
-              className="flex gap-3 overflow-x-auto pb-4 px-6"
-              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredSessions.map((session) => (
-                  <WorkoutCard
-                    key={session.id}
-                    session={session}
-                    gender={settings.gender}
-                    isActive={activeWorkout?.id === session.id}
-                    isDone={completedWorkouts.has(session.id)}
-                    onStart={handleStartWorkout}
-                  />
-                ))}
-              </AnimatePresence>
-              {/* "Créer" placeholder card */}
-              <motion.div
-                data-tour-anchor="prog-seances-create"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ y: -3, scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setShowCreateModal(true)}
-                className="flex-shrink-0 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer"
-                style={{
-                  width: 180,
-                  minHeight: 280,
-                  background: "rgb(var(--surface-rgb))",
-                  border: "2px dashed rgba(var(--accent-rgb),0.35)",
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
-                >
-                  <Plus size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="text-center px-4">
-                  <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Créer</p>
-                  <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>Ma propre séance</p>
-                </div>
-              </motion.div>
-              <div className="flex-shrink-0 w-6" />
-            </div>
-          </motion.div>
-
-          {/* ── Ma Bibliothèque ── */}
-          {(() => {
-            const filteredCustom = customSessions.filter(
-              s => libraryFilter === "tous" || s.category === libraryFilter
-            );
-            const totalMin = customSessions.reduce((acc, s) => acc + s.duration, 0);
-
-            return (
-              <motion.div
-                data-tour-anchor="prog-seances-library"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.15 }}
-                className="max-w-5xl mb-8"
-              >
-                {/* Section header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-                      Mes créations
-                    </p>
-                    <h2 className="text-lg font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
-                      Ma Bibliothèque
-                      {customSessions.length > 0 && (
-                        <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
-                        >
-                          {customSessions.length}
-                        </span>
-                      )}
-                    </h2>
-                  </div>
-                  <motion.button
-                    whileTap={{ scale: 0.93 }}
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
-                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
-                  >
-                    <Plus size={13} strokeWidth={2} />
-                    Créer
-                  </motion.button>
-                </div>
-
-                {/* Summary banner */}
-                {customSessions.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.16) 0%, rgba(var(--cream-mid-rgb),0.13) 100%)",
-                      border: "1px solid rgba(var(--accent-rgb),0.16)",
-                    }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.45) 0%, rgba(var(--cream-mid-rgb),0.4) 100%)" }}
-                    >
-                      <Sparkles size={15} strokeWidth={1.4} style={{ color: "var(--accent)" }} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
-                        {customSessions.length} séance{customSessions.length > 1 ? "s" : ""} personnalisée{customSessions.length > 1 ? "s" : ""}
-                      </p>
-                      <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
-                        {totalMin} min de contenu créé sur mesure
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Category filter chips */}
-                {customSessions.length > 0 && (
-                  <div className="flex gap-2 mb-5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-                    {categoryFilters.map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => setLibraryFilter(key)}
-                        className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                        style={libraryFilter === key
-                          ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                          : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
-                        }
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Grid content */}
-                {loadingCustom ? (
-                  <div className="flex items-center gap-2 py-4">
-                    <motion.div
-                      className="w-4 h-4 rounded-full border-2"
-                      style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-                    />
-                    <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement de ta bibliothèque…</span>
-                  </div>
-                ) : filteredCustom.length > 0 ? (
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                  >
-                    <AnimatePresence mode="popLayout">
-                      {filteredCustom.map(s => (
-                        <LibraryCard
-                          key={s.id}
-                          session={s}
-                          isActive={activeWorkout?.id === s.id}
-                          onStart={handleStartWorkout}
-                          onEdit={(session) => { setEditSession(session); setShowCreateModal(true); }}
-                          onDelete={async (id) => {
-                            if (user) {
-                              const supabase = createClient();
-                              await supabase.from("custom_sessions").delete().eq("id", id);
-                            }
-                            setCustomSessions(p => p.filter(cs => cs.id !== id));
-                          }}
-                          onVisibilityChange={handleVisibilityChange}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </motion.div>
-                ) : customSessions.length === 0 ? (
-                  /* Empty state */
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center justify-center py-14 gap-5 rounded-3xl"
-                    style={{ background: "rgba(var(--surface-rgb),0.55)", border: "1px dashed rgba(var(--accent-rgb),0.3)" }}
-                  >
-                    <div
-                      className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.35) 0%, rgba(var(--cream-mid-rgb),0.3) 100%)",
-                        border: "1px solid rgba(var(--accent-rgb),0.15)",
-                      }}
-                    >
-                      <Sparkles size={24} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
-                    </div>
-                    <div className="text-center px-6">
-                      <p className="text-base font-light" style={{ color: "var(--text-1)" }}>Ta bibliothèque est vide</p>
-                      <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
-                        Crée ta première séance sur mesure et retrouve-la ici à tout moment.
-                      </p>
-                    </div>
-                    <motion.button
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => setShowCreateModal(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
-                      style={{
-                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-                        color: "var(--text-1)",
-                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
-                      }}
-                    >
-                      <Plus size={14} strokeWidth={2} />
-                      Créer ma première séance
-                    </motion.button>
-                  </motion.div>
-                ) : (
-                  /* No sessions match filter */
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                    style={{ background: "rgba(var(--surface-rgb),0.4)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}
-                  >
-                    <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
-                      Aucune séance dans cette catégorie
-                    </p>
-                    <button
-                      onClick={() => setLibraryFilter("tous")}
-                      className="text-xs font-medium cursor-pointer mt-1"
-                      style={{ color: "var(--accent)" }}
-                    >
-                      Voir toutes les séances
-                    </button>
-                  </motion.div>
-                )}
-              </motion.div>
-            );
-          })()}
-
-          {/* ── Historique des séances ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="max-w-5xl mt-2"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>Toutes les séances</p>
-                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Historique</h2>
-              </div>
-            </div>
-
-            {historySessions.length === 0 && !historyLoading && (
-              <div className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                style={{ background: "rgba(var(--surface-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                <Dumbbell size={24} strokeWidth={1.4} style={{ color: "var(--violet-mid)" }} />
-                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune séance enregistrée encore.</p>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-              {historySessions.map((s, i) => {
-                const isExpanded = historyExpanded === s.id;
-                const date = new Date(s.started_at);
-                const dateLabel = date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-                const timeLabel = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-                const dur = s.elapsed_seconds > 0
-                  ? `${Math.floor(s.elapsed_seconds / 60)} min`
-                  : s.duration_minutes > 0 ? `${s.duration_minutes} min` : null;
-                // Système D : toutes les séances = violet (action), peu importe la catégorie.
-                const catColor = "#8B5CF6";
-
-                return (
-                  <motion.div
-                    key={s.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="rounded-2xl overflow-hidden cursor-pointer"
-                    style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.09)" }}
-                    onClick={() => setHistoryExpanded(isExpanded ? null : s.id)}
-                  >
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${catColor}18` }}>
-                        <Dumbbell size={13} strokeWidth={1.8} style={{ color: catColor }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
-                        <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{dateLabel} · {timeLabel}</p>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {dur && <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>{dur}</span>}
-                        {s.calories_burned > 0 && (
-                          <span className="text-[11px] font-medium" style={{ color: "var(--gold)" }}>{s.calories_burned} kcal</span>
-                        )}
-                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--text-3)", transform: "rotate(90deg)" }} />
-                        </motion.div>
-                      </div>
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.22 }}
-                          style={{ overflow: "hidden", borderTop: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}
-                        >
-                          <div className="px-4 py-3 flex flex-col gap-1.5">
-                            {s.exercises.length === 0 ? (
-                              <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Aucun détail d&apos;exercice enregistré.</p>
-                            ) : (
-                              s.exercises.map((ex, j) => (
-                                <div key={j} className="flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: catColor }} />
-                                  <p className="text-xs font-medium flex-1" style={{ color: "var(--text-1)" }}>{ex.name}</p>
-                                  {(ex.sets || ex.reps || ex.weight) && (
-                                    <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
-                                      {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
-                                    </p>
-                                  )}
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {historyLoading && (
-              <div className="flex items-center justify-center gap-2 py-4">
-                <motion.div className="w-4 h-4 rounded-full border-2"
-                  style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-                  animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
-                <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement…</span>
-              </div>
-            )}
-
-            {historyHasMore && !historyLoading && historySessions.length > 0 && (
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => fetchHistory(historyPage + 1, true)}
-                className="w-full mt-3 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--accent)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
-              >
-                Voir plus
-              </motion.button>
-            )}
-          </motion.div>
-
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
+            {dateLabel}
+          </p>
+          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Entraînement</h1>
         </motion.div>
 
+        {/* ── ① Héros « Aujourd'hui » ── */}
+        <section data-tour-anchor="prog-hero">
+          <TodayHero
+            state={heroState}
+            day={todayDay}
+            nextLabel={nextLabel}
+            doneStats={doneStats}
+            onStart={startToday}
+            onImprovise={() => setSheet("improviser")}
+            onOrganise={() => setSheet("organiser")}
+            onShift={() => openAssistant("Décale ma séance d'aujourd'hui à un autre jour")}
+            onReplace={() => openAssistant("Remplace ma séance d'aujourd'hui par autre chose")}
+          />
+        </section>
 
-      <SharePerformanceModal
-        open={shareData !== null}
-        onClose={() => setShareData(null)}
-        data={shareData ?? displayTimeline[0]?.performance ?? { type: "workout", title: "", date: "", metrics: [] }}
-      />
+        {/* ── ② Bifurcation ── */}
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.15 }}
+          className="text-[16px] font-light mt-6 mb-3" style={{ color: "var(--text-1)" }}
+        >
+          {askLabel}
+        </motion.p>
+        <motion.div
+          data-tour-anchor="prog-forks"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+          className="grid grid-cols-2 gap-3"
+        >
+          <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
+          <ForkCard kind="choisis" count={allSessions.length} onClick={() => setSheet("choisir")} />
+        </motion.div>
 
-      {/* ── Guided workout modal ── */}
+        {/* ── ③ Ma semaine ── */}
+        <motion.div
+          data-tour-anchor="prog-semaine"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
+          className="mt-4"
+        >
+          <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("organiser")} />
+        </motion.div>
+      </div>
+
+      {/* ══ Sheets ══ */}
+      <AnimatePresence>
+        {sheet === "organiser" && (
+          <OrganiserSheet onClose={() => { setSheet(null); void loadWeek(); }} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "choisir" && (
+          <ChooseSheet
+            sessions={allSessions}
+            loading={loadingCustom}
+            onClose={() => setSheet(null)}
+            onStart={startSession}
+            onCreate={() => { setEditSession(null); setShowCreateModal(true); }}
+            onEdit={(s) => { setEditSession(s); setShowCreateModal(true); }}
+            onDelete={handleDelete}
+            onVisibilityChange={handleVisibilityChange}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "improviser" && (
+          <ImproviseSheet
+            defaultPlace={improDefaultPlace}
+            defaultHalteres={improDefaultHalteres}
+            difficulty={levelToDifficulty(profileLevel)}
+            onClose={() => setSheet(null)}
+            onLaunch={(t) => { setSheet(null); setActiveWorkout(t); showToast(`${t.title} prête ✦`); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Lecteur guidé ══ */}
       <AnimatePresence>
         {activeWorkout && (
           <WorkoutGuideModal
             sessionId={activeWorkout.id}
             title={activeWorkout.title}
-            accent={activeWorkout.accent}
+            accent="var(--accent)"
             duration={activeWorkout.duration}
             difficulty={activeWorkout.difficulty}
             category={activeWorkout.category}
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
-            onComplete={() => {
-              setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]));
-              /* WorkoutGuideModal saves to DB on completion — refresh list after a short delay */
-              setTimeout(fetchSessions, 1200);
-            }}
+            onComplete={() => handleWorkoutComplete(activeWorkout)}
           />
         )}
       </AnimatePresence>
 
-      {/* ── Create session modal ── */}
+      {/* ══ Création / édition de séance perso ══ */}
       <AnimatePresence>
         {showCreateModal && (
           <CreateSessionModal
             key={editSession?.id ?? "new"}
             onClose={() => { setShowCreateModal(false); setEditSession(null); }}
             editSession={editSession}
-            onCreate={async (s) => {
-              const supabase = createClient();
-              const existingSession = customSessions.find(cs => cs.id === s.id);
-              const row = {
-                id: s.id,
-                user_id: user?.id,
-                title: s.title,
-                subtitle: s.subtitle,
-                category: s.category,
-                duration: s.duration,
-                difficulty: s.difficulty,
-                exercises: s.exercises,
-                muscles: s.muscles,
-                accent: s.accent,
-                icon: s.icon,
-                exercise_list: s.exerciseList ?? [],
-                visibility: existingSession?.visibility ?? "private",
-                updated_at: new Date().toISOString(),
-              };
-              if (editSession) {
-                if (user) {
-                  const { error } = await supabase.from("custom_sessions").update(row).eq("id", s.id);
-                  if (error) { console.error(error); showToast("Erreur lors de la modification"); return; }
-                }
-                setCustomSessions(p => p.map(cs => cs.id === s.id ? s : cs));
-                showToast(`"${s.title}" modifiée ✓`);
-              } else {
-                if (user) {
-                  const { error } = await supabase.from("custom_sessions").insert(row);
-                  if (error) { console.error(error); showToast("Erreur lors de la création"); return; }
-                }
-                setCustomSessions(p => [s, ...p]);
-                showToast(`"${s.title}" créée ✓`);
-              }
-              setEditSession(null);
-            }}
+            onCreate={handleCreateOrEdit}
           />
         )}
       </AnimatePresence>
 
+      {/* ══ Toast ══ */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -2451,7 +1934,6 @@ function ProgressionPageContent() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }

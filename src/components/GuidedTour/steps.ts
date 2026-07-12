@@ -120,29 +120,29 @@ export const TOUR_STEPS: TourStep[] = [
     route: "/",
   },
 
-  /* ═══════════ CHAPITRE 2 · PROGRESSION ═══════════ */
+  /* ═══════════ CHAPITRE 2 · ENTRAÎNEMENT ═══════════ */
 
-  // Annonce + focus sur l'icône nav : « cet onglet-LÀ, c'est Progression »
+  // Annonce + focus sur l'icône nav : « cet onglet-LÀ, c'est Entraînement »
   {
     id: "focus-nav-progression",
     type: "focus",
     anchorId: "nav-progression",
-    label: "Onglet · Séances",
+    label: "Onglet · Entraînement",
     duration: 2300,
     route: "/progression",
     shape: "rounded",
     padding: 10,
-    chapter: { name: "Séances", tagline: "Tes entraînements, prêts à lancer" },
+    chapter: { name: "Entraînement", tagline: "Ta séance du jour t'attend" },
   },
 
   {
-    id: "prog-seances-catalogue",
+    id: "prog-hero",
     type: "spotlight",
-    anchorId: "prog-seances-catalogue",
-    breadcrumb: "Mes Séances",
-    title: "Des séances prêtes à l'emploi",
+    anchorId: "prog-hero",
+    breadcrumb: "Entraînement",
+    title: "Ta séance du jour t'attend",
     description:
-      "Force, cardio, mobilité, full body… Choisis, tape, transpire. Chaque séance est guidée exercice par exercice.",
+      "Vaiiya sait ce qui est prévu : un seul geste — « C'est parti » — et la séance guidée démarre. Jour de repos ? Elle te le dit aussi.",
     shape: "rounded",
     padding: 10,
     tooltipPosition: "auto",
@@ -150,27 +150,27 @@ export const TOUR_STEPS: TourStep[] = [
     softOverlay: true,
   },
   {
-    id: "prog-seances-create",
+    id: "prog-forks",
     type: "spotlight",
-    anchorId: "prog-seances-create",
-    breadcrumb: "Mes Séances",
-    title: "Crée la séance parfaite",
+    anchorId: "prog-forks",
+    breadcrumb: "Entraînement",
+    title: "Pas ce qui était prévu ?",
     description:
-      "Compose-la toi-même, exercice par exercice — ou décris ton objectif à l'IA et laisse-la générer un programme sur-mesure en quelques secondes.",
+      "Improvise — dis ton temps et ton matériel, l'IA crée la séance — ou choisis dans tes séances : celles de Vaiiya et les tiennes, au même endroit.",
     shape: "rounded",
-    padding: 14,
+    padding: 10,
     tooltipPosition: "auto",
     route: "/progression",
     softOverlay: true,
   },
   {
-    id: "prog-seances-library",
+    id: "prog-semaine",
     type: "spotlight",
-    anchorId: "prog-seances-library",
-    breadcrumb: "Mes Séances",
-    title: "Ta bibliothèque, ton influence",
+    anchorId: "prog-semaine",
+    breadcrumb: "Entraînement",
+    title: "Ta semaine en un regard",
     description:
-      "Tes créations restent privées, se partagent entre amis ou deviennent publiques. Et dans l'autre sens : entraîne-toi sur les séances de la communauté.",
+      "Fait ✓, repos, aujourd'hui. Touche « Organiser » pour piloter ton planning — ou demande à l'orbe ✦ de décaler, remplacer, réinventer.",
     shape: "rounded",
     padding: 10,
     tooltipPosition: "auto",

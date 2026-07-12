@@ -77,16 +77,17 @@ export const SITE_FEATURES: SiteFeature[] = [
   },
   {
     key: "progression",
-    title: "Progression",
+    title: "Entraînement",
     route: "/progression",
     summary:
-      "Suivi des statistiques dans le temps : évolution du poids, séances réalisées, charges, badges et historique.",
+      "L'onglet Entraînement accueille avec la séance du jour (planning piloté par l'IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans ses séances (Vaiiya + personnalisées), ou organiser sa semaine.",
     actions: [
-      "voir l'évolution de son poids",
-      "consulter l'historique des séances",
-      "voir ses badges et records",
+      "lancer la séance du jour",
+      "improviser une séance (temps + matériel)",
+      "choisir ou créer une séance",
+      "organiser sa semaine d'entraînement",
     ],
-    keywords: ["progression", "stats", "statistiques", "poids", "courbe", "historique", "badges", "records"],
+    keywords: ["entraînement", "entrainement", "séance", "seance", "muscu", "musculation", "sport", "planning", "programme", "semaine", "improviser"],
   },
   {
     key: "nutrition",

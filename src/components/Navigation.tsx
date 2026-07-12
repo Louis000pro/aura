@@ -23,7 +23,7 @@ type TabItem = {
 
 const TABS: (TabItem & { tourAnchor?: string })[] = [
   { href: "/",            label: "Accueil",     icon: Home,        tourAnchor: "nav-accueil" },
-  { href: "/progression", label: "Progression", icon: Dumbbell,    tourAnchor: "nav-progression" },
+  { href: "/progression", label: "Entraînement", icon: Dumbbell,   tourAnchor: "nav-progression" },
   { href: "/nutrition",   label: "Nutrition",   icon: Utensils,    tourAnchor: "nav-nutrition" },
   { href: "/communaute",  label: "Communauté",  icon: Users,       tourAnchor: "nav-communaute" },
 ];
