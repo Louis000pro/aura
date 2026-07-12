@@ -159,9 +159,10 @@ function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?
 /* ─── PhotoAnalysisModal ─────────────────────────────────────────────── */
 type PhotoPhase = "select" | "analyzing" | "result" | "edit";
 
-function PhotoAnalysisModal({ onClose, onAdd }: {
+function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
   onClose: () => void;
   onAdd: (meal: Omit<MealEntry, "id">) => void;
+  onBack?: () => void;   // présent quand on arrive depuis la carte → revenir au classement (misclic)
 }) {
   const [phase, setPhase] = useState<PhotoPhase>("select");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -320,17 +321,26 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
-          <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
-            <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
-              {phase === "analyzing" ? "Je regarde…"
-                : phase === "result"   ? "Repas identifié"
-                : phase === "edit"     ? "Ajuster"
-                : "Snap ton assiette"}
-            </h2>
+          <div className="flex items-center gap-2.5 min-w-0">
+            {onBack && (
+              <motion.button whileTap={{ scale: 0.9 }} onClick={onBack}
+                className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }} aria-label="Revenir au classement de la carte">
+                <ChevronLeft size={16} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+              </motion.button>
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{onBack ? "Retour à la carte" : "IA Nutrition"}</p>
+              <h2 className="text-lg font-semibold truncate" style={{ color: "var(--text-1)" }}>
+                {phase === "analyzing" ? "Je regarde…"
+                  : phase === "result"   ? "Repas identifié"
+                  : phase === "edit"     ? "Ajuster"
+                  : "Snap ton assiette"}
+              </h2>
+            </div>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
             style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
@@ -1196,17 +1206,20 @@ const MENU_VERDICT_META: Record<MenuVerdict, { label: string; color: string; tin
   eviter:     { label: "À éviter",   color: "#C0525C", tint: "rgba(224,106,115,0.14)", stripe: "#E06A73" },
 };
 
-function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, onClose, onPickDish }: {
+function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult, onClose, onResult, onPickDish }: {
   objectiveLine: string;
   objectiveChip: string;
   goalKnown: boolean;
+  initialResult?: MenuScanResult | null;   // rouvre directement sur le classement (retour depuis la photo)
   onClose: () => void;
+  onResult?: (r: MenuScanResult) => void;  // remonte le scan au parent pour pouvoir y revenir
   onPickDish: (dishName: string) => void;
 }) {
-  const [phase, setPhase] = useState<MenuPhase>("select");
+  const [phase, setPhase] = useState<MenuPhase>(initialResult ? "result" : "select");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [result, setResult] = useState<MenuScanResult | null>(null);
+  const [result, setResult] = useState<MenuScanResult | null>(initialResult ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [focusedIdx, setFocusedIdx] = useState<number | null>(null);  // plat « déplié » dans la liste (évite la sélection au 1er tap)
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -1244,6 +1257,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, onClose, onPic
         const data: MenuScanResult = await res.json();
         if (!data?.dishes?.length) { setError("Aucun plat lisible — réessaie."); setPhase("select"); return; }
         setResult(data);
+        onResult?.(data);          // le parent garde le classement en cache → retour depuis la photo sans re-scan
         setPhase("result");
       } catch {
         setError("Lecture impossible, réessaie.");
@@ -1484,25 +1498,52 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, onClose, onPic
                   </motion.button>
                 </div>
 
-                {/* Les autres plats */}
+                {/* Les autres plats — 1er tap = on DÉPLIE le plat sur place (pas de sélection accidentelle),
+                    2e tap sur « Je pars là-dessus » = vraie sélection. Voir [[nutrition-onmangeou-redesign]]. */}
                 {others.length > 0 && (
                   <>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mt-0.5" style={{ color: "var(--text-3)" }}>Les autres plats</p>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mt-0.5" style={{ color: "var(--text-3)" }}>
+                      Les autres plats <span className="font-normal tracking-normal normal-case">· touche pour choisir</span>
+                    </p>
                     <div className="flex flex-col gap-2">
                       {others.map((d, i) => {
                         const vm = MENU_VERDICT_META[d.verdict];
+                        const open = focusedIdx === i;
                         return (
-                          <motion.button key={`${d.name}-${i}`} whileTap={{ scale: 0.98 }} onClick={() => onPickDish(d.name)}
-                            className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer text-left"
-                            style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.28)" }}>
-                            <span className="self-stretch rounded-full flex-shrink-0" style={{ width: 4, background: vm.stripe }} />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>{d.name}</p>
-                              {d.reason && <p className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>{d.reason}</p>}
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0"
-                              style={{ color: vm.color, background: vm.tint }}>{vm.label}</span>
-                          </motion.button>
+                          <motion.div key={`${d.name}-${i}`} layout
+                            className="rounded-2xl overflow-hidden"
+                            style={{
+                              background: open
+                                ? `linear-gradient(160deg, ${vm.tint}, rgba(var(--tint-violet-rgb),0.15))`
+                                : "rgba(var(--tint-violet-rgb),0.4)",
+                              border: open ? `1px solid ${vm.stripe}59` : "1px solid rgba(var(--violet-mid-rgb),0.28)",
+                            }}>
+                            <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFocusedIdx(open ? null : i)}
+                              className="w-full flex items-center gap-3 p-3 cursor-pointer text-left">
+                              <span className="self-stretch rounded-full flex-shrink-0" style={{ width: 4, background: vm.stripe }} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-semibold leading-tight ${open ? "text-base" : "text-sm"}`} style={{ color: "var(--text-1)" }}>{d.name}</p>
+                                {d.reason && <p className="text-[11px] mt-0.5 leading-snug" style={{ color: open ? "var(--text-2)" : "var(--text-3)" }}>{d.reason}</p>}
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0"
+                                style={{ color: vm.color, background: vm.tint }}>{vm.label}</span>
+                            </motion.button>
+                            <AnimatePresence initial={false}>
+                              {open && (
+                                <motion.div key="cta"
+                                  initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }} className="overflow-hidden">
+                                  <div className="px-3 pb-3">
+                                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPickDish(d.name)}
+                                      className="w-full py-2.5 rounded-xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.35)" }}>
+                                      <Camera size={15} strokeWidth={2} /> Je pars là-dessus
+                                    </motion.button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
                         );
                       })}
                     </div>
@@ -2120,6 +2161,8 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const [showManual, setShowManual] = useState(false);
   const [showBarcode, setShowBarcode] = useState(false);
   const [showMenu, setShowMenu] = useState(false);   // « La carte » du resto en photo → classement
+  const [menuResult, setMenuResult] = useState<MenuScanResult | null>(null);  // classement gardé en cache → retour photo→carte sans re-scan
+  const [photoFromMenu, setPhotoFromMenu] = useState(false);                  // la photo a été ouverte depuis la carte (affiche le retour)
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -2241,6 +2284,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`); }
     else showToast("Erreur lors de l'ajout");
     setShowPhoto(false);
+    setPhotoFromMenu(false);
   };
 
   /* ── Ajout repas code-barres ─── */
@@ -2398,7 +2442,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             onPhoto={() => setShowPhoto(true)}
             onBarcode={() => setShowBarcode(true)}
             onManual={() => setShowManual(true)}
-            onMenuScan={() => setShowMenu(true)}
+            onMenuScan={() => { setMenuResult(null); setPhotoFromMenu(false); setShowMenu(true); }}
             onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
             classics={displayRecents}
             onQuickAdd={(r) => { void quickAddRecent(r); }}
@@ -2821,7 +2865,11 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           <BarcodeScannerModal key="barcode" onClose={() => setShowBarcode(false)} onAdd={handleAddBarcode} />
         )}
         {showPhoto && (
-          <PhotoAnalysisModal key="photo" onClose={() => setShowPhoto(false)} onAdd={handleAddPhoto} />
+          <PhotoAnalysisModal key="photo"
+            onClose={() => { setShowPhoto(false); setPhotoFromMenu(false); }}
+            onAdd={handleAddPhoto}
+            onBack={photoFromMenu ? () => { setShowPhoto(false); setPhotoFromMenu(false); setShowMenu(true); } : undefined}
+          />
         )}
         {showManual && (
           <ManualModal key="manual" onClose={() => setShowManual(false)} onAdd={handleAddManual} />
@@ -2844,9 +2892,12 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
           return (
             <MenuScanModal key="menu"
               objectiveLine={objectiveLine} objectiveChip={objectiveChip} goalKnown={known}
+              initialResult={menuResult} onResult={setMenuResult}
               onClose={() => setShowMenu(false)}
               onPickDish={(name) => {
+                // On garde le classement en cache (menuResult) → la photo pourra revenir dessus
                 setShowMenu(false);
+                setPhotoFromMenu(true);
                 showToast(`Bon choix : « ${name} » 🍽️ Photographie ton assiette quand elle arrive pour le vrai décompte.`);
                 setShowPhoto(true);
               }}
