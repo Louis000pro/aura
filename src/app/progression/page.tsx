@@ -164,52 +164,103 @@ const goalLabels: Record<string, string> = {
 };
 
 /* ════════════════════════════════════════════════════════════════════
-   Ambiances visuelles — placeholders premium en dégradés (structure
-   prête à recevoir de vraies photos, comme /public/nutrition).
+   Ambiances visuelles — vraie banque photo (public/entrainement).
+   Base NEUTRE : la couleur de la FAMILLE est appliquée ici, in-app, dans
+   les zones sombres (blend « screen ») → la peau reste naturelle. Une
+   séance perso hérite automatiquement d'une famille via ses muscles /
+   son titre : elle a donc l'air aussi « native » qu'une séance Vaiiya.
+   C'est le fil rouge du catalogue.
    ════════════════════════════════════════════════════════════════════ */
-const ART: Record<string, string> = {
-  // splits du planning
-  push:     "radial-gradient(75% 55% at 82% 8%, rgba(239,159,39,.30), transparent 58%), radial-gradient(90% 75% at 12% 100%, rgba(139,92,246,.42), transparent 62%), linear-gradient(158deg,#2A2046 0%,#171129 55%,#0D0A16 100%)",
-  pull:     "radial-gradient(75% 55% at 80% 10%, rgba(193,59,193,.32), transparent 58%), radial-gradient(90% 75% at 10% 100%, rgba(139,92,246,.45), transparent 62%), linear-gradient(158deg,#251C42 0%,#151026 55%,#0C0915 100%)",
-  jambes:   "radial-gradient(75% 55% at 78% 6%, rgba(239,159,39,.22), transparent 55%), radial-gradient(95% 80% at 12% 100%, rgba(193,59,193,.38), transparent 62%), linear-gradient(158deg,#301B44 0%,#190F27 55%,#0E0916 100%)",
-  haut:     "radial-gradient(70% 50% at 84% 6%, rgba(239,159,39,.26), transparent 55%), radial-gradient(88% 72% at 8% 100%, rgba(139,92,246,.4), transparent 60%), linear-gradient(158deg,#282052 0%,#161129 55%,#0C0A18 100%)",
-  fullbody: "radial-gradient(80% 60% at 80% 5%, rgba(139,92,246,.34), transparent 58%), radial-gradient(80% 70% at 8% 100%, rgba(193,59,193,.24), transparent 60%), linear-gradient(158deg,#241E48 0%,#151129 55%,#0C0A16 100%)",
-  cardio:   "radial-gradient(80% 60% at 78% 8%, rgba(232,98,12,.4), transparent 58%), radial-gradient(85% 70% at 10% 100%, rgba(239,159,39,.24), transparent 62%), linear-gradient(158deg,#3A2418 0%,#1F120C 55%,#100906 100%)",
-  mobilite: "radial-gradient(80% 60% at 78% 8%, rgba(43,212,160,.28), transparent 58%), radial-gradient(85% 70% at 10% 100%, rgba(139,92,246,.2), transparent 62%), linear-gradient(158deg,#15342C 0%,#0E1F1C 55%,#080F0E 100%)",
-  // états du héros
-  repos:    "radial-gradient(75% 55% at 80% 0%, rgba(43,212,160,.18), transparent 60%), radial-gradient(90% 70% at 10% 100%, rgba(60,80,180,.28), transparent 65%), linear-gradient(160deg,#16203A 0%,#0D1120 60%,#0A0D18 100%)",
-  done:     "radial-gradient(80% 60% at 75% 5%, rgba(43,212,160,.32), transparent 60%), radial-gradient(80% 70% at 10% 100%, rgba(139,92,246,.25), transparent 65%), linear-gradient(160deg,#0F2A24 0%,#0C1620 65%,#0A0D16 100%)",
-  setup:    "radial-gradient(80% 60% at 80% 8%, rgba(193,59,193,.3), transparent 58%), radial-gradient(95% 80% at 8% 95%, rgba(139,92,246,.5), transparent 62%), linear-gradient(158deg,#2C1F52 0%,#150F28 60%,#0D0A18 100%)",
-  // cartes de bifurcation
-  improvise: "radial-gradient(80% 60% at 78% 10%, rgba(193,59,193,.35), transparent 60%), radial-gradient(90% 80% at 10% 90%, rgba(139,92,246,.5), transparent 65%), linear-gradient(150deg,#2B1F4E 0%,#130E22 70%)",
-  choisis:   "radial-gradient(70% 50% at 20% 0%, rgba(43,212,160,.14), transparent 60%), linear-gradient(150deg,#20304A 0%,#101A2C 40%,#0D1120 100%)",
+type Family = "push" | "pull" | "legs" | "core" | "full" | "cardio";
+
+const FAMILY: Record<Family, { label: string; base: string; glow: string; variants: string[] }> = {
+  push:   { label: "Poussée",   base: "#E8481F", glow: "#FF7A4D", variants: ["push-couche", "push-militaire", "push-dips"] },
+  pull:   { label: "Tirage",    base: "#1E5FD0", glow: "#4C93FF", variants: ["pull-traction", "pull-rowing", "pull-curl"] },
+  legs:   { label: "Jambes",    base: "#0E9E56", glow: "#2FD98A", variants: ["legs-squat", "legs-fentes", "legs-souleve"] },
+  core:   { label: "Gainage",   base: "#0F8E86", glow: "#2BD4A0", variants: ["core-planche", "core-abdos"] },
+  full:   { label: "Full body", base: "#8B3FD6", glow: "#C46BFF", variants: ["full-burpee", "full-epaule", "full-kettlebell"] },
+  cardio: { label: "Cardio",    base: "#D81E63", glow: "#FF5A8D", variants: ["cardio-ropes", "cardio-sprint", "cardio-rameur"] },
 };
 
-/** Ambiance d'une séance du planning, selon son split / type. */
-function seanceArt(day: PlanningDay): string {
-  const t = (day.title || "").toLowerCase();
-  if (t.includes("push")) return ART.push;
-  if (t.includes("pull")) return ART.pull;
-  if (t.includes("bas"))  return ART.jambes;
-  if (t.includes("haut")) return ART.haut;
-  if (t.includes("cardio") || day.type === "HIIT") return ART.cardio;
-  return ART.fullbody;
+/** Le « cerveau » : muscle / mouvement nommé → image précise. Sinon repli famille. */
+const IMG_RULES: { re: RegExp; img: string; fam: Family }[] = [
+  { re: /pector|\bpec|couch|bench/,                                          img: "push-couche",   fam: "push" },
+  { re: /dips?/,                                                             img: "push-dips",     fam: "push" },
+  { re: /épaule|epaule|deltoï|deltoi|militaire|overhead|shoulder/,           img: "push-militaire",fam: "push" },
+  { re: /\bpush\b|poussé|pousse/,                                            img: "push-couche",   fam: "push" },
+  { re: /traction|pull[- ]?up|tirage vertical|dorsaux|grand dorsal|\blats?\b/, img: "pull-traction", fam: "pull" },
+  { re: /rowing|\brow\b|tirage horizontal|rhombo|trapèze|trapeze/,           img: "pull-rowing",   fam: "pull" },
+  { re: /biceps|\bcurl/,                                                     img: "pull-curl",     fam: "pull" },
+  { re: /\bpull\b|\bdos\b/,                                                  img: "pull-traction", fam: "pull" },
+  { re: /squat|quadri|\bquad/,                                              img: "legs-squat",    fam: "legs" },
+  { re: /fente|lunge/,                                                       img: "legs-fentes",   fam: "legs" },
+  { re: /soulevé|souleve|deadlift|\bterre\b|ischio|fessier|hip thrust|hanche/, img: "legs-souleve",  fam: "legs" },
+  { re: /bas du corps|\bjambe|\bleg\b|mollet/,                               img: "legs-squat",    fam: "legs" },
+  { re: /planche|\bplank|gainage/,                                           img: "core-planche",  fam: "core" },
+  { re: /abdo|crunch|sit[- ]?up|oblique|lombaire|\bcore\b|sangle/,           img: "core-abdos",    fam: "core" },
+  { re: /burpee/,                                                            img: "full-burpee",   fam: "full" },
+  { re: /kettlebell|\bswing|snatch|arraché|arrache/,                         img: "full-kettlebell",fam: "full" },
+  { re: /haut du corps|corps entier|full[- ]?body|complet|thruster|clean|épaulé/, img: "full-epaule", fam: "full" },
+  { re: /corde|\brope|battle/,                                              img: "cardio-ropes",  fam: "cardio" },
+  { re: /rameur|rower|\berg\b|aviron/,                                       img: "cardio-rameur", fam: "cardio" },
+  { re: /sprint|course|\brun\b|vélo|velo|\bbike|assault|cardio|endurance|hiit/, img: "cardio-sprint", fam: "cardio" },
+];
+
+const CAT_FAMILY: Record<WorkoutCategory, Family> = {
+  force: "push", fullbody: "full", cardio: "cardio", mobilite: "core",
+};
+
+function artHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
 }
 
-/** Ambiance d'une tuile de séance (sheet « Je choisis »), selon sa catégorie. */
-const TILE_ART: Record<WorkoutCategory, string> = {
-  force: ART.push, fullbody: ART.fullbody, cardio: ART.cardio, mobilite: ART.mobilite,
+type Art = { img: string; base: string; glow: string; label: string };
+
+/** Résout l'ambiance d'une séance depuis ses muscles / titre / catégorie. */
+function resolveArt(input: { title?: string; category?: WorkoutCategory; muscles?: string[] }): Art {
+  const hay = [input.title ?? "", ...(input.muscles ?? [])].join(" ").toLowerCase();
+  for (const r of IMG_RULES) {
+    if (r.re.test(hay)) {
+      const f = FAMILY[r.fam];
+      return { img: r.img, base: f.base, glow: f.glow, label: f.label };
+    }
+  }
+  const fam: Family = input.category ? CAT_FAMILY[input.category] : "full";
+  const f = FAMILY[fam];
+  const img = f.variants[artHash(input.title || fam) % f.variants.length];
+  return { img, base: f.base, glow: f.glow, label: f.label };
+}
+
+/** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
+const WIDGET: Record<"repos" | "done" | "setup" | "improvise" | "choisis", {
+  img: string; base: string; glow: string; dim: number; focus: string; pos: string;
+}> = {
+  repos:     { img: "repos",       base: "#0F6F63", glow: "#2BD4A0", dim: 0.32, focus: "72% 58%", pos: "68% center" },
+  done:      { img: "done",        base: "#0E8E6A", glow: "#2BD4A0", dim: 0.5,  focus: "50% 42%", pos: "center 40%" },
+  setup:     { img: "setup",       base: "#C0571A", glow: "#EF9F27", dim: 0.4,  focus: "42% 40%", pos: "center 45%" },
+  improvise: { img: "improvise",   base: "#7A34C8", glow: "#C46BFF", dim: 0.5,  focus: "56% 46%", pos: "center 40%" },
+  choisis:   { img: "full-epaule", base: "#4B3EA6", glow: "#8B7BFF", dim: 0.44, focus: "50% 40%", pos: "center 30%" },
 };
 
-/** Silhouette de barre olympique — signature visuelle des cartes séance. */
-function BarbellSilhouette({ style }: { style?: React.CSSProperties }) {
+const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+/** Le « common thread » : photo (base neutre) → couleur famille (zones sombres,
+    blend screen) → grain argentique. Rendu identique Vaiiya / perso. */
+function Visual({
+  img, base, glow, dim = 0.5, focus = "50% 30%", pos = "center 28%", className, style, children,
+}: {
+  img: string; base: string; glow: string; dim?: number; focus?: string; pos?: string;
+  className?: string; style?: React.CSSProperties; children?: React.ReactNode;
+}) {
   return (
-    <svg viewBox="0 0 220 60" fill="none" stroke="currentColor" strokeWidth={7} strokeLinecap="round"
-      style={{ position: "absolute", width: 210, color: "#fff", opacity: 0.13, transform: "rotate(-7deg)", pointerEvents: "none", ...style }}
-      aria-hidden>
-      <path d="M30 30h160" />
-      <path d="M48 8v44M64 14v32M172 8v44M156 14v32" />
-    </svg>
+    <div className={className} style={{ position: "relative", overflow: "hidden", background: "#0b0a10", ...style }}>
+      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, mixBlendMode: "screen", opacity: dim, background: `radial-gradient(62% 55% at ${focus}, ${glow} 0%, ${base} 36%, transparent 74%)` }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.08, mixBlendMode: "overlay", backgroundImage: GRAIN, backgroundSize: "120px 120px" }} />
+      {children}
+    </div>
   );
 }
 
@@ -299,22 +350,24 @@ function TodayHero({
     );
   }
 
-  const art =
-    state === "setup" ? ART.setup
-    : state === "done" ? ART.done
-    : state === "repos" ? ART.repos
-    : day ? seanceArt(day) : ART.fullbody;
+  const viz =
+    state === "setup" ? WIDGET.setup
+    : state === "done" ? WIDGET.done
+    : state === "repos" ? WIDGET.repos
+    : (() => {
+        const a = resolveArt({ title: day ? `${day.title} ${day.type}` : "" });
+        return { ...a, dim: 0.52, focus: "50% 28%", pos: "center 24%" };
+      })();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
       className="rounded-3xl overflow-hidden relative"
-      style={{ minHeight: state === "seance" ? 360 : 300, background: art, boxShadow: "0 14px 40px rgba(var(--accent-rgb),0.22)" }}
+      style={{ minHeight: state === "seance" ? 360 : 300, boxShadow: "0 14px 40px rgba(var(--accent-rgb),0.22)" }}
     >
-      {(state === "seance" || state === "done") && (
-        <BarbellSilhouette style={{ left: -14, top: state === "seance" ? 96 : 76 }} />
-      )}
+      <Visual img={viz.img} base={viz.base} glow={viz.glow} dim={viz.dim} focus={viz.focus} pos={viz.pos}
+        style={{ position: "absolute", inset: 0 }} />
 
       {/* Chips du haut */}
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
@@ -455,25 +508,21 @@ function ForkCard({ kind, count, onClick }: {
   onClick: () => void;
 }) {
   const isIA = kind === "improvise";
+  const w = WIDGET[isIA ? "improvise" : "choisis"];
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
       className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0"
-      style={{ height: 148, background: isIA ? ART.improvise : ART.choisis, boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
+      style={{ height: 148, boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
     >
-      {isIA ? (
+      <Visual img={w.img} base={w.base} glow={w.glow} dim={w.dim} focus={w.focus} pos={w.pos}
+        style={{ position: "absolute", inset: 0 }} />
+      {isIA && (
         <>
           <Sparkles size={24} strokeWidth={1.5} className="absolute top-3 right-3" style={{ color: "#E4D6FF", opacity: 0.9 }} />
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
         </>
-      ) : (
-        /* Deck de mini-cartes — « tes séances t'attendent » */
-        <div className="absolute top-3.5 left-3 right-3 h-[58px] pointer-events-none">
-          <div className="absolute rounded-[10px]" style={{ inset: "13px 42% 0 0", background: "linear-gradient(140deg,#5B4295,#2A1F4A)", border: "1px solid rgba(255,255,255,0.18)", transform: "rotate(-3deg)" }} />
-          <div className="absolute rounded-[10px]" style={{ inset: "6px 21% 6px 21%", background: "linear-gradient(140deg,#8A5A2E,#3A2716)", border: "1px solid rgba(255,255,255,0.18)", transform: "rotate(2deg)" }} />
-          <div className="absolute rounded-[10px]" style={{ inset: "0 0 13px 42%", background: "linear-gradient(140deg,#1F6E58,#122E29)", border: "1px solid rgba(255,255,255,0.18)", transform: "rotate(-1deg)" }} />
-        </div>
       )}
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
         style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
@@ -603,6 +652,7 @@ function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }:
   const vis = VIS_CONFIG[visKey];
   const VisIcon = vis.icon;
   const diffShort = session.difficulty === "Intermédiaire" ? "Inter." : session.difficulty;
+  const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}>
@@ -611,9 +661,11 @@ function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }:
         whileTap={{ scale: 0.97 }}
         onClick={() => onStart(session)}
         className="w-full rounded-2xl overflow-hidden relative cursor-pointer text-left border-none p-0 block"
-        style={{ height: 118, background: TILE_ART[session.category] ?? ART.fullbody }}
+        style={{ height: 118 }}
         aria-label={`Lancer : ${session.title}`}
       >
+        <Visual img={tileArt.img} base={tileArt.base} glow={tileArt.glow} dim={0.52} focus="50% 26%" pos="center 22%"
+          style={{ position: "absolute", inset: 0 }} />
         <div className="absolute top-2 left-2.5 flex items-center gap-1.5">
           <Icon size={13} strokeWidth={1.8} style={{ color: "rgba(255,255,255,0.85)" }} />
           <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>
