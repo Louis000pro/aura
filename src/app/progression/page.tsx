@@ -120,15 +120,17 @@ const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
   force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
 };
 
-/* Filtres de la sheet « Je choisis » — un SEUL jeu, catalogue + perso fusionnés */
+/* Filtres de la sheet « Je choisis » — un SEUL jeu, catalogue + perso fusionnés.
+   La pastille reprend la couleur de famille des cartes : le filtre ANNONCE
+   la couleur qu'on va voir. Perso = doré (comme le badge). */
 type ChooseFilter = "tous" | WorkoutCategory | "perso";
-const CHOOSE_FILTERS: { key: ChooseFilter; label: string }[] = [
+const CHOOSE_FILTERS: { key: ChooseFilter; label: string; dot?: string }[] = [
   { key: "tous",     label: "Toutes" },
-  { key: "force",    label: "Force" },
-  { key: "cardio",   label: "Cardio" },
-  { key: "mobilite", label: "Mobilité" },
-  { key: "fullbody", label: "Full Body" },
-  { key: "perso",    label: "Perso" },
+  { key: "force",    label: "Force",     dot: "#FF7A4D" },
+  { key: "cardio",   label: "Cardio",    dot: "#FF5A8D" },
+  { key: "mobilite", label: "Mobilité",  dot: "#2BD4A0" },
+  { key: "fullbody", label: "Full Body", dot: "#C46BFF" },
+  { key: "perso",    label: "Perso",     dot: "#EFB83B" },
 ];
 
 /* ─── Icon resolver (Supabase stores icon name as string) ── */
@@ -218,13 +220,18 @@ function artHash(s: string): number {
 
 type Art = { img: string; base: string; glow: string; label: string };
 
-/** Résout l'ambiance d'une séance depuis ses muscles / titre / catégorie. */
+/** Résout l'ambiance d'une séance depuis son titre / ses muscles / sa catégorie.
+    Le TITRE prime : « Dos de Fer » reste Tirage même si les muscles listent
+    les épaules — c'est le nom que l'utilisateur a choisi. */
 function resolveArt(input: { title?: string; category?: WorkoutCategory; muscles?: string[] }): Art {
-  const hay = [input.title ?? "", ...(input.muscles ?? [])].join(" ").toLowerCase();
-  for (const r of IMG_RULES) {
-    if (r.re.test(hay)) {
-      const f = FAMILY[r.fam];
-      return { img: r.img, base: f.base, glow: f.glow, label: f.label };
+  const hays = [(input.title ?? "").toLowerCase(), (input.muscles ?? []).join(" ").toLowerCase()];
+  for (const hay of hays) {
+    if (!hay) continue;
+    for (const r of IMG_RULES) {
+      if (r.re.test(hay)) {
+        const f = FAMILY[r.fam];
+        return { img: r.img, base: f.base, glow: f.glow, label: f.label };
+      }
     }
   }
   const fam: Family = input.category ? CAT_FAMILY[input.category] : "full";
@@ -278,10 +285,11 @@ const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "
    Sheet — enveloppe commune des bottom sheets (Organiser / Choisir /
    Improviser). Masque la nav du bas tant qu'elle est ouverte.
    ════════════════════════════════════════════════════════════════════ */
-function Sheet({ onClose, children, maxHeight = "88vh" }: {
+function Sheet({ onClose, children, maxHeight = "88vh", height }: {
   onClose: () => void;
   children: React.ReactNode;
   maxHeight?: string;
+  height?: string;              // imposée → sheet « plein écran » (catalogue)
 }) {
   useEffect(() => {
     document.body.classList.add("modal-open");
@@ -304,6 +312,7 @@ function Sheet({ onClose, children, maxHeight = "88vh" }: {
           border: "1px solid rgba(var(--accent-rgb),0.14)",
           boxShadow: "0 -14px 44px rgba(0,0,0,0.35)",
           maxHeight,
+          height,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -671,7 +680,6 @@ function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }:
   onDelete: (id: string) => void;
   onVisibilityChange: (id: string, vis: Visibility) => void;
 }) {
-  const Icon = resolveIcon(session.icon);
   const visKey = (session.visibility ?? "private") as Visibility;
   const vis = VIS_CONFIG[visKey];
   const VisIcon = vis.icon;
@@ -680,58 +688,74 @@ function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }:
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}>
-      {/* La tuile = un seul geste : lancer */}
+      {/* La tuile = un seul geste : lancer. Portrait 3:4 → les photos 2:3
+          de la banque se cadrent naturellement, plus de torses coupés. */}
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={() => onStart(session)}
-        className="w-full rounded-2xl overflow-hidden relative cursor-pointer text-left border-none p-0 block"
-        style={{ height: 118 }}
+        className="w-full rounded-[18px] overflow-hidden relative cursor-pointer text-left border-none p-0 block"
+        style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
         aria-label={`Lancer : ${session.title}`}
       >
-        <Visual img={tileArt.img} base={tileArt.base} glow={tileArt.glow} dim={0.52} focus="50% 26%" pos="center 22%"
+        <Visual img={tileArt.img} base={tileArt.base} glow={tileArt.glow} dim={0.42} focus="50% 34%" pos="center 20%"
           style={{ position: "absolute", inset: 0 }} />
-        <div className="absolute top-2 left-2.5 flex items-center gap-1.5">
-          <Icon size={13} strokeWidth={1.8} style={{ color: "rgba(255,255,255,0.85)" }} />
-          <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>
-            {CATEGORY_LABEL[session.category]}
+
+        {/* Famille — la couleur de la carte a un nom (Poussée, Tirage…) */}
+        <span className="absolute top-2 left-2 flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-full"
+          style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}>
+          <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: tileArt.glow }} />
+          <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.86)" }}>
+            {tileArt.label}
           </span>
-        </div>
+        </span>
+
         {session.perso && (
-          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[8px] font-black tracking-[0.12em] uppercase"
-            style={{ color: "#EFB83B", border: "1px solid rgba(239,184,59,0.65)", background: "rgba(20,14,4,0.5)", backdropFilter: "blur(4px)" }}>
+          <span className="absolute top-2 right-2 px-2 py-1 rounded-full text-[8px] font-black tracking-[0.12em] uppercase"
+            style={{ color: "#EFB83B", border: "1px solid rgba(239,184,59,0.55)", background: "rgba(20,14,4,0.55)", backdropFilter: "blur(6px)" }}>
             Perso
           </span>
         )}
-        <div className="absolute inset-x-0 bottom-0 px-2.5 pb-2 pt-7"
-          style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 30%, transparent)" }}>
-          <p className="text-[12.5px] font-bold text-white leading-tight truncate">{session.title}</p>
-          <p className="text-[9.5px] font-medium mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>
-            {session.duration} min · {diffShort}
-          </p>
+
+        {/* Scrim bas : titre sur 2 lignes max + affordance de lancement */}
+        <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-10 flex items-end justify-between gap-2"
+          style={{ background: "linear-gradient(to top, rgba(8,6,14,0.92) 18%, rgba(8,6,14,0.4) 60%, transparent)" }}>
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold text-white leading-snug"
+              style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+              {session.title}
+            </p>
+            <p className="text-[9.5px] font-medium mt-1" style={{ color: "rgba(255,255,255,0.62)" }}>
+              {session.duration} min · {diffShort}
+            </p>
+          </div>
+          <span aria-hidden className="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0 mb-0.5"
+            style={{ background: "rgba(255,255,255,0.16)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.28)" }}>
+            <Play size={11} strokeWidth={0} fill="#fff" style={{ marginLeft: 1, color: "#fff" }} />
+          </span>
         </div>
       </motion.button>
 
-      {/* Actions perso — hors de la zone de tap (fini les sélections accidentelles) */}
+      {/* Actions perso — UNE barre segmentée, hors zone de tap */}
       {session.perso && (
-        <div className="flex items-center gap-1 mt-1.5 px-0.5">
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => onEdit(session)}
-            className="flex-1 h-7 rounded-lg flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
+        <div className="flex items-stretch mt-1.5 h-8 rounded-xl overflow-hidden"
+          style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onEdit(session)}
+            className="flex-1 flex items-center justify-center cursor-pointer border-none bg-transparent p-0"
             aria-label="Modifier">
-            <Pencil size={11} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+            <Pencil size={12} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
           </motion.button>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => onVisibilityChange(session.id, VIS_CYCLE[visKey])}
-            className="flex-1 h-7 rounded-lg flex items-center justify-center gap-1 cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}
+          <span aria-hidden className="w-px my-1.5 flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.18)" }} />
+          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onVisibilityChange(session.id, VIS_CYCLE[visKey])}
+            className="flex-[1.4] flex items-center justify-center gap-1 cursor-pointer border-none bg-transparent p-0"
             aria-label={`Visibilité : ${vis.label} (toucher pour changer)`}>
-            <VisIcon size={10} strokeWidth={2} style={{ color: vis.color }} />
-            <span className="text-[8.5px] font-bold" style={{ color: vis.color }}>{vis.label}</span>
+            <VisIcon size={11} strokeWidth={2} style={{ color: vis.color }} />
+            <span className="text-[9px] font-bold" style={{ color: vis.color }}>{vis.label}</span>
           </motion.button>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(session.id)}
-            className="flex-1 h-7 rounded-lg flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(252,129,129,0.09)", border: "1px solid rgba(252,129,129,0.2)" }}
+          <span aria-hidden className="w-px my-1.5 flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.18)" }} />
+          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onDelete(session.id)}
+            className="flex-1 flex items-center justify-center cursor-pointer border-none bg-transparent p-0"
             aria-label="Supprimer">
-            <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
+            <Trash2 size={12} strokeWidth={1.9} style={{ color: "#FC8181" }} />
           </motion.button>
         </div>
       )}
@@ -755,67 +779,74 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
   );
 
   return (
-    <Sheet onClose={onClose}>
-      {/* Header */}
-      <div className="px-5 pt-2 pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[19px] font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
-            Mes séances
-            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.13)", color: "var(--accent)" }}>
-              {sessions.length}
-            </span>
-          </h2>
+    <Sheet onClose={onClose} height="94dvh" maxHeight="94dvh">
+      {/* Header — éditorial : le compte vit dans la phrase, pas dans un badge */}
+      <div className="px-5 pt-2 pb-3.5 flex-shrink-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-[23px] font-light leading-tight" style={{ color: "var(--text-1)" }}>
+              Mes séances
+            </h2>
+            <p className="text-[11.5px] font-light mt-1" style={{ color: "var(--text-3)" }}>
+              Vaiiya + les tiennes · <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} prêtes à lancer</span>
+            </p>
+          </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 mt-0.5"
             style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
             <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
-        <p className="text-[11.5px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
-          Vaiiya + les tiennes, au même endroit.
-        </p>
       </div>
 
-      {/* Filtres — UN seul jeu */}
-      <div className="flex gap-1.5 px-5 pb-3 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: "none" }}>
-        {CHOOSE_FILTERS.map(({ key, label }) => (
-          <button key={key} onClick={() => setFilter(key)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-[10.5px] font-bold cursor-pointer transition-all duration-150"
-            style={filter === key
-              ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }
-              : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-            {label}
-          </button>
-        ))}
+      {/* Filtres — la pastille annonce la couleur des cartes */}
+      <div className="flex gap-1.5 px-5 pb-3.5 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: "none" }}>
+        {CHOOSE_FILTERS.map(({ key, label, dot }) => {
+          const active = filter === key;
+          return (
+            <button key={key} onClick={() => setFilter(key)}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3.5 h-[31px] rounded-full text-[10.5px] font-bold cursor-pointer transition-all duration-150"
+              style={active
+                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", border: "1px solid transparent", boxShadow: "0 4px 14px rgba(139,92,246,0.32)" }
+                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+              {dot && <span aria-hidden className="w-[5px] h-[5px] rounded-full flex-shrink-0"
+                style={{ background: active ? "rgba(255,255,255,0.9)" : dot }} />}
+              {label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Grille */}
-      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
+      {/* Grille — portrait, la photo respire */}
+      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
         {loading ? (
-          <div className="flex items-center gap-2 py-6">
-            <motion.div className="w-4 h-4 rounded-full border-2"
-              style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-              animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
-            <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement de tes séances…</span>
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="rounded-[18px] animate-pulse"
+                style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 items-start">
+          <div className="grid grid-cols-2 gap-3 items-start">
             <AnimatePresence mode="popLayout">
               {filtered.map((s) => (
                 <SessionTile key={s.id} session={s}
                   onStart={onStart} onEdit={onEdit} onDelete={onDelete} onVisibilityChange={onVisibilityChange} />
               ))}
             </AnimatePresence>
-            {/* Créer la mienne */}
+            {/* Créer la mienne — même gabarit que les tuiles */}
             <motion.button
               layout whileTap={{ scale: 0.96 }} onClick={onCreate}
-              className="rounded-2xl flex flex-col items-center justify-center gap-1.5 cursor-pointer"
-              style={{ height: 118, background: "transparent", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+              className="rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer"
+              style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
             >
-              <span className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
-                <Plus size={15} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+              <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
               </span>
-              <span className="text-[11px] font-bold" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+              <span className="text-[11.5px] font-bold" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+              <span className="text-[9px] font-medium px-4 text-center leading-snug" style={{ color: "var(--text-3)" }}>
+                Elle aura sa photo, comme les autres
+              </span>
             </motion.button>
             {filtered.length === 0 && filter === "perso" && (
               <p className="col-span-2 text-center text-xs font-light py-4" style={{ color: "var(--text-3)" }}>
