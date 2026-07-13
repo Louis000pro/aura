@@ -234,14 +234,13 @@ function resolveArt(input: { title?: string; category?: WorkoutCategory; muscles
 }
 
 /** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
-const WIDGET: Record<"repos" | "done" | "setup" | "improvise" | "choisis", {
+const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
   img: string; base: string; glow: string; dim: number; focus: string; pos: string;
 }> = {
   repos:     { img: "repos",       base: "#0F6F63", glow: "#2BD4A0", dim: 0.32, focus: "72% 58%", pos: "68% center" },
   done:      { img: "done",        base: "#0E8E6A", glow: "#2BD4A0", dim: 0.5,  focus: "50% 42%", pos: "center 40%" },
   setup:     { img: "setup",       base: "#C0571A", glow: "#EF9F27", dim: 0.4,  focus: "42% 40%", pos: "center 45%" },
   improvise: { img: "improvise",   base: "#7A34C8", glow: "#C46BFF", dim: 0.5,  focus: "56% 46%", pos: "center 40%" },
-  choisis:   { img: "full-epaule", base: "#4B3EA6", glow: "#8B7BFF", dim: 0.44, focus: "50% 40%", pos: "center 30%" },
 };
 
 const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
@@ -502,13 +501,21 @@ function TodayHero({
 /* ════════════════════════════════════════════════════════════════════
    ② Cartes de bifurcation — J'improvise / Je choisis
    ════════════════════════════════════════════════════════════════════ */
+/** Le deck « Je choisis » : 3 vraies vignettes de la banque, familles
+    différentes (couleur in-app), empilées en éventail → « tes séances,
+    choisis-en une ». Pas une photo unique qui mentirait sur le contenu. */
+const CHOISIS_DECK: { img: string; base: string; glow: string; rot: number; x: number; y: number; s: number; z: number }[] = [
+  { img: "pull-traction", base: "#1E5FD0", glow: "#4C93FF", rot: -13, x: -30, y: 5,  s: 0.92, z: 1 },
+  { img: "legs-squat",    base: "#0E9E56", glow: "#2FD98A", rot:  13, x:  30, y: 5,  s: 0.92, z: 1 },
+  { img: "push-couche",   base: "#E8481F", glow: "#FF7A4D", rot:   0, x:   0, y: -4, s: 1,    z: 2 },
+];
+
 function ForkCard({ kind, count, onClick }: {
   kind: "improvise" | "choisis";
   count?: number;
   onClick: () => void;
 }) {
   const isIA = kind === "improvise";
-  const w = WIDGET[isIA ? "improvise" : "choisis"];
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
@@ -516,12 +523,29 @@ function ForkCard({ kind, count, onClick }: {
       className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0"
       style={{ height: 148, boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
     >
-      <Visual img={w.img} base={w.base} glow={w.glow} dim={w.dim} focus={w.focus} pos={w.pos}
-        style={{ position: "absolute", inset: 0 }} />
-      {isIA && (
+      {isIA ? (
         <>
+          <Visual img={WIDGET.improvise.img} base={WIDGET.improvise.base} glow={WIDGET.improvise.glow}
+            dim={WIDGET.improvise.dim} focus={WIDGET.improvise.focus} pos={WIDGET.improvise.pos}
+            style={{ position: "absolute", inset: 0 }} />
           <Sparkles size={24} strokeWidth={1.5} className="absolute top-3 right-3" style={{ color: "#E4D6FF", opacity: 0.9 }} />
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
+        </>
+      ) : (
+        <>
+          <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(158deg,#1b1430,#0c0a15)" }} />
+          <div aria-hidden className="absolute inset-x-0 top-2.5 flex items-center justify-center" style={{ height: 92 }}>
+            {CHOISIS_DECK.map((d) => (
+              <Visual key={d.img} img={d.img} base={d.base} glow={d.glow} dim={0.5} focus="50% 32%" pos="center 26%"
+                className="absolute rounded-[9px]"
+                style={{
+                  width: 56, height: 80, zIndex: d.z,
+                  transform: `translate(${d.x}px, ${d.y}px) rotate(${d.rot}deg) scale(${d.s})`,
+                  border: "1.5px solid rgba(255,255,255,0.16)",
+                  boxShadow: "0 7px 16px rgba(0,0,0,0.45)",
+                }} />
+            ))}
+          </div>
         </>
       )}
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
