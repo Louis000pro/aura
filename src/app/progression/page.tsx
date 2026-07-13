@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock, ChevronRight, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Zap, Home, Sun, CalendarDays,
+  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
@@ -150,7 +150,7 @@ const VIS_CONFIG = {
   public:  { label: "Public", icon: Globe, color: "#2BD4A0" },
 } as const;
 type Visibility = keyof typeof VIS_CONFIG;
-const VIS_CYCLE: Record<Visibility, Visibility> = { private: "friends", friends: "public", public: "private" };
+const VIS_ORDER: Visibility[] = ["private", "friends", "public"];
 
 /* ─── Libellés FR des objectifs onboarding (même map que WeeklyProgramme) ── */
 const goalLabels: Record<string, string> = {
@@ -218,7 +218,10 @@ function artHash(s: string): number {
   return h;
 }
 
-type Art = { img: string; base: string; glow: string; label: string };
+/* Ordre de rangement du catalogue — les familles se suivent toujours pareil */
+const FAMILY_ORDER: Family[] = ["push", "pull", "legs", "core", "full", "cardio"];
+
+type Art = { img: string; base: string; glow: string; label: string; fam: Family };
 
 /** Résout l'ambiance d'une séance depuis son titre / ses muscles / sa catégorie.
     Le TITRE prime : « Dos de Fer » reste Tirage même si les muscles listent
@@ -230,14 +233,14 @@ function resolveArt(input: { title?: string; category?: WorkoutCategory; muscles
     for (const r of IMG_RULES) {
       if (r.re.test(hay)) {
         const f = FAMILY[r.fam];
-        return { img: r.img, base: f.base, glow: f.glow, label: f.label };
+        return { img: r.img, base: f.base, glow: f.glow, label: f.label, fam: r.fam };
       }
     }
   }
   const fam: Family = input.category ? CAT_FAMILY[input.category] : "full";
   const f = FAMILY[fam];
   const img = f.variants[artHash(input.title || fam) % f.variants.length];
-  return { img, base: f.base, glow: f.glow, label: f.label };
+  return { img, base: f.base, glow: f.glow, label: f.label, fam };
 }
 
 /** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
@@ -673,21 +676,16 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
    ════════════════════════════════════════════════════════════════════ */
 type MergedSession = WorkoutSession & { perso: boolean };
 
-function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }: {
+function SessionTile({ session, onStart, onManage }: {
   session: MergedSession;
   onStart: (s: MergedSession) => void;
-  onEdit: (s: WorkoutSession) => void;
-  onDelete: (id: string) => void;
-  onVisibilityChange: (id: string, vis: Visibility) => void;
+  onManage: (s: MergedSession) => void;
 }) {
-  const visKey = (session.visibility ?? "private") as Visibility;
-  const vis = VIS_CONFIG[visKey];
-  const VisIcon = vis.icon;
   const diffShort = session.difficulty === "Intermédiaire" ? "Inter." : session.difficulty;
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}>
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
       {/* La tuile = un seul geste : lancer. Portrait 3:4 → les photos 2:3
           de la banque se cadrent naturellement, plus de torses coupés. */}
       <motion.button
@@ -700,21 +698,22 @@ function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }:
         <Visual img={tileArt.img} base={tileArt.base} glow={tileArt.glow} dim={0.42} focus="50% 34%" pos="center 20%"
           style={{ position: "absolute", inset: 0 }} />
 
-        {/* Famille — la couleur de la carte a un nom (Poussée, Tirage…) */}
-        <span className="absolute top-2 left-2 flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-full"
-          style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}>
-          <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: tileArt.glow }} />
-          <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.86)" }}>
-            {tileArt.label}
+        {/* Chips empilés — famille, puis Perso. Le coin droit reste au ⋯ */}
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          <span className="flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-full"
+            style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}>
+            <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: tileArt.glow }} />
+            <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.86)" }}>
+              {tileArt.label}
+            </span>
           </span>
-        </span>
-
-        {session.perso && (
-          <span className="absolute top-2 right-2 px-2 py-1 rounded-full text-[8px] font-black tracking-[0.12em] uppercase"
-            style={{ color: "#EFB83B", border: "1px solid rgba(239,184,59,0.55)", background: "rgba(20,14,4,0.55)", backdropFilter: "blur(6px)" }}>
-            Perso
-          </span>
-        )}
+          {session.perso && (
+            <span className="px-2 py-1 rounded-full text-[8px] font-black tracking-[0.12em] uppercase"
+              style={{ color: "#EFB83B", border: "1px solid rgba(239,184,59,0.55)", background: "rgba(20,14,4,0.55)", backdropFilter: "blur(6px)" }}>
+              Perso
+            </span>
+          )}
+        </div>
 
         {/* Scrim bas : titre sur 2 lignes max + affordance de lancement */}
         <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-10 flex items-end justify-between gap-2"
@@ -735,30 +734,120 @@ function SessionTile({ session, onStart, onEdit, onDelete, onVisibilityChange }:
         </div>
       </motion.button>
 
-      {/* Actions perso — UNE barre segmentée, hors zone de tap */}
+      {/* Gérer (perso) — un ⋯ discret sur la carte, le menu fait le reste */}
       {session.perso && (
-        <div className="flex items-stretch mt-1.5 h-8 rounded-xl overflow-hidden"
-          style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onEdit(session)}
-            className="flex-1 flex items-center justify-center cursor-pointer border-none bg-transparent p-0"
-            aria-label="Modifier">
-            <Pencil size={12} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
-          </motion.button>
-          <span aria-hidden className="w-px my-1.5 flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.18)" }} />
-          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onVisibilityChange(session.id, VIS_CYCLE[visKey])}
-            className="flex-[1.4] flex items-center justify-center gap-1 cursor-pointer border-none bg-transparent p-0"
-            aria-label={`Visibilité : ${vis.label} (toucher pour changer)`}>
-            <VisIcon size={11} strokeWidth={2} style={{ color: vis.color }} />
-            <span className="text-[9px] font-bold" style={{ color: vis.color }}>{vis.label}</span>
-          </motion.button>
-          <span aria-hidden className="w-px my-1.5 flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.18)" }} />
-          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onDelete(session.id)}
-            className="flex-1 flex items-center justify-center cursor-pointer border-none bg-transparent p-0"
-            aria-label="Supprimer">
-            <Trash2 size={12} strokeWidth={1.9} style={{ color: "#FC8181" }} />
+        <motion.button whileTap={{ scale: 0.85 }} onClick={() => onManage(session)}
+          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+          style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}
+          aria-label={`Gérer : ${session.title}`}>
+          <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
+        </motion.button>
+      )}
+    </motion.div>
+  );
+}
+
+/* Menu « Gérer » d'une séance perso — remplace la barre de réglages sous
+   les tuiles : la grille reste pure, les réglages ont leur propre écran. */
+function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }: {
+  session: MergedSession;
+  onClose: () => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: Visibility) => void;
+}) {
+  const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const [vis, setVis] = useState<Visibility>((session.visibility ?? "private") as Visibility);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[130] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(12,8,22,0.55)", backdropFilter: "blur(3px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.14)",
+          boxShadow: "0 -14px 44px rgba(0,0,0,0.4)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center pt-2.5 pb-1 md:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
+        </div>
+
+        {/* La séance dont on parle — sa vignette, son nom */}
+        <div className="flex items-center gap-3 px-5 pt-2 pb-4">
+          <Visual img={art.img} base={art.base} glow={art.glow} dim={0.42} focus="50% 34%" pos="center 20%"
+            className="rounded-xl flex-shrink-0" style={{ width: 46, height: 61 }} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
+            <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
+              Séance perso · {session.duration} min · {art.label}
+            </p>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
-      )}
+
+        <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+
+        {/* Modifier */}
+        <motion.button whileTap={{ scale: 0.98 }} onClick={() => onEdit(session)}
+          className="w-full flex items-center gap-3 px-5 py-3.5 cursor-pointer text-left border-none bg-transparent">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+            <Pencil size={14} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
+          </span>
+          <span className="flex-1 text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Modifier la séance</span>
+          <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+        </motion.button>
+
+        <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+
+        {/* Visibilité — les 3 choix visibles d'un coup, plus de cycle mystère */}
+        <div className="px-5 pt-3.5 pb-1">
+          <p className="text-[9.5px] font-extrabold tracking-[0.14em] uppercase mb-2" style={{ color: "var(--text-3)" }}>
+            Qui peut la voir ?
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {VIS_ORDER.map((k) => {
+              const cfg = VIS_CONFIG[k];
+              const CfgIcon = cfg.icon;
+              const active = vis === k;
+              return (
+                <motion.button key={k} whileTap={{ scale: 0.95 }}
+                  onClick={() => { setVis(k); onVisibilityChange(session.id, k); }}
+                  className="h-[52px] rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer"
+                  style={active
+                    ? { background: "rgba(var(--accent-rgb),0.1)", border: "1.5px solid rgba(var(--accent-rgb),0.55)" }
+                    : { background: "rgba(var(--tint-violet-rgb),0.4)", border: "1.5px solid transparent" }}
+                  aria-pressed={active}>
+                  <CfgIcon size={14} strokeWidth={2} style={{ color: active ? "var(--accent)" : "var(--text-3)" }} />
+                  <span className="text-[9.5px] font-bold" style={{ color: active ? "var(--accent)" : "var(--text-3)" }}>{cfg.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Supprimer — à l'écart, en rouge, aucune ambiguïté */}
+        <motion.button whileTap={{ scale: 0.98 }} onClick={() => onDelete(session.id)}
+          className="w-full flex items-center gap-3 px-5 py-3.5 mt-2 mb-1 cursor-pointer text-left border-none bg-transparent">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(252,129,129,0.1)" }}>
+            <Trash2 size={14} strokeWidth={1.9} style={{ color: "#FC8181" }} />
+          </span>
+          <span className="text-[13px] font-semibold" style={{ color: "#FC8181" }}>Supprimer la séance</span>
+        </motion.button>
+      </motion.div>
     </motion.div>
   );
 }
@@ -774,11 +863,29 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
   onVisibilityChange: (id: string, vis: Visibility) => void;
 }) {
   const [filter, setFilter] = useState<ChooseFilter>("tous");
-  const filtered = sessions.filter((s) =>
-    filter === "tous" ? true : filter === "perso" ? s.perso : s.category === filter
-  );
+  const [manage, setManage] = useState<MergedSession | null>(null);
+
+  /* Rangement : les séances se groupent par FAMILLE (l'ordre du fil rouge),
+     tes perso en tête de chaque famille. Les couleurs se rangent d'elles-mêmes. */
+  const groups = useMemo(() => {
+    const filtered = sessions.filter((s) =>
+      filter === "tous" ? true : filter === "perso" ? s.perso : s.category === filter
+    );
+    const byFam = new Map<Family, MergedSession[]>();
+    for (const s of filtered) {
+      const fam = resolveArt({ title: s.title, category: s.category, muscles: s.muscles }).fam;
+      const arr = byFam.get(fam);
+      if (arr) arr.push(s); else byFam.set(fam, [s]);
+    }
+    return FAMILY_ORDER.filter((f) => byFam.has(f)).map((f) => ({
+      fam: f,
+      meta: FAMILY[f],
+      items: byFam.get(f)!.sort((a, b) => Number(b.perso) - Number(a.perso) || a.title.localeCompare(b.title, "fr")),
+    }));
+  }, [sessions, filter]);
 
   return (
+    <>
     <Sheet onClose={onClose} height="94dvh" maxHeight="94dvh">
       {/* Header — éditorial : le compte vit dans la phrase, pas dans un badge */}
       <div className="px-5 pt-2 pb-3.5 flex-shrink-0">
@@ -817,7 +924,7 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
         })}
       </div>
 
-      {/* Grille — portrait, la photo respire */}
+      {/* Rangé par famille — chaque section porte sa couleur et son compte */}
       <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
         {loading ? (
           <div className="grid grid-cols-2 gap-3">
@@ -827,36 +934,63 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 items-start">
-            <AnimatePresence mode="popLayout">
-              {filtered.map((s) => (
-                <SessionTile key={s.id} session={s}
-                  onStart={onStart} onEdit={onEdit} onDelete={onDelete} onVisibilityChange={onVisibilityChange} />
-              ))}
-            </AnimatePresence>
-            {/* Créer la mienne — même gabarit que les tuiles */}
-            <motion.button
-              layout whileTap={{ scale: 0.96 }} onClick={onCreate}
-              className="rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer"
-              style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
-            >
-              <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-                <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
-              </span>
-              <span className="text-[11.5px] font-bold" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
-              <span className="text-[9px] font-medium px-4 text-center leading-snug" style={{ color: "var(--text-3)" }}>
-                Elle aura sa photo, comme les autres
-              </span>
-            </motion.button>
-            {filtered.length === 0 && filter === "perso" && (
-              <p className="col-span-2 text-center text-xs font-light py-4" style={{ color: "var(--text-3)" }}>
-                Pas encore de séance à toi — crée la première juste au-dessus. ✦
+          <>
+            {groups.map((g) => (
+              <section key={g.fam} className="mb-5">
+                <div className="flex items-center gap-2 mb-2.5 px-0.5">
+                  <span aria-hidden className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: g.meta.base }} />
+                  <span className="text-[9.5px] font-extrabold tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>
+                    {g.meta.label}
+                  </span>
+                  <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+                  <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{g.items.length}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 items-start">
+                  {g.items.map((s) => (
+                    <SessionTile key={s.id} session={s} onStart={onStart} onManage={setManage} />
+                  ))}
+                </div>
+              </section>
+            ))}
+            {groups.length === 0 && filter === "perso" && (
+              <p className="text-center text-xs font-light py-4" style={{ color: "var(--text-3)" }}>
+                Pas encore de séance à toi — crée la première juste en dessous. ✦
               </p>
             )}
-          </div>
+            {/* Créer la mienne — une rangée à part : la grille ne contient que des séances */}
+            <motion.button
+              whileTap={{ scale: 0.98 }} onClick={onCreate}
+              className="w-full rounded-2xl flex items-center gap-3 px-4 py-3.5 cursor-pointer text-left"
+              style={{ background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+            >
+              <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+              </span>
+              <span>
+                <span className="block text-[12.5px] font-bold" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+                <span className="block text-[9.5px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
+                  Elle aura sa photo et sa famille, comme les autres
+                </span>
+              </span>
+            </motion.button>
+          </>
         )}
       </div>
     </Sheet>
+
+    {/* Menu « Gérer » d'une séance perso */}
+    <AnimatePresence>
+      {manage && (
+        <ManageSheet
+          session={manage}
+          onClose={() => setManage(null)}
+          onEdit={(s) => { setManage(null); onEdit(s); }}
+          onDelete={(id) => { setManage(null); onDelete(id); }}
+          onVisibilityChange={onVisibilityChange}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
