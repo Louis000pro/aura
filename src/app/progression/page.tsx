@@ -652,22 +652,29 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
 type ElanData = {
   bars: { label: string; min: number; done: boolean; today: boolean }[];
   sessions: number; minutes: number; kcal: number; streak: number; hasHistory: boolean;
+  prevMinutes: number;   // total de la semaine dernière (pour la comparaison)
+  record: number;        // plus longue séance sur la fenêtre (8 sem.)
 };
 
 const fmtDur = (m: number) =>
   m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
 
-function ElanStrip({ data }: { data: ElanData | null }) {
+function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void }) {
   if (!data) return null; // le temps du chargement : rien, pas de flash
   const { bars, sessions, minutes, kcal, streak, hasHistory } = data;
   const maxMin = Math.max(1, ...bars.map((b) => b.min));
   const barH = (min: number) => (min <= 0 ? 4 : Math.round(6 + (min / maxMin) * 30));
 
   return (
-    <div className="rounded-[20px] px-4 pt-3.5 pb-3.5"
+    <motion.button
+      whileTap={{ scale: 0.98 }} onClick={onOpen}
+      className="w-full text-left cursor-pointer block rounded-[20px] px-4 pt-3.5 pb-3.5"
       style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(43,212,160,0.20)", boxShadow: "0 6px 22px rgba(43,212,160,0.08)" }}>
       <div className="flex items-center justify-between mb-3.5">
-        <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
+        <p className="text-[13.5px] font-bold flex items-center gap-0.5" style={{ color: "var(--text-1)" }}>
+          Ton élan
+          <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
+        </p>
         {streak > 0 && (
           <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-extrabold"
             style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
@@ -719,7 +726,90 @@ function ElanStrip({ data }: { data: ElanData | null }) {
           </p>
         </div>
       )}
-    </div>
+    </motion.button>
+  );
+}
+
+/** Sheet « Ton élan » — le détail au tap : graphique agrandi à gauche,
+    chiffres à droite, comparaison vs semaine dernière. Unité discrète
+    (« en minutes ») pour ne pas lasser les habitués. Zéro culpabilité :
+    une semaine plus légère devient un objectif, pas un reproche. */
+function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
+  const { bars, sessions, minutes, kcal, streak, prevMinutes, record } = data;
+  const maxMin = Math.max(1, ...bars.map((b) => b.min));
+  const barH = (min: number) => (min <= 0 ? 6 : Math.round(10 + (min / maxMin) * 100));
+  const avg = sessions > 0 ? Math.round(minutes / sessions) : 0;
+  const delta = minutes - prevMinutes;
+
+  return (
+    <Sheet onClose={onClose} maxHeight="72vh">
+      <div className="px-5 pt-2 pb-6 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <p className="text-[17px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
+          {streak > 0 && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-extrabold"
+              style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
+              <Flame size={13} strokeWidth={2.4} fill="#EF9F27" />
+              {streak} sem.
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] font-medium mt-0.5 mb-5" style={{ color: "var(--text-3)" }}>
+          7 derniers jours · en minutes
+        </p>
+
+        <div className="flex items-end gap-5">
+          {/* Graphique agrandi */}
+          <div className="flex-1 flex items-end justify-between" style={{ height: 150 }}>
+            {bars.map((b, i) => (
+              <div key={i} className="flex flex-col items-center justify-end gap-1.5 h-full">
+                {b.min > 0 && b.min === maxMin && (
+                  <span className="text-[9.5px] font-extrabold" style={{ color: "#2BD4A0" }}>{b.min} min</span>
+                )}
+                <span className="w-[12px] rounded-full" style={{
+                  height: barH(b.min),
+                  background: b.today && b.min > 0 ? "#2BD4A0"
+                    : b.done ? "rgba(43,212,160,0.5)" : "rgba(255,255,255,0.09)",
+                  boxShadow: b.today && b.min > 0 ? "0 0 14px rgba(43,212,160,0.4)" : undefined,
+                }} />
+                <span className="text-[9px] font-bold" style={{ color: b.today ? "#2BD4A0" : "var(--text-3)" }}>{b.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Détails */}
+          <div style={{ width: 128 }}>
+            {([
+              ["Séances", sessions > 0 ? String(sessions) : "—", "#2BD4A0"],
+              ["Temps", minutes > 0 ? fmtDur(minutes) : "—", "var(--text-1)"],
+              ["Calories", kcal > 0 ? kcal.toLocaleString("fr-FR") : "—", "#EF9F27"],
+              ["Moyenne", avg > 0 ? `${avg} min` : "—", "var(--text-1)"],
+              ["Record", record > 0 ? `${record} min` : "—", "var(--text-1)"],
+            ] as const).map(([k, v, c], i, arr) => (
+              <div key={k} className="flex items-baseline justify-between py-[7px]"
+                style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                <span className="text-[10.5px] font-semibold" style={{ color: "var(--text-3)" }}>{k}</span>
+                <span className="text-[13px] font-extrabold" style={{ color: c }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comparaison vs semaine dernière — jamais un reproche */}
+        {prevMinutes > 0 && delta > 0 && (
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-bold"
+            style={{ background: "rgba(43,212,160,0.09)", border: "1px solid rgba(43,212,160,0.22)", color: "#2BD4A0" }}>
+            ▲ +{delta} min vs la semaine dernière — ça monte.
+          </div>
+        )}
+        {prevMinutes > 0 && delta <= 0 && (
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-semibold"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-2)" }}>
+            Encore {Math.abs(delta) + 1} min pour égaler la semaine dernière.
+          </div>
+        )}
+      </div>
+    </Sheet>
   );
 }
 
@@ -1958,7 +2048,7 @@ export default function ProgressionPage() {
   const [profileLevel, setProfileLevel] = useState<string | null>(null);
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan">(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
@@ -2098,7 +2188,7 @@ export default function ProgressionPage() {
       const dayMin = new Map<string, number>();
       const dayCount = new Map<string, number>();
       const activeWeeks = new Set<number>();
-      let sessions = 0, minutes = 0, kcal = 0;
+      let sessions = 0, minutes = 0, kcal = 0, prevMinutes = 0, record = 0;
 
       for (const r of data ?? []) {
         const started = r.started_at as string | null;
@@ -2109,9 +2199,11 @@ export default function ProgressionPage() {
           : ((r.duration_minutes as number) ?? 0);
         dayMin.set(key, (dayMin.get(key) ?? 0) + min);
         dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
+        if (min > record) record = min;
         const off = weekOffsetOf(key);
         activeWeeks.add(off);
         if (off === 0) { sessions += 1; minutes += min; kcal += (r.calories_burned as number) ?? 0; }
+        if (off === -1) prevMinutes += min;
       }
 
       // Série : semaines consécutives actives (la semaine en cours pas encore lancée ne casse rien)
@@ -2129,7 +2221,7 @@ export default function ProgressionPage() {
         bars.push({ label: DL[idx], min: dayMin.get(key) ?? 0, done: (dayCount.get(key) ?? 0) > 0, today: key === today });
       }
 
-      setElan({ bars, sessions, minutes, kcal, streak, hasHistory: (data?.length ?? 0) > 0 });
+      setElan({ bars, sessions, minutes, kcal, streak, hasHistory: (data?.length ?? 0) > 0, prevMinutes, record });
     })();
     return () => { cancelled = true; };
   }, [user, today]);
@@ -2342,7 +2434,7 @@ export default function ProgressionPage() {
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
           className="mt-3"
         >
-          <ElanStrip data={elan} />
+          <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
         </motion.div>
       </div>
 
@@ -2350,6 +2442,11 @@ export default function ProgressionPage() {
       <AnimatePresence>
         {sheet === "organiser" && (
           <OrganiserSheet onClose={() => { setSheet(null); void loadWeek(); }} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "elan" && elan && (
+          <ElanSheet data={elan} onClose={() => setSheet(null)} />
         )}
       </AnimatePresence>
       <AnimatePresence>
