@@ -120,17 +120,6 @@ const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
   force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
 };
 
-/* Filtres de la sheet « Je choisis » — par catégorie. Vaiiya / perso sont
-   désormais deux RANGÉES, plus un filtre. La pastille annonce la couleur. */
-type ChooseFilter = "tous" | WorkoutCategory;
-const CHOOSE_FILTERS: { key: ChooseFilter; label: string; dot?: string }[] = [
-  { key: "tous",     label: "Toutes" },
-  { key: "force",    label: "Force",     dot: "#FF7A4D" },
-  { key: "cardio",   label: "Cardio",    dot: "#FF5A8D" },
-  { key: "mobilite", label: "Mobilité",  dot: "#2BD4A0" },
-  { key: "fullbody", label: "Full Body", dot: "#C46BFF" },
-];
-
 /* ─── Icon resolver (Supabase stores icon name as string) ── */
 const ICON_MAP: Record<string, typeof Dumbbell> = {
   Dumbbell, Flame, Wind, Layers, Sparkles,
@@ -164,12 +153,13 @@ const goalLabels: Record<string, string> = {
 };
 
 /* ════════════════════════════════════════════════════════════════════
-   Ambiances visuelles — vraie banque photo (public/entrainement).
-   Base NEUTRE : la couleur de la FAMILLE est appliquée ici, in-app, dans
-   les zones sombres (blend « screen ») → la peau reste naturelle. Une
-   séance perso hérite automatiquement d'une famille via ses muscles /
-   son titre : elle a donc l'air aussi « native » qu'une séance Vaiiya.
-   C'est le fil rouge du catalogue.
+   Banque photo (public/entrainement) — dans le CATALOGUE, les photos
+   sont NATURELLES : aucun filtre, aucune teinte. La cohérence vient du
+   cadrage portrait, du scrim bas et de la typo blanche — pas d'une
+   couleur plaquée. Les familles restent en coulisse : elles servent
+   uniquement à choisir LA BONNE PHOTO d'une séance (resolveArt). Le
+   blend couleur ne s'applique plus qu'aux widgets d'ambiance
+   (repos / done / setup / improvise).
    ════════════════════════════════════════════════════════════════════ */
 type Family = "push" | "pull" | "legs" | "core" | "full" | "cardio";
 
@@ -263,6 +253,20 @@ function Visual({
       <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, mixBlendMode: "screen", opacity: dim, background: `radial-gradient(62% 55% at ${focus}, ${glow} 0%, ${base} 36%, transparent 74%)` }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.08, mixBlendMode: "overlay", backgroundImage: GRAIN, backgroundSize: "120px 120px" }} />
+      {children}
+    </div>
+  );
+}
+
+/** Photo naturelle — la banque parle d'elle-même. Juste l'image, cadrée,
+    sur fond sombre le temps du chargement. Le scrim vit chez l'appelant. */
+function Photo({ img, pos = "center 25%", className, style, children }: {
+  img: string; pos?: string;
+  className?: string; style?: React.CSSProperties; children?: React.ReactNode;
+}) {
+  return (
+    <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
+      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
       {children}
     </div>
   );
@@ -508,13 +512,13 @@ function TodayHero({
 /* ════════════════════════════════════════════════════════════════════
    ② Cartes de bifurcation — J'improvise / Je choisis
    ════════════════════════════════════════════════════════════════════ */
-/** Le deck « Je choisis » : 3 vraies vignettes de la banque, familles
-    différentes (couleur in-app), empilées en éventail → « tes séances,
-    choisis-en une ». Pas une photo unique qui mentirait sur le contenu. */
-const CHOISIS_DECK: { img: string; base: string; glow: string; rot: number; x: number; y: number; s: number; z: number }[] = [
-  { img: "pull-traction", base: "#1E5FD0", glow: "#4C93FF", rot: -13, x: -30, y: 5,  s: 0.92, z: 1 },
-  { img: "legs-squat",    base: "#0E9E56", glow: "#2FD98A", rot:  13, x:  30, y: 5,  s: 0.92, z: 1 },
-  { img: "push-couche",   base: "#E8481F", glow: "#FF7A4D", rot:   0, x:   0, y: -4, s: 1,    z: 2 },
+/** Le deck « Je choisis » : 3 vraies vignettes de la banque — photos
+    naturelles, empilées en éventail → « tes séances, choisis-en une ».
+    Pas une photo unique qui mentirait sur le contenu. */
+const CHOISIS_DECK: { img: string; rot: number; x: number; y: number; s: number; z: number }[] = [
+  { img: "pull-traction", rot: -13, x: -30, y: 5,  s: 0.92, z: 1 },
+  { img: "legs-squat",    rot:  13, x:  30, y: 5,  s: 0.92, z: 1 },
+  { img: "push-couche",   rot:   0, x:   0, y: -4, s: 1,    z: 2 },
 ];
 
 function ForkCard({ kind, count, onClick }: {
@@ -543,7 +547,7 @@ function ForkCard({ kind, count, onClick }: {
           <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(158deg,#1b1430,#0c0a15)" }} />
           <div aria-hidden className="absolute inset-x-0 top-2.5 flex items-center justify-center" style={{ height: 92 }}>
             {CHOISIS_DECK.map((d) => (
-              <Visual key={d.img} img={d.img} base={d.base} glow={d.glow} dim={0.5} focus="50% 32%" pos="center 26%"
+              <Photo key={d.img} img={d.img} pos="center 26%"
                 className="absolute rounded-[9px]"
                 style={{
                   width: 56, height: 80, zIndex: d.z,
@@ -676,55 +680,37 @@ function SessionTile({ session, onStart, onManage }: {
   onStart: (s: MergedSession) => void;
   onManage: (s: MergedSession) => void;
 }) {
-  const diffShort = session.difficulty === "Intermédiaire" ? "Inter." : session.difficulty;
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
-      {/* La tuile = un seul geste : lancer. Portrait 3:4 → les photos 2:3
-          de la banque se cadrent naturellement, plus de torses coupés. */}
+      {/* La tuile = un seul geste : lancer. Photo NATURELLE plein cadre,
+          scrim bas, typo blanche centrée, pastille durée — rien d'autre. */}
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={() => onStart(session)}
-        className="w-full rounded-[18px] overflow-hidden relative cursor-pointer text-left border-none p-0 block"
+        className="w-full rounded-[18px] overflow-hidden relative cursor-pointer border-none p-0 block"
         style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
         aria-label={`Lancer : ${session.title}`}
       >
-        <Visual img={tileArt.img} base={tileArt.base} glow={tileArt.glow} dim={0.42} focus="50% 34%" pos="center 20%"
-          style={{ position: "absolute", inset: 0 }} />
+        <Photo img={tileArt.img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
 
-        {/* Chips empilés — famille, puis Perso. Le coin droit reste au ⋯ */}
-        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-          <span className="flex items-center gap-1.5 pl-2 pr-2.5 py-1 rounded-full"
-            style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}>
-            <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ background: tileArt.glow }} />
-            <span className="text-[8px] font-extrabold tracking-[0.14em] uppercase" style={{ color: "rgba(255,255,255,0.86)" }}>
-              {tileArt.label}
-            </span>
-          </span>
-          {session.perso && (
-            <span className="px-2 py-1 rounded-full text-[8px] font-black tracking-[0.12em] uppercase"
-              style={{ color: "#EFB83B", border: "1px solid rgba(239,184,59,0.55)", background: "rgba(20,14,4,0.55)", backdropFilter: "blur(6px)" }}>
-              Perso
-            </span>
-          )}
-        </div>
-
-        {/* Scrim bas : titre sur 2 lignes max + affordance de lancement */}
-        <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-10 flex items-end justify-between gap-2"
-          style={{ background: "linear-gradient(to top, rgba(8,6,14,0.92) 18%, rgba(8,6,14,0.4) 60%, transparent)" }}>
-          <div className="min-w-0">
-            <p className="text-[13px] font-bold text-white leading-snug"
-              style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-              {session.title}
-            </p>
-            <p className="text-[9.5px] font-medium mt-1" style={{ color: "rgba(255,255,255,0.62)" }}>
-              {session.duration} min · {diffShort}
-            </p>
-          </div>
-          <span aria-hidden className="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0 mb-0.5"
-            style={{ background: "rgba(255,255,255,0.16)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.28)" }}>
-            <Play size={11} strokeWidth={0} fill="#fff" style={{ marginLeft: 1, color: "#fff" }} />
+        {/* Scrim bas : éyebrow · titre · durée — pile centrée, lisible partout */}
+        <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3 pt-12 flex flex-col items-center text-center"
+          style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 22%, rgba(6,5,10,0.38) 64%, transparent)" }}>
+          <p className="text-[7.5px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>
+            {session.perso ? "Perso" : "Séance"}
+          </p>
+          <p className="text-[12.5px] font-black uppercase text-white leading-[1.12] tracking-tight"
+            style={{
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+              textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+            }}>
+            {session.title}
+          </p>
+          <span className="mt-1.5 px-2.5 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.08em] text-white"
+            style={{ border: "1px solid rgba(255,255,255,0.65)" }}>
+            {session.duration} MIN
           </span>
         </div>
       </motion.button>
@@ -779,12 +765,12 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }:
 
         {/* La séance dont on parle — sa vignette, son nom */}
         <div className="flex items-center gap-3 px-5 pt-2 pb-4">
-          <Visual img={art.img} base={art.base} glow={art.glow} dim={0.42} focus="50% 34%" pos="center 20%"
+          <Photo img={art.img} pos="center 20%"
             className="rounded-xl flex-shrink-0" style={{ width: 46, height: 61 }} />
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
             <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
-              Séance perso · {session.duration} min · {art.label}
+              Séance perso · {session.duration} min
             </p>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -852,8 +838,8 @@ const ROW_CARD_W = 150;
 
 /* Une rangée = un slide horizontal. Sur téléphone : swipe natif. Sur PC :
    deux flèches discrètes dans l'en-tête (pas de barre de scroll moche). */
-function SessionRow({ label, dot, count, children }: {
-  label: string; dot: string; count: number; children: React.ReactNode;
+function SessionRow({ label, count, children }: {
+  label: string; count: number; children: React.ReactNode;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const nudge = (dir: 1 | -1) =>
@@ -862,7 +848,6 @@ function SessionRow({ label, dot, count, children }: {
   return (
     <section className="mb-6">
       <div className="flex items-center gap-2 mb-2.5 px-0.5">
-        <span aria-hidden className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
         <span className="text-[10px] font-extrabold tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>{label}</span>
         <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{count}</span>
         <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
@@ -889,6 +874,88 @@ function SessionRow({ label, dot, count, children }: {
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   L'ENTONNOIR — grandes collections d'intention (réf. validée : ShapeYou).
+   Volontairement chevauchantes : une séance vit dans PLUSIEURS collections
+   (multi-appartenance par prédicat). Une collection vide reste une porte
+   ouverte : on la montre « Bientôt », on ne la cache pas — la banque se
+   remplira. Les photos sont naturelles, les titres blancs font le reste.
+   ════════════════════════════════════════════════════════════════════ */
+type CatDef = {
+  id: string;
+  name: string;
+  tag: string;                                   // la promesse, en une ligne
+  img: string;
+  pos?: string;
+  match: (s: MergedSession, hay: string) => boolean;
+};
+
+const hayOf = (s: MergedSession) =>
+  `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")}`.toLowerCase();
+
+const CATALOG: CatDef[] = [
+  { id: "tiennes", name: "Les tiennes", tag: "Tes créations — elles vivent aussi dans les autres collections.",
+    img: "full-kettlebell", match: (s) => s.perso },
+  { id: "express", name: "Séances express", tag: "20 minutes ou moins — zéro excuse.",
+    img: "cardio-sprint", match: (s) => s.duration <= 20 },
+  { id: "masse", name: "Prise de masse", tag: "Construire du muscle, brique par brique.",
+    img: "push-couche", match: (s, hay) => /masse|hypertroph|volume/.test(hay) || (s.category === "force" && s.duration >= 40) },
+  { id: "perte", name: "Perte de poids", tag: "Brûler, sans se cramer.",
+    img: "cardio-rameur", match: (s, hay) => /perte|brûle|brule|minceur|sèche|seche|calorie/.test(hay) || s.category === "cardio" },
+  { id: "renfo", name: "Renfo musculaire", tag: "Plus fort, partout, pour de vrai.",
+    img: "pull-curl", match: (s, hay) => s.category === "force" || /renfo|force|muscu/.test(hay) },
+  { id: "cardiohiit", name: "Cardio & HIIT", tag: "Le souffle court, le cœur solide.",
+    img: "cardio-ropes", match: (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay) },
+  { id: "abdos", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
+    img: "core-abdos", match: (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay) },
+  { id: "jambes", name: "Jambes & fessiers", tag: "La base — on ne triche pas avec les jambes.",
+    img: "legs-squat", match: (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay) },
+  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras — l'armure.",
+    img: "pull-rowing", match: (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay) },
+  { id: "fullbody", name: "Full body", tag: "Tout le corps, une seule séance.",
+    img: "full-burpee", match: (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay) },
+  { id: "salle", name: "À la salle", tag: "Machines, barres, charges — ton terrain.",
+    img: "legs-souleve", match: (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay) },
+  { id: "sansmateriel", name: "Sans matériel", tag: "Ton corps suffit — partout, tout le temps.",
+    img: "core-planche", match: (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay) },
+  { id: "debuter", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
+    img: "full-epaule", match: (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay) },
+  { id: "mobilite", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",
+    img: "legs-fentes", match: (s, hay) => s.category === "mobilite" || /mobilit|étirement|etirement|souplesse|posture|stretch/.test(hay) },
+  { id: "recup", name: "Récupération", tag: "Le muscle se construit au repos.",
+    img: "repos", pos: "68% center", match: (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay) },
+  { id: "defis", name: "Défis", tag: "Un max, un chrono, un record à battre.",
+    img: "pull-traction", match: (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay) },
+  { id: "conseils", name: "Conseils & progresser", tag: "Comprendre, c'est déjà progresser.",
+    img: "setup", pos: "center 45%", match: () => false },
+];
+
+/** Tuile de collection — photo naturelle, titre blanc centré, compte.
+    Une collection vide dit « Bientôt » : la porte reste ouverte. */
+function CatTile({ cat, count, onOpen }: { cat: CatDef; count: number; onOpen: () => void }) {
+  const sub = count > 0
+    ? `${count} séance${count > 1 ? "s" : ""}`
+    : cat.id === "tiennes" ? "À toi de jouer" : "Bientôt";
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }} onClick={onOpen}
+      className="relative w-full rounded-[18px] overflow-hidden cursor-pointer border-none p-0 block"
+      style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }}
+      aria-label={`${cat.name} — ${sub}`}
+    >
+      <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
+      <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
+        style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 20%, rgba(6,5,10,0.35) 62%, transparent)" }}>
+        <p className="text-[14.5px] font-black uppercase text-white leading-[1.08] tracking-tight"
+          style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+          {cat.name}
+        </p>
+        <p className="text-[9px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.62)" }}>{sub}</p>
+      </div>
+    </motion.button>
+  );
+}
+
 function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, onDelete, onVisibilityChange }: {
   sessions: MergedSession[];
   loading: boolean;
@@ -899,106 +966,139 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
   onDelete: (id: string) => void;
   onVisibilityChange: (id: string, vis: Visibility) => void;
 }) {
-  const [filter, setFilter] = useState<ChooseFilter>("tous");
+  const [catId, setCatId] = useState<string | null>(null);
   const [manage, setManage] = useState<MergedSession | null>(null);
 
-  /* Deux rangées : le catalogue Vaiiya, puis les tiennes. Filtre par catégorie. */
-  const inCat = (s: MergedSession) => filter === "tous" || s.category === filter;
-  const vaiiya = sessions.filter((s) => !s.perso && inCat(s));
-  const perso = sessions.filter((s) => s.perso && inCat(s));
+  const cat = catId ? CATALOG.find((c) => c.id === catId) ?? null : null;
+
+  /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
+  const matched = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
+  const vaiiya = matched.filter((s) => !s.perso);
+  const perso = matched.filter((s) => s.perso);
+
+  const rowTile = (s: MergedSession) => (
+    <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
+      <SessionTile session={s} onStart={onStart} onManage={setManage} />
+    </div>
+  );
+
+  const createCard = (
+    <motion.button
+      whileTap={{ scale: 0.96 }} onClick={onCreate}
+      className="w-full rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer px-3"
+      style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+    >
+      <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+        <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+      </span>
+      <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+      <span className="text-[9px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
+        Elle rejoint tes collections
+      </span>
+    </motion.button>
+  );
 
   return (
     <>
     <Sheet onClose={onClose} height="94dvh" maxHeight="94dvh">
-      {/* Header — éditorial : le compte vit dans la phrase, pas dans un badge */}
-      <div className="px-5 pt-2 pb-3.5 flex-shrink-0">
-        <div className="flex items-start justify-between">
-          <div>
+      {/* Header — niveau 1 : l'invitation. Niveau 2 : retour + nom + promesse. */}
+      <div className="px-5 pt-2 pb-3 flex-shrink-0 flex items-center gap-3">
+        {cat ? (
+          <>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCatId(null)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+              style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour aux collections">
+              <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--text-2)" }} />
+            </motion.button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-[17px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{cat.name}</h2>
+              <p className="text-[10.5px] font-light mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{cat.tag}</p>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1">
             <h2 className="text-[23px] font-light leading-tight" style={{ color: "var(--text-1)" }}>
-              Mes séances
+              Entraînements
             </h2>
             <p className="text-[11.5px] font-light mt-1" style={{ color: "var(--text-3)" }}>
-              Vaiiya + les tiennes · <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} prêtes à lancer</span>
+              Un but, une envie — <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} séances t&apos;attendent</span>
             </p>
           </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0 mt-0.5"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
+        )}
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+          style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+          <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+        </motion.button>
       </div>
 
-      {/* Filtres — la pastille annonce la couleur des cartes */}
-      <div className="flex gap-1.5 px-5 pb-3.5 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: "none" }}>
-        {CHOOSE_FILTERS.map(({ key, label, dot }) => {
-          const active = filter === key;
-          return (
-            <button key={key} onClick={() => setFilter(key)}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3.5 h-[31px] rounded-full text-[10.5px] font-bold cursor-pointer transition-all duration-150"
-              style={active
-                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", border: "1px solid transparent", boxShadow: "0 4px 14px rgba(139,92,246,0.32)" }
-                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-2)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-              {dot && <span aria-hidden className="w-[5px] h-[5px] rounded-full flex-shrink-0"
-                style={{ background: active ? "rgba(255,255,255,0.9)" : dot }} />}
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Deux rangées slidables : Vaiiya, puis les tiennes */}
-      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
-        {loading ? (
-          <div className="space-y-6">
-            {[0, 1].map((r) => (
-              <div key={r}>
-                <div className="h-2.5 w-24 rounded-full mb-3 animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }} />
-                <div className="flex gap-3 -mx-5 px-5 overflow-hidden">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="flex-shrink-0 rounded-[18px] animate-pulse"
-                      style={{ width: ROW_CARD_W, aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
-                  ))}
-                </div>
-              </div>
+      {/* Le corps — remonté par clé : l'entrée glisse dans le sens du voyage */}
+      <motion.div
+        key={cat ? cat.id : "collections"}
+        initial={{ opacity: 0, x: cat ? 26 : -26 }} animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        className="overflow-y-auto px-5 flex-1"
+        style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+      >
+        {!cat ? (
+          /* ── Niveau 1 : la grille des collections ── */
+          loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-[18px] animate-pulse"
+                  style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {CATALOG.map((c) => (
+                <CatTile key={c.id} cat={c}
+                  count={sessions.reduce((n, s) => n + (c.match(s, hayOf(s)) ? 1 : 0), 0)}
+                  onOpen={() => setCatId(c.id)} />
+              ))}
+            </div>
+          )
+        ) : cat.id === "tiennes" ? (
+          /* ── Niveau 2, « Les tiennes » : ta bibliothèque + créer ── */
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {perso.map((s) => (
+              <SessionTile key={s.id} session={s} onStart={onStart} onManage={setManage} />
             ))}
+            {createCard}
+          </div>
+        ) : matched.length === 0 ? (
+          /* ── Niveau 2, collection vide : la porte reste ouverte ── */
+          <div className="flex flex-col items-center text-center pt-12 px-6">
+            <span className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+              style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+              <Sparkles size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+            </span>
+            <p className="text-[14.5px] font-semibold" style={{ color: "var(--text-1)" }}>Cette collection arrive</p>
+            <p className="text-[11.5px] font-light mt-1.5 leading-relaxed max-w-[260px]" style={{ color: "var(--text-3)" }}>
+              On la remplit séance après séance. En attendant, crée la tienne — si elle colle, elle apparaîtra ici.
+            </p>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={onCreate}
+              className="mt-5 px-5 h-10 rounded-full text-[12px] font-bold text-white cursor-pointer border-none"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.35)" }}>
+              Créer la mienne
+            </motion.button>
           </div>
         ) : (
+          /* ── Niveau 2 : rangées slidables Vaiiya / Les tiennes ── */
           <>
             {vaiiya.length > 0 && (
-              <SessionRow label="Vaiiya" dot="var(--accent)" count={vaiiya.length}>
-                {vaiiya.map((s) => (
-                  <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
-                    <SessionTile session={s} onStart={onStart} onManage={setManage} />
-                  </div>
-                ))}
+              <SessionRow label="Vaiiya" count={vaiiya.length}>
+                {vaiiya.map(rowTile)}
               </SessionRow>
             )}
-
-            <SessionRow label="Les tiennes" dot="#EFB83B" count={perso.length}>
-              {perso.map((s) => (
-                <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
-                  <SessionTile session={s} onStart={onStart} onManage={setManage} />
-                </div>
-              ))}
-              {/* Créer la mienne — dernière carte de TA rangée */}
-              <motion.button
-                whileTap={{ scale: 0.96 }} onClick={onCreate}
-                className="flex-shrink-0 rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer px-3"
-                style={{ width: ROW_CARD_W, aspectRatio: "3 / 4", scrollSnapAlign: "start", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
-              >
-                <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-                  <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
-                </span>
-                <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
-                <span className="text-[9px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
-                  Sa photo, sa famille, comme les autres
-                </span>
-              </motion.button>
-            </SessionRow>
+            {perso.length > 0 && (
+              <SessionRow label="Les tiennes" count={perso.length}>
+                {perso.map(rowTile)}
+              </SessionRow>
+            )}
           </>
         )}
-      </div>
+      </motion.div>
     </Sheet>
 
     {/* Menu « Gérer » d'une séance perso */}
