@@ -13,10 +13,10 @@
    Tout le reste vit derrière un tap. L'historique a quitté la page.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Clock, ChevronRight, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
+  Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
   Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal,
 } from "lucide-react";
@@ -120,17 +120,15 @@ const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
   force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
 };
 
-/* Filtres de la sheet « Je choisis » — un SEUL jeu, catalogue + perso fusionnés.
-   La pastille reprend la couleur de famille des cartes : le filtre ANNONCE
-   la couleur qu'on va voir. Perso = doré (comme le badge). */
-type ChooseFilter = "tous" | WorkoutCategory | "perso";
+/* Filtres de la sheet « Je choisis » — par catégorie. Vaiiya / perso sont
+   désormais deux RANGÉES, plus un filtre. La pastille annonce la couleur. */
+type ChooseFilter = "tous" | WorkoutCategory;
 const CHOOSE_FILTERS: { key: ChooseFilter; label: string; dot?: string }[] = [
   { key: "tous",     label: "Toutes" },
   { key: "force",    label: "Force",     dot: "#FF7A4D" },
   { key: "cardio",   label: "Cardio",    dot: "#FF5A8D" },
   { key: "mobilite", label: "Mobilité",  dot: "#2BD4A0" },
   { key: "fullbody", label: "Full Body", dot: "#C46BFF" },
-  { key: "perso",    label: "Perso",     dot: "#EFB83B" },
 ];
 
 /* ─── Icon resolver (Supabase stores icon name as string) ── */
@@ -217,9 +215,6 @@ function artHash(s: string): number {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h;
 }
-
-/* Ordre de rangement du catalogue — les familles se suivent toujours pareil */
-const FAMILY_ORDER: Family[] = ["push", "pull", "legs", "core", "full", "cardio"];
 
 type Art = { img: string; base: string; glow: string; label: string; fam: Family };
 
@@ -852,6 +847,48 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }:
   );
 }
 
+/* Largeur d'une carte du carrousel — 2,2 cartes visibles sur téléphone (peek). */
+const ROW_CARD_W = 150;
+
+/* Une rangée = un slide horizontal. Sur téléphone : swipe natif. Sur PC :
+   deux flèches discrètes dans l'en-tête (pas de barre de scroll moche). */
+function SessionRow({ label, dot, count, children }: {
+  label: string; dot: string; count: number; children: React.ReactNode;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const nudge = (dir: 1 | -1) =>
+    scroller.current?.scrollBy({ left: dir * (ROW_CARD_W + 12) * 2, behavior: "smooth" });
+
+  return (
+    <section className="mb-6">
+      <div className="flex items-center gap-2 mb-2.5 px-0.5">
+        <span aria-hidden className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: dot }} />
+        <span className="text-[10px] font-extrabold tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>{label}</span>
+        <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{count}</span>
+        <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+        {/* Flèches — desktop uniquement, discrètes */}
+        <div className="hidden md:flex items-center gap-1">
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(-1)}
+            className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }} aria-label="Précédent">
+            <ChevronLeft size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(1)}
+            className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }} aria-label="Suivant">
+            <ChevronRight size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+        </div>
+      </div>
+      {/* -mx-5 px-5 : les cartes filent jusqu'au bord tout en restant alignées */}
+      <div ref={scroller} className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5"
+        style={{ scrollbarWidth: "none", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
 function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, onDelete, onVisibilityChange }: {
   sessions: MergedSession[];
   loading: boolean;
@@ -865,24 +902,10 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
   const [filter, setFilter] = useState<ChooseFilter>("tous");
   const [manage, setManage] = useState<MergedSession | null>(null);
 
-  /* Rangement : les séances se groupent par FAMILLE (l'ordre du fil rouge),
-     tes perso en tête de chaque famille. Les couleurs se rangent d'elles-mêmes. */
-  const groups = useMemo(() => {
-    const filtered = sessions.filter((s) =>
-      filter === "tous" ? true : filter === "perso" ? s.perso : s.category === filter
-    );
-    const byFam = new Map<Family, MergedSession[]>();
-    for (const s of filtered) {
-      const fam = resolveArt({ title: s.title, category: s.category, muscles: s.muscles }).fam;
-      const arr = byFam.get(fam);
-      if (arr) arr.push(s); else byFam.set(fam, [s]);
-    }
-    return FAMILY_ORDER.filter((f) => byFam.has(f)).map((f) => ({
-      fam: f,
-      meta: FAMILY[f],
-      items: byFam.get(f)!.sort((a, b) => Number(b.perso) - Number(a.perso) || a.title.localeCompare(b.title, "fr")),
-    }));
-  }, [sessions, filter]);
+  /* Deux rangées : le catalogue Vaiiya, puis les tiennes. Filtre par catégorie. */
+  const inCat = (s: MergedSession) => filter === "tous" || s.category === filter;
+  const vaiiya = sessions.filter((s) => !s.perso && inCat(s));
+  const perso = sessions.filter((s) => s.perso && inCat(s));
 
   return (
     <>
@@ -924,55 +947,55 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
         })}
       </div>
 
-      {/* Rangé par famille — chaque section porte sa couleur et son compte */}
+      {/* Deux rangées slidables : Vaiiya, puis les tiennes */}
       <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="rounded-[18px] animate-pulse"
-                style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+          <div className="space-y-6">
+            {[0, 1].map((r) => (
+              <div key={r}>
+                <div className="h-2.5 w-24 rounded-full mb-3 animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+                <div className="flex gap-3 -mx-5 px-5 overflow-hidden">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex-shrink-0 rounded-[18px] animate-pulse"
+                      style={{ width: ROW_CARD_W, aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         ) : (
           <>
-            {groups.map((g) => (
-              <section key={g.fam} className="mb-5">
-                <div className="flex items-center gap-2 mb-2.5 px-0.5">
-                  <span aria-hidden className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: g.meta.base }} />
-                  <span className="text-[9.5px] font-extrabold tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>
-                    {g.meta.label}
-                  </span>
-                  <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
-                  <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{g.items.length}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3 items-start">
-                  {g.items.map((s) => (
-                    <SessionTile key={s.id} session={s} onStart={onStart} onManage={setManage} />
-                  ))}
-                </div>
-              </section>
-            ))}
-            {groups.length === 0 && filter === "perso" && (
-              <p className="text-center text-xs font-light py-4" style={{ color: "var(--text-3)" }}>
-                Pas encore de séance à toi — crée la première juste en dessous. ✦
-              </p>
+            {vaiiya.length > 0 && (
+              <SessionRow label="Vaiiya" dot="var(--accent)" count={vaiiya.length}>
+                {vaiiya.map((s) => (
+                  <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
+                    <SessionTile session={s} onStart={onStart} onManage={setManage} />
+                  </div>
+                ))}
+              </SessionRow>
             )}
-            {/* Créer la mienne — une rangée à part : la grille ne contient que des séances */}
-            <motion.button
-              whileTap={{ scale: 0.98 }} onClick={onCreate}
-              className="w-full rounded-2xl flex items-center gap-3 px-4 py-3.5 cursor-pointer text-left"
-              style={{ background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
-            >
-              <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-                <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
-              </span>
-              <span>
-                <span className="block text-[12.5px] font-bold" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
-                <span className="block text-[9.5px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
-                  Elle aura sa photo et sa famille, comme les autres
+
+            <SessionRow label="Les tiennes" dot="#EFB83B" count={perso.length}>
+              {perso.map((s) => (
+                <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
+                  <SessionTile session={s} onStart={onStart} onManage={setManage} />
+                </div>
+              ))}
+              {/* Créer la mienne — dernière carte de TA rangée */}
+              <motion.button
+                whileTap={{ scale: 0.96 }} onClick={onCreate}
+                className="flex-shrink-0 rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer px-3"
+                style={{ width: ROW_CARD_W, aspectRatio: "3 / 4", scrollSnapAlign: "start", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+              >
+                <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                  <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
                 </span>
-              </span>
-            </motion.button>
+                <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+                <span className="text-[9px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
+                  Sa photo, sa famille, comme les autres
+                </span>
+              </motion.button>
+            </SessionRow>
           </>
         )}
       </div>
