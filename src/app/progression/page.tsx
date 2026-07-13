@@ -28,7 +28,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import {
   ensureWeek, setDayStatus, hasSeance, readLieu, readVariant, ctxFromLieu,
-  weekDates, todayYmd, todayWeekIndex, dayTitle, normalizeExercises,
+  weekDates, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
 
@@ -639,6 +639,85 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
 
       {story && (
         <p className="text-[11px] font-medium mt-2.5" style={{ color: "var(--text-3)" }}>{story}</p>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ④ Ton élan — la preuve qu'on avance. Série de semaines actives +
+   totaux de la semaine + 7 derniers jours. Teal = progrès. Aucune
+   culpabilité : un jour vide est un trait discret, jamais un reproche.
+   ════════════════════════════════════════════════════════════════════ */
+type ElanData = {
+  bars: { label: string; min: number; done: boolean; today: boolean }[];
+  sessions: number; minutes: number; kcal: number; streak: number; hasHistory: boolean;
+};
+
+const fmtDur = (m: number) =>
+  m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
+
+function ElanStrip({ data }: { data: ElanData | null }) {
+  if (!data) return null; // le temps du chargement : rien, pas de flash
+  const { bars, sessions, minutes, kcal, streak, hasHistory } = data;
+  const maxMin = Math.max(1, ...bars.map((b) => b.min));
+  const barH = (min: number) => (min <= 0 ? 4 : Math.round(6 + (min / maxMin) * 30));
+
+  return (
+    <div className="rounded-[20px] px-4 pt-3.5 pb-3.5"
+      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(43,212,160,0.20)", boxShadow: "0 6px 22px rgba(43,212,160,0.08)" }}>
+      <div className="flex items-center justify-between mb-3.5">
+        <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
+        {streak > 0 && (
+          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-extrabold"
+            style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
+            <Flame size={12} strokeWidth={2.4} fill="#EF9F27" />
+            {streak} sem.
+          </span>
+        )}
+      </div>
+
+      {hasHistory ? (
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex items-end gap-[7px]">
+            {bars.map((b, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <span className="w-[9px] rounded-full" style={{
+                  height: barH(b.min),
+                  background: b.today ? "#2BD4A0" : b.done ? "rgba(43,212,160,0.55)" : "rgba(255,255,255,0.10)",
+                }} />
+                <span className="text-[8.5px] font-bold" style={{ color: b.today ? "#2BD4A0" : "var(--text-3)" }}>{b.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-right">
+            <p className="text-[9.5px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: "var(--text-3)" }}>Cette semaine</p>
+            <p className="leading-none">
+              <span className="text-[22px] font-extrabold" style={{ color: "#2BD4A0" }}>{sessions}</span>
+              <span className="text-[12px] font-semibold ml-1" style={{ color: "var(--text-2)" }}>séance{sessions > 1 ? "s" : ""}</span>
+            </p>
+            <p className="text-[11px] font-semibold mt-1.5 flex items-center justify-end gap-1.5" style={{ color: "var(--text-3)" }}>
+              <Clock size={11} strokeWidth={2.4} />{fmtDur(minutes)}
+              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "var(--text-3)" }} />
+              <Zap size={11} strokeWidth={2.4} style={{ color: "#EF9F27" }} fill="#EF9F27" />
+              <span style={{ color: "#EF9F27" }}>{kcal.toLocaleString("fr-FR")} kcal</span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3.5 pb-0.5">
+          <div className="flex items-end gap-[7px]">
+            {bars.map((b, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <span className="w-[9px] rounded-full" style={{ height: 8 + (i % 3) * 6, background: "rgba(255,255,255,0.08)" }} />
+                <span className="text-[8.5px] font-bold" style={{ color: "var(--text-3)" }}>{b.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11.5px] font-medium leading-snug" style={{ color: "var(--text-3)" }}>
+            Ton élan démarre à la première séance. 💪
+          </p>
+        </div>
       )}
     </div>
   );
@@ -1892,6 +1971,7 @@ export default function ProgressionPage() {
 
   /* ── Stats du jour (état « fait » du héros) ── */
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
+  const [elan, setElan] = useState<ElanData | null>(null);
 
   const today = todayYmd();
   const todayIdx = todayWeekIndex();
@@ -1995,6 +2075,64 @@ export default function ProgressionPage() {
     })();
     return () => { cancelled = true; };
   }, [heroState, user, today]);
+
+  /* ── Ton élan : agrégat des séances faites sur 8 semaines glissantes ── */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const since = new Date(today + "T00:00:00");
+      since.setDate(since.getDate() - 55);
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("started_at, elapsed_seconds, duration_minutes, calories_burned")
+        .eq("user_id", user.id)
+        .gte("started_at", since.toISOString())
+        .order("started_at", { ascending: true });
+      if (cancelled) return;
+
+      const ymdLocal = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+      const dayMin = new Map<string, number>();
+      const dayCount = new Map<string, number>();
+      const activeWeeks = new Set<number>();
+      let sessions = 0, minutes = 0, kcal = 0;
+
+      for (const r of data ?? []) {
+        const started = r.started_at as string | null;
+        if (!started) continue;
+        const key = ymdLocal(new Date(started));
+        const min = r.elapsed_seconds
+          ? Math.max(1, Math.round((r.elapsed_seconds as number) / 60))
+          : ((r.duration_minutes as number) ?? 0);
+        dayMin.set(key, (dayMin.get(key) ?? 0) + min);
+        dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
+        const off = weekOffsetOf(key);
+        activeWeeks.add(off);
+        if (off === 0) { sessions += 1; minutes += min; kcal += (r.calories_burned as number) ?? 0; }
+      }
+
+      // Série : semaines consécutives actives (la semaine en cours pas encore lancée ne casse rien)
+      let streak = 0;
+      let o = activeWeeks.has(0) ? 0 : -1;
+      while (activeWeeks.has(o)) { streak += 1; o -= 1; }
+
+      const DL = ["L", "M", "M", "J", "V", "S", "D"];
+      const bars: ElanData["bars"] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today + "T00:00:00");
+        d.setDate(d.getDate() - i);
+        const key = ymdLocal(d);
+        const wd = d.getDay(); const idx = wd === 0 ? 6 : wd - 1;
+        bars.push({ label: DL[idx], min: dayMin.get(key) ?? 0, done: (dayCount.get(key) ?? 0) > 0, today: key === today });
+      }
+
+      setElan({ bars, sessions, minutes, kcal, streak, hasHistory: (data?.length ?? 0) > 0 });
+    })();
+    return () => { cancelled = true; };
+  }, [user, today]);
 
   /* ── Bibliothèque perso (Supabase) ── */
   const fetchCustomSessions = useCallback(async () => {
@@ -2196,6 +2334,15 @@ export default function ProgressionPage() {
           className="mt-4"
         >
           <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("organiser")} />
+        </motion.div>
+
+        {/* ── ④ Ton élan ── */}
+        <motion.div
+          data-tour-anchor="prog-elan"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
+          className="mt-3"
+        >
+          <ElanStrip data={elan} />
         </motion.div>
       </div>
 
