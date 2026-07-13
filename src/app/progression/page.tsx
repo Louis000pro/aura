@@ -230,33 +230,13 @@ function resolveArt(input: { title?: string; category?: WorkoutCategory; muscles
 
 /** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
 const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
-  img: string; base: string; glow: string; dim: number; focus: string; pos: string;
+  img: string; pos: string;
 }> = {
-  repos:     { img: "repos",       base: "#0F6F63", glow: "#2BD4A0", dim: 0.32, focus: "72% 58%", pos: "68% center" },
-  done:      { img: "done",        base: "#0E8E6A", glow: "#2BD4A0", dim: 0.5,  focus: "50% 42%", pos: "center 40%" },
-  setup:     { img: "setup",       base: "#C0571A", glow: "#EF9F27", dim: 0.4,  focus: "42% 40%", pos: "center 45%" },
-  improvise: { img: "improvise",   base: "#7A34C8", glow: "#C46BFF", dim: 0.5,  focus: "56% 46%", pos: "center 40%" },
+  repos:     { img: "repos",     pos: "68% center" },
+  done:      { img: "done",      pos: "center 40%" },
+  setup:     { img: "setup",     pos: "center 45%" },
+  improvise: { img: "improvise", pos: "center 40%" },
 };
-
-const GRAIN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
-
-/** Le « common thread » : photo (base neutre) → couleur famille (zones sombres,
-    blend screen) → grain argentique. Rendu identique Vaiiya / perso. */
-function Visual({
-  img, base, glow, dim = 0.5, focus = "50% 30%", pos = "center 28%", className, style, children,
-}: {
-  img: string; base: string; glow: string; dim?: number; focus?: string; pos?: string;
-  className?: string; style?: React.CSSProperties; children?: React.ReactNode;
-}) {
-  return (
-    <div className={className} style={{ position: "relative", overflow: "hidden", background: "#0b0a10", ...style }}>
-      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
-      <div aria-hidden style={{ position: "absolute", inset: 0, mixBlendMode: "screen", opacity: dim, background: `radial-gradient(62% 55% at ${focus}, ${glow} 0%, ${base} 36%, transparent 74%)` }} />
-      <div aria-hidden style={{ position: "absolute", inset: 0, opacity: 0.08, mixBlendMode: "overlay", backgroundImage: GRAIN, backgroundSize: "120px 120px" }} />
-      {children}
-    </div>
-  );
-}
 
 /** Photo naturelle — la banque parle d'elle-même. Juste l'image, cadrée,
     sur fond sombre le temps du chargement. Le scrim vit chez l'appelant. */
@@ -364,10 +344,7 @@ function TodayHero({
     state === "setup" ? WIDGET.setup
     : state === "done" ? WIDGET.done
     : state === "repos" ? WIDGET.repos
-    : (() => {
-        const a = resolveArt({ title: day ? `${day.title} ${day.type}` : "" });
-        return { ...a, dim: 0.52, focus: "50% 28%", pos: "center 24%" };
-      })();
+    : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
 
   return (
     <motion.div
@@ -376,8 +353,7 @@ function TodayHero({
       className="rounded-3xl overflow-hidden relative"
       style={{ minHeight: state === "seance" ? 360 : 300, boxShadow: "0 14px 40px rgba(var(--accent-rgb),0.22)" }}
     >
-      <Visual img={viz.img} base={viz.base} glow={viz.glow} dim={viz.dim} focus={viz.focus} pos={viz.pos}
-        style={{ position: "absolute", inset: 0 }} />
+      <Photo img={viz.img} pos={viz.pos} style={{ position: "absolute", inset: 0 }} />
 
       {/* Chips du haut */}
       <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
@@ -536,8 +512,7 @@ function ForkCard({ kind, count, onClick }: {
     >
       {isIA ? (
         <>
-          <Visual img={WIDGET.improvise.img} base={WIDGET.improvise.base} glow={WIDGET.improvise.glow}
-            dim={WIDGET.improvise.dim} focus={WIDGET.improvise.focus} pos={WIDGET.improvise.pos}
+          <Photo img={WIDGET.improvise.img} pos={WIDGET.improvise.pos}
             style={{ position: "absolute", inset: 0 }} />
           <Sparkles size={24} strokeWidth={1.5} className="absolute top-3 right-3" style={{ color: "#E4D6FF", opacity: 0.9 }} />
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
