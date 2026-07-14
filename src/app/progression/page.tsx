@@ -28,7 +28,7 @@ import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import {
   ensureWeek, setDayStatus, hasSeance, readLieu, readVariant, ctxFromLieu,
-  weekDates, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
+  weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
 
@@ -1433,9 +1433,217 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   Sheet « Ma semaine » — l'agenda vivant (phase 2). La semaine entière,
+   jour par jour, en photos : verdict d'équilibre + charge prévue en tête,
+   navigation entre semaines, actions par jour déléguées à l'IA (décaler /
+   remplacer / repos) — cohérent avec le héros. Le drag direct viendra en
+   phase 3.
+   ════════════════════════════════════════════════════════════════════ */
+const DAY_ABBR = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
+const MAX_WEEK_AHEAD = 6;
+/** Regroupe les 6 familles en 4 grands rôles lisibles pour le verdict. */
+const BALANCE_BUCKET: Record<Family, string> = {
+  push: "haut", pull: "haut", legs: "jambes", core: "gainage", cardio: "cardio", full: "full body",
+};
+const fmtDay = (ymd: string) =>
+  new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession }: {
+  week: PlanningDay[] | null;
+  todayIdx: number;
+  fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
+  onClose: () => void;
+  onStartDay: (day: PlanningDay) => void;
+  onAsk: (prompt: string) => void;
+  onAddSession: () => void;
+}) {
+  const [offset, setOffset] = useState(0);
+  const [days, setDays] = useState<PlanningDay[] | null>(week);
+  const [loading, setLoading] = useState(false);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  /* offset 0 = la semaine du héros (déjà chargée) ; sinon on va la chercher. */
+  useEffect(() => {
+    let alive = true;
+    if (offset === 0) { setDays(week); return; }
+    setLoading(true);
+    fetchWeekAt(offset).then((d) => { if (alive) { setDays(d); setLoading(false); } });
+    return () => { alive = false; };
+  }, [offset, week, fetchWeekAt]);
+
+  const go = (delta: number) => {
+    const next = Math.max(0, Math.min(MAX_WEEK_AHEAD, offset + delta));
+    if (next === offset) return;
+    setOpenIdx(null);
+    setOffset(next);
+  };
+
+  const wd = weekDatesForOffset(offset);
+  const rangeLabel = `${fmtDay(wd[0])} – ${fmtDay(wd[6])}`;
+  const weekTag = offset === 0 ? "Cette semaine" : offset === 1 ? "Semaine prochaine" : `Dans ${offset} sem.`;
+
+  /* ── Verdict d'équilibre + charge (lus depuis les familles en coulisse) ── */
+  const seances = (days ?? []).filter(hasSeance);
+  const totalMin = seances.reduce((s, d) => s + (d.type === "HIIT" ? 30 : 45), 0);
+  const buckets = new Map<string, number>();
+  for (const d of seances) {
+    const b = BALANCE_BUCKET[resolveArt({ title: `${d.title} ${d.type}` }).fam];
+    buckets.set(b, (buckets.get(b) ?? 0) + 1);
+  }
+  const verdict = seances.length === 0 ? null : buckets.size >= 3 ? "Équilibrée ✦" : "Ciblée";
+
+  return (
+    <Sheet onClose={onClose} height="90vh">
+      {/* En-tête + navigation semaine */}
+      <div className="px-5 pt-1 pb-3 flex items-center justify-between flex-shrink-0">
+        <div>
+          <p className="text-[17px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</p>
+          <p className="text-[11px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>{rangeLabel}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => go(-1)} disabled={offset <= 0} aria-label="Semaine précédente"
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(var(--accent-rgb),0.1)", opacity: offset <= 0 ? 0.3 : 1, cursor: offset <= 0 ? "default" : "pointer" }}>
+            <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
+          </button>
+          <span className="text-[10.5px] font-bold w-[92px] text-center" style={{ color: "var(--text-2)" }}>{weekTag}</span>
+          <button onClick={() => go(1)} disabled={offset >= MAX_WEEK_AHEAD} aria-label="Semaine suivante"
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(var(--accent-rgb),0.1)", opacity: offset >= MAX_WEEK_AHEAD ? 0.3 : 1, cursor: offset >= MAX_WEEK_AHEAD ? "default" : "pointer" }}>
+            <ChevronRight size={15} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
+          </button>
+        </div>
+      </div>
+
+      {/* Verdict d'équilibre + charge */}
+      {verdict && (
+        <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap flex-shrink-0">
+          <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full"
+            style={{ background: "rgba(43,212,160,0.12)", color: "#2BD4A0" }}>{verdict}</span>
+          {[...buckets.entries()].map(([b, n]) => (
+            <span key={b} className="text-[10px] font-bold px-2 py-1 rounded-full"
+              style={{ background: "rgba(255,255,255,0.055)", color: "var(--text-2)" }}>{n}× {b}</span>
+          ))}
+          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+            style={{ background: "rgba(239,159,39,0.12)", color: "#EF9F27" }}>{fmtDur(totalMin)} prévues</span>
+        </div>
+      )}
+
+      {/* Liste des 7 jours */}
+      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none" }}>
+        {DAY_ABBR.map((abbr, i) => {
+          const d = days?.[i] ?? null;
+          const isToday = offset === 0 && i === todayIdx;
+          const isDone = d?.status === "done";
+          const isSeance = hasSeance(d);
+          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
+          const num = d ? new Date(d.date + "T00:00:00").getDate() : "";
+          const open = openIdx === i;
+
+          return (
+            <div key={i} className="py-1">
+              <button onClick={() => setOpenIdx(open ? null : i)}
+                className="flex items-center gap-2.5 w-full text-left bg-transparent border-none p-0 cursor-pointer">
+                <div className="w-8 flex-shrink-0 text-center">
+                  <span className="block text-[9px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
+                  <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
+                </div>
+                <div className="flex-1 flex items-center gap-2.5 rounded-2xl px-2.5 py-2 min-w-0"
+                  style={{
+                    background: isToday ? "rgba(139,92,246,0.1)" : isSeance ? "rgba(255,255,255,0.04)" : "transparent",
+                    border: isToday ? "1px solid rgba(139,92,246,0.55)"
+                      : isSeance ? "1px solid rgba(255,255,255,0.06)" : "1px dashed rgba(var(--accent-rgb),0.18)",
+                    opacity: isDone ? 0.72 : 1,
+                  }}>
+                  {isSeance && art ? (
+                    <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 38, height: 38 }} />
+                  ) : (
+                    <span className="rounded-xl flex-shrink-0 flex items-center justify-center" style={{ width: 38, height: 38, background: "rgba(255,255,255,0.03)" }}>
+                      <Moon size={14} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{isSeance ? dayTitle(d!) : "Repos"}</p>
+                    <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: "var(--text-3)" }}>
+                      {isSeance ? `${d!.type === "HIIT" ? 30 : 45} min${lieuLabel(d!.location) ? ` · ${lieuLabel(d!.location)}` : ""}` : "Ton corps construit"}
+                    </p>
+                  </div>
+                  {isDone ? (
+                    <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
+                      <Check size={10} strokeWidth={3.2} style={{ color: "#2BD4A0" }} />
+                    </span>
+                  ) : isToday ? (
+                    <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ color: "#C9B8FF" }}>AUJOURD&apos;HUI</span>
+                  ) : (
+                    <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
+                      style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
+                  )}
+                </div>
+              </button>
+
+              {/* Actions du jour — dépliées au tap */}
+              <AnimatePresence initial={false}>
+                {open && d && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }} className="overflow-hidden">
+                    <div className="flex gap-1.5 flex-wrap pl-[42px] pt-2 pb-1">
+                      {isSeance && (
+                        <ActChip onClick={() => onStartDay(d)} primary>
+                          <Play size={11} strokeWidth={2.5} fill="#fff" style={{ color: "#fff" }} /> Commencer
+                        </ActChip>
+                      )}
+                      {isSeance && <ActChip onClick={() => onAsk(`Remplace ma séance de ${DAY_FULL[i]} par autre chose`)}><span style={{ color: "#C9B8FF" }}>✦</span> Remplacer</ActChip>}
+                      {isSeance && <ActChip onClick={() => onAsk(`Décale ma séance de ${DAY_FULL[i]} à un autre jour`)}>Décaler</ActChip>}
+                      {isSeance
+                        ? <ActChip onClick={() => onAsk(`Mets repos le ${DAY_FULL[i]}`)}>☾ Repos</ActChip>
+                        : <ActChip onClick={() => onAsk(`Ajoute une séance le ${DAY_FULL[i]}`)}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+        {loading && <p className="text-[11px] font-medium text-center py-4" style={{ color: "var(--text-3)" }}>Chargement…</p>}
+        <div style={{ height: 8 }} />
+      </div>
+
+      {/* Footer — IA + ajout */}
+      <div className="px-5 pt-3 flex gap-2 flex-shrink-0"
+        style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d'entraînement")}
+          className="flex-1 py-3 rounded-2xl text-[13px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px rgba(139,92,246,0.4)" }}>
+          <Sparkles size={13} strokeWidth={2} /> Refais ma semaine
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.96 }} onClick={onAddSession}
+          className="px-4 rounded-2xl text-[12.5px] font-bold cursor-pointer flex items-center gap-1"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
+          <Plus size={14} strokeWidth={2.4} /> Séance
+        </motion.button>
+      </div>
+    </Sheet>
+  );
+}
+
+/** Petit bouton d'action d'un jour de l'agenda. */
+function ActChip({ children, onClick, primary }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) {
+  return (
+    <motion.button whileTap={{ scale: 0.94 }} onClick={onClick}
+      className="flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer border-none"
+      style={primary
+        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(139,92,246,0.35)" }
+        : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-2)" }}>
+      {children}
+    </motion.button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
    Sheet « Organiser » — le planning complet (WeeklyProgramme) : semaines,
-   jours, tutos, régénération, lieu. La page reste au présent, la
-   préparation vit ici.
+   jours, tutos, régénération, lieu. Réservé au chemin setup (le héros
+   « Créer mon planning » quand l'app ne sait pas encore).
    ════════════════════════════════════════════════════════════════════ */
 function OrganiserSheet({ onClose }: { onClose: () => void }) {
   return (
@@ -2051,7 +2259,7 @@ export default function ProgressionPage() {
   const [profileLevel, setProfileLevel] = useState<string | null>(null);
 
   /* ── UI ── */
-  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan">(null);
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine">(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
@@ -2112,6 +2320,32 @@ export default function ProgressionPage() {
   }, [user]);
 
   useEffect(() => { void loadWeek(); }, [loadWeek]);
+
+  /* ── Charge une autre semaine (navigation de l'agenda) sans toucher au héros ── */
+  const fetchWeekAt = useCallback(async (offset: number): Promise<PlanningDay[] | null> => {
+    if (!user) return null;
+    const supabase = createClient();
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+      .eq("id", user.id)
+      .maybeSingle();
+    const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
+      || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
+    const { location, equip } = readLieu(user.id);
+    const lieuReady = location === "salle" || (location === "maison" && !!equip);
+    if (!hasOnboarding || !lieuReady) return null;
+    const gen: GenInput = {
+      ctx: ctxFromLieu(location, equip),
+      sessions: prof!.onboarding_sessions_week ?? 3,
+      goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
+      level: prof!.onboarding_level,
+      variant: readVariant(user.id),
+      seed: user.id,
+    };
+    try { return await ensureWeek(user.id, gen, weekDatesForOffset(offset)); }
+    catch (e) { console.error("Week fetch error", e); return null; }
+  }, [user]);
 
   /* Recharge si le planning ou le lieu changent ailleurs (orbe, Organiser…) */
   useEffect(() => {
@@ -2268,18 +2502,19 @@ export default function ProgressionPage() {
   ], [customSessions]);
 
   /* ── Lancements ── */
-  const startToday = () => {
-    if (!todayDay || !hasSeance(todayDay)) return;
+  const startDay = (d: PlanningDay) => {
+    if (!hasSeance(d)) return;
     setActiveWorkout({
-      id: `planning-${todayDay.date}`,
-      title: dayTitle(todayDay),
-      duration: todayDay.type === "HIIT" ? 30 : 45,
-      difficulty: todayDay.difficulty,
-      category: todayDay.type,
-      exerciseList: todayDay.exerciseList,
-      planningDate: todayDay.date,
+      id: `planning-${d.date}`,
+      title: dayTitle(d),
+      duration: d.type === "HIIT" ? 30 : 45,
+      difficulty: d.difficulty,
+      category: d.type,
+      exerciseList: d.exerciseList,
+      planningDate: d.date,
     });
   };
+  const startToday = () => { if (todayDay) startDay(todayDay); };
 
   const startSession = (s: MergedSession) => {
     setSheet(null);
@@ -2428,7 +2663,7 @@ export default function ProgressionPage() {
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
           className="mt-4"
         >
-          <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("organiser")} />
+          <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("semaine")} />
         </motion.div>
 
         {/* ── ④ Ton élan ── */}
@@ -2442,6 +2677,19 @@ export default function ProgressionPage() {
       </div>
 
       {/* ══ Sheets ══ */}
+      <AnimatePresence>
+        {sheet === "semaine" && (
+          <SemaineSheet
+            week={week}
+            todayIdx={todayIdx}
+            fetchWeekAt={fetchWeekAt}
+            onClose={() => { setSheet(null); void loadWeek(); }}
+            onStartDay={(d) => { setSheet(null); startDay(d); }}
+            onAsk={(p) => { setSheet(null); openAssistant(p); }}
+            onAddSession={() => setSheet("choisir")}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {sheet === "organiser" && (
           <OrganiserSheet onClose={() => { setSheet(null); void loadWeek(); }} />
