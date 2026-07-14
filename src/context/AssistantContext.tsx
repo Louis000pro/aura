@@ -25,14 +25,23 @@ import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory }
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import {
   resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
-  ctxFromLieu, readLieu, weekDates, todayYmd, normalizeExercises,
-  PLANNING_TYPE_BY_CATEGORY, type PlanningDay,
+  ctxFromLieu, readLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
+  PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
   | { type: "forget"; keywords?: string }
   | { type: "none" };
+
+/** Clés d'objectif (onboarding) → libellés compris par le générateur. */
+const GOAL_LABELS: Record<string, string> = {
+  masse: "prise de masse", prise_de_masse: "prise de masse",
+  poids: "perte de poids", perte_de_poids: "perte de poids",
+  force: "force", endurance: "endurance",
+  sante: "santé générale", sante_generale: "santé générale",
+  souplesse: "souplesse",
+};
 
 /** Changement de planning proposé par l'IA, en attente de confirmation. */
 type PendingPlan = {
@@ -316,7 +325,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
   const preparePlanAction = useCallback(async (action: {
     intent?: string; when?: string; to?: string; location?: string;
-    muscles?: unknown; category?: string; description?: string; title?: string;
+    muscles?: unknown; category?: string; description?: string; title?: string; adjust?: string;
   }) => {
     if (!user?.id) return;
     // Réponse courte du coach dans le fil (chaque impasse est explicite, jamais muette).
@@ -326,25 +335,36 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // et on libère (Repos) le jour source. Aucun échec silencieux : chaque
     // impasse renvoie un message clair (sinon « la carte ne s'ouvre pas »).
     if (action.intent === "plan_move") {
-      const to = action.to ? resolveWhen(action.to) : null;
-      if (!to) {
-        say("Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅");
-        return;
-      }
+      let to = action.to ? resolveWhen(action.to) : null;
       // Jour source : celui indiqué s'il porte une séance ; sinon le prochain
       // jour d'entraînement à venir cette semaine (« déplace ma séance dans 2
       // jours » sans préciser le départ doit marcher même si aujourd'hui = repos).
       let from = action.when ? resolveWhen(action.when) : null;
       let src = from ? await fetchDay(user.id, from) : null;
+      const weekMap = await fetchRange(user.id, weekDates());
       if (!hasSeance(src)) {
-        const upcoming = weekDates().filter((d) => d >= todayYmd() && d !== to);
-        const found = await fetchRange(user.id, upcoming);
-        const next = upcoming.find((d) => hasSeance(found[d]));
-        if (next) { from = next; src = found[next]; }
+        const next = weekDates().find((d) => d >= todayYmd() && d !== to && hasSeance(weekMap[d]));
+        if (next) { from = next; src = weekMap[next]; }
       }
       if (!hasSeance(src) || !from) {
-        say(`Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à ${dayLabelLong(to)} ».`);
+        say("Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».");
         return;
+      }
+      // Empêchement sans destination (« je ne peux pas jeudi ») → on choisit
+      // le premier jour de repos à venir de la semaine (après le jour source
+      // de préférence), plutôt que de renvoyer une question.
+      if (!to) {
+        const rest = (d: string) => {
+          const day = weekMap[d];
+          return !!day && day.status !== "done" && !hasSeance(day);
+        };
+        to = weekDates().find((d) => d > from! && rest(d))
+          ?? weekDates().find((d) => d >= todayYmd() && d !== from && rest(d))
+          ?? null;
+        if (!to) {
+          say("Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅");
+          return;
+        }
       }
       if (from === to) {
         say(`La séance est déjà prévue le ${dayLabelLong(to)} 🙂`);
@@ -357,6 +377,60 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         summary: `📅 ${dayLabelLong(from)} → ${dayLabelLong(to)}`,
         writes: [movedDay, restDay],
         preview: movedDay,
+      });
+      return;
+    }
+
+    // SEMAINE ENTIÈRE : « refais ma semaine » / « plus légère » / « plus de
+    // cardio »… On génère la semaine SANS écrire (previewWeek) et on propose
+    // une carte ; le passé et les jours déjà faits sont préservés.
+    if (action.intent === "plan_regen") {
+      const supabase = createClient();
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+        .eq("id", user.id)
+        .maybeSingle();
+      const saved = readLieu(user.id);
+      if (!saved.location || (saved.location === "maison" && !saved.equip)) {
+        say("Dis-moi d'abord où tu t'entraînes (salle ou maison) et je te refais une semaine 🙂");
+        return;
+      }
+      const adjust = action.adjust ?? "none";
+      let sessions = prof?.onboarding_sessions_week ?? 3;
+      const goals = (((prof?.onboarding_goals as string[] | null) ?? [])).map((g) => GOAL_LABELS[g] ?? g);
+      if (adjust === "leger") sessions = Math.max(2, sessions - 1);
+      if (adjust === "intense") sessions = Math.min(6, sessions + 1);
+      if (adjust === "cardio") goals.push("endurance");
+      if (adjust === "force") goals.push("force");
+      // Variant frais pour que « refais » change vraiment le contenu.
+      const variant = readVariant(user.id) + 1;
+      try { localStorage.setItem(`vaiiya_prog_variant_${user.id}`, String(variant)); } catch { /* ignore */ }
+      const gen: GenInput = {
+        ctx: ctxFromLieu(saved.location, saved.equip),
+        sessions, goals,
+        level: prof?.onboarding_level ?? null,
+        variant,
+        seed: user.id,
+      };
+      const dates = weekDates();
+      const existing = await fetchRange(user.id, dates);
+      const writes = previewWeek(gen, dates)
+        .filter((d) => d.date >= todayYmd() && existing[d.date]?.status !== "done");
+      const nbSeances = writes.filter(hasSeance).length;
+      if (nbSeances === 0) {
+        say("Il ne reste plus de jour modifiable cette semaine 🙂 Décale plutôt une séance précise, ou redemande-moi lundi pour la semaine d'après.");
+        return;
+      }
+      const adjustLabel = adjust === "leger" ? " · plus légère"
+        : adjust === "intense" ? " · plus intense"
+        : adjust === "cardio" ? " · plus de cardio"
+        : adjust === "force" ? " · plus de force" : "";
+      setPendingPlan({
+        title: "Nouvelle semaine ✦",
+        summary: `📅 dès aujourd'hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
+        writes,
+        preview: writes.find(hasSeance) ?? null,
       });
       return;
     }
@@ -492,7 +566,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     let parsed: {
       memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string };
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string };
     } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
@@ -515,8 +589,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const action = parsed.action;
     if (!action || !action.intent) return;
 
-    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio)
-    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_library") {
+    // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio / refaire la semaine)
+    if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_library" || action.intent === "plan_regen") {
       void preparePlanAction(action);
       return;
     }

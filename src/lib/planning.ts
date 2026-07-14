@@ -217,6 +217,12 @@ function generateWeek(gen: GenInput, dates: string[]): PlanningDay[] {
   });
 }
 
+/** Génère la semaine SANS rien écrire — pour préparer une carte de
+    confirmation (l'écriture n'arrive qu'au clic, via saveDay). */
+export function previewWeek(gen: GenInput, dates: string[] = weekDates()): PlanningDay[] {
+  return generateWeek(gen, dates);
+}
+
 /** Titre lisible d'un jour de planning (pour le lancement / l'historique). */
 export function dayTitle(day: PlanningDay): string {
   return day.title || day.type;

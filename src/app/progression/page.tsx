@@ -14,11 +14,11 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import {
   Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal,
+  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
@@ -27,7 +27,7 @@ import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import {
-  ensureWeek, setDayStatus, hasSeance, readLieu, readVariant, ctxFromLieu,
+  ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
@@ -1448,7 +1448,7 @@ const BALANCE_BUCKET: Record<Family, string> = {
 const fmtDay = (ymd: string) =>
   new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession }: {
+function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onMove }: {
   week: PlanningDay[] | null;
   todayIdx: number;
   fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
@@ -1456,11 +1456,50 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
   onStartDay: (day: PlanningDay) => void;
   onAsk: (prompt: string) => void;
   onAddSession: () => void;
+  onMove: (a: PlanningDay, b: PlanningDay, msg: string) => Promise<void>;
 }) {
   const [offset, setOffset] = useState(0);
   const [days, setDays] = useState<PlanningDay[] | null>(week);
   const [loading, setLoading] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  /* ── Drag & drop : déplacer une séance d'un jour à l'autre ── */
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const canDrop = (from: number, to: number) => {
+    const t = days?.[to];
+    return to !== from && !!t && t.status !== "done" && t.date >= todayYmd();
+  };
+  const hoverFromY = (y: number): number | null => {
+    for (let i = 0; i < 7; i++) {
+      const r = rowRefs.current[i]?.getBoundingClientRect();
+      if (r && y >= r.top && y <= r.bottom) return i;
+    }
+    return null;
+  };
+  const handleDragStart = (i: number) => { setOpenIdx(null); setDragIdx(i); };
+  const handleDragMove = (i: number, y: number) => {
+    const h = hoverFromY(y);
+    setHoverIdx(h !== null && canDrop(i, h) ? h : null);
+  };
+  const handleDragEnd = (i: number) => {
+    const to = hoverIdx;
+    setDragIdx(null); setHoverIdx(null);
+    if (to === null || !canDrop(i, to) || !days) return;
+    const a = days[i], b = days[to];
+    // Échange des contenus (les dates restent aux jours) ; tout redevient « prévu ».
+    const swap = (x: PlanningDay, y2: PlanningDay): PlanningDay => ({
+      ...x, type: y2.type, title: y2.title, difficulty: y2.difficulty,
+      location: y2.location, exerciseList: y2.exerciseList, sessionId: y2.sessionId,
+      status: "planned",
+    });
+    const newA = swap(a, b), newB = swap(b, a);
+    setDays(days.map((d, k) => (k === i ? newA : k === to ? newB : d)));
+    const msg = hasSeance(newA) ? "Séances échangées ✓" : `${dayTitle(newB)} → ${DAY_FULL[to]} ✓`;
+    void onMove(newA, newB, msg);
+  };
 
   /* offset 0 = la semaine du héros (déjà chargée) ; sinon on va la chercher. */
   useEffect(() => {
@@ -1531,80 +1570,30 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
 
       {/* Liste des 7 jours */}
       <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none" }}>
-        {DAY_ABBR.map((abbr, i) => {
-          const d = days?.[i] ?? null;
-          const isToday = offset === 0 && i === todayIdx;
-          const isDone = d?.status === "done";
-          const isSeance = hasSeance(d);
-          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
-          const num = d ? new Date(d.date + "T00:00:00").getDate() : "";
-          const open = openIdx === i;
-
-          return (
-            <div key={i} className="py-1">
-              <button onClick={() => setOpenIdx(open ? null : i)}
-                className="flex items-center gap-2.5 w-full text-left bg-transparent border-none p-0 cursor-pointer">
-                <div className="w-8 flex-shrink-0 text-center">
-                  <span className="block text-[9px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
-                  <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
-                </div>
-                <div className="flex-1 flex items-center gap-2.5 rounded-2xl px-2.5 py-2 min-w-0"
-                  style={{
-                    background: isToday ? "rgba(139,92,246,0.1)" : isSeance ? "rgba(255,255,255,0.04)" : "transparent",
-                    border: isToday ? "1px solid rgba(139,92,246,0.55)"
-                      : isSeance ? "1px solid rgba(255,255,255,0.06)" : "1px dashed rgba(var(--accent-rgb),0.18)",
-                    opacity: isDone ? 0.72 : 1,
-                  }}>
-                  {isSeance && art ? (
-                    <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 38, height: 38 }} />
-                  ) : (
-                    <span className="rounded-xl flex-shrink-0 flex items-center justify-center" style={{ width: 38, height: 38, background: "rgba(255,255,255,0.03)" }}>
-                      <Moon size={14} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{isSeance ? dayTitle(d!) : "Repos"}</p>
-                    <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: "var(--text-3)" }}>
-                      {isSeance ? `${d!.type === "HIIT" ? 30 : 45} min${lieuLabel(d!.location) ? ` · ${lieuLabel(d!.location)}` : ""}` : "Ton corps construit"}
-                    </p>
-                  </div>
-                  {isDone ? (
-                    <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
-                      <Check size={10} strokeWidth={3.2} style={{ color: "#2BD4A0" }} />
-                    </span>
-                  ) : isToday ? (
-                    <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ color: "#C9B8FF" }}>AUJOURD&apos;HUI</span>
-                  ) : (
-                    <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
-                      style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
-                  )}
-                </div>
-              </button>
-
-              {/* Actions du jour — dépliées au tap */}
-              <AnimatePresence initial={false}>
-                {open && d && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }} className="overflow-hidden">
-                    <div className="flex gap-1.5 flex-wrap pl-[42px] pt-2 pb-1">
-                      {isSeance && (
-                        <ActChip onClick={() => onStartDay(d)} primary>
-                          <Play size={11} strokeWidth={2.5} fill="#fff" style={{ color: "#fff" }} /> Commencer
-                        </ActChip>
-                      )}
-                      {isSeance && <ActChip onClick={() => onAsk(`Remplace ma séance de ${DAY_FULL[i]} par autre chose`)}><span style={{ color: "#C9B8FF" }}>✦</span> Remplacer</ActChip>}
-                      {isSeance && <ActChip onClick={() => onAsk(`Décale ma séance de ${DAY_FULL[i]} à un autre jour`)}>Décaler</ActChip>}
-                      {isSeance
-                        ? <ActChip onClick={() => onAsk(`Mets repos le ${DAY_FULL[i]}`)}>☾ Repos</ActChip>
-                        : <ActChip onClick={() => onAsk(`Ajoute une séance le ${DAY_FULL[i]}`)}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
+        {days?.some((d) => hasSeance(d) && d.status !== "done") && (
+          <p className="text-[9.5px] font-semibold pb-1" style={{ color: "var(--text-3)", opacity: 0.8 }}>
+            Maintiens <GripVertical size={9} strokeWidth={2.4} style={{ display: "inline", verticalAlign: "-1px" }} /> pour déplacer une séance.
+          </p>
+        )}
+        {DAY_ABBR.map((abbr, i) => (
+          <DayRow
+            key={`${offset}-${i}`}
+            day={days?.[i] ?? null}
+            idx={i}
+            abbr={abbr}
+            isToday={offset === 0 && i === todayIdx}
+            open={openIdx === i}
+            dropHover={hoverIdx === i && dragIdx !== null}
+            dimmed={dragIdx !== null && dragIdx !== i && hoverIdx !== i}
+            registerRef={(el) => { rowRefs.current[i] = el; }}
+            onToggle={() => setOpenIdx(openIdx === i ? null : i)}
+            onStartDay={onStartDay}
+            onAsk={onAsk}
+            onDragStart={() => handleDragStart(i)}
+            onDragMove={(y) => handleDragMove(i, y)}
+            onDragEnd={() => handleDragEnd(i)}
+          />
+        ))}
         {loading && <p className="text-[11px] font-medium text-center py-4" style={{ color: "var(--text-3)" }}>Chargement…</p>}
         <div style={{ height: 8 }} />
       </div>
@@ -1624,6 +1613,133 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
         </motion.button>
       </div>
     </Sheet>
+  );
+}
+
+/** Y du pointeur, quel que soit le type d'événement (souris / touch). */
+const clientYOf = (e: unknown, fallback: number): number => {
+  const ev = e as { clientY?: number; touches?: Array<{ clientY: number }> };
+  return ev.clientY ?? ev.touches?.[0]?.clientY ?? fallback;
+};
+
+/** Un jour de l'agenda — carte draggable (poignée dédiée, pour laisser le
+    scroll tranquille) + actions dépliées au tap. */
+function DayRow({ day, idx, abbr, isToday, open, dropHover, dimmed, registerRef, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
+  day: PlanningDay | null;
+  idx: number;
+  abbr: string;
+  isToday: boolean;
+  open: boolean;
+  dropHover: boolean;
+  dimmed: boolean;
+  registerRef: (el: HTMLDivElement | null) => void;
+  onToggle: () => void;
+  onStartDay: (d: PlanningDay) => void;
+  onAsk: (p: string) => void;
+  onDragStart: () => void;
+  onDragMove: (clientY: number) => void;
+  onDragEnd: () => void;
+}) {
+  const controls = useDragControls();
+  const d = day;
+  const isDone = d?.status === "done";
+  const isSeance = hasSeance(d);
+  const draggable = isSeance && !isDone;
+  const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
+  const num = d ? new Date(d.date + "T00:00:00").getDate() : "";
+
+  return (
+    <div ref={registerRef} className="py-1" style={{ opacity: dimmed ? 0.45 : 1, transition: "opacity 0.15s" }}>
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 flex-shrink-0 text-center">
+          <span className="block text-[9px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
+          <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
+        </div>
+        <motion.div
+          drag={draggable ? "y" : false}
+          dragControls={controls}
+          dragListener={false}
+          dragSnapToOrigin
+          dragMomentum={false}
+          dragElastic={0.1}
+          onDragStart={onDragStart}
+          onDrag={(e, info) => onDragMove(clientYOf(e, info.point.y))}
+          onDragEnd={onDragEnd}
+          whileDrag={{ scale: 1.04, rotate: -1.5, zIndex: 40, boxShadow: "0 14px 34px rgba(0,0,0,0.55)" }}
+          className="flex-1 flex items-center gap-2 rounded-2xl px-2.5 py-2 min-w-0 relative"
+          style={{
+            background: dropHover ? "rgba(139,92,246,0.13)"
+              : isToday ? "rgba(139,92,246,0.1)"
+              : isSeance ? "rgba(255,255,255,0.04)" : "transparent",
+            border: dropHover ? "1.5px dashed rgba(139,92,246,0.75)"
+              : isToday ? "1px solid rgba(139,92,246,0.55)"
+              : isSeance ? "1px solid rgba(255,255,255,0.06)" : "1px dashed rgba(var(--accent-rgb),0.18)",
+            opacity: isDone ? 0.72 : 1,
+          }}
+        >
+          <button onClick={onToggle}
+            className="flex items-center gap-2.5 flex-1 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer">
+            {isSeance && art ? (
+              <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 38, height: 38 }} />
+            ) : (
+              <span className="rounded-xl flex-shrink-0 flex items-center justify-center" style={{ width: 38, height: 38, background: "rgba(255,255,255,0.03)" }}>
+                <Moon size={14} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{isSeance ? dayTitle(d!) : "Repos"}</p>
+              <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
+                {dropHover ? "Dépose la séance ici ✦"
+                  : isSeance ? `${d!.type === "HIIT" ? 30 : 45} min${lieuLabel(d!.location) ? ` · ${lieuLabel(d!.location)}` : ""}`
+                  : "Ton corps construit"}
+              </p>
+            </div>
+            {isDone ? (
+              <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
+                <Check size={10} strokeWidth={3.2} style={{ color: "#2BD4A0" }} />
+              </span>
+            ) : isToday ? (
+              <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ color: "#C9B8FF" }}>AUJOURD&apos;HUI</span>
+            ) : (
+              <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
+                style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
+            )}
+          </button>
+          {draggable && (
+            <div
+              onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
+              className="flex-shrink-0 flex items-center justify-center cursor-grab"
+              style={{ touchAction: "none", width: 24, height: 34 }}
+              aria-label="Déplacer la séance"
+            >
+              <GripVertical size={15} strokeWidth={2.2} style={{ color: "var(--text-3)", opacity: 0.8 }} />
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Actions du jour — dépliées au tap */}
+      <AnimatePresence initial={false}>
+        {open && d && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }} className="overflow-hidden">
+            <div className="flex gap-1.5 flex-wrap pl-[42px] pt-2 pb-1">
+              {isSeance && (
+                <ActChip onClick={() => onStartDay(d)} primary>
+                  <Play size={11} strokeWidth={2.5} fill="#fff" style={{ color: "#fff" }} /> Commencer
+                </ActChip>
+              )}
+              {isSeance && <ActChip onClick={() => onAsk(`Remplace ma séance de ${DAY_FULL[idx]} par autre chose`)}><span style={{ color: "#C9B8FF" }}>✦</span> Remplacer</ActChip>}
+              {isSeance && <ActChip onClick={() => onAsk(`Décale ma séance de ${DAY_FULL[idx]} à un autre jour`)}>Décaler</ActChip>}
+              {isSeance
+                ? <ActChip onClick={() => onAsk(`Mets repos le ${DAY_FULL[idx]}`)}>☾ Repos</ActChip>
+                : <ActChip onClick={() => onAsk(`Ajoute une séance le ${DAY_FULL[idx]}`)}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -2516,6 +2632,15 @@ export default function ProgressionPage() {
   };
   const startToday = () => { if (todayDay) startDay(todayDay); };
 
+  /* Drag & drop de l'agenda : persiste les deux jours échangés, puis
+     resynchronise le héros (l'agenda a déjà fait sa mise à jour optimiste). */
+  const moveDays = async (a: PlanningDay, b: PlanningDay, msg: string) => {
+    if (!user) return;
+    await Promise.all([saveDay(user.id, a), saveDay(user.id, b)]);
+    showToast(msg);
+    void loadWeek();
+  };
+
   const startSession = (s: MergedSession) => {
     setSheet(null);
     setActiveWorkout({
@@ -2687,6 +2812,7 @@ export default function ProgressionPage() {
             onStartDay={(d) => { setSheet(null); startDay(d); }}
             onAsk={(p) => { setSheet(null); openAssistant(p); }}
             onAddSession={() => setSheet("choisir")}
+            onMove={moveDays}
           />
         )}
       </AnimatePresence>
