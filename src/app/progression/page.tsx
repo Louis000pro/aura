@@ -488,13 +488,13 @@ function TodayHero({
 /* ════════════════════════════════════════════════════════════════════
    ② Cartes de bifurcation — J'improvise / Je choisis
    ════════════════════════════════════════════════════════════════════ */
-/** Le deck « Je choisis » : 3 vraies vignettes de la banque — photos
-    naturelles, empilées en éventail → « tes séances, choisis-en une ».
-    Pas une photo unique qui mentirait sur le contenu. */
-const CHOISIS_DECK: { img: string; rot: number; x: number; y: number; s: number; z: number }[] = [
-  { img: "pull-traction", rot: -13, x: -30, y: 5,  s: 0.92, z: 1 },
-  { img: "legs-squat",    rot:  13, x:  30, y: 5,  s: 0.92, z: 1 },
-  { img: "push-couche",   rot:   0, x:   0, y: -4, s: 1,    z: 2 },
+/** « Je choisis » : triptyque plein cadre de 3 vraies vignettes de la banque
+    → « plusieurs séances, choisis-en une ». Panneaux édge-to-edge (comme un
+    contact-sheet), pas des cartes flottantes qui font mockup de téléphone. */
+const CHOISIS_IMGS: { img: string; pos: string }[] = [
+  { img: "push-couche", pos: "center 30%" },
+  { img: "legs-squat",  pos: "center 32%" },
+  { img: "pull-rowing", pos: "center 28%" },
 ];
 
 function ForkCard({ kind, count, onClick }: {
@@ -518,21 +518,12 @@ function ForkCard({ kind, count, onClick }: {
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
         </>
       ) : (
-        <>
-          <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(158deg,#1b1430,#0c0a15)" }} />
-          <div aria-hidden className="absolute inset-x-0 top-2.5 flex items-center justify-center" style={{ height: 92 }}>
-            {CHOISIS_DECK.map((d) => (
-              <Photo key={d.img} img={d.img} pos="center 26%"
-                className="absolute rounded-[9px]"
-                style={{
-                  width: 56, height: 80, zIndex: d.z,
-                  transform: `translate(${d.x}px, ${d.y}px) rotate(${d.rot}deg) scale(${d.s})`,
-                  border: "1.5px solid rgba(255,255,255,0.16)",
-                  boxShadow: "0 7px 16px rgba(0,0,0,0.45)",
-                }} />
-            ))}
-          </div>
-        </>
+        <div aria-hidden className="absolute inset-0 flex">
+          {CHOISIS_IMGS.map((c, k) => (
+            <Photo key={c.img} img={c.img} pos={c.pos} className="flex-1"
+              style={{ boxShadow: k > 0 ? "inset 1.5px 0 0 rgba(0,0,0,0.45)" : undefined }} />
+          ))}
+        </div>
       )}
       <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
         style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
@@ -1559,7 +1550,7 @@ function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk,
         <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap flex-shrink-0">
           <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full"
             style={{ background: "rgba(43,212,160,0.12)", color: "#2BD4A0" }}>{verdict}</span>
-          {[...buckets.entries()].map(([b, n]) => (
+          {[...buckets.entries()].sort((a, b) => b[1] - a[1]).map(([b, n]) => (
             <span key={b} className="text-[10px] font-bold px-2 py-1 rounded-full"
               style={{ background: "rgba(255,255,255,0.055)", color: "var(--text-2)" }}>{n}× {b}</span>
           ))}
