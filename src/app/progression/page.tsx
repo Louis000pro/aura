@@ -576,69 +576,72 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
   }
 
   return (
-    <div className="rounded-[20px] px-4 pt-3.5 pb-3"
+    <div className="rounded-[20px] px-4 pt-3.5 pb-3.5"
       style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.08)" }}>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</p>
+        <button onClick={onOrganise} className="flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer">
+          <span className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</span>
+          <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
+        </button>
         <button onClick={onOrganise}
           className="flex items-center gap-1 text-[11.5px] font-bold cursor-pointer bg-transparent border-none p-0"
           style={{ color: "var(--accent)" }}>
           <CalendarDays size={12} strokeWidth={2.2} />
           Organiser
-          <ChevronRight size={11} strokeWidth={2.6} />
         </button>
       </div>
 
-      <div className="flex justify-between">
+      <div className="flex gap-1.5">
         {DAY_LETTERS.map((letter, i) => {
           const d = week?.[i] ?? null;
           const isToday = i === todayIdx;
           const isDone = d?.status === "done";
-          const isRest = !!d && d.type.toLowerCase() === "repos";
+          const isSeance = hasSeance(d);
           const isPast = i < todayIdx;
-
-          let inner: React.ReactNode;
-          let dotStyle: React.CSSProperties;
-          if (isToday) {
-            inner = letter;
-            dotStyle = {
-              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff",
-              boxShadow: "0 0 0 2.5px rgb(var(--surface-rgb)), 0 0 0 4.5px rgba(139,92,246,0.5), 0 6px 14px rgba(139,92,246,0.35)",
-            };
-            if (isDone) {
-              inner = <Check size={13} strokeWidth={3} />;
-              dotStyle = {
-                background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", color: "#06281E",
-                boxShadow: "0 0 0 2.5px rgb(var(--surface-rgb)), 0 0 0 4.5px rgba(43,212,160,0.5), 0 6px 14px rgba(43,212,160,0.35)",
-              };
-            }
-          } else if (isDone) {
-            inner = <Check size={13} strokeWidth={3} />;
-            dotStyle = { background: "rgba(43,212,160,0.16)", color: "#2BD4A0", border: "1.5px solid rgba(43,212,160,0.45)" };
-          } else if (isRest) {
-            inner = "–";
-            dotStyle = { background: "transparent", color: "var(--text-3)", border: "1.5px dashed rgba(var(--accent-rgb),0.22)" };
-          } else {
-            // séance planifiée (passée non faite = discret, aucune culpabilité)
-            inner = letter;
-            dotStyle = isPast
-              ? { background: "rgba(var(--tint-violet-rgb),0.35)", color: "var(--text-3)", border: "1.5px solid transparent", opacity: 0.55 }
-              : { background: "rgba(var(--tint-violet-rgb),0.55)", color: "var(--text-2)", border: "1.5px solid rgba(var(--accent-rgb),0.22)" };
-          }
+          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
 
           return (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <span className="w-[33px] h-[33px] rounded-full flex items-center justify-center text-[11px] font-extrabold" style={dotStyle}>
-                {inner}
+            <button key={i} onClick={onOrganise}
+              aria-label={`${DAY_FULL[i]} — ${isSeance ? dayTitle(d!) : "repos"}`}
+              className="relative flex-1 rounded-[12px] overflow-hidden cursor-pointer border-none p-0 block"
+              style={{
+                height: 60, background: "#0f0d17",
+                outline: isToday ? "2px solid #8B5CF6" : undefined,
+                outlineOffset: isToday ? 2 : undefined,
+                boxShadow: isToday ? "0 5px 16px rgba(139,92,246,0.4)" : undefined,
+                opacity: isPast && !isDone && isSeance ? 0.5 : 1,
+              }}>
+              {isSeance && art ? (
+                <>
+                  <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(5,4,9,0.8) 0%, rgba(5,4,9,0.12) 52%, transparent)" }} />
+                  {isDone && (
+                    <span className="absolute top-1 right-1 rounded-full flex items-center justify-center"
+                      style={{ width: 14, height: 14, background: "#1FBF8C", boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
+                      <Check size={9} strokeWidth={3.4} style={{ color: "#06281E" }} />
+                    </span>
+                  )}
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(var(--accent-rgb),0.22)", borderRadius: 12 }}>
+                  <Moon size={13} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+                </div>
+              )}
+              <span className="absolute inset-x-0 bottom-[3px] text-center text-[8.5px] font-extrabold tracking-wide"
+                style={{
+                  color: isSeance ? "rgba(255,255,255,0.92)" : "var(--text-3)",
+                  textShadow: isSeance ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
+                }}>
+                {letter}
               </span>
-              <span className="text-[9px] font-bold tracking-wide" style={{ color: "var(--text-3)" }}>{letter}</span>
-            </div>
+            </button>
           );
         })}
       </div>
 
       {story && (
-        <p className="text-[11px] font-medium mt-2.5" style={{ color: "var(--text-3)" }}>{story}</p>
+        <p className="text-[11px] font-medium mt-3" style={{ color: "var(--text-3)" }}>{story}</p>
       )}
     </div>
   );
