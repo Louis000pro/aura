@@ -100,6 +100,11 @@ let _counter = 0;
 const uid = () => `${Date.now()}-${++_counter}`;
 const todayISODate = () => new Date().toISOString().slice(0, 10);
 
+/* Au-delà de cette absence (app en arrière-plan / onglet en veille), revenir
+   dans l'app rouvre un chat vierge. sessionStorage gère déjà les vraies
+   fermetures ; ce filet couvre les PWA qui restent chaudes. */
+const IDLE_RESET_MS = 30 * 60 * 1000; // 30 min
+
 export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -120,21 +125,62 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const dataLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* ── Historique persistant (par utilisateur) ── */
+  /* ── Historique de SESSION (par utilisateur) ──
+     Le fil de conversation ne vit QUE le temps de la session : il est rangé
+     dans sessionStorage (et non localStorage) → fermer puis rouvrir l'app =
+     chat vierge, plus jamais un mur de messages d'il y a un mois. On estampille
+     le fil pour aussi repartir à zéro quand on revient après une longue absence
+     (PWA restée chaude). La mémoire long terme (ai_memories, Supabase) n'est
+     JAMAIS concernée. */
   const historyKey = user?.id ? `aura_coach_history_${user.id}` : null;
-  useEffect(() => {
-    if (!historyKey || typeof window === "undefined") { setMessages([]); return; }
+
+  const readHistory = useCallback((): AssistantMsg[] => {
+    if (!historyKey || typeof window === "undefined") return [];
+    // Purge de l'ancien historique PERSISTANT (localStorage) des versions
+    // précédentes — sinon un vieux fil ressort à la première ouverture.
+    try { localStorage.removeItem(historyKey); } catch { /* ignore */ }
     try {
-      const raw = localStorage.getItem(historyKey);
-      setMessages(raw ? JSON.parse(raw) : []);
-    } catch { setMessages([]); }
+      const raw = sessionStorage.getItem(historyKey);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { ts?: number; msgs?: AssistantMsg[] };
+      if (!parsed || (parsed.ts != null && Date.now() - parsed.ts > IDLE_RESET_MS)) {
+        try { sessionStorage.removeItem(historyKey); } catch { /* ignore */ }
+        return [];
+      }
+      return Array.isArray(parsed.msgs) ? parsed.msgs : [];
+    } catch { return []; }
   }, [historyKey]);
+
+  useEffect(() => { setMessages(readHistory()); }, [readHistory]);
 
   const persist = useCallback((msgs: AssistantMsg[]) => {
     if (!historyKey || typeof window === "undefined") return;
     try {
-      localStorage.setItem(historyKey, JSON.stringify(msgs.slice(-60).map((m) => ({ ...m, streaming: false }))));
+      const clean = msgs.slice(-60).map((m) => ({ ...m, streaming: false }));
+      sessionStorage.setItem(historyKey, JSON.stringify({ ts: Date.now(), msgs: clean }));
     } catch { /* ignore */ }
+  }, [historyKey]);
+
+  // Retour dans l'app (onglet ré-affiché) après une longue absence → si le
+  // dernier message dépasse IDLE_RESET_MS, on rouvre sur un chat vierge. Ne
+  // touche à rien tant que le fil est frais (pas d'écrasement d'une conversation
+  // en cours).
+  useEffect(() => {
+    if (!historyKey || typeof window === "undefined") return;
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const raw = sessionStorage.getItem(historyKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as { ts?: number };
+        if (parsed?.ts != null && Date.now() - parsed.ts > IDLE_RESET_MS) {
+          try { sessionStorage.removeItem(historyKey); } catch { /* ignore */ }
+          setMessages([]);
+        }
+      } catch { /* ignore */ }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [historyKey]);
 
   /* ── Collecte du contexte utilisateur (LAZY : au 1er besoin seulement) ── */
@@ -783,7 +829,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const toggle = useCallback(() => setIsOpen((v) => !v), []);
   const clear = useCallback(() => {
     setMessages([]);
-    if (historyKey) { try { localStorage.removeItem(historyKey); } catch { /* ignore */ } }
+    if (historyKey) {
+      try { sessionStorage.removeItem(historyKey); } catch { /* ignore */ }
+      try { localStorage.removeItem(historyKey); } catch { /* ignore */ }
+    }
   }, [historyKey]);
 
   /* ── Validation de la carte : crée réellement la séance dans custom_sessions ── */
