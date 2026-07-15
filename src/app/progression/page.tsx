@@ -921,9 +921,11 @@ function SessionTile({ session, onStart, onManage, imgOverride }: {
       >
         <Photo img={img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
 
-        {/* Difficulté — pastilles (orange = énergie/intensité, système D) */}
+        {/* Difficulté — pastilles (orange = énergie/intensité, système D).
+            forcedColorAdjust:none → l'orange survit au mode « couleurs forcées »
+            (hérité par les 3 points). */}
         <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
-          style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)" }}
+          style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)", forcedColorAdjust: "none" }}
           aria-label={`Difficulté : ${session.difficulty}`}>
           {[0, 1, 2].map((i) => (
             <span key={i} className="w-1 h-1 rounded-full"
@@ -937,11 +939,15 @@ function SessionTile({ session, onStart, onManage, imgOverride }: {
           {session.duration} MIN
         </span>
 
-        {/* Scrim bas : nom (blanc) + muscles (lavande = notre identité) */}
+        {/* Scrim bas : nom (blanc) + muscles (lavande = notre identité).
+            forcedColorAdjust:none → en mode « couleurs forcées », on garde
+            NOTRE dégradé, le nom blanc et la lavande des muscles (hérité par
+            les deux <p>), au lieu d'un repeint système illisible. */}
         <div className="absolute inset-x-0 bottom-0 pl-2.5 pb-3 pt-12 flex flex-col items-start text-left"
           style={{
             paddingRight: session.perso ? 34 : 10,
             background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
+            forcedColorAdjust: "none",
           }}>
           <p className="text-[12.5px] font-black uppercase text-white leading-[1.12] tracking-tight"
             style={{
