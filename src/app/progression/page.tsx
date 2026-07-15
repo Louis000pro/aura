@@ -488,13 +488,16 @@ function TodayHero({
 /* ════════════════════════════════════════════════════════════════════
    ② Cartes de bifurcation — J'improvise / Je choisis
    ════════════════════════════════════════════════════════════════════ */
-/** « Je choisis » : triptyque plein cadre de 3 vraies vignettes de la banque
-    → « plusieurs séances, choisis-en une ». Panneaux édge-to-edge (comme un
-    contact-sheet), pas des cartes flottantes qui font mockup de téléphone. */
-const CHOISIS_IMGS: { img: string; pos: string }[] = [
-  { img: "push-couche", pos: "center 30%" },
-  { img: "legs-squat",  pos: "center 32%" },
-  { img: "pull-rowing", pos: "center 28%" },
+/** « Je choisis » : éventail de 3 cartes-séances déployées sur un fond en
+    profondeur → « plusieurs séances, choisis la tienne ». Cartes distinctes
+    (liseré clair + ombre = carte, pas écran), rotation en éventail, dégagées
+    du texte. Ancrage horizontal au centre (dx en px) → forme identique quelle
+    que soit la largeur de la carte. */
+type FanCard = { img: string; pos: string; cy: number; dx: number; rot: number; z: number; w: number; h: number };
+const CHOISIS_FAN: FanCard[] = [
+  { img: "legs-squat",    pos: "center 32%", cy: 44, dx: -32, rot: -18, z: 1, w: 50, h: 66 },
+  { img: "pull-traction", pos: "center 26%", cy: 44, dx:  32, rot:  18, z: 2, w: 50, h: 66 },
+  { img: "push-couche",   pos: "center 30%", cy: 39, dx:   0, rot:   0, z: 3, w: 52, h: 68 },
 ];
 
 function ForkCard({ kind, count, onClick }: {
@@ -518,10 +521,20 @@ function ForkCard({ kind, count, onClick }: {
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
         </>
       ) : (
-        <div aria-hidden className="absolute inset-0 flex">
-          {CHOISIS_IMGS.map((c, k) => (
-            <Photo key={c.img} img={c.img} pos={c.pos} className="flex-1"
-              style={{ boxShadow: k > 0 ? "inset 1.5px 0 0 rgba(0,0,0,0.45)" : undefined }} />
+        <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate" }}>
+          {/* fond en profondeur — la bibliothèque derrière l'éventail */}
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "url(/entrainement/pull-rowing.webp)", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(4px) brightness(0.42)", transform: "scale(1.12)" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,14,0.5), rgba(8,6,14,0.72))" }} />
+          <div style={{ position: "absolute", left: "50%", top: 32, width: 96, height: 96, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(155,130,255,0.35), transparent 68%)", filter: "blur(6px)" }} />
+          {/* l'éventail de séances */}
+          {CHOISIS_FAN.map((c) => (
+            <div key={c.img} style={{
+              position: "absolute", left: "50%", top: c.cy, width: c.w, height: c.h, zIndex: c.z,
+              transform: `translate(calc(-50% + ${c.dx}px), -50%) rotate(${c.rot}deg)`,
+              borderRadius: 9,
+              backgroundImage: `url(/entrainement/${c.img}.webp)`, backgroundSize: "cover", backgroundPosition: c.pos,
+              boxShadow: "0 7px 15px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(255,255,255,0.55)",
+            }} />
           ))}
         </div>
       )}
@@ -532,7 +545,7 @@ function ForkCard({ kind, count, onClick }: {
         </p>
         <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J'improvise" : "Je choisis"}</p>
         <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
-          {isIA ? "Ton temps, ton matériel — elle crée" : `${count ?? 0} séances, prêtes à lancer`}
+          {isIA ? "Ton temps, ton matériel — elle crée" : `${count ?? 0} séances, choisis la tienne`}
         </p>
       </div>
     </motion.button>
