@@ -840,17 +840,29 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
    ════════════════════════════════════════════════════════════════════ */
 type MergedSession = WorkoutSession & { perso: boolean };
 
+/* Difficulté → nombre de pastilles allumées. L'orange (énergie, système D)
+   dit l'intensité ; on garde le teal pour le corps, la lavande pour l'identité. */
+const DIFF_LEVEL: Record<WorkoutSession["difficulty"], number> = {
+  "Débutant": 1, "Intermédiaire": 2, "Avancé": 3,
+};
+
 function SessionTile({ session, onStart, onManage }: {
   session: MergedSession;
   onStart: (s: MergedSession) => void;
   onManage: (s: MergedSession) => void;
 }) {
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const level = DIFF_LEVEL[session.difficulty];
+  // Le différenciateur : les muscles. À défaut (séance sans muscles listés),
+  // la famille de mouvement (« Poussée », « Tirage »…) fait un repli parlant.
+  const muscles = session.muscles.filter(Boolean).slice(0, 3).join(" · ") || tileArt.label;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
-      {/* La tuile = un seul geste : lancer. Photo NATURELLE plein cadre,
-          scrim bas, typo blanche centrée, pastille durée — rien d'autre. */}
+      {/* La tuile = un seul geste : lancer. Photo NATURELLE plein cadre.
+          Quatre repères à leur place : difficulté (pastilles orange, coin
+          haut-gauche) · durée (badge, coin haut-droite) · nom · muscles
+          (lavande maison). Les coins portent la méta, le bas l'identité. */}
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={() => onStart(session)}
@@ -860,12 +872,28 @@ function SessionTile({ session, onStart, onManage }: {
       >
         <Photo img={tileArt.img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
 
-        {/* Scrim bas : éyebrow · titre · durée — pile centrée, lisible partout */}
-        <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3 pt-12 flex flex-col items-center text-center"
-          style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 22%, rgba(6,5,10,0.38) 64%, transparent)" }}>
-          <p className="text-[7.5px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "rgba(255,255,255,0.6)" }}>
-            {session.perso ? "Perso" : "Séance"}
-          </p>
+        {/* Difficulté — pastilles (orange = énergie/intensité, système D) */}
+        <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
+          style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)" }}
+          aria-label={`Difficulté : ${session.difficulty}`}>
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="w-1 h-1 rounded-full"
+              style={{ background: i < level ? "#EF9F27" : "rgba(255,255,255,0.3)" }} />
+          ))}
+        </span>
+
+        {/* Durée — badge discret */}
+        <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
+          style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.34)" }}>
+          {session.duration} MIN
+        </span>
+
+        {/* Scrim bas : nom (blanc) + muscles (lavande = notre identité) */}
+        <div className="absolute inset-x-0 bottom-0 pl-2.5 pb-3 pt-12 flex flex-col items-start text-left"
+          style={{
+            paddingRight: session.perso ? 34 : 10,
+            background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
+          }}>
           <p className="text-[12.5px] font-black uppercase text-white leading-[1.12] tracking-tight"
             style={{
               display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
@@ -873,17 +901,21 @@ function SessionTile({ session, onStart, onManage }: {
             }}>
             {session.title}
           </p>
-          <span className="mt-1.5 px-2.5 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.08em] text-white"
-            style={{ border: "1px solid rgba(255,255,255,0.65)" }}>
-            {session.duration} MIN
-          </span>
+          <p className="text-[10.5px] font-semibold mt-1 leading-snug"
+            style={{
+              color: "#C9B8FF",
+              display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden",
+              textShadow: "0 1px 6px rgba(0,0,0,0.45)",
+            }}>
+            {muscles}
+          </p>
         </div>
       </motion.button>
 
-      {/* Gérer (perso) — un ⋯ discret sur la carte, le menu fait le reste */}
+      {/* Gérer (perso) — un ⋯ discret en bas-droite, hors du chemin du nom */}
       {session.perso && (
         <motion.button whileTap={{ scale: 0.85 }} onClick={() => onManage(session)}
-          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+          className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
           style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}
           aria-label={`Gérer : ${session.title}`}>
           <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
