@@ -495,9 +495,9 @@ function TodayHero({
     que soit la largeur de la carte. */
 type FanCard = { img: string; pos: string; cy: number; dx: number; rot: number; z: number; w: number; h: number };
 const CHOISIS_FAN: FanCard[] = [
-  { img: "legs-squat",    pos: "center 32%", cy: 44, dx: -32, rot: -18, z: 1, w: 50, h: 66 },
-  { img: "pull-traction", pos: "center 26%", cy: 44, dx:  32, rot:  18, z: 2, w: 50, h: 66 },
-  { img: "push-couche",   pos: "center 30%", cy: 39, dx:   0, rot:   0, z: 3, w: 52, h: 68 },
+  { img: "legs-squat",    pos: "center 32%", cy: 43, dx: -22, rot: -16, z: 1, w: 56, h: 68 },
+  { img: "pull-traction", pos: "center 26%", cy: 43, dx:  22, rot:  16, z: 2, w: 56, h: 68 },
+  { img: "push-couche",   pos: "center 30%", cy: 42, dx:   0, rot:   0, z: 3, w: 64, h: 80 },
 ];
 
 function ForkCard({ kind, count, onClick }: {
