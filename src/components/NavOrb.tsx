@@ -25,25 +25,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
+import { AssistantSpark } from "@/components/AssistantMark";
 
 const LONG_PRESS_MS = 350;
-
-/* L'étincelle ✦ — chemins de lucide « sparkles » repris tels quels, en
-   bicolore : grande étoile violette (léger remplissage pour la présence),
-   petits éclats dorés. */
-function OrbGlyph({ px }: { px: number }) {
-  return (
-    <svg width={px} height={px} viewBox="0 0 24 24" fill="none"
-      strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path
-        d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
-        style={{ stroke: "var(--accent)", fill: "rgba(var(--accent-rgb),0.13)" }} />
-      <path d="M20 2v4" style={{ stroke: "var(--gold)" }} />
-      <path d="M22 4h-4" style={{ stroke: "var(--gold)" }} />
-      <circle cx="4" cy="20" r="2" style={{ stroke: "var(--gold)" }} />
-    </svg>
-  );
-}
 
 export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: number }) {
   const px = glyph ?? Math.round(size * 0.56);
@@ -133,7 +117,7 @@ export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: nu
       >
         {/* L'étincelle s'efface pendant les états (micro / vumètre / spinner) */}
         <span style={{ opacity: quiet ? 0 : 1, transition: "opacity 0.15s ease", display: "flex" }}>
-          <OrbGlyph px={px} />
+          <AssistantSpark px={px} />
         </span>
 
         {/* Contenu d'état (couleurs du thème, plus de blanc) */}

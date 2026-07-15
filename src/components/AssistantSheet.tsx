@@ -16,6 +16,7 @@ import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays } from "lucide-reac
 import { useAssistant } from "@/context/AssistantContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
+import { AssistantAvatar } from "@/components/AssistantMark";
 
 const SUGGESTIONS = [
   "Comment créer une séance ?",
@@ -103,9 +104,7 @@ export default function AssistantSheet() {
               </div>
               <div className="flex items-center gap-3 px-4 pb-3 pt-1"
                 style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/nav-orb.png" alt="" draggable={false}
-                  className="w-9 h-9 flex-shrink-0 object-contain select-none" />
+                <AssistantAvatar size={36} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>Vaiiya ✦</p>
                   <p className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>Ton assistant — partout, tout le temps</p>
@@ -125,10 +124,8 @@ export default function AssistantSheet() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col items-center justify-center gap-5 flex-1 text-center px-4">
                   <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-20 h-20 flex items-center justify-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/nav-orb.png" alt="" draggable={false}
-                      className="w-20 h-20 object-contain select-none" />
+                    className="flex items-center justify-center">
+                    <AssistantAvatar size={80} />
                   </motion.div>
                   <div>
                     <p className="text-base font-semibold mb-1" style={{ color: "var(--text-0)" }}>
@@ -161,9 +158,7 @@ export default function AssistantSheet() {
                     transition={{ duration: 0.26, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
                     {msg.role === "assistant" && (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src="/nav-orb.png" alt="" draggable={false}
-                        className="w-7 h-7 flex-shrink-0 object-contain select-none mb-0.5" />
+                      <AssistantAvatar size={28} className="mb-0.5" />
                     )}
                     <div className="px-4 py-2.5 rounded-3xl text-[14px] font-light leading-relaxed"
                       style={{
