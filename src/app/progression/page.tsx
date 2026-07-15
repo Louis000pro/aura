@@ -493,11 +493,16 @@ function TodayHero({
     (liseré clair + ombre = carte, pas écran), rotation en éventail, dégagées
     du texte. Ancrage horizontal au centre (dx en px) → forme identique quelle
     que soit la largeur de la carte. */
-type FanCard = { img: string; pos: string; cy: number; dx: number; rot: number; z: number; w: number; h: number };
+/** Écartement horizontal responsive : serré sur mobile (plancher 30px), il
+    s'élargit avec la largeur de la carte (13cqw) jusqu'à 62px → l'éventail
+    occupe plus de place là où il y a de la largeur (nécessite container-type
+    sur le parent). */
+const CHOISIS_DX = "clamp(30px, 13cqw, 62px)";
+type FanCard = { img: string; pos: string; cy: number; dir: -1 | 0 | 1; rot: number; z: number; w: number; h: number };
 const CHOISIS_FAN: FanCard[] = [
-  { img: "legs-squat",    pos: "center 32%", cy: 43, dx: -22, rot: -16, z: 1, w: 56, h: 68 },
-  { img: "pull-traction", pos: "center 26%", cy: 43, dx:  22, rot:  16, z: 2, w: 56, h: 68 },
-  { img: "push-couche",   pos: "center 30%", cy: 42, dx:   0, rot:   0, z: 3, w: 64, h: 80 },
+  { img: "legs-squat",    pos: "center 32%", cy: 43, dir: -1, rot: -11, z: 1, w: 68, h: 70 },
+  { img: "pull-traction", pos: "center 26%", cy: 43, dir:  1, rot:  11, z: 2, w: 68, h: 70 },
+  { img: "push-couche",   pos: "center 30%", cy: 42, dir:  0, rot:   0, z: 3, w: 76, h: 80 },
 ];
 
 function ForkCard({ kind, count, onClick }: {
@@ -521,7 +526,7 @@ function ForkCard({ kind, count, onClick }: {
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
         </>
       ) : (
-        <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate" }}>
+        <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate", containerType: "inline-size" }}>
           {/* fond en profondeur — la bibliothèque derrière l'éventail */}
           <div style={{ position: "absolute", inset: 0, backgroundImage: "url(/entrainement/pull-rowing.webp)", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(4px) brightness(0.42)", transform: "scale(1.12)" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,14,0.5), rgba(8,6,14,0.72))" }} />
@@ -530,7 +535,7 @@ function ForkCard({ kind, count, onClick }: {
           {CHOISIS_FAN.map((c) => (
             <div key={c.img} style={{
               position: "absolute", left: "50%", top: c.cy, width: c.w, height: c.h, zIndex: c.z,
-              transform: `translate(calc(-50% + ${c.dx}px), -50%) rotate(${c.rot}deg)`,
+              transform: `translate(calc(-50% + (${c.dir} * ${CHOISIS_DX})), -50%) rotate(${c.rot}deg)`,
               borderRadius: 9,
               backgroundImage: `url(/entrainement/${c.img}.webp)`, backgroundSize: "cover", backgroundPosition: c.pos,
               boxShadow: "0 7px 15px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(255,255,255,0.55)",
