@@ -317,7 +317,7 @@ export default function Navigation() {
           {/* 3. Assistant — glyphe SVG, colonne calquée sur celle des onglets
                 (glyphe + hauteur de libellé réservée) → centres alignés. */}
           <div className="flex-1 flex flex-col items-center justify-center gap-1 px-1" data-tour-anchor="nav-assistant">
-            <NavOrb size={44} glyph={27} />
+            <NavOrb size={44} glyph={25} />
             <span aria-hidden style={{ height: 10 }} />
           </div>
 
@@ -343,7 +343,7 @@ export default function Navigation() {
           {/* Assistant — glyphe SVG dans une case 40px comme les pastilles d'onglet */}
           <div className="flex justify-center mt-1" data-tour-anchor="nav-assistant">
             <div className="w-10 h-10 flex items-center justify-center">
-              <NavOrb size={40} glyph={21} />
+              <NavOrb size={40} glyph={19} />
             </div>
           </div>
 

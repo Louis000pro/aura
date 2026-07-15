@@ -3,12 +3,12 @@
 /* ════════════════════════════════════════════════════════════════════
    NavOrb — le bouton assistant au centre de la navigation.
 
-   Visuel : glyphe SVG vectoriel (« pictogramme ») — un cercle au trait de 2
-   sur grille 24 (le poids exact des icônes lucide voisines), traversé par un
-   ruban, avec une étincelle d'or. Il hérite des couleurs du thème (violet
-   action + or) → mode sombre automatique, net à toutes les tailles. Remplace
-   l'ancien PNG photoréaliste qui jurait avec la barre ; le PNG reste le
-   visage du chat dans AssistantSheet.
+   Visuel : l'étincelle ✦ (géométrie EXACTE de lucide « sparkles » — même
+   grille 24, même trait que les icônes voisines) en bicolore : étoile
+   violette (action) + petits éclats dorés. Hérite des couleurs du thème →
+   mode sombre automatique, net à toutes les tailles. Remplace l'ancien PNG
+   photoréaliste qui jurait avec la barre (puis un essai cercle+ruban rejeté :
+   illisible à 27 px). Le PNG reste le visage du chat dans AssistantSheet.
 
    • FIGÉ au repos (aucune animation continue → conso minimale).
    • Ne s'anime QU'À l'activation : appui (scale + micro), enregistrement
@@ -20,7 +20,7 @@
      s'aligne sur la rangée d'icônes tout en gardant une vraie cible tactile.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
@@ -28,27 +28,19 @@ import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 
 const LONG_PRESS_MS = 350;
 
-/* Le glyphe. `quiet` retire le ruban et l'étincelle pour laisser le cercle
-   servir de cadre au contenu d'état (micro / vumètre / spinner). */
-function OrbGlyph({ px, quiet }: { px: number; quiet: boolean }) {
-  const clipId = useId();
+/* L'étincelle ✦ — chemins de lucide « sparkles » repris tels quels, en
+   bicolore : grande étoile violette (léger remplissage pour la présence),
+   petits éclats dorés. */
+function OrbGlyph({ px }: { px: number }) {
   return (
-    <svg width={px} height={px} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <defs>
-        <clipPath id={clipId}><circle cx="12" cy="12" r="9" /></clipPath>
-      </defs>
-      <circle cx="12" cy="12" r="9" style={{ fill: "rgba(var(--accent-rgb),0.14)" }} />
-      {!quiet && (
-        <g clipPath={`url(#${clipId})`}>
-          <path d="M1.5 14.5 C 8 8, 16 18.5, 22.5 11" strokeWidth={1.7} strokeLinecap="round"
-            style={{ stroke: "var(--accent)", opacity: 0.8 }} />
-        </g>
-      )}
-      <circle cx="12" cy="12" r="9" strokeWidth={2} style={{ stroke: "var(--accent)" }} />
-      {!quiet && (
-        <path d="M15.9 6.7 Q16.15 7.85 17.3 8.1 Q16.15 8.35 15.9 9.5 Q15.65 8.35 14.5 8.1 Q15.65 7.85 15.9 6.7 Z"
-          style={{ fill: "var(--gold)" }} />
-      )}
+    <svg width={px} height={px} viewBox="0 0 24 24" fill="none"
+      strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path
+        d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"
+        style={{ stroke: "var(--accent)", fill: "rgba(var(--accent-rgb),0.13)" }} />
+      <path d="M20 2v4" style={{ stroke: "var(--gold)" }} />
+      <path d="M22 4h-4" style={{ stroke: "var(--gold)" }} />
+      <circle cx="4" cy="20" r="2" style={{ stroke: "var(--gold)" }} />
     </svg>
   );
 }
@@ -139,9 +131,12 @@ export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: nu
           { duration: 0.18 }
         }
       >
-        <OrbGlyph px={px} quiet={quiet} />
+        {/* L'étincelle s'efface pendant les états (micro / vumètre / spinner) */}
+        <span style={{ opacity: quiet ? 0 : 1, transition: "opacity 0.15s ease", display: "flex" }}>
+          <OrbGlyph px={px} />
+        </span>
 
-        {/* Contenu d'état, DANS le cercle (couleurs du thème, plus de blanc) */}
+        {/* Contenu d'état (couleurs du thème, plus de blanc) */}
         <span className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2 }}>
           <AnimatePresence mode="wait">
             {recording ? (
@@ -149,17 +144,17 @@ export default function NavOrb({ size = 48, glyph }: { size?: number; glyph?: nu
                 className="flex items-end gap-[2px]">
                 {voice.levels.map((lvl, i) => (
                   <motion.span key={i} className="block w-[2px] rounded-full" style={{ background: "var(--accent)" }}
-                    animate={{ height: `${Math.max(4, lvl * (px * 0.5))}px` }} transition={{ duration: 0.08, ease: "linear" }} />
+                    animate={{ height: `${Math.max(5, lvl * (px * 0.65))}px` }} transition={{ duration: 0.08, ease: "linear" }} />
                 ))}
               </motion.span>
             ) : processing ? (
               <motion.span key="proc" initial={{ opacity: 0 }} animate={{ opacity: 1, rotate: 360 }} exit={{ opacity: 0 }}
                 transition={{ rotate: { duration: 1.4, repeat: Infinity, ease: "linear" }, opacity: { duration: 0.2 } }}
                 className="rounded-full"
-                style={{ width: px * 0.55, height: px * 0.55, border: "2px solid rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }} />
+                style={{ width: px * 0.65, height: px * 0.65, border: "2px solid rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }} />
             ) : pressing ? (
               <motion.span key="press" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                <Mic size={Math.round(px * 0.52)} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                <Mic size={Math.round(px * 0.65)} strokeWidth={2} style={{ color: "var(--accent)" }} />
               </motion.span>
             ) : null}
           </AnimatePresence>
