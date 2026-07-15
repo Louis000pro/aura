@@ -25,6 +25,7 @@ import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
+import { lockBodyModal } from "@/lib/bodyModal";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import {
   ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, readVariant, ctxFromLieu,
@@ -273,10 +274,7 @@ function Sheet({ onClose, children, maxHeight = "88vh", height }: {
   maxHeight?: string;
   height?: string;              // imposée → sheet « plein écran » (catalogue)
 }) {
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   return (
     <motion.div
@@ -1872,10 +1870,7 @@ function CreateSessionModal({ onClose, onCreate, editSession }: {
   // Tant que la modale est ouverte, on masque la barre de navigation du bas :
   // sur mobile elle se superposait au pied de la modale (compositing du translateZ
   // de la nav), rendant le bouton « Créer la séance » inaccessible.
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   const handleAiGenerate = async () => {
     if (!aiDescription.trim()) return;

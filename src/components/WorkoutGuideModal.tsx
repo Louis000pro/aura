@@ -7,6 +7,7 @@ import {
   Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck, ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import { lockBodyModal } from "@/lib/bodyModal";
 import { useAuth } from "@/context/AuthContext";
 import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
@@ -492,10 +493,7 @@ export default function WorkoutGuideModal({
 
   /* ── Masque la barre de navigation du bas tant que la séance guidée est ouverte
         (sinon, sur mobile, elle se superpose au bas de la modale). ── */
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   /* ── Notify parent + auto-save session when workout is done ── */
   useEffect(() => {
@@ -1262,8 +1260,8 @@ export default function WorkoutGuideModal({
                   onClick={completeSet}
                   className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
                   style={{
-                    background: `linear-gradient(135deg, ${accent}dd 0%, ${accent}aa 100%)`,
-                    boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(var(--surface-rgb),0.3)`,
+                    background: "var(--accent)",
+                    boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
                     color: "#fff",
                   }}
                 >
@@ -1319,9 +1317,9 @@ export default function WorkoutGuideModal({
                     disabled={shareStatus === "saving"}
                     className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
                     style={{
-                      background: `linear-gradient(135deg, ${accent}dd 0%, ${accent}aa 100%)`,
+                      background: "var(--accent)",
                       color: "#fff",
-                      boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(var(--surface-rgb),0.3)`,
+                      boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
                       opacity: shareStatus === "saving" ? 0.7 : 1,
                     }}
                   >

@@ -298,7 +298,7 @@ export default function Navigation() {
       )}
 
       {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou) ══ */}
-      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform" }}>
         <div
           className="relative flex items-stretch justify-around px-1"
           style={{
