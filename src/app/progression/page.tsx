@@ -846,12 +846,40 @@ const DIFF_LEVEL: Record<WorkoutSession["difficulty"], number> = {
   "Débutant": 1, "Intermédiaire": 2, "Avancé": 3,
 };
 
-function SessionTile({ session, onStart, onManage }: {
+/* Dé-doublonnage des photos DANS une rangée. resolveArt est déterministe :
+   deux séances qui matchent la même règle (ou tombent sur le même hash)
+   reçoivent la MÊME photo. Ici on parcourt la rangée dans l'ordre et, dès
+   qu'une image est déjà prise, on tourne vers une autre variante libre de la
+   même famille — la 1re carte garde sa photo « juste », les suivantes varient.
+   Une rangée ne répète donc plus une photo tant qu'il reste des variantes. */
+function dedupeRowArt(list: MergedSession[]): Map<string, string> {
+  const used = new Set<string>();
+  const out = new Map<string, string>();
+  for (const s of list) {
+    const art = resolveArt({ title: s.title, category: s.category, muscles: s.muscles });
+    let img = art.img;
+    if (used.has(img)) {
+      const variants = FAMILY[art.fam].variants;
+      const start = variants.indexOf(img);
+      for (let k = 1; k <= variants.length; k++) {
+        const cand = variants[(start + k) % variants.length];
+        if (!used.has(cand)) { img = cand; break; }
+      }
+    }
+    used.add(img);
+    out.set(s.id, img);
+  }
+  return out;
+}
+
+function SessionTile({ session, onStart, onManage, imgOverride }: {
   session: MergedSession;
   onStart: (s: MergedSession) => void;
   onManage: (s: MergedSession) => void;
+  imgOverride?: string;
 }) {
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const img = imgOverride ?? tileArt.img;
   const level = DIFF_LEVEL[session.difficulty];
   // Le différenciateur : les muscles. À défaut (séance sans muscles listés),
   // la famille de mouvement (« Poussée », « Tirage »…) fait un repli parlant.
@@ -870,7 +898,7 @@ function SessionTile({ session, onStart, onManage }: {
         style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
         aria-label={`Lancer : ${session.title}`}
       >
-        <Photo img={tileArt.img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
+        <Photo img={img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
 
         {/* Difficulté — pastilles (orange = énergie/intensité, système D) */}
         <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
@@ -1173,9 +1201,16 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
   const vaiiya = matched.filter((s) => !s.perso);
   const perso = matched.filter((s) => s.perso);
 
+  /* Photo par séance, dé-doublonnée PAR RANGÉE (Vaiiya et « les tiennes »
+     indépendamment) : deux cartes d'une même rangée ne tombent plus sur la
+     même image. Fusionné en une map id → image (les id sont uniques). */
+  const artById = new Map<string, string>();
+  dedupeRowArt(vaiiya).forEach((img, id) => artById.set(id, img));
+  dedupeRowArt(perso).forEach((img, id) => artById.set(id, img));
+
   const rowTile = (s: MergedSession) => (
     <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
-      <SessionTile session={s} onStart={onStart} onManage={setManage} />
+      <SessionTile session={s} onStart={onStart} onManage={setManage} imgOverride={artById.get(s.id)} />
     </div>
   );
 
@@ -1259,7 +1294,7 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
           /* ── Niveau 2, « Les tiennes » : ta bibliothèque + créer ── */
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {perso.map((s) => (
-              <SessionTile key={s.id} session={s} onStart={onStart} onManage={setManage} />
+              <SessionTile key={s.id} session={s} onStart={onStart} onManage={setManage} imgOverride={artById.get(s.id)} />
             ))}
             {createCard}
           </div>
