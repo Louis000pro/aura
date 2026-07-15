@@ -492,15 +492,20 @@ function TodayHero({
     du texte. Ancrage horizontal au centre (dx en px) → forme identique quelle
     que soit la largeur de la carte. */
 /** Écartement horizontal responsive : serré sur mobile (plancher 30px), il
-    s'élargit avec la largeur de la carte (13cqw) jusqu'à 62px → l'éventail
+    s'élargit avec la largeur de la carte (13cqw) jusqu'à 72px → l'éventail
     occupe plus de place là où il y a de la largeur (nécessite container-type
     sur le parent). */
-const CHOISIS_DX = "clamp(30px, 13cqw, 62px)";
-type FanCard = { img: string; pos: string; cy: number; dir: -1 | 0 | 1; rot: number; z: number; w: number; h: number };
+const CHOISIS_DX = "clamp(30px, 13cqw, 72px)";
+/** L'éventail grandit avec la HAUTEUR de la carte (cqh) : plus haute sur desktop
+    (148 → 188) → cartes de l'éventail plus grandes. La formule `top` verrouille
+    le bas de la carte pivotée à une ligne constante (100cqh − 64px), donc l'écart
+    au texte reste ~constant à toute hauteur (`sway` compense le débord de la
+    rotation). Nécessite `container-type: size` sur le parent. */
+type FanCard = { img: string; pos: string; wv: string; hv: string; dir: -1 | 0 | 1; rot: number; z: number; sway: number };
 const CHOISIS_FAN: FanCard[] = [
-  { img: "legs-squat",    pos: "center 32%", cy: 43, dir: -1, rot: -11, z: 1, w: 68, h: 70 },
-  { img: "pull-traction", pos: "center 26%", cy: 43, dir:  1, rot:  11, z: 2, w: 68, h: 70 },
-  { img: "push-couche",   pos: "center 30%", cy: 42, dir:  0, rot:   0, z: 3, w: 76, h: 80 },
+  { img: "legs-squat",    pos: "center 32%", wv: "clamp(66px,44cqh,100px)", hv: "clamp(70px,47cqh,104px)", dir: -1, rot: -11, z: 1, sway: 0.095 },
+  { img: "pull-traction", pos: "center 26%", wv: "clamp(66px,44cqh,100px)", hv: "clamp(70px,47cqh,104px)", dir:  1, rot:  11, z: 2, sway: 0.095 },
+  { img: "push-couche",   pos: "center 30%", wv: "clamp(75px,51cqh,112px)", hv: "clamp(80px,54cqh,120px)", dir:  0, rot:   0, z: 3, sway: 0    },
 ];
 
 function ForkCard({ kind, count, onClick }: {
@@ -513,8 +518,8 @@ function ForkCard({ kind, count, onClick }: {
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0"
-      style={{ height: 148, boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
+      className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0 h-[148px] md:h-[188px]"
+      style={{ boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
     >
       {isIA ? (
         <>
@@ -524,16 +529,22 @@ function ForkCard({ kind, count, onClick }: {
           <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
         </>
       ) : (
-        <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate", containerType: "inline-size" }}>
+        <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate", containerType: "size" }}>
           {/* fond en profondeur — la bibliothèque derrière l'éventail */}
           <div style={{ position: "absolute", inset: 0, backgroundImage: "url(/entrainement/pull-rowing.webp)", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(4px) brightness(0.42)", transform: "scale(1.12)" }} />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,14,0.5), rgba(8,6,14,0.72))" }} />
-          <div style={{ position: "absolute", left: "50%", top: 32, width: 96, height: 96, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(155,130,255,0.35), transparent 68%)", filter: "blur(6px)" }} />
-          {/* l'éventail de séances */}
+          {/* halo — centré sur la carte du milieu, suit sa hauteur */}
+          <div style={{ position: "absolute", left: "50%", top: "calc(100cqh - 64px - (clamp(80px,54cqh,120px) / 2))", width: 96, height: 96, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(155,130,255,0.35), transparent 68%)", filter: "blur(6px)" }} />
+          {/* l'éventail de séances — grandit avec la hauteur de la carte */}
           {CHOISIS_FAN.map((c) => (
             <div key={c.img} style={{
-              position: "absolute", left: "50%", top: c.cy, width: c.w, height: c.h, zIndex: c.z,
-              transform: `translate(calc(-50% + (${c.dir} * ${CHOISIS_DX})), -50%) rotate(${c.rot}deg)`,
+              position: "absolute", left: "50%",
+              top: c.sway
+                ? `calc(100cqh - 64px - ${c.hv} - (${c.wv} * ${c.sway}))`
+                : `calc(100cqh - 64px - ${c.hv})`,
+              width: c.wv, height: c.hv, zIndex: c.z,
+              transform: `translateX(calc(-50% + (${c.dir} * ${CHOISIS_DX}))) rotate(${c.rot}deg)`,
+              transformOrigin: "center",
               borderRadius: 9,
               backgroundImage: `url(/entrainement/${c.img}.webp)`, backgroundSize: "cover", backgroundPosition: c.pos,
               boxShadow: "0 7px 15px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(255,255,255,0.55)",
