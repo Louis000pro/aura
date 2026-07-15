@@ -115,6 +115,27 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Cardio"],
     accent: "#8B5CF6", icon: Wind,
   },
+  {
+    id: "salle-haut", category: "force",
+    title: "Haut du corps — Salle", subtitle: "Barre · Machines · Poulie",
+    duration: 50, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Dos", "Épaules"],
+    accent: "#8B5CF6", icon: Dumbbell,
+  },
+  {
+    id: "recup-active", category: "mobilite",
+    title: "Récupération active", subtitle: "Respiration · Étirements doux · Détente",
+    duration: 25, difficulty: "Débutant", exercises: 7,
+    muscles: ["Souplesse", "Respiration"],
+    accent: "#8B5CF6", icon: Wind,
+  },
+  {
+    id: "defi-gainage", category: "fullbody",
+    title: "Défi Gainage", subtitle: "Un chrono, un record à battre",
+    duration: 15, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Core", "Abdominaux", "Gainage"],
+    accent: "#8B5CF6", icon: Flame,
+  },
 ];
 
 const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
