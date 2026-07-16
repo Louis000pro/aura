@@ -3,14 +3,16 @@
    rejoue le geste dans le « tunnel » de séance (voir ExerciseGuide.tsx,
    affiché par WorkoutGuideModal pendant l'effort).
 
-   PIPELINE DE PROD (ChatGPT → app)
+   PIPELINE DE PROD (ChatGPT → app) — 3 gestes, pas une heure de Python
    1. Génère 1 image par exo contenant 2-3 poses du MÊME personnage côte à
       côte (départ → milieu → fin du mouvement). Même génération = même
-      perso garanti. Fond transparent.
-   2. Découpe l'image en frames PNG transparentes de même cadrage/échelle.
-   3. Dépose-les dans  public/entrainement/guides/  nommées
-      <key>-1.png, <key>-2.png, … <key>-<frames>.png  (numérotées de 1).
-   4. Ajoute une règle ci-dessous. L'app les enchaîne en fondu = le geste.
+      perso garanti. Fond uni (vert de préf.) ou transparent, et les poses
+      ne doivent pas se toucher — c'est le trou entre elles qui les sépare.
+   2. Dépose la planche dans  guides-src/<clé>.png  (dossier gitignoré).
+   3. `npm run guides` : détoure, découpe, met tout sur un canevas commun,
+      écrit public/entrainement/guides/<clé>-<n>.png et te dicte la règle
+      à coller ci-dessous. L'app enchaîne les frames en fondu = le geste.
+      (voir scripts/build-guides.mjs pour les options --loop / --tol)
 
    Exo STATIQUE (planche, gainage) = 1 seule frame → { frames: 1 } (pas d'anim).
    Tant qu'un exo n'a AUCUNE règle ici, le tunnel affiche un halo épuré

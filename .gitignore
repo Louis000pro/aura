@@ -32,3 +32,6 @@ desktop.ini
 seed_videos/
 .vidtmp/
 .vidtmp2/
+
+# planches brutes des personnages-guides (entrée de `npm run guides`)
+/guides-src
