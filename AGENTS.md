@@ -58,7 +58,7 @@ La vision : « tout connecté » — une seule source de données par concept (f
 
 ## Chantiers en cours (juillet 2026)
 
-- **Redesign séance « le tunnel »** : fiche-affiche photo → player toujours sombre avec personnage-guide animé (JAMAIS de photo hors-sujet pendant l'effort) → repos = anneau orange auto-démarré → fin teal. Maquette livrée, personnages en cours de production, **RIEN codé — attendre le GO de Louis**.
+- **Redesign séance « le tunnel »** : CODÉ sur `dev` (commit 2cd2666, `WorkoutGuideModal.tsx` + fiche via `heroImage` dans `progression/page.tsx`). Fiche = affiche photo → player TOUJOURS sombre (barre segmentée stories teal/violet, typo géante, démo vidéo dépliable) → repos = anneau orange auto-démarré → fin teal. Le personnage-guide animé n'est PAS encore là : fallback = tunnel épuré (halo violet à la place). Les sprites tomberont plus tard, exo par exo, sans casser le reste. En validation visuelle par Louis sur Vercel.
 - **Nutrition « On mange où ? »** : le héros devient une question humaine → 3 choix (Maison / Resto & livraison / Sur le pouce). Validé en maquette, **pas codé**.
 - **Planning unifié** : phase 1 (socle en base, table `planning_days`) faite ; suite = pilotage par l'IA.
 - **Carte de perf partageable** (`PerfShareCard` / `PerfShareButton` / `lib/perfShareExport.ts`) : DÉJÀ sur `dev` (poster « aura » + export PNG story, intégré directement dans le feed communauté) — ne pas la réimplémenter.
