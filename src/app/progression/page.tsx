@@ -2971,6 +2971,7 @@ export default function ProgressionPage() {
             duration={activeWorkout.duration}
             difficulty={activeWorkout.difficulty}
             category={activeWorkout.category}
+            heroImage={`/entrainement/${resolveArt({ title: activeWorkout.title, category: activeWorkout.category as WorkoutCategory | undefined }).img}.webp`}
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
             onComplete={() => handleWorkoutComplete(activeWorkout)}
