@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
+import ExerciseGuide from "@/components/ExerciseGuide";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { useAuth } from "@/context/AuthContext";
@@ -956,10 +957,6 @@ export default function WorkoutGuideModal({
                 transition={{ duration: 0.18 }}
                 className="relative flex flex-col px-5 pt-4 pb-4"
               >
-                {/* halo (à la place du personnage-guide — arrive plus tard) */}
-                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-                  style={{ top: "1%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,92,246,0.16), transparent 62%)" }} />
-
                 {/* Titre + démo dépliable */}
                 <div className="relative z-[2]">
                   <p className="text-[10px] font-extrabold tracking-[0.24em]" style={{ color: TUN.lav }}>
@@ -985,6 +982,10 @@ export default function WorkoutGuideModal({
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* Personnage-guide : rejoue le geste en fondu si un sprite existe,
+                    sinon halo épuré. Brancher une vague = éditer src/lib/exerciseGuides.ts */}
+                <ExerciseGuide name={cur.name} />
 
                 {/* Héros : le chrono (exos minutés) OU les reps */}
                 {isTimered ? (
