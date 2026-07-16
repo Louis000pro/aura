@@ -29,6 +29,7 @@ La vision : « tout connecté » — une seule source de données par concept (f
 - **Tout passe par GitHub.** Jamais de `vercel --prod` en direct : la prod divergerait du repo (déjà vécu).
 - **Toujours `git pull` avant de pousser** : un collaborateur humain (Kisotil) et plusieurs agents IA travaillent en parallèle sur le même repo.
 - Des worktrees git existent dans `.claude/worktrees/` (autres agents) : ne pas y toucher.
+- **Un seul agent par gros fichier à la fois.** On est plusieurs à écrire sur `dev` en parallèle. Les fichiers monolithiques concentrent le risque de conflit git : `communaute/page.tsx` (~5 500 l.), `progression/page.tsx` (~2 800 l.), `NutritionTab.tsx` (~2 700 l.), `profil/page.tsx` (~2 700 l.), `WorkoutGuideModal.tsx` (~1 400 l.). Avant d'éditer l'un d'eux : `git pull`, travailler en une passe courte, committer + pousser vite pour ne pas garder le fichier « ouvert » longtemps. Si Louis répartit une tâche qui touche un de ces fichiers, il ne devrait pas confier en même temps à un autre agent une tâche qui touche le même fichier. En cas de doute sur qui touche quoi, demander à Louis plutôt que de foncer.
 
 ## Stack
 
