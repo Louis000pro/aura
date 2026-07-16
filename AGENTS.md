@@ -60,7 +60,7 @@ La vision : « tout connecté » — une seule source de données par concept (f
 - **Redesign séance « le tunnel »** : fiche-affiche photo → player toujours sombre avec personnage-guide animé (JAMAIS de photo hors-sujet pendant l'effort) → repos = anneau orange auto-démarré → fin teal. Maquette livrée, personnages en cours de production, **RIEN codé — attendre le GO de Louis**.
 - **Nutrition « On mange où ? »** : le héros devient une question humaine → 3 choix (Maison / Resto & livraison / Sur le pouce). Validé en maquette, **pas codé**.
 - **Planning unifié** : phase 1 (socle en base, table `planning_days`) faite ; suite = pilotage par l'IA.
-- **Carte de perf partageable** (`PerfShareCard`) : codée sur un worktree Claude, pas encore poussée — ne pas la réimplémenter.
+- **Carte de perf partageable** (`PerfShareCard` / `PerfShareButton` / `lib/perfShareExport.ts`) : DÉJÀ sur `dev` (poster « aura » + export PNG story, intégré directement dans le feed communauté) — ne pas la réimplémenter.
 - Rétro-fit système D + mode sombre : quasi complets sur toute l'app.
 
 ## Ce qu'il faut à un nouvel agent
