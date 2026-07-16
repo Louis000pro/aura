@@ -28,15 +28,17 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
   // { re: /jump.?squat|squat.*saut/i, guide: { key: "jumpsquat", frames: 3 } },
   { re: /squat/i,                       guide: { key: "squat",     frames: 3 } },
-  // { re: /pompe|push.?up/i,           guide: { key: "pompes",    frames: 3 } },
-  // { re: /fente|lunge/i,              guide: { key: "fentes",    frames: 3 } },
+  { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3 } },
+  { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 3 } },
   // { re: /traction|pull.?up|tirage/i, guide: { key: "traction",  frames: 3 } },
   // { re: /militaire|overhead|développé.*(épaul|militaire)/i, guide: { key: "militaire", frames: 3 } },
   // { re: /rowing/i,                   guide: { key: "rowing",    frames: 2 } },
-  // { re: /hip.?thrust/i,              guide: { key: "hipthrust", frames: 2 } },
+  { re: /hip.?thrust|pont.?fessier/i,   guide: { key: "hipthrust", frames: 3 } },
   // { re: /burpee/i,                   guide: { key: "burpee",    frames: 3 } },
   // { re: /mountain.?climber|climber/i, guide: { key: "climbers", frames: 2 } },
-  // { re: /planche|plank|gainage/i,    guide: { key: "planche",   frames: 1 } },
+  { re: /planche|plank|gainage/i,       guide: { key: "planche",   frames: 1 } },
+  { re: /crunch/i,                      guide: { key: "crunch",     frames: 3 } },
+  { re: /superman/i,                    guide: { key: "superman",   frames: 3 } },
 ];
 
 /** Retourne le sprite du personnage-guide pour un exo, ou null (→ halo épuré). */
