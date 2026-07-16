@@ -27,7 +27,7 @@ export type Guide = { key: string; frames: number };
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
   // { re: /jump.?squat|squat.*saut/i, guide: { key: "jumpsquat", frames: 3 } },
-  // { re: /squat/i,                    guide: { key: "squat",     frames: 3 } },
+  { re: /squat/i,                       guide: { key: "squat",     frames: 3 } },
   // { re: /pompe|push.?up/i,           guide: { key: "pompes",    frames: 3 } },
   // { re: /fente|lunge/i,              guide: { key: "fentes",    frames: 3 } },
   // { re: /traction|pull.?up|tirage/i, guide: { key: "traction",  frames: 3 } },
