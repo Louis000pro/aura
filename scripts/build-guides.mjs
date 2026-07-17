@@ -5,7 +5,9 @@
    TOI :  1. génère la planche dans ChatGPT — 2-3 poses du MÊME personnage
              côte à côte (départ → milieu → fin), fond uni (vert de préf.)
              ou transparent, les poses qui ne se touchent pas.
-          2. dépose-la dans  guides-src/  sous le nom de la clé : squat.png
+          2. dépose-la dans  guides-src/  — garde ton nommage habituel, le
+             script en extrait l'exo tout seul :
+             vaiiya-guide-femme-chaise-mur-chroma-v1.png → clé « chaisemur »
           3. npm run guides
 
    LUI :  détoure le fond, découpe les poses, les met TOUTES sur le même
@@ -22,6 +24,7 @@
      --only=squat  ne traite que cette planche
      --tol=60      tolérance du détourage (monte si le fond bave, descends
                    si le perso se fait manger)
+     --key=xxx     force la clé (si l'extraction auto tombe à côté)
    ════════════════════════════════════════════════════════════════════ */
 
 import { readdir, mkdir, writeFile } from "node:fs/promises";
@@ -40,6 +43,31 @@ const flag = (n, d) => {
 const LOOP = args.includes("--loop");
 const ONLY = flag("only", null);
 const TOL = Number(flag("tol", 60));
+const KEY = flag("key", null);
+
+/* ── Le nom du fichier → la clé de l'exo ──────────────────────────────
+   On garde le nommage de prod de Louis intact et on jette l'intendance :
+     vaiiya-guide-femme-chaise-mur-chroma-v1  →  chaisemur
+   Le genre dégage : un exo = UN sprite (cf. ExerciseGuide), donc la
+   version femme et la version homme du même exo tomberaient sur la même
+   clé — le script prévient au lieu d'écraser en silence. */
+const NOISE = new Set([
+  "vaiiya", "aura", "guide", "guides", "sprite", "planche", "sheet",
+  "femme", "homme", "female", "male", "f", "h",
+  "chroma", "chromakey", "greenscreen", "green", "vert", "fondvert", "bg",
+  "final", "def", "ok", "new", "copy", "copie",
+]);
+
+function keyOf(stem) {
+  const parts = stem
+    .toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")   // é → e
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .filter(p => !NOISE.has(p))
+    .filter(p => !/^v?\d+$/.test(p));                    // v1, v2, 01…
+  return { key: parts.join("") || stem.toLowerCase().replace(/[^a-z0-9]/g, ""), parts };
+}
 
 /* Marge autour du perso, en pixels du canevas final. */
 const PAD = 24;
@@ -201,9 +229,25 @@ if (!files.length) {
 
 console.log(`\nPlanches → frames${LOOP ? "  (--loop : le geste revient)" : ""}\n`);
 const done = [];
+const seen = new Map();
 for (const f of files) {
-  const key = path.parse(f).name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const { key, parts } = KEY ? { key: KEY, parts: [KEY] } : keyOf(path.parse(f).name);
   if (ONLY && key !== ONLY) continue;
+
+  /* Deux planches, une seule clé : la 2e écraserait la 1re. */
+  if (seen.has(key)) {
+    console.log(`  ✗ ${f}
+      → même clé « ${key} » que ${seen.get(key)} : la 2e écraserait la 1re.
+        Un exo = UN sprite. Choisis une version, ou distingue-les
+        (…-chaise-mur-assis / …-chaise-mur-dos) puis relance.`);
+    continue;
+  }
+  seen.set(key, f);
+
+  console.log(`  ${f}  →  clé « ${key} »`);
+  if (parts.length > 3) {
+    console.log(`      (si c'est faux : npm run guides -- --key=lavraiecle)`);
+  }
   const r = await build(path.join(SRC, f), key);
   if (r) done.push(r);
 }
