@@ -273,6 +273,16 @@ if (!files.length) {
   process.exit(0);
 }
 
+/* --pose vise UNE planche. Sans garde-fou, il s'appliquerait à toutes celles
+   qui traînent dans le dossier et re-découperait en silence une tenue déjà
+   réglée (frames:1 → on réafficherait la mauvaise pose, sans erreur). */
+if (POSE && !ONLY && files.length > 1) {
+  console.log(`\n--pose=${POSE} s'appliquerait aux ${files.length} planches du dossier.
+Vise-en une : npm run guides -- --only=<exo> --pose=${POSE}
+(ou ne garde que celle-là dans ${SRC}/)\n`);
+  process.exit(1);
+}
+
 console.log(`\nPlanches → frames${LOOP ? "  (--loop : le geste revient)" : ""}\n`);
 const done = [];
 const seen = new Map();
