@@ -45,18 +45,18 @@ const ONLY = flag("only", null);
 const TOL = Number(flag("tol", 60));
 const KEY = flag("key", null);
 
-/* ── Le nom du fichier → la clé de l'exo ──────────────────────────────
-   On garde le nommage de prod de Louis intact et on jette l'intendance :
-     vaiiya-guide-femme-chaise-mur-chroma-v1  →  chaisemur
-   Le genre dégage : un exo = UN sprite (cf. ExerciseGuide), donc la
-   version femme et la version homme du même exo tomberaient sur la même
-   clé — le script prévient au lieu d'écraser en silence. */
+/* ── Le nom du fichier → l'exo + le genre ─────────────────────────────
+   On garde le nommage de prod intact et on jette l'intendance :
+     vaiiya-guide-femme-chaise-mur-chroma-v1 → exo « chaisemur », genre f
+   Le genre n'est PAS du bruit : il est gardé dans le nom du sprite pour
+   qu'une version femme et une version homme du même exo puissent coexister
+   le jour où on offrira le choix (cf. Guide.genres). */
 const NOISE = new Set([
   "vaiiya", "aura", "guide", "guides", "sprite", "planche", "sheet",
-  "femme", "homme", "female", "male", "f", "h",
   "chroma", "chromakey", "greenscreen", "green", "vert", "fondvert", "bg",
   "final", "def", "ok", "new", "copy", "copie",
 ]);
+const GENRE = { femme: "f", female: "f", f: "f", homme: "h", male: "h", h: "h" };
 
 /* La clé NOMME les fichiers (extensiontricepshaltere) ; elle ne matche
    jamais rien — le vrai nom d'exo a des espaces (« Extension triceps
@@ -68,14 +68,21 @@ const NOISE = new Set([
 const ruleFor = parts => parts.slice(0, 2).join(".*");
 
 function keyOf(stem) {
-  const parts = stem
+  const words = stem
     .toLowerCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "")   // é → e
     .split(/[^a-z0-9]+/)
     .filter(Boolean)
     .filter(p => !NOISE.has(p))
     .filter(p => !/^v?\d+$/.test(p));                    // v1, v2, 01…
-  return { key: parts.join("") || stem.toLowerCase().replace(/[^a-z0-9]/g, ""), parts };
+
+  const genre = GENRE[words.find(w => GENRE[w])] ?? null;
+  const parts = words.filter(w => !GENRE[w]);
+  return {
+    key: parts.join("") || stem.toLowerCase().replace(/[^a-z0-9]/g, ""),
+    parts,
+    genre,
+  };
 }
 
 /* Marge autour du perso, en pixels du canevas final. */
@@ -178,7 +185,7 @@ function carve({ data, w, h }) {
   return { runs, top, bot };
 }
 
-async function build(file, key) {
+async function build(file, key, genre) {
   const mask = await toMask(file);
   const cut = carve(mask);
   if (!cut) return console.log(`  ✗ ${key} — planche vide, rien à découper`);
@@ -215,12 +222,12 @@ async function build(file, key) {
 
   await mkdir(OUT, { recursive: true });
   for (let i = 0; i < out.length; i++) {
-    await writeFile(path.join(OUT, `${key}-${i + 1}.png`), out[i]);
+    await writeFile(path.join(OUT, `${key}-${genre}-${i + 1}.png`), out[i]);
   }
   console.log(
-    `  ✓ ${key} — ${out.length} frame${out.length > 1 ? "s" : ""} en ${cw}×${ch}  (${mask.mode})`
+    `  ✓ ${key}-${genre} — ${out.length} frame${out.length > 1 ? "s" : ""} en ${cw}×${ch}  (${mask.mode})`
   );
-  return { key, frames: out.length };
+  return { key, genre, frames: out.length };
 }
 
 /* ── ── */
@@ -240,42 +247,69 @@ console.log(`\nPlanches → frames${LOOP ? "  (--loop : le geste revient)" : ""}
 const done = [];
 const seen = new Map();
 for (const f of files) {
-  const { key, parts } = KEY ? { key: KEY, parts: [KEY] } : keyOf(path.parse(f).name);
+  const auto = keyOf(path.parse(f).name);
+  const key = KEY ?? auto.key;
+  const parts = KEY ? [KEY] : auto.parts;
   if (ONLY && key !== ONLY) continue;
 
-  /* Deux planches, une seule clé : la 2e écraserait la 1re. */
-  if (seen.has(key)) {
+  /* Sans genre dans le nom, on ne sait pas qui est dessiné : on ne devine
+     pas, sinon la planche femme finirait rangée sous « homme ». */
+  if (!auto.genre) {
     console.log(`  ✗ ${f}
-      → même clé « ${key} » que ${seen.get(key)} : la 2e écraserait la 1re.
-        Un exo = UN sprite. Choisis une version, ou distingue-les
-        (…-chaise-mur-assis / …-chaise-mur-dos) puis relance.`);
+      → genre introuvable dans le nom. Ajoute « femme » ou « homme »
+        (vaiiya-guide-femme-${key}-chroma-v1.png) puis relance.`);
     continue;
   }
-  seen.set(key, f);
 
-  console.log(`  ${f}  →  clé « ${key} »`);
-  if (parts.length > 3) {
-    console.log(`      (si c'est faux : npm run guides -- --key=lavraiecle)`);
+  /* Même exo + même genre = la 2e planche écraserait la 1re. Même exo,
+     genres différents = c'est la parité, tout va bien. */
+  const id = `${key}-${auto.genre}`;
+  if (seen.has(id)) {
+    console.log(`  ✗ ${f}
+      → même exo ET même genre que ${seen.get(id)} : la 2e écraserait la 1re.
+        Garde-en une, ou distingue les exos (…-chaise-mur-assis).`);
+    continue;
   }
-  const r = await build(path.join(SRC, f), key);
+  seen.set(id, f);
+
+  console.log(`  ${f}\n      →  exo « ${key} », ${auto.genre === "f" ? "femme" : "homme"}`);
+  if (parts.length > 3) {
+    console.log(`      (si l'exo est faux : npm run guides -- --key=lavraiecle)`);
+  }
+  const r = await build(path.join(SRC, f), key, auto.genre);
   if (r) done.push({ ...r, parts });
 }
 
-/* Quelles clés n'ont pas encore de règle ? */
+/* Reste à faire côté règles : exo inconnu, ou exo connu mais nouveau genre. */
 const rules = await import("node:fs").then(fs =>
   fs.promises.readFile(RULES, "utf8").catch(() => "")
 );
-const orphans = done.filter(d => !new RegExp(`key:\\s*"${d.key}"`).test(rules));
-if (orphans.length) {
+const ruleOf = key => new RegExp(`key:\\s*"${key}"[^}]*`).exec(rules)?.[0] ?? null;
+
+const news = done.filter(d => !ruleOf(d.key));
+const parity = done.filter(d => {
+  const r = ruleOf(d.key);
+  return r && !r.includes(`"${d.genre}"`);
+});
+
+if (news.length) {
   console.log(`\nÀ coller dans ${RULES} (GUIDE_RULES) — l'ordre compte, du
 plus précis au plus générique :\n`);
-  for (const o of orphans) {
-    console.log(`  { re: /${ruleFor(o.parts)}/i, guide: { key: "${o.key}", frames: ${o.frames} } },`);
+  for (const o of news) {
+    console.log(`  { re: /${ruleFor(o.parts)}/i, guide: { key: "${o.key}", frames: ${o.frames}, genres: ["${o.genre}"] } },`);
   }
   console.log(`\n(la regex teste le NOM DE L'EXO tel qu'il s'affiche dans l'app,
 accents compris — vérifie qu'elle le vise vraiment, et élargis-la aux
 variantes : /pompe|push.?up/i plutôt que /pompes/i)`);
-} else if (done.length) {
-  console.log(`\nToutes les clés ont déjà leur règle — rien à ajouter.`);
+}
+if (parity.length) {
+  console.log(`\nParité : l'exo a déjà sa règle, ajoute juste le genre dans
+son tableau \`genres\` (${RULES}) :\n`);
+  for (const o of parity) {
+    console.log(`  ${o.key} → genres: [… , "${o.genre}"]`);
+  }
+}
+if (!news.length && !parity.length && done.length) {
+  console.log(`\nLes règles sont déjà à jour — rien à toucher.`);
 }
 console.log();

@@ -28,33 +28,50 @@
    déclinaisons de squat → le même « squat »).
    ════════════════════════════════════════════════════════════════════ */
 
-export type Guide = { key: string; frames: number };
+/** Le personnage d'une frame : femme ou homme. */
+export type Genre = "f" | "h";
+
+/** `genres` = les versions QUI EXISTENT en fichiers, pas celles qu'on veut.
+    Aujourd'hui un seul genre par exo ; le jour où on offre le choix à
+    l'utilisateur, on ajoute la 2e planche + son genre ici, et c'est tout. */
+export type Guide = { key: string; frames: number; genres: Genre[] };
+
+/** Le genre à afficher : celui demandé s'il existe, sinon le seul qu'on a.
+    Tant que personne ne passe `want`, ça retourne l'unique version. */
+export function pickGenre(guide: Guide, want?: Genre): Genre {
+  return want && guide.genres.includes(want) ? want : guide.genres[0];
+}
+
+/** Le chemin d'une frame. Seul endroit qui connaît la forme du nom. */
+export function frameSrc(guide: Guide, genre: Genre, i: number): string {
+  return `/entrainement/guides/${guide.key}-${genre}-${i + 1}.png`;
+}
 
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
-  { re: /jump.?squat|squat.*saut/i,     guide: { key: "squatsaute", frames: 3 } },
-  { re: /pike.*(push|pompe)|pompe.*pike/i, guide: { key: "pikepushups", frames: 3 } },
-  { re: /squat/i,                       guide: { key: "squat",     frames: 3 } },
-  { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3 } },
-  { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 3 } },
-  { re: /traction|pull.?up|chin.?up/i,  guide: { key: "tractions", frames: 3 } },
-  { re: /militaire.*halt|developpe.*(epaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3 } },
-  { re: /developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3 } },
-  { re: /rowing.*barre|barbell.?row/i,   guide: { key: "rowing",    frames: 3 } },
-  { re: /bicep.?curl|curl.*halt|curl biceps?/i, guide: { key: "curl", frames: 3 } },
-  { re: /elevation.*lateral|lateral.?raise/i, guide: { key: "elevationslaterales", frames: 3 } },
-  { re: /souleve.*terre.*roumain|romanian.?deadlift|deadlift.*roumain/i, guide: { key: "souleveterre", frames: 3 } },
-  { re: /mollet|calf.?raise/i,           guide: { key: "mollets",   frames: 3 } },
-  { re: /hip.?thrust|pont.?fessier/i,   guide: { key: "hipthrust", frames: 3 } },
-  { re: /burpee/i,                      guide: { key: "burpees",   frames: 5 } },
-  { re: /mountain.?climber|climber/i,   guide: { key: "mountainclimbers", frames: 3 } },
-  { re: /jumping.?jack/i,               guide: { key: "jumpingjacks", frames: 3 } },
-  { re: /corde.*saut|saut.*corde|jump.?rope/i, guide: { key: "corde", frames: 3 } },
-  { re: /dips?.*(chaise|banc)/i,        guide: { key: "dips",      frames: 3 } },
-  { re: /bird.?dog/i,                   guide: { key: "birddog",   frames: 3 } },
-  { re: /planche|plank|gainage/i,       guide: { key: "planche",   frames: 1 } },
-  { re: /crunch/i,                      guide: { key: "crunch",     frames: 3 } },
-  { re: /superman/i,                    guide: { key: "superman",   frames: 3 } },
+  { re: /jump.?squat|squat.*saut/i,     guide: { key: "squatsaute", frames: 3, genres: ["f"] } },
+  { re: /pike.*(push|pompe)|pompe.*pike/i, guide: { key: "pikepushups", frames: 3, genres: ["f"] } },
+  { re: /squat/i,                       guide: { key: "squat",     frames: 3, genres: ["f"] } },
+  { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3, genres: ["f"] } },
+  { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 3, genres: ["f"] } },
+  { re: /traction|pull.?up|chin.?up/i,  guide: { key: "tractions", frames: 3, genres: ["h"] } },
+  { re: /militaire.*halt|developpe.*(epaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3, genres: ["h"] } },
+  { re: /developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3, genres: ["h"] } },
+  { re: /rowing.*barre|barbell.?row/i,   guide: { key: "rowing",    frames: 3, genres: ["h"] } },
+  { re: /bicep.?curl|curl.*halt|curl biceps?/i, guide: { key: "curl", frames: 3, genres: ["h"] } },
+  { re: /elevation.*lateral|lateral.?raise/i, guide: { key: "elevationslaterales", frames: 3, genres: ["h"] } },
+  { re: /souleve.*terre.*roumain|romanian.?deadlift|deadlift.*roumain/i, guide: { key: "souleveterre", frames: 3, genres: ["h"] } },
+  { re: /mollet|calf.?raise/i,           guide: { key: "mollets",   frames: 3, genres: ["h"] } },
+  { re: /hip.?thrust|pont.?fessier/i,   guide: { key: "hipthrust", frames: 3, genres: ["f"] } },
+  { re: /burpee/i,                      guide: { key: "burpees",   frames: 5, genres: ["f"] } },
+  { re: /mountain.?climber|climber/i,   guide: { key: "mountainclimbers", frames: 3, genres: ["f"] } },
+  { re: /jumping.?jack/i,               guide: { key: "jumpingjacks", frames: 3, genres: ["f"] } },
+  { re: /corde.*saut|saut.*corde|jump.?rope/i, guide: { key: "corde", frames: 3, genres: ["f"] } },
+  { re: /dips?.*(chaise|banc)/i,        guide: { key: "dips",      frames: 3, genres: ["f"] } },
+  { re: /bird.?dog/i,                   guide: { key: "birddog",   frames: 3, genres: ["f"] } },
+  { re: /planche|plank|gainage/i,       guide: { key: "planche",   frames: 1, genres: ["f"] } },
+  { re: /crunch/i,                      guide: { key: "crunch",     frames: 3, genres: ["f"] } },
+  { re: /superman/i,                    guide: { key: "superman",   frames: 3, genres: ["f"] } },
 ];
 
 /** Retourne le sprite du personnage-guide pour un exo, ou null (→ halo épuré). */

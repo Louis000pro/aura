@@ -1,18 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { resolveGuide } from "@/lib/exerciseGuides";
+import { resolveGuide, pickGenre, frameSrc, type Genre } from "@/lib/exerciseGuides";
 
 /* ════════════════════════════════════════════════════════════════════
    Le personnage-guide du « tunnel » de séance : rejoue le geste de l'exo
    en fondu-enchaîné quand un sprite existe (cf. src/lib/exerciseGuides.ts),
    sinon un halo violet épuré — JAMAIS de photo hors-sujet pendant l'effort.
 
-   Les frames vivent dans  public/entrainement/guides/<key>-<n>.png .
-   Ajouter un exo = ajouter une règle dans exerciseGuides.ts + les PNG.
+   Les frames vivent dans  public/entrainement/guides/<key>-<genre>-<n>.png .
+   Ajouter un exo = `npm run guides` + une règle dans exerciseGuides.ts.
    Aucune modif ici nécessaire pour brancher une nouvelle vague de sprites.
+
+   `genre` : le jour où on laisse l'utilisateur choisir son personnage, on
+   passe son choix ici. Tant que personne ne le passe — et tant qu'un exo
+   n'a qu'une seule planche — on affiche la version qui existe.
    ════════════════════════════════════════════════════════════════════ */
-export default function ExerciseGuide({ name }: { name: string }) {
+export default function ExerciseGuide({ name, genre }: { name: string; genre?: Genre }) {
   const guide = resolveGuide(name);
   const [frame, setFrame] = useState(0);
 
@@ -35,13 +39,14 @@ export default function ExerciseGuide({ name }: { name: string }) {
   );
 
   if (!guide) return halo;
+  const g = pickGenre(guide, genre);
 
   return (
     <div className="relative z-[1] flex justify-center mt-1" style={{ height: 176 }} aria-hidden>
       {halo}
       {Array.from({ length: guide.frames }).map((_, i) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={i} src={`/entrainement/guides/${guide.key}-${i + 1}.png`} alt=""
+        <img key={i} src={frameSrc(guide, g, i)} alt=""
           className="absolute top-0 h-full w-auto object-contain"
           style={{ opacity: i === frame ? 1 : 0, transition: "opacity 500ms ease-in-out" }} />
       ))}
