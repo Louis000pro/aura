@@ -54,7 +54,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /bulgare|split.?squat/i,        guide: { key: "squatbulgare", frames: 2, genres: ["f"] } },
   { re: /squat/i,                       guide: { key: "squat",     frames: 3, genres: ["f"] } },
   { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3, genres: ["f"] } },
-  { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 4, genres: ["f"] } },
+  { re: /fente(?!.*saut)|lunge/i,       guide: { key: "fentes",    frames: 4, genres: ["f"] } },
   { re: /traction|pull.?up|chin.?up/i,  guide: { key: "tractions", frames: 3, genres: ["h"] } },
   { re: /militaire.*halt|developpe.*(epaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3, genres: ["h"] } },
   { re: /developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3, genres: ["h"] } },
@@ -70,7 +70,12 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /corde.*saut|saut.*corde|jump.?rope/i, guide: { key: "corde", frames: 3, genres: ["f"] } },
   { re: /dips?.*(chaise|banc)/i,        guide: { key: "dips",      frames: 3, genres: ["f"] } },
   { re: /bird.?dog/i,                   guide: { key: "birddog",   frames: 3, genres: ["f"] } },
-  { re: /planche|plank|gainage/i,       guide: { key: "planche",   frames: 1, genres: ["f"] } },
+  /* Les exclusions ci-dessous valent tant que l'exo n'a pas SON sprite :
+     « Gainage dorsal » et « Fentes sautées » sont d'autres mouvements, et
+     leur servir le ventral / la fente classique serait montrer un geste
+     faux pendant l'effort. Le halo est plus honnête. Quand leur planche
+     existe, sa règle se met AU-DESSUS et l'exclusion devient un filet. */
+  { re: /planche|plank|gainage(?!.*dorsal)/i, guide: { key: "planche", frames: 1, genres: ["f"] } },
   { re: /chaise.*mur|wall.?sit/i,       guide: { key: "chaisemur", frames: 1, genres: ["f"] } },
   { re: /crunch/i,                      guide: { key: "crunch",     frames: 3, genres: ["f"] } },
   { re: /superman/i,                    guide: { key: "superman",   frames: 3, genres: ["f"] } },
