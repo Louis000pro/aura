@@ -325,11 +325,20 @@ const rules = await import("node:fs").then(fs =>
   fs.promises.readFile(RULES, "utf8").catch(() => "")
 );
 const ruleOf = key => new RegExp(`key:\\s*"${key}"[^}]*`).exec(rules)?.[0] ?? null;
+const framesOf = r => Number(/frames:\s*(\d+)/.exec(r)?.[1] ?? NaN);
 
 const news = done.filter(d => !ruleOf(d.key));
 const parity = done.filter(d => {
   const r = ruleOf(d.key);
   return r && !r.includes(`"${d.genre}"`);
+});
+/* Re-traiter une planche peut CHANGER le nombre de frames (une pose ajoutée,
+   --loop, --pose). La règle, elle, garde l'ancien compte : l'app afficherait
+   3 frames sur 4 (la remontée disparaît) ou chercherait une 4e PNG qui
+   n'existe pas. Rien ne casse bruyamment — d'où ce rappel. */
+const stale = done.filter(d => {
+  const r = ruleOf(d.key);
+  return r && framesOf(r) !== d.frames;
 });
 
 if (news.length) {
@@ -349,7 +358,14 @@ son tableau \`genres\` (${RULES}) :\n`);
     console.log(`  ${o.key} → genres: [… , "${o.genre}"]`);
   }
 }
-if (!news.length && !parity.length && done.length) {
+if (stale.length) {
+  console.log(`\nLe nombre de frames a changé : mets \`frames\` à jour dans
+sa règle (${RULES}), sinon l'app garde l'ancien compte, sans erreur :\n`);
+  for (const o of stale) {
+    console.log(`  ${o.key} → frames: ${o.frames}  (la règle dit encore ${framesOf(ruleOf(o.key))})`);
+  }
+}
+if (!news.length && !parity.length && !stale.length && done.length) {
   console.log(`\nLes règles sont déjà à jour — rien à toucher.`);
 }
 console.log();

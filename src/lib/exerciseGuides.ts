@@ -53,7 +53,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /pike.*(push|pompe)|pompe.*pike/i, guide: { key: "pikepushups", frames: 3, genres: ["f"] } },
   { re: /squat/i,                       guide: { key: "squat",     frames: 3, genres: ["f"] } },
   { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3, genres: ["f"] } },
-  { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 3, genres: ["f"] } },
+  { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 4, genres: ["f"] } },
   { re: /traction|pull.?up|chin.?up/i,  guide: { key: "tractions", frames: 3, genres: ["h"] } },
   { re: /militaire.*halt|developpe.*(epaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3, genres: ["h"] } },
   { re: /developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3, genres: ["h"] } },
