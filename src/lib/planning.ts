@@ -43,9 +43,9 @@ export interface GenInput {
 /* ═══════════════════════════ Banque d'exercices ═══════════════════════════ */
 const EX: Record<Ctx, Record<string, string[]>> = {
   salle: {
-    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
+    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl assis", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
     "Haut du corps": ["Développé couché", "Tirage poitrine", "Développé épaules machine", "Rowing assis poulie", "Pec deck", "Tirage vertical", "Élévations latérales", "Curl haltères", "Extensions triceps poulie"],
-    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
+    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl allongé", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
     "Push": ["Développé couché", "Développé incliné haltères", "Développé épaules machine", "Pec deck", "Élévations latérales", "Extensions triceps poulie", "Dips machine"],
     "Pull": ["Tirage vertical", "Rowing assis poulie", "Tirage poitrine", "Rowing haltère", "Curl barre EZ", "Curl haltères", "Face pull poulie", "Tirage horizontal"],
     "Cardio / HIIT": ["Tapis course 20 min", "Vélo 15 min", "Rameur 10 min", "Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s"],
