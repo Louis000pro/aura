@@ -136,6 +136,13 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Core", "Abdominaux", "Gainage"],
     accent: "#8B5CF6", icon: Flame,
   },
+  {
+    id: "defi-anim", category: "fullbody",
+    title: "Défi Animations ✦", subtitle: "Chaque geste animé, un par un — l'atelier complet",
+    duration: 25, difficulty: "Intermédiaire", exercises: 55,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Sparkles,
+  },
 ];
 
 const CATEGORY_LABEL: Record<WorkoutCategory, string> = {

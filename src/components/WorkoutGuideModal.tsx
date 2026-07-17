@@ -110,7 +110,42 @@ const CR        = 46;
 const CC        = 2 * Math.PI * CR;
 
 /* ─── Exercise data ──────────────────────────────────────── */
+
+/* « Défi Animations » — l'atelier qui enchaîne CHAQUE geste animé une
+   seule fois (un sprite = une entrée). Les noms sont choisis pour résoudre
+   vers leur personnage-guide (cf. src/lib/exerciseGuides.ts) ; c'est la même
+   liste que la galerie /guides. sets:1 + repos court = on défile vite et on
+   voit toutes les animations d'une traite. Ajouter un sprite ⇒ l'ajouter ici. */
+const DEFI_ANIM_NAMES: string[] = [
+  // Poids du corps & HIIT
+  "Squat", "Pompes", "Fentes", "Squats sautés", "Fentes sautées",
+  "Pike push-ups", "Pompes diamant", "Pompes inclinées", "Dips sur chaise",
+  "Tractions", "Rowing inversé", "Burpees", "Mountain climbers",
+  "Jumping jacks", "Montées de genoux", "Corde à sauter", "Chaise au mur",
+  // Gainage & abdos
+  "Gainage", "Planche latérale", "Gainage dynamique", "Crunch", "Superman", "Bird dog",
+  // Machines
+  "Presse à cuisses", "Leg extension", "Leg curl assis", "Leg curl allongé",
+  "Abducteurs machine", "Hip thrust machine", "Pont fessier", "Pec deck",
+  "Développé épaules machine", "Dips machine", "Tirage poitrine",
+  "Rowing assis poulie", "Face pull poulie",
+  // Haltères & barre
+  "Développé couché", "Développé incliné haltères", "Développé militaire haltères",
+  "Oiseau haltères", "Élévations latérales", "Curl haltères", "Curl marteau",
+  "Curl barre EZ", "Extension triceps haltère", "Extension triceps poulie",
+  "Rowing barre", "Rowing haltère", "Tirage menton haltères",
+  "Soulevé de terre roumain", "Mollets", "Squat bulgare",
+  // Cardio machine
+  "Rameur", "Tapis de course", "Vélo",
+];
+
 const exerciseData: Record<string, Exercise[]> = {
+  "defi-anim": DEFI_ANIM_NAMES.map((name) => ({
+    name, sets: 1, reps: "Observe le geste", rest: 8,
+    tip: "Reproduis le mouvement du personnage-guide.",
+    benefit: "", muscles: [],
+  })),
+
   "demo-avatars": [
     // ─── Bas du corps ────────────────────────────────────────
     { name: "Air Squat",         sets: 2, reps: "12 reps", rest: 30,
