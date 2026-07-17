@@ -936,7 +936,9 @@ export default function WorkoutGuideModal({
                                 transition={{ duration: 0.25 }} className="overflow-hidden"
                               >
                                 <div className="pb-3 pt-1 flex flex-col gap-2.5">
-                                  <p className="text-[12.5px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{ex.tip}</p>
+                                  {ex.tip && (
+                                    <p className="text-[12.5px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{ex.tip}</p>
+                                  )}
                                   <ExerciseVideo exerciseName={ex.name} />
                                 </div>
                               </motion.div>
@@ -1054,12 +1056,17 @@ export default function WorkoutGuideModal({
                   )}
                 </AnimatePresence>
 
-                {/* Conseil du coach — porté par l'étincelle ✦ */}
-                <div className="relative z-[2] flex gap-3 items-start rounded-2xl px-3.5 py-3.5 mt-5"
-                  style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
-                  <span className="flex-shrink-0 mt-0.5"><AssistantSpark px={17} /></span>
-                  <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
-                </div>
+                {/* Conseil du coach — porté par l'étincelle ✦.
+                    Les séances du planning arrivent avec tip: "" (cf. toExercise
+                    dans lib/planning.ts) : sans ce garde-fou, l'étincelle promet
+                    « Le geste : » puis ne dit rien. Mieux vaut pas de carte. */}
+                {cur.tip && (
+                  <div className="relative z-[2] flex gap-3 items-start rounded-2xl px-3.5 py-3.5 mt-5"
+                    style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
+                    <span className="flex-shrink-0 mt-0.5"><AssistantSpark px={17} /></span>
+                    <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
+                  </div>
+                )}
               </motion.div>
             )}
 
