@@ -48,6 +48,29 @@ export function frameSrc(guide: Guide, genre: Genre, i: number): string {
 }
 
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
+  // ── Vague 2 (2026-07-17) — machines & variantes ────────────────────
+  // EN TÊTE volontairement : ces cas sont plus précis que les génériques de
+  // la Vague 1 et doivent gagner. « pompes diamant » avant /pompe/, « planche
+  // latérale » + « gainage dynamique » avant /planche|gainage/, « hip thrust
+  // machine » avant /hip thrust/. (Piège : /velo/ matcherait « déVELOppé »
+  // sans accents → on ancre \bvelo\b.)
+  { re: /abducteur/i,                     guide: { key: "abducteursmachine",       frames: 2, genres: ["f"] } },
+  { re: /developpe.*epaul.*machine/i,     guide: { key: "developpeepaulesmachine", frames: 2, genres: ["h"] } },
+  { re: /hip.?thrust.*machine/i,          guide: { key: "hipthrustmachine",        frames: 2, genres: ["h"] } },
+  { re: /dips?.*machine/i,                guide: { key: "dipsmachine",             frames: 2, genres: ["h"] } },
+  { re: /face.?pull/i,                    guide: { key: "facepullpoulie",          frames: 2, genres: ["h"] } },
+  { re: /curl.*marteau|hammer.?curl/i,    guide: { key: "curlmarteau",             frames: 2, genres: ["h"] } },
+  { re: /curl.*(barre|\bez\b)/i,          guide: { key: "curlbarreez",             frames: 2, genres: ["h"] } },
+  { re: /tirage.*menton|upright.?row/i,   guide: { key: "tiragementonhalteres",    frames: 2, genres: ["h"] } },
+  { re: /rowing.*invers|invers.*row/i,    guide: { key: "rowinginverse",           frames: 2, genres: ["f"] } },
+  { re: /rowing.*halt|one.?arm.?row|dumbbell.?row/i, guide: { key: "rowingunilateralhaltere", frames: 2, genres: ["h"] } },
+  { re: /pompe.*diamant|diamond.?push/i,  guide: { key: "pompesdiamant",           frames: 2, genres: ["f"] } },
+  { re: /pompe.*inclin|incline.?push.?up/i, guide: { key: "pompesinclinees",       frames: 2, genres: ["f"] } },
+  { re: /planche.*lateral|gainage.*lateral|side.?plank/i, guide: { key: "planchelaterale", frames: 1, genres: ["f"] } },
+  { re: /gainage.*dynamiq/i,              guide: { key: "gainagedynamique",        frames: 3, genres: ["f"] } },
+  { re: /rameur|rowing.?machine/i,        guide: { key: "rameur",                  frames: 3, genres: ["h"] } },
+  { re: /tapis|treadmill|course.*pied/i,  guide: { key: "coursetapis",             frames: 3, genres: ["f"] } },
+  { re: /\bvelo\b|spinning|\bbike\b/i,    guide: { key: "veloappartement",         frames: 2, genres: ["f"] } },
   // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
   { re: /jump.?squat|squat.*saut/i,     guide: { key: "squatsaute", frames: 3, genres: ["f"] } },
   { re: /pike.*(push|pompe)|pompe.*pike/i, guide: { key: "pikepushups", frames: 3, genres: ["f"] } },

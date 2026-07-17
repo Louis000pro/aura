@@ -29,6 +29,14 @@
                    frames:1, pas d'anim. C'est le cas des exos de TENUE
                    (chaise au mur, gainage) : il n'y a pas de geste à
                    rejouer, et sans fondu aucun décor ne peut sauter.
+     --slices=3    force N découpes de largeur égale au lieu de chercher
+                   les trous entre poses. Pour les planches où le DÉCOR
+                   relie les poses en continu (rameur, presse, tapis) :
+                   un long rail/châssis occupe toutes les colonnes, aucun
+                   corridor vide ne sépare les poses → le carve auto les
+                   recolle en une seule frame géante. On tranche alors en
+                   N parts égales (poses régulièrement espacées) et chaque
+                   part se recentre sur son propre perso. Vise UNE planche.
    ════════════════════════════════════════════════════════════════════ */
 
 import { readdir, mkdir, writeFile } from "node:fs/promises";
@@ -49,6 +57,7 @@ const ONLY = flag("only", null);
 const TOL = Number(flag("tol", 60));
 const KEY = flag("key", null);
 const POSE = Number(flag("pose", 0));
+const SLICES = Number(flag("slices", 0));
 
 /* ── Le nom du fichier → l'exo + le genre ─────────────────────────────
    On garde le nommage de prod intact et on jette l'intendance :
@@ -202,6 +211,34 @@ function bandOf({ data, w }, [a, b], h) {
   return [top, bot];
 }
 
+/* Le bloc de colonnes le plus large d'une tranche [a,b] — pour --slices : on
+   recentre sur le perso principal et on jette les éclats du décor voisin
+   (bout de volant, rail) qui débordent dans la tranche, séparés du perso par
+   le même trou vide que carve sait voir. null si la tranche est vide. */
+function widestRun({ data, w, h }, a, b) {
+  /* Seuil relatif à la TRANCHE, pas à la planche : le voisin peut n'être qu'à
+     quelques % de la tranche, un seuil calé sur la largeur totale ne le
+     verrait pas. Un perso est un bloc plein — pas de corridor vert interne à
+     ce seuil — donc on ne risque pas de le couper. */
+  const minGap = Math.max(6, Math.floor((b - a + 1) * 0.015));
+  let best = null, start = -1, gap = 0;
+  for (let x = a; x <= b; x++) {
+    let ink = false;
+    for (let y = 0; y < h; y++) {
+      if (data[(y * w + x) * 4 + 3] > INK) { ink = true; break; }
+    }
+    if (ink) {
+      if (start < 0) start = x;
+      gap = 0;
+    } else if (start >= 0 && ++gap >= minGap) {
+      if (!best || x - gap - start > best[1] - best[0]) best = [start, x - gap];
+      start = -1;
+    }
+  }
+  if (start >= 0 && (!best || b - start > best[1] - best[0])) best = [start, b];
+  return best;
+}
+
 async function build(file, key, genre) {
   const mask = await toMask(file);
   const cut = carve(mask);
@@ -219,6 +256,26 @@ async function build(file, key, genre) {
     }
     runs = [runs[POSE - 1]];
     [top, bot] = bandOf(mask, runs[0], mask.h);
+  }
+
+  /* --slices=N : le décor relie les poses (rameur, presse…), le carve n'a
+     trouvé qu'un seul bloc. On tranche cette étendue en N parts égales et on
+     rogne chacune sur son perso. Le HAUT/BAS commun reste celui de la planche
+     entière → même sol, même échelle, le fondu ne fait sauter personne. */
+  if (SLICES) {
+    const lo = runs[0][0], hi = runs[runs.length - 1][1];
+    const step = (hi - lo + 1) / SLICES;
+    const sliced = [];
+    for (let s = 0; s < SLICES; s++) {
+      const a = Math.round(lo + s * step);
+      const b = Math.round(lo + (s + 1) * step) - 1;
+      const t = widestRun(mask, a, b);
+      if (t) sliced.push(t);
+    }
+    if (sliced.length !== SLICES) {
+      return console.log(`  ✗ ${key} — ${SLICES} tranches demandées, ${sliced.length} avec du perso dedans (planche mal espacée ?)`);
+    }
+    runs = sliced;
   }
 
   const band = bot - top + 1;
@@ -276,9 +333,10 @@ if (!files.length) {
 /* --pose vise UNE planche. Sans garde-fou, il s'appliquerait à toutes celles
    qui traînent dans le dossier et re-découperait en silence une tenue déjà
    réglée (frames:1 → on réafficherait la mauvaise pose, sans erreur). */
-if (POSE && !ONLY && files.length > 1) {
-  console.log(`\n--pose=${POSE} s'appliquerait aux ${files.length} planches du dossier.
-Vise-en une : npm run guides -- --only=<exo> --pose=${POSE}
+if ((POSE || SLICES) && !ONLY && files.length > 1) {
+  const opt = POSE ? `--pose=${POSE}` : `--slices=${SLICES}`;
+  console.log(`\n${opt} s'appliquerait aux ${files.length} planches du dossier.
+Vise-en une : npm run guides -- --only=<exo> ${opt}
 (ou ne garde que celle-là dans ${SRC}/)\n`);
   process.exit(1);
 }
