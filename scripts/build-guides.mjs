@@ -58,6 +58,15 @@ const NOISE = new Set([
   "final", "def", "ok", "new", "copy", "copie",
 ]);
 
+/* La clé NOMME les fichiers (extensiontricepshaltere) ; elle ne matche
+   jamais rien — le vrai nom d'exo a des espaces (« Extension triceps
+   haltère »). La règle se construit donc à partir des mots.
+   Pas de gymnastique sur les accents ici : resolveGuide les retire du nom
+   avant de tester, les règles s'écrivent sans accent (cf. exerciseGuides).
+   2 mots suffisent à viser un exo sans le sur-restreindre : « extension
+   triceps » attrape aussi la variante à la poulie. */
+const ruleFor = parts => parts.slice(0, 2).join(".*");
+
 function keyOf(stem) {
   const parts = stem
     .toLowerCase()
@@ -249,7 +258,7 @@ for (const f of files) {
     console.log(`      (si c'est faux : npm run guides -- --key=lavraiecle)`);
   }
   const r = await build(path.join(SRC, f), key);
-  if (r) done.push(r);
+  if (r) done.push({ ...r, parts });
 }
 
 /* Quelles clés n'ont pas encore de règle ? */
@@ -261,10 +270,11 @@ if (orphans.length) {
   console.log(`\nÀ coller dans ${RULES} (GUIDE_RULES) — l'ordre compte, du
 plus précis au plus générique :\n`);
   for (const o of orphans) {
-    console.log(`  { re: /${o.key}/i, guide: { key: "${o.key}", frames: ${o.frames} } },`);
+    console.log(`  { re: /${ruleFor(o.parts)}/i, guide: { key: "${o.key}", frames: ${o.frames} } },`);
   }
-  console.log(`\n(la regex ci-dessus est un point de départ : élargis-la aux
-variantes — /pompe|push.?up/i plutôt que /pompes/i)`);
+  console.log(`\n(la regex teste le NOM DE L'EXO tel qu'il s'affiche dans l'app,
+accents compris — vérifie qu'elle le vise vraiment, et élargis-la aux
+variantes : /pompe|push.?up/i plutôt que /pompes/i)`);
 } else if (done.length) {
   console.log(`\nToutes les clés ont déjà leur règle — rien à ajouter.`);
 }

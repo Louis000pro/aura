@@ -18,6 +18,10 @@
    Tant qu'un exo n'a AUCUNE règle ici, le tunnel affiche un halo épuré
    (jamais de photo hors-sujet — c'est le fallback validé).
 
+   ⚠️ LES RÈGLES S'ÉCRIVENT SANS ACCENT (/developpe.*couche/i) : resolveGuide
+   retire les accents du nom avant de tester. Une regex accentuée ne matche
+   plus rien — et l'échec est silencieux (l'exo retombe sur le halo).
+
    ⚠️ L'ORDRE COMPTE : la 1re regex qui matche le nom de l'exo gagne. Mettre
    les cas spécifiques AVANT les génériques (ex. /jump.?squat/ avant /squat/).
    Un même sprite peut couvrir plusieurs variantes d'un exo (toutes les
@@ -34,12 +38,12 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3 } },
   { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 3 } },
   { re: /traction|pull.?up|chin.?up/i,  guide: { key: "tractions", frames: 3 } },
-  { re: /militaire.*halt|développé.*(épaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3 } },
-  { re: /développé.*couché(?!.*halt)|developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3 } },
+  { re: /militaire.*halt|developpe.*(epaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3 } },
+  { re: /developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3 } },
   { re: /rowing.*barre|barbell.?row/i,   guide: { key: "rowing",    frames: 3 } },
   { re: /bicep.?curl|curl.*halt|curl biceps?/i, guide: { key: "curl", frames: 3 } },
-  { re: /élévation.*latéral|elevation.*lateral|lateral.?raise/i, guide: { key: "elevationslaterales", frames: 3 } },
-  { re: /soulevé.*terre.*roumain|souleve.*terre.*roumain|romanian.?deadlift|deadlift.*roumain/i, guide: { key: "souleveterre", frames: 3 } },
+  { re: /elevation.*lateral|lateral.?raise/i, guide: { key: "elevationslaterales", frames: 3 } },
+  { re: /souleve.*terre.*roumain|romanian.?deadlift|deadlift.*roumain/i, guide: { key: "souleveterre", frames: 3 } },
   { re: /mollet|calf.?raise/i,           guide: { key: "mollets",   frames: 3 } },
   { re: /hip.?thrust|pont.?fessier/i,   guide: { key: "hipthrust", frames: 3 } },
   { re: /burpee/i,                      guide: { key: "burpees",   frames: 5 } },
@@ -55,7 +59,12 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
 
 /** Retourne le sprite du personnage-guide pour un exo, ou null (→ halo épuré). */
 export function resolveGuide(name: string): Guide | null {
-  const hay = name.toLowerCase();
+  /* Les accents tombent AVANT le test : « Développé couché » devient
+     « developpe couche ». Les règles s'écrivent donc sans accent, une
+     seule fois — sinon chacune doit épeler ses deux orthographes, et
+     c'est la variante accentuée qu'on oublie (elle ne rate jamais bruyam-
+     ment : l'exo retombe juste sur le halo, sans erreur). */
+  const hay = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   for (const r of GUIDE_RULES) if (r.re.test(hay)) return r.guide;
   return null;
 }
