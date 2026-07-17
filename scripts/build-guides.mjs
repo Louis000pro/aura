@@ -25,6 +25,10 @@
      --tol=60      tolérance du détourage (monte si le fond bave, descends
                    si le perso se fait manger)
      --key=xxx     force la clé (si l'extraction auto tombe à côté)
+     --pose=2      ne garde QUE la pose n°2 (comptée depuis la gauche) →
+                   frames:1, pas d'anim. C'est le cas des exos de TENUE
+                   (chaise au mur, gainage) : il n'y a pas de geste à
+                   rejouer, et sans fondu aucun décor ne peut sauter.
    ════════════════════════════════════════════════════════════════════ */
 
 import { readdir, mkdir, writeFile } from "node:fs/promises";
@@ -44,6 +48,7 @@ const LOOP = args.includes("--loop");
 const ONLY = flag("only", null);
 const TOL = Number(flag("tol", 60));
 const KEY = flag("key", null);
+const POSE = Number(flag("pose", 0));
 
 /* ── Le nom du fichier → l'exo + le genre ─────────────────────────────
    On garde le nommage de prod intact et on jette l'intendance :
@@ -185,12 +190,37 @@ function carve({ data, w, h }) {
   return { runs, top, bot };
 }
 
+/* Les lignes occupées d'une tranche de colonnes — pour recadrer sur UNE
+   pose au lieu de la planche entière (cf. --pose). */
+function bandOf({ data, w }, [a, b], h) {
+  let top = h, bot = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = a; x <= b; x++) {
+      if (data[(y * w + x) * 4 + 3] > INK) { if (y < top) top = y; if (y > bot) bot = y; break; }
+    }
+  }
+  return [top, bot];
+}
+
 async function build(file, key, genre) {
   const mask = await toMask(file);
   const cut = carve(mask);
   if (!cut) return console.log(`  ✗ ${key} — planche vide, rien à découper`);
 
-  const { runs, top, bot } = cut;
+  let { runs, top, bot } = cut;
+
+  /* --pose=N : un exo de TENUE (chaise au mur, gainage) n'a pas de geste à
+     rejouer — on ne garde que la pose tenue, et le canevas se recadre sur
+     elle seule (garder la bande commune laisserait le vide des autres poses).
+     Résultat : frames:1, aucun fondu, donc aucun décor qui saute. */
+  if (POSE) {
+    if (POSE > runs.length) {
+      return console.log(`  ✗ ${key} — pose ${POSE} demandée, la planche n'en a que ${runs.length}`);
+    }
+    runs = [runs[POSE - 1]];
+    [top, bot] = bandOf(mask, runs[0], mask.h);
+  }
+
   const band = bot - top + 1;
   const widest = Math.max(...runs.map(([a, b]) => b - a + 1));
   const cw = widest + PAD * 2;

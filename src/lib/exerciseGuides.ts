@@ -70,6 +70,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /dips?.*(chaise|banc)/i,        guide: { key: "dips",      frames: 3, genres: ["f"] } },
   { re: /bird.?dog/i,                   guide: { key: "birddog",   frames: 3, genres: ["f"] } },
   { re: /planche|plank|gainage/i,       guide: { key: "planche",   frames: 1, genres: ["f"] } },
+  { re: /chaise.*mur|wall.?sit/i,       guide: { key: "chaisemur", frames: 1, genres: ["f"] } },
   { re: /crunch/i,                      guide: { key: "crunch",     frames: 3, genres: ["f"] } },
   { re: /superman/i,                    guide: { key: "superman",   frames: 3, genres: ["f"] } },
 ];
