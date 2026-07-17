@@ -51,6 +51,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
   { re: /jump.?squat|squat.*saut/i,     guide: { key: "squatsaute", frames: 3, genres: ["f"] } },
   { re: /pike.*(push|pompe)|pompe.*pike/i, guide: { key: "pikepushups", frames: 3, genres: ["f"] } },
+  { re: /bulgare|split.?squat/i,        guide: { key: "squatbulgare", frames: 2, genres: ["f"] } },
   { re: /squat/i,                       guide: { key: "squat",     frames: 3, genres: ["f"] } },
   { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3, genres: ["f"] } },
   { re: /fente|lunge/i,                 guide: { key: "fentes",    frames: 4, genres: ["f"] } },
