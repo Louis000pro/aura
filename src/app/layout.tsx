@@ -6,6 +6,7 @@ import MainWrapper from "@/components/MainWrapper";
 import { AuthProvider } from "@/context/AuthContext";
 import { GuidedTourProvider } from "@/context/GuidedTourContext";
 import OnboardingWrapper from "@/components/OnboardingWrapper";
+import SeasonCeremony from "@/components/SeasonCeremony";
 import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
@@ -189,6 +190,7 @@ export default function RootLayout({
               <Navigation />
               <MainWrapper>{children}</MainWrapper>
               <OnboardingWrapper />
+              <SeasonCeremony />
               <GuidedTour />
               <PWARegister />
               <AssistantSheet />

@@ -6,6 +6,7 @@ import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown } from "lucide-react
 import { AssistantSpark } from "@/components/AssistantMark";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import { createClient } from "@/lib/supabase";
+import { creditSeanceEclats } from "@/lib/seasonApi";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { useAuth } from "@/context/AuthContext";
 import PerfShareButton from "@/components/PerfShareButton";
@@ -613,8 +614,12 @@ export default function WorkoutGuideModal({
       elapsed_seconds:  elapsed,
       exercises:        exercises,
       started_at:       new Date().toISOString(),
-    }).then(({ error }) => {
-      if (!error) setSessionSaved(true);
+    }).select("id").single().then(({ data, error }) => {
+      if (!error) {
+        setSessionSaved(true);
+        // La saison : la séance crédite les éclats (idempotent, jamais bloquant)
+        if (data?.id) void creditSeanceEclats(user.id, String(data.id));
+      }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
