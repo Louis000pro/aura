@@ -48,6 +48,30 @@ export function frameSrc(guide: Guide, genre: Genre, i: number): string {
 }
 
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
+  // ── Vague 5 (2026-07-18) — variantes salle & poids du corps ────────
+  // EN TÊTE : « goblet squat » avant /squat/, « mollets assis » avant
+  // /mollet/, « reverse crunch » avant /crunch/. Le soulevé de terre
+  // CLASSIQUE ne doit pas voler le ROUMAIN (qui a son propre sprite) :
+  // d'où le garde-fou en tête de regex, qui exclut les deux orthographes.
+  { re: /goblet.*squat/i,                     guide: { key: "gobletsquat",           frames: 2, genres: ["h"] } },
+  { re: /mollets?.*assis|seated.*calf/i,      guide: { key: "molletsassis",          frames: 2, genres: ["h"] } },
+  { re: /reverse.*crunch|crunch.*invers/i,    guide: { key: "reversecrunch",         frames: 2, genres: ["f"] } },
+  { re: /^(?!.*(roumain|romanian)).*(souleve.*terre|deadlift)/i, guide: { key: "souleveterreclassique", frames: 2, genres: ["h"] } },
+  { re: /dips?.*(barres?|paralleles)/i,       guide: { key: "dipsbarresparalleles",  frames: 2, genres: ["h"] } },
+  { re: /extension.*lombaire|hyperextension|banc.*lombaire/i, guide: { key: "extensionslombairesbanc", frames: 2, genres: ["h"] } },
+  { re: /arnold/i,                            guide: { key: "developpearnold",       frames: 3, genres: ["h"] } },
+  { re: /pullover/i,                          guide: { key: "pulloverhaltere",       frames: 2, genres: ["h"] } },
+  { re: /thruster/i,                          guide: { key: "thrusterhalteres",      frames: 3, genres: ["h"] } },
+  { re: /kickback|donkey.*kick.*poulie/i,     guide: { key: "kickbackfessierpoulie", frames: 2, genres: ["h"] } },
+  { re: /donkey.?kick/i,                      guide: { key: "donkeykick",            frames: 2, genres: ["f"] } },
+  { re: /bear.?crawl|marche.*ours/i,          guide: { key: "bearcrawl",             frames: 3, genres: ["f"] } },
+  { re: /step.?up|montee.*banc/i,             guide: { key: "stepupbanc",            frames: 2, genres: ["f"] } },
+  { re: /\bv.?ups?\b/i,                       guide: { key: "vups",                  frames: 2, genres: ["f"] } },
+  /* « Bicycle crunch » n'a PAS de sprite : sa planche a les deux poses qui
+     se chevauchent en diagonale, aucune coupe verticale ne les sépare (le
+     carve rend une frame à deux personnages, le forçage --slices=2 laisse
+     des fragments). À refaire chez ChatGPT avec les poses bien détachées.
+     En attendant l'exo tombe sur le halo — plus honnête qu'un geste faux. */
   // ── Vague 4 (2026-07-18) — mobilité, étirements & yoga ─────────────
   // EN TÊTE : « étirement mollet au mur » DOIT passer avant /mollet/, qui
   // pointe sur les montées de mollets debout — sinon on montre un exo de

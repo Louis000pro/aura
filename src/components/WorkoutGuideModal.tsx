@@ -123,14 +123,17 @@ const DEFI_ANIM_NAMES: string[] = [
   "Tractions", "Rowing inversé", "Burpees", "Mountain climbers",
   "Jumping jacks", "Montées de genoux", "Corde à sauter", "Chaise au mur",
   "Pompes explosives", "Box jump", "Skaters", "Sprint sur place",
+  "Bear crawl", "Step up banc", "Donkey kick", "Dips barres parallèles",
   // Gainage & abdos
   "Gainage", "Planche latérale", "Gainage dynamique", "Crunch", "Superman", "Bird dog",
   "Dead bug", "Hollow hold", "Relevés de jambes", "Russian twist", "Sit-ups",
+  "Reverse crunch", "V-ups", "Extensions lombaires banc",
   // Machines
   "Presse à cuisses", "Leg extension", "Leg curl assis", "Leg curl allongé",
   "Abducteurs machine", "Hip thrust machine", "Pont fessier", "Pec deck",
   "Développé épaules machine", "Dips machine", "Tirage poitrine",
   "Rowing assis poulie", "Face pull poulie", "Écarté à la poulie",
+  "Mollets assis", "Kickback fessier poulie",
   // Haltères & barre
   "Développé couché", "Développé incliné haltères", "Développé militaire haltères",
   "Oiseau haltères", "Élévations latérales", "Curl haltères", "Curl marteau",
@@ -139,6 +142,8 @@ const DEFI_ANIM_NAMES: string[] = [
   "Soulevé de terre roumain", "Mollets", "Squat bulgare",
   "Développé couché haltères", "Élévations frontales", "Kettlebell swing",
   "Rowing buste penché haltères", "Squat barre", "Overhead squat",
+  "Goblet squat", "Soulevé de terre classique", "Développé Arnold",
+  "Pullover haltère", "Thruster haltères",
   // Cardio machine
   "Rameur", "Tapis de course", "Vélo",
   // Mobilité & étirements — la descente, en fin de parcours
