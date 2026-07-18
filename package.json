@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "guides": "node scripts/build-guides.mjs && node scripts/normalize-guides.mjs",
+    "guides:build": "node scripts/build-guides.mjs",
     "guides:normalize": "node scripts/normalize-guides.mjs"
   },
   "dependencies": {

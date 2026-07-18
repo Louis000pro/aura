@@ -122,19 +122,23 @@ const DEFI_ANIM_NAMES: string[] = [
   "Pike push-ups", "Pompes diamant", "Pompes inclinées", "Dips sur chaise",
   "Tractions", "Rowing inversé", "Burpees", "Mountain climbers",
   "Jumping jacks", "Montées de genoux", "Corde à sauter", "Chaise au mur",
+  "Pompes explosives", "Box jump", "Skaters", "Sprint sur place",
   // Gainage & abdos
   "Gainage", "Planche latérale", "Gainage dynamique", "Crunch", "Superman", "Bird dog",
+  "Dead bug", "Hollow hold", "Relevés de jambes", "Russian twist", "Sit-ups",
   // Machines
   "Presse à cuisses", "Leg extension", "Leg curl assis", "Leg curl allongé",
   "Abducteurs machine", "Hip thrust machine", "Pont fessier", "Pec deck",
   "Développé épaules machine", "Dips machine", "Tirage poitrine",
-  "Rowing assis poulie", "Face pull poulie",
+  "Rowing assis poulie", "Face pull poulie", "Écarté à la poulie",
   // Haltères & barre
   "Développé couché", "Développé incliné haltères", "Développé militaire haltères",
   "Oiseau haltères", "Élévations latérales", "Curl haltères", "Curl marteau",
   "Curl barre EZ", "Extension triceps haltère", "Extension triceps poulie",
   "Rowing barre", "Rowing haltère", "Tirage menton haltères",
   "Soulevé de terre roumain", "Mollets", "Squat bulgare",
+  "Développé couché haltères", "Élévations frontales", "Kettlebell swing",
+  "Rowing buste penché haltères", "Squat barre", "Overhead squat",
   // Cardio machine
   "Rameur", "Tapis de course", "Vélo",
 ];

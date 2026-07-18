@@ -48,6 +48,28 @@ export function frameSrc(guide: Guide, genre: Genre, i: number): string {
 }
 
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
+  // ── Vague 3 (2026-07-18) — abdos, pliométrie & barre ───────────────
+  // EN TÊTE : plusieurs de ces exos sont des variantes d'un générique déjà
+  // couvert plus bas et DOIVENT gagner — « squat barre » et « overhead squat »
+  // avant /squat/, « pompes explosives » avant /pompe/, « développé couché
+  // haltères » avant le développé couché à la barre, « rowing buste penché
+  // haltères » avant le rowing unilatéral ET le rowing barre.
+  { re: /overhead.?squat|squat.*overhead/i,   guide: { key: "overheadsquat",  frames: 2, genres: ["h"] } },
+  { re: /squat.*barre|back.?squat|barbell.?squat/i, guide: { key: "squatbarre", frames: 2, genres: ["h"] } },
+  { re: /pompe.*explosi|clap.?push|explosive.?push/i, guide: { key: "pompesexplosives", frames: 3, genres: ["f"] } },
+  { re: /developpe.*couche.*halt|dumbbell.*bench/i, guide: { key: "developpecouchehalteres", frames: 2, genres: ["h"] } },
+  { re: /rowing.*buste|buste.*penche|bent.?over.?row/i, guide: { key: "rowingbustepenchehalteres", frames: 2, genres: ["h"] } },
+  { re: /box.?jump|saut.*box|saut.*caisse/i,  guide: { key: "boxjump",        frames: 3, genres: ["f"] } },
+  { re: /dead.?bug/i,                         guide: { key: "deadbug",        frames: 2, genres: ["f"] } },
+  { re: /hollow/i,                            guide: { key: "hollowhold",     frames: 1, genres: ["f"] } },
+  { re: /releve.*jambe|leg.?raise/i,          guide: { key: "relevesjambes",  frames: 2, genres: ["f"] } },
+  { re: /russian.?twist|twist.*russe/i,       guide: { key: "russiantwist",   frames: 3, genres: ["f"] } },
+  { re: /sit.?ups?/i,                         guide: { key: "situps",         frames: 2, genres: ["f"] } },
+  { re: /skater|patineur/i,                   guide: { key: "skaters",        frames: 3, genres: ["f"] } },
+  { re: /sprint/i,                            guide: { key: "sprintsurplace", frames: 2, genres: ["f"] } },
+  { re: /ecarte.*poulie|cable.?(cross|fly)/i, guide: { key: "ecartepoulie",   frames: 3, genres: ["h"] } },
+  { re: /elevation.*frontal|front.?raise/i,   guide: { key: "elevationsfrontales", frames: 2, genres: ["h"] } },
+  { re: /kettlebell/i,                        guide: { key: "kettlebellswing", frames: 2, genres: ["h"] } },
   // ── Vague 2 (2026-07-17) — machines & variantes ────────────────────
   // EN TÊTE volontairement : ces cas sont plus précis que les génériques de
   // la Vague 1 et doivent gagner. « pompes diamant » avant /pompe/, « planche

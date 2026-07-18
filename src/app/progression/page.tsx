@@ -139,7 +139,7 @@ const workoutSessions: WorkoutSession[] = [
   {
     id: "defi-anim", category: "fullbody",
     title: "Défi Animations ✦", subtitle: "Chaque geste animé, un par un — l'atelier complet",
-    duration: 25, difficulty: "Intermédiaire", exercises: 55,
+    duration: 32, difficulty: "Intermédiaire", exercises: 71,
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Sparkles,
   },
