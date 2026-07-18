@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown, ChevronRight } from "lucide-react";
+import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProgressionStats from "@/components/ProgressionStats";
@@ -318,7 +318,7 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
 
 /* ─── Objectif Modal ─── */
 type GoalType = "workouts" | "calories" | "steps" | "sleep";
-const goalTypesList: { id: GoalType; label: string; desc: string; unit: string; defaultVal: string; icon: React.ElementType; color: string }[] = [
+const goalTypesList: { id: GoalType; label: string; desc: string; unit: string; defaultVal: string; icon: LucideIcon; color: string }[] = [
   { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,     color: "var(--accent)" },
   { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,       color: "var(--accent)" },
   { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "var(--gold)" },
@@ -372,7 +372,7 @@ function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (labe
 }
 
 /* ─── Quick Action Card ─── */
-function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { icon: React.ElementType; label: string; color: string; bg: string; index: number; onClick?: () => void }) {
+function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { icon: LucideIcon; label: string; color: string; bg: string; index: number; onClick?: () => void }) {
   const [tapped, setTapped] = useState(false);
   return (
     <motion.button type="button" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}

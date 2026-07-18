@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
-import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles, Gauge, Utensils } from "lucide-react";
+import { Lock, LogOut, Trash2, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Bell, Shield, Moon, Sun, Target, Sparkles, Gauge, Utensils, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -35,7 +35,7 @@ function Row({
   chevron = true,
   iconBg,
 }: {
-  icon: React.ElementType;
+  icon: LucideIcon;
   label: string;
   sublabel?: string;
   onClick: () => void;

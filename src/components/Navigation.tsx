@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Dumbbell, Utensils, Users, User, LogIn, LogOut,
-  Settings, Shield, ChevronRight, Crown,
+  Settings, Shield, ChevronRight, Crown, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -17,8 +17,8 @@ import { createClient } from "@/lib/supabase";
 type TabItem = {
   href: string;
   label: string;
-  icon: React.ElementType;
-  sub?: { href: string; label: string; icon?: React.ElementType }[];
+  icon: LucideIcon;
+  sub?: { href: string; label: string; icon?: LucideIcon }[];
 };
 
 const TABS: (TabItem & { tourAnchor?: string })[] = [
@@ -136,8 +136,8 @@ export default function Navigation() {
   const NavIcon = ({
     href, label, icon: Icon, sub, mobile, tourAnchor,
   }: {
-    href: string; label: string; icon: React.ElementType;
-    sub?: { href: string; label: string; icon?: React.ElementType }[];
+    href: string; label: string; icon: LucideIcon;
+    sub?: { href: string; label: string; icon?: LucideIcon }[];
     mobile?: boolean;
     tourAnchor?: string;
   }) => {

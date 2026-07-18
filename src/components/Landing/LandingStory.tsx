@@ -16,7 +16,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Brain, Utensils, Activity, Dumbbell, TrendingUp, Users,
-  Sparkles, ArrowRight, Check, Flame, Crown,
+  Sparkles, ArrowRight, Check, Flame, Crown, type LucideIcon,
 } from "lucide-react";
 
 /* Dégradé de marque pour le texte d’accent */
@@ -350,7 +350,7 @@ function FeatureRow({
 }
 
 /* Carte secondaire (grille) */
-function MiniCard({ icon: Icon, title, desc, mock }: { icon: React.ElementType; title: string; desc: string; mock: React.ReactNode }) {
+function MiniCard({ icon: Icon, title, desc, mock }: { icon: LucideIcon; title: string; desc: string; mock: React.ReactNode }) {
   return (
     <Reveal className="h-full">
       <div className="h-full rounded-[26px] p-5 flex flex-col"
