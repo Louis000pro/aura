@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import { GUIDE_SECTIONS } from "@/lib/guideSections";
 
@@ -17,6 +18,32 @@ import { GUIDE_SECTIONS } from "@/lib/guideSections";
 const SECTIONS = GUIDE_SECTIONS;
 
 const total = SECTIONS.reduce((n, s) => n + s.items.length, 0);
+
+function DeferredExerciseGuide({ name }: { name: string }) {
+  const host = useRef<HTMLDivElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
+
+  useEffect(() => {
+    const element = host.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setNearViewport(true);
+        observer.disconnect();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={host} className="flex items-center justify-center [&_img]:max-w-full" style={{ height: 188 }}>
+      {nearViewport ? <ExerciseGuide name={name} loading="lazy" /> : null}
+    </div>
+  );
+}
 
 export default function GuidesGalleryPage() {
   return (
@@ -74,9 +101,7 @@ export default function GuidesGalleryPage() {
                     border: "1px solid rgba(255,255,255,0.07)",
                   }}
                 >
-                  <div className="flex items-center justify-center [&_img]:max-w-full" style={{ height: 188 }}>
-                    <ExerciseGuide name={name} />
-                  </div>
+                  <DeferredExerciseGuide name={name} />
                   <div
                     className="px-3 pb-3 pt-1 text-center text-[13px] font-medium leading-tight"
                     style={{ color: "rgba(255,255,255,0.9)" }}

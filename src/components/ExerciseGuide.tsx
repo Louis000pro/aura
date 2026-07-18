@@ -8,7 +8,7 @@ import { resolveGuide, pickGenre, frameSrc, type Genre } from "@/lib/exerciseGui
    en fondu-enchaîné quand un sprite existe (cf. src/lib/exerciseGuides.ts),
    sinon un halo violet épuré — JAMAIS de photo hors-sujet pendant l'effort.
 
-   Les frames vivent dans  public/entrainement/guides/<key>-<genre>-<n>.png .
+   Les frames vivent dans  public/entrainement/guides/<key>-<genre>-<n>.webp .
    Ajouter un exo = `npm run guides` + une règle dans exerciseGuides.ts.
    Aucune modif ici nécessaire pour brancher une nouvelle vague de sprites.
 
@@ -16,7 +16,15 @@ import { resolveGuide, pickGenre, frameSrc, type Genre } from "@/lib/exerciseGui
    passe son choix ici. Tant que personne ne le passe — et tant qu'un exo
    n'a qu'une seule planche — on affiche la version qui existe.
    ════════════════════════════════════════════════════════════════════ */
-export default function ExerciseGuide({ name, genre }: { name: string; genre?: Genre }) {
+export default function ExerciseGuide({
+  name,
+  genre,
+  loading = "eager",
+}: {
+  name: string;
+  genre?: Genre;
+  loading?: "eager" | "lazy";
+}) {
   const guide = resolveGuide(name);
   const [frame, setFrame] = useState(0);
 
@@ -46,7 +54,7 @@ export default function ExerciseGuide({ name, genre }: { name: string; genre?: G
       {halo}
       {Array.from({ length: guide.frames }).map((_, i) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={i} src={frameSrc(guide, g, i)} alt=""
+        <img key={i} src={frameSrc(guide, g, i)} alt="" loading={loading} decoding="async"
           className="absolute top-0 h-full w-auto object-contain"
           style={{ opacity: i === frame ? 1 : 0, transition: "opacity 500ms ease-in-out" }} />
       ))}

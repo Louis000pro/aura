@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ════════════════════════════════════════════════════════════════════
-   Usine à personnages-guides : planche brute (ChatGPT) → frames PNG prêtes.
+   Usine à personnages-guides : planche brute (ChatGPT) → frames WebP prêtes.
 
    TOI :  1. génère la planche dans ChatGPT — 2-3 poses du MÊME personnage
              côte à côte (départ → milieu → fin), fond uni (vert de préf.)
@@ -12,7 +12,7 @@
 
    LUI :  détoure le fond, découpe les poses, les met TOUTES sur le même
           canevas (même échelle, même sol) et écrit
-          public/entrainement/guides/<clé>-1.png, -2.png, …
+          public/entrainement/guides/<clé>-<genre>-1.webp, -2.webp, …
           puis te dicte la règle à coller dans src/lib/exerciseGuides.ts.
 
    Le canevas commun est la clé : c'est lui qui empêche le perso de sauter
@@ -371,7 +371,7 @@ async function build(file, key, genre) {
           right: cw - pw - PAD - ((widest - pw) >> 1),
           background: { r: 0, g: 0, b: 0, alpha: 0 },
         })
-        .png({ compressionLevel: 9 })
+        .webp({ quality: 82, alphaQuality: 90, effort: 6 })
         .toBuffer()
     );
   }
@@ -384,7 +384,7 @@ async function build(file, key, genre) {
 
   await mkdir(OUT, { recursive: true });
   for (let i = 0; i < out.length; i++) {
-    await writeFile(path.join(OUT, `${key}-${genre}-${i + 1}.png`), out[i]);
+    await writeFile(path.join(OUT, `${key}-${genre}-${i + 1}.webp`), out[i]);
   }
   console.log(
     `  ✓ ${key}-${genre} — ${out.length} frame${out.length > 1 ? "s" : ""} en ${cw}×${ch}  (${mask.mode})`

@@ -10,7 +10,7 @@
       ne doivent pas se toucher — c'est le trou entre elles qui les sépare.
    2. Dépose la planche dans  guides-src/<clé>.png  (dossier gitignoré).
    3. `npm run guides` : détoure, découpe, met tout sur un canevas commun,
-      écrit public/entrainement/guides/<clé>-<n>.png et te dicte la règle
+      écrit public/entrainement/guides/<clé>-<genre>-<n>.webp et te dicte la règle
       à coller ci-dessous. L'app enchaîne les frames en fondu = le geste.
       (voir scripts/build-guides.mjs pour les options --loop / --tol)
 
@@ -44,7 +44,7 @@ export function pickGenre(guide: Guide, want?: Genre): Genre {
 
 /** Le chemin d'une frame. Seul endroit qui connaît la forme du nom. */
 export function frameSrc(guide: Guide, genre: Genre, i: number): string {
-  return `/entrainement/guides/${guide.key}-${genre}-${i + 1}.png`;
+  return `/entrainement/guides/${guide.key}-${genre}-${i + 1}.webp`;
 }
 
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [

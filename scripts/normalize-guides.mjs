@@ -2,8 +2,9 @@
 /* ============================================================================
    Normalisation des personnages-guides deja batis.
 
-   Ce post-traitement ne lit JAMAIS guides-src/ : il relit les PNG commites de
-   public/entrainement/guides/, puis les reecrit sur un canevas carre commun.
+   Ce post-traitement ne lit JAMAIS guides-src/ : il relit les WebP (et les
+   anciens PNG pendant une migration) de public/entrainement/guides/, puis les
+   reecrit en WebP sur un canevas carre commun.
 
    Pour chaque cle + genre :
    - la boite alpha est reunie sur toutes les frames (le mouvement est preserve) ;
@@ -15,14 +16,14 @@
    la meme longueur visuelle qu'un personnage debout, sans etre etire.
 
    Usage :
-     npm run guides:normalize          reecrit tous les PNG
+     npm run guides:normalize          reecrit toutes les frames en WebP
      npm run guides:normalize -- --check
                                       verifie le contrat sans rien modifier
 
    Le script est idempotent et peut etre relance apres `npm run guides`.
    ============================================================================ */
 
-import { readdir, writeFile } from "node:fs/promises";
+import { readdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
@@ -32,7 +33,7 @@ const TARGET_SPAN = 920;
 const BASELINE = 972;
 const ALPHA_THRESHOLD = 24;
 const CHECK = process.argv.includes("--check");
-const FILE_RE = /^(.*)-([fh])-(\d+)\.png$/i;
+const FILE_RE = /^(.*)-([fh])-(\d+)\.(png|webp)$/i;
 
 function alphaBox(data, width, height) {
   let left = width;
@@ -72,7 +73,7 @@ async function readFrame(file) {
   return { file, data, info, box };
 }
 
-const names = (await readdir(OUT)).filter(name => name.toLowerCase().endsWith(".png"));
+const names = (await readdir(OUT)).filter(name => /\.(png|webp)$/i.test(name));
 const groups = new Map();
 
 for (const name of names) {
@@ -101,7 +102,8 @@ for (const [id, entries] of [...groups].sort(([a], [b]) => a.localeCompare(b))) 
   const box = unionBox(frames.map(frame => frame.box));
   const sourceWidth = box.right - box.left + 1;
   const sourceHeight = box.bottom - box.top + 1;
-  const alreadyNormalized = width === CANVAS && height === CANVAS &&
+  const alreadyNormalized = frames.every(frame => frame.file.toLowerCase().endsWith(".webp")) &&
+    width === CANVAS && height === CANVAS &&
     Math.max(sourceWidth, sourceHeight) === TARGET_SPAN && box.bottom === BASELINE;
 
   if (CHECK) {
@@ -138,10 +140,12 @@ for (const [id, entries] of [...groups].sort(([a], [b]) => a.localeCompare(b))) 
       },
     })
       .composite([{ input: sprite, left, top }])
-      .png({ compressionLevel: 9 })
+      .webp({ quality: 82, alphaQuality: 90, effort: 6 })
       .toBuffer();
 
-    await writeFile(frame.file, normalized);
+    const output = frame.file.replace(/\.png$/i, ".webp");
+    await writeFile(output, normalized);
+    if (output !== frame.file) await unlink(frame.file);
     written++;
   }
 }
@@ -152,6 +156,6 @@ if (errors.length) {
 }
 
 console.log(CHECK
-  ? `OK : ${names.length} PNG, ${groups.size} guides respectent le canevas ${CANVAS}x${CANVAS}.`
-  : `OK : ${written} PNG normalises, ${skipped} deja conformes (${groups.size} guides, canevas ${CANVAS}x${CANVAS}, span ${TARGET_SPAN}, sol ${BASELINE}).`
+  ? `OK : ${names.length} WebP, ${groups.size} guides respectent le canevas ${CANVAS}x${CANVAS}.`
+  : `OK : ${written} WebP normalises, ${skipped} deja conformes (${groups.size} guides, canevas ${CANVAS}x${CANVAS}, span ${TARGET_SPAN}, sol ${BASELINE}).`
 );
