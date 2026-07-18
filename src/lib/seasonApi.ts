@@ -7,6 +7,7 @@
 import { createClient } from "@/lib/supabase";
 import {
   ECLATS,
+  rankFor,
   type CampKey,
   type Exploit,
   type Season,
@@ -111,22 +112,46 @@ export async function fetchEclatsFor(seasonId: string, userIds: string[]): Promi
 }
 
 /**
- * Crédite les éclats d'une séance terminée (idempotent : l'index unique
- * (user, saison, kind, ref) rejette un double-crédit en silence).
+ * Créditer des éclats + publier l'événement « rank_up » si le crédit
+ * fait franchir un palier. Idempotent via l'index unique (kind, ref).
+ */
+async function awardEclats(
+  userId: string,
+  seasonId: string,
+  kind: "seance" | "exploit" | "serie" | "bonus",
+  amount: number,
+  refId: string,
+): Promise<boolean> {
+  const supabase = createClient();
+  const before = await fetchMyEclats(seasonId, userId);
+  const { error } = await supabase.from("eclat_events").insert({
+    user_id: userId,
+    season_id: seasonId,
+    kind,
+    amount,
+    ref_id: refId,
+  });
+  if (error) return false; // déjà crédité (double-crédit rejeté par l'index)
+  const beforeRank = rankFor(before);
+  const afterRank = rankFor(before + amount);
+  if (afterRank.key !== beforeRank.key) {
+    await pushCommunityEvent("rank_up", userId, seasonId, {
+      rank_key: afterRank.key,
+      rank_name: afterRank.name,
+    });
+  }
+  return true;
+}
+
+/**
+ * Crédite les éclats d'une séance terminée (idempotent).
  * Fire-and-forget depuis la fin de séance — ne doit JAMAIS bloquer l'UX.
  */
 export async function creditSeanceEclats(userId: string, workoutSessionId: string): Promise<void> {
   try {
     const season = await fetchActiveGlobalSeason();
     if (!season) return;
-    const supabase = createClient();
-    await supabase.from("eclat_events").insert({
-      user_id: userId,
-      season_id: season.id,
-      kind: "seance",
-      amount: ECLATS.seance,
-      ref_id: workoutSessionId,
-    });
+    await awardEclats(userId, season.id, "seance", ECLATS.seance, workoutSessionId);
   } catch {
     // silencieux : les éclats se rattraperont, la séance est déjà sauvée
   }
@@ -165,13 +190,7 @@ export async function completeExploit(exploit: Exploit, userId: string): Promise
   if (error) return false; // déjà validé
   const season = await fetchActiveGlobalSeason();
   if (season) {
-    await supabase.from("eclat_events").insert({
-      user_id: userId,
-      season_id: season.id,
-      kind: "exploit",
-      amount: exploit.reward_eclats,
-      ref_id: exploit.id,
-    });
+    await awardEclats(userId, season.id, "exploit", exploit.reward_eclats, exploit.id);
     await pushCommunityEvent("exploit_done", userId, season.id, {
       exploit_id: exploit.id,
       title: exploit.title,
@@ -180,6 +199,71 @@ export async function completeExploit(exploit: Exploit, userId: string): Promise
     });
   }
   return true;
+}
+
+export interface LeaderboardEntry {
+  user_id: string;
+  pseudo: string;
+  avatar_url: string | null;
+  eclats: number;
+  isMe: boolean;
+}
+
+/** Classement de saison ENTRE AMIS (moi + ceux que je suis) — jamais global. */
+export async function fetchFriendsLeaderboard(seasonId: string, userId: string): Promise<LeaderboardEntry[]> {
+  const supabase = createClient();
+  const { data: follows } = await supabase
+    .from("followers")
+    .select("following_id")
+    .eq("follower_id", userId);
+  const ids = [...new Set([userId, ...(follows ?? []).map((f) => f.following_id as string)])];
+  const [eclatsMap, { data: profs }] = await Promise.all([
+    fetchEclatsFor(seasonId, ids),
+    supabase.from("profiles").select("id, pseudo, avatar_url").in("id", ids),
+  ]);
+  return (profs ?? [])
+    .map((p) => ({
+      user_id: p.id as string,
+      pseudo: (p.pseudo as string) ?? "?",
+      avatar_url: (p.avatar_url as string | null) ?? null,
+      eclats: eclatsMap.get(p.id as string) ?? 0,
+      isMe: p.id === userId,
+    }))
+    .sort((a, b) => b.eclats - a.eclats)
+    .slice(0, 10);
+}
+
+export interface EarnedBadge {
+  badge_name: string;
+  badge_emoji: string;
+  title: string;
+  completed_at: string;
+}
+
+/** Les badges d'exploit gagnés (à vie), du plus récent au plus ancien. */
+export async function fetchMyBadges(userId: string): Promise<EarnedBadge[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("exploit_completions")
+    .select("completed_at, exploits(badge_name, badge_emoji, title)")
+    .eq("user_id", userId)
+    .order("completed_at", { ascending: false });
+  return (data ?? []).flatMap((row) => {
+    const ex = row.exploits as unknown as { badge_name: string; badge_emoji: string; title: string } | null;
+    if (!ex) return [];
+    return [{ badge_name: ex.badge_name, badge_emoji: ex.badge_emoji, title: ex.title, completed_at: row.completed_at as string }];
+  });
+}
+
+/** Numéro de membre (badge Fondateur par vagues). */
+export async function fetchMemberNumber(userId: string): Promise<number | null> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("member_number")
+    .eq("id", userId)
+    .maybeSingle();
+  return (data?.member_number as number | undefined) ?? null;
 }
 
 export interface FeedEvent {

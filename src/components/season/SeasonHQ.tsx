@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGlobalSeason } from "@/lib/useSeason";
 import { completeExploit, fetchRecentEvents, type FeedEvent } from "@/lib/seasonApi";
 import { campEmblem, campName, seasonDaysLeft, type CampKey } from "@/lib/season";
+import SeasonProgression from "@/components/season/SeasonProgression";
 
 const HEX_CLIP = "polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)";
 const CAMP_GRAD: Record<CampKey, string> = {
@@ -55,6 +56,7 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
   const s = useGlobalSeason();
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [explStep, setExplStep] = useState<"idle" | "confirm" | "saving">("idle");
+  const [showProgression, setShowProgression] = useState(false);
   const noSeasonRef = useRef(false);
 
   // Pas de saison active → l'onglet retombe sur le fil, sans écran cassé.
@@ -173,16 +175,22 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
         </div>
       </div>
 
-      {/* ═══ TA CARTE — ancrée côté camp ═══ */}
-      <div style={{
-        position: "relative", zIndex: 10,
-        margin: myCamp === "a" ? "-24px 58px 0 14px" : "-24px 14px 0 58px",
-        borderRadius: 16, padding: "10px 12px",
-        background: "rgba(24,16,42,.92)",
-        border: myCamp === "a" ? "1px solid rgba(245,177,32,.45)" : "1px solid rgba(139,92,246,.45)",
-        boxShadow: "0 12px 30px -10px rgba(0,0,0,.7)",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
+      {/* ═══ TA CARTE — ancrée côté camp (tap → progression) ═══ */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Voir ta progression"
+        onClick={() => setShowProgression(true)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setShowProgression(true); }}
+        style={{
+          position: "relative", zIndex: 10, cursor: "pointer",
+          margin: myCamp === "a" ? "-24px 58px 0 14px" : "-24px 14px 0 58px",
+          borderRadius: 16, padding: "10px 12px",
+          background: "rgba(24,16,42,.92)",
+          border: myCamp === "a" ? "1px solid rgba(245,177,32,.45)" : "1px solid rgba(139,92,246,.45)",
+          boxShadow: "0 12px 30px -10px rgba(0,0,0,.7)",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
             <b style={{ fontSize: 12.5, fontWeight: 800 }}>
@@ -270,6 +278,8 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
           Remonter le fil{freshCount > 0 ? <> — <b style={{ color: "#C3AEFF" }}>{freshCount} nouveauté{freshCount > 1 ? "s" : ""}</b></> : ""}
         </span>
       </button>
+
+      {showProgression && <SeasonProgression s={s} onClose={() => setShowProgression(false)} />}
     </div>
   );
 }
