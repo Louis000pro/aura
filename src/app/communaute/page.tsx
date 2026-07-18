@@ -13,10 +13,11 @@ import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import CreatePostModal from "@/components/CreatePostModal";
+import SeasonHQ from "@/components/season/SeasonHQ";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
-type View = "feed" | "search" | "dms" | "thread";
+type View = "qg" | "feed" | "search" | "dms" | "thread";
 type SearchFilter = "tous" | "compte" | "seances";
 
 type SessionResult = {
@@ -3249,7 +3250,8 @@ let __repostedCache = new Set<string>();
 function CommunautePageInner() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const [view, setView] = useState<View>("feed");
+  // Le QG (la saison) est l'écran d'arrivée ; le fil se tire depuis lui.
+  const [view, setView] = useState<View>("qg");
   const [search, setSearch] = useState("");
   const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
   const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean }[]>([]);
@@ -4141,6 +4143,19 @@ function CommunautePageInner() {
       .map(([tag, count]) => ({ tag, count }));
   }, [realFeedPosts]);
 
+  // ── LE QG : l'écran d'arrivée de la saison (lobby sombre, zéro scroll).
+  //    Placé APRÈS tous les hooks : l'ordre des hooks reste stable. ──
+  if (view === "qg") {
+    return (
+      <SeasonHQ
+        onOpenFil={() => setView("feed")}
+        onOpenSearch={() => setView("search")}
+        onOpenDMs={() => setView("dms")}
+        onNoSeason={() => setView("feed")}
+      />
+    );
+  }
+
   return (
     <div
       data-tour-anchor="page-communaute"
@@ -4223,6 +4238,14 @@ function CommunautePageInner() {
             </motion.button>
           ) : (
             <>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setView("qg")}
+                className="lg-strong lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
+                aria-label="Retour au QG de la saison"
+              >
+                <span style={{ fontSize: 15, lineHeight: 1, color: "var(--gold)" }}>✦</span>
+              </motion.button>
               <Link href="/decouverte" aria-label="Découvrir des comptes">
                 <motion.div
                   whileTap={{ scale: 0.9 }}

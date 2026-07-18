@@ -182,6 +182,33 @@ export async function completeExploit(exploit: Exploit, userId: string): Promise
   return true;
 }
 
+export interface FeedEvent {
+  id: string;
+  type: string;
+  actor_id: string | null;
+  actorPseudo: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+/** Les derniers événements du fil/ticker, pseudos résolus. */
+export async function fetchRecentEvents(limit = 12): Promise<FeedEvent[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("community_events")
+    .select("id, type, actor_id, payload, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  const events = (data ?? []) as Omit<FeedEvent, "actorPseudo">[];
+  const ids = [...new Set(events.map((e) => e.actor_id).filter((x): x is string => !!x))];
+  const pseudos = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: profs } = await supabase.from("profiles").select("id, pseudo").in("id", ids);
+    for (const p of profs ?? []) pseudos.set(p.id as string, p.pseudo as string);
+  }
+  return events.map((e) => ({ ...e, actorPseudo: e.actor_id ? pseudos.get(e.actor_id) ?? null : null }));
+}
+
 export async function pushCommunityEvent(
   type: string,
   actorId: string | null,
