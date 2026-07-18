@@ -1,56 +1,20 @@
 "use client";
 
 import ExerciseGuide from "@/components/ExerciseGuide";
+import { GUIDE_SECTIONS } from "@/lib/guideSections";
 
 /* ════════════════════════════════════════════════════════════════════
    Galerie des personnages-guides — regroupe TOUS les exos animés de
    Vaiiya avec leur perso en fondu, comme dans le « tunnel » de séance.
    Écran de revue (fond toujours sombre = contexte réel des sprites).
 
-   Chaque libellé est un NOM D'EXO qui résout vers son sprite via les
-   règles de src/lib/exerciseGuides.ts (ExerciseGuide fait le reste). Un
-   exo sans sprite retomberait sur le halo — ici on ne liste que ceux qui
-   ont une planche, d'où la parité avec public/entrainement/guides/.
+   La liste vit dans src/lib/guideSections.ts — partagée avec les séances
+   « Défi Animations ». Elle était dupliquée ici et a divergé (galerie
+   restée à 55 exos pendant que les séances montaient à 101) : ajouter un
+   sprite se fait dans le module, pas dans cet écran.
    ════════════════════════════════════════════════════════════════════ */
 
-const SECTIONS: { title: string; items: string[] }[] = [
-  {
-    title: "Poids du corps & HIIT",
-    items: [
-      "Squat", "Pompes", "Fentes", "Squats sautés", "Fentes sautées",
-      "Pike push-ups", "Pompes diamant", "Pompes inclinées", "Dips sur chaise",
-      "Tractions", "Rowing inversé", "Burpees", "Mountain climbers",
-      "Jumping jacks", "Montées de genoux", "Corde à sauter", "Chaise au mur",
-    ],
-  },
-  {
-    title: "Gainage & abdos",
-    items: ["Gainage", "Planche latérale", "Gainage dynamique", "Crunch", "Superman", "Bird dog"],
-  },
-  {
-    title: "Machines",
-    items: [
-      "Presse à cuisses", "Leg extension", "Leg curl assis", "Leg curl allongé",
-      "Abducteurs machine", "Hip thrust machine", "Pont fessier", "Pec deck",
-      "Développé épaules machine", "Dips machine", "Tirage poitrine",
-      "Rowing assis poulie", "Face pull poulie",
-    ],
-  },
-  {
-    title: "Haltères & barre",
-    items: [
-      "Développé couché", "Développé incliné haltères", "Développé militaire haltères",
-      "Oiseau haltères", "Élévations latérales", "Curl haltères", "Curl marteau",
-      "Curl barre EZ", "Extension triceps haltère", "Extension triceps poulie",
-      "Rowing barre", "Rowing haltère", "Tirage menton haltères",
-      "Soulevé de terre roumain", "Mollets", "Squat bulgare",
-    ],
-  },
-  {
-    title: "Cardio machine",
-    items: ["Rameur", "Tapis de course", "Vélo"],
-  },
-];
+const SECTIONS = GUIDE_SECTIONS;
 
 const total = SECTIONS.reduce((n, s) => n + s.items.length, 0);
 

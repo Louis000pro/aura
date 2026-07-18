@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
 import type { PerfShareData } from "@/lib/perfShareExport";
+import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -111,55 +112,21 @@ const CC        = 2 * Math.PI * CR;
 
 /* ─── Exercise data ──────────────────────────────────────── */
 
-/* « Défi Animations » — l'atelier qui enchaîne CHAQUE geste animé une
-   seule fois (un sprite = une entrée). Les noms sont choisis pour résoudre
-   vers leur personnage-guide (cf. src/lib/exerciseGuides.ts) ; c'est la même
-   liste que la galerie /guides. sets:1 + repos court = on défile vite et on
-   voit toutes les animations d'une traite. Ajouter un sprite ⇒ l'ajouter ici. */
-const DEFI_ANIM_NAMES: string[] = [
-  // Poids du corps & HIIT
-  "Squat", "Pompes", "Fentes", "Squats sautés", "Fentes sautées",
-  "Pike push-ups", "Pompes diamant", "Pompes inclinées", "Dips sur chaise",
-  "Tractions", "Rowing inversé", "Burpees", "Mountain climbers",
-  "Jumping jacks", "Montées de genoux", "Corde à sauter", "Chaise au mur",
-  "Pompes explosives", "Box jump", "Skaters", "Sprint sur place",
-  "Bear crawl", "Step up banc", "Donkey kick", "Dips barres parallèles",
-  // Gainage & abdos
-  "Gainage", "Planche latérale", "Gainage dynamique", "Crunch", "Superman", "Bird dog",
-  "Dead bug", "Hollow hold", "Relevés de jambes", "Russian twist", "Sit-ups",
-  "Reverse crunch", "V-ups", "Extensions lombaires banc",
-  // Machines
-  "Presse à cuisses", "Leg extension", "Leg curl assis", "Leg curl allongé",
-  "Abducteurs machine", "Hip thrust machine", "Pont fessier", "Pec deck",
-  "Développé épaules machine", "Dips machine", "Tirage poitrine",
-  "Rowing assis poulie", "Face pull poulie", "Écarté à la poulie",
-  "Mollets assis", "Kickback fessier poulie",
-  // Haltères & barre
-  "Développé couché", "Développé incliné haltères", "Développé militaire haltères",
-  "Oiseau haltères", "Élévations latérales", "Curl haltères", "Curl marteau",
-  "Curl barre EZ", "Extension triceps haltère", "Extension triceps poulie",
-  "Rowing barre", "Rowing haltère", "Tirage menton haltères",
-  "Soulevé de terre roumain", "Mollets", "Squat bulgare",
-  "Développé couché haltères", "Élévations frontales", "Kettlebell swing",
-  "Rowing buste penché haltères", "Squat barre", "Overhead squat",
-  "Goblet squat", "Soulevé de terre classique", "Développé Arnold",
-  "Pullover haltère", "Thruster haltères",
-  // Cardio machine
-  "Rameur", "Tapis de course", "Vélo",
-  // Mobilité & étirements — la descente, en fin de parcours
-  "Cercles de hanches", "Cat-cow", "Downward dog / cobra", "Thread the needle",
-  "World's greatest stretch", "Pigeon", "Papillon hanches", "Posture de l'enfant",
-  "Torsion allongée", "Étirement chaîne postérieure", "Étirement quadriceps",
-  "Étirement mollet au mur", "Étirement pectoraux au mur", "Ouverture des épaules",
-  "Étirement du cou", "Cohérence cardiaque",
-];
+/* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
+   un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
+   sets:1 + repos court = on défile vite et on voit les animations d'une
+   traite. TEMPORAIRE : ces séances servent à valider chaque vague de
+   sprites dans le vrai tunnel ; on les retire à la mise à jour. */
 
 const exerciseData: Record<string, Exercise[]> = {
-  "defi-anim": DEFI_ANIM_NAMES.map((name) => ({
-    name, sets: 1, reps: "Observe le geste", rest: 8,
-    tip: "Reproduis le mouvement du personnage-guide.",
-    benefit: "", muscles: [],
-  })),
+  ...Object.fromEntries(GUIDE_SECTIONS.map((sec) => [
+    sectionSessionId(sec),
+    sec.items.map((name) => ({
+      name, sets: 1, reps: "Observe le geste", rest: 8,
+      tip: "Reproduis le mouvement du personnage-guide.",
+      benefit: "", muscles: [],
+    })),
+  ])),
 
   "demo-avatars": [
     // ─── Bas du corps ────────────────────────────────────────

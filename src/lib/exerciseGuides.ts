@@ -56,6 +56,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /goblet.*squat/i,                     guide: { key: "gobletsquat",           frames: 2, genres: ["h"] } },
   { re: /mollets?.*assis|seated.*calf/i,      guide: { key: "molletsassis",          frames: 2, genres: ["h"] } },
   { re: /reverse.*crunch|crunch.*invers/i,    guide: { key: "reversecrunch",         frames: 2, genres: ["f"] } },
+  { re: /bicycle.*crunch|crunch.*velo|velo.*abdo/i, guide: { key: "bicyclecrunch",   frames: 2, genres: ["f"] } },
   { re: /^(?!.*(roumain|romanian)).*(souleve.*terre|deadlift)/i, guide: { key: "souleveterreclassique", frames: 2, genres: ["h"] } },
   { re: /dips?.*(barres?|paralleles)/i,       guide: { key: "dipsbarresparalleles",  frames: 2, genres: ["h"] } },
   { re: /extension.*lombaire|hyperextension|banc.*lombaire/i, guide: { key: "extensionslombairesbanc", frames: 2, genres: ["h"] } },
@@ -67,11 +68,9 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /bear.?crawl|marche.*ours/i,          guide: { key: "bearcrawl",             frames: 3, genres: ["f"] } },
   { re: /step.?up|montee.*banc/i,             guide: { key: "stepupbanc",            frames: 2, genres: ["f"] } },
   { re: /\bv.?ups?\b/i,                       guide: { key: "vups",                  frames: 2, genres: ["f"] } },
-  /* « Bicycle crunch » n'a PAS de sprite : sa planche a les deux poses qui
-     se chevauchent en diagonale, aucune coupe verticale ne les sépare (le
-     carve rend une frame à deux personnages, le forçage --slices=2 laisse
-     des fragments). À refaire chez ChatGPT avec les poses bien détachées.
-     En attendant l'exo tombe sur le halo — plus honnête qu'un geste faux. */
+  /* « Bicycle crunch » : ses deux poses se CHEVAUCHENT en x (deux corps
+     allongés en diagonale), aucune colonne vide ne les sépare. Découpée
+     par formes connexes — `--blobs=2`, cf. scripts/build-guides.mjs. */
   // ── Vague 4 (2026-07-18) — mobilité, étirements & yoga ─────────────
   // EN TÊTE : « étirement mollet au mur » DOIT passer avant /mollet/, qui
   // pointe sur les montées de mollets debout — sinon on montre un exo de

@@ -27,6 +27,7 @@ import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { levelToDifficulty } from "@/lib/assistantActions";
+import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import {
   ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
@@ -136,13 +137,20 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Core", "Abdominaux", "Gainage"],
     accent: "#8B5CF6", icon: Flame,
   },
-  {
-    id: "defi-anim", category: "fullbody",
-    title: "Défi Animations ✦", subtitle: "Chaque geste animé, un par un — l'atelier complet",
-    duration: 46, difficulty: "Intermédiaire", exercises: 101,
+  /* « Défi Animations » — un atelier par thème, généré depuis la source
+     unique des personnages-guides (src/lib/guideSections.ts). Le titre
+     contient « Défi » : la collection « Défis » du catalogue les ramasse
+     toute seule. TEMPORAIRE — ces fiches servent à valider les vagues de
+     sprites dans le vrai tunnel, on les retire à la mise à jour. */
+  ...GUIDE_SECTIONS.map((sec) => ({
+    id: sectionSessionId(sec), category: "fullbody" as const,
+    title: `Défi Animations ✦ — ${sec.title}`, subtitle: sec.subtitle,
+    /* ~25 s par geste + 8 s de repos, arrondi à la minute. */
+    duration: Math.round((sec.items.length * 33) / 60),
+    difficulty: "Intermédiaire" as const, exercises: sec.items.length,
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Sparkles,
-  },
+  })),
 ];
 
 const CATEGORY_LABEL: Record<WorkoutCategory, string> = {

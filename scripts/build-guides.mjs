@@ -37,6 +37,16 @@
                    recolle en une seule frame géante. On tranche alors en
                    N parts égales (poses régulièrement espacées) et chaque
                    part se recentre sur son propre perso. Vise UNE planche.
+     --blobs=2     découpe par FORMES au lieu de colonnes. Pour les planches
+                   où les poses SE CHEVAUCHENT en x (bicycle crunch : deux
+                   corps allongés en diagonale) : il n'existe aucune colonne
+                   vide entre eux, le carve auto les recolle en une frame à
+                   deux personnages, et --slices coupe en plein milieu d'un
+                   corps en laissant des fragments. Ici on isole les N plus
+                   grosses formes connexes et on efface les autres de chaque
+                   frame — ça marche tant que les poses ne SE TOUCHENT pas
+                   (se chevaucher est permis, se toucher non). Vise UNE
+                   planche.
    ════════════════════════════════════════════════════════════════════ */
 
 import { readdir, mkdir, writeFile } from "node:fs/promises";
@@ -58,6 +68,7 @@ const TOL = Number(flag("tol", 60));
 const KEY = flag("key", null);
 const POSE = Number(flag("pose", 0));
 const SLICES = Number(flag("slices", 0));
+const BLOBS = Number(flag("blobs", 0));
 
 /* ── Le nom du fichier → l'exo + le genre ─────────────────────────────
    On garde le nommage de prod intact et on jette l'intendance :
@@ -239,6 +250,53 @@ function widestRun({ data, w, h }, a, b) {
   return best;
 }
 
+/* Les N plus grosses FORMES connexes (8-voisins), rendues dans l'ordre de
+   lecture. Chacune revient avec sa propre copie de la planche où les autres
+   formes sont effacées : deux poses qui se chevauchent en x partagent des
+   colonnes, donc un simple recadrage ramènerait le voisin dans la frame.
+   C'est la seule différence avec --slices ; le reste du pipeline (bande
+   commune, canevas partagé) ne bouge pas. */
+function blobsOf({ data, w, h }, want) {
+  const lab = new Int32Array(w * h);
+  const found = [];
+  const stack = [];
+  for (let s = 0; s < w * h; s++) {
+    if (lab[s] || data[s * 4 + 3] <= INK) continue;
+    const id = found.length + 1;
+    let l = w, r = -1, t = h, b = -1, n = 0;
+    lab[s] = id; stack.push(s);
+    while (stack.length) {
+      const p = stack.pop(), y = (p / w) | 0, x = p % w;
+      n++;
+      if (x < l) l = x; if (x > r) r = x;
+      if (y < t) t = y; if (y > b) b = y;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const q = ny * w + nx;
+        if (!lab[q] && data[q * 4 + 3] > INK) { lab[q] = id; stack.push(q); }
+      }
+    }
+    found.push({ id, l, r, t, b, n });
+  }
+  if (found.length < want) return null;
+
+  /* Les plus grosses = les persos ; les miettes (éclat de décor, pixel isolé)
+     tombent. Puis on repasse en ordre de lecture : la frame 1 doit être la
+     pose de GAUCHE, pas la plus grosse. */
+  const keep = found.sort((a, b2) => b2.n - a.n).slice(0, want).sort((a, b2) => a.l - b2.l);
+  const ids = new Set(keep.map(k => k.id));
+
+  return keep.map(k => {
+    const only = Buffer.alloc(w * h * 4);
+    for (let i = 0; i < w * h; i++) {
+      if (lab[i] !== k.id) continue;          // voisins ET miettes effacés
+      only.set(data.subarray(i * 4, i * 4 + 4), i * 4);
+    }
+    return { run: [k.l, k.r], data: only, top: k.t, bot: k.b, ids };
+  });
+}
+
 async function build(file, key, genre) {
   const mask = await toMask(file);
   const cut = carve(mask);
@@ -278,6 +336,22 @@ async function build(file, key, genre) {
     runs = sliced;
   }
 
+  /* --blobs=N : les poses se chevauchent en x (aucune colonne vide à couper).
+     On repart des formes connexes, et chaque frame lit SA propre planche où
+     les voisines sont effacées. Le haut/bas redevient celui des seules formes
+     gardées — sinon une miette de décor loin du perso étirerait la bande. */
+  let sources = null;
+  if (BLOBS) {
+    const blobs = blobsOf(mask, BLOBS);
+    if (!blobs) {
+      return console.log(`  ✗ ${key} — ${BLOBS} formes demandées, la planche en a moins (poses qui se touchent ?)`);
+    }
+    runs = blobs.map(b => b.run);
+    sources = blobs.map(b => b.data);
+    top = Math.min(...blobs.map(b => b.top));
+    bot = Math.max(...blobs.map(b => b.bot));
+  }
+
   const band = bot - top + 1;
   const widest = Math.max(...runs.map(([a, b]) => b - a + 1));
   const cw = widest + PAD * 2;
@@ -285,10 +359,11 @@ async function build(file, key, genre) {
 
   const raw = { raw: { width: mask.w, height: mask.h, channels: 4 } };
   const frames = [];
-  for (const [a, b] of runs) {
+  for (let r = 0; r < runs.length; r++) {
+    const [a, b] = runs[r];
     const pw = b - a + 1;
     frames.push(
-      await sharp(mask.data, raw)
+      await sharp(sources ? sources[r] : mask.data, raw)
         .extract({ left: a, top, width: pw, height: band })
         .extend({
           top: PAD, bottom: PAD,
@@ -333,11 +408,13 @@ if (!files.length) {
 /* --pose vise UNE planche. Sans garde-fou, il s'appliquerait à toutes celles
    qui traînent dans le dossier et re-découperait en silence une tenue déjà
    réglée (frames:1 → on réafficherait la mauvaise pose, sans erreur). */
-if ((POSE || SLICES) && !ONLY && files.length > 1) {
-  const opt = POSE ? `--pose=${POSE}` : `--slices=${SLICES}`;
+if ((POSE || SLICES || BLOBS) && !ONLY && files.length > 1) {
+  const opt = POSE ? `--pose=${POSE}` : SLICES ? `--slices=${SLICES}` : `--blobs=${BLOBS}`;
   console.log(`\n${opt} s'appliquerait aux ${files.length} planches du dossier.
-Vise-en une : npm run guides -- --only=<exo> ${opt}
-(ou ne garde que celle-là dans ${SRC}/)\n`);
+Vise-en une : npm run guides:build -- --only=<exo> ${opt} && npm run guides:normalize
+(ou ne garde que celle-là dans ${SRC}/)
+⚠ pas « npm run guides -- <option> » : npm colle l'argument en fin de chaîne,
+  donc sur normalize-guides.mjs, qui l'ignore en silence.\n`);
   process.exit(1);
 }
 
