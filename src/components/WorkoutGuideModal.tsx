@@ -141,6 +141,12 @@ const DEFI_ANIM_NAMES: string[] = [
   "Rowing buste penché haltères", "Squat barre", "Overhead squat",
   // Cardio machine
   "Rameur", "Tapis de course", "Vélo",
+  // Mobilité & étirements — la descente, en fin de parcours
+  "Cercles de hanches", "Cat-cow", "Downward dog / cobra", "Thread the needle",
+  "World's greatest stretch", "Pigeon", "Papillon hanches", "Posture de l'enfant",
+  "Torsion allongée", "Étirement chaîne postérieure", "Étirement quadriceps",
+  "Étirement mollet au mur", "Étirement pectoraux au mur", "Ouverture des épaules",
+  "Étirement du cou", "Cohérence cardiaque",
 ];
 
 const exerciseData: Record<string, Exercise[]> = {

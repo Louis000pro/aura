@@ -48,6 +48,28 @@ export function frameSrc(guide: Guide, genre: Genre, i: number): string {
 }
 
 export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
+  // ── Vague 4 (2026-07-18) — mobilité, étirements & yoga ─────────────
+  // EN TÊTE : « étirement mollet au mur » DOIT passer avant /mollet/, qui
+  // pointe sur les montées de mollets debout — sinon on montre un exo de
+  // renfo pendant un étirement. Deux regex volontairement resserrées :
+  // /papillon/ seul volerait le pec deck (« papillon » en salle), et
+  // /cou/ seul matcherait « developpe COUche » une fois désaccentué.
+  { re: /etirement.*mollet|mollet.*mur/i,     guide: { key: "etirementmolletmur",    frames: 1, genres: ["h"] } },
+  { re: /etirement.*pectoraux|etirement.*pec\b/i, guide: { key: "etirementpectorauxmur", frames: 1, genres: ["h"] } },
+  { re: /etirement.*quadriceps|etirement.*quad\b/i, guide: { key: "etirementquadriceps", frames: 1, genres: ["h"] } },
+  { re: /etirement.*chaine|chaine.*posterieure|ischio.*etirement/i, guide: { key: "etirementchaineposterieure", frames: 1, genres: ["f"] } },
+  { re: /etirement.*cou\b|nuque/i,            guide: { key: "etirementcou",          frames: 1, genres: ["f"] } },
+  { re: /ouverture.*epaule/i,                 guide: { key: "ouvertureepaules",      frames: 1, genres: ["h"] } },
+  { re: /cat.?cow|chat.?vache|dos.*chat/i,    guide: { key: "catcow",                frames: 2, genres: ["f"] } },
+  { re: /downward.?dog|chien.*tete.*bas|cobra/i, guide: { key: "downwarddogcobra",   frames: 2, genres: ["f"] } },
+  { re: /thread.*needle|passage.*aiguille/i,  guide: { key: "threadtheneedle",       frames: 2, genres: ["f"] } },
+  { re: /world.*greatest|plus.?grand.*etirement/i, guide: { key: "worldsgreateststretch", frames: 2, genres: ["f"] } },
+  { re: /cercle.*hanche|hip.?circle/i,        guide: { key: "cercleshanches",        frames: 3, genres: ["f"] } },
+  { re: /papillon.*hanche|hanche.*papillon|butterfly.*(hip|stretch)/i, guide: { key: "papillonhanches", frames: 1, genres: ["f"] } },
+  { re: /pigeon/i,                            guide: { key: "pigeonyoga",            frames: 1, genres: ["f"] } },
+  { re: /posture.*enfant|child.?s?.?pose/i,   guide: { key: "postureenfant",         frames: 1, genres: ["f"] } },
+  { re: /torsion.*allong|torsion.*sol|torsion.*vertebrale/i, guide: { key: "torsionallongee", frames: 1, genres: ["f"] } },
+  { re: /coherence.*cardiaque|respiration|\bsouffle\b/i, guide: { key: "coherencecardiaque", frames: 1, genres: ["f"] } },
   // ── Vague 3 (2026-07-18) — abdos, pliométrie & barre ───────────────
   // EN TÊTE : plusieurs de ces exos sont des variantes d'un générique déjà
   // couvert plus bas et DOIVENT gagner — « squat barre » et « overhead squat »
