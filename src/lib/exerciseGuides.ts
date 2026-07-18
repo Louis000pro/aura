@@ -68,7 +68,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /pompe.*inclin|incline.?push.?up/i, guide: { key: "pompesinclinees",       frames: 2, genres: ["f"] } },
   { re: /planche.*lateral|gainage.*lateral|side.?plank/i, guide: { key: "planchelaterale", frames: 1, genres: ["f"] } },
   { re: /gainage.*dynamiq/i,              guide: { key: "gainagedynamique",        frames: 3, genres: ["f"] } },
-  { re: /rameur|rowing.?machine/i,        guide: { key: "rameur",                  frames: 3, genres: ["h"] } },
+  { re: /rameur/i,                        guide: { key: "rameur",                  frames: 3, genres: ["h"] } },
   { re: /tapis|treadmill|course.*pied/i,  guide: { key: "coursetapis",             frames: 3, genres: ["f"] } },
   { re: /\bvelo\b|spinning|\bbike\b/i,    guide: { key: "veloappartement",         frames: 2, genres: ["f"] } },
   // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
@@ -87,7 +87,7 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
   { re: /extension.*triceps.*halt/i,     guide: { key: "extensiontricepshaltere", frames: 2, genres: ["h"] } },
   { re: /extension.*triceps.*poulie/i,   guide: { key: "extensiontricepspoulie", frames: 2, genres: ["h"] } },
   { re: /oiseau.*halt/i,                 guide: { key: "oiseauhalteres", frames: 2, genres: ["h"] } },
-  { re: /rowing.*assis.*poulie/i,        guide: { key: "rowingassispoulie", frames: 2, genres: ["h"] } },
+  { re: /rowing.*(assis.*poulie|machine.*assis|assis.*machine)/i, guide: { key: "rowingassispoulie", frames: 2, genres: ["h"] } },
   { re: /tirage.*poitrine/i,             guide: { key: "tiragepoitrine", frames: 2, genres: ["h"] } },
   { re: /rowing.*barre|barbell.?row/i,   guide: { key: "rowing",    frames: 3, genres: ["h"] } },
   { re: /bicep.?curl|curl.*halt|curl biceps?/i, guide: { key: "curl", frames: 3, genres: ["h"] } },
@@ -113,7 +113,9 @@ export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
      existe, sa règle se met AU-DESSUS et l'exclusion devient un filet. */
   { re: /planche|plank|gainage(?!.*dorsal)/i, guide: { key: "planche", frames: 1, genres: ["f"] } },
   { re: /chaise.*mur|wall.?sit/i,       guide: { key: "chaisemur", frames: 1, genres: ["f"] } },
-  { re: /crunch/i,                      guide: { key: "crunch",     frames: 3, genres: ["f"] } },
+  /* Les variantes machine, bicycle et circle sont d'autres gestes : sans
+     sprite dedie, elles gardent le halo plutot que le crunch au sol. */
+  { re: /^(?!.*(?:machine|bicycle|circle|velo|cercle)).*crunch/i, guide: { key: "crunch", frames: 3, genres: ["f"] } },
   { re: /superman/i,                    guide: { key: "superman",   frames: 3, genres: ["f"] } },
 ];
 
