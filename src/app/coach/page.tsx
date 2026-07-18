@@ -34,6 +34,9 @@ interface UserContext {
 interface LiveStats {
   calories?: number;
   proteins?: number;
+  streak?: number;
+  lastWeight?: number;
+  recentSessions?: string[];
 }
 
 /* ─── Speech Recognition type shim ──────────────────────── */

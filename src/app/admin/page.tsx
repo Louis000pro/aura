@@ -416,16 +416,16 @@ export default function AdminPage() {
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
       // Fetch users défensif : tente avec is_certified/is_banned, sinon fallback
-      let usersRes = await supabase
+      const usersResWithFlags = await supabase
         .from("profiles")
         .select("id, pseudo, full_name, avatar_url, is_admin, is_certified, is_banned, created_at")
         .order("created_at", { ascending: false });
-      if (usersRes.error) {
-        usersRes = await supabase
+      const usersRes = usersResWithFlags.error
+        ? await supabase
           .from("profiles")
           .select("id, pseudo, full_name, avatar_url, is_admin, created_at")
-          .order("created_at", { ascending: false });
-      }
+          .order("created_at", { ascending: false })
+        : usersResWithFlags;
 
       const [followsRes, sessionsRes, notifsRes, postsRes, postAudienceRes] = await Promise.all([
         supabase.from("followers").select("follower_id", { count: "exact", head: true }),

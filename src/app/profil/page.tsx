@@ -1175,9 +1175,10 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
       }
       setItems((prev) => [...prev, ...newItems]);
       // Update cover if first item and no cover
-      if (!coverUrl && newItems[0]) {
-        await supabase.from("highlights").update({ cover_url: newItems[0].media_url }).eq("id", highlight.id);
-        setCoverUrl(newItems[0].media_url);
+      const firstMediaUrl = newItems[0]?.media_url;
+      if (!coverUrl && firstMediaUrl) {
+        await supabase.from("highlights").update({ cover_url: firstMediaUrl }).eq("id", highlight.id);
+        setCoverUrl(firstMediaUrl);
       }
     } finally { setUploading(false); if (mediaRef.current) mediaRef.current.value = ""; }
   };
@@ -1189,9 +1190,10 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
     const remaining = items.filter((i) => i.id !== itemId);
     setItems(remaining);
     // Update cover if deleted item was cover
-    if (remaining.length > 0 && coverUrl.includes(itemId)) {
-      await supabase.from("highlights").update({ cover_url: remaining[0].media_url }).eq("id", highlight.id);
-      setCoverUrl(remaining[0].media_url);
+    const nextCoverUrl = remaining[0]?.media_url;
+    if (coverUrl.includes(itemId) && nextCoverUrl) {
+      await supabase.from("highlights").update({ cover_url: nextCoverUrl }).eq("id", highlight.id);
+      setCoverUrl(nextCoverUrl);
     }
   };
 
@@ -1299,10 +1301,10 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
             <div className="grid grid-cols-3 gap-1.5 mb-4">
               {items.map((item) => (
                 <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden group">
-                  {item.media_type === "video"
+                  {item.media_url && (item.media_type === "video"
                     ? <video src={item.media_url} className="w-full h-full object-cover" muted playsInline />
                     // eslint-disable-next-line @next/next/no-img-element
-                    : <img loading="lazy" decoding="async" src={item.media_url} alt="" className="w-full h-full object-cover" />}
+                    : <img loading="lazy" decoding="async" src={item.media_url} alt="" className="w-full h-full object-cover" />)}
                   <motion.button
                     onClick={() => handleDeleteItem(item.id)}
                     className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer"
@@ -1575,7 +1577,15 @@ export default function ProfilPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) {
-          const posts = data.map((d: { posts: UserPost }) => d.posts).filter(Boolean);
+          const posts = data
+            .map(({ posts }) => Array.isArray(posts) ? posts[0] : posts)
+            .filter((post) => post != null)
+            .map((post) => ({
+              ...post,
+              post_likes: [],
+              post_comments: [],
+              post_reposts: [],
+            }));
           setSavedPosts(posts);
         }
       });

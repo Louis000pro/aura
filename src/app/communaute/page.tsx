@@ -1435,8 +1435,8 @@ function ShareToDMModal({ post, onClose, onSent }: { post: RealPost; onClose: ()
       .then(({ data }) => {
         if (data) {
           const list = data
-            .map((d: { profiles: DMPartner }) => d.profiles)
-            .filter(Boolean);
+            .map(({ profiles }) => Array.isArray(profiles) ? profiles[0] : profiles)
+            .filter((profile) => profile != null);
           setFriends(list);
         }
       });
