@@ -176,16 +176,27 @@ function LaunchSheet({ userId, myCircles, onDone, onClose }: {
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{ position: "fixed", inset: 0, zIndex: 9980, background: "rgba(0,0,0,.66)", display: "flex", alignItems: "flex-end" }}
-      onClick={onClose}
-    >
+    <>
+      <style>{`
+        .vaiiya-circle-sheet-backdrop { bottom: calc(68px + env(safe-area-inset-bottom)) !important; }
+        .vaiiya-circle-sheet { max-height: calc(100dvh - 68px - env(safe-area-inset-bottom)) !important; overscroll-behavior: contain; }
+        @media (min-width: 768px) {
+          .vaiiya-circle-sheet-backdrop { bottom: 0 !important; }
+          .vaiiya-circle-sheet { max-height: 82dvh !important; }
+        }
+      `}</style>
       <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 30, stiffness: 320 }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
+        className="vaiiya-circle-sheet-backdrop"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        style={{ position: "fixed", inset: 0, zIndex: 9980, background: "rgba(0,0,0,.66)", display: "flex", alignItems: "flex-end" }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 30, stiffness: 320 }}
+          onClick={(e) => e.stopPropagation()}
+          className="vaiiya-circle-sheet"
+          style={{
           width: "100%", maxHeight: "82dvh", overflowY: "auto",
           borderRadius: "22px 22px 0 0", padding: "18px 18px calc(20px + env(safe-area-inset-bottom))",
           background: "linear-gradient(180deg,#171028,#0a0512)", color: "#ECEAF6",
@@ -321,8 +332,9 @@ function LaunchSheet({ userId, myCircles, onDone, onClose }: {
             </button>
           </>
         )}
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   );
 }
 

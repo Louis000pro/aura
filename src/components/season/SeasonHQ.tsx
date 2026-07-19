@@ -4,7 +4,7 @@
 // LE QG — l'écran d'arrivée de l'onglet Communauté.
 // Un lobby de jeu, pas une page web : l'arène balafrée en haut,
 // ta carte ancrée côté camp, l'exploit en sceau doré, le ticker
-// d'événements, la poignée vers le fil. Toujours sombre (comme
+// d'événements. Toujours sombre (comme
 // le tunnel de séance). Toute la donnée vient de useGlobalSeason
 // — ce fichier n'est QUE de l'habillage, redessinable à volonté.
 // ============================================================
@@ -47,8 +47,7 @@ function tickerSentence(e: FeedEvent): string | null {
   }
 }
 
-export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeason }: {
-  onOpenFil: () => void;
+export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
   onOpenSearch: () => void;
   onOpenDMs: () => void;
   onNoSeason: () => void;
@@ -92,11 +91,6 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
     return items;
   }, [events, s.season, pointsA, pointsB]);
 
-  const freshCount = useMemo(
-    () => events.filter((e) => Date.now() - new Date(e.created_at).getTime() < 86_400_000).length,
-    [events],
-  );
-
   if (s.loading || !s.season) {
     return (
       <div style={{ minHeight: "60dvh", display: "grid", placeItems: "center", color: "#C3AEFF" }}>
@@ -121,12 +115,12 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
 
   return (
     <div style={{
-      width: "100vw", marginLeft: "calc(-50vw + 50%)",
+      width: "100%", maxWidth: "100%", overflowX: "hidden",
       minHeight: "100dvh",
       background: "radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000 100%)",
       color: "#ECEAF6",
       display: "flex", flexDirection: "column",
-      paddingBottom: "calc(6.5rem + env(safe-area-inset-bottom))",
+      paddingBottom: "calc(8.5rem + env(safe-area-inset-bottom))",
     }}>
       <style>{`
         @keyframes vaiiya-tick { to { transform: translateX(-50%); } }
@@ -179,7 +173,7 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
           );
         })}
 
-        <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, textAlign: "center", zIndex: 6, fontSize: 9.5, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(255,255,255,.82)" }}>
+        <div style={{ position: "absolute", bottom: 40, left: 12, right: 12, textAlign: "center", zIndex: 6, fontSize: 9.5, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(255,255,255,.82)" }}>
           {duelLine}
         </div>
       </div>
@@ -193,7 +187,8 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setShowProgression(true); }}
         style={{
           position: "relative", zIndex: 10, cursor: "pointer",
-          margin: myCamp === "a" ? "-24px 58px 0 14px" : "-24px 14px 0 58px",
+          margin: myCamp === "a" ? "-24px 58px 0 14px" : "-24px 22px 0 50px",
+          minWidth: 0, boxSizing: "border-box",
           borderRadius: 16, padding: "10px 12px",
           background: "rgba(24,16,42,.92)",
           border: myCamp === "a" ? "1px solid rgba(245,177,32,.45)" : "1px solid rgba(139,92,246,.45)",
@@ -316,14 +311,6 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
           </div>
         </div>
       )}
-
-      {/* ═══ LA POIGNÉE VERS LE FIL ═══ */}
-      <button onClick={onOpenFil} style={{ marginTop: "auto", padding: "18px 0 6px", background: "none", border: "none", cursor: "pointer", textAlign: "center", color: "#BCB7D6" }}>
-        <span style={{ display: "block", width: 36, height: 4, borderRadius: 99, background: "#BCB7D6", opacity: 0.5, margin: "0 auto 7px" }} />
-        <span style={{ fontSize: 11.5, fontWeight: 700 }}>
-          Remonter le fil{freshCount > 0 ? <> — <b style={{ color: "#C3AEFF" }}>{freshCount} nouveauté{freshCount > 1 ? "s" : ""}</b></> : ""}
-        </span>
-      </button>
 
       {showProgression && <SeasonProgression s={s} onClose={() => setShowProgression(false)} />}
     </div>

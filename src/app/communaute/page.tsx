@@ -2809,7 +2809,6 @@ function CommunautePageInner() {
   if (view === "qg") {
     return (
       <SeasonHQ
-        onOpenFil={() => setView("feed")}
         onOpenSearch={() => setView("search")}
         onOpenDMs={() => setView("dms")}
         onNoSeason={() => setView("feed")}
