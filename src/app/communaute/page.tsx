@@ -1,10 +1,10 @@
 ﻿"use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback, memo, Suspense } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX } from "lucide-react";
+import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Check, Bookmark, Flag, EyeOff, Compass, PenLine, Pencil, Repeat2, Play } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
@@ -18,22 +18,6 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 
 type View = "qg" | "feed" | "search" | "dms" | "thread";
-type SearchFilter = "tous" | "compte" | "seances";
-
-type SessionResult = {
-  id: string;
-  title: string;
-  category: string;
-  duration: number;
-  difficulty: string;
-  muscles: string[];
-  accent: string;
-  icon: string;
-  user_id: string;
-  author_pseudo?: string;
-  author_avatar?: string;
-  exercise_list?: unknown[];
-};
 
 
 type RealStory = {
@@ -629,7 +613,7 @@ function AddStoryModal({ onClose, userId, onPublished }: {
       const supabase = createClient();
       const ext  = mediaFile.name.split(".").pop();
       const path = `${userId}/story_${Date.now()}.${ext}`;
-      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, mediaFile, { upsert: true });
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, mediaFile, { upsert: true, cacheControl: "31536000" });
       if (uploadErr) { console.error("publishMedia upload:", uploadErr); setError("L'envoi du média a échoué, réessaie"); setStep("photo-preview"); return; }
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const mediaUrl = urlData.publicUrl + "?t=" + Date.now();
@@ -1855,152 +1839,6 @@ function CommentsSection({ postId, initialCount, onClose, onCommentAdded, postOw
   );
 }
 
-/* ── Hashtag Videos Page — style Instagram ─────────────────── */
-function HashtagVideosModal({ tag, onClose, onOpenVideo }: {
-  tag: string;
-  onClose: () => void;
-  onOpenVideo: (postId: string) => void;
-}) {
-  const [videos, setVideos] = useState<RealPost[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    const supabase = createClient();
-    Promise.all([
-      supabase.from("posts").select(`
-        id, type, caption, description, media_url, media_type, performance_data, views, created_at, user_id,
-        author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
-        post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
-      `).eq("media_type", "video").ilike("caption", `%${tag}%`).limit(60),
-      supabase.from("posts").select(`
-        id, type, caption, description, media_url, media_type, performance_data, views, created_at, user_id,
-        author:profiles!user_id(pseudo, avatar_url, is_admin, is_certified),
-        post_likes(user_id), post_comments(id), post_reposts(user_id), post_saves(user_id)
-      `).eq("media_type", "video").ilike("description", `%${tag}%`).limit(60),
-    ]).then(([capRes, descRes]) => {
-      if (cancelled) return;
-      const all = [...(capRes.data ?? []), ...(descRes.data ?? [])] as unknown as RealPost[];
-      const seen = new Set<string>();
-      const deduped = all.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
-      deduped.sort((a, b) => (b.views ?? 0) - (a.views ?? 0));
-      setVideos(deduped);
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
-  }, [tag]);
-
-  const fmtViews = (n?: number) => {
-    if (!n || n === 0) return "0";
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
-    return `${n}`;
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 40 }}
-      transition={{ type: "spring", damping: 30, stiffness: 280 }}
-      className="fixed inset-y-0 right-0 left-0 md:left-[88px] pb-28 md:pb-0 z-[9999] flex flex-col"
-      style={{ background: "var(--page-bg)" }}
-    >
-      {/* Inner — same width as the video feed */}
-      <div className="h-full flex flex-col mx-auto w-full" style={{ maxWidth: 560 }}>
-
-      {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-4 pt-6 pb-4 flex-shrink-0">
-        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-          className="cursor-pointer" style={{ color: "var(--text-1)" }}>
-          <ArrowLeft size={22} strokeWidth={1.8} />
-        </motion.button>
-        <div>
-          <h1 className="text-lg font-bold tracking-tight" style={{ color: "var(--text-1)" }}>{tag}</h1>
-          {!loading && (
-            <p className="text-[12px] font-light" style={{ color: "var(--text-3)" }}>
-              {videos.length} vidéo{videos.length !== 1 ? "s" : ""}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Sous-tabs "Pour vous / Non personnalisé" ── */}
-      <div className="flex flex-shrink-0" style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-        <button className="flex-1 py-2.5 text-[13px] font-semibold relative cursor-default"
-          style={{ color: "var(--text-1)" }}>
-          Pour vous
-          <div className="absolute bottom-0 inset-x-0 h-0.5 rounded-full"
-            style={{ background: "linear-gradient(90deg,var(--violet-mid),var(--accent))" }} />
-        </button>
-        <button className="flex-1 py-2.5 text-[13px] font-light cursor-default"
-          style={{ color: "var(--text-3)" }}>
-          Non personnalisé
-        </button>
-      </div>
-
-      {/* ── Grille carrée 3 colonnes ── */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="grid grid-cols-3 p-2" style={{ gap: 6 }}>
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="aspect-[9/16] animate-pulse rounded-xl"
-                style={{ background: "rgba(var(--violet-mid-rgb),0.15)" }} />
-            ))}
-          </div>
-        ) : videos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <span className="text-4xl">🎬</span>
-            <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune vidéo pour {tag}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 p-2" style={{ gap: 6 }}>
-            {videos.map(video => (
-              <motion.div
-                key={video.id}
-                whileTap={{ opacity: 0.75, scale: 0.98 }}
-                transition={{ duration: 0.12 }}
-                className="relative aspect-[9/16] overflow-hidden cursor-pointer rounded-xl"
-                style={{ background: "#111" }}
-                onClick={() => onOpenVideo(video.id)}
-              >
-                {/* Thumbnail pleine hauteur — vidéo entière visible */}
-                <video
-                  src={video.media_url ?? undefined}
-                  poster={(video.performance_data as { poster?: string } | null)?.poster ?? undefined}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  muted playsInline preload="metadata"
-                  style={{ pointerEvents: "none" }}
-                />
-
-                {/* Gradient bas */}
-                <div className="absolute inset-x-0 bottom-0 h-14 pointer-events-none"
-                  style={{ background: "linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 100%)" }} />
-
-                {/* Icône play — coin haut droit */}
-                <div className="absolute top-2 right-2 pointer-events-none">
-                  <Play size={14} strokeWidth={0} fill="rgba(var(--surface-rgb),0.9)" />
-                </div>
-
-                {/* Vues — coin bas gauche, toujours affiché */}
-                <div className="absolute bottom-2 left-2 flex items-center gap-1 pointer-events-none">
-                  <Play size={10} strokeWidth={0} fill="white" />
-                  <span className="text-[11px] font-bold text-white drop-shadow-sm">
-                    {fmtViews(video.views)}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      </div>{/* end inner 560px */}
-    </motion.div>
-  );
-}
-
 /* ── Hashtag bottom sheet ──────────────────────────────────── */
 function HashtagSheet({ tag, currentUserId, onClose }: {
   tag: string;
@@ -2201,1048 +2039,7 @@ function postTimeAgo(iso: string) {
   return `${Math.floor(h / 24)}j`;
 }
 
-/* ─── TikTok Video Feed ─────────────────────────────────── */
-
-// Panel commentaires style vidéo (overlay sombre slide-up)
-function VideoCommentsPanel({ postId, postOwnerId, commentCount, onClose, onCommentAdded }: {
-  postId: string; postOwnerId: string; commentCount: number;
-  onClose: () => void; onCommentAdded: () => void;
-}) {
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-    const mq = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  if (!mounted) return null;
-
-  const panel = (
-    <>
-      {/* Voile cliquable pour fermer — léger sur desktop, sombre sur mobile */}
-      <motion.div
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9998]"
-        style={{ background: isDesktop ? "transparent" : "rgba(0,0,0,0.5)" }}
-        onClick={onClose}
-      />
-      <motion.div
-        initial={isDesktop ? { x: "100%" } : { y: "100%" }}
-        animate={isDesktop ? { x: 0 } : { y: 0 }}
-        exit={isDesktop ? { x: "100%" } : { y: "100%" }}
-        transition={{ type: "spring", damping: 32, stiffness: 320 }}
-        className={
-          isDesktop
-            ? "fixed top-0 right-0 bottom-0 z-[9999] w-[400px] rounded-l-3xl overflow-hidden flex flex-col"
-            : "fixed inset-x-0 bottom-0 z-[9999] rounded-t-3xl overflow-hidden flex flex-col"
-        }
-        style={
-          isDesktop
-            ? { background: "rgba(var(--surface-rgb),1)", boxShadow: "-12px 0 48px rgba(0,0,0,0.18)" }
-            : { background: "rgba(var(--surface-rgb),0.98)", backdropFilter: "blur(24px)", maxHeight: "72%", minHeight: 320, boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }
-        }
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Poignée (mobile uniquement) */}
-        {!isDesktop && (
-          <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
-            <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.3)" }} />
-          </div>
-        )}
-        <div className={`px-4 ${isDesktop ? "pt-5" : ""} pb-3 flex items-center justify-between flex-shrink-0`} style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-          <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{isDesktop ? "Commentaires" : `${commentCount} commentaire${commentCount !== 1 ? "s" : ""}`}</p>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={13} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Contenu commentaires */}
-        <div className="flex-1 overflow-hidden">
-          <VideoCommentsList postId={postId} postOwnerId={postOwnerId} onCommentAdded={onCommentAdded} />
-        </div>
-      </motion.div>
-    </>
-  );
-
-  return createPortal(panel, document.body);
-}
-
-function VideoCommentsList({ postId, postOwnerId, onCommentAdded }: { postId: string; postOwnerId: string; onCommentAdded: () => void }) {
-  const { user } = useAuth();
-  const [comments, setComments] = useState<RealComment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dbError, setDbError] = useState(false);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState("");
-  const [replyingTo, setReplyingTo] = useState<{ id: string; pseudo: string } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  // @mention autocomplete
-  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
-  const [mentionResults, setMentionResults] = useState<{ pseudo: string; avatar_url?: string | null }[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase.from("post_comments").select(COMMENTS_SELECT)
-        .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
-      if (error) {
-        try {
-          await fetch("/api/setup-db", { method: "POST" });
-          const { data: d2, error: e2 } = await supabase.from("post_comments").select(COMMENTS_SELECT)
-            .eq("post_id", postId).order("created_at", { ascending: true }).limit(80);
-          if (e2) setDbError(true);
-          else setComments((d2 as unknown as RealComment[]) ?? []);
-        } catch { setDbError(true); }
-      } else {
-        setComments((data as unknown as RealComment[]) ?? []);
-      }
-      setLoading(false);
-    };
-    void load();
-  }, [postId]);
-
-  // Fetch mention suggestions when user types @...
-  useEffect(() => {
-    if (mentionSearch === null) { setMentionResults([]); return; }
-    const search = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.from("profiles")
-        .select("pseudo, avatar_url")
-        .ilike("pseudo", `${mentionSearch}%`)
-        .limit(5);
-      setMentionResults((data as { pseudo: string; avatar_url?: string | null }[]) ?? []);
-    };
-    void search();
-  }, [mentionSearch]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInput(val);
-    const cursor = e.target.selectionStart ?? val.length;
-    const textBeforeCursor = val.slice(0, cursor);
-    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
-    if (mentionMatch) {
-      setMentionSearch(mentionMatch[1]);
-    } else {
-      setMentionSearch(null);
-    }
-  };
-
-  const selectMention = (pseudo: string) => {
-    const cursor = inputRef.current?.selectionStart ?? input.length;
-    const before = input.slice(0, cursor).replace(/@\w*$/, `@${pseudo} `);
-    const after = input.slice(cursor);
-    setInput(before + after);
-    setMentionSearch(null);
-    setMentionResults([]);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  };
-
-  const handleSend = async () => {
-    if (!input.trim() || !user || sending) return;
-    const content = input.trim();
-    setSendError(""); setInput(""); setReplyingTo(null); setSending(true);
-    setMentionSearch(null); setMentionResults([]);
-    const tmpId = `tmp-${Date.now()}`;
-    setComments(prev => [...prev, {
-      id: tmpId, content, created_at: new Date().toISOString(),
-      user_id: user.id, parent_id: replyingTo?.id ?? null,
-      author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
-      comment_likes: [],
-    }]);
-    const supabase = createClient();
-    const { error } = await supabase.from("post_comments")
-      .insert({ post_id: postId, user_id: user.id, text: content, parent_id: replyingTo?.id ?? null });
-    setSending(false);
-    if (error) {
-      setComments(prev => prev.filter(c => c.id !== tmpId));
-      setInput(content);
-      console.error("comment send:", error);
-      setSendError("Commentaire non envoyé, réessaie");
-    } else {
-      onCommentAdded();
-      if (postOwnerId && postOwnerId !== user.id) {
-        void fetch("/api/notifications/comment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ commenter_id: user.id, post_owner_id: postOwnerId, post_id: postId, comment_preview: content }),
-        }).catch(() => {});
-      }
-    }
-  };
-
-  const handleLikeToggle = async (commentId: string, liked: boolean) => {
-    if (!user) return;
-    const supabase = createClient();
-    setComments(prev => prev.map(c => c.id !== commentId ? c : {
-      ...c,
-      comment_likes: liked ? c.comment_likes.filter(l => l.user_id !== user.id) : [...c.comment_likes, { user_id: user.id }],
-    }));
-    if (liked) await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id);
-    else await supabase.from("comment_likes").upsert({ comment_id: commentId, user_id: user.id }, { ignoreDuplicates: true });
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    if (!user) return;
-    setComments(prev => prev.filter(c => c.id !== commentId));
-    const supabase = createClient();
-    await supabase.from("post_comments").delete().eq("id", commentId).eq("user_id", user.id);
-  };
-
-  const topLevel = comments.filter(c => !c.parent_id);
-  const replies  = (parentId: string) => comments.filter(c => c.parent_id === parentId);
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3" style={{ scrollbarWidth: "none" }}>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <motion.div className="w-5 h-5 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-          </div>
-        ) : dbError ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-center">
-            <span className="text-2xl">⚠️</span>
-            <p className="text-xs" style={{ color: "#FC8181" }}>Commentaires indisponibles</p>
-          </div>
-        ) : topLevel.length === 0 ? (
-          <p className="text-center text-sm py-8" style={{ color: "var(--text-3)" }}>Sois le premier à commenter</p>
-        ) : topLevel.map((c, i) => (
-          <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }}>
-            <CommentRow c={c} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
-            {replies(c.id).map(r => (
-              <div key={r.id} className="ml-9 mt-2">
-                <CommentRow c={r} user={user} onReply={(id, ps) => { setReplyingTo({ id, pseudo: ps }); inputRef.current?.focus(); }} onLikeToggle={handleLikeToggle} onDelete={handleDeleteComment} />
-              </div>
-            ))}
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Indicateur réponse */}
-      {replyingTo && (
-        <div className="flex items-center gap-2 px-4 py-1.5" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.3)", background: "rgba(var(--tint-violet-rgb),0.5)" }}>
-          <span className="text-[11px]" style={{ color: "var(--accent)" }}>↩ Répondre à @{replyingTo.pseudo}</span>
-          <button onClick={() => setReplyingTo(null)} className="text-[11px] cursor-pointer ml-auto" style={{ color: "var(--text-3)" }}>✕</button>
-        </div>
-      )}
-      {sendError && <p className="px-4 pb-1 text-[11px] text-center" style={{ color: "#FC8181" }}>{sendError}</p>}
-
-      {/* Dropdown @mention */}
-      {mentionResults.length > 0 && (
-        <div className="mx-4 mb-1 rounded-xl overflow-hidden shadow-lg" style={{ background: "rgba(var(--surface-rgb),0.97)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)" }}>
-          {mentionResults.map(profile => (
-            <button key={profile.pseudo} onMouseDown={e => { e.preventDefault(); selectMention(profile.pseudo); }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-purple-50 transition-colors cursor-pointer">
-              <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden text-[10px] font-semibold"
-                style={{ background: profile.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
-                {profile.avatar_url
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img loading="lazy" decoding="async" src={profile.avatar_url} alt={profile.pseudo} className="w-full h-full object-cover" />
-                  : profile.pseudo[0]?.toUpperCase()}
-              </div>
-              <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>@{profile.pseudo}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex-shrink-0 px-4 pb-5 pt-3 flex items-center gap-2.5" style={{ borderTop: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-        <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden"
-          style={{ background: user?.avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
-          {user?.avatar
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img loading="lazy" decoding="async" src={user.avatar} alt="" className="w-full h-full object-cover" />
-            : <span className="text-[10px] font-bold" style={{ color: "var(--text-1)" }}>{user?.pseudo?.[0]?.toUpperCase() ?? "?"}</span>}
-        </div>
-        <input ref={inputRef} type="text" value={input} onChange={handleInputChange}
-          onKeyDown={e => {
-            if (e.key === "Enter" && mentionResults.length === 0) handleSend();
-            if (e.key === "Escape") { setMentionSearch(null); setMentionResults([]); }
-          }}
-          placeholder={user ? (replyingTo ? `↩ @${replyingTo.pseudo}…` : "Ajouter un commentaire…") : "Connecte-toi"}
-          disabled={!user}
-          className="flex-1 text-sm outline-none px-3 py-2.5 rounded-2xl"
-          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-        <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-          style={{ background: input.trim() && user ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)" }}>
-          <Send size={13} strokeWidth={2} style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }} />
-        </motion.button>
-      </div>
-    </div>
-  );
-}
-
-// Panel paramètres vidéo (vitesse, sous-titres, signaler)
-function VideoSettingsPanel({ onClose, onSpeedChange, speed, captionsOn, onToggleCaptions, onReport, onDelete }: {
-  onClose: () => void; onSpeedChange: (s: number) => void;
-  speed: number; captionsOn: boolean; onToggleCaptions: () => void; onReport: () => void;
-  onDelete?: () => void;
-}) {
-  const speeds = [0.25, 0.5, 1, 1.5, 2];
-  return (
-    <motion.div
-      initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-      transition={{ type: "spring", damping: 32, stiffness: 320 }}
-      className="absolute inset-x-0 bottom-0 z-50 rounded-t-3xl pb-8"
-      style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: "blur(24px)", boxShadow: "0 -8px 40px rgba(var(--accent-rgb),0.18)" }}
-      onClick={e => e.stopPropagation()}
-    >
-      <div className="pt-5" />
-      <div className="px-5">
-        <p className="text-sm font-semibold mb-4" style={{ color: "var(--text-1)" }}>Paramètres vidéo</p>
-        {/* Vitesse */}
-        <div className="mb-5">
-          <p className="text-[11px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>Vitesse de lecture</p>
-          <div className="flex gap-2">
-            {speeds.map(s => (
-              <motion.button key={s} whileTap={{ scale: 0.93 }} onClick={() => onSpeedChange(s)}
-                className="flex-1 py-2.5 rounded-2xl text-xs font-bold cursor-pointer"
-                style={speed === s
-                  ? { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.3)" }
-                  : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
-                {s === 1 ? "×1" : `×${s}`}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-        {/* Sous-titres */}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onToggleCaptions}
-          className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2 cursor-pointer"
-          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
-          <div className="flex items-center gap-3">
-            <span className="text-base font-bold" style={{ color: "var(--accent)" }}>CC</span>
-            <div>
-              <p className="text-sm font-medium text-left" style={{ color: "var(--text-1)" }}>Sous-titres</p>
-              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>{captionsOn ? "Activés" : "Désactivés"}</p>
-            </div>
-          </div>
-          <div className="w-11 h-6 rounded-full flex items-center px-1 transition-all" style={{ background: captionsOn ? "linear-gradient(135deg,var(--violet-mid),var(--accent))" : "rgba(var(--violet-mid-rgb),0.3)" }}>
-            <motion.div className="w-4 h-4 rounded-full bg-white shadow" animate={{ x: captionsOn ? 20 : 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} />
-          </div>
-        </motion.button>
-        {/* Signaler */}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onReport}
-          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-2 cursor-pointer"
-          style={{ background: "rgba(252,129,129,0.07)", border: "1px solid rgba(252,129,129,0.2)" }}>
-          <Flag size={16} strokeWidth={1.5} style={{ color: "#FC8181" }} />
-          <p className="text-sm font-medium" style={{ color: "#FC8181" }}>Signaler cette vidéo</p>
-        </motion.button>
-        {/* Supprimer (auteur uniquement) */}
-        {onDelete && (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={onDelete}
-            className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl mt-2 cursor-pointer"
-            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)" }}>
-            <X size={16} strokeWidth={2} style={{ color: "#EF4444" }} />
-            <p className="text-sm font-semibold" style={{ color: "#EF4444" }}>Supprimer la vidéo</p>
-          </motion.button>
-        )}
-        {/* Fermer */}
-        <motion.button whileTap={{ scale: 0.97 }} onClick={onClose}
-          className="w-full py-3 mt-3 rounded-2xl text-sm font-medium cursor-pointer"
-          style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-          Fermer
-        </motion.button>
-      </div>
-    </motion.div>
-  );
-}
-
-// Son toujours actif (suit le volume du téléphone). Pas de bouton, pas d'interaction.
-let __videoMuted = false;
-
-const VideoCard = memo(function VideoCard({ post, isActive, eager, onHashtagClick, isScrollingRef, onDeletePost }: { post: RealPost; isActive: boolean; eager?: boolean; onHashtagClick?: (tag: string) => void; isScrollingRef?: React.RefObject<boolean>; onDeletePost?: (id: string) => Promise<boolean> | void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const { user } = useAuth();
-
-  // Interaction state
-  const [liked, setLiked] = useState(() => post.post_likes?.some(l => l.user_id === (user?.id ?? "")) ?? false);
-  const [likes, setLikes] = useState(post.post_likes?.length ?? 0);
-  const [saved, setSaved] = useState(false);
-  const [savesCount, setSavesCount] = useState(post.post_saves?.length ?? 0);
-
-  // Charger l'état "sauvegardé" depuis la DB
-  useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    supabase.from("post_saves").select("post_id").eq("post_id", post.id).eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => { if (data) setSaved(true); });
-  }, [post.id, user]);
-
-  const toggleSave = async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const next = !saved;
-    setSaved(next); // optimiste
-    setSavesCount(c => Math.max(0, c + (next ? 1 : -1)));
-    if (!next) {
-      await supabase.from("post_saves").delete().eq("post_id", post.id).eq("user_id", user.id);
-    } else {
-      await supabase.from("post_saves").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-    }
-  };
-  const [reposted, setReposted] = useState(() => post.post_reposts?.some(r => r.user_id === (user?.id ?? "")) ?? false);
-  const [reposts, setReposts] = useState(post.post_reposts?.length ?? 0);
-  const [commentCount, setCommentCount] = useState(post.post_comments?.length ?? 0);
-  const [following, setFollowing] = useState(false);
-
-  // UI state
-  const [muted, setMuted] = useState(__videoMuted);
-  const [paused, setPaused] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [captionsOn, setCaptionsOn] = useState(false);
-  const [reported, setReported] = useState(false);
-  const [shared, setShared] = useState(false);
-  const [doubleTapHeart, setDoubleTapHeart] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [showShareToDM, setShowShareToDM] = useState(false);
-
-  // Double-tap to like
-  const lastTapRef = useRef(0);
-
-  const authorPseudo = post.author?.pseudo ?? "utilisateur";
-  const authorAvatar = post.author?.avatar_url;
-  const authorCertified = post.author?.is_certified === true || post.author?.is_admin === true;
-
-  // Play/pause on isActive + incrémenter les vues une fois par activation
-  const viewCountedRef = useRef(false);
-  const userPausedRef = useRef(false);   // true uniquement si l'user tape pour pause
-  const isActiveRef = useRef(isActive);
-  isActiveRef.current = isActive;
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    let viewTimer: ReturnType<typeof setTimeout> | null = null;
-    if (isActive) {
-      userPausedRef.current = false;
-      setPaused(false);
-      setMuted(__videoMuted); // respecte la préférence de son globale
-      // Pas de reset currentTime (évite la frame noire au scroll)
-      const p = video.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-      // +1 vue seulement si on RESTE plus d'1 s sur la vidéo (un scroll rapide ne compte pas)
-      if (!viewCountedRef.current) {
-        viewTimer = setTimeout(() => {
-          viewCountedRef.current = true;
-          void createClient().rpc("increment_post_views", { p_post_id: post.id });
-        }, 1000);
-      }
-    } else {
-      video.pause();
-      viewCountedRef.current = false;
-    }
-    return () => { if (viewTimer) clearTimeout(viewTimer); };
-  }, [isActive]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Anti-pause involontaire : pendant le scroll mobile, le navigateur met
-  // parfois la vidéo active en pause. On la relance (sauf pause volontaire).
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const onPause = () => {
-      if (!isActiveRef.current || userPausedRef.current) return;
-      requestAnimationFrame(() => {
-        if (isActiveRef.current && !userPausedRef.current && video.paused) {
-          const p = video.play();
-          if (p && typeof p.catch === "function") p.catch(() => {});
-        }
-      });
-    };
-    // Joue dès que la vidéo a des données si elle est active (montage / swipe d'onglet)
-    const tryPlayWhenReady = () => {
-      if (isActiveRef.current && !userPausedRef.current && video.paused) {
-        const p = video.play();
-        if (p && typeof p.catch === "function") p.catch(() => {});
-      }
-    };
-    video.addEventListener("pause", onPause);
-    video.addEventListener("loadeddata", tryPlayWhenReady);
-    video.addEventListener("canplay", tryPlayWhenReady);
-    return () => {
-      video.removeEventListener("pause", onPause);
-      video.removeEventListener("loadeddata", tryPlayWhenReady);
-      video.removeEventListener("canplay", tryPlayWhenReady);
-    };
-  }, []);
-
-  // Playback rate
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.playbackRate = speed;
-  }, [speed]);
-
-  // Synchronise l'attribut muted réel de la vidéo
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = muted;
-  }, [muted]);
-
-
-  // Captions via HTML track (if available)
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const tracks = Array.from(video.textTracks);
-    tracks.forEach(t => { t.mode = captionsOn ? "showing" : "hidden"; });
-  }, [captionsOn]);
-
-  const handleVideoTap = () => {
-    // Ignorer les taps déclenchés par le scroll (swipe → click accidentel)
-    if (isScrollingRef?.current) return;
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      // Double tap → like
-      triggerLike();
-      setDoubleTapHeart(true);
-      setTimeout(() => setDoubleTapHeart(false), 900);
-    } else {
-      // Single tap → play/pause
-      const video = videoRef.current;
-      if (!video) return;
-      if (video.paused) {
-        userPausedRef.current = false;
-        void video.play().catch(() => {});
-        setPaused(false);
-      } else {
-        userPausedRef.current = true;
-        video.pause();
-        setPaused(true);
-      }
-    }
-    lastTapRef.current = now;
-  };
-
-  const triggerLike = async () => {
-    if (!user) return;
-    if (!liked) {
-      setLiked(true); setLikes(l => l + 1);
-      const supabase = createClient();
-      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      if (post.user_id !== user.id) {
-        void fetch("/api/notifications/like", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: post.id }),
-        }).catch(() => {});
-      }
-    }
-  };
-
-  const toggleLike = async () => {
-    if (!user) return;
-    const supabase = createClient();
-    if (liked) {
-      setLiked(false); setLikes(l => l - 1);
-      await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", user.id);
-    } else {
-      setLiked(true); setLikes(l => l + 1);
-      await supabase.from("post_likes").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      if (post.user_id !== user.id) {
-        void fetch("/api/notifications/like", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: post.id }),
-        }).catch(() => {});
-      }
-    }
-  };
-
-  const toggleRepost = async () => {
-    if (!user) return;
-    const supabase = createClient();
-    if (reposted) {
-      setReposted(false); setReposts(r => r - 1);
-      await supabase.from("post_reposts").delete().eq("post_id", post.id).eq("user_id", user.id);
-    } else {
-      setReposted(true); setReposts(r => r + 1);
-      await supabase.from("post_reposts").upsert({ post_id: post.id, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      if (post.user_id !== user.id) {
-        void fetch("/api/notifications/repost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: post.id }),
-        }).catch(() => {});
-      }
-    }
-  };
-
-  const toggleFollow = async () => {
-    if (!user || post.user_id === user.id) return;
-    const supabase = createClient();
-    if (following) {
-      setFollowing(false);
-      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", post.user_id);
-    } else {
-      setFollowing(true);
-      await supabase.from("followers").upsert({ follower_id: user.id, following_id: post.user_id }, { ignoreDuplicates: true });
-    }
-  };
-
-  const handleShare = () => setShowShareModal(true);
-
-  const handleReport = () => {
-    setReported(true);
-    setShowSettings(false);
-  };
-
-  const fmtCount = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
-
-  // ── Mobile = plein écran TikTok (boutons overlay), Desktop = carte + colonne ──
-  // Init synchrone (pas de flash gris au montage de chaque vidéo au scroll)
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches
-  );
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  // Couleurs des icônes : blanc (overlay) sur mobile, sombre sur desktop
-  const icoColor = isMobile ? "#fff" : "#374151";
-  const icoShadow = isMobile ? "drop-shadow(0 1px 3px rgba(0,0,0,0.6))" : "none";
-  const labelColor = isMobile ? "rgba(var(--surface-rgb),0.95)" : "#6B7280";
-  const labelShadow = isMobile ? { textShadow: "0 1px 3px rgba(0,0,0,0.6)" } : {};
-
-  return (
-    <div className="h-full flex items-center justify-center select-none relative"
-      style={{ gap: isMobile ? 0 : 16, willChange: "transform", transform: "translateZ(0)" }}>
-
-      {/* ══════════════════════════════════
-          COLONNE VIDÉO (9:16)
-      ══════════════════════════════════ */}
-      <div className="relative flex-shrink-0 overflow-hidden"
-        style={{ height: "100%", aspectRatio: isMobile ? undefined : "9/16", width: isMobile ? "100%" : undefined, maxWidth: isMobile ? "100%" : "calc(100% - 80px)", background: "#111", borderRadius: isMobile ? 0 : 18, boxShadow: isMobile ? "none" : "0 6px 28px rgba(0,0,0,0.22)", cursor: "pointer", willChange: "transform", transform: "translateZ(0)", backfaceVisibility: "hidden" }}
-        onClick={handleVideoTap}>
-
-        {/* Vidéo principale */}
-        {post.media_url && (
-          <video ref={videoRef} src={post.media_url}
-            poster={(post.performance_data as { poster?: string } | null)?.poster ?? undefined}
-            className="absolute inset-0 w-full h-full object-cover"
-            muted={muted} playsInline autoPlay={isActive} preload={isActive || eager ? "auto" : "metadata"} loop
-            style={{ pointerEvents: "none", zIndex: 0, willChange: "transform", transform: "translateZ(0)", imageRendering: "high-quality" as React.CSSProperties["imageRendering"], backgroundColor: "#000" }} />
-        )}
-
-        {/* Gradient bas — couvre caption + boutons */}
-        <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-          style={{ height: 320, background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.15) 75%, transparent 100%)" }} />
-
-
-        {/* Tap sur la vidéo = activer/couper le son (pas de bouton visible) */}
-
-        {/* Signalé badge */}
-        <AnimatePresence>
-          {reported && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-full flex items-center gap-1.5"
-              style={{ background: "rgba(252,129,129,0.2)", border: "1px solid rgba(252,129,129,0.4)", backdropFilter: "blur(8px)" }}>
-              <Flag size={11} strokeWidth={2} style={{ color: "#FC8181" }} />
-              <span className="text-[10px] font-semibold" style={{ color: "#FC8181" }}>Signalé</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Pause indicator */}
-        <AnimatePresence>
-          {paused && (
-            <motion.div initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(10px)" }}>
-                <Play size={24} strokeWidth={1.5} style={{ color: "#fff", marginLeft: 3 }} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Double-tap heart */}
-        <AnimatePresence>
-          {doubleTapHeart && (
-            <motion.div initial={{ opacity: 0, scale: 0.3, y: 0 }} animate={{ opacity: [0, 1, 1, 0], scale: [0.3, 1.5, 1.2, 0.8], y: -60 }}
-              transition={{ duration: 0.85, ease: "easeOut" }}
-              className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-              <Heart size={90} strokeWidth={0} fill="#FF4458" style={{ filter: "drop-shadow(0 0 28px rgba(255,68,88,0.9))" }} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Badge vitesse */}
-        {speed !== 1 && (
-          <div className="absolute top-3 left-3 z-20 inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold pointer-events-none"
-            style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
-            ×{speed}
-          </div>
-        )}
-
-        {/* ══ AUTEUR + CAPTION (bas gauche, abaissé vers la nav) ══ */}
-        <div className="absolute left-4 z-20" style={{ right: isMobile ? 72 : 16, bottom: isMobile ? "calc(82px + env(safe-area-inset-bottom))" : 18, pointerEvents: "none" }}>
-          <Link href={post.user_id === user?.id ? "/profil" : `/profil/${encodeURIComponent(authorPseudo)}`} className="flex items-center gap-2 mb-2 w-fit" style={{ pointerEvents: "auto" }} onClick={e => e.stopPropagation()}>
-            {authorAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img loading="lazy" decoding="async" src={authorAvatar} alt={authorPseudo}
-                className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-            ) : (
-              <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff" }}>
-                {authorPseudo[0]?.toUpperCase()}
-              </div>
-            )}
-            <span className="flex items-center gap-1 min-w-0">
-              <span className="text-white text-sm font-semibold leading-none drop-shadow-sm truncate">@{authorPseudo}</span>
-              {authorCertified && (
-                <span className="inline-flex items-center justify-center rounded-full flex-shrink-0"
-                  style={{ width: 16, height: 16, background: "linear-gradient(135deg,var(--accent),#7C5CFA)", boxShadow: "0 1px 5px rgba(124,92,250,0.55)" }}>
-                  <svg width="9" height="9" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-              )}
-            </span>
-          </Link>
-          {post.caption && (
-            <p className="text-white text-[13px] leading-snug line-clamp-2" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.85)", pointerEvents: "auto" }}>
-              <CaptionText text={post.caption} onHashtagClick={(tag) => { onHashtagClick?.(tag); }} />
-            </p>
-          )}
-        </div>
-
-        {/* Panels overlay (commentaires & settings) */}
-        <AnimatePresence>
-          {showSettings && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-40"
-              style={{ background: "rgba(0,0,0,0.55)" }}
-              onClick={() => { setShowSettings(false); }} />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {showComments && (
-            <VideoCommentsPanel
-              postId={post.id}
-              postOwnerId={post.user_id}
-              commentCount={commentCount}
-              onClose={() => setShowComments(false)}
-              onCommentAdded={() => setCommentCount(c => c + 1)}
-            />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {showSettings && (
-            <VideoSettingsPanel
-              speed={speed}
-              onSpeedChange={s => setSpeed(s)}
-              captionsOn={captionsOn}
-              onToggleCaptions={() => setCaptionsOn(c => !c)}
-              onReport={handleReport}
-              onDelete={(user?.id === post.user_id || (user as { is_admin?: boolean } | null)?.is_admin) && onDeletePost
-                ? async () => { setShowSettings(false); await onDeletePost(post.id); }
-                : undefined}
-              onClose={() => setShowSettings(false)}
-            />
-          )}
-        </AnimatePresence>
-      </div>{/* ── fin carte vidéo ── */}
-
-      {/* ══════════════════════════════════
-          COLONNE ACTIONS — overlay sur mobile, colonne à droite sur desktop
-      ══════════════════════════════════ */}
-      <div className={isMobile ? "absolute z-30 flex flex-col items-center" : "flex flex-col items-center flex-shrink-0"}
-        style={isMobile
-          ? { gap: 22, width: 52, right: 8, bottom: "calc(120px + env(safe-area-inset-bottom))" }
-          : { gap: 22, width: 52, paddingBottom: 8 }}
-        onClick={e => e.stopPropagation()}>
-
-        {/* Like */}
-        <button onClick={toggleLike} className="flex flex-col items-center gap-1 cursor-pointer">
-          <motion.div whileTap={{ scale: 1.45 }} animate={liked ? { scale: [1, 1.45, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-            <Heart size={30} strokeWidth={liked ? 0 : 2} fill={liked ? "#FF4458" : "none"}
-              style={{ color: liked ? "#FF4458" : icoColor, filter: liked ? "drop-shadow(0 0 8px rgba(255,68,88,0.5))" : icoShadow }} />
-          </motion.div>
-          <span className="text-[11px] font-semibold" style={{ color: liked ? "#FF4458" : labelColor, ...labelShadow }}>{fmtCount(likes)}</span>
-        </button>
-
-        {/* Commentaires */}
-        <button onClick={() => { setShowComments(s => !s); setShowSettings(false); }}
-          className="flex flex-col items-center gap-1 cursor-pointer">
-          <MessageCircle size={30} strokeWidth={2}
-            style={{ color: showComments ? "var(--accent)" : icoColor, filter: icoShadow }} />
-          <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(commentCount)}</span>
-        </button>
-
-        {/* Sauvegarder */}
-        <button onClick={toggleSave} className="flex flex-col items-center gap-1 cursor-pointer">
-          <motion.div whileTap={{ scale: 1.3 }}>
-            <Bookmark size={29} strokeWidth={2}
-              fill={saved ? "var(--cream-mid)" : "none"}
-              style={{ color: saved ? "var(--gold)" : icoColor, filter: saved ? "drop-shadow(0 0 6px rgba(var(--gold-rgb),0.5))" : icoShadow }} />
-          </motion.div>
-          <span className="text-[11px]" style={{ color: saved ? "var(--gold)" : labelColor, ...labelShadow }}>{fmtCount(savesCount)}</span>
-        </button>
-
-        {/* Partager (avion Instagram) */}
-        <button onClick={handleShare} className="flex flex-col items-center gap-1 cursor-pointer">
-          <motion.div whileTap={{ scale: 1.3 }} animate={shared ? { scale: [1, 1.3, 1] } : {}} transition={{ duration: 0.3 }}>
-            <svg width="29" height="29" viewBox="0 0 24 24" fill="none"
-              style={{ color: shared ? "#2BD4A0" : icoColor, filter: icoShadow }}>
-              <line x1="22" y1="3" x2="9.218" y2="10.083" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round" />
-              <polygon points="11.698 20.334 22 3.001 2 3.001 9.218 10.084 11.698 20.334" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round" fill="none" />
-            </svg>
-          </motion.div>
-          <span className="text-[11px]" style={{ color: labelColor, ...labelShadow }}>{fmtCount(reposts)}</span>
-        </button>
-
-        {/* Plus / settings */}
-        <button onClick={() => { setShowSettings(s => !s); setShowComments(false); }}
-          className="flex flex-col items-center cursor-pointer">
-          <MoreHorizontal size={28} strokeWidth={2} style={{ color: icoColor, filter: icoShadow }} />
-        </button>
-      </div>{/* ── fin colonne actions ── */}
-
-      {/* Share modals (position:fixed, échappent l'overflow) */}
-      <AnimatePresence>
-        {showShareModal && (
-          <ShareModal
-            postCaption={post.caption}
-            onClose={() => setShowShareModal(false)}
-            onShareDM={() => { setShowShareModal(false); setShowShareToDM(true); }}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {showShareToDM && (
-          <ShareToDMModal
-            post={post}
-            onClose={() => setShowShareToDM(false)}
-            onSent={(_partner) => {
-              setShared(true);
-              setReposts(c => c + 1); // compteur de partages
-              setTimeout(() => setShared(false), 2000);
-            }}
-          />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
-
-const TikTokFeed = memo(function TikTokFeed({ posts, initialPostId, onInitialScrolled, onHashtagClick, onActiveIndexChange, onScrollCollapse, feedHeight, onCreatePost, onDeletePost }: {
-  posts: RealPost[];
-  initialPostId?: string | null;
-  onInitialScrolled?: () => void;
-  onHashtagClick?: (tag: string) => void;
-  onActiveIndexChange?: (idx: number) => void;
-  onScrollCollapse?: (collapsed: boolean) => void;
-  feedHeight?: number; // hauteur exacte mesurée depuis le parent
-  onCreatePost?: () => void;
-  onDeletePost?: (id: string) => Promise<boolean> | void;
-}) {
-  const videoPosts = posts.filter(p => p.media_type === "video" && p.media_url);
-  const wrapperRef   = useRef<HTMLDivElement>(null);  // fallback measurement
-  const containerRef = useRef<HTMLDivElement>(null);  // élément scrollable
-  const isScrollingRef = useRef(false);               // true pendant le scroll → bloque handleVideoTap
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  // ── Hauteur exacte en pixels via ResizeObserver ──────────────────
-  // Évite les bugs de `height:100%` dans les flex children imbriqués
-  // Priorité : hauteur mesurée depuis le parent (prop feedHeight)
-  // Fallback : ResizeObserver local sur wrapperRef
-  const [localSlotH, setLocalSlotH] = useState(0);
-  useEffect(() => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const measure = () => {
-      const h = el.getBoundingClientRect().height || el.clientHeight;
-      if (h > 0) setLocalSlotH(Math.floor(h));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const slotH = (feedHeight && feedHeight > 0) ? feedHeight : localSlotH;
-  const H = slotH > 0 ? `${slotH}px` : "100dvh";
-
-  // ── Scroll léger : collapse header + flag "scrolling" (anti-tap accidentel) ──
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    let rafId = 0;
-    let lastCollapsed = false;
-    let scrollStopTimer: ReturnType<typeof setTimeout>;
-
-    const handleScroll = () => {
-      isScrollingRef.current = true;
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const collapsed = el.scrollTop > 40;
-        if (collapsed !== lastCollapsed) { lastCollapsed = collapsed; onScrollCollapse?.(collapsed); }
-      });
-      clearTimeout(scrollStopTimer);
-      scrollStopTimer = setTimeout(() => { isScrollingRef.current = false; }, 150);
-    };
-
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", handleScroll);
-      cancelAnimationFrame(rafId);
-      clearTimeout(scrollStopTimer);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onScrollCollapse]);
-
-  // ── Vidéo active via IntersectionObserver (FIABLE sur mobile) ──────
-  // Robuste aux changements de hauteur (barre d'URL qui se masque, dvh
-  // variable) : on se base sur la VISIBILITÉ réelle, pas sur un calcul de
-  // pixels qui dérape. La vidéo la plus visible (>50%) devient active.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || videoPosts.length === 0) return;
-    const slots = Array.from(el.querySelectorAll("[data-slot]"));
-    if (!slots.length) return;
-
-    const ratios = new Map<number, number>();
-    let lastIdx = -1;
-
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        const idx = Number((e.target as HTMLElement).dataset.slot);
-        ratios.set(idx, e.intersectionRatio);
-      }
-      let bestIdx = lastIdx, bestRatio = 0;
-      ratios.forEach((r, i) => { if (r > bestRatio) { bestRatio = r; bestIdx = i; } });
-      if (bestRatio >= 0.5 && bestIdx !== lastIdx && bestIdx >= 0) {
-        lastIdx = bestIdx;
-        setActiveIndex(bestIdx);
-        onActiveIndexChange?.(bestIdx);
-      }
-    }, { root: el, threshold: [0, 0.25, 0.5, 0.75, 1] });
-
-    slots.forEach((s) => io.observe(s));
-    return () => io.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoPosts.length]);
-
-  // ── Scroll vers le post partagé depuis un DM ────────────────────
-  useEffect(() => {
-    if (!initialPostId || !containerRef.current || videoPosts.length === 0 || slotH === 0) return;
-    const idx = videoPosts.findIndex(p => p.id === initialPostId);
-    if (idx < 0) return;
-    requestAnimationFrame(() => {
-      const el = containerRef.current;
-      if (!el) return;
-      el.scrollTop = idx * slotH;
-      setActiveIndex(idx);
-      onInitialScrolled?.();
-    });
-  }, [initialPostId, videoPosts, onInitialScrolled, slotH]);
-
-  if (videoPosts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 px-6 text-center h-full">
-        <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.35) 0%, rgba(var(--cream-mid-rgb),0.3) 100%)", border: "1px solid rgba(var(--accent-rgb),0.2)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)" }}
-        >
-          <Plus size={30} strokeWidth={1.4} style={{ color: "var(--accent)" }} />
-        </div>
-        <div>
-          <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>Aucune vidéo pour le moment</p>
-          <p className="text-sm font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>Publie ta première vidéo et lance la communauté 🎬</p>
-        </div>
-        {onCreatePost && (
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={onCreatePost}
-            className="mt-1 px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-            style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
-          >
-            Publier ma première vidéo
-          </motion.button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div ref={wrapperRef} style={{ position: "absolute", inset: 0 }}>
-      <div ref={containerRef}
-        className="overflow-y-scroll mx-auto"
-        style={{
-          height: H,
-          width: "100%",
-          scrollSnapType: "y mandatory",
-          scrollbarWidth: "none",
-          overscrollBehavior: "contain",
-          touchAction: "pan-y",
-          WebkitOverflowScrolling: "touch" as never,
-          willChange: "scroll-position",
-          transform: "translateZ(0)",
-        }}>
-        {videoPosts.map((post, i) => {
-          // ── Virtualisation : ne monter que les vidéos proches de l'écran ──
-          // Fenêtre : précédente (1), active, et 2 suivantes (préchargées).
-          // Hors fenêtre → placeholder vide (même hauteur) pour préserver scroll + snap.
-          const dist = i - activeIndex;
-          const inWindow = dist >= -1 && dist <= 2;
-          return (
-            <div key={post.id} data-slot={i} style={{ height: H, scrollSnapAlign: "start", scrollSnapStop: "always", contentVisibility: "auto", containIntrinsicSize: `${H}px`, contain: "layout paint" }}>
-              {inWindow ? (
-                <VideoCard
-                  post={post}
-                  isActive={i === activeIndex}
-                  eager={dist === 1 || dist === 2}
-                  onHashtagClick={onHashtagClick}
-                  isScrollingRef={isScrollingRef}
-                  onDeletePost={onDeletePost}
-                />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Bouton retour en haut — visible dès la 2ème vidéo */}
-      <AnimatePresence>
-        {activeIndex > 0 && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.7, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.7, y: 10 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            onClick={() => {
-              if (containerRef.current) {
-                containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-              }
-            }}
-            className="fixed bottom-28 right-4 md:bottom-8 md:right-8 z-50 w-11 h-11 rounded-full hidden md:flex items-center justify-center cursor-pointer"
-            style={{
-              background: "rgba(var(--surface-rgb),0.92)",
-              backdropFilter: "blur(12px)",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-              border: "1px solid rgba(var(--violet-mid-rgb),0.3)",
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 14V4M9 4L4 9M9 4L14 9" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </motion.button>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
-
-// ── Cache module : le feed s'affiche INSTANTANÉMENT au retour sur Communauté ──
+// Cache module-level : le fil réapparaît instantanément quand on revient sur l'onglet
 let __feedCache: RealPost[] = [];
 let __likedCache = new Set<string>();
 let __repostedCache = new Set<string>();
@@ -3253,10 +2050,7 @@ function CommunautePageInner() {
   // Le QG (la saison) est l'écran d'arrivée ; le fil se tire depuis lui.
   const [view, setView] = useState<View>("qg");
   const [search, setSearch] = useState("");
-  const [searchFilter, setSearchFilter] = useState<SearchFilter>("tous");
   const [realProfiles, setRealProfiles] = useState<{ id: string; pseudo: string; full_name?: string; bio?: string; avatar_url?: string; is_admin?: boolean; is_certified?: boolean }[]>([]);
-  const [realSessions, setRealSessions] = useState<SessionResult[]>([]);
-  const [hashtagDbPosts, setHashtagDbPosts] = useState<RealPost[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   // followingIds = ensemble des IDs Supabase que l'utilisateur suit réellement
@@ -3272,31 +2066,6 @@ function CommunautePageInner() {
   } | null>(null);
 
   const [activeHashtag, setActiveHashtag] = useState<string | null>(null);
-  // Modal plein écran hashtag vidéos
-  const [hashtagVideosTag, setHashtagVideosTag] = useState<string | null>(null);
-  // Header toujours visible (titre + stories + tabs), la vidéo prend le reste via flex
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  // Mobile = feed vidéo immersif plein écran (style Instagram Reels)
-  const [isMobileView, setIsMobileView] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobileView(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  // Hauteur du feed container mesurée depuis le parent → passée à TikTokFeed
-  const feedContainerRef = useRef<HTMLDivElement>(null);
-  const [feedContainerH, setFeedContainerH] = useState(0);
-  useEffect(() => {
-    const el = feedContainerRef.current;
-    if (!el) return;
-    const measure = () => { const h = el.getBoundingClientRect().height; if (h > 0) setFeedContainerH(Math.floor(h)); };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   const [sharePost, setSharePost] = useState<{ caption?: string; post?: RealPost } | null>(null);
   const [shareToDMPost, setShareToDMPost] = useState<RealPost | null>(null);
   const [showNewDM, setShowNewDM] = useState(false);
@@ -3311,39 +2080,6 @@ function CommunautePageInner() {
   const feedPageRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [feedMode, setFeedMode] = useState<"algo" | "amis">("algo");
-  const [feedTab, setFeedTab] = useState<"posts" | "videos">("posts");
-  // Mode vidéo immersif plein écran sur mobile (dépend de feedTab/view déclarés au-dessus)
-  const immersiveVideo = isMobileView && feedTab === "videos" && view === "feed";
-
-  // ── Swipe horizontal entre Publications (gauche) et Vidéos (droite) ──
-  // Indicateur flèche : visible 5 s puis se cache (ne gêne pas les vidéos)
-  const [swipeHint, setSwipeHint] = useState(true);
-  useEffect(() => {
-    setSwipeHint(true);
-    // Sur PC on ne peut pas swiper → on garde les boutons Vidéos/Publications visibles en permanence.
-    // Sur mobile : auto-masqués après 5 s comme avant.
-    if (isMobileView) {
-      const t = setTimeout(() => setSwipeHint(false), 5000);
-      return () => clearTimeout(t);
-    }
-  }, [feedTab, view, isMobileView]);
-  const swipeStart = useRef<{ x: number; y: number } | null>(null);
-  const onFeedTouchStart = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    swipeStart.current = { x: t.clientX, y: t.clientY };
-  };
-  const onFeedTouchEnd = (e: React.TouchEvent) => {
-    if (!swipeStart.current) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - swipeStart.current.x;
-    const dy = t.clientY - swipeStart.current.y;
-    swipeStart.current = null;
-    // Swipe clairement horizontal uniquement (ne gêne pas le scroll vertical)
-    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-    if (dx < 0 && feedTab === "posts") setFeedTab("videos");      // doigt vers la gauche → Vidéos
-    else if (dx > 0 && feedTab === "videos") setFeedTab("posts"); // doigt vers la droite → Publications
-  };
-  const [highlightVideoId, setHighlightVideoId] = useState<string | null>(null);
   const [likedRealIds, setLikedRealIds] = useState<Set<string>>(() => new Set(__likedCache));
   const [hiddenRealIds, setHiddenRealIds] = useState<Set<string>>(new Set());
   const [openRealComments, setOpenRealComments] = useState<Set<string>>(new Set());
@@ -3418,11 +2154,8 @@ function CommunautePageInner() {
     return [...visible].sort((a, b) => getScore(b) - getScore(a));
   }, [realFeedPosts, hiddenRealIds, feedMode, getScore, mutualIds]);
 
-  // Onglet "Posts" : on exclut les vidéos (elles ont leur propre onglet Vidéos)
-  const postsFeed = useMemo(
-    () => sortedFeedPosts.filter((p) => p.media_type !== "video"),
-    [sortedFeedPosts]
-  );
+  // Fil unique : les vidéos redeviennent des posts comme les autres (l'onglet TikTok a été supprimé)
+  const postsFeed = sortedFeedPosts;
 
 
   // Charger les abonnements réels depuis Supabase + calculer les amis mutuels
@@ -3471,14 +2204,10 @@ function CommunautePageInner() {
       });
   }, [searchParams]); // eslint-disable-line
 
-  // Ouvrir directement la VIDÉO du jour si ?video=<id> présent → onglet Vidéos + scroll dessus
+  // ?video=<id> : l'onglet Vidéos n'existe plus → on ouvre simplement le fil
   useEffect(() => {
-    const vid = searchParams?.get("video");
-    if (!vid) return;
-    setView("feed");
-    setFeedTab("videos");
-    setHighlightVideoId(vid);
-  }, [searchParams]); // eslint-disable-line
+    if (searchParams?.get("video")) setView("feed");
+  }, [searchParams]);
 
   // Charger les suggestions de comptes à suivre
   useEffect(() => {
@@ -3533,24 +2262,6 @@ function CommunautePageInner() {
   }, [user]);
 
   useEffect(() => { loadStories(); }, [loadStories]);
-
-  // Reset header collapse quand on change d'onglet
-  useEffect(() => { setHeaderCollapsed(false); }, [feedTab]);
-
-  // ── Lock du scroll de la page en mode Vidéos (seul le feed scrolle) ──
-  useEffect(() => {
-    const lock = feedTab === "videos" && view === "feed";
-    if (lock) {
-      const prevBody = document.body.style.overflow;
-      const prevHtml = document.documentElement.style.overflow;
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prevBody;
-        document.documentElement.style.overflow = prevHtml;
-      };
-    }
-  }, [feedTab, view]);
 
   // Charger le feed réel depuis Supabase (paginé)
   const loadFeed = useCallback(async ({ append = false }: { append?: boolean } = {}) => {
@@ -3618,18 +2329,6 @@ function CommunautePageInner() {
   }, [user]);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
-
-  // Callbacks stables passés à TikTokFeed → préserve sa mémoïsation (memo)
-  const handleHashtagClick    = useCallback((tag: string) => setHashtagVideosTag(tag), []);
-  const handleScrollCollapse  = useCallback((collapsed: boolean) => setHeaderCollapsed(collapsed), []);
-  const handleInitialScrolled = useCallback(() => setHighlightVideoId(null), []);
-  const handleCreatePost      = useCallback(() => setShowCreatePost(true), []);
-  const handleActiveIndexChange = useCallback((idx: number) => {
-    const total = sortedFeedPosts.filter((p) => p.media_type === "video" && p.media_url).length;
-    if (idx >= total - 3 && hasMoreFeed && !feedLoading && !feedLoadingMore) {
-      void loadFeed({ append: true });
-    }
-  }, [sortedFeedPosts, hasMoreFeed, feedLoading, feedLoadingMore, loadFeed]);
 
   // Realtime : nouveau post dans le feed
   useEffect(() => {
@@ -4060,70 +2759,32 @@ function CommunautePageInner() {
     }
   };
 
-  // Fetch real profiles / sessions / hashtag posts from Supabase on search
+  // « Trouver des gens » : la recherche ne cherche QUE des personnes (le contenu, c'est le fil)
   useEffect(() => {
     if (searchDebounce.current) clearTimeout(searchDebounce.current);
     const q = search.trim();
-    if (!q) { setRealProfiles([]); setRealSessions([]); setHashtagDbPosts([]); return; }
-    const isHashtag = q.startsWith("#") && q.length > 1;
+    if (!q) { setRealProfiles([]); return; }
     searchDebounce.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
         const supabase = createClient();
-        const [profileRes, sessionRes, postRes] = await Promise.all([
-          !isHashtag && searchFilter !== "seances"
-            ? supabase.from("profiles").select("id, pseudo, full_name, bio, avatar_url, is_admin, is_certified").or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`).limit(15)
-            : { data: [] },
-          !isHashtag && searchFilter !== "compte"
-            ? supabase.from("custom_sessions").select("id, title, category, duration, difficulty, muscles, accent, icon, user_id").eq("visibility", "public").ilike("title", `%${q}%`).limit(12)
-            : { data: [] },
-          isHashtag
-            ? supabase.from("posts").select(`
-                id, type, caption, description, audience, performance_data, media_url, media_type, created_at, user_id,
-                author:profiles!user_id(pseudo, full_name, avatar_url, is_admin, is_certified),
-                post_likes(user_id),
-                post_comments(id),
-                post_reposts(user_id),
-        post_saves(user_id)
-              `)
-              .or(`caption.ilike.%${q}%,description.ilike.%${q}%`)
-              .order("created_at", { ascending: false })
-              .limit(30)
-            : { data: [] },
-        ]);
-        setRealProfiles((profileRes.data as typeof realProfiles) ?? []);
-        setRealSessions((sessionRes.data as SessionResult[]) ?? []);
-        setHashtagDbPosts((postRes.data as unknown as RealPost[]) ?? []);
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, pseudo, full_name, bio, avatar_url, is_admin, is_certified")
+          .or(`pseudo.ilike.%${q}%,full_name.ilike.%${q}%`)
+          .limit(15);
+        setRealProfiles((data as typeof realProfiles) ?? []);
       } finally {
         setSearchLoading(false);
       }
     }, 300);
-  }, [search, searchFilter]); // eslint-disable-line
+  }, [search]); // eslint-disable-line
 
-  const filteredResults = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const isHashtag = q.startsWith("#") && q.length > 1;
-    // Merge DB results + locally-loaded posts, deduplicated by id
-    const localMatches = isHashtag
-      ? realFeedPosts.filter(p =>
-          p.caption?.toLowerCase().includes(q) ||
-          p.description?.toLowerCase().includes(q)
-        )
-      : [];
-    const dbIds = new Set(hashtagDbPosts.map(p => p.id));
-    const merged = [
-      ...hashtagDbPosts,
-      ...localMatches.filter(p => !dbIds.has(p.id)),
-    ];
-    return {
-      realProfiles: searchFilter !== "seances" ? realProfiles : [],
-      sessions:     searchFilter !== "compte"  ? realSessions : [],
-      // Suggestions : comptes pas encore suivis (utilisé quand search est vide)
-      suggestions:  suggestedProfiles.filter(p => !followingIds.has(p.id)).slice(0, 8),
-      // Posts trouvés par hashtag (DB + local cache)
-      hashtagPosts: isHashtag ? merged : [],
-    };
-  }, [searchFilter, realProfiles, realSessions, suggestedProfiles, followingIds, search, realFeedPosts, hashtagDbPosts]);
+  const filteredResults = useMemo(() => ({
+    realProfiles,
+    // Suggestions : comptes pas encore suivis (utilisé quand search est vide)
+    suggestions: suggestedProfiles.filter(p => !followingIds.has(p.id)).slice(0, 8),
+  }), [realProfiles, suggestedProfiles, followingIds]);
 
   // Trending hashtags : extraire les #tags les plus fréquents des posts chargés
   const trendingHashtags = useMemo(() => {
@@ -4159,45 +2820,23 @@ function CommunautePageInner() {
   return (
     <div
       data-tour-anchor="page-communaute"
-      className={`flex flex-col w-full mx-auto max-w-4xl relative ${
-        immersiveVideo
-          ? "fixed inset-0 z-20 h-dvh overflow-hidden px-0"
-          : feedTab === "videos"
-            ? "px-4 md:px-8 h-dvh overflow-hidden pb-0"
-            : "px-4 md:px-8 min-h-screen"
-      }`}
-      style={
-        immersiveVideo
-          ? { background: "#000" }
-          : feedTab === "videos" && !immersiveVideo
-            ? {
-                paddingTop: headerCollapsed ? 0 : 32,
-                transition: "padding-top 0.3s cubic-bezier(0.4,0,0.2,1)",
-              }
-            : {
-                // Feed Publications : safe-area en haut + dégagement de la barre du bas
-                paddingTop: "calc(env(safe-area-inset-top) + 12px)",
-                paddingBottom: "calc(7rem + env(safe-area-inset-bottom))",
-              }
-      }
+      className="flex flex-col w-full mx-auto max-w-4xl relative px-4 md:px-8 min-h-screen"
+      style={{
+        // Fil : safe-area en haut + dégagement de la barre du bas
+        paddingTop: "calc(env(safe-area-inset-top) + 12px)",
+        paddingBottom: "calc(7rem + env(safe-area-inset-bottom))",
+      }}
       onClick={() => { if (openRealMenu !== null) setOpenRealMenu(null); }}
     >
       {/* ── Contenu ── */}
-      <div className={`relative flex flex-col flex-1${feedTab === "videos" ? " min-h-0 overflow-hidden" : ""}`}>
+      <div className="relative flex flex-col flex-1">
 
       {/* Décale la barre (titre + loupe/découverte/messages) SOUS le header global
-          (cloche + avatar) sur mobile → plus de chevauchement. Hors mode vidéo. */}
-      {feedTab !== "videos" && <div className="h-11 md:hidden" aria-hidden />}
+          (cloche + avatar) sur mobile → plus de chevauchement. */}
+      <div className="h-11 md:hidden" aria-hidden />
 
-      {/* Top Bar — caché en mode immersif mobile (vidéos) */}
-      <div className={immersiveVideo ? "hidden" : ""} style={feedTab === "videos" && !immersiveVideo ? {
-        maxHeight: headerCollapsed ? 0 : 90,
-        overflow: "hidden",
-        transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s cubic-bezier(0.4,0,0.2,1)",
-        opacity: headerCollapsed ? 0 : 1,
-        flexShrink: 0,
-        willChange: "max-height, opacity",
-      } : {}}>
+      {/* Top Bar */}
+      <div>
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -4284,52 +2923,10 @@ function CommunautePageInner() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onTouchStart={onFeedTouchStart}
-            onTouchEnd={onFeedTouchEnd}
-            className={feedTab === "videos" ? "flex flex-col flex-1 min-h-0 overflow-hidden" : "flex flex-col gap-5 pb-4"}
+            className="flex flex-col gap-5 pb-4"
           >
-            {/* ── Indicateur swipe vers Vidéos (sur Publications) — blanc, auto-masqué 5s ── */}
-            <AnimatePresence>
-              {feedTab === "posts" && swipeHint && (
-                <motion.button
-                  onClick={() => setFeedTab("videos")}
-                  aria-label="Voir les vidéos"
-                  className="fixed top-1/2 -translate-y-1/2 right-2 z-40 flex items-center gap-1 pl-3 pr-2 py-2 rounded-full cursor-pointer"
-                  style={{ background: "#fff", boxShadow: "0 6px 20px rgba(124,92,250,0.28)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
-                  initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: [6, 0, 6] }} exit={{ opacity: 0, x: 18 }}
-                  transition={{ opacity: { duration: 0.4 }, x: { duration: 1.6, repeat: Infinity, ease: "easeInOut" } }}
-                >
-                  <span className="text-[11px] font-bold" style={{ color: "#7C5CFA" }}>Vidéos</span>
-                  <ChevronRight size={16} strokeWidth={2.6} color="#7C5CFA" />
-                </motion.button>
-              )}
-            </AnimatePresence>
-            {/* ── Retour vers Publications (sur Vidéos) — blanc, auto-masqué 5s ── */}
-            <AnimatePresence>
-              {feedTab === "videos" && view === "feed" && swipeHint && (
-                <motion.button
-                  onClick={() => setFeedTab("posts")}
-                  aria-label="Voir les publications"
-                  className="fixed top-1/2 -translate-y-1/2 left-2 md:left-[96px] z-40 flex items-center gap-1 pl-2 pr-3 py-2 rounded-full cursor-pointer"
-                  style={{ background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,0.3)" }}
-                  initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <ChevronLeft size={16} strokeWidth={2.6} color="#7C5CFA" />
-                  <span className="text-[11px] font-bold" style={{ color: "#7C5CFA" }}>Publications</span>
-                </motion.button>
-              )}
-            </AnimatePresence>
-
-            {/* Stories — cachées en mode immersif mobile */}
-            <div className={immersiveVideo ? "hidden" : ""} style={feedTab === "videos" && !immersiveVideo ? {
-              maxHeight: headerCollapsed ? 0 : 150,
-              overflow: "hidden",
-              transition: "max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s cubic-bezier(0.4,0,0.2,1)",
-              opacity: headerCollapsed ? 0 : 1,
-              flexShrink: 0,
-              willChange: "max-height, opacity",
-            } : {}}>
+            {/* Stories */}
+            <div>
             {(() => {
               // Grouper TOUTES les stories par user (pas de déduplication)
               // Tri : oldest first pour la lecture dans l'ordre
@@ -4479,32 +3076,10 @@ function CommunautePageInner() {
                 pour que leur centre visuel soit aligné avec le centre de la
                 colonne vidéo (et non le centre vidéo+sidebar).
             ══════════════════════════════════════════════════════ */}
-            <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)", ...(feedTab === "videos" ? { flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column" } : {}) }}>
+            <div style={{ width: "100vw", marginLeft: "calc(-50vw + 50%)" }}>
 
-              {/* ── Accès flottant (mobile immersif) : Découverte · Recherche · Messages ── */}
-              {immersiveVideo && (
-                <div className="absolute right-3 z-40 flex items-center gap-3.5"
-                  style={{ top: "calc(env(safe-area-inset-top) + 10px)" }}>
-                  <Link href="/decouverte" aria-label="Découvrir des comptes">
-                    <div className="flex items-center justify-center cursor-pointer">
-                      <Compass size={23} strokeWidth={2} color="#fff" style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.75))" }} />
-                    </div>
-                  </Link>
-                  <button onClick={() => setView("search")} aria-label="Rechercher"
-                    className="flex items-center justify-center cursor-pointer">
-                    <Search size={23} strokeWidth={2} color="#fff" style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.75))" }} />
-                  </button>
-                  <button onClick={() => setView("dms")} aria-label="Messages"
-                    className="flex items-center justify-center cursor-pointer">
-                    <Send size={22} strokeWidth={2} color="#fff" style={{ filter: "drop-shadow(0 1px 4px rgba(0,0,0,0.75))" }} />
-                  </button>
-                </div>
-              )}
-
-
-
-              {/* ── Toggle algo / récents (Posts uniquement) — même cadrage que les tabs ── */}
-              {feedTab === "posts" && !feedLoading && (
+              {/* ── Toggle algo / récents — même cadrage que les tabs ── */}
+              {!feedLoading && (
                 <div className="flex items-center justify-center gap-2 py-1"
                   style={{ maxWidth: 560, margin: "0 auto" }}>
                   {(["algo", "amis"] as const).map((mode) => (
@@ -4526,26 +3101,10 @@ function CommunautePageInner() {
                 </div>
               )}
 
-              {/* ── Feed Vidéos TikTok ── */}
-              {feedTab === "videos" && (
-                <div ref={feedContainerRef} style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", position: "relative" }}>
-                  <TikTokFeed
-                    posts={sortedFeedPosts}
-                    initialPostId={highlightVideoId}
-                    onInitialScrolled={handleInitialScrolled}
-                    onHashtagClick={handleHashtagClick}
-                    onScrollCollapse={handleScrollCollapse}
-                    onActiveIndexChange={handleActiveIndexChange}
-                    feedHeight={feedContainerH}
-                    onCreatePost={handleCreatePost}
-                    onDeletePost={deleteRealPost}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Posts réels depuis Supabase */}
-            {feedTab === "posts" && feedLoading && (
+            {feedLoading && (
               <div className="flex flex-col gap-4">
                 {[0, 1, 2].map((i) => (
                   <motion.div
@@ -4582,7 +3141,7 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {feedTab === "posts" && !feedLoading && postsFeed.length === 0 && feedMode === "amis" && (
+            {!feedLoading && postsFeed.length === 0 && feedMode === "amis" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -4607,7 +3166,7 @@ function CommunautePageInner() {
               </motion.div>
             )}
 
-            {feedTab === "posts" && !feedLoading && postsFeed.length === 0 && feedMode === "algo" && (
+            {!feedLoading && postsFeed.length === 0 && feedMode === "algo" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-14 gap-4">
                 <div
                   className="w-16 h-16 rounded-3xl flex items-center justify-center"
@@ -4632,7 +3191,7 @@ function CommunautePageInner() {
               </motion.div>
             )}
 
-            {feedTab === "posts" && !feedLoading && postsFeed.map((post, postIdx) => {
+            {!feedLoading && postsFeed.map((post, postIdx) => {
               const liked = likedRealIds.has(post.id);
               const isMenuOpen = openRealMenu === post.id;
               const isSaved = savedRealIds.has(post.id);
@@ -4962,7 +3521,7 @@ function CommunautePageInner() {
             })}
 
             {/* ── Infinite scroll sentinel ── */}
-            {feedTab === "posts" && !feedLoading && (
+            {!feedLoading && (
               <>
                 {hasMoreFeed && (
                   <div ref={sentinelRef} className="h-10 flex items-center justify-center">
@@ -4985,7 +3544,7 @@ function CommunautePageInner() {
             )}
 
             {/* ── Floating Action Button : créer un post libre ── */}
-            {user && feedTab === "posts" && (
+            {user && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -5023,7 +3582,7 @@ function CommunautePageInner() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
-                placeholder="Rechercher comptes, programmes, recettes…"
+                placeholder="Trouver des gens…"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
                 style={{ color: "var(--text-1)" }}
               />
@@ -5034,50 +3593,8 @@ function CommunautePageInner() {
               )}
             </div>
 
-            {/* Filters */}
-            <div className="flex gap-2">
-              {(["tous", "compte", "seances"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setSearchFilter(f)}
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all duration-150"
-                  style={
-                    searchFilter === f
-                      ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                      : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
-                  }
-                >
-                  {f === "tous" ? "Tous" : f === "compte" ? "Personnes" : "Séances"}
-                </button>
-              ))}
-            </div>
-
-            {/* ── Trending hashtags (quand search est vide) ── */}
-            {!search.trim() && trendingHashtags.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
-                  Tendances
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {trendingHashtags.map(({ tag, count }) => (
-                    <motion.button
-                      key={tag}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSearch(tag)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer"
-                      style={{ background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.12),rgba(var(--violet-mid-rgb),0.18))", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
-                    >
-                      {tag}
-                      <span className="text-[9px] font-normal opacity-70">{count}</span>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Suggestions — comptes à découvrir (quand search est vide) */}
-            {!search.trim() && filteredResults.suggestions.length > 0 && searchFilter !== "seances" && (
+            {!search.trim() && filteredResults.suggestions.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
                   Suggestions
@@ -5186,114 +3703,7 @@ function CommunautePageInner() {
               </div>
             )}
 
-            {/* Sessions publiques */}
-            {filteredResults.sessions.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--text-3)" }}>
-                  Séances · {filteredResults.sessions.length} résultat{filteredResults.sessions.length > 1 ? "s" : ""}
-                </p>
-                <div className="flex flex-col gap-2">
-                  {filteredResults.sessions.map((s) => {
-                    // Système D — couleur = type (résistance violet, cardio orange, mobilité teal), stockée ignorée
-                    const catColors: Record<string, string> = { force: "#8B5CF6", cardio: "#E8620C", mobilite: "#2BD4A0", fullbody: "#8B5CF6" };
-                    const accent = catColors[s.category] || "#8B5CF6";
-                    return (
-                      <motion.div
-                        key={s.id}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        whileHover={{ y: -1 }}
-                        className="lg-surface lg-highlight relative rounded-2xl overflow-hidden"
-                      >
-                        {/* Accent bar */}
-                        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ background: accent }} />
-                        <div className="flex items-center gap-3 px-4 py-3 pl-5">
-                          <div
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: `${accent}20`, border: `1px solid ${accent}40` }}
-                          >
-                            <Dumbbell size={15} strokeWidth={1.5} style={{ color: accent }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{s.duration} min</span>
-                              <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
-                              <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>{s.difficulty}</span>
-                              {s.muscles?.[0] && <>
-                                <span className="w-px h-2.5" style={{ background: "rgba(0,0,0,0.1)" }} />
-                                <span className="text-[10px] font-light truncate" style={{ color: "var(--text-3)" }}>{s.muscles.slice(0, 2).join(" · ")}</span>
-                              </>}
-                            </div>
-                          </div>
-                          <span
-                            className="text-[9px] font-bold tracking-wider uppercase px-2 py-1 rounded-full flex-shrink-0"
-                            style={{ background: `${accent}18`, color: accent }}
-                          >
-                            {s.category === "force" ? "Force" : s.category === "cardio" ? "Cardio" : s.category === "mobilite" ? "Mobilité" : "Full Body"}
-                          </span>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Sessions empty state when filter = séances */}
-            {!searchLoading && searchFilter === "seances" && search.trim() && filteredResults.sessions.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
-                  Aucune séance publique pour « {search} »
-                </p>
-                <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
-                  Les créateurs peuvent publier leurs séances depuis leur bibliothèque
-                </p>
-              </div>
-            )}
-
-            {/* ── Hashtag posts ── */}
-            {!searchLoading && filteredResults.hashtagPosts.length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 px-1" style={{ color: "var(--accent)" }}>
-                  Posts · {filteredResults.hashtagPosts.length} résultat{filteredResults.hashtagPosts.length > 1 ? "s" : ""}
-                </p>
-                <div className="flex flex-col gap-2">
-                  {filteredResults.hashtagPosts.map((p) => {
-                    const pseudo = p.author?.pseudo ?? "utilisateur";
-                    const avatar = p.author?.avatar_url;
-                    return (
-                      <motion.button
-                        key={p.id}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => { setSearch(""); setView("feed"); }}
-                        className="lg-surface lg-highlight relative flex items-start gap-3 px-4 py-3 rounded-2xl text-left cursor-pointer"
-                      >
-                        <div
-                          className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-semibold overflow-hidden mt-0.5"
-                          style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}
-                        >
-                          {avatar
-                            // eslint-disable-next-line @next/next/no-img-element
-                            ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
-                            : pseudo[0]?.toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>@{pseudo}</p>
-                          <p className="text-xs font-light line-clamp-2 mt-0.5" style={{ color: "var(--text-1)" }}>{p.caption || p.description}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{p.post_likes.length} ❤️</span>
-                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{p.post_comments.length} 💬</span>
-                          </div>
-                        </div>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {!searchLoading && search.trim() && filteredResults.realProfiles.length === 0 && filteredResults.sessions.length === 0 && filteredResults.hashtagPosts.length === 0 && (
+            {!searchLoading && search.trim() && filteredResults.realProfiles.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                   Aucun résultat pour « {search} »
@@ -5492,17 +3902,13 @@ function CommunautePageInner() {
                             {msg.shared_post ? (
                               <div>
                                 {msg.shared_post.media_url && (
-                                  // Clic → ouvre l'onglet Vidéos et scrolle sur ce post
+                                  // Clic → retour au fil
                                   <div
                                     className="relative cursor-pointer"
                                     style={{ height: 160, background: "#000" }}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (msg.post_id) {
-                                        setHighlightVideoId(msg.post_id);
-                                        setFeedTab("videos");
-                                        setView("feed");
-                                      }
+                                      if (msg.post_id) setView("feed");
                                     }}
                                   >
                                     {msg.shared_post.media_type === "video"
@@ -5631,22 +4037,7 @@ function CommunautePageInner() {
         })()}
       </AnimatePresence>
 
-      {/* Hashtag Videos Modal (plein écran, depuis onglet vidéos) */}
-      <AnimatePresence>
-        {hashtagVideosTag && (
-          <HashtagVideosModal
-            tag={hashtagVideosTag}
-            onClose={() => setHashtagVideosTag(null)}
-            onOpenVideo={(postId) => {
-              setHashtagVideosTag(null);
-              setFeedTab("videos");
-              setHighlightVideoId(postId);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Hashtag bottom sheet (depuis onglet publications) */}
+      {/* Hashtag bottom sheet (depuis le fil) */}
       <AnimatePresence>
         {activeHashtag && (
           <HashtagSheet

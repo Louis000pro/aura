@@ -159,7 +159,9 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
           xhr.setRequestHeader("authorization", `Bearer ${token}`);
           xhr.setRequestHeader("apikey", anon);
           xhr.setRequestHeader("x-upsert", "false");
-          xhr.setRequestHeader("cache-control", "3600");
+          // 1 an : le chemin est unique (Date.now) donc le fichier ne change jamais → le
+          // navigateur/CDN le garde et on économise l'egress Supabase (quota déjà explosé)
+          xhr.setRequestHeader("cache-control", "31536000");
           if (file.type) xhr.setRequestHeader("content-type", file.type);
           xhr.upload.onprogress = (e) => { if (e.lengthComputable) setProgress(e.loaded / e.total); };
           xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`upload ${xhr.status}`));
@@ -174,7 +176,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
     }
 
     // Fallback : upload classique supabase-js (sans progression)
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: false });
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: false, cacheControl: "31536000" });
     if (upErr) {
       console.error("[PublishModal] upload error:", upErr);
       setError("L'envoi du média a échoué, réessaie");
@@ -215,7 +217,7 @@ export default function PublishModal({ onClose }: { onClose: () => void }) {
         try {
           const cpath = `${user.id}/posts/${Date.now()}-cover.jpg`;
           const { error: cErr } = await supabase.storage.from("avatars")
-            .upload(cpath, coverBlobRef.current, { upsert: false, contentType: "image/jpeg" });
+            .upload(cpath, coverBlobRef.current, { upsert: false, contentType: "image/jpeg", cacheControl: "31536000" });
           if (!cErr) coverUrl = supabase.storage.from("avatars").getPublicUrl(cpath).data.publicUrl;
         } catch { /* couverture optionnelle */ }
       }

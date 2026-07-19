@@ -81,7 +81,7 @@ export default function CreatePostModal({ onClose, onSuccess, suggestedTags = []
       setUploadProgress(20);
       const { data, error: uploadErr } = await supabase.storage
         .from("avatars")
-        .upload(path, mediaFile, { upsert: false, contentType: mediaFile.type });
+        .upload(path, mediaFile, { upsert: false, contentType: mediaFile.type, cacheControl: "31536000" });
 
       if (uploadErr) {
         console.error("post media upload:", uploadErr);
