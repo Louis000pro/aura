@@ -114,21 +114,41 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
   const exploitDoneCount = s.exploitDoneBy.length;
 
   return (
-    <div style={{
+    <div className="vaiiya-season-hq" style={{
       width: "100%", maxWidth: "100%", overflowX: "hidden",
       minHeight: "100dvh",
       background: "radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000 100%)",
       color: "#ECEAF6",
       display: "flex", flexDirection: "column",
-      paddingBottom: "calc(8.5rem + env(safe-area-inset-bottom))",
     }}>
       <style>{`
         @keyframes vaiiya-tick { to { transform: translateX(-50%); } }
         @media (prefers-reduced-motion: reduce){ .vaiiya-tick-track { animation: none !important; } }
+        .vaiiya-season-hq { padding-bottom: calc(8.5rem + env(safe-area-inset-bottom)); }
+        @media (min-width: 768px) {
+          .vaiiya-season-hq { padding-bottom: 24px; }
+          .vaiiya-season-content,
+          .vaiiya-season-circle-duels { width: min(100%, 1040px); margin-left: auto; margin-right: auto; box-sizing: border-box; }
+        }
+        @media (min-width: 1024px) {
+          .vaiiya-season-arena { height: 220px !important; }
+          .vaiiya-season-camp { top: 64px !important; }
+          .vaiiya-season-camp-a { left: clamp(54px, 14vw, 220px) !important; }
+          .vaiiya-season-camp-b { right: clamp(54px, 14vw, 220px) !important; }
+          .vaiiya-season-player {
+            width: calc(100% - 64px);
+            max-width: 1080px;
+            margin-top: -20px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
+          .vaiiya-season-player-a { transform: translateX(-20px); }
+          .vaiiya-season-player-b { transform: translateX(20px); }
+        }
       `}</style>
 
       {/* ═══ L'ARÈNE ═══ */}
-      <div style={{ position: "relative", height: 252, flex: "none", overflow: "hidden" }}>
+      <div className="vaiiya-season-arena" style={{ position: "relative", height: 252, flex: "none", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, clipPath: "polygon(0 0,62% 0,38% 100%,0 100%)", background: "linear-gradient(200deg,#3A2606 0%,#100B02 80%)" }} />
         <div style={{ position: "absolute", inset: 0, clipPath: "polygon(0 0,62% 0,38% 100%,0 100%)", background: "radial-gradient(90% 80% at 28% 30%, rgba(245,177,32,.4), transparent 60%)" }} />
         <div style={{ position: "absolute", inset: 0, clipPath: "polygon(62% 0,100% 0,100% 100%,38% 100%)", background: "linear-gradient(160deg,#1B0F38 0%,#070310 80%)" }} />
@@ -158,7 +178,7 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
           const pts = isA ? pointsA : pointsB;
           const membersCount = s.scores.find((x) => x.camp === camp)?.members ?? 0;
           return (
-            <div key={camp} style={{ position: "absolute", top: 92, zIndex: 6, display: "flex", flexDirection: "column", gap: 2, ...(isA ? { left: 22, alignItems: "flex-start" as const } : { right: 22, alignItems: "flex-end" as const, textAlign: "right" as const }) }}>
+            <div className={`vaiiya-season-camp vaiiya-season-camp-${camp}`} key={camp} style={{ position: "absolute", top: 92, zIndex: 6, display: "flex", flexDirection: "column", gap: 2, ...(isA ? { left: 22, alignItems: "flex-start" as const } : { right: 22, alignItems: "flex-end" as const, textAlign: "right" as const }) }}>
               <span style={{ width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 14, color: "#fff", background: CAMP_GRAD[camp], boxShadow: `0 0 20px ${isA ? "rgba(232,98,12,.6)" : "rgba(139,92,246,.65)"}` }}>
                 {campEmblem(season, camp)}
               </span>
@@ -180,6 +200,7 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
 
       {/* ═══ TA CARTE — ancrée côté camp (tap → progression) ═══ */}
       <div
+        className={`vaiiya-season-player vaiiya-season-player-${myCamp ?? "none"}`}
         role="button"
         tabIndex={0}
         aria-label="Voir ta progression"
@@ -218,7 +239,7 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
 
       {/* ═══ L'EXPLOIT — le sceau ═══ */}
       {s.exploit && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 16px 4px" }}>
+        <div className="vaiiya-season-content" style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 16px 4px" }}>
           <span style={{
             width: 58, height: 58, flex: "none", borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 22,
             background: s.exploitDone
@@ -266,7 +287,7 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
 
       {/* ═══ LA PRÉSENCE — qui a transpiré aujourd'hui ? ═══ */}
       {presence.length > 1 && (
-        <div style={{ padding: "18px 0 0 16px" }}>
+        <div className="vaiiya-season-content" style={{ padding: "18px 0 0 16px" }}>
           <div style={{ fontSize: 8.5, letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 800, color: "#BCB7D6" }}>
             Qui a transpiré aujourd&apos;hui ?
             {sweatCount > 0 && <b style={{ color: "#2BD4A0" }}> · {sweatCount}</b>}

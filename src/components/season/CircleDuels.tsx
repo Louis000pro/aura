@@ -358,7 +358,7 @@ export default function CircleDuels() {
   if (!user) return null;
 
   return (
-    <div style={{ padding: "18px 0 0 16px" }}>
+    <div className="vaiiya-season-circle-duels" style={{ padding: "18px 0 0 16px" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", paddingRight: 16 }}>
         <span style={{ fontSize: 8.5, letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 800, color: "#BCB7D6" }}>
           Les duels de cercle
