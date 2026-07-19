@@ -266,6 +266,90 @@ export async function fetchMemberNumber(userId: string): Promise<number | null> 
   return (data?.member_number as number | undefined) ?? null;
 }
 
+/* ─── La finale de saison ─────────────────────────────────── */
+
+export interface SeasonRecap {
+  season: Season;
+  winner: CampKey | "draw";
+  points: Record<CampKey, number>;
+  campCounts: Record<CampKey, number>;
+  myCamp: CampKey | null;
+  myEclats: number;
+  mySeances: number;
+  /** Badges d'exploit gagnés PENDANT la saison. */
+  seasonBadges: EarnedBadge[];
+  /** Meilleur rang jamais atteint, toutes saisons confondues (gravé à vie). */
+  bestEclats: number;
+}
+
+/** La dernière saison globale TERMINÉE (fenêtre de 14 jours après la fin). */
+export async function fetchLastFinishedGlobalSeason(): Promise<Season | null> {
+  const supabase = createClient();
+  const recent = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const { data } = await supabase
+    .from("seasons")
+    .select("id, scope, circle_id, name, camp_a_name, camp_a_emblem, camp_b_name, camp_b_emblem, starts_on, ends_on, winner")
+    .eq("scope", "global")
+    .lt("ends_on", today())
+    .gte("ends_on", recent)
+    .order("ends_on", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as Season | null) ?? null;
+}
+
+/** Tout ce qu'il faut pour le mini-Wrapped de fin de saison, en un appel. */
+export async function fetchSeasonRecap(season: Season, userId: string): Promise<SeasonRecap> {
+  const supabase = createClient();
+  const [scores, campCounts, myCamp, myEclats, seancesRes, badgesRes, allEclatsRes] = await Promise.all([
+    fetchSeasonScores(season.id),
+    fetchCampCounts(season.id),
+    fetchMyCamp(season.id, userId),
+    fetchMyEclats(season.id, userId),
+    supabase
+      .from("workout_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("started_at", season.starts_on)
+      .lt("started_at", new Date(new Date(season.ends_on).getTime() + 24 * 3600 * 1000).toISOString().slice(0, 10)),
+    supabase
+      .from("exploit_completions")
+      .select("completed_at, exploits(badge_name, badge_emoji, title)")
+      .eq("user_id", userId)
+      .gte("completed_at", season.starts_on)
+      .order("completed_at", { ascending: true }),
+    supabase.from("season_eclats").select("eclats").eq("user_id", userId),
+  ]);
+
+  const points: Record<CampKey, number> = { a: 0, b: 0 };
+  for (const s of scores) points[s.camp] = s.points;
+  const winner: CampKey | "draw" = points.a === points.b ? "draw" : points.a > points.b ? "a" : "b";
+
+  // Si le vainqueur n'est pas encore gravé en base, on tente (seul un admin passera la RLS)
+  if (!season.winner) {
+    void supabase.from("seasons").update({ winner: winner === "draw" ? "draw" : winner }).eq("id", season.id).then(() => {});
+  }
+
+  const seasonBadges: EarnedBadge[] = ((badgesRes.data ?? []) as { completed_at: string; exploits: unknown }[]).flatMap((row) => {
+    const ex = row.exploits as { badge_name: string; badge_emoji: string; title: string } | null;
+    return ex ? [{ badge_name: ex.badge_name, badge_emoji: ex.badge_emoji, title: ex.title, completed_at: row.completed_at }] : [];
+  });
+
+  const bestEclats = Math.max(myEclats, ...((allEclatsRes.data ?? []).map((r) => (r.eclats as number) ?? 0)), 0);
+
+  return {
+    season,
+    winner: (season.winner as CampKey | "draw" | null) ?? winner,
+    points,
+    campCounts,
+    myCamp,
+    myEclats,
+    mySeances: seancesRes.count ?? 0,
+    seasonBadges,
+    bestEclats,
+  };
+}
+
 export interface FeedEvent {
   id: string;
   type: string;
