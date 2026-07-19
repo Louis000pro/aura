@@ -9,6 +9,7 @@
 // ============================================================
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "@/context/AuthContext";
 import { RANKS, founderWave, type Rank } from "@/lib/season";
 import {
@@ -65,13 +66,15 @@ export default function SeasonProgression({ s, onClose }: { s: GlobalSeasonState
   const myPos = board.findIndex((b) => b.isMe);
   const ahead = myPos > 0 ? board[myPos - 1] : null;
 
-  return (
-    <div style={{
+  const overlay = (
+    <div role="dialog" aria-modal="true" aria-label="Ta progression de saison" style={{
       position: "fixed", inset: 0, zIndex: 8990, overflow: "auto",
       background: "radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000 100%)",
       color: "#ECEAF6",
       padding: "calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 24px)",
+      boxSizing: "border-box", overscrollBehavior: "contain",
     }}>
+      <div style={{ width: "100%", maxWidth: 1040, margin: "0 auto" }}>
       {/* En-tête */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
@@ -160,6 +163,9 @@ export default function SeasonProgression({ s, onClose }: { s: GlobalSeasonState
         L'éclat récompense ta constance, jamais ton corps.<br />
         Nouvelle saison = tout le monde repart Argent — tes badges restent à vie.
       </p>
+      </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }

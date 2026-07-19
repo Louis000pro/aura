@@ -125,8 +125,10 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
         @keyframes vaiiya-tick { to { transform: translateX(-50%); } }
         @media (prefers-reduced-motion: reduce){ .vaiiya-tick-track { animation: none !important; } }
         .vaiiya-season-hq { padding-bottom: calc(8.5rem + env(safe-area-inset-bottom)); }
+        .vaiiya-season-actions { left: 12px; right: auto !important; }
         @media (min-width: 768px) {
           .vaiiya-season-hq { padding-bottom: 24px; }
+          .vaiiya-season-actions { left: auto; right: 12px !important; }
           .vaiiya-season-content,
           .vaiiya-season-circle-duels { width: min(100%, 1040px); margin-left: auto; margin-right: auto; box-sizing: border-box; }
         }
@@ -168,7 +170,7 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
         </div>
 
         {/* icônes trouver des gens / messages */}
-        <div style={{ position: "absolute", top: "calc(env(safe-area-inset-top) + 10px)", right: 12, zIndex: 7, display: "flex", gap: 7 }}>
+        <div className="vaiiya-season-actions" style={{ position: "absolute", top: "calc(env(safe-area-inset-top) + 10px)", right: 12, zIndex: 7, display: "flex", gap: 7 }}>
           <button onClick={onOpenSearch} aria-label="Trouver des gens" style={{ width: 32, height: 32, borderRadius: 11, display: "grid", placeItems: "center", background: "rgba(13,10,20,.6)", border: "1px solid rgba(255,255,255,.14)", color: "#ECEAF6", cursor: "pointer", fontSize: 14 }}>⌕</button>
           <button onClick={onOpenDMs} aria-label="Messages" style={{ width: 32, height: 32, borderRadius: 11, display: "grid", placeItems: "center", background: "rgba(13,10,20,.6)", border: "1px solid rgba(255,255,255,.14)", color: "#ECEAF6", cursor: "pointer", fontSize: 13 }}>✉</button>
         </div>
@@ -178,7 +180,7 @@ export default function SeasonHQ({ onOpenSearch, onOpenDMs, onNoSeason }: {
           const pts = isA ? pointsA : pointsB;
           const membersCount = s.scores.find((x) => x.camp === camp)?.members ?? 0;
           return (
-            <div className={`vaiiya-season-camp vaiiya-season-camp-${camp}`} key={camp} style={{ position: "absolute", top: 92, zIndex: 6, display: "flex", flexDirection: "column", gap: 2, ...(isA ? { left: 22, alignItems: "flex-start" as const } : { right: 22, alignItems: "flex-end" as const, textAlign: "right" as const }) }}>
+            <div className={`vaiiya-season-camp vaiiya-season-camp-${camp}`} key={camp} style={{ position: "absolute", top: 72, zIndex: 6, display: "flex", flexDirection: "column", gap: 2, ...(isA ? { left: 22, alignItems: "flex-start" as const } : { right: 22, alignItems: "flex-end" as const, textAlign: "right" as const }) }}>
               <span style={{ width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 14, color: "#fff", background: CAMP_GRAD[camp], boxShadow: `0 0 20px ${isA ? "rgba(232,98,12,.6)" : "rgba(139,92,246,.65)"}` }}>
                 {campEmblem(season, camp)}
               </span>
