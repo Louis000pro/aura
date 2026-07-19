@@ -6,6 +6,8 @@
 
 import { createClient } from "@/lib/supabase";
 import {
+  campEmblem,
+  campName,
   ECLATS,
   rankFor,
   type CampKey,
@@ -144,6 +146,30 @@ async function awardEclats(
 }
 
 /**
+ * La bascule du duel : appelée juste après qu'une séance a compté.
+ * La séance est DÉJÀ dans les scores — si mon camp mène maintenant
+ * alors qu'il ne menait pas avant elle, c'est elle qui a fait basculer.
+ */
+async function maybeAnnounceLeadChange(season: Season, userId: string): Promise<void> {
+  const [myCamp, scores] = await Promise.all([
+    fetchMyCamp(season.id, userId),
+    fetchSeasonScores(season.id),
+  ]);
+  if (!myCamp) return;
+  const points: Record<CampKey, number> = { a: 0, b: 0 };
+  for (const s of scores) points[s.camp] = s.points;
+  const mine = points[myCamp];
+  const other = points[myCamp === "a" ? "b" : "a"];
+  if (mine > other && mine - 1 <= other) {
+    await pushCommunityEvent("duel_lead", userId, season.id, {
+      camp: myCamp,
+      camp_name: campName(season, myCamp),
+      camp_emblem: campEmblem(season, myCamp),
+    });
+  }
+}
+
+/**
  * Crédite les éclats d'une séance terminée (idempotent).
  * Fire-and-forget depuis la fin de séance — ne doit JAMAIS bloquer l'UX.
  */
@@ -151,7 +177,8 @@ export async function creditSeanceEclats(userId: string, workoutSessionId: strin
   try {
     const season = await fetchActiveGlobalSeason();
     if (!season) return;
-    await awardEclats(userId, season.id, "seance", ECLATS.seance, workoutSessionId);
+    const awarded = await awardEclats(userId, season.id, "seance", ECLATS.seance, workoutSessionId);
+    if (awarded) await maybeAnnounceLeadChange(season, userId);
   } catch {
     // silencieux : les éclats se rattraperont, la séance est déjà sauvée
   }
@@ -264,6 +291,63 @@ export async function fetchMemberNumber(userId: string): Promise<number | null> 
     .eq("id", userId)
     .maybeSingle();
   return (data?.member_number as number | undefined) ?? null;
+}
+
+/* ─── La présence du cercle ───────────────────────────────── */
+
+export interface PresenceEntry {
+  user_id: string;
+  pseudo: string;
+  avatar_url: string | null;
+  /** Anneau teal : au moins une séance créditée aujourd'hui. */
+  doneToday: boolean;
+  /** Halo doré ✦ : exploit réussi il y a moins de 24 h. */
+  goldHalo: boolean;
+  isMe: boolean;
+}
+
+/**
+ * « Qui a transpiré aujourd'hui ? » — moi + les gens que je suis.
+ * Séance du jour lue dans le ledger d'éclats (lisible par tous),
+ * exploit < 24 h dans exploit_completions. Jamais global : le cercle.
+ */
+export async function fetchCirclePresence(userId: string): Promise<PresenceEntry[]> {
+  const supabase = createClient();
+  const { data: follows } = await supabase
+    .from("followers")
+    .select("following_id")
+    .eq("follower_id", userId);
+  const ids = [...new Set([userId, ...(follows ?? []).map((f) => f.following_id as string)])];
+
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
+  const last24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+
+  const [{ data: profs }, { data: seances }, { data: exploits }] = await Promise.all([
+    supabase.from("profiles").select("id, pseudo, avatar_url").in("id", ids),
+    supabase.from("eclat_events").select("user_id").eq("kind", "seance").in("user_id", ids).gte("created_at", dayStart.toISOString()),
+    supabase.from("exploit_completions").select("user_id").in("user_id", ids).gte("completed_at", last24h),
+  ]);
+
+  const done = new Set((seances ?? []).map((r) => r.user_id as string));
+  const gold = new Set((exploits ?? []).map((r) => r.user_id as string));
+
+  return (profs ?? [])
+    .map((p) => ({
+      user_id: p.id as string,
+      pseudo: (p.pseudo as string) ?? "?",
+      avatar_url: (p.avatar_url as string | null) ?? null,
+      doneToday: done.has(p.id as string),
+      goldHalo: gold.has(p.id as string),
+      isMe: p.id === userId,
+    }))
+    // Les héros du jour d'abord (halo doré, puis séance faite), moi en tête à égalité
+    .sort((a, b) =>
+      Number(b.goldHalo) - Number(a.goldHalo)
+      || Number(b.doneToday) - Number(a.doneToday)
+      || Number(b.isMe) - Number(a.isMe)
+      || a.pseudo.localeCompare(b.pseudo))
+    .slice(0, 14);
 }
 
 /* ─── La finale de saison ─────────────────────────────────── */

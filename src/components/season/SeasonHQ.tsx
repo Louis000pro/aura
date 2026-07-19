@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useGlobalSeason } from "@/lib/useSeason";
-import { completeExploit, fetchRecentEvents, type FeedEvent } from "@/lib/seasonApi";
+import { completeExploit, fetchCirclePresence, fetchRecentEvents, type FeedEvent, type PresenceEntry } from "@/lib/seasonApi";
 import { campEmblem, campName, seasonDaysLeft, type CampKey } from "@/lib/season";
 import SeasonProgression from "@/components/season/SeasonProgression";
 
@@ -39,7 +39,7 @@ function tickerSentence(e: FeedEvent): string | null {
   switch (e.type) {
     case "exploit_done": return `🏅 ${who} a relevé l'exploit « ${String(e.payload.badge_name ?? "")} »`;
     case "rank_up":      return `✦ ${who} monte ${String(e.payload.rank_name ?? "de rang")}`;
-    case "duel_lead":    return `⚡ ${String(e.payload.camp_name ?? "Un camp")} reprend la tête`;
+    case "duel_lead":    return `⚡ La séance de ${who} fait basculer le duel — ${String(e.payload.camp_emblem ?? "")} ${String(e.payload.camp_name ?? "son camp")} devant`;
     case "streak":       return `🔥 ${who} — ${String(e.payload.days ?? "?")} jours d'affilée`;
     case "season_start": return `✦ La saison est lancée`;
     default: return null;
@@ -70,6 +70,14 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
   useEffect(() => {
     void fetchRecentEvents(12).then(setEvents);
   }, []);
+
+  // La présence : « Qui a transpiré aujourd'hui ? »
+  const [presence, setPresence] = useState<PresenceEntry[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    void fetchCirclePresence(user.id).then(setPresence).catch(() => {});
+  }, [user]);
+  const sweatCount = presence.filter((p) => p.doneToday).length;
 
   const pointsA = s.scores.find((x) => x.camp === "a")?.points ?? 0;
   const pointsB = s.scores.find((x) => x.camp === "b")?.points ?? 0;
@@ -257,6 +265,40 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
               </button>
             )
           )}
+        </div>
+      )}
+
+      {/* ═══ LA PRÉSENCE — qui a transpiré aujourd'hui ? ═══ */}
+      {presence.length > 1 && (
+        <div style={{ padding: "18px 0 0 16px" }}>
+          <div style={{ fontSize: 8.5, letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 800, color: "#BCB7D6" }}>
+            Qui a transpiré aujourd&apos;hui ?
+            {sweatCount > 0 && <b style={{ color: "#2BD4A0" }}> · {sweatCount}</b>}
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 9, overflowX: "auto", paddingRight: 16, paddingBottom: 2, scrollbarWidth: "none" }}>
+            {presence.map((p) => (
+              <div key={p.user_id} style={{ flex: "none", width: 46, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                <span style={{
+                  width: 42, height: 42, borderRadius: "50%", display: "grid", placeItems: "center", position: "relative",
+                  // Anneau teal = séance faite (système D : teal = fait ✓) ; sinon liseré éteint
+                  border: p.doneToday ? "2px solid #2BD4A0" : "2px solid rgba(188,183,214,.28)",
+                  boxShadow: p.goldHalo ? "0 0 12px 3px rgba(230,197,110,.55)" : undefined,
+                  opacity: p.doneToday || p.goldHalo ? 1 : 0.55,
+                }}>
+                  {p.avatar_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img loading="lazy" decoding="async" src={p.avatar_url} alt={p.pseudo} style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                    : <span style={{ width: "100%", height: "100%", borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 15, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#5A4B92,#8B5CF6)" }}>{p.pseudo.slice(0, 1).toUpperCase()}</span>}
+                  {p.goldHalo && (
+                    <span style={{ position: "absolute", top: -5, right: -5, fontSize: 11, color: "#E6C56E", textShadow: "0 0 6px rgba(230,197,110,.8)" }}>✦</span>
+                  )}
+                </span>
+                <span style={{ fontSize: 8, fontWeight: 700, color: p.doneToday ? "#ECEAF6" : "#BCB7D6", maxWidth: 46, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {p.isMe ? "Toi" : p.pseudo}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
