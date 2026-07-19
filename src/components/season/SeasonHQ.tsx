@@ -15,6 +15,7 @@ import { useGlobalSeason } from "@/lib/useSeason";
 import { completeExploit, fetchCirclePresence, fetchRecentEvents, type FeedEvent, type PresenceEntry } from "@/lib/seasonApi";
 import { campEmblem, campName, seasonDaysLeft, type CampKey } from "@/lib/season";
 import SeasonProgression from "@/components/season/SeasonProgression";
+import CircleDuels from "@/components/season/CircleDuels";
 
 const HEX_CLIP = "polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)";
 const CAMP_GRAD: Record<CampKey, string> = {
@@ -301,6 +302,9 @@ export default function SeasonHQ({ onOpenFil, onOpenSearch, onOpenDMs, onNoSeaso
           </div>
         </div>
       )}
+
+      {/* ═══ LES DUELS DE CERCLE — ton arène privée ═══ */}
+      <CircleDuels />
 
       {/* ═══ LE TICKER ═══ */}
       {tickerItems.length > 0 && (

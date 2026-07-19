@@ -173,3 +173,22 @@ export function leadingCamp(scores: SeasonScore[]): CampKey | null {
   if (a === b) return null;
   return a > b ? "a" : "b";
 }
+
+// ── Le vivier de camps ──────────────────────────────────────
+// Chaque saison oppose 2 NOUVELLES équipes (rééquilibrage
+// naturel). Ton : astral ou élémentaire, jamais lié à des
+// mouvements. Sert de suggestion à l'admin et aux duels de
+// cercle — libre d'inventer d'autres paires.
+
+export interface CampPair {
+  a: { name: string; emblem: string };
+  b: { name: string; emblem: string };
+}
+
+export const CAMP_PAIRS: CampPair[] = [
+  { a: { name: "Solaire",  emblem: "☀" },  b: { name: "Lunaire", emblem: "☾" } },
+  { a: { name: "Braise",   emblem: "🔥" }, b: { name: "Marée",   emblem: "🌊" } },
+  { a: { name: "Tonnerre", emblem: "⚡" }, b: { name: "Givre",   emblem: "❄" } },
+  { a: { name: "Aurore",   emblem: "🌅" }, b: { name: "Comète",  emblem: "☄️" } },
+  { a: { name: "Roc",      emblem: "⛰" },  b: { name: "Sève",    emblem: "🌿" } },
+];

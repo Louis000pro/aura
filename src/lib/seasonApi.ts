@@ -11,6 +11,7 @@ import {
   ECLATS,
   rankFor,
   type CampKey,
+  type Circle,
   type Exploit,
   type Season,
   type SeasonScore,
@@ -432,6 +433,223 @@ export async function fetchSeasonRecap(season: Season, userId: string): Promise<
     seasonBadges,
     bestEclats,
   };
+}
+
+/* ─── Les duels de cercle ─────────────────────────────────── */
+
+/** Mes cercles (propriétaire ou membre — la RLS filtre déjà). */
+export async function fetchMyCircles(): Promise<Circle[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("circles")
+    .select("id, name, emoji, owner_id")
+    .order("created_at", { ascending: true });
+  return (data as Circle[] | null) ?? [];
+}
+
+/**
+ * Créer un cercle + y inscrire ses premiers membres (le créateur
+ * n'a pas besoin d'être membre : propriétaire ⇒ accès via la RLS,
+ * mais on l'ajoute quand même pour que « membres » veuille dire
+ * quelque chose). Renvoie null si la RLS refuse.
+ */
+export async function createCircle(
+  name: string,
+  emoji: string,
+  ownerId: string,
+  memberIds: string[],
+): Promise<Circle | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("circles")
+    .insert({ name, emoji, owner_id: ownerId })
+    .select("id, name, emoji, owner_id")
+    .single();
+  if (error || !data) return null;
+  const circle = data as Circle;
+  const rows = [...new Set([ownerId, ...memberIds])].map((uid) => ({ circle_id: circle.id, user_id: uid }));
+  await supabase.from("circle_members").insert(rows);
+  return circle;
+}
+
+/**
+ * Lancer un duel dans un cercle : une ligne de `seasons` scope
+ * 'circle'. Seul le propriétaire du cercle passe la RLS.
+ */
+export async function launchCircleDuel(
+  circle: Circle,
+  userId: string,
+  opts: {
+    campA: { name: string; emblem: string };
+    campB: { name: string; emblem: string };
+    days: number;
+  },
+): Promise<Season | null> {
+  const supabase = createClient();
+  const start = new Date();
+  const end = new Date(start.getTime() + (opts.days - 1) * 24 * 3600 * 1000);
+  const { data, error } = await supabase
+    .from("seasons")
+    .insert({
+      scope: "circle",
+      circle_id: circle.id,
+      name: `Duel ${circle.emoji} ${circle.name}`,
+      camp_a_name: opts.campA.name,
+      camp_a_emblem: opts.campA.emblem,
+      camp_b_name: opts.campB.name,
+      camp_b_emblem: opts.campB.emblem,
+      starts_on: start.toISOString().slice(0, 10),
+      ends_on: end.toISOString().slice(0, 10),
+      created_by: userId,
+    })
+    .select("id, scope, circle_id, name, camp_a_name, camp_a_emblem, camp_b_name, camp_b_emblem, starts_on, ends_on, winner")
+    .single();
+  if (error || !data) return null;
+  return data as Season;
+}
+
+export interface CircleDuelBoard {
+  season: Season;
+  circle: Circle | null;
+  points: Record<CampKey, number>;
+  members: Record<CampKey, number>;
+  myCamp: CampKey | null;
+}
+
+/**
+ * Les mini-arènes du QG : chaque duel de cercle actif avec ses
+ * scores et mon camp. Une séance marque dans TOUTES les arènes
+ * à la fois (le score se calcule depuis workout_sessions).
+ */
+export async function fetchCircleDuelBoards(userId: string): Promise<CircleDuelBoard[]> {
+  const seasons = await fetchMyCircleSeasons();
+  if (seasons.length === 0) return [];
+  const supabase = createClient();
+  const circleIds = [...new Set(seasons.map((s) => s.circle_id).filter((x): x is string => !!x))];
+  const [{ data: circles }, boards] = await Promise.all([
+    supabase.from("circles").select("id, name, emoji, owner_id").in("id", circleIds),
+    Promise.all(seasons.map(async (season) => {
+      const [scores, myCamp] = await Promise.all([
+        fetchSeasonScores(season.id),
+        fetchMyCamp(season.id, userId),
+      ]);
+      const points: Record<CampKey, number> = { a: 0, b: 0 };
+      const members: Record<CampKey, number> = { a: 0, b: 0 };
+      for (const s of scores) { points[s.camp] = s.points; members[s.camp] = s.members; }
+      return { season, points, members, myCamp };
+    })),
+  ]);
+  const byId = new Map(((circles as Circle[] | null) ?? []).map((c) => [c.id, c]));
+  return boards.map((b) => ({ ...b, circle: b.season.circle_id ? byId.get(b.season.circle_id) ?? null : null }));
+}
+
+/** Les gens que je suis (pour composer un cercle). */
+export interface FollowedProfile {
+  id: string;
+  pseudo: string;
+  avatar_url: string | null;
+}
+
+export async function fetchMyFollowing(userId: string): Promise<FollowedProfile[]> {
+  const supabase = createClient();
+  const { data: follows } = await supabase
+    .from("followers")
+    .select("following_id")
+    .eq("follower_id", userId);
+  const ids = (follows ?? []).map((f) => f.following_id as string);
+  if (ids.length === 0) return [];
+  const { data: profs } = await supabase.from("profiles").select("id, pseudo, avatar_url").in("id", ids);
+  return ((profs ?? []) as { id: string; pseudo: string | null; avatar_url: string | null }[])
+    .map((p) => ({ id: p.id, pseudo: p.pseudo ?? "?", avatar_url: p.avatar_url }))
+    .sort((a, b) => a.pseudo.localeCompare(b.pseudo));
+}
+
+/* ─── L'admin (créer sans SQL) ────────────────────────────── */
+
+/** Toutes les saisons globales, la plus récente d'abord (écran admin). */
+export async function fetchAllGlobalSeasons(): Promise<Season[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("seasons")
+    .select("id, scope, circle_id, name, camp_a_name, camp_a_emblem, camp_b_name, camp_b_emblem, starts_on, ends_on, winner")
+    .eq("scope", "global")
+    .order("starts_on", { ascending: false })
+    .limit(24);
+  return (data as Season[] | null) ?? [];
+}
+
+/** Tous les exploits globaux, le plus récent d'abord (écran admin). */
+export async function fetchAllGlobalExploits(): Promise<Exploit[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("exploits")
+    .select("id, scope, circle_id, title, badge_name, badge_emoji, reward_eclats, starts_on, ends_on")
+    .eq("scope", "global")
+    .order("starts_on", { ascending: false })
+    .limit(24);
+  return (data as Exploit[] | null) ?? [];
+}
+
+/** Créer une saison globale (seul un admin passe la RLS). */
+export async function createGlobalSeason(
+  userId: string,
+  opts: {
+    name: string;
+    campA: { name: string; emblem: string };
+    campB: { name: string; emblem: string };
+    startsOn: string; // yyyy-mm-dd
+    endsOn: string;   // inclus
+  },
+): Promise<Season | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("seasons")
+    .insert({
+      scope: "global",
+      name: opts.name,
+      camp_a_name: opts.campA.name,
+      camp_a_emblem: opts.campA.emblem,
+      camp_b_name: opts.campB.name,
+      camp_b_emblem: opts.campB.emblem,
+      starts_on: opts.startsOn,
+      ends_on: opts.endsOn,
+      created_by: userId,
+    })
+    .select("id, scope, circle_id, name, camp_a_name, camp_a_emblem, camp_b_name, camp_b_emblem, starts_on, ends_on, winner")
+    .single();
+  if (error || !data) return null;
+  return data as Season;
+}
+
+/** Créer un exploit global (seul un admin passe la RLS). */
+export async function createGlobalExploit(
+  userId: string,
+  opts: {
+    title: string;
+    badgeName: string;
+    badgeEmoji: string;
+    rewardEclats: number;
+    startsOn: string;
+    endsOn: string;
+  },
+): Promise<Exploit | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("exploits")
+    .insert({
+      scope: "global",
+      title: opts.title,
+      badge_name: opts.badgeName,
+      badge_emoji: opts.badgeEmoji,
+      reward_eclats: opts.rewardEclats,
+      starts_on: opts.startsOn,
+      ends_on: opts.endsOn,
+      created_by: userId,
+    })
+    .select("id, scope, circle_id, title, badge_name, badge_emoji, reward_eclats, starts_on, ends_on")
+    .single();
+  if (error || !data) return null;
+  return data as Exploit;
 }
 
 export interface FeedEvent {

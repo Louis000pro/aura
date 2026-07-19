@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import SeasonAdmin from "@/components/season/SeasonAdmin";
 
 /* ─── Types ─── */
 type AdminUser = {
@@ -393,7 +394,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AdminUser | null>(null);
   const [manageUser, setManageUser] = useState<AdminUser | null>(null);
-  const [tab, setTab] = useState<"users" | "stats">("users");
+  const [tab, setTab] = useState<"users" | "stats" | "saison">("users");
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -610,7 +611,7 @@ export default function AdminPage() {
         className="flex gap-1 mb-5 p-1 rounded-2xl"
         style={{ background: "rgba(240,235,255,0.55)" }}
       >
-        {(["users", "stats"] as const).map((t) => (
+        {(["users", "stats", "saison"] as const).map((t) => (
           <motion.button
             key={t}
             onClick={() => setTab(t)}
@@ -621,7 +622,7 @@ export default function AdminPage() {
             }}
             style={{ boxShadow: tab === t ? "inset 0 1px 0 rgba(255,255,255,0.85)" : "none" }}
           >
-            {t === "users" ? `Utilisateurs (${users.length})` : "Statistiques"}
+            {t === "users" ? `Utilisateurs (${users.length})` : t === "stats" ? "Statistiques" : "Saison ✦"}
           </motion.button>
         ))}
       </div>
@@ -794,6 +795,10 @@ export default function AdminPage() {
               </div>
             )}
           </motion.div>
+        )}
+
+        {tab === "saison" && (
+          <SeasonAdmin userId={user.id} onToast={showToast} />
         )}
 
         {tab === "stats" && stats && (
