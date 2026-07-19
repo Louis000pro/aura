@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, MessageCircle, Share2, Send, Plus, ArrowLeft, BadgeCheck, UserPlus, UserCheck, MoreHorizontal, X, Camera, Check, Bookmark, Flag, EyeOff, Dumbbell, Compass, PenLine, Pencil, Repeat2, Play, ChevronRight, ChevronLeft, Volume2, VolumeX } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import CommunauteMaintenance from "@/components/CommunauteMaintenance";
 import Link from "next/link";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
@@ -5812,6 +5813,12 @@ function CommunautePageInner() {
   );
 }
 
+// Fermeture temporaire le temps de la refonte (voir CommunauteMaintenance.tsx).
+// Le retour anticipé est AVANT tout hook : CommunautePageInner n'est jamais
+// monté, donc aucune requête Supabase ni aucune vidéo n'est chargée.
+const COMMUNAUTE_EN_MAINTENANCE = true;
+
 export default function CommunautePage() {
+  if (COMMUNAUTE_EN_MAINTENANCE) return <CommunauteMaintenance />;
   return <Suspense fallback={null}><CommunautePageInner /></Suspense>;
 }

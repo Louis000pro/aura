@@ -993,7 +993,7 @@ function NewHighlightModal({ userId, onCreated, onClose }: {
       const supabase = createClient();
       const ext  = file.name.split(".").pop();
       const path = `${userId}/highlight_${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "31536000" });
       if (!error) {
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
         setCoverUrl(data.publicUrl + "?t=" + Date.now());
@@ -1153,7 +1153,7 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
         const ext  = file.name.split(".").pop();
         const isVid = file.type.startsWith("video/");
         const path = `${userId}/hi_${highlight.id}_${Date.now()}_${i}.${ext}`;
-        const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+        const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "31536000" });
         if (error) continue;
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
         const order = items.length + newItems.length;
