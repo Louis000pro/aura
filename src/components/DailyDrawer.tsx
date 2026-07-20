@@ -422,20 +422,6 @@ export default function DailyDrawer({
                             )}
                           </div>
                         </Link>
-
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => router.push(`/communaute?video=${dailyVideo.id}`)}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full flex-shrink-0"
-                          style={{
-                            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
-                            boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(var(--surface-rgb),0.6)",
-                          }}>
-                          <Play size={12} strokeWidth={2.5} style={{ color: "var(--text-1)", marginLeft: 1 }} fill="currentColor" />
-                          <span className="text-xs font-bold" style={{ color: "var(--text-1)" }}>Voir</span>
-                        </motion.button>
                       </div>
                     </div>
                   ) : (

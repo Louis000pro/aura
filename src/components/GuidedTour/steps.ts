@@ -179,31 +179,6 @@ export const TOUR_STEPS: TourStep[] = [
   },
 
   /* ═══════════ CHAPITRE 3 · COMMUNAUTÉ ═══════════ */
-  {
-    id: "focus-nav-communaute",
-    type: "focus",
-    anchorId: "nav-communaute",
-    label: "Onglet · Communauté",
-    duration: 2300,
-    route: "/communaute",
-    shape: "rounded",
-    padding: 10,
-    chapter: { name: "Communauté", tagline: "Ta motivation, démultipliée" },
-  },
-  {
-    id: "communaute",
-    type: "spotlight",
-    anchorId: "page-communaute",
-    breadcrumb: "Communauté",
-    title: "Ta communauté d'entraînement",
-    description:
-      "Publications, vidéos, stories, messages privés : retrouve tes amis, partage tes perfs et nourris ta motivation de celle des autres.",
-    shape: "rounded",
-    padding: 8,
-    tooltipPosition: "auto",
-    route: "/communaute",
-    softOverlay: true,
-  },
 
   /* ═══════════ CHAPITRE 4 · TON ESPACE ═══════════ */
   {

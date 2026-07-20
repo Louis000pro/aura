@@ -259,7 +259,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               </div>
             ) : (
               notifs.map((n, i) => (
-                <Link key={n.id} href={n.post_id ? `/communaute` : `/profil/${encodeURIComponent(n.from_pseudo)}`} onClick={() => setOpen(false)}>
+                <Link key={n.id} href={n.post_id ? `/profil` : `/profil/${encodeURIComponent(n.from_pseudo)}`} onClick={() => setOpen(false)}>
                   <motion.div
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}

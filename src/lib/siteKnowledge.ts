@@ -103,19 +103,6 @@ export const SITE_FEATURES: SiteFeature[] = [
     keywords: ["nutrition", "journal", "calories", "macros", "protéines", "scan", "code-barres", "suivi nutritionnel"],
   },
   {
-    key: "communaute",
-    title: "Communauté",
-    route: "/communaute",
-    summary:
-      "Fil social : posts, stories, vidéos, likes et commentaires, recherche de membres, suivi d'amis. C'est ici qu'on publie une perf ou un post.",
-    actions: [
-      "publier un post ou une perf",
-      "voir les stories et le feed",
-      "chercher et suivre des membres",
-    ],
-    keywords: ["communauté", "communaute", "feed", "fil", "social", "amis", "post", "publier", "story", "stories"],
-  },
-  {
     key: "profil",
     title: "Profil",
     route: "/profil",
@@ -154,14 +141,6 @@ export const SITE_FEATURES: SiteFeature[] = [
       "Conversation complète avec le coach IA Vaiiya pour des conseils détaillés sport, nutrition et santé.",
     actions: ["discuter en plein écran avec le coach", "demander un plan détaillé"],
     keywords: ["coach", "assistant", "chat", "discussion", "conversation"],
-  },
-  {
-    key: "decouverte",
-    title: "Découverte",
-    route: "/decouverte",
-    summary: "Page de découverte des contenus et fonctionnalités de Vaiiya.",
-    actions: ["explorer les contenus"],
-    keywords: ["découverte", "decouverte", "explorer"],
   },
   {
     key: "recherche",

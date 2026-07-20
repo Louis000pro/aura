@@ -2127,15 +2127,15 @@ export default function ProfilPage() {
                 </div>
                 <div className="text-center px-8">
                   <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Partage ta première publication pour lancer ton feed 💜</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Termine une séance pour créer ton premier poster.</p>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push("/communaute")}
+                  onClick={() => router.push("/progression")}
                   className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
                   style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
                 >
-                  Publier maintenant
+                  Lancer une séance
                 </motion.button>
               </motion.div>
             ) : (() => {

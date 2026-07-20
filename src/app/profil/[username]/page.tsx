@@ -811,22 +811,6 @@ export default function PublicProfilePage() {
                   <><UserPlus size={13} strokeWidth={2} />Suivre</>
                 )}
               </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => profile && router.push(`/communaute?dm=${profile.id}&pseudo=${profile.pseudo}`)}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
-                style={{
-                  background: "rgba(var(--surface-rgb),0.7)",
-                  color: "var(--text-2)",
-                  border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <MessageCircle size={13} strokeWidth={1.5} />
-                Message
-              </motion.button>
             </>
           )}
 

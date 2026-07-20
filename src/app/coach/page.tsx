@@ -458,8 +458,6 @@ export default function CoachPage() {
               case "premium": router.push("/premium"); break;
               case "progression": router.push("/progression"); break;
               case "nutrition": router.push("/nutrition"); break;
-              case "communaute": case "communauté": router.push("/communaute"); break;
-              case "decouverte": case "découverte": router.push("/decouverte"); break;
               case "parametres": case "paramètres": router.push("/parametres"); break;
               default: break;
             }

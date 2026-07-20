@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, TrendingUp, Dumbbell, Utensils, Users, User, LogIn, LogOut,
+  Home, TrendingUp, Dumbbell, Utensils, User, LogIn, LogOut,
   Settings, Shield, ChevronRight, Crown, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -25,7 +25,7 @@ const TABS: (TabItem & { tourAnchor?: string })[] = [
   { href: "/",            label: "Accueil",     icon: Home,        tourAnchor: "nav-accueil" },
   { href: "/progression", label: "Entraînement", icon: Dumbbell,   tourAnchor: "nav-progression" },
   { href: "/nutrition",   label: "Nutrition",   icon: Utensils,    tourAnchor: "nav-nutrition" },
-  { href: "/communaute",  label: "Communauté",  icon: Users,       tourAnchor: "nav-communaute" },
+  { href: "/profil",      label: "Profil",      icon: User,        tourAnchor: "nav-profil" },
 ];
 
 /* ── Contenu du menu « avatar » — partagé entre la sidebar desktop et le header
@@ -82,28 +82,10 @@ export default function Navigation() {
   const router     = useRouter();
   const { user, logout } = useAuth();
 
-  const [unreadDMs,   setUnreadDMs]   = useState(0);
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-  /* ── DMs non lus ── */
-  useEffect(() => {
-    if (!user) { setUnreadDMs(0); return; }
-    const supabase = createClient();
-    const fetch = async () => {
-      const { count } = await supabase.from("direct_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("receiver_id", user.id).is("read_at", null);
-      setUnreadDMs(count ?? 0);
-    };
-    fetch();
-    const ch = supabase.channel("nav-dms")
-      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${user.id}` }, fetch)
-      .subscribe();
-    return () => { supabase.removeChannel(ch).catch(() => {}); };
-  }, [user]);
 
   /* ── Fermer le menu user si clic extérieur ── */
   useEffect(() => {
@@ -118,7 +100,7 @@ export default function Navigation() {
 
   /* ── Préchargement des routes principales → navigation instantanée ── */
   useEffect(() => {
-    ["/", "/communaute", "/progression", "/nutrition", "/profil", "/decouverte"].forEach((r) => {
+    ["/", "/progression", "/nutrition", "/profil"].forEach((r) => {
       try { router.prefetch(r); } catch { /* ignore */ }
     });
   }, [router]);
@@ -142,7 +124,7 @@ export default function Navigation() {
     tourAnchor?: string;
   }) => {
     const isActive = sub ? isProgActive : pathname === href;
-    const badge    = href === "/communaute" && unreadDMs > 0 ? unreadDMs : null;
+    const badge    = null;
 
     if (mobile) {
       return (

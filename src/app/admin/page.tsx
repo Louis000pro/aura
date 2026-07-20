@@ -11,7 +11,6 @@ import {
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import SeasonAdmin from "@/components/season/SeasonAdmin";
 
 /* ─── Types ─── */
 type AdminUser = {
@@ -795,10 +794,6 @@ export default function AdminPage() {
               </div>
             )}
           </motion.div>
-        )}
-
-        {tab === "saison" && (
-          <SeasonAdmin userId={user.id} onToast={showToast} />
         )}
 
         {tab === "stats" && stats && (
