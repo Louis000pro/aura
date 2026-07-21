@@ -14,7 +14,7 @@ import { ArrowLeft, Check, Copy, Share2, Dumbbell, Loader2, ImageDown } from "lu
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
-  chargerDefi, creerDefi, lienInvitation, etatPoster, tourDeJeu,
+  chargerDefi, creerDefi, annulerRelais, lienInvitation, etatPoster, tourDeJeu,
   joursDeLaFenetre, joursRestants, encoreJouable, aujourdhui,
   defiFactice, SERIES, CLE_DEVOILE, type Defi,
 } from "@/lib/defi";
@@ -35,6 +35,7 @@ export default function DefiPage() {
   const [erreur, setErreur]     = useState<string | null>(null);
   const [debloques, setDebloques] = useState<string[]>([]);
   const [carte, setCarte] = useState<"repos" | "occupe" | "fait" | "rate">("repos");
+  const [confirmeArret, setConfirmeArret] = useState(false);
 
   /* /defi?apercu=1..4 ou ?apercu=gagne → on REGARDE un écran sans
      jouer la semaine. Rien n'est lu ni écrit en base. */
@@ -96,6 +97,28 @@ export default function DefiPage() {
     : raison === "defi_deja_en_cours"        ? "Tu as déjà un relais en cours."
     : raison === "non_connecte"              ? "Reconnecte-toi pour lancer un relais."
     :                                          "Impossible de lancer le relais pour le moment.",
+    );
+  };
+
+  /* Arrêter depuis ICI, et pas seulement depuis les infos d'une
+     conversation : un relais créé par `creer_defi_duo` n'a PAS de
+     conversation (invitation envoyée par lien, jamais rejointe). Ces
+     runs-là bloquent le lancement suivant et n'étaient joignables
+     nulle part — cet écran est le seul qui les affiche. */
+  const arreter = async () => {
+    if (!defi) return;
+    setCreation(true);
+    setErreur(null);
+    const r = await annulerRelais(defi.runId);
+    setCreation(false);
+    setConfirmeArret(false);
+    if (r.ok) { void recharger(); return; }
+
+    const raison = String(r.raison ?? "");
+    setErreur(
+      /function|does not exist|schema cache|404/i.test(raison)
+        ? "L'arrêt du relais n'est pas encore activé côté serveur."
+        : "Impossible d'arrêter le relais pour le moment.",
     );
   };
 
@@ -169,6 +192,41 @@ export default function DefiPage() {
   const serie    = SERIES[defi.serie as keyof typeof SERIES] ?? SERIES.sillage;
 
   /* ── En attente de l'équipier ───────────────────────────── */
+  /* Le rappel discret « on arrête là », partagé par l'écran d'attente et
+     l'écran en cours. Discret exprès : c'est une sortie, pas une action
+     qu'on met en avant. */
+  const arret = (
+    <div className="mt-7">
+      {confirmeArret ? (
+        <div className="rounded-2xl border p-3.5"
+          style={{ borderColor: "rgba(232,98,12,.35)", background: "rgba(232,98,12,.06)" }}>
+          <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+            Le relais s&apos;arrête pour vous deux. L&apos;affiche reste dans votre
+            discussion, et vous pouvez en relancer un tout de suite.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button onClick={arreter} disabled={creation}
+              className="flex-1 rounded-xl py-2.5 text-[14px] font-semibold text-white disabled:opacity-60"
+              style={{ background: "#E8620C" }}>
+              Arrêter le relais
+            </button>
+            <button onClick={() => setConfirmeArret(false)}
+              className="rounded-xl px-4 py-2.5 text-[14px] font-semibold"
+              style={{ color: "var(--text-2)", background: "rgba(var(--text-3-rgb), .10)" }}>
+              Garder
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setConfirmeArret(true)}
+          className="w-full py-2 text-[13.5px] font-medium"
+          style={{ color: "var(--text-3)" }}>
+          Arrêter le relais
+        </button>
+      )}
+    </div>
+  );
+
   if (defi.statut === "inscription") {
     const lien = defi.code ? lienInvitation(defi.code) : "";
     return (
@@ -205,6 +263,8 @@ export default function DefiPage() {
               </button>
             </>
           )}
+
+          {arret}
 
           <div className="mt-8">
             <RangeeBadges badges={badgesDuDefi(defi.serie)} debloques={debloques} />
@@ -332,6 +392,8 @@ export default function DefiPage() {
             Dix minutes minimum pour que le maillon compte.
           </p>
         )}
+
+        {arret}
 
         <div className="mt-8">
           <RangeeBadges badges={badgesDuDefi(defi.serie)} debloques={debloques} />
