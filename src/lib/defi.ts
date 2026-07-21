@@ -307,6 +307,44 @@ export async function validerMaillon(
   return reponse;
 }
 
+/* ── Aperçu ──────────────────────────────────────────────────
+   Fabrique un défi factice pour REGARDER un écran sans avoir à
+   jouer la semaine. Rien n'est écrit en base, aucun badge n'est
+   accordé : c'est du décor, uniquement déclenché par l'URL
+   (/defi?apercu=1..4 ou ?apercu=gagne). Sans le paramètre, ce
+   code ne s'exécute jamais. */
+export function defiFactice(quoi: string, moi: string, monPseudo: string): Defi | null {
+  const gagne = quoi === "gagne";
+  const jours = gagne ? 4 : Number(quoi);
+  if (!gagne && (!Number.isFinite(jours) || jours < 0 || jours > 4)) return null;
+
+  const debut = decaler(aujourdhui(), -3);
+  const equipier = "00000000-0000-0000-0000-0000000000e1";
+
+  // Des maillons alternés, comme la règle l'impose vraiment.
+  const actions: Action[] = Array.from({ length: jours }, (_, i) => ({
+    jour: decaler(debut, i),
+    userId: i % 2 === 0 ? moi : equipier,
+  }));
+
+  return {
+    runId: "apercu",
+    statut: gagne ? "reussi" : "en_cours",
+    serie: "sillage",
+    objectif: 4,
+    fenetre: 7,
+    debut,
+    fin: decaler(debut, 6),
+    maxMembres: 2,
+    membres: [
+      { userId: moi, pseudo: monPseudo, avatar: null },
+      { userId: equipier, pseudo: "Marc", avatar: null },
+    ],
+    actions,
+    code: "APERCU00",
+  };
+}
+
 /** Le lien à envoyer à son équipier. */
 export function lienInvitation(code: string): string {
   const base = typeof window !== "undefined" ? window.location.origin : "https://vaiiya.com";

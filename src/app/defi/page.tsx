@@ -16,7 +16,7 @@ import PosterDefi from "@/components/defi/PosterDefi";
 import {
   chargerDefi, creerDefi, lienInvitation, etatPoster, tourDeJeu,
   joursDeLaFenetre, joursRestants, encoreJouable, aujourdhui,
-  SERIES, CLE_DEVOILE, type Defi,
+  defiFactice, SERIES, CLE_DEVOILE, type Defi,
 } from "@/lib/defi";
 import { badgesDuDefi } from "@/lib/badges";
 import { chargerBadges } from "@/lib/messagerie";
@@ -36,13 +36,30 @@ export default function DefiPage() {
   const [debloques, setDebloques] = useState<string[]>([]);
   const [carte, setCarte] = useState<"repos" | "occupe" | "fait" | "rate">("repos");
 
+  /* /defi?apercu=1..4 ou ?apercu=gagne → on REGARDE un écran sans
+     jouer la semaine. Rien n'est lu ni écrit en base. */
+  const apercu = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("apercu")
+    : null;
+
   const recharger = useCallback(async () => {
     if (!user) return;
+
+    if (apercu) {
+      const faux = defiFactice(apercu, user.id, user.pseudo ?? "Toi");
+      if (faux) {
+        setDefi(faux);
+        setDebloques(faux.statut === "reussi" ? ["serie-sillage", "premier-relais"] : []);
+        setChargement(false);
+        return;
+      }
+    }
+
     const [d, b] = await Promise.all([chargerDefi(user.id), chargerBadges(user.id)]);
     setDefi(d);
     setDebloques(b);
     setChargement(false);
-  }, [user]);
+  }, [user, apercu]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -54,6 +71,8 @@ export default function DefiPage() {
      l'affiche bascule sous les yeux, une seule fois. */
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // ?devoile=1 rejoue la bascule à volonté, pour la regarder.
+    if (new URLSearchParams(window.location.search).get("devoile")) { setDevoile(true); return; }
     if (sessionStorage.getItem(CLE_DEVOILE)) {
       sessionStorage.removeItem(CLE_DEVOILE);
       setDevoile(true);
@@ -370,7 +389,26 @@ function Cadre({ children }: { children: React.ReactNode }) {
       >
         <ArrowLeft className="h-5 w-5" />
       </button>
+      <Bandeau />
       {children}
     </div>
+  );
+}
+
+/** Rappel visible qu'on regarde du décor, pas ses vraies données. */
+function Bandeau() {
+  const [texte, setTexte] = useState<string | null>(null);
+  useEffect(() => {
+    const a = new URLSearchParams(window.location.search).get("apercu");
+    if (a) setTexte(a === "gagne" ? "Aperçu — affiche terminée" : `Aperçu — ${a} jour${Number(a) > 1 ? "s" : ""} franchi${Number(a) > 1 ? "s" : ""}`);
+  }, []);
+  if (!texte) return null;
+  return (
+    <p
+      className="mb-3 rounded-xl px-3 py-2 text-center text-[12px] font-semibold"
+      style={{ background: "rgba(245,177,32,.14)", color: "#E8620C" }}
+    >
+      {texte} · aucune donnée réelle
+    </p>
   );
 }
