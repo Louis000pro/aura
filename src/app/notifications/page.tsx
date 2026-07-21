@@ -1,15 +1,16 @@
 ﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, UserPlus, Bell, CheckCheck, Repeat2, AtSign } from "lucide-react";
+import { Heart, MessageCircle, UserPlus, Bell, CheckCheck, Repeat2, AtSign, Sparkle } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-type NotifType = "follow" | "like" | "comment" | "repost" | "mention";
+type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais";
 
 type Notification = {
   id: string;
@@ -21,6 +22,8 @@ type Notification = {
   read: boolean;
   created_at: string;
   post_id: string | null;
+  /** Destination libre (le relais mène à sa conversation). */
+  lien: string | null;
 };
 
 type Group = { label: string; items: Notification[] };
@@ -64,6 +67,7 @@ function notifText(n: Notification): string {
     case "comment": return `@${n.from_pseudo} a commenté ton post`;
     case "repost":  return `@${n.from_pseudo} a repartagé ta publication`;
     case "mention": return `@${n.from_pseudo} t'a mentionné dans un commentaire`;
+    case "relais":  return `@${n.from_pseudo} a franchi son maillon — l'affiche s'est dévoilée`;
     default:        return `@${n.from_pseudo} a interagi`;
   }
 }
@@ -77,6 +81,7 @@ function TypeBadge({ type }: { type: NotifType }) {
     follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
     repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(43,212,160,0.2)",   color: "#2BD4A0" },
     mention: { icon: <AtSign size={9} />,                   bg: "rgba(var(--violet-mid-rgb),0.6)",  color: "var(--accent)" },
+    relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
   };
   const cfg = cfgMap[type] ?? cfgMap.like;
 
@@ -173,6 +178,7 @@ function EmptyState() {
 /* ─── Main page ──────────────────────────────────────────────── */
 export default function NotificationsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -190,7 +196,7 @@ export default function NotificationsPage() {
 
     const { data } = await supabase
       .from("notifications")
-      .select("id, user_id, type, from_pseudo, from_avatar_url, from_user_id, read, created_at, post_id")
+      .select("id, user_id, type, from_pseudo, from_avatar_url, from_user_id, read, created_at, post_id, lien")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(80);
@@ -354,6 +360,7 @@ export default function NotificationsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04, duration: 0.25 }}
                   whileHover={{ y: -1, transition: { duration: 0.15 } }}
+                  onClick={() => { if (notif.lien) router.push(notif.lien); }}
                   className="flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-2 relative cursor-pointer"
                   style={{
                     background: notif.read
@@ -384,6 +391,7 @@ export default function NotificationsPage() {
                         {notif.type === "comment" && "a commenté ton post"}
                         {notif.type === "repost" && "a repartagé ta publication"}
                         {notif.type === "mention" && "t'a mentionné dans un commentaire"}
+                        {notif.type === "relais" && "a franchi son maillon — l'affiche s'est dévoilée"}
                       </span>
                     </p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>

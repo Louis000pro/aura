@@ -292,7 +292,19 @@ export async function validerMaillon(
     p_session_id: sessionId,
   });
   if (error) return { ok: false, raison: error.message };
-  return data as Reponse;
+
+  const reponse = data as Reponse;
+
+  // On prévient l'équipier — sans jamais bloquer la fin de séance.
+  if (reponse?.ok) {
+    void fetch("/api/notifications/relais", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ run_id: defi.runId, actor_id: userId }),
+    }).catch(() => {});
+  }
+
+  return reponse;
 }
 
 /** Le lien à envoyer à son équipier. */
