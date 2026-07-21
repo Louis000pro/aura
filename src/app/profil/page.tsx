@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown,
+  CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown, Link2,
   ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
   Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
   MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2, Award,
@@ -1790,6 +1790,23 @@ export default function ProfilPage() {
       {/* ─── Notifs + Premium + Settings — top RIGHT ─── */}
       <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
         <NotificationBell side="top" />
+        {/* Entrée provisoire vers le relais, le temps que l'accueil-parcours
+            lui donne sa vraie place. */}
+        <Link href="/defi">
+          <motion.div
+            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
+            style={{
+              background: "rgba(var(--surface-rgb),0.88)",
+              backdropFilter: "blur(16px)",
+              border: "1px solid rgba(var(--violet-mid-rgb),0.45)",
+              boxShadow: "0 2px 14px rgba(var(--accent-rgb),0.15)",
+            }}
+            aria-label="Le relais"
+          >
+            <Link2 size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+          </motion.div>
+        </Link>
         <Link href="/premium">
           <motion.div
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}

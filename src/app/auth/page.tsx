@@ -147,13 +147,23 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
   );
 }
 
+/* Destination après connexion : ?next=/chemin (invitation à un relais…).
+   On n'accepte qu'un chemin interne — jamais une URL absolue, sinon
+   n'importe qui peut fabriquer un lien de login qui renvoie ailleurs.
+   Lu sur window plutôt qu'avec useSearchParams : pas de Suspense à poser. */
+function destinationApres(): string {
+  if (typeof window === "undefined") return "/";
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const { signUp, signIn, signInWithGoogle, resetPassword, verifySignupOtp, resendSignupOtp, user, isLoading } = useAuth();
 
   // Redirige vers le dashboard si déjà connecté
   useEffect(() => {
-    if (!isLoading && user) router.replace("/");
+    if (!isLoading && user) router.replace(destinationApres());
   }, [user, isLoading, router]);
 
   const [mode, setMode]             = useState<"login"|"signup">("login");
@@ -233,7 +243,7 @@ export default function AuthPage() {
 
     setLoading(false);
     setSuccess(true);
-    setTimeout(() => router.push("/"), 900);
+    setTimeout(() => router.push(destinationApres()), 900);
   };
 
   const handleGoogle = async () => {
@@ -285,7 +295,7 @@ export default function AuthPage() {
 
     setSignupSent(false);
     setSuccess(true);
-    setTimeout(() => router.push("/"), 1000);
+    setTimeout(() => router.push(destinationApres()), 1000);
   };
 
   const handleResendOtp = async () => {

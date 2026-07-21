@@ -106,7 +106,8 @@ export default function Navigation() {
   }, [router]);
 
   if (pathname === "/auth") return null;
-  if (!user && pathname === "/") return null;
+  // Pages publiques : accueil vitrine et invitation à un relais.
+  if (!user && (pathname === "/" || pathname.startsWith("/rejoindre"))) return null;
 
   const handleLogout = () => { logout(); router.push("/"); };
 

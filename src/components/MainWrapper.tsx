@@ -9,7 +9,10 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
 
   const isAuth = pathname === "/auth";
   const isLanding = pathname === "/" && !user && !isLoading;
-  const noNav = isAuth || isLanding;
+  // Invitation à un relais : page publique, sans navigation, pour un
+  // visiteur qui n'a pas encore de compte.
+  const isInvitation = pathname.startsWith("/rejoindre") && !user && !isLoading;
+  const noNav = isAuth || isLanding || isInvitation;
   // Communauté + Premium gèrent leur propre plein écran → aucun padding global
   const fullBleed = noNav || pathname === "/premium";
 

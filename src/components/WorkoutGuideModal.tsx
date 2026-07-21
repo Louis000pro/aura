@@ -7,6 +7,7 @@ import { AssistantSpark } from "@/components/AssistantMark";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
+import { validerMaillon, CLE_DEVOILE } from "@/lib/defi";
 import { useAuth } from "@/context/AuthContext";
 import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
@@ -613,8 +614,18 @@ export default function WorkoutGuideModal({
       elapsed_seconds:  elapsed,
       exercises:        exercises,
       started_at:       new Date().toISOString(),
-    }).select("id").single().then(({ error }) => {
-      if (!error) setSessionSaved(true);
+    }).select("id").single().then(({ data, error }) => {
+      if (error) return;
+      setSessionSaved(true);
+      // Le maillon du jour, si un relais est en cours. Volontairement
+      // silencieux : pas de défi, séance trop courte ou jour déjà
+      // franchi par l'équipier → il ne se passe rien, et on ne
+      // reproche rien à personne.
+      if (data?.id) {
+        void validerMaillon(user.id, String(data.id)).then((r) => {
+          if (r?.ok) sessionStorage.setItem(CLE_DEVOILE, "1");
+        });
+      }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
