@@ -66,8 +66,8 @@ export async function renderAfficheBlob(data: AfficheShareData): Promise<Blob | 
   // 3) La marque en haut, CENTRÉE : le wordmark VAIIYA puis l'étincelle,
   //    à la même hauteur de capitale. Elle est légèrement en retrait —
   //    incrustée dans la photo, pas posée dessus.
-  const TAILLE_MOT = 44, HAUTEUR_MARQUE = 32, ECART = 18, Y_MARQUE = 122;
-  ls(9); ctx.font = `700 ${TAILLE_MOT}px ${sans}`;
+  const TAILLE_MOT = 30, HAUTEUR_MARQUE = 22, ECART = 16, Y_MARQUE = 118;
+  ls(11); ctx.font = `700 ${TAILLE_MOT}px ${sans}`;
   const largeurMot = ctx.measureText("VAIIYA").width;
 
   let marque: HTMLImageElement | null = null;
@@ -76,15 +76,15 @@ export async function renderAfficheBlob(data: AfficheShareData): Promise<Blob | 
   const total = largeurMot + (marque ? ECART + largeurMarque : 0);
   const debut = (W - total) / 2;
 
-  ctx.fillStyle = "rgba(255,255,255,0.88)";
-  ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 2;
+  // Crème translucide, sans ombre portée : la marque appartient à
+  // l'image au lieu d'être une étiquette posée dessus.
+  ctx.fillStyle = "rgba(251,244,230,0.58)";
   ctx.fillText("VAIIYA", debut, Y_MARQUE); ls(0);
   if (marque) {
-    ctx.globalAlpha = 0.88;
+    ctx.globalAlpha = 0.55;
     ctx.drawImage(marque, debut + largeurMot + ECART, Y_MARQUE - HAUTEUR_MARQUE, largeurMarque, HAUTEUR_MARQUE);
     ctx.globalAlpha = 1;
   }
-  ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
   ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.font = `400 32px ${sans}`; ctx.fillText(data.date, W - PAD, 118);
