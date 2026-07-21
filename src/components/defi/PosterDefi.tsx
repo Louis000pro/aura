@@ -23,6 +23,8 @@ type Props = {
   etat: number;
   /** Prénoms affichés en bas de l'affiche. */
   noms?: string[];
+  /** Nom de la série (« Sillage »), affiché en bas au-dessus des prénoms. */
+  titre?: string;
   /** true juste après un maillon franchi → l'affiche bascule sous les yeux. */
   devoile?: boolean;
   /** Hauteur maximale de l'affiche. Indispensable sur mobile : en 9/16,
@@ -33,7 +35,7 @@ type Props = {
 };
 
 export default function PosterDefi({
-  serie, etat, noms = [], devoile = false, hauteurMax = "52vh", className = "",
+  serie, etat, noms = [], titre, devoile = false, hauteurMax = "52vh", className = "",
 }: Props) {
   const sobre = useReducedMotion();
   const complet = etat >= NB_ETATS;
@@ -91,39 +93,56 @@ export default function PosterDefi({
         />
       )}
 
-      {/* Voile de lecture : dessiné ici, jamais cuit dans l'image. */}
+      {/* Voiles de lecture : dessinés ici, jamais cuits dans l'image.
+          Celui du haut est indispensable — le ciel s'éclaircit d'un état
+          à l'autre et la marque finirait par se perdre dedans. */}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[34%]"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,.62), rgba(0,0,0,0))" }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-[18%]"
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,.5), rgba(0,0,0,0))" }}
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[36%]"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,.68), rgba(0,0,0,0))" }}
       />
 
-      {/* Signature */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/marque/marque-blanc.png"
-            alt=""
-            width={22}
-            height={20}
-            className="h-[18px] w-auto opacity-95"
-          />
-          <span
-            className="text-[15px] font-medium lowercase text-white/95"
-            style={{ letterSpacing: "0.14em" }}
-          >
-            vaiiya
-          </span>
-        </div>
-
-        {noms.length > 0 && (
-          <span
-            className="max-w-[55%] truncate text-right text-[11px] uppercase text-white/70"
-            style={{ letterSpacing: "0.16em" }}
-          >
-            {noms.join(" · ")}
-          </span>
-        )}
+      {/* La marque, en haut : le wordmark puis l'étincelle. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 p-4">
+        <span
+          className="text-[15px] font-black uppercase text-white"
+          style={{ letterSpacing: "0.04em", textShadow: "0 1px 12px rgba(0,0,0,.5)" }}
+        >
+          Vaiiya
+        </span>
+        <Image
+          src="/marque/marque-blanc.png"
+          alt=""
+          width={22}
+          height={20}
+          className="h-[15px] w-auto opacity-95"
+        />
       </div>
+
+      {/* Le défi, en bas : son nom puis ceux qui le jouent. */}
+      {(titre || noms.length > 0) && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+          {titre && (
+            <b
+              className="block text-[19px] font-bold leading-none text-white"
+              style={{ textShadow: "0 2px 14px rgba(0,0,0,.55)" }}
+            >
+              {titre}
+            </b>
+          )}
+          {noms.length > 0 && (
+            <span
+              className="mt-1.5 block truncate text-[11px] uppercase text-white/75"
+              style={{ letterSpacing: "0.16em" }}
+            >
+              {noms.join(" · ")}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Éclat unique à l'arrivée de l'affiche complète. */}
       <AnimatePresence>

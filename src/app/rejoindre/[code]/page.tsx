@@ -88,7 +88,7 @@ export default function RejoindrePage() {
   return (
     <Ecran>
       <div className="mx-auto w-full max-w-[360px]">
-        <PosterDefi serie="sillage" etat={1} className="shadow-2xl" />
+        <PosterDefi serie="sillage" etat={1} titre="Sillage" className="shadow-2xl" />
 
         <div className="mt-7 flex items-center gap-3">
           {apercu.inviterAvatar ? (

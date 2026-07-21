@@ -126,7 +126,7 @@ export default function DefiPage() {
     return (
       <Cadre>
         <div className="mx-auto w-full max-w-[360px]">
-          <PosterDefi serie="sillage" etat={1} className="shadow-2xl" />
+          <PosterDefi serie="sillage" etat={1} titre={SERIES.sillage.nom} className="shadow-2xl" />
 
           <h1 className="mt-7 text-[26px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
             Cette affiche est vide.
@@ -174,7 +174,7 @@ export default function DefiPage() {
     return (
       <Cadre>
         <div className="mx-auto w-full max-w-[360px]">
-          <PosterDefi serie={defi.serie} etat={1} noms={noms} className="shadow-2xl" />
+          <PosterDefi serie={defi.serie} etat={1} noms={noms} titre={serie.nom} className="shadow-2xl" />
 
           <h1 className="mt-7 text-[24px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>
             Il manque une personne.
@@ -224,6 +224,7 @@ export default function DefiPage() {
             serie={defi.serie}
             etat={gagne ? 4 : etat}
             noms={noms}
+            titre={serie.nom}
             devoile={devoile}
             className="shadow-2xl"
           />
@@ -290,6 +291,7 @@ export default function DefiPage() {
           serie={defi.serie}
           etat={etat}
           noms={noms}
+          titre={serie.nom}
           devoile={devoile}
           className="shadow-2xl"
         />
