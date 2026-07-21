@@ -89,8 +89,12 @@ export async function chargerConversations(userId: string): Promise<Conversation
     // de chacun et on compte les non-lus dedans.
     supabase.from("messages").select("id, conversation_id, user_id, contenu, type, created_at")
       .in("conversation_id", ids).order("created_at", { ascending: false }).limit(300),
+    // Une conversation peut porter PLUSIEURS runs dans le temps (un gagné,
+    // un arrêté, un en cours). Le plus récent d'abord : c'est lui que le
+    // `find` plus bas retiendra.
     supabase.from("challenge_runs").select("id, conversation_id, statut, serie, target_days")
-      .in("conversation_id", ids).in("statut", ["inscription", "en_cours", "reussi"]),
+      .in("conversation_id", ids).in("statut", ["inscription", "en_cours", "reussi"])
+      .order("created_at", { ascending: false }),
   ]);
 
   const profilIds = [...new Set((membresRes.data ?? []).map((m) => m.user_id as string))];
@@ -161,8 +165,12 @@ export async function chargerFil(convId: string): Promise<{
     supabase.from("conversation_members").select("user_id, last_read_at").eq("conversation_id", convId),
     supabase.from("messages").select("id, user_id, contenu, type, created_at, repond_a")
       .eq("conversation_id", convId).order("created_at", { ascending: true }).limit(200),
+    // Surtout PAS `.maybeSingle()` : dès qu'un deuxième relais est lancé
+    // dans le même fil (après un gagné ou un arrêté), il y a plusieurs
+    // lignes et maybeSingle échoue — le défi disparaîtrait du fil.
     supabase.from("challenge_runs").select("id, statut, serie, target_days")
-      .eq("conversation_id", convId).in("statut", ["inscription", "en_cours", "reussi"]).maybeSingle(),
+      .eq("conversation_id", convId).in("statut", ["inscription", "en_cours", "reussi"])
+      .order("created_at", { ascending: false }).limit(1),
   ]);
 
   if (!convRes.data) return { conversation: null, messages: [] };
@@ -173,14 +181,15 @@ export async function chargerFil(convId: string): Promise<{
     .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
 
   let defi: DefiDuFil | null = null;
-  if (defiRes.data) {
+  const run = defiRes.data?.[0];
+  if (run) {
     const { data: actions } = await supabase
-      .from("challenge_actions").select("run_id").eq("run_id", defiRes.data.id);
+      .from("challenge_actions").select("run_id").eq("run_id", run.id);
     defi = {
-      runId: defiRes.data.id as string,
-      statut: defiRes.data.statut as string,
-      serie: (defiRes.data.serie as string) ?? "sillage",
-      objectif: defiRes.data.target_days as number,
+      runId: run.id as string,
+      statut: run.statut as string,
+      serie: (run.serie as string) ?? "sillage",
+      objectif: run.target_days as number,
       faits: (actions ?? []).length,
     };
   }

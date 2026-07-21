@@ -266,6 +266,17 @@ export async function lancerRelaisDansConversation(convId: string): Promise<Repo
   return data as Reponse;
 }
 
+/** Arrêter un relais en cours. N'importe lequel des deux peut le faire,
+ *  à tout moment : le cas réel c'est l'équipier qui ne répond plus, et
+ *  rester bloqué une semaine pour rien serait la vraie punition.
+ *  L'affiche reste dans le fil — l'effacer punirait les deux. */
+export async function annulerRelais(runId: string): Promise<Reponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("annuler_relais", { p_run: runId });
+  if (error) return { ok: false, raison: error.message };
+  return data as Reponse;
+}
+
 export async function rejoindreDefi(code: string): Promise<Reponse> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("rejoindre_defi", { p_code: code });

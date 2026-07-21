@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
+import { imageEtat, etatPoster, lancerRelaisDansConversation, annulerRelais } from "@/lib/defi";
 import {
   chargerFil, titreConversation, autresMembres, mesRelations, majConversation,
   ajouterMembres, quitterConversation,
@@ -38,6 +38,7 @@ export default function InfosPage() {
   const [occupe, setOccupe] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [ajout, setAjout]   = useState(false);
+  const [confirmeAnnul, setConfirmeAnnul] = useState(false);
 
   const fichierRef = useRef<HTMLInputElement>(null);
 
@@ -104,6 +105,27 @@ export default function InfosPage() {
       : raison === "pas_un_duo"         ? "Le relais se joue à deux. Ouvre une discussion avec une seule personne."
       : raison === "defi_deja_en_cours" ? "L'un de vous a déjà un relais en cours."
       :                                   "Impossible de lancer le relais pour le moment.",
+    );
+  };
+
+  /* Arrêter le relais. Deux temps : le bouton demande confirmation avant
+     d'agir — c'est irréversible et ça engage deux personnes, un doigt qui
+     glisse ne doit pas suffire. */
+  const annuler = async () => {
+    if (!conv?.defi) return;
+    setOccupe("annuler");
+    setErreur(null);
+    const r = await annulerRelais(conv.defi.runId);
+    setOccupe(null);
+    setConfirmeAnnul(false);
+    if (r.ok) { void recharger(); return; }
+
+    const raison = String(r.raison ?? "");
+    setErreur(
+      /function|does not exist|schema cache|404/i.test(raison)
+        ? "L'arrêt du relais n'est pas encore activé côté serveur."
+        : raison === "deja_fini" ? "Ce relais est déjà terminé."
+        : "Impossible d'arrêter le relais pour le moment.",
     );
   };
 
@@ -246,7 +268,44 @@ export default function InfosPage() {
                 </span>
               </span>
             </button>
-          ) : (
+          ) : null}
+
+          {/* Arrêter — seulement tant que ce n'est pas gagné : une affiche
+              gagnée est à eux, elle ne s'annule pas. En deux temps, et sans
+              rien dramatiser : on ne perd rien, on remet le compteur à zéro. */}
+          {conv.defi && conv.defi.statut !== "reussi" && (
+            <div className="border-t" style={{ borderColor: "rgba(var(--text-3-rgb), .14)" }}>
+              {confirmeAnnul ? (
+                <div className="p-3">
+                  <p className="mb-2.5 text-[12.5px]" style={{ color: "var(--text-2)" }}>
+                    Le relais s&apos;arrête pour vous deux et l&apos;affiche reste ici.
+                    Vous pourrez en relancer un tout de suite.
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={annuler} disabled={occupe === "annuler"}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-semibold text-white disabled:opacity-60"
+                      style={{ background: "#E8620C" }}>
+                      {occupe === "annuler" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      Arrêter le relais
+                    </button>
+                    <button onClick={() => setConfirmeAnnul(false)}
+                      className="rounded-xl px-4 py-2 text-[13px] font-semibold"
+                      style={{ color: "var(--text-2)", background: "rgba(var(--text-3-rgb), .10)" }}>
+                      Garder
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmeAnnul(true)}
+                  className="w-full p-3 text-left text-[13.5px] font-semibold"
+                  style={{ color: "#E8620C" }}>
+                  Arrêter le relais
+                </button>
+              )}
+            </div>
+          )}
+
+          {!conv.defi && (
             <button onClick={lancer} disabled={occupe === "relais"}
               className="flex w-full items-center gap-3 p-3 text-left disabled:opacity-60">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
