@@ -2390,44 +2390,9 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
             </em>
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <motion.div
-            initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full"
-            style={{ background: "rgba(var(--gold-rgb),0.12)", border: "1px solid rgba(var(--gold-rgb),0.25)" }}>
-            <span style={{ color: "var(--gold)", fontSize: 11 }}>★</span>
-            <span className="text-xs font-semibold" style={{ color: "var(--gold)" }}>14 j</span>
-          </motion.div>
-          {/* Barcode CTA */}
-          <motion.button
-            whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
-            onClick={() => setShowBarcode(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
-            style={{
-              background: "rgba(var(--accent-rgb),0.12)",
-              border: "1px solid rgba(var(--accent-rgb),0.3)",
-            }}>
-            <Barcode size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "var(--accent)" }}>
-              Code-barres
-            </span>
-          </motion.button>
-          {/* Photo CTA */}
-          <motion.button
-            data-tour-anchor="nutrition-photo-cta"
-            whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
-            onClick={() => setShowPhoto(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-              boxShadow: "0 4px 16px rgba(147,60,200,0.45)",
-            }}>
-            <Camera size={16} strokeWidth={1.5} style={{ color: "#fff" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#fff" }}>
-              Photo IA
-            </span>
-          </motion.button>
-        </div>
+        {/* Plus de trio série / code-barres / photo ici : la série n'était
+            qu'un chiffre en dur, et les deux actions vivent maintenant dans
+            « On mange où ? » — un seul endroit pour ajouter un repas. */}
       </motion.div>
 
       {/* ── On mange où ? — le nouveau #1 (dominant) ─────────── */}
