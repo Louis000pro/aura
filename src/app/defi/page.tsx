@@ -18,6 +18,9 @@ import {
   joursDeLaFenetre, joursRestants, encoreJouable, aujourdhui,
   SERIES, CLE_DEVOILE, type Defi,
 } from "@/lib/defi";
+import { badgesDuDefi } from "@/lib/badges";
+import { chargerBadges } from "@/lib/messagerie";
+import RangeeBadges from "@/components/defi/RangeeBadges";
 
 export default function DefiPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -29,11 +32,13 @@ export default function DefiPage() {
   const [copie, setCopie]       = useState(false);
   const [devoile, setDevoile]   = useState(false);
   const [erreur, setErreur]     = useState<string | null>(null);
+  const [debloques, setDebloques] = useState<string[]>([]);
 
   const recharger = useCallback(async () => {
     if (!user) return;
-    const d = await chargerDefi(user.id);
+    const [d, b] = await Promise.all([chargerDefi(user.id), chargerBadges(user.id)]);
     setDefi(d);
+    setDebloques(b);
     setChargement(false);
   }, [user]);
 
@@ -179,6 +184,10 @@ export default function DefiPage() {
               </button>
             </>
           )}
+
+          <div className="mt-8">
+            <RangeeBadges badges={badgesDuDefi(defi.serie)} debloques={debloques} />
+          </div>
         </div>
       </Cadre>
     );
@@ -217,6 +226,10 @@ export default function DefiPage() {
               Partager l&apos;affiche
             </button>
           )}
+
+          <div className="mt-8">
+            <RangeeBadges badges={badgesDuDefi(defi.serie)} debloques={debloques} />
+          </div>
         </div>
       </Cadre>
     );
@@ -278,6 +291,10 @@ export default function DefiPage() {
             Dix minutes minimum pour que le maillon compte.
           </p>
         )}
+
+        <div className="mt-8">
+          <RangeeBadges badges={badgesDuDefi(defi.serie)} debloques={debloques} />
+        </div>
       </div>
     </Cadre>
   );

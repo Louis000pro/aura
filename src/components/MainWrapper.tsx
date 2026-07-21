@@ -13,8 +13,11 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   // visiteur qui n'a pas encore de compte.
   const isInvitation = pathname.startsWith("/rejoindre") && !user && !isLoading;
   const noNav = isAuth || isLanding || isInvitation;
+  // Le fil d'une conversation occupe toute la hauteur et masque la barre du
+  // bas (comme le tunnel de séance) → aucun padding global.
+  const isFil = /^\/communaute\/[^/]+$/.test(pathname);
   // Communauté + Premium gèrent leur propre plein écran → aucun padding global
-  const fullBleed = noNav || pathname === "/premium";
+  const fullBleed = noNav || isFil || pathname === "/premium";
 
   return (
     <main

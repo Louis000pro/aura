@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, TrendingUp, Dumbbell, Utensils, User, LogIn, LogOut,
-  Settings, Shield, ChevronRight, Crown, type LucideIcon,
+  Settings, Shield, ChevronRight, Crown, MessageCircle, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -25,7 +25,9 @@ const TABS: (TabItem & { tourAnchor?: string })[] = [
   { href: "/",            label: "Accueil",     icon: Home,        tourAnchor: "nav-accueil" },
   { href: "/progression", label: "Entraînement", icon: Dumbbell,   tourAnchor: "nav-progression" },
   { href: "/nutrition",   label: "Nutrition",   icon: Utensils,    tourAnchor: "nav-nutrition" },
-  { href: "/profil",      label: "Profil",      icon: User,        tourAnchor: "nav-profil" },
+  // Le profil n'est plus un onglet : il s'ouvre depuis l'avatar en haut à
+  // gauche des conversations (décision du 2026-07-21, façon Snapchat).
+  { href: "/communaute",  label: "Communauté",  icon: MessageCircle, tourAnchor: "nav-communaute" },
 ];
 
 /* ── Contenu du menu « avatar » — partagé entre la sidebar desktop et le header
@@ -100,7 +102,7 @@ export default function Navigation() {
 
   /* ── Préchargement des routes principales → navigation instantanée ── */
   useEffect(() => {
-    ["/", "/progression", "/nutrition", "/profil"].forEach((r) => {
+    ["/", "/progression", "/nutrition", "/communaute"].forEach((r) => {
       try { router.prefetch(r); } catch { /* ignore */ }
     });
   }, [router]);
