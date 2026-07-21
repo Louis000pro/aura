@@ -28,6 +28,7 @@ export default function DefiPage() {
   const [creation, setCreation] = useState(false);
   const [copie, setCopie]       = useState(false);
   const [devoile, setDevoile]   = useState(false);
+  const [erreur, setErreur]     = useState<string | null>(null);
 
   const recharger = useCallback(async () => {
     if (!user) return;
@@ -54,9 +55,22 @@ export default function DefiPage() {
 
   const lancer = async () => {
     setCreation(true);
+    setErreur(null);
     const r = await creerDefi();
     setCreation(false);
-    if (r.ok) void recharger();
+    if (r.ok) { void recharger(); return; }
+
+    // Un échec muet est pire qu'un message maladroit : on dit ce qui
+    // s'est passé, et on nomme le cas « migration pas encore appliquée »
+    // parce que c'est celui qu'on rencontrera le plus au lancement.
+    const raison = String(r.raison ?? "");
+    const pasDeFonction = /function|does not exist|schema cache|404/i.test(raison);
+    setErreur(
+      pasDeFonction                          ? "Le défi n'est pas encore activé côté serveur."
+    : raison === "defi_deja_en_cours"        ? "Tu as déjà un relais en cours."
+    : raison === "non_connecte"              ? "Reconnecte-toi pour lancer un relais."
+    :                                          "Impossible de lancer le relais pour le moment.",
+    );
   };
 
   const partager = async (lien: string, titre: string, texte: string) => {
@@ -109,6 +123,12 @@ export default function DefiPage() {
           <p className="mt-3 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
             Tu obtiendras un lien à envoyer à la personne de ton choix.
           </p>
+
+          {erreur && (
+            <p className="mt-4 text-center text-[14px] font-medium" style={{ color: "#E8620C" }}>
+              {erreur}
+            </p>
+          )}
         </div>
       </Cadre>
     );
