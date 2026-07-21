@@ -25,10 +25,16 @@ type Props = {
   noms?: string[];
   /** true juste après un maillon franchi → l'affiche bascule sous les yeux. */
   devoile?: boolean;
+  /** Hauteur maximale de l'affiche. Indispensable sur mobile : en 9/16,
+   *  une affiche pleine largeur dépasse la hauteur de l'écran et pousse
+   *  le compteur et le bouton hors champ. */
+  hauteurMax?: string;
   className?: string;
 };
 
-export default function PosterDefi({ serie, etat, noms = [], devoile = false, className = "" }: Props) {
+export default function PosterDefi({
+  serie, etat, noms = [], devoile = false, hauteurMax = "52vh", className = "",
+}: Props) {
   const sobre = useReducedMotion();
   const complet = etat >= NB_ETATS;
 
@@ -38,8 +44,14 @@ export default function PosterDefi({ serie, etat, noms = [], devoile = false, cl
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-[26px] ${className}`}
-      style={{ aspectRatio: "9 / 16" }}
+      className={`relative overflow-hidden rounded-[26px] ${className}`}
+      style={{
+        aspectRatio: "9 / 16",
+        // On prend toute la largeur disponible, sauf si ça dépasse la
+        // hauteur autorisée — auquel cas c'est la hauteur qui commande.
+        width: `min(100%, calc(${hauteurMax} * 9 / 16))`,
+        marginInline: "auto",
+      }}
     >
       {/* Les couches d'affiche. Le fondu croisé vient du fait que
           l'ancienne et la nouvelle coexistent pendant la sortie. */}
