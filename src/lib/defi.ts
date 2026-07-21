@@ -13,9 +13,11 @@ import { createClient } from "@/lib/supabase";
 
 /* ── Les séries d'affiches ────────────────────────────────────
    Une série = 4 états de la MÊME affiche, du vide au complet.
-   Ajouter une série = déposer 4 images dans public/defis/<slug>/
-   et l'inscrire ici. Rien d'autre à toucher. */
-export type SerieSlug = "sillage";
+   Ajouter une série = déposer 4 WebP (01..04) dans
+   public/defis/<slug>/ et l'inscrire ici. Rien d'autre à toucher.
+   Les affiches sont en WebP : en PNG, douze états pesaient 21 Mo
+   dans le repo contre 776 Ko une fois converties. */
+export type SerieSlug = "sillage" | "aurore" | "brume";
 
 export type Serie = {
   slug: SerieSlug;
@@ -30,6 +32,16 @@ export const SERIES: Record<SerieSlug, Serie> = {
     nom: "Sillage",
     promesse: "Une route de lumière dans la nuit",
   },
+  aurore: {
+    slug: "aurore",
+    nom: "Aurore",
+    promesse: "Le ciel qui prend feu au-dessus du lac gelé",
+  },
+  brume: {
+    slug: "brume",
+    nom: "Brume",
+    promesse: "Le phare, une fois la brume tombée",
+  },
 };
 
 export const NB_ETATS = 4;
@@ -41,7 +53,7 @@ export const CLE_DEVOILE = "vaiiya:defi-devoile";
 
 export function imageEtat(serie: string, etat: number): string {
   const s = etat.toString().padStart(2, "0");
-  return `/defis/${serie}/${s}.png`;
+  return `/defis/${serie}/${s}.webp`;
 }
 
 /**
