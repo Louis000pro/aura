@@ -15,6 +15,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Loader2, PenLine, Check, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 import { imageEtat } from "@/lib/defi";
 import {
   chargerConversations, titreConversation, autresMembres, mesRelations,
@@ -74,7 +75,10 @@ export default function CommunautePage() {
     <div className="min-h-screen">
       {/* ─── Barre du haut ─── */}
       <div className="flex items-center gap-3 px-4 pb-3 pt-4">
-        <button onClick={() => router.push("/profil")} aria-label="Mon profil" className="relative shrink-0">
+        {/* Mon avatar = le seul chemin vers mon profil dans toute l'app :
+            le raccourci flottant qui traînait sur chaque page a été retiré. */}
+        <button onClick={() => router.push("/profil")} aria-label="Mon profil"
+          data-tour-anchor="nav-profil" className="relative shrink-0">
           {user?.avatar ? (
             <Image src={user.avatar} alt="" width={36} height={36}
               className="h-9 w-9 rounded-full object-cover" unoptimized />
@@ -89,6 +93,13 @@ export default function CommunautePage() {
         <h1 className="flex-1 text-[21px] font-bold tracking-tight" style={{ color: "var(--text-0)" }}>
           Communauté
         </h1>
+
+        {/* La cloche vit ICI sur mobile : cet écran a sa propre barre du
+            haut, donc la cloche flottante globale s'y poserait par-dessus
+            le « + ». Sur desktop c'est la sidebar qui la porte. */}
+        <div className="md:hidden">
+          <NotificationBell side="top" />
+        </div>
 
         <button
           onClick={() => setSheet("choix")}

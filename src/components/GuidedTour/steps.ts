@@ -187,7 +187,9 @@ export const TOUR_STEPS: TourStep[] = [
     anchorId: "nav-profil",
     label: "Ton avatar · profil",
     duration: 2300,
-    route: "/",
+    // L'avatar ne flotte plus sur toutes les pages : il vit en haut à
+    // gauche de Communauté. Le tour doit aller le chercher là.
+    route: "/communaute",
     shape: "rounded",
     padding: 10,
     chapter: { name: "Ton espace", tagline: "Ton identité, ton histoire" },

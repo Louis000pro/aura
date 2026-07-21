@@ -87,13 +87,12 @@ export default function Navigation() {
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   /* ── Fermer le menu user si clic extérieur ── */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (userMenuRef.current?.contains(t) || mobileMenuRef.current?.contains(t)) return;
+      if (userMenuRef.current?.contains(t)) return;
       setUserMenu(false);
     };
     document.addEventListener("mousedown", handler);
@@ -246,39 +245,19 @@ export default function Navigation() {
 
   return (
     <>
-      {/* ══ Header mobile — cloche + avatar (profil), flottant en haut à droite.
-            Pas sur /profil : cette page a déjà son propre cluster en haut à droite. ══ */}
-      {user && pathname !== "/profil" && (
-        <div className="md:hidden fixed top-0 right-0 z-40 flex items-center gap-2 px-3"
+      {/* ══ Cloche mobile, flottante en haut à droite.
+            L'avatar qui l'accompagnait a été retiré : mon profil s'ouvre
+            depuis l'avatar en haut à gauche de Communauté, et deux
+            raccourcis vers le même écran n'en font pas un meilleur. Le
+            reste du menu (Premium, Paramètres, Admin, Déconnexion) vit
+            sur /profil et /parametres.
+
+            Les pages qui possèdent leur propre barre du haut portent la
+            cloche elles-mêmes : sinon celle-ci vient se poser dessus. ══ */}
+      {user && pathname !== "/profil" && pathname !== "/communaute" && (
+        <div className="md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <NotificationBell side="top" />
-          <div ref={mobileMenuRef} className="relative" data-tour-anchor="nav-profil">
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setUserMenu((v) => !v)}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black cursor-pointer overflow-hidden"
-              style={{
-                background: userMenu ? "linear-gradient(135deg,#C4A8FF,var(--accent))" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
-                color: "var(--text-1)",
-                border: "2px solid rgba(var(--surface-rgb),0.85)",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.12)",
-              }}
-              aria-label="Menu utilisateur">
-              {user.avatar
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" decoding="async" src={user.avatar} alt="" className="w-full h-full object-cover" />
-                : <span style={{ color: userMenu ? "white" : "#3D2F6B" }}>{avatarLetter}</span>}
-            </motion.button>
-            <AnimatePresence>
-              {userMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
-                  className="absolute top-[46px] right-0 rounded-2xl overflow-hidden z-50 min-w-[210px]"
-                  style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(0,0,0,0.1)", border: "1px solid rgba(196,168,255,0.2)" }}>
-                  <UserMenuItems user={user} isAdmin={isAdmin} onClose={() => setUserMenu(false)} onLogout={handleLogout} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
       )}
 
