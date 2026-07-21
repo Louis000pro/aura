@@ -244,6 +244,16 @@ export async function creerDefi(): Promise<Reponse> {
   return data as Reponse;
 }
 
+/** Ouvrir un relais dans une conversation qui existe déjà.
+ *  Les deux sont là : pas d'invitation, le défi démarre aussitôt.
+ *  Le serveur refuse si le fil n'est pas un duo (`pas_un_duo`). */
+export async function lancerRelaisDansConversation(convId: string): Promise<Reponse> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("lancer_relais", { p_conv: convId });
+  if (error) return { ok: false, raison: error.message };
+  return data as Reponse;
+}
+
 export async function rejoindreDefi(code: string): Promise<Reponse> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("rejoindre_defi", { p_code: code });

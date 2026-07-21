@@ -166,9 +166,12 @@ function Liste({ convs, moi, onOuvrir }: {
             className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors active:bg-[rgba(var(--tint-violet-rgb),.5)]"
           >
             {c.defi ? (
-              <VignetteAffiche defi={c.defi} />
+              <Sceau defi={c.defi} />
+            ) : c.image ? (
+              <Image src={c.image} alt="" width={46} height={46}
+                className="h-[46px] w-[46px] shrink-0 rounded-full object-cover" unoptimized />
             ) : (
-              <Avatar personne={autres[0]} taille={44} />
+              <Avatar personne={autres[0]} taille={46} nom={c.nom ?? undefined} />
             )}
 
             <div className="min-w-0 flex-1">
@@ -198,28 +201,56 @@ function Liste({ convs, moi, onOuvrir }: {
   );
 }
 
-/** L'affiche remplace l'avatar quand la conversation porte un relais. */
-function VignetteAffiche({ defi }: { defi: NonNullable<Conversation["defi"]> }) {
+/* ─── Le sceau ───────────────────────────────────────────────
+   Quand une conversation porte un relais, l'affiche remplace
+   l'avatar et un trait d'or se referme autour d'elle, un quart
+   par maillon. Bouclé = contour entier + l'étincelle.
+
+   C'est l'inverse exact d'une flamme Snapchat : une flamme
+   menace de s'éteindre, le sceau se construit. Aucun compteur
+   de jours consécutifs, aucune dette. */
+const PERIMETRE = 156;   // rect 39×45, rayon 7
+
+function Sceau({ defi }: { defi: NonNullable<Conversation["defi"]> }) {
   const etat = defi.faits <= 0 ? 1
     : defi.faits >= defi.objectif ? 4
     : Math.min(3, 1 + Math.round((3 * defi.faits) / defi.objectif));
 
+  const part    = Math.min(1, defi.faits / Math.max(1, defi.objectif));
+  const boucle  = defi.faits >= defi.objectif;
+  const dessine = PERIMETRE * part;
+
   return (
-    <div className="relative h-[46px] w-[34px] shrink-0 overflow-hidden rounded-[7px] shadow-md">
-      <Image src={imageEtat(defi.serie, etat)} alt="" fill sizes="34px" className="object-cover" />
-      <span
-        className="absolute inset-x-0 bottom-0 pb-[3px] pt-1 text-center text-[8.5px] font-extrabold tracking-wide text-white"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,0))" }}
-      >
-        {defi.faits}/{defi.objectif}
-      </span>
+    <div className="relative h-[46px] w-[46px] shrink-0">
+      <div className="absolute left-[5px] top-[2px] h-[42px] w-[36px] overflow-hidden rounded-[6px] shadow-md">
+        <Image src={imageEtat(defi.serie, etat)} alt="" fill sizes="36px" className="object-cover" />
+      </div>
+
+      <svg viewBox="0 0 46 46" fill="none" className="absolute inset-0" aria-hidden="true">
+        <rect x="3.5" y="0.5" width="39" height="45" rx="7"
+          stroke="rgba(215,166,42,.22)" strokeWidth="1.6" />
+        {part > 0 && (
+          <rect x="3.5" y="0.5" width="39" height="45" rx="7"
+            stroke="#D7A62A" strokeWidth={boucle ? 1.9 : 1.6} strokeLinecap="round"
+            strokeDasharray={`${dessine} ${PERIMETRE}`} strokeDashoffset={-20} />
+        )}
+      </svg>
+
+      {boucle && (
+        <span className="absolute -right-[3px] -top-[3px] text-[11px]"
+          style={{ color: "#D7A62A", textShadow: "0 0 7px rgba(215,166,42,.8)" }}>
+          ✦
+        </span>
+      )}
     </div>
   );
 }
 
-function Avatar({ personne, taille = 44 }: { personne?: Personne; taille?: number }) {
+function Avatar({ personne, taille = 44, nom }: {
+  personne?: Personne; taille?: number; nom?: string;
+}) {
   const s = { width: taille, height: taille };
-  if (personne?.avatar) {
+  if (!nom && personne?.avatar) {
     return (
       <Image src={personne.avatar} alt="" width={taille} height={taille}
         className="shrink-0 rounded-full object-cover" style={s} unoptimized />
@@ -230,7 +261,7 @@ function Avatar({ personne, taille = 44 }: { personne?: Personne; taille?: numbe
       className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
       style={{ ...s, fontSize: taille * 0.36, background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
     >
-      {(personne?.pseudo ?? "?").charAt(0).toUpperCase()}
+      {(nom ?? personne?.pseudo ?? "?").charAt(0).toUpperCase()}
     </div>
   );
 }

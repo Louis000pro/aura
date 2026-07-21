@@ -13,6 +13,15 @@ export type Personne = {
   id: string;
   pseudo: string;
   avatar: string | null;
+  /** Jusqu'où cette personne a lu — sert au « Vu », rempli seulement
+   *  quand on ouvre une conversation. */
+  luA?: string | null;
+};
+
+/** Une réaction, regroupée par emoji : « 🔥 2 ». */
+export type Reaction = {
+  emoji: string;
+  userIds: string[];
 };
 
 export type Message = {
@@ -21,6 +30,8 @@ export type Message = {
   contenu: string;
   type: "texte" | "systeme";
   createdAt: string;
+  repondA: string | null;
+  reactions: Reaction[];
 };
 
 /** Le défi porté par une conversation, réduit à ce qu'il faut pour l'afficher. */
@@ -36,6 +47,7 @@ export type Conversation = {
   id: string;
   type: "duo" | "groupe";
   nom: string | null;
+  image: string | null;
   membres: Personne[];
   dernier: Message | null;
   nonLus: number;
@@ -70,7 +82,7 @@ export async function chargerConversations(userId: string): Promise<Conversation
   const luA = new Map(miennes.map((m) => [m.conversation_id as string, m.last_read_at as string]));
 
   const [convsRes, membresRes, msgsRes, defisRes] = await Promise.all([
-    supabase.from("conversations").select("id, type, nom, last_message_at")
+    supabase.from("conversations").select("id, type, nom, image_url, last_message_at")
       .in("id", ids).order("last_message_at", { ascending: false }),
     supabase.from("conversation_members").select("conversation_id, user_id").in("conversation_id", ids),
     // Un seul appel plutôt qu'un par fil : on garde le dernier message
@@ -106,6 +118,7 @@ export async function chargerConversations(userId: string): Promise<Conversation
       id: convId,
       type: c.type as "duo" | "groupe",
       nom: (c.nom as string | null) ?? null,
+      image: (c.image_url as string | null) ?? null,
       membres: (membresRes.data ?? [])
         .filter((m) => m.conversation_id === convId)
         .map((m) => personne(m.user_id as string)),
@@ -116,6 +129,8 @@ export async function chargerConversations(userId: string): Promise<Conversation
             contenu: msgs[0].contenu as string,
             type: msgs[0].type as "texte" | "systeme",
             createdAt: msgs[0].created_at as string,
+            repondA: null,
+            reactions: [],
           }
         : null,
       nonLus: msgs.filter((m) => m.created_at > lu && m.user_id !== userId).length,
@@ -141,9 +156,10 @@ export async function chargerFil(convId: string): Promise<{
   const supabase = createClient();
 
   const [convRes, membresRes, msgsRes, defiRes] = await Promise.all([
-    supabase.from("conversations").select("id, type, nom, last_message_at").eq("id", convId).maybeSingle(),
-    supabase.from("conversation_members").select("user_id").eq("conversation_id", convId),
-    supabase.from("messages").select("id, user_id, contenu, type, created_at")
+    supabase.from("conversations").select("id, type, nom, image_url, last_message_at")
+      .eq("id", convId).maybeSingle(),
+    supabase.from("conversation_members").select("user_id, last_read_at").eq("conversation_id", convId),
+    supabase.from("messages").select("id, user_id, contenu, type, created_at, repond_a")
       .eq("conversation_id", convId).order("created_at", { ascending: true }).limit(200),
     supabase.from("challenge_runs").select("id, statut, serie, target_days")
       .eq("conversation_id", convId).in("statut", ["inscription", "en_cours", "reussi"]).maybeSingle(),
@@ -169,14 +185,37 @@ export async function chargerFil(convId: string): Promise<{
     };
   }
 
+  /* Les réactions des messages chargés, regroupées par emoji. */
+  const msgIds = (msgsRes.data ?? []).map((m) => m.id as string);
+  const { data: reacs } = msgIds.length
+    ? await supabase.from("message_reactions").select("message_id, user_id, emoji").in("message_id", msgIds)
+    : { data: [] as { message_id: string; user_id: string; emoji: string }[] };
+
+  const reactionsDe = (id: string): Reaction[] => {
+    const parEmoji = new Map<string, string[]>();
+    for (const r of reacs ?? []) {
+      if (r.message_id !== id) continue;
+      const emoji = r.emoji as string;
+      parEmoji.set(emoji, [...(parEmoji.get(emoji) ?? []), r.user_id as string]);
+    }
+    return [...parEmoji].map(([emoji, userIds]) => ({ emoji, userIds }));
+  };
+
   return {
     conversation: {
       id: convId,
       type: convRes.data.type as "duo" | "groupe",
       nom: (convRes.data.nom as string | null) ?? null,
+      image: (convRes.data.image_url as string | null) ?? null,
       membres: ids.map((id) => {
         const p = profils?.find((x) => x.id === id);
-        return { id, pseudo: p?.pseudo ?? "…", avatar: p?.avatar_url ?? null };
+        const m = (membresRes.data ?? []).find((x) => x.user_id === id);
+        return {
+          id,
+          pseudo: p?.pseudo ?? "…",
+          avatar: p?.avatar_url ?? null,
+          luA: (m?.last_read_at as string | null) ?? null,
+        };
       }),
       dernier: null,
       nonLus: 0,
@@ -189,17 +228,75 @@ export async function chargerFil(convId: string): Promise<{
       contenu: m.contenu as string,
       type: m.type as "texte" | "systeme",
       createdAt: m.created_at as string,
+      repondA: (m.repond_a as string | null) ?? null,
+      reactions: reactionsDe(m.id as string),
     })),
   };
 }
 
-export async function envoyerMessage(convId: string, userId: string, contenu: string) {
+export async function envoyerMessage(
+  convId: string, userId: string, contenu: string, repondA?: string | null,
+) {
   const texte = contenu.trim();
   if (!texte) return { ok: false };
   const supabase = createClient();
   const { error } = await supabase.from("messages").insert({
     conversation_id: convId, user_id: userId, contenu: texte, type: "texte",
+    repond_a: repondA ?? null,
   });
+  return { ok: !error, raison: error?.message };
+}
+
+/* ── Réagir, répondre, supprimer ──────────────────────────────
+   Une seule réaction par personne et par message (c'est la clé
+   primaire côté base) : réagir à nouveau remplace, réagir avec
+   le même emoji retire. */
+export async function reagir(messageId: string, userId: string, emoji: string, actuelle?: string | null) {
+  const supabase = createClient();
+  if (actuelle === emoji) {
+    const { error } = await supabase.from("message_reactions")
+      .delete().eq("message_id", messageId).eq("user_id", userId);
+    return { ok: !error };
+  }
+  const { error } = await supabase.from("message_reactions")
+    .upsert({ message_id: messageId, user_id: userId, emoji }, { onConflict: "message_id,user_id" });
+  return { ok: !error, raison: error?.message };
+}
+
+export async function supprimerMessage(messageId: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("messages").delete().eq("id", messageId);
+  return { ok: !error, raison: error?.message };
+}
+
+/* ── Réglages de la conversation ─────────────────────────────
+   Pas de rôle admin : n'importe quel membre renomme et rhabille.
+   Ce sont des groupes de gens qui se connaissent. */
+export async function majConversation(
+  convId: string, champs: { nom?: string | null; image?: string | null },
+) {
+  const supabase = createClient();
+  const patch: Record<string, string | null> = {};
+  if (champs.nom !== undefined)   patch.nom = champs.nom?.trim() || null;
+  if (champs.image !== undefined) patch.image_url = champs.image;
+  if (!Object.keys(patch).length) return { ok: true };
+
+  const { error } = await supabase.from("conversations").update(patch).eq("id", convId);
+  return { ok: !error, raison: error?.message };
+}
+
+export async function ajouterMembres(convId: string, userIds: string[]) {
+  if (!userIds.length) return { ok: true };
+  const supabase = createClient();
+  const { error } = await supabase.from("conversation_members")
+    .insert(userIds.map((id) => ({ conversation_id: convId, user_id: id })));
+  return { ok: !error, raison: error?.message };
+}
+
+export async function quitterConversation(convId: string, userId: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("conversation_members")
+    .delete().eq("conversation_id", convId).eq("user_id", userId);
   return { ok: !error, raison: error?.message };
 }
 
@@ -268,4 +365,30 @@ export function heureCourte(iso: string): string {
   const jours = (now.getTime() - d.getTime()) / 86_400_000;
   if (jours < 7) return d.toLocaleDateString("fr-FR", { weekday: "short" });
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+}
+
+/** L'heure sous une bulle : « 21:14 ». */
+export function heureExacte(iso: string): string {
+  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+export function memeJour(a: string, b: string): boolean {
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+/** Le séparateur de date : « Aujourd'hui », « Hier », « mardi 15 juillet ». */
+export function libelleJour(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return "Aujourd'hui";
+
+  const hier = new Date(now);
+  hier.setDate(now.getDate() - 1);
+  if (d.toDateString() === hier.toDateString()) return "Hier";
+
+  const memeAnnee = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long",
+    ...(memeAnnee ? {} : { year: "numeric" }),
+  });
 }
