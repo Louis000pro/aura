@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Copy, Share2, Dumbbell, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, Share2, Dumbbell, Loader2, ImageDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import PosterDefi from "@/components/defi/PosterDefi";
 import {
@@ -21,6 +21,7 @@ import {
 import { badgesDuDefi } from "@/lib/badges";
 import { chargerBadges } from "@/lib/messagerie";
 import RangeeBadges from "@/components/defi/RangeeBadges";
+import { partagerAffiche } from "@/lib/defiShareExport";
 
 export default function DefiPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -33,6 +34,7 @@ export default function DefiPage() {
   const [devoile, setDevoile]   = useState(false);
   const [erreur, setErreur]     = useState<string | null>(null);
   const [debloques, setDebloques] = useState<string[]>([]);
+  const [carte, setCarte] = useState<"repos" | "occupe" | "fait" | "rate">("repos");
 
   const recharger = useCallback(async () => {
     if (!user) return;
@@ -218,12 +220,30 @@ export default function DefiPage() {
 
           {gagne && (
             <button
-              onClick={() => partager(lienInvitation(defi.code ?? ""), "Notre relais est bouclé", "Quatre jours sur sept, à deux.")}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98]"
+              onClick={async () => {
+                if (carte === "occupe") return;
+                setCarte("occupe");
+                const r = await partagerAffiche({
+                  serie: defi.serie,
+                  noms,
+                  objectif: defi.objectif,
+                  fenetre: defi.fenetre,
+                  date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short" }),
+                });
+                setCarte(r === "error" ? "rate" : "fait");
+                setTimeout(() => setCarte("repos"), 2200);
+              }}
+              disabled={carte === "occupe"}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-[16px] font-semibold text-white transition-transform active:scale-[.98] disabled:opacity-70"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
-              <Share2 className="h-5 w-5" />
-              Partager l&apos;affiche
+              {carte === "occupe" ? <Loader2 className="h-5 w-5 animate-spin" />
+               : carte === "fait" ? <Check className="h-5 w-5" />
+               : <ImageDown className="h-5 w-5" />}
+              {carte === "occupe" ? "Génération…"
+               : carte === "fait" ? "Enregistré ✦"
+               : carte === "rate" ? "Réessaie"
+               : "Télécharger la carte"}
             </button>
           )}
 

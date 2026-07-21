@@ -11,6 +11,7 @@ import {
   MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2, Award,
 } from "lucide-react";
 import Badges from "@/components/Badges";
+import BadgesRelais from "@/components/defi/BadgesRelais";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
@@ -2486,6 +2487,7 @@ export default function ProfilPage() {
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
+            {user && <BadgesRelais userId={user.id} />}
             <Badges />
           </motion.div>
         )}
