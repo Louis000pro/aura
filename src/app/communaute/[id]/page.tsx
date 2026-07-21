@@ -137,6 +137,15 @@ export default function FilPage() {
     void canalRef.current.send({ type: "broadcast", event: "ecrit", payload: { id: user.id } });
   };
 
+  /** Envoi d'un contenu déjà décidé (le « Salut l'ami ! » d'ouverture). */
+  const envoyerTexte = async (contenu: string) => {
+    if (!user || envoi) return;
+    setEnvoi(true);
+    const r = await envoyerMessage(convId, user.id, contenu, null);
+    setEnvoi(false);
+    if (r.ok) void recharger();
+  };
+
   const envoyer = async () => {
     if (!user || !texte.trim() || envoi) return;
     const contenu = texte.trim();
@@ -292,9 +301,23 @@ export default function FilPage() {
       {/* ─── Les messages ─── */}
       <div className="relative z-10 flex-1 overflow-y-auto px-3 py-2">
         {messages.length === 0 && (
-          <p className="mt-8 text-center text-[13.5px] leading-relaxed" style={{ color: c.t3 }}>
-            Rien encore.<br />C&apos;est à toi d&apos;ouvrir.
-          </p>
+          <div className="mt-8 flex flex-col items-center px-6 text-center">
+            <p className="text-[13.5px] leading-relaxed" style={{ color: c.t3 }}>
+              Rien encore.<br />C&apos;est à toi d&apos;ouvrir.
+            </p>
+
+            {/* Le premier message est le plus dur à écrire. On en pose
+                un tout fait : personne n'a jamais eu honte d'un
+                « Salut l'ami ! ». */}
+            <button
+              onClick={() => void envoyerTexte("Salut l'ami ! 👋")}
+              disabled={envoi}
+              className="mt-4 rounded-full px-5 py-2.5 text-[14px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              Salut l&apos;ami&nbsp;! 👋
+            </button>
+          </div>
         )}
 
         <div className="flex flex-col">

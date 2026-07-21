@@ -69,16 +69,19 @@ export default function InfosPage() {
 
     const supabase = createClient();
     const ext = (fichier.name.split(".").pop() ?? "jpg").toLowerCase();
+    // Le premier dossier DOIT être mon user_id : la policy Storage du
+    // bucket « avatars » n'autorise l'upload que dans son propre
+    // dossier. Un chemin en `groupes/…` est refusé d'office.
     // Chemin unique + cache long : le fichier n'est jamais écrasé,
     // donc il peut être mis en cache pour de bon (règle egress).
-    const chemin = `groupes/${convId}-${Date.now()}.${ext}`;
+    const chemin = `${user.id}/groupes/${convId}-${Date.now()}.${ext}`;
 
     const { error } = await supabase.storage
       .from("avatars").upload(chemin, fichier, { upsert: false, cacheControl: "31536000" });
 
     if (error) {
       setOccupe(null);
-      setErreur("La photo n'est pas passée.");
+      setErreur(`La photo n'est pas passée — ${error.message}`);
       return;
     }
 

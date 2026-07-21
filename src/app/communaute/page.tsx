@@ -152,8 +152,10 @@ function Liste({ convs, moi, onOuvrir }: {
       {convs.map((c) => {
         const titre  = titreConversation(c, moi);
         const autres = autresMembres(c, moi);
+        // Un fil ouvert par une amitié mutuelle n'a aucun message :
+        // il ne dit pas « vide », il dit quoi en faire.
         const apercu =
-          c.dernier == null                 ? "Nouvelle discussion"
+          c.dernier == null                 ? "Dis-lui bonjour 👋"
         : c.dernier.type === "systeme"      ? c.dernier.contenu
         : c.dernier.userId === moi          ? `Toi : ${c.dernier.contenu}`
         : c.type === "groupe"               ? `${c.membres.find((m) => m.id === c.dernier!.userId)?.pseudo ?? "…"} : ${c.dernier.contenu}`
