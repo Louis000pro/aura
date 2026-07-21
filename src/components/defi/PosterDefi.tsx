@@ -94,22 +94,39 @@ export default function PosterDefi({
       )}
 
       {/* Voiles de lecture : dessinés ici, jamais cuits dans l'image.
-          Celui du haut est indispensable — le ciel s'éclaircit d'un état
-          à l'autre et la marque finirait par se perdre dedans. */}
+          Celui du haut n'est plus une bande mais une ombre douce centrée
+          sous la marque : elle donne le contraste juste là où il faut,
+          sans poser un bandeau noir en travers du ciel. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[18%]"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,.5), rgba(0,0,0,0))" }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-[24%]"
+        style={{
+          background:
+            "radial-gradient(120% 100% at 50% -10%, rgba(0,0,0,.62) 0%, rgba(0,0,0,.28) 45%, rgba(0,0,0,0) 78%)",
+        }}
       />
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[36%]"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,.68), rgba(0,0,0,0))" }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%]"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.58) 34%, rgba(0,0,0,0) 100%)",
+        }}
       />
 
-      {/* La marque, en haut : le wordmark puis l'étincelle. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center gap-2 p-4">
+      {/* La marque, centrée en haut : le wordmark puis l'étincelle, à la
+          même hauteur de capitale. Elle est volontairement en retrait —
+          incrustée dans la photo, pas posée dessus : on doit la lire sans
+          qu'elle prenne le pas sur l'image. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center gap-[7px] pt-[5.5%]">
         <span
-          className="text-[15px] font-black uppercase text-white"
-          style={{ letterSpacing: "0.04em", textShadow: "0 1px 12px rgba(0,0,0,.5)" }}
+          className="text-[15px] font-bold uppercase leading-none"
+          style={{
+            letterSpacing: "0.22em",
+            // Le dernier caractère emporte l'interlettrage avec lui :
+            // sans ça, le bloc paraît décalé à gauche.
+            textIndent: "0.22em",
+            color: "rgba(255,255,255,.86)",
+            textShadow: "0 1px 10px rgba(0,0,0,.55)",
+          }}
         >
           Vaiiya
         </span>
@@ -118,28 +135,48 @@ export default function PosterDefi({
           alt=""
           width={22}
           height={20}
-          className="h-[15px] w-auto opacity-95"
+          /* 11px = la hauteur de capitale d'un texte de 15px. C'est ce
+             qui fait que le signe et le mot pèsent pareil à l'œil. */
+          className="h-[11px] w-auto"
+          style={{ opacity: 0.86, filter: "drop-shadow(0 1px 10px rgba(0,0,0,.55))" }}
         />
       </div>
 
-      {/* Le défi, en bas : son nom puis ceux qui le jouent. */}
+      {/* Le bas. Quand des prénoms sont là, ce sont EUX le sujet : la
+          série passe en étiquette dorée au-dessus. Sans prénoms (page
+          d'invitation), c'est la série qui prend la grande taille.
+          Aucun prénom n'est jamais coupé — ils s'empilent. */}
       {(titre || noms.length > 0) && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-5">
           {titre && (
-            <b
-              className="block text-[19px] font-bold leading-none text-white"
-              style={{ textShadow: "0 2px 14px rgba(0,0,0,.55)" }}
+            <span
+              className={
+                noms.length > 0
+                  ? "block text-[10.5px] font-bold uppercase leading-none"
+                  : "block text-[26px] font-bold leading-none text-white"
+              }
+              style={
+                noms.length > 0
+                  ? { letterSpacing: "0.3em", color: "#D7A62A", textShadow: "0 1px 10px rgba(0,0,0,.6)" }
+                  : { letterSpacing: "-0.01em", textShadow: "0 2px 16px rgba(0,0,0,.6)" }
+              }
             >
               {titre}
-            </b>
-          )}
-          {noms.length > 0 && (
-            <span
-              className="mt-1.5 block truncate text-[11px] uppercase text-white/75"
-              style={{ letterSpacing: "0.16em" }}
-            >
-              {noms.join(" · ")}
             </span>
+          )}
+
+          {noms.length > 0 && (
+            <div className="mt-2 flex flex-col gap-[3px]">
+              {noms.map((nom) => (
+                <b
+                  key={nom}
+                  className="block break-words text-[21px] font-bold leading-[1.12] text-white"
+                  style={{ letterSpacing: "-0.015em", textShadow: "0 2px 16px rgba(0,0,0,.6)" }}
+                >
+                  {nom}
+                </b>
+              ))}
+            </div>
           )}
         </div>
       )}

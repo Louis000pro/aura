@@ -63,17 +63,28 @@ export async function renderAfficheBlob(data: AfficheShareData): Promise<Blob | 
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  // 3) La marque en haut : le wordmark VAIIYA puis l'étincelle.
-  //    Même traitement que SplashIntro — capitales, gras, léger
-  //    interlettrage. C'est LE wordmark de la marque, pas une variante.
-  ls(2); ctx.fillStyle = "#fff"; ctx.font = `900 46px ${sans}`;
-  ctx.fillText("VAIIYA", PAD, 122); ls(0);
-  try {
-    const marque = await loadImage("/marque/marque-blanc.png");
-    const h = 34, w = (marque.width / marque.height) * h;
-    const largeurMot = ctx.measureText("VAIIYA").width;
-    ctx.drawImage(marque, PAD + largeurMot + 22, 90, w, h);
-  } catch { /* sans l'étincelle, le wordmark suffit */ }
+  // 3) La marque en haut, CENTRÉE : le wordmark VAIIYA puis l'étincelle,
+  //    à la même hauteur de capitale. Elle est légèrement en retrait —
+  //    incrustée dans la photo, pas posée dessus.
+  const TAILLE_MOT = 44, HAUTEUR_MARQUE = 32, ECART = 18, Y_MARQUE = 122;
+  ls(9); ctx.font = `700 ${TAILLE_MOT}px ${sans}`;
+  const largeurMot = ctx.measureText("VAIIYA").width;
+
+  let marque: HTMLImageElement | null = null;
+  try { marque = await loadImage("/marque/marque-blanc.png"); } catch { /* le mot suffit */ }
+  const largeurMarque = marque ? (marque.width / marque.height) * HAUTEUR_MARQUE : 0;
+  const total = largeurMot + (marque ? ECART + largeurMarque : 0);
+  const debut = (W - total) / 2;
+
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 18; ctx.shadowOffsetY = 2;
+  ctx.fillText("VAIIYA", debut, Y_MARQUE); ls(0);
+  if (marque) {
+    ctx.globalAlpha = 0.88;
+    ctx.drawImage(marque, debut + largeurMot + ECART, Y_MARQUE - HAUTEUR_MARQUE, largeurMarque, HAUTEUR_MARQUE);
+    ctx.globalAlpha = 1;
+  }
+  ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
   ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.font = `400 32px ${sans}`; ctx.fillText(data.date, W - PAD, 118);
@@ -84,20 +95,40 @@ export async function renderAfficheBlob(data: AfficheShareData): Promise<Blob | 
   ls(8); ctx.fillStyle = "#D7A62A"; ctx.font = `700 34px ${sans}`;
   ctx.fillText((serie?.nom ?? data.serie).toUpperCase(), PAD, 1372); ls(0);
 
+  /* Un pseudo n'est JAMAIS coupé : s'il est trop long pour la largeur
+     disponible, c'est la taille qui cède, pas le nom. Un « … » sur le
+     prénom de quelqu'un, sur une carte qu'il va montrer, ça ne se fait
+     pas. */
+  const tailleQuiRentre = (texte: string, base: number, dispo: number) => {
+    let taille = base;
+    while (taille > 40) {
+      ctx.font = `600 ${taille}px ${sans}`;
+      if (ctx.measureText(texte).width <= dispo) break;
+      taille -= 4;
+    }
+    return taille;
+  };
+
   ctx.fillStyle = "#fff";
   const noms = data.noms.filter(Boolean);
+  const DISPO = W - PAD * 2;
+
   if (noms.length <= 2) {
-    ctx.font = `600 122px ${sans}`;
+    const t1 = tailleQuiRentre(noms[0] ?? "", 122, DISPO);
+    ctx.font = `600 ${t1}px ${sans}`;
     ctx.fillText(noms[0] ?? "", PAD - 4, 1502);
+
     if (noms[1]) {
       ctx.fillStyle = "rgba(255,255,255,0.5)"; ctx.font = `300 92px ${sans}`;
       ctx.fillText("&", PAD - 4, 1626);
       const w = ctx.measureText("&").width;
-      ctx.fillStyle = "#fff"; ctx.font = `600 122px ${sans}`;
+      const t2 = tailleQuiRentre(noms[1], 122, DISPO - w - 30);
+      ctx.fillStyle = "#fff"; ctx.font = `600 ${t2}px ${sans}`;
       ctx.fillText(noms[1], PAD - 4 + w + 30, 1626);
     }
   } else {
-    ctx.font = `600 82px ${sans}`;
+    const t = tailleQuiRentre(noms.join(" · "), 82, DISPO);
+    ctx.font = `600 ${t}px ${sans}`;
     ctx.fillText(noms.join(" · "), PAD - 4, 1560);
   }
 
