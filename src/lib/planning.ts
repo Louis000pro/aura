@@ -409,7 +409,16 @@ export async function loadLieu(userId: string): Promise<Lieu> {
       }
     }
   } catch { /* colonnes absentes → fallback */ }
-  return readLieu(userId);
+  // Rien en base : on prend le localStorage de cet appareil et on le REMONTE en
+  // base (fire-and-forget) → la synchro cross-device démarre sans re-réglage.
+  const local = readLieu(userId);
+  if (local.location || local.equip) {
+    void persistLieu(userId, {
+      ...(local.location ? { location: local.location } : {}),
+      ...(local.equip ? { equip: local.equip } : {}),
+    });
+  }
+  return local;
 }
 
 /**
