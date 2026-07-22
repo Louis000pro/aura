@@ -2530,16 +2530,19 @@ export default function ProgressionPage() {
     const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
     const { location, equip } = await loadLieu(user.id);
-    const lieuReady = location === "salle" || (location === "maison" && !!equip);
     setProfileLevel(prof?.onboarding_level ?? null);
 
-    if (!hasOnboarding || !lieuReady) {
-      // L'app ne sait pas encore → héros en mode question (« On s'entraîne comment ? »)
+    if (!hasOnboarding) {
+      // Vraiment rien à générer (onboarding pas fait) → héros de mise en route.
       setNeedsSetup(true);
       setWeek(null);
       setHeroReady(true);
       return;
     }
+    // Lieu OPTIONNEL : tant que la synchro cross-device n'a pas eu lieu, le
+    // localStorage de cet appareil peut être vide. On ne bloque JAMAIS sur
+    // « 7 repos » pour ça — on retombe sur le poids du corps (ctxFromLieu(null,
+    // null) === "poids") et l'utilisateur affine son lieu via « Organiser ».
 
     const gen: GenInput = {
       ctx: ctxFromLieu(location, equip),
@@ -2573,8 +2576,8 @@ export default function ProgressionPage() {
     const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
     const { location, equip } = await loadLieu(user.id);
-    const lieuReady = location === "salle" || (location === "maison" && !!equip);
-    if (!hasOnboarding || !lieuReady) return null;
+    if (!hasOnboarding) return null;
+    // Lieu optionnel (voir loadWeek) : défaut poids du corps si non réglé.
     const gen: GenInput = {
       ctx: ctxFromLieu(location, equip),
       sessions: prof!.onboarding_sessions_week ?? 3,
