@@ -25,7 +25,7 @@ import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory }
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import {
   resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
-  ctxFromLieu, readLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
+  ctxFromLieu, readLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
@@ -789,7 +789,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // redemandera plus, et la création de séance peut s'y fier (même source).
       const lieuMatch = accumulated.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
       if (lieuMatch && user?.id) {
-        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, lieuMatch[1].toLowerCase()); } catch { /* ignore */ }
+        void persistLieu(user.id, { location: lieuMatch[1].toLowerCase() as "salle" | "maison" }); // localStorage + base (cross-device)
       }
 
       const cleaned = stripMemoryTags(accumulated)

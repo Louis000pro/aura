@@ -29,7 +29,7 @@ import { lockBodyModal } from "@/lib/bodyModal";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import {
-  ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, readVariant, ctxFromLieu,
+  ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
@@ -2529,7 +2529,7 @@ export default function ProgressionPage() {
 
     const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
-    const { location, equip } = readLieu(user.id);
+    const { location, equip } = await loadLieu(user.id);
     const lieuReady = location === "salle" || (location === "maison" && !!equip);
     setProfileLevel(prof?.onboarding_level ?? null);
 
@@ -2572,7 +2572,7 @@ export default function ProgressionPage() {
       .maybeSingle();
     const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
       || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
-    const { location, equip } = readLieu(user.id);
+    const { location, equip } = await loadLieu(user.id);
     const lieuReady = location === "salle" || (location === "maison" && !!equip);
     if (!hasOnboarding || !lieuReady) return null;
     const gen: GenInput = {

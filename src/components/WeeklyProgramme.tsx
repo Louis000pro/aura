@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
-  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle,
+  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
@@ -324,15 +324,16 @@ export default function WeeklyProgramme() {
   // Semaine consultée : 0 = cette semaine, +1 = la prochaine, etc.
   const [weekOffset, setWeekOffset] = useState(0);
 
-  /* ── Charge le lieu + matériel enregistrés ── */
+  /* ── Charge le lieu + matériel : base d'abord (cross-device), fallback localStorage ── */
   useEffect(() => {
     if (!user) return;
-    try {
-      const v = localStorage.getItem(`vaiiya_lieu_${user.id}`);
-      if (v === "salle" || v === "maison") setLocation(v);
-      const e = localStorage.getItem(`vaiiya_lieu_equip_${user.id}`);
-      if (e === "halteres" || e === "poids") setHomeEquip(e);
-    } catch { /* ignore */ }
+    let alive = true;
+    void loadLieu(user.id).then(({ location, equip }) => {
+      if (!alive) return;
+      if (location) setLocation(location);
+      if (equip) setHomeEquip(equip);
+    });
+    return () => { alive = false; };
   }, [user]);
 
   /* ── Sync si le lieu change ailleurs (ex: coach chat) ── */
@@ -353,28 +354,22 @@ export default function WeeklyProgramme() {
   const chooseLocation = useCallback((loc: "salle" | "maison") => {
     if (loc === "salle") {
       if (user) {
-        try {
-          localStorage.setItem(`vaiiya_lieu_${user.id}`, "salle");
-          localStorage.removeItem(`vaiiya_lieu_equip_${user.id}`);
-        } catch { /* ignore */ }
+        void persistLieu(user.id, { location: "salle" }); // localStorage + base (cross-device)
+        try { localStorage.removeItem(`vaiiya_lieu_equip_${user.id}`); } catch { /* ignore */ }
       }
       forceNextRef.current = true;
       setHomeEquip(null);
       setLocation("salle");
     } else {
       // Maison → on demande ensuite s'il a des haltères (pas de génération tout de suite)
-      if (user) {
-        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, "maison"); } catch { /* ignore */ }
-      }
+      if (user) void persistLieu(user.id, { location: "maison" });
       setHomeEquip(null);
       setLocation("maison");
     }
   }, [user]);
 
   const chooseHomeEquip = useCallback((equip: "halteres" | "poids") => {
-    if (user) {
-      try { localStorage.setItem(`vaiiya_lieu_equip_${user.id}`, equip); } catch { /* ignore */ }
-    }
+    if (user) void persistLieu(user.id, { equip }); // localStorage + base (cross-device)
     forceNextRef.current = true; // force la régénération avec le matériel choisi
     setHomeEquip(equip);
   }, [user]);

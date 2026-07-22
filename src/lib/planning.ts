@@ -380,6 +380,58 @@ export function readLieu(userId: string): { location: "salle" | "maison" | null;
   }
 }
 
+type Lieu = { location: "salle" | "maison" | null; equip: "halteres" | "poids" | null };
+
+/**
+ * Lit le lieu depuis la BASE (cross-device) puis retombe sur le localStorage.
+ * Hydrate le localStorage de l'appareil au passage (pour les lectures synchrones
+ * de `readLieu`). Défensif : si les colonnes n'existent pas encore (migration non
+ * passée), la requête échoue silencieusement → fallback localStorage, zéro régression.
+ */
+export async function loadLieu(userId: string): Promise<Lieu> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("training_location, training_equipment")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data) {
+      const row = data as { training_location?: string | null; training_equipment?: string | null };
+      const location = row.training_location === "salle" || row.training_location === "maison" ? row.training_location : null;
+      const equip = row.training_equipment === "halteres" || row.training_equipment === "poids" ? row.training_equipment : null;
+      if (location || equip) {
+        try {
+          if (location) localStorage.setItem(`vaiiya_lieu_${userId}`, location);
+          if (equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, equip);
+        } catch { /* ignore */ }
+        return { location, equip };
+      }
+    }
+  } catch { /* colonnes absentes → fallback */ }
+  return readLieu(userId);
+}
+
+/**
+ * Persiste le lieu en base (cross-device) ET en localStorage. On ne passe que les
+ * champs fournis (une carte qui ne règle que le lieu ne doit pas effacer le
+ * matériel). Défensif : si les colonnes n'existent pas, on garde au moins le
+ * localStorage.
+ */
+export async function persistLieu(userId: string, patch: { location?: "salle" | "maison"; equip?: "halteres" | "poids" }): Promise<void> {
+  try {
+    if (patch.location) localStorage.setItem(`vaiiya_lieu_${userId}`, patch.location);
+    if (patch.equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, patch.equip);
+  } catch { /* ignore */ }
+  try {
+    const supabase = createClient();
+    const dbPatch: Record<string, string> = {};
+    if (patch.location) dbPatch.training_location = patch.location;
+    if (patch.equip) dbPatch.training_equipment = patch.equip;
+    if (Object.keys(dbPatch).length) await supabase.from("profiles").update(dbPatch).eq("id", userId);
+  } catch { /* colonnes absentes → localStorage seul */ }
+}
+
 /** Contexte matériel effectif (salle / haltères / poids du corps). */
 export function ctxFromLieu(location: "salle" | "maison" | null, equip: "halteres" | "poids" | null): Ctx {
   return location === "salle" ? "salle" : equip === "halteres" ? "halteres" : "poids";

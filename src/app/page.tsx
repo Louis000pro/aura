@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import GemmeRang from "@/components/GemmeRang";
 import { calculerAura, etatDepuisExp, histoireSerie, RANGS, type EtatAura } from "@/lib/aura";
+import { persistLieu } from "@/lib/planning";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
@@ -874,8 +875,8 @@ function Dashboard() {
       // Détecte le lieu d'entraînement indiqué par l'utilisateur (salle / maison)
       const lieuMatch = fullText.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
       if (lieuMatch && user) {
-        const lieu = lieuMatch[1].toLowerCase();
-        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, lieu); } catch { /* ignore */ }
+        const lieu = lieuMatch[1].toLowerCase() as "salle" | "maison";
+        void persistLieu(user.id, { location: lieu }); // localStorage + base (cross-device)
         window.dispatchEvent(new CustomEvent("lieu-updated"));
         showToast(lieu === "maison" ? "🏠 Séances adaptées à la maison" : "🏋️ Séances adaptées à la salle");
         // Nettoie le tag du message affiché
