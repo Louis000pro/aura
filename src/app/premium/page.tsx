@@ -23,7 +23,7 @@ export default function PremiumPage() {
 }
 
 function PremiumInner() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const [loading, setLoading] = useState<PlanId | null>(null);
@@ -80,8 +80,11 @@ function PremiumInner() {
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, email: user.email, plan }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }

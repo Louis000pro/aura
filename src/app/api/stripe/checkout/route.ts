@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PLANS, type PlanId } from "@/lib/plans";
+import { createAdminClient } from "@/lib/supabase-admin";
 
 const SECRET = process.env.STRIPE_SECRET_KEY ?? "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vaiiya.fr";
@@ -22,16 +23,23 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { user_id, email, plan } = (await req.json()) as {
-      user_id?: string;
-      email?: string;
-      plan?: PlanId;
-    };
+    // ── Authentification : l'utilisateur est DÉDUIT du token de session ──
+    // On ne fait jamais confiance à un user_id/email envoyé par le client :
+    // impossible d'initier un checkout pour le compte d'un autre.
+    const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    const admin = createAdminClient();
+    const { data: { user: caller }, error: authError } = await admin.auth.getUser(token);
+    if (authError || !caller) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-    if (!user_id || !plan || (plan !== "premium" && plan !== "creator")) {
+    // Le body ne fournit QUE le plan choisi.
+    const { plan } = (await req.json()) as { plan?: PlanId };
+    if (!plan || (plan !== "premium" && plan !== "creator")) {
       return NextResponse.json({ error: "bad_request" }, { status: 400 });
     }
 
+    const user_id = caller.id;   // identité issue de la session, jamais du body
+    const email = caller.email;  // email issu de la session
     const p = PLANS[plan];
     const stripe = new Stripe(SECRET);
 
