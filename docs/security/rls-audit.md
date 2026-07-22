@@ -1,133 +1,192 @@
-# Audit RLS Supabase — Vaiiya (lecture seule)
+# Audit & durcissement RLS Supabase — Vaiiya
 
-> **Portée & limites.** Cet audit s'appuie sur les fichiers de migration du repo
-> (`supabase/migrations/`). ⚠️ **La prod peut différer** : plusieurs colonnes
-> existent en base sans être dans le repo (ex. `profiles.is_certified`,
-> `is_banned`, `is_premium`, et probablement `email`, insérée par
-> `/api/me/ensure-profile`). Les migrations `notifications` et `direct_messages`
-> utilisent `CREATE POLICY IF NOT EXISTS`, **syntaxe inexistante en PostgreSQL**
-> → si jouées telles quelles elles échouent. **Rien n'a été exécuté ni modifié.**
-> Toute correction doit être validée puis vérifiée dans le dashboard Supabase.
+> **Nature de ce document.** Journal d'audit et de remédiation de la sécurité
+> Row-Level Security (RLS) de la base Supabase de production. Il consigne l'état
+> initial constaté, les données exposées, les correctifs **déjà appliqués
+> directement dans Supabase Production**, les vérifications, et ce qui reste à
+> traiter. Établi à partir d'un relevé **réel** du catalogue de production
+> (`pg_policies`, `pg_class`, `information_schema`, `pg_proc`), pas des seules
+> migrations du repo — ces dernières s'étaient révélées divergentes.
 
-## Matrice des politiques (d'après le repo)
+**Date de la remédiation :** 2026-07-23
+**Statut global :** fuite principale (PII sans authentification) **FERMÉE en prod**.
 
-| Table | SELECT (lecture) | Écriture | Verdict |
+---
+
+## 0. Distinction importante — ce qui est appliqué vs ce qui ne l'est pas
+
+| Élément | Où | Statut |
+|---|---|---|
+| Suppression des 3 politiques publiques sur `profiles` | **Supabase Production** | ✅ **APPLIQUÉ** (SQL exécuté à la main dans le SQL Editor) |
+| Politique de lecture `profiles` réservée aux connectés | **Supabase Production** | ✅ **APPLIQUÉ** |
+| Révocation de l'accès public à `ouvrir_fil_entre` | **Supabase Production** | ✅ **APPLIQUÉ** |
+| Durcissement des API (setup-db, Stripe, ensure-profile, cron) | **Code, branche `hardening-seo-privacy`** | ⏳ **NON FUSIONNÉ** (poussé, testé sur preview, en attente de merge) |
+| Tables sociales (`posts`/`stories`/`followers`/likes…) | — | ⏳ **À TRAITER** avec la grosse mise à jour |
+
+> ⚠️ Les changements RLS ci-dessous ont été **exécutés en production** par les
+> fondateurs. Ce document ne réexécute aucun SQL et ne modifie aucune politique :
+> il **consigne**. Le SQL est reproduit à titre d'archive.
+
+---
+
+## 1. État initial constaté (avant remédiation)
+
+Relevé du catalogue de production. Points saillants :
+
+- **RLS activée sur les 43 tables `public`** (confirmé via `pg_class.relrowsecurity`),
+  grâce à l'event trigger `rls_auto_enable` qui active la RLS sur toute nouvelle
+  table. Les grants Supabase par défaut (`anon`/`authenticated` = `ALL`) sont donc
+  gatés par la RLS.
+- **`profiles`** portait **trois** politiques `SELECT` permissives **cumulées**,
+  toutes en `USING (true)` :
+  - `Profiles lisibles par tous`
+  - `profiles public read`
+  - `profiles_public_read`
+  En RLS, les politiques permissives se combinent en **OU** : une seule `true`
+  suffit à rendre la table **lisible par n'importe qui, y compris un visiteur
+  non authentifié**, via la clé anon (publique, embarquée dans le bundle client).
+- **`ouvrir_fil_entre(uuid, uuid)`** : fonction `SECURITY DEFINER` **sans
+  vérification de `auth.uid()`**, avec `EXECUTE` accordé à `anon` et
+  `authenticated`. Elle crée une conversation entre deux utilisateurs passés en
+  paramètre → **création de conversations entre utilisateurs arbitraires**
+  invocable par n'importe qui.
+
+Autres constats (non bloquants, voir §7) : les RPC de la mise à jour
+(relais/défi/messagerie) vérifient correctement `auth.uid()` ; la messagerie
+(`conversations`/`messages`/`direct_messages`) est correctement filtrée par
+appartenance ; plusieurs tables sociales restent en `SELECT USING (true)`.
+
+---
+
+## 2. Données qui étaient potentiellement exposées (via `profiles`)
+
+Colonnes réelles de `public.profiles` lisibles **sans authentification** avant
+correctif :
+
+- Identité : `pseudo`, `name`, `last_name`, `full_name`, `bio`, `avatar_url`.
+- **Contact** : `email`.
+- **Données de santé / corporelles** : `age`, `height_cm`, `weight_kg`, `gender`,
+  `goals`, `level`, `diet`, `meals_per_day`, `sessions_per_week`, ainsi que tous
+  les champs `onboarding_*` équivalents (`onboarding_age`, `onboarding_height`,
+  `onboarding_weight`, `onboarding_gender`, `onboarding_goals`, `onboarding_diet`,
+  `onboarding_level`, `onboarding_sessions_week`, `onboarding_meals_day`).
+- **Facturation / abonnement** : `stripe_customer_id`, `subscription_tier`,
+  `subscription_status`, `is_premium`, `current_period_end`.
+- Statuts internes : `is_admin`, `is_certified`, `is_banned`, `member_number`.
+
+→ Un tiers non connecté pouvait, via l'API REST + clé anon, récupérer l'email,
+les données de santé et l'identifiant Stripe de **tous** les utilisateurs.
+Le `noindex`/`robots.txt` ne protège pas de ce scraping direct : seule la RLS le
+fait.
+
+---
+
+## 3. Politiques supprimées (appliqué en prod)
+
+Sur `public.profiles`, les trois politiques de lecture publique ont été
+supprimées :
+
+```sql
+drop policy if exists "Profiles lisibles par tous" on public.profiles;
+drop policy if exists "profiles public read"       on public.profiles;
+drop policy if exists "profiles_public_read"        on public.profiles;
+```
+
+---
+
+## 4. Politiques finales actuellement présentes sur `profiles`
+
+Politique de lecture ajoutée (appliqué en prod) :
+
+```sql
+create policy "profiles lisibles par membres connectes"
+  on public.profiles for select to authenticated using (true);
+```
+
+Relevé `pg_policies` de contrôle (`cmd = SELECT`) après remédiation :
+
+| policyname | cmd | roles | qual |
 |---|---|---|---|
-| **`profiles`** | **`USING (true)` → TOUT LE MONDE (anon inclus)** | UPDATE owner | 🔴 **Critique** (données perso lisibles sans compte) |
-| `followers` | `USING (true)` → tout le monde | INSERT/DELETE owner | 🟠 graphe social public |
-| `posts` | public (viewable by everyone) | owner | 🟠 contenu public |
-| `stories`, `highlights`, `highlight_items` | `USING (true)` | owner | 🟠 contenu public |
-| `post_likes`/`comments`/`reposts`/`comment_likes` | `USING (true)` | owner | 🟠 social public |
-| `ai_memories` | owner (`auth.uid() = user_id`) | owner | 🟢 correct |
-| `daily_stats`, `nutrition_logs` | owner | owner | 🟢 correct |
-| `workout_sessions`, `body_measurements`, `personal_records` | owner | owner | 🟢 correct |
-| `custom_sessions`, `planning_days`, `post_saves` | owner | owner | 🟢 correct |
-| `notifications` | destinataire (`auth.uid() = user_id`) | INSERT `from_user_id` | ⚠️ policies en `IF NOT EXISTS` (vérifier prod) |
-| `direct_messages` | participants | expéditeur | ⚠️ même syntaxe + dormante (remplacée à la MAJ) |
-| `storage.objects` (avatars) | `TO public` (lecture publique) | dossier perso (authenticated) | 🟢 ok pour avatars ; ⚠️ voir note photos privées |
-| `increment_post_views()` | `GRANT EXECUTE TO anon` | — | 🟡 anon peut gonfler les vues (mineur) |
+| `profiles lisibles par membres connectes` | SELECT | `{authenticated}` | `true` |
+| `select own` | SELECT | `{public}` | `auth.uid() = id` |
+
+Les politiques d'écriture propriétaire préexistantes restent en place
+(`profiles_own_write` ALL `auth.uid() = id`, `insert own`, `own profile insert`,
+`Utilisateur modifie son profil`, `own profile write`, `update own`).
+
+**Effet net** : lecture réservée aux comptes `authenticated` (+ le propriétaire
+pour sa propre ligne). Un rôle `anon` (`auth.uid()` nul) ne correspond à aucune
+politique de lecture → **0 ligne**.
 
 ---
 
-## 🔴 Finding critique — `profiles` lisible sans authentification
+## 5. Révocation de `ouvrir_fil_entre` (appliqué en prod)
 
-**Table** : `public.profiles`
-**Opération** : `SELECT`
-**Politique actuelle** : `CREATE POLICY "Profiles lisibles par tous" ON public.profiles FOR SELECT USING (true);`
-**Qui peut lire** : **n'importe qui**, y compris un visiteur non connecté, via la
-**clé anon** (publique, embarquée dans le bundle navigateur). Exemple d'accès
-direct, sans passer par l'app :
-`GET https://<projet>.supabase.co/rest/v1/profiles?select=*` avec l'`apikey` anon.
-
-**Données exposées** (colonnes présentes) : `pseudo`, `full_name`, `bio`,
-`avatar_url`, et surtout les champs d'onboarding **sensibles** :
-`onboarding_age`, `onboarding_height`, `onboarding_weight`, `onboarding_gender`,
-`onboarding_goals`, `onboarding_level`, `onboarding_diet`, `onboarding_meals_day`,
-`onboarding_sessions_week`. **À vérifier en prod** : présence d'une colonne
-`email` (insérée par `ensure-profile`) → si elle existe, **les emails sont
-lisibles publiquement**.
-
-**Risque** : fuite de données personnelles et de santé sans authentification.
-Le `noindex` / `robots.txt` **ne protège pas** de ça (scraping direct de l'API
-REST). Contradiction directe avec la décision « profils privés ».
-
-**Impact produit d'une correction** : l'app lit aujourd'hui `profiles`
-publiquement (pseudo/avatar affichés sur les posts, listes d'abonnés, profils
-`/profil/[username]`). Restreindre brutalement casserait ces affichages — mais
-ces surfaces sociales passent justement en privé/sommeil (pivot). À concevoir
-avec soin.
-
-**Corrections possibles (à valider, NON exécutées)** :
-
-**Option A — Restreindre toute lecture aux utilisateurs authentifiés** (simple,
-aligné « profils privés ») :
 ```sql
--- ⚠️ NE PAS EXÉCUTER sans validation. Vérifier d'abord les surfaces qui lisent
--- profiles sans session (SSR public, pages non connectées).
-DROP POLICY IF EXISTS "Profiles lisibles par tous" ON public.profiles;
-CREATE POLICY "Profiles lisibles par les membres connectés"
-  ON public.profiles FOR SELECT TO authenticated
-  USING (true);
-```
-Conséquence : plus aucune lecture anonyme. Impact : toute surface publique qui
-affichait un pseudo/avatar sans session cesse de fonctionner (à recenser avant).
-
-**Option B — Séparer données publiques et sensibles via une vue** (plus fin) :
-lecture publique limitée à `pseudo`/`avatar_url` via une vue dédiée, table
-`profiles` réservée à l'owner + membres connectés. Plus de travail, mais garde
-l'affichage minimal des identités tout en protégeant la donnée sensible.
-```sql
--- Esquisse à affiner et valider (NON exécutée) :
-DROP POLICY IF EXISTS "Profiles lisibles par tous" ON public.profiles;
-CREATE POLICY "profiles: owner"
-  ON public.profiles FOR SELECT TO authenticated
-  USING (auth.uid() = id);
--- + vue publique en lecture seule n'exposant QUE pseudo/avatar, si un affichage
---   public d'identité reste nécessaire.
+revoke execute on function public.ouvrir_fil_entre(uuid, uuid) from anon, authenticated;
+revoke execute on function public.amis_ouvrent_un_fil() from anon, authenticated;
 ```
 
-**Recommandation** : **Option A** si les profils deviennent entièrement privés
-(cohérent avec la décision), en recensant d'abord les lectures anonymes de
-`profiles` côté app. Décider colonne par colonne pour les champs onboarding.
+Le trigger `amis_ouvrent_un_fil` (ouverture d'un fil au follow mutuel) **continue
+de fonctionner** : les fonctions trigger s'exécutent en contexte `SECURITY
+DEFINER` indépendamment des grants. La fonction n'est donc plus invocable
+directement via l'API publique, tout en restant opérationnelle en interne.
 
 ---
 
-## 🟠 Tables sociales `USING (true)`
+## 6. Vérifications ayant confirmé la fermeture
 
-`followers`, `posts`, `stories`, `highlights`, `highlight_items`, `post_likes`,
-`post_comments`, `post_reposts`, `comment_likes` sont **lisibles par tous**.
-Moins sensible que `profiles` (pas de données de santé), mais le **graphe social**
-et les contenus sont scrappables sans compte. Comme la couche sociale est refondue
-en messagerie privée à la MAJ, **corriger de préférence avec cette refonte** (pas
-en urgence ici), sauf si une de ces tables expose une donnée personnelle.
-
-## ⚠️ Divergence repo ↔ prod (à vérifier au dashboard)
-
-`notifications` et `direct_messages` définissent leurs policies avec
-`CREATE POLICY IF NOT EXISTS` — **non supporté par PostgreSQL**. Si joué verbatim,
-le script échoue à la première policy → RLS actif **sans** policy = table
-inaccessible. Or les notifications fonctionnent en prod → les policies y ont été
-posées autrement. **Action** : vérifier l'état réel des policies de ces deux
-tables dans le dashboard (Authentication → Policies), car le repo n'est pas fiable
-ici. `direct_messages` est de toute façon dormante (remplacée par la messagerie).
-
-## 🗂️ Note — futures photos privées (avant/après)
-
-Le bucket `avatars` est en **lecture publique** (`SELECT TO public`), ce qui
-convient aux avatars. La future fonctionnalité « photos privées avant/après »
-(pivot) **ne doit pas** utiliser un bucket public : prévoir un **bucket privé**
-avec lecture réservée à l'owner (URLs signées), sinon les photos seraient
-accessibles publiquement.
+1. **Relevé `pg_policies` post-remédiation** (§4) : les trois politiques `true`
+   sont absentes ; seules subsistent la lecture `authenticated` et
+   `select own`.
+2. **Raisonnement RLS deny-par-défaut** : rôle `anon`, `auth.uid()` nul → aucune
+   politique de lecture applicable → aucune ligne visible. Un compte
+   `authenticated` correspond à la politique membres connectés → l'affichage
+   inter-utilisateurs (pseudo/avatar) de l'app connectée est préservé.
+3. **Contrôle anonyme reproductible** (à exécuter dans le SQL Editor) :
+   ```sql
+   set local role anon;
+   select count(*) as lignes_visibles_par_un_anonyme from public.profiles; -- attendu : 0
+   reset role;
+   ```
+4. RLS confirmée active sur les 43 tables (`pg_class.relrowsecurity = true`).
 
 ---
 
-## Conclusion
+## 7. Tables sociales restant à traiter (avec la grosse mise à jour)
 
-- **Priorité** : le finding `profiles` (🔴) est le vrai « données accessibles
-  sans authentification » signalé par les fondateurs, et il est **indépendant**
-  du travail noindex/robots.
-- **Aucune policy modifiée.** Le SQL ci-dessus est une **proposition** : attendre
-  validation explicite, puis vérifier l'impact produit et l'état réel en prod
-  avant toute exécution dans le SQL Editor Supabase.
-- **Étape suivante recommandée** : recenser dans le code toutes les lectures
-  anonymes de `profiles`, puis trancher Option A vs B.
+Ces tables portent encore une politique `SELECT USING (true)` → lisibles sans
+compte via la clé anon. **Pas de PII de santé**, mais contenu et graphe social
+scrapables. Leur RLS est **entremêlée avec la refonte sociale du pivot** : les
+corriger isolément changerait le comportement du feed en production juste avant
+la mise à jour. À traiter **avec** le déploiement de la grosse MAJ.
+
+| Table | Problème | Correction cible |
+|---|---|---|
+| `posts` | politique `Posts publics visibles par tous` (`true`) **annule** la logique d'audience `posts_select` (public/friends/privé) → posts privés/amis exposés | retirer le blanket `true`, restreindre `posts_select` à `authenticated` |
+| `stories` | `Stories visibles par tous` (`true`) **annule** l'expiration → stories expirées exposées | conserver la fenêtre d'expiration, restreindre à `authenticated` |
+| `followers` | `Abonnements visibles par tous` (`true`) → graphe social public | `SELECT TO authenticated` |
+| `post_likes`, `post_comments`, `post_reposts`, `comment_likes` | `SELECT USING (true)` → interactions publiques | `SELECT TO authenticated` |
+| `highlights`, `highlight_items` | `SELECT USING (true)` | `SELECT TO authenticated` |
+
+Note complémentaire (à vérifier, non bloquant) : `season_eclats` et
+`season_scores` apparaissent dans les grants mais pas dans le scan des tables
+soumises à RLS → possibles grants orphelins ou vues ; à confirmer (dormant,
+lié aux saisons).
+
+Cible produit à terme (rappel) : profils **privés**, données complètes réservées
+au propriétaire, identité minimale exposée via une **vue publique dédiée** en
+opt-in explicite. Voir la Phase 2 discutée hors de ce document.
+
+---
+
+## 8. Rappel — SQL (archive) vs code non fusionné
+
+- **SQL RLS ci-dessus** : **exécuté en production** par les fondateurs (SQL
+  Editor). Ce document ne fait que l'archiver.
+- **Durcissement des API** (`/api/setup-db`, `/api/stripe/checkout`,
+  `/api/me/ensure-profile`, `/api/cron/reminders`) : présent uniquement sur la
+  branche `hardening-seo-privacy`, **poussé et testé sur preview mais NON
+  FUSIONNÉ** dans `main`. Sa fusion est conditionnée à la configuration de
+  `CRON_SECRET` en production (sinon le cron des rappels renverra 401) et à la
+  checklist de pré-fusion du Lot 2.
