@@ -583,6 +583,21 @@ function Dashboard() {
       .catch(() => setAuraLoaded(true));
   }, [user, mealsRefreshKey]);
 
+  // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
+  // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
+  const [expGain, setExpGain] = useState<number | null>(null);
+  const prevExpRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!auraLoaded) return;
+    const prev = prevExpRef.current;
+    prevExpRef.current = aura.exp;
+    if (prev !== null && aura.exp > prev) {
+      setExpGain(aura.exp - prev);
+      const t = setTimeout(() => setExpGain(null), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [aura.exp, auraLoaded]);
+
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
@@ -950,9 +965,18 @@ function Dashboard() {
       >
         {/* ── Salutation (centrée, au-dessus du rang) ── */}
         <div className="text-center">
-          <p className="text-[13px] font-normal" style={{ color: "var(--text-soft)" }}>{greeting}</p>
-          <h1 className="text-xl font-semibold -tracking-[0.01em] mt-0.5" style={{ color: "var(--text-0)" }}>
-            {(user?.pseudo ?? user?.name ?? "")}
+          <p className="text-[12px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
+          <h1 className="text-[32px] font-extrabold leading-tight mt-0.5" style={{ color: "var(--text-0)" }}>
+            <span
+              style={{
+                background: "linear-gradient(135deg,var(--accent),var(--gold))",
+                WebkitBackgroundClip: "text", backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                display: "inline-block", paddingRight: "0.08em", // évite que la dernière lettre soit coupée
+              }}
+            >
+              {(user?.pseudo ?? user?.name ?? "")}
+            </span>
           </h1>
         </div>
 
@@ -967,18 +991,37 @@ function Dashboard() {
             Rang {RANGS.findIndex((r) => r.id === aura.rang.id) + 1}
           </div>
 
-          {/* EXP en chiffres (pas de barre) */}
-          <div
-            className="mt-3 inline-flex items-baseline gap-1 rounded-full px-[18px] py-2"
-            style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.10)", boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.12)" }}
-          >
-            <span
-              className="text-[22px] font-extrabold leading-none"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}
+          {/* EXP en chiffres (pas de barre) + animation de gain */}
+          <div className="relative mt-3 inline-flex justify-center">
+            <AnimatePresence>
+              {expGain != null && (
+                <motion.div
+                  key="expgain"
+                  initial={{ opacity: 0, y: 6, scale: 0.6 }}
+                  animate={{ opacity: 1, y: -16, scale: 1 }}
+                  exit={{ opacity: 0, y: -32 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="absolute -top-2 left-1/2 -translate-x-1/2 pointer-events-none px-2.5 py-0.5 rounded-full text-[12px] font-extrabold whitespace-nowrap"
+                  style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 14px rgba(193,59,193,0.5)" }}
+                >
+                  +{expGain} EXP
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.div
+              className="inline-flex items-baseline gap-1 rounded-full px-[18px] py-2"
+              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.10)", boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.12)" }}
+              animate={expGain != null ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
             >
-              {auraLoaded ? aura.exp : "—"}
-            </span>
-            <span className="text-[14px] font-semibold" style={{ color: "var(--text-soft)" }}>/ {aura.seuilHaut} EXP</span>
+              <span
+                className="text-[22px] font-extrabold leading-none"
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}
+              >
+                {auraLoaded ? aura.exp : "—"}
+              </span>
+              <span className="text-[14px] font-semibold" style={{ color: "var(--text-soft)" }}>/ {aura.seuilHaut} EXP</span>
+            </motion.div>
           </div>
           <p className="mt-2 text-[11.5px]" style={{ color: "var(--text-3)" }}>
             {auraLoaded

@@ -21,6 +21,12 @@ export const EXP_SEANCE_STREAK = 5; // bonus « série de séances » : +5 aprè
 export const EXP_CONNEXION = 5;
 export const EXP_REPAS = 5;
 
+// ── Reset global de l'aura ──
+// L'EXP est dérivée des données : pour repartir tout le monde de 0, on ne compte
+// QUE les actions (séances / repas / jours) à partir de cette date. Reculer cette
+// date « rend » l'historique ; l'avancer = nouveau reset pour tout le monde.
+export const AURA_EPOCH = "2026-07-22";
+
 /** Un rang = un palier de l'aura. `min` = EXP minimale pour l'atteindre. */
 export type Rang = {
   id: string;
@@ -91,11 +97,12 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
   try {
     const today = new Date().toISOString().slice(0, 10);
     const [seancesRes, repasRes, joursRes, todayRes] = await Promise.all([
-      supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      // Repas : on ne compte QUE les dates <= aujourd'hui (les faux repas datés
-      // dans le futur ne rapportent aucune EXP).
-      supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", userId).lte("date", today),
-      supabase.from("daily_stats").select("id", { count: "exact", head: true }).eq("user_id", userId).lte("date", today),
+      // On ne compte que les actions à partir de AURA_EPOCH (reset global).
+      supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("started_at", AURA_EPOCH),
+      // Repas : dates >= époque ET <= aujourd'hui (les faux repas datés dans le
+      // futur ne rapportent aucune EXP).
+      supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
+      supabase.from("daily_stats").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
       supabase.from("daily_stats").select("streak").eq("user_id", userId).eq("date", today).maybeSingle(),
     ]);
 
