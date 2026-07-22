@@ -48,13 +48,15 @@ function pickReminder(hasWorkout: boolean, hasMeals: boolean, streak: number): R
 }
 
 export async function GET(req: NextRequest) {
-  // ── Auth cron ──
+  // ── Auth cron (fail-closed) ──
+  // Sans CRON_SECRET configuré, ou avec un en-tête absent/incorrect, on refuse
+  // TOUJOURS. Vercel Cron ajoute automatiquement "Authorization: Bearer <CRON_SECRET>"
+  // quand la variable existe. ⚠️ Ne pas déployer sans avoir défini CRON_SECRET
+  // en production, sinon le cron des rappels renverra 401.
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "non_autorisé" }, { status: 401 });
-    }
+  const auth = req.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "non_autorise" }, { status: 401 });
   }
 
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
