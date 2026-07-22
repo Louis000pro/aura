@@ -2385,6 +2385,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
               background: "linear-gradient(135deg,var(--accent),var(--gold))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
+              display: "inline-block", paddingRight: "0.14em",  // évite que l'italique coupe le « n » final
             }}>
               nutrition
             </em>

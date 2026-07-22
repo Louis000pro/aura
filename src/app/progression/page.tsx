@@ -2872,7 +2872,14 @@ export default function ProgressionPage() {
           <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
             {dateLabel}
           </p>
-          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Entraînement</h1>
+          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
+            <em className="not-italic font-light" style={{
+              background: "linear-gradient(135deg,var(--accent),var(--gold))",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              fontStyle: "italic",
+              display: "inline-block", paddingRight: "0.14em",  // même traitement que « nutrition »
+            }}>Entraînement</em>
+          </h1>
         </motion.div>
 
         {/* ── ① Héros « Aujourd'hui » ── */}
