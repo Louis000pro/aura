@@ -1,5 +1,28 @@
 import { NextResponse } from "next/server";
 
+/**
+ * ⚠️ ENDPOINT PRIVILÉGIÉ — exécute du SQL via la clé service-role.
+ * VERROUILLÉ (fail-closed) : accès réservé au porteur du secret serveur
+ * `SETUP_DB_SECRET` (jamais exposé au navigateur, jamais `NEXT_PUBLIC_*`).
+ * Refuse si le secret n'est pas configuré, si l'en-tête est absent, ou si la
+ * valeur ne correspond pas. Répond 404 pour ne pas révéler l'existence de
+ * l'endpoint.
+ *
+ * DETTE TECHNIQUE (à traiter, cf. compte-rendu Lot 2) :
+ *   - supprimer définitivement cet endpoint ;
+ *   - retirer ses deux appels dans src/app/communaute/page.tsx ;
+ *   - déplacer tout setup de schéma vers une migration SQL / un script interne.
+ */
+function isAuthorized(req: Request): boolean {
+  const secret = process.env.SETUP_DB_SECRET;
+  if (!secret) return false; // fail-closed : pas de secret configuré → fermé
+  const provided =
+    req.headers.get("x-setup-secret")?.trim() ||
+    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ||
+    "";
+  return provided.length > 0 && provided === secret;
+}
+
 const PROJECT_REF = "qbxcalnihiydvfjorhay";
 const MGMT_TOKEN  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -99,7 +122,9 @@ CREATE INDEX IF NOT EXISTS post_reposts_post_id_idx ON public.post_reposts(post_
 CREATE INDEX IF NOT EXISTS comment_likes_comment_id_idx ON public.comment_likes(comment_id);
 `;
 
-export async function POST() {
+export async function POST(req: Request) {
+  if (!isAuthorized(req)) return new NextResponse(null, { status: 404 });
+
   // Méthode 1 : Supabase Management API (token de service)
   if (MGMT_TOKEN) {
     try {
@@ -165,7 +190,9 @@ export async function POST() {
   );
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!isAuthorized(req)) return new NextResponse(null, { status: 404 });
+
   // Vérifie si post_comments existe
   if (!SUPABASE_URL || !SERVICE_KEY) {
     return NextResponse.json({ exists: false, error: "Config manquante" });
