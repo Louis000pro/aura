@@ -24,26 +24,32 @@ function slugify(s: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, pseudo, full_name, avatar_url, email } = await req.json();
-    if (!user_id) return Response.json({ error: "user_id requis" }, { status: 400 });
+    // ── Authentification : l'identité vient du token de session, jamais du body ──
+    // Un utilisateur ne peut donc pas agir sur le profil d'un autre en changeant
+    // le corps de la requête.
+    const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return Response.json({ error: "non_authentifie" }, { status: 401 });
 
     const supabase = createAdminClient();
+    const { data: { user: caller }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !caller) return Response.json({ error: "session_invalide" }, { status: 401 });
 
-    // ── Métadonnées (body + auth.users) ──
+    const user_id = caller.id; // identité issue de la session
+
+    // Indices de profil : hints du body (données de l'utilisateur lui-même) + métadonnées auth.
+    const { pseudo, full_name, avatar_url } = (await req.json().catch(() => ({}))) as {
+      pseudo?: string | null; full_name?: string | null; avatar_url?: string | null;
+    };
     let metaPseudo = pseudo as string | null | undefined;
     let metaName   = full_name as string | null | undefined;
     let metaAvatar = avatar_url as string | null | undefined;
-    let metaEmail  = email as string | null | undefined;
-    try {
-      const { data: userData } = await supabase.auth.admin.getUserById(user_id);
-      const u = userData?.user;
-      if (u) {
-        metaEmail  = metaEmail  || u.email;
-        metaPseudo = metaPseudo || (u.user_metadata?.pseudo as string | undefined);
-        metaName   = metaName   || (u.user_metadata?.full_name as string | undefined) || (u.user_metadata?.name as string | undefined);
-        metaAvatar = metaAvatar || (u.user_metadata?.avatar_url as string | undefined) || (u.user_metadata?.picture as string | undefined);
-      }
-    } catch { /* ignore */ }
+    let metaEmail  = caller.email as string | null | undefined;
+    {
+      const u = caller;
+      metaPseudo = metaPseudo || (u.user_metadata?.pseudo as string | undefined);
+      metaName   = metaName   || (u.user_metadata?.full_name as string | undefined) || (u.user_metadata?.name as string | undefined);
+      metaAvatar = metaAvatar || (u.user_metadata?.avatar_url as string | undefined) || (u.user_metadata?.picture as string | undefined);
+    }
 
     // Candidat de pseudo : pseudo explicite → slug du nom → préfixe email → user_xxxxxx
     const candidate =

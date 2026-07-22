@@ -99,19 +99,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           // Profil manquant OU pseudo vide (compte Google) → création / réparation
           if (data) setUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
-          void fetch("/api/me/ensure-profile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: sbUser.id,
-              email: sbUser.email,
-              pseudo: (sbUser.user_metadata?.pseudo as string | undefined) ?? null,
-              full_name: (sbUser.user_metadata?.full_name as string | undefined) ?? (sbUser.user_metadata?.name as string | undefined) ?? null,
-              avatar_url: (sbUser.user_metadata?.avatar_url as string | undefined) ?? null,
-            }),
-          }).then((r) => r.json()).then((res) => {
-            if (res?.profile) setUser(mapUser(sbUser, res.profile));
-          }).catch(() => {});
+          void (async () => {
+            // Identité déduite du token côté serveur → on n'envoie plus user_id/email.
+            const { data: { session: s } } = await supabase.auth.getSession();
+            const token = s?.access_token;
+            if (!token) return;
+            fetch("/api/me/ensure-profile", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                pseudo: (sbUser.user_metadata?.pseudo as string | undefined) ?? null,
+                full_name: (sbUser.user_metadata?.full_name as string | undefined) ?? (sbUser.user_metadata?.name as string | undefined) ?? null,
+                avatar_url: (sbUser.user_metadata?.avatar_url as string | undefined) ?? null,
+              }),
+            }).then((r) => r.json()).then((res) => {
+              if (res?.profile) setUser(mapUser(sbUser, res.profile));
+            }).catch(() => {});
+          })();
         }
       }
     })();
