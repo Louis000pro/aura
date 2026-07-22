@@ -952,7 +952,7 @@ function Dashboard() {
         <div className="text-center">
           <p className="text-[13px] font-normal" style={{ color: "var(--text-soft)" }}>{greeting}</p>
           <h1 className="text-xl font-semibold -tracking-[0.01em] mt-0.5" style={{ color: "var(--text-0)" }}>
-            {(user?.pseudo ?? user?.name ?? "")} 👋
+            {(user?.pseudo ?? user?.name ?? "")}
           </h1>
         </div>
 

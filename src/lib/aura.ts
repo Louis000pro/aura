@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // L'aura — système de rang personnel de Vaiiya
 //
-// L'EXP (« l'aura ») monte avec les actions. Barème validé avec Louis (2026-07-21) :
-//   • Séance terminée   → +30
-//   • Connexion du jour → +5
-//   • Repas loggé       → +5
-//   • Série 🔥 maintenue → bonus (+5 par jour de série en cours)
+// L'EXP (« l'aura ») monte avec les actions. Barème validé avec Louis :
+//   • Séance terminée      → +30
+//   • Bonus série de séance → +5 après CHAQUE séance
+//   • Connexion du jour    → +5
+//   • Repas identifié      → +5   (dates FUTURES exclues : anti-triche)
 //
 // Pour démarrer sans migration SQL bloquante, l'EXP est DÉRIVÉE des vraies données
 // (compte des séances / repas / jours actifs). On pourra persister une colonne
@@ -17,18 +17,20 @@ import type { createClient } from "@/lib/supabase";
 type SB = ReturnType<typeof createClient>;
 
 export const EXP_SEANCE = 30;
+export const EXP_SEANCE_STREAK = 5; // bonus « série de séances » : +5 après chaque séance
 export const EXP_CONNEXION = 5;
 export const EXP_REPAS = 5;
-export const EXP_SERIE_PAR_JOUR = 5; // bonus par jour de série en cours
 
 /** Un rang = un palier de l'aura. `min` = EXP minimale pour l'atteindre. */
 export type Rang = {
   id: string;
   nom: string;
   min: number;
-  /** Le néon de la gemme (dégradé) — sert au composant GemmeRang. */
+  /** Chemin du vrai logo PNG (détouré). Si absent/introuvable → repli SVG. */
+  image?: string;
+  /** Le néon de la gemme (dégradé) — repli SVG du composant GemmeRang. */
   neon: [string, string];
-  /** La pierre (dégradé clair → foncé). */
+  /** La pierre (dégradé clair → foncé) — repli SVG. */
   pierre: [string, string, string];
 };
 
@@ -40,6 +42,7 @@ export const RANGS: Rang[] = [
     id: "aurore",
     nom: "Aurore",
     min: 0,
+    image: "/rangs/aurore.png",
     neon: ["#E45FE4", "#B02FC0"],
     pierre: ["#FFD98A", "#E8930C", "#7a3d0a"],
   },
@@ -89,8 +92,10 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
     const today = new Date().toISOString().slice(0, 10);
     const [seancesRes, repasRes, joursRes, todayRes] = await Promise.all([
       supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("daily_stats").select("id", { count: "exact", head: true }).eq("user_id", userId),
+      // Repas : on ne compte QUE les dates <= aujourd'hui (les faux repas datés
+      // dans le futur ne rapportent aucune EXP).
+      supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", userId).lte("date", today),
+      supabase.from("daily_stats").select("id", { count: "exact", head: true }).eq("user_id", userId).lte("date", today),
       supabase.from("daily_stats").select("streak").eq("user_id", userId).eq("date", today).maybeSingle(),
     ]);
 
@@ -100,10 +105,9 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
     const streak = (todayRes.data?.streak as number | undefined) ?? 0;
 
     const exp =
-      seances * EXP_SEANCE +
+      seances * (EXP_SEANCE + EXP_SEANCE_STREAK) + // séance +30, +5 de série à chaque séance
       repas * EXP_REPAS +
-      jours * EXP_CONNEXION +
-      streak * EXP_SERIE_PAR_JOUR;
+      jours * EXP_CONNEXION;
 
     return etatDepuisExp(exp, { seances, repas, jours, streak });
   } catch {

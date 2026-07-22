@@ -2272,9 +2272,22 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2800); };
 
+  // Anti-triche : on interdit de logger un repas sur une date future (sinon on
+  // pourrait gonfler son EXP avec de faux repas datés dans l'avenir).
+  const estDateFuture = (d: Date) => {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    const dd = new Date(d); dd.setHours(0, 0, 0, 0);
+    return dd.getTime() > t.getTime();
+  };
+  const bloquerSiFutur = () => {
+    if (estDateFuture(selectedDate)) { showToast("Impossible de logger un repas dans le futur 🙂"); return true; }
+    return false;
+  };
+
   /* ── Ajout repas photo IA ─── */
   const handleAddPhoto = async (meal: Omit<MealEntry, "id">) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
       food_name: meal.name, description: meal.description ?? null,
@@ -2290,6 +2303,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   /* ── Ajout repas code-barres ─── */
   const handleAddBarcode = async (meal: Omit<MealEntry, "id">) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
       food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
@@ -2303,6 +2317,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   /* ── Ajout repas manuel ─── */
   const handleAddManual = async (meal: Omit<MealEntry, "id">) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
       food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
@@ -2316,6 +2331,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   /* ── Ajout rapide depuis les repas récents (1 tap) ─── */
   const quickAddRecent = async (r: RecentMeal) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: getMealTypeFromTime(),
       food_name: r.name, calories: r.calories, proteins: r.proteins,
@@ -2328,6 +2344,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   /* ── Ajout d'une recette (IA) au journal du jour — même flux que ci-dessus ─── */
   const addRecipeMeal = async (m: { name: string; calories: number; proteins: number; carbs: number; fats: number }) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: getMealTypeFromTime(),
       food_name: m.name, calories: m.calories, proteins: m.proteins,
