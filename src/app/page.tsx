@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown, ChevronRight, type LucideIcon } from "lucide-react";
+import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Footprints, ChevronUp, ChevronDown, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import ProgressionStats from "@/components/ProgressionStats";
 import StatsDrawer from "@/components/StatsDrawer";
 import DailyDrawer from "@/components/DailyDrawer";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
@@ -17,6 +16,8 @@ import OnboardingModal, { type OnboardingData } from "@/components/OnboardingMod
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
+import GemmeRang from "@/components/GemmeRang";
+import { calculerAura, etatDepuisExp, histoireSerie, RANGS, type EtatAura } from "@/lib/aura";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
@@ -87,35 +88,6 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   }, { onConflict: "user_id,date" });
 
   return { score, calories, burned, steps: 0, sleepHours: 0, streak };
-}
-
-/* ─── Score Ring ─── */
-function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
-  const strokeW = 4;
-  const radius = (size - strokeW * 2) / 2;
-  const circumference = 2 * Math.PI * radius;
-  return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
-        <defs>
-          <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#FFD34E" />
-            <stop offset="100%" stopColor="#FF7A1A" />
-          </linearGradient>
-        </defs>
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--accent-rgb),0.18)" strokeWidth={strokeW} />
-        <motion.circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="url(#scoreGrad)" strokeWidth={strokeW} strokeLinecap="round"
-          style={{ filter: "drop-shadow(0 0 5px rgba(var(--gold-rgb),0.55))" }}
-          strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: circumference * (1 - score / 100) }}
-          transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }} />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-2xl font-light leading-none" style={{ color: "var(--text-1)" }}>{score}</motion.span>
-        <span className="text-[9px] font-semibold tracking-wider uppercase mt-0.5" style={{ color: "var(--text-3)" }}>/100</span>
-      </div>
-    </div>
-  );
 }
 
 /* ─── Welcome Overlay ─── */
@@ -578,7 +550,6 @@ function Dashboard() {
   }, [showChat]);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
-  const [dailyVideoUrl, setDailyVideoUrl] = useState<string | null>(null);
   void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
@@ -601,19 +572,17 @@ function Dashboard() {
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Animation quand le score augmente (+N qui s'envole + pop)
-  const [scoreBump, setScoreBump] = useState<number | null>(null);
-  const prevScoreRef = useRef<number | null>(null);
+  // ── L'aura (rang personnel) : EXP dérivée des vraies données de l'utilisateur ──
+  const [aura, setAura] = useState<EtatAura>(() => etatDepuisExp(0));
+  const [auraLoaded, setAuraLoaded] = useState(false);
   useEffect(() => {
-    if (!liveStats.loaded) return;
-    const prev = prevScoreRef.current;
-    prevScoreRef.current = liveStats.score;
-    if (prev !== null && liveStats.score > prev) {
-      setScoreBump(liveStats.score - prev);
-      const t = setTimeout(() => setScoreBump(null), 2200);
-      return () => clearTimeout(t);
-    }
-  }, [liveStats.score, liveStats.loaded]);
+    if (!user) return;
+    const supabase = createClient();
+    calculerAura(supabase, user.id)
+      .then((etat) => { setAura(etat); setAuraLoaded(true); })
+      .catch(() => setAuraLoaded(true));
+  }, [user, mealsRefreshKey]);
+
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
@@ -687,29 +656,6 @@ function Dashboard() {
       .gte("started_at", monday.toISOString())
       .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
   }, [user]);
-
-  // Fetch la vidéo du jour : 24h → 7j → la plus vue de tous les temps (garantit un aperçu)
-  useEffect(() => {
-    const supabase = createClient();
-    const pickVideo = async () => {
-      const tryWindow = async (sinceIso: string | null) => {
-        let q = supabase.from("posts").select("media_url, views, created_at")
-          .eq("media_type", "video")
-          .not("media_url", "is", null);
-        if (sinceIso) q = q.gte("created_at", sinceIso);
-        const { data } = await q
-          .order("views", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false })
-          .limit(1).maybeSingle();
-        return (data?.media_url as string | undefined) ?? null;
-      };
-      const day  = new Date(Date.now() - 86400000).toISOString();
-      const week = new Date(Date.now() - 7 * 86400000).toISOString();
-      const url = (await tryWindow(day)) ?? (await tryWindow(week)) ?? (await tryWindow(null));
-      if (url) setDailyVideoUrl(url);
-    };
-    void pickVideo();
-  }, []);
 
   // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
   // Une fois le compte créé / l'onboarding fermé, il ne réapparaît plus jamais
@@ -1002,123 +948,111 @@ function Dashboard() {
           paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
         }}
       >
-        {/* ── Salutation ── */}
-        <div>
-          <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
-          <h1 className="text-2xl font-light mt-0.5" style={{ color: "var(--text-0)" }}>
-            {user?.pseudo ?? user?.name ?? ""}
+        {/* ── Salutation (centrée, au-dessus du rang) ── */}
+        <div className="text-center">
+          <p className="text-[13px] font-normal" style={{ color: "var(--text-soft)" }}>{greeting}</p>
+          <h1 className="text-xl font-semibold -tracking-[0.01em] mt-0.5" style={{ color: "var(--text-0)" }}>
+            {(user?.pseudo ?? user?.name ?? "")} 👋
           </h1>
         </div>
 
-        {/* ── Aujourd'hui → séances & repas recommandés (StatsDrawer) ── */}
-        <button
-          type="button"
-          onClick={() => setShowStatsDrawer(true)}
-          data-tour-anchor="stats"
-          className="w-full text-left rounded-3xl p-4 outline-none active:opacity-95 transition-opacity"
-          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)" }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>Aujourd&apos;hui</p>
-            <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
-              <Dumbbell size={11} strokeWidth={2} />
-              Séances &amp; repas
-              <ChevronDown size={12} strokeWidth={2.5} />
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <ScoreRing score={liveStats.loaded ? liveStats.score : 0} size={82} />
-              <AnimatePresence>
-                {scoreBump != null && (
-                  <motion.div key="bump"
-                    initial={{ opacity: 0, y: 6, scale: 0.6 }}
-                    animate={{ opacity: 1, y: -8, scale: 1 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="absolute -top-1 left-1/2 -translate-x-1/2 pointer-events-none px-2 py-0.5 rounded-full text-[11px] font-extrabold"
-                    style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.5)", whiteSpace: "nowrap" }}>
-                    +{scoreBump}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <div className="flex-1 grid grid-cols-2 gap-2.5">
-              {/* Série — dégradé orange (flamme) */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 5px 16px rgba(232,98,12,0.4)" }}>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "#fff" }}><Flame size={12} strokeWidth={2} />Série</span>
-                <p className="mt-1 text-xl font-extrabold leading-none" style={{ color: "#fff" }}>
-                  {liveStats.loaded && liveStats.streak > 0 ? liveStats.streak : "—"}
-                  {liveStats.streak > 0 && <span className="text-[11px] font-medium ml-1" style={{ opacity: 0.85 }}>{liveStats.streak > 1 ? "jours" : "jour"}</span>}
-                </p>
-              </div>
-              {/* Séances — dégradé violet → magenta */}
-              <div className="rounded-2xl px-3 py-2.5" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 5px 16px rgba(147,60,200,0.4)" }}>
-                <span className="flex items-center gap-1.5 text-[10px] font-bold tracking-wide uppercase" style={{ color: "#fff" }}><Dumbbell size={12} strokeWidth={2} />Séances</span>
-                <p className="mt-1 text-xl font-semibold leading-none" style={{ color: "#fff" }}>
-                  {liveStats.loaded ? liveStats.sessionsWeek : "—"}
-                  <span className="text-[11px] font-medium ml-1" style={{ opacity: 0.85 }}>/ sem</span>
-                </p>
-              </div>
-            </div>
-          </div>
-          {/* Calories mangées / brûlées */}
-          <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}>
-            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#FF9A3D" }}>
-              <Flame size={12} strokeWidth={2} />
-              {liveStats.calories > 0 ? `${liveStats.calories.toLocaleString("fr-FR")} kcal mangées` : "Aucun repas loggé"}
-            </span>
-            {liveStats.burned > 0 && (
-              <span className="text-xs font-medium" style={{ color: "#E8620C" }}>{liveStats.burned.toLocaleString("fr-FR")} kcal brûlées</span>
-            )}
-          </div>
-        </button>
+        {/* ── HÉROS : le rang (l'aura) au centre ── */}
+        <div className="flex flex-col items-center pt-1">
+          <GemmeRang rang={aura.rang} size={150} />
 
-        {/* ── Du jour (vidéo) → DailyDrawer ── */}
-        <button
-          type="button"
-          onClick={() => setShowDailyDrawer(true)}
-          data-tour-anchor="votd"
-          aria-label="Ouvrir Du Jour"
-          className="w-full rounded-3xl p-2.5 flex items-stretch gap-3 outline-none active:opacity-95 transition-opacity overflow-hidden"
-          style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.1)", boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)" }}
-        >
-          <div className="relative overflow-hidden rounded-2xl flex-shrink-0" style={{ width: 66, height: 92, background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)" }}>
-            {dailyVideoUrl ? (
-              <video src={dailyVideoUrl} className="absolute inset-0 w-full h-full object-cover" muted loop autoPlay playsInline preload="auto" />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Play size={20} strokeWidth={2} style={{ color: "#fff", marginLeft: 2 }} fill="#fff" />
-              </div>
-            )}
-            {dailyVideoUrl && (
-              <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.55)" }}>
-                <div className="w-1 h-1 rounded-full" style={{ background: "#FC8181" }} />
-                <span className="text-[7px] font-bold tracking-widest text-white">LIVE</span>
-              </div>
-            )}
+          <div className="mt-1 text-[26px] font-bold tracking-[0.06em] uppercase" style={{ color: "var(--text-0)" }}>
+            {aura.rang.nom}
           </div>
-          <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-            <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--text-3)" }}>Du jour</p>
-            <p className="text-lg font-light leading-tight" style={{ color: "var(--text-0)" }}>Vidéo · Séance · Perf</p>
-            <p className="text-[11px] font-light mt-1" style={{ color: "var(--text-soft)" }}>Tap pour explorer ton contenu</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 3px 12px rgba(193,59,193,0.4)" }}>
-                <Play size={10} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 0.5 }} fill="#fff" />
-                <span className="text-[11px] font-bold text-white">Voir</span>
+          <div className="mt-1 text-[13px] font-semibold tracking-wide" style={{ color: "#9a5a12" }}>
+            Rang {RANGS.findIndex((r) => r.id === aura.rang.id) + 1}
+          </div>
+
+          {/* EXP en chiffres (pas de barre) */}
+          <div
+            className="mt-3 inline-flex items-baseline gap-1 rounded-full px-[18px] py-2"
+            style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.10)", boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.12)" }}
+          >
+            <span
+              className="text-[22px] font-extrabold leading-none"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}
+            >
+              {auraLoaded ? aura.exp : "—"}
+            </span>
+            <span className="text-[14px] font-semibold" style={{ color: "var(--text-soft)" }}>/ {aura.seuilHaut} EXP</span>
+          </div>
+          <p className="mt-2 text-[11.5px]" style={{ color: "var(--text-3)" }}>
+            {auraLoaded
+              ? <>Plus que <b style={{ color: "var(--text-soft)" }}>{aura.restant} EXP</b> avant le prochain rang</>
+              : "Calcul de ton aura…"}
+          </p>
+        </div>
+
+        {/* ── La série, racontée comme une histoire ── */}
+        {(() => {
+          const h = histoireSerie(aura.detail.streak);
+          return (
+            <div
+              className="rounded-2xl px-4 py-3 flex items-center gap-3"
+              style={{ background: "linear-gradient(135deg,rgba(245,177,32,0.14),rgba(232,98,12,0.11))", border: "1px solid rgba(232,98,12,0.18)" }}
+            >
+              <span className="text-2xl leading-none">🔥</span>
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{h.titre}</p>
+                <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "#b06a1e" }}>{h.sous}</p>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Actions du jour (gagne de l'EXP) ── */}
+        <section>
+          <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>
+            Gagne de l&apos;EXP aujourd&apos;hui
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {/* Séance — action principale (violet → magenta) */}
+            <button
+              type="button"
+              onClick={() => router.push("/progression")}
+              className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)" }}
+            >
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>🏋️</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Faire ma séance</span>
+                <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>La plus grosse montée d&apos;aura</span>
               </span>
-              <ChevronRight size={14} strokeWidth={2} style={{ color: "rgba(var(--accent-rgb),0.6)" }} />
-            </div>
-          </div>
-        </button>
+              <span className="text-[14px] font-extrabold" style={{ color: "#C13BC1" }}>+30</span>
+            </button>
 
-        {/* ── Ta progression (courbes remontées de l'onglet Progression) ── */}
-        <section className="mt-2">
-          <div className="mb-3 px-1">
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>Analyse</p>
-            <h2 className="text-lg font-light" style={{ color: "var(--text-0)" }}>Ta progression</h2>
+            {/* Connexion du jour — déjà validée par le fait d'être là (teal) */}
+            <div
+              className="w-full rounded-2xl px-3.5 py-3 flex items-center gap-3"
+              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: 0.72 }}
+            >
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#2BD4A0,#12b98a)" }}>✅</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Connexion du jour</span>
+                <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Déjà validé ✓</span>
+              </span>
+              <span className="text-[14px] font-extrabold" style={{ color: "#12b98a" }}>+5</span>
+            </div>
+
+            {/* Repas — ouvre le log rapide (orange = énergie) */}
+            <button
+              type="button"
+              onClick={() => setShowRepas(true)}
+              className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)" }}
+            >
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>🍽️</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Logger un repas</span>
+                <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>Note ce que tu manges</span>
+              </span>
+              <span className="text-[14px] font-extrabold" style={{ color: "#E8620C" }}>+5</span>
+            </button>
           </div>
-          <ProgressionStats onToast={showToast} />
         </section>
       </div>
 
