@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -258,6 +259,28 @@ export default function Navigation() {
         <div className="md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <NotificationBell side="top" />
+        </div>
+      )}
+
+      {/* ══ Avatar profil global (haut-gauche, mobile) — mon profil s'ouvre depuis
+            là sur les onglets principaux (façon Snapchat), plus seulement
+            Communauté (qui garde le sien dans sa propre barre). Limité aux onglets
+            pour ne pas se poser sur les titres à gauche des pages secondaires. ══ */}
+      {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
+        <div className="md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          <button onClick={() => router.push("/profil")} aria-label="Mon profil"
+            data-tour-anchor="nav-profil" className="relative shrink-0 active:opacity-80 transition-opacity">
+            {user.avatar ? (
+              <Image src={user.avatar} alt="" width={36} height={36}
+                className="h-9 w-9 rounded-full object-cover" unoptimized />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+                {(user.pseudo ?? "?").charAt(0).toUpperCase()}
+              </div>
+            )}
+          </button>
         </div>
       )}
 

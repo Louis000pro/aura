@@ -2861,7 +2861,7 @@ export default function ProgressionPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-10 pb-36 md:pl-28 md:pr-8 md:pt-12 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+60px)] pb-36 md:pl-28 md:pr-8 md:pt-12 md:pb-16 relative overflow-x-hidden">
       <div className="w-full max-w-xl flex flex-col">
 
         {/* ── En-tête : date + titre ── */}

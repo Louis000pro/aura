@@ -2373,7 +2373,7 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   };
 
   return (
-    <div className={fullPage ? "min-h-screen px-4 pt-10 pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10" : "w-full px-0 pt-4 pb-12"}>
+    <div className={fullPage ? "min-h-screen px-4 pt-[calc(env(safe-area-inset-top)+60px)] pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10" : "w-full px-0 pt-4 pb-12"}>
       <WeighInPrompt />
       <TastePrefsPrompt />
 
