@@ -19,7 +19,6 @@ export default function GemmeRang({
   const h = Math.round(size * (200 / 150));
   const reduce = useReducedMotion();
   const [imgOk, setImgOk] = useState(true);
-  const [n0] = rang.neon;
 
   const flottement = reduce
     ? {}
@@ -41,7 +40,9 @@ export default function GemmeRang({
             height: h,
             width: "auto",
             objectFit: "contain",
-            filter: `drop-shadow(0 0 20px ${hexA(n0, 0.55)}) drop-shadow(0 10px 24px rgba(0,0,0,0.18))`,
+            // PAS de filter:drop-shadow ici : le PNG contient déjà son néon, et sur
+            // iOS Safari le drop-shadow d'un <img> se calcule sur la boîte
+            // rectangulaire (→ rectangle flou visible sur fond clair).
           }}
           draggable={false}
         />
