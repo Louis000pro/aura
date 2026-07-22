@@ -2,6 +2,6 @@
 
 Déposer ici le PNG **détouré** (fond transparent) de chaque rang, nommé par l'id du rang défini dans `src/lib/aura.ts`.
 
-- `aurore.png` — rang 1 (Aurore)
+- `aurore-v2.png` — rang 1 (Aurore) — suffixe versionné pour casser le cache navigateur/SW à chaque mise à jour du visuel
 
 Si le fichier est absent ou ne charge pas, `GemmeRang` retombe automatiquement sur un rendu SVG (aucune image cassée).

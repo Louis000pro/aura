@@ -48,7 +48,7 @@ export const RANGS: Rang[] = [
     id: "aurore",
     nom: "Aurore",
     min: 0,
-    image: "/rangs/aurore.png",
+    image: "/rangs/aurore-v2.png", // nom versionné = casse le cache navigateur/SW (l'ancien avait un halo)
     neon: ["#E45FE4", "#B02FC0"],
     pierre: ["#FFD98A", "#E8930C", "#7a3d0a"],
   },
