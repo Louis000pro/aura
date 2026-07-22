@@ -27,7 +27,7 @@ export default function GemmeRang({
 
   return (
     <motion.div
-      style={{ width: size, height: h, display: "flex", alignItems: "center", justifyContent: "center" }}
+      style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
       {...flottement}
     >
       {rang.image && imgOk ? (
@@ -35,13 +35,11 @@ export default function GemmeRang({
         <img
           src={rang.image}
           alt={`Rang ${rang.nom}`}
-          width={size}
-          height={h}
           onError={() => setImgOk(false)}
           style={{
-            width: size,
-            height: "auto",
-            maxHeight: h,
+            // hauteur pilotée par `size` (la gemme réelle est élancée) ; largeur auto
+            height: h,
+            width: "auto",
             objectFit: "contain",
             filter: `drop-shadow(0 0 20px ${hexA(n0, 0.55)}) drop-shadow(0 10px 24px rgba(0,0,0,0.18))`,
           }}
