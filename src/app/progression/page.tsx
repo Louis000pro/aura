@@ -153,21 +153,6 @@ const workoutSessions: WorkoutSession[] = [
   })),
 ];
 
-const CATEGORY_LABEL: Record<WorkoutCategory, string> = {
-  force: "Force", fullbody: "Full Body", cardio: "Cardio", mobilite: "Mobilité",
-};
-
-/* ─── Icon resolver (Supabase stores icon name as string) ── */
-const ICON_MAP: Record<string, typeof Dumbbell> = {
-  Dumbbell, Flame, Wind, Layers, Sparkles,
-};
-function resolveIcon(icon: unknown): typeof Dumbbell {
-  if (typeof icon === "string") return ICON_MAP[icon] ?? Dumbbell;
-  if (typeof icon === "function") return icon as typeof Dumbbell;
-  return Dumbbell;
-}
-
-/* ─── Visibilité des séances perso ─────────────────────────── */
 const VIS_CONFIG = {
   private: { label: "Privée", icon: Lock,  color: "var(--text-3)" },
   friends: { label: "Amis",   icon: Users, color: "#8B5CF6" },
