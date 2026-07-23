@@ -23,9 +23,18 @@ import { X, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, formatPrice } from "@/lib/plans";
 
-const SESSION_KEY = "vaiiya:premium-banner-vu";
 const DELAI_APPARITION = 1400;   // laisse l'app se poser avant de solliciter
-const DUREE_VISIBLE = 11000;     // ne squatte jamais le haut de l'écran
+
+/**
+ * Qui a déjà vu le rappel dans CE chargement de page.
+ *
+ * Volontairement une variable de module et PAS sessionStorage : sessionStorage
+ * survit aux rechargements, donc le bandeau ne revenait plus tant que l'onglet
+ * était ouvert. Ici la variable repart à zéro à chaque chargement du site →
+ * **le rappel réapparaît à chaque connexion / réouverture**, tout en ne se
+ * rejouant pas quand on navigue d'une page à l'autre.
+ */
+let dernierUtilisateurMontre: string | null = null;
 
 /** Les bénéfices tournent : le rappel ne dit pas deux fois la même chose. */
 const BENEFICES = [
@@ -51,23 +60,20 @@ export default function PremiumBanner() {
     pathname.startsWith("/rejoindre");
 
   useEffect(() => {
-    if (!user || estAbonne || pageExclue) return;
+    // Déconnecté → on réarme : la prochaine connexion réaffichera le rappel.
+    if (!user) { dernierUtilisateurMontre = null; return; }
+    if (estAbonne || pageExclue) return;
+    // Déjà montré à cette personne depuis le chargement → on ne rejoue pas
+    // à chaque navigation interne.
+    if (dernierUtilisateurMontre === user.id) return;
 
-    // Une seule fois par session de navigation
-    try {
-      if (sessionStorage.getItem(SESSION_KEY)) return;
-    } catch { /* sessionStorage indisponible → on affiche quand même */ }
-
+    dernierUtilisateurMontre = user.id;
     setBenefice(BENEFICES[Math.floor(Math.random() * BENEFICES.length)]);
 
-    const tOuvre = setTimeout(() => {
-      setVisible(true);
-      try { sessionStorage.setItem(SESSION_KEY, "1"); } catch { /* ignore */ }
-    }, DELAI_APPARITION);
-
-    const tFerme = setTimeout(() => setVisible(false), DELAI_APPARITION + DUREE_VISIBLE);
-
-    return () => { clearTimeout(tOuvre); clearTimeout(tFerme); };
+    // Pas de fermeture automatique : le rappel reste tant que l'utilisateur ne
+    // l'a pas fermé (ou n'a pas touché « Voir »). C'est un rappel, pas un flash.
+    const tOuvre = setTimeout(() => setVisible(true), DELAI_APPARITION);
+    return () => clearTimeout(tOuvre);
   }, [user, estAbonne, pageExclue]);
 
   const ouvrirPremium = () => {
