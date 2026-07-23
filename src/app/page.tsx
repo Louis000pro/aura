@@ -637,6 +637,133 @@ function SerieCard({ streak }: { streak: number }) {
   );
 }
 
+/**
+ * La galerie de TOUS les rangs (bottom-sheet). Montre la gemme, le nom, le seuil
+ * EXP et l'état (atteint / rang courant / verrouillé) de chaque rang connu.
+ * Les rangs pas encore atteints sont grisés + désaturés (mystère préservé).
+ */
+function RangsModal({
+  open,
+  onClose,
+  expActuel,
+  rangActuelId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  expActuel: number;
+  rangActuelId: string;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          style={{ background: "rgba(10,6,20,0.55)", backdropFilter: "blur(4px)" }}
+        >
+          <motion.div
+            className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--page-bg)", boxShadow: "0 -8px 40px rgba(0,0,0,0.3)" }}
+          >
+            {/* poignée + titre */}
+            <div className="flex items-center justify-between mb-1">
+              <div className="mx-auto sm:hidden h-1.5 w-10 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.25)" }} />
+            </div>
+            <div className="flex items-center justify-between mb-4 mt-1">
+              <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Les rangs de l&apos;aura</h2>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Fermer"
+                className="grid place-items-center h-8 w-8 rounded-full outline-none active:opacity-80"
+                style={{ background: "rgba(var(--accent-rgb),0.08)", color: "var(--text-soft)" }}
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {RANGS.map((rang, i) => {
+                const atteint = expActuel >= rang.min;
+                const courant = rang.id === rangActuelId;
+                const suivant = RANGS[i + 1];
+                return (
+                  <div
+                    key={rang.id}
+                    className="flex items-center gap-3.5 rounded-2xl px-3.5 py-3"
+                    style={{
+                      background: courant ? "rgba(var(--accent-rgb),0.07)" : "rgb(var(--surface-rgb))",
+                      border: courant ? "1.5px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--accent-rgb),0.08)",
+                    }}
+                  >
+                    <div
+                      className="shrink-0"
+                      style={{ filter: atteint ? "none" : "grayscale(0.85) opacity(0.45)" }}
+                    >
+                      <GemmeRang rang={rang} size={52} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[15px] font-extrabold" style={{ color: "var(--text-0)" }}>{rang.nom}</span>
+                        {courant && (
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
+                            Ton rang
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>
+                        {rang.min === 0
+                          ? "Le point de départ"
+                          : suivant
+                            ? <>À partir de <b style={{ color: "var(--text-soft)" }}>{rang.min} EXP</b></>
+                            : <>À partir de <b style={{ color: "var(--text-soft)" }}>{rang.min} EXP</b></>}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-[11px] font-bold" style={{ color: atteint ? "var(--accent)" : "var(--text-3)" }}>
+                      {atteint ? "Atteint ✦" : `${Math.max(0, rang.min - expActuel)} EXP`}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Teasing du prochain rang à venir */}
+              <div className="flex items-center gap-3.5 rounded-2xl px-3.5 py-3 opacity-70" style={{ border: "1px dashed rgba(var(--accent-rgb),0.2)" }}>
+                <div className="grid place-items-center h-[52px] w-[40px] shrink-0 rounded-xl" style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--text-3)" }}>
+                  <Sparkles size={20} strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[15px] font-extrabold" style={{ color: "var(--text-soft)" }}>Bientôt…</span>
+                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>De nouveaux rangs arrivent. Continue à monter.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
@@ -703,6 +830,7 @@ function Dashboard() {
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
   const [expGain, setExpGain] = useState<number | null>(null);
+  const [showRangs, setShowRangs] = useState(false);
   const prevExpRef = useRef<number | null>(null);
   useEffect(() => {
     if (!auraLoaded) return;
@@ -1149,7 +1277,20 @@ function Dashboard() {
               ? <>Plus que <b style={{ color: "var(--text-soft)" }}>{aura.restant} EXP</b> avant le prochain rang</>
               : "Calcul de ton aura…"}
           </p>
+
+          {/* Voir tous les rangs */}
+          <button
+            type="button"
+            onClick={() => setShowRangs(true)}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
+            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
+          >
+            <Sparkles size={14} strokeWidth={2.4} />
+            Voir tous les rangs
+          </button>
         </div>
+
+        <RangsModal open={showRangs} onClose={() => setShowRangs(false)} expActuel={auraLoaded ? aura.exp : 0} rangActuelId={aura.rang.id} />
 
         {/* ── La série, racontée comme une histoire (animation scopée au rectangle) ── */}
         <SerieCard streak={aura.detail.streak} />
