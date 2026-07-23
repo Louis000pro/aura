@@ -681,6 +681,10 @@ function Dashboard() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // ── L'aura (rang personnel) : EXP dérivée des vraies données de l'utilisateur ──
+  // `statsTick` est incrémenté quand l'effet des stats a fini d'écrire daily_stats
+  // (connexion du jour). On recalcule l'aura APRÈS, sinon la connexion du jour ne
+  // serait pas comptée (0 EXP, Jour 0) à cause de la race entre les deux effets.
+  const [statsTick, setStatsTick] = useState(0);
   const [aura, setAura] = useState<EtatAura>(() => etatDepuisExp(0));
   const [auraLoaded, setAuraLoaded] = useState(false);
   useEffect(() => {
@@ -689,11 +693,7 @@ function Dashboard() {
     calculerAura(supabase, user.id)
       .then((etat) => { setAura(etat); setAuraLoaded(true); })
       .catch(() => setAuraLoaded(true));
-    // liveStats.streak/loaded en dépendance : au 1er chargement (ou après un
-    // reset), la série est réécrite dans daily_stats par l'effet des stats APRÈS
-    // ce calcul → on relit l'aura une fois la série connue, sinon la carte série
-    // resterait bloquée sur « le début » (streak lu à 0 par la race).
-  }, [user, mealsRefreshKey, liveStats.streak, liveStats.loaded]);
+  }, [user, mealsRefreshKey, statsTick]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
@@ -728,13 +728,14 @@ function Dashboard() {
     if (!user) return;
     const supabase = createClient();
     const today = new Date().toISOString().slice(0, 10);
-    supabase
-      .from("daily_stats")
-      .select("score, calories, burned, steps, sleep_hours, streak")
-      .eq("user_id", user.id)
-      .eq("date", today)
-      .maybeSingle()
-      .then(async ({ data, error }) => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("daily_stats")
+          .select("score, calories, burned, steps, sleep_hours, streak")
+          .eq("user_id", user.id)
+          .eq("date", today)
+          .maybeSingle();
         if (!error && data && data.score > 0) {
           // Données existantes avec un score valide — on les utilise directement
           setLiveStats(prev => ({
@@ -748,24 +749,27 @@ function Dashboard() {
             loaded:     true,
           }));
         } else {
-          // Score absent ou nul — calcul dynamique
-          try {
-            const computed = await computeAndSaveScore(user.id, supabase);
-            setLiveStats(prev => ({
-              ...prev,
-              score:      computed.score,
-              calories:   computed.calories,
-              burned:     computed.burned,
-              steps:      computed.steps,
-              sleepHours: computed.sleepHours,
-              streak:     computed.streak,
-              loaded:     true,
-            }));
-          } catch {
-            setLiveStats(prev => ({ ...prev, loaded: true }));
-          }
+          // Score absent ou nul — calcul dynamique (crée aussi la ligne du jour)
+          const computed = await computeAndSaveScore(user.id, supabase);
+          setLiveStats(prev => ({
+            ...prev,
+            score:      computed.score,
+            calories:   computed.calories,
+            burned:     computed.burned,
+            steps:      computed.steps,
+            sleepHours: computed.sleepHours,
+            streak:     computed.streak,
+            loaded:     true,
+          }));
         }
-      });
+      } catch {
+        setLiveStats(prev => ({ ...prev, loaded: true }));
+      } finally {
+        // daily_stats du jour est désormais garantie écrite → on recalcule l'aura
+        // (la connexion du jour +5 est enfin comptée, et la série passe à Jour 1).
+        setStatsTick((t) => t + 1);
+      }
+    })();
   }, [user]);
 
   // Fetch le nombre de séances de la semaine (lundi → maintenant)
