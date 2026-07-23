@@ -11,6 +11,7 @@ import PremiumCelebration from "@/components/PremiumCelebration";
 const ICONS: Record<PlanId, React.ReactNode> = {
   free: <Sparkles size={20} strokeWidth={1.8} />,
   premium: <Crown size={20} strokeWidth={1.8} />,
+  premium_plus: <Crown size={20} strokeWidth={1.8} />,
 };
 
 export default function PremiumPage() {
@@ -92,7 +93,7 @@ function PremiumInner() {
     }
   };
 
-  const order: PlanId[] = ["free", "premium"];
+  const order: PlanId[] = ["free", "premium", "premium_plus"];
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col"
@@ -135,7 +136,7 @@ function PremiumInner() {
         <div
           ref={carouselRef}
           onScroll={onCarouselScroll}
-          className="flex md:grid md:grid-cols-2 md:max-w-2xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
+          className="flex md:grid md:grid-cols-3 md:max-w-4xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
           style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never }}
         >
           {order.map((id) => {
@@ -231,7 +232,7 @@ function PremiumInner() {
               className="rounded-full transition-all cursor-pointer"
               style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
           ))}
-          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>2 offres · glisse pour comparer</span>
+          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>3 offres · glisse pour comparer</span>
         </div>
 
         <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>

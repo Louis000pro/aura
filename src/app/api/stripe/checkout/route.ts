@@ -8,7 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS, isPaidPlan, type PlanId } from "@/lib/plans";
 
 const SECRET = process.env.STRIPE_SECRET_KEY ?? "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vaiiya.fr";
@@ -28,11 +28,12 @@ export async function POST(req: NextRequest) {
       plan?: PlanId;
     };
 
-    if (!user_id || plan !== "premium") {
+    if (!user_id || !isPaidPlan(plan)) {
       return NextResponse.json({ error: "bad_request" }, { status: 400 });
     }
 
-    const p = PLANS[plan];
+    const planId = plan as PlanId;
+    const p = PLANS[planId];
     const stripe = new Stripe(SECRET);
 
     const session = await stripe.checkout.sessions.create({
@@ -55,9 +56,9 @@ export async function POST(req: NextRequest) {
       ],
       subscription_data: {
         trial_period_days: p.trialDays || undefined,
-        metadata: { user_id, plan },
+        metadata: { user_id, plan: planId },
       },
-      metadata: { user_id, plan },
+      metadata: { user_id, plan: planId },
       allow_promotion_codes: true,
       success_url: `${APP_URL}/premium?success=1`,
       cancel_url: `${APP_URL}/premium?canceled=1`,

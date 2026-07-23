@@ -689,7 +689,7 @@ function RangsModal({
               <div className="mx-auto sm:hidden h-1.5 w-10 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.25)" }} />
             </div>
             <div className="flex items-center justify-between mb-4 mt-1">
-              <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Les rangs de l&apos;aura</h2>
+              <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Les rangs</h2>
               <button
                 type="button"
                 onClick={onClose}
@@ -797,7 +797,7 @@ function MissionsModal({
 
   // Missions qui rapportent de l'EXP (le barème rendu lisible).
   const missionsExp: { emoji: string; bg: string; titre: string; sous: string; exp: string; done?: boolean; path?: string }[] = [
-    { emoji: "🏋️", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Terminer une séance", sous: "La plus grosse montée d'aura", exp: "+30", done: seanceOk, path: "/progression" },
+    { emoji: "🏋️", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Terminer une séance", sous: "La plus grosse montée d'EXP", exp: "+30", done: seanceOk, path: "/progression" },
     { emoji: "🔥", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Enchaîner les séances", sous: "Bonus « série » après chaque séance", exp: "+5" },
     { emoji: "👋", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Connexion du jour", sous: "Rien qu'en revenant aujourd'hui", exp: "+5", done: true },
     { emoji: "🍽️", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Logger un repas", sous: "Estime les calories, ça s'enregistre", exp: "+5", done: repasOk, path: "/nutrition" },
@@ -810,8 +810,10 @@ function MissionsModal({
   // Missions supplémentaires — débloquées en Premium (illimitées).
   const missionsPremium: { emoji: string; bg: string; titre: string; sous: string; exp: string; path?: string }[] = [
     { emoji: "⚡", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Double séance", sous: "Deux séances dans la même journée", exp: "+60", path: "/progression" },
-    { emoji: "📸", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Journée nutrition complète", sous: "Logge tous tes repas du jour", exp: "+15", path: "/nutrition" },
-    { emoji: "🔥", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Semaine parfaite", sous: "7 jours de connexion d'affilée", exp: "+35" },
+    { emoji: "🌅", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Lève-tôt", sous: "Une séance avant 9h du matin", exp: "+40", path: "/progression" },
+    { emoji: "🏆", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Semaine intense", sous: "5 séances dans la semaine", exp: "+50", path: "/progression" },
+    { emoji: "📸", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Journée nutrition complète", sous: "Tous tes repas du jour loggés", exp: "+15", path: "/nutrition" },
+    { emoji: "🔥", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Semaine parfaite", sous: "7 jours de connexion d'affilée", exp: "+35" },
   ];
 
   return createPortal(
@@ -841,7 +843,7 @@ function MissionsModal({
                 <X size={16} strokeWidth={2.5} />
               </button>
             </div>
-            <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>Chaque action fait monter ton aura.</p>
+            <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>Chaque action fait monter ton EXP.</p>
 
             {/* Missions à EXP */}
             <div className="flex flex-col gap-2.5">
@@ -1482,7 +1484,7 @@ function Dashboard() {
           <p className="mt-2 text-[11.5px]" style={{ color: "var(--text-3)" }}>
             {auraLoaded
               ? <>Plus que <b style={{ color: "var(--text-soft)" }}>{aura.restant} EXP</b> avant le prochain rang</>
-              : "Calcul de ton aura…"}
+              : "Calcul de ton EXP…"}
           </p>
 
           {/* Voir tous les rangs */}
@@ -1519,7 +1521,7 @@ function Dashboard() {
                 <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Faire ma séance</span>
                 {missions.seanceOk
                   ? <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Séance faite · +30 EXP</span>
-                  : <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>La plus grosse montée d&apos;aura</span>}
+                  : <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>La plus grosse montée d&apos;EXP</span>}
               </span>
               {missions.seanceOk ? <CocheMission /> : <span className="text-[14px] font-extrabold" style={{ color: "#C13BC1" }}>+30</span>}
             </button>
