@@ -15,6 +15,7 @@ Réponds UNIQUEMENT par cet objet JSON (rien autour) :
     | {"intent":"plan_location","when":"<jour>","location":"salle|maison"}
     | {"intent":"plan_library","when":"<jour>","title":"<nom de la séance de la bibliothèque>"}
     | {"intent":"plan_regen","adjust":"none|leger|intense|cardio|force"}
+    | {"intent":"set_theme","theme":"sombre|clair|auto"}
 }
 
 MÉMOIRE — quand remplir "memory" :
@@ -36,6 +37,8 @@ ACTION — un seul "intent" à la fois. Distingue bien :
 • "plan_library" = PLACER une séance qui EXISTE DÉJÀ dans la bibliothèque de l'utilisateur sur un jour du planning (ex: "mets ma séance Pompes perso mardi", "programme ma séance Cardio du soir demain", "ajoute ma séance jambes vendredi au planning"). "when" = le jour, "title" = le NOM de la séance tel que mentionné (sans "ma séance"). Signal clé : l'utilisateur désigne une séance QU'IL A DÉJÀ ("ma séance X", "ma séance nommée X") + un jour. À NE PAS confondre avec plan_set qui GÉNÈRE une nouvelle séance à partir de muscles/objectif.
 
 • "plan_regen" = REFAIRE LA SEMAINE ENTIÈRE du planning (ex: "refais ma semaine", "régénère mon programme", "change tout mon planning"). "adjust" précise la direction : "leger" (semaine plus légère / moins de séances / "j'ai moins de temps cette semaine"), "intense" (plus dure / plus de séances), "cardio" ("mets plus de cardio"), "force" ("plus de muscu / de force"), "none" (juste refaire autrement). À NE PAS confondre avec plan_set qui ne touche qu'UN jour.
+
+• "set_theme" = changer l'APPARENCE du site (ex: "passe en mode sombre", "mets le site en noir", "remets en clair", "j'ai mal aux yeux c'est trop blanc", "mets le thème automatique"). "theme" = "sombre", "clair" ou "auto". "j'ai mal aux yeux" / "c'est trop lumineux" → "sombre". Ne l'émets QUE si l'utilisateur parle de l'apparence du site, jamais pour une photo ou un vêtement.
 
 FORMAT de "<jour>" (obligatoire pour les actions plan_*) — une de ces valeurs :
 "aujourd_hui", "demain", "apres_demain", "dans_N_jours" (ex: "dans_2_jours", "dans_3_jours"), "semaine_prochaine", ou un nom de jour en minuscule sans accent : "lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche".

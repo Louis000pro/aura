@@ -22,6 +22,7 @@ import { createClient } from "@/lib/supabase";
 import { goalsFromRow } from "@/lib/nutritionGoals";
 import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
+import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import {
   resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
@@ -612,7 +613,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     let parsed: {
       memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string };
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string; theme?: string };
     } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
@@ -634,6 +635,27 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // 2) Action
     const action = parsed.action;
     if (!action || !action.intent) return;
+
+    // 2a-bis) THÈME du site (sombre / clair / auto). Appliqué TOUT DE SUITE,
+    // sans carte de confirmation : c'est instantané, visible et réversible d'un
+    // mot — demander « tu confirmes ? » pour un changement de couleur serait
+    // plus lourd que l'action elle-même.
+    if (action.intent === "set_theme") {
+      const t = (action.theme ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      const pref: ThemePreference | null =
+        /somb|dark|nuit|noir/.test(t) ? "dark"
+        : /clair|light|jour|blanc/.test(t) ? "light"
+        : /auto|system/.test(t) ? "system"
+        : null;
+      if (!pref) return;
+      setThemePreference(pref);
+      const motTheme =
+        pref === "dark" ? "C'est passé en sombre ✦"
+        : pref === "light" ? "Retour en clair ✦"
+        : "Thème réglé sur automatique — il suivra ton téléphone ✦";
+      setMessages((prev) => [...prev, { role: "assistant" as const, content: motTheme, id: uid() }]);
+      return;
+    }
 
     // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio / refaire la semaine)
     if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_library" || action.intent === "plan_regen") {
