@@ -204,7 +204,7 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
         });
         if (res.status === 429) {
           const err = await res.json().catch(() => ({}));
-          setError(`Tu as atteint ta limite gratuite de ${err.dailyLimit ?? 3} analyses photo/jour 📸 Passe en Premium pour des analyses illimitées.`);
+          setError(`Tu as atteint ta limite gratuite de ${err.dailyLimit ?? 2} analyses photo/jour 📸 Passe en Premium pour des analyses illimitées.`);
           setPhase("select");
           return;
         }

@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 // Analyses photo gratuites par jour (la vision IA est le poste de coût le plus cher)
-const FREE_DAILY_SCANS = 3;
+const FREE_DAILY_SCANS = 2;
 
 // Date du jour au format YYYY-MM-DD en fuseau Europe/Paris (= date stockée côté app)
 function parisToday(): string {

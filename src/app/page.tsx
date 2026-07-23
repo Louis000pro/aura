@@ -774,12 +774,14 @@ function MissionsModal({
   onClose,
   seanceOk,
   repasOk,
+  isPremium,
   onNavigate,
 }: {
   open: boolean;
   onClose: () => void;
   seanceOk: boolean;
   repasOk: boolean;
+  isPremium: boolean;
   onNavigate: (path: string) => void;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -804,6 +806,12 @@ function MissionsModal({
   const habitudes: { emoji: string; bg: string; titre: string; sous: string; path: string }[] = [
     { emoji: "⚖️", bg: "rgba(43,212,160,0.14)", titre: "Note ton poids", sous: "Suis ta progression corps", path: "/profil" },
     { emoji: "🤝", bg: "rgba(139,92,246,0.14)", titre: "Lance un défi à deux", sous: "Tiens la série avec un pote", path: "/communaute" },
+  ];
+  // Missions supplémentaires — débloquées en Premium (illimitées).
+  const missionsPremium: { emoji: string; bg: string; titre: string; sous: string; exp: string; path?: string }[] = [
+    { emoji: "⚡", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Double séance", sous: "Deux séances dans la même journée", exp: "+60", path: "/progression" },
+    { emoji: "📸", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Journée nutrition complète", sous: "Logge tous tes repas du jour", exp: "+15", path: "/nutrition" },
+    { emoji: "🔥", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Semaine parfaite", sous: "7 jours de connexion d'affilée", exp: "+35" },
   ];
 
   return createPortal(
@@ -877,22 +885,48 @@ function MissionsModal({
               ))}
             </div>
 
-            {/* Teaser Premium : plus de missions + le reste de l'offre */}
-            <button
-              type="button"
-              onClick={() => onNavigate("/premium")}
-              className="w-full text-left rounded-2xl px-4 py-3.5 mt-5 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
-              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 20px rgba(193,59,193,0.30)" }}
-            >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
-                <Sparkles size={20} strokeWidth={2.4} color="#fff" />
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[14px] font-extrabold" style={{ color: "#fff" }}>Découvre bien plus de missions</span>
-                <span className="block text-[11.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>Avec le Premium — et pas que : assistant &amp; nutrition illimités, planning IA</span>
-              </span>
-              <ArrowRight size={18} strokeWidth={2.6} color="#fff" className="flex-shrink-0" />
-            </button>
+            {isPremium ? (
+              /* Abonné Premium : ses missions supplémentaires, en illimité */
+              <>
+                <p className="text-[11px] font-bold tracking-[0.06em] uppercase mt-5 mb-2" style={{ color: "var(--accent)" }}>
+                  Missions Premium ✦
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {missionsPremium.map((m) => (
+                    <div
+                      key={m.titre}
+                      {...(m.path ? { role: "button" as const, tabIndex: 0, onClick: () => onNavigate(m.path!) } : {})}
+                      className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+                      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.18)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.10)", cursor: m.path ? "pointer" : "default" }}
+                    >
+                      <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: m.bg }}>{m.emoji}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>{m.titre}</span>
+                        <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>{m.sous}</span>
+                      </span>
+                      <span className="rounded-full px-2.5 py-1 text-[12px] font-extrabold flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--accent)" }}>{m.exp} EXP</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* Gratuit : teaser Premium — plus de missions + le reste de l'offre */
+              <button
+                type="button"
+                onClick={() => onNavigate("/premium")}
+                className="w-full text-left rounded-2xl px-4 py-3.5 mt-5 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 20px rgba(193,59,193,0.30)" }}
+              >
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
+                  <Sparkles size={20} strokeWidth={2.4} color="#fff" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[14px] font-extrabold" style={{ color: "#fff" }}>Débloque les missions supplémentaires</span>
+                  <span className="block text-[11.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>En illimité avec le Premium — et pas que : assistant &amp; nutrition illimités</span>
+                </span>
+                <ArrowRight size={18} strokeWidth={2.6} color="#fff" className="flex-shrink-0" />
+              </button>
+            )}
           </motion.div>
         </motion.div>
       )}
@@ -1539,6 +1573,7 @@ function Dashboard() {
           onClose={() => setShowMissions(false)}
           seanceOk={missions.seanceOk}
           repasOk={missions.repasOk}
+          isPremium={!!(user?.is_admin || user?.is_premium)}
           onNavigate={(p) => { setShowMissions(false); router.push(p); }}
         />
       </div>

@@ -1,7 +1,7 @@
 /**
  * POST /api/stripe/checkout
  * Crée une session Stripe Checkout (abonnement) avec essai gratuit.
- * Body: { user_id, email, plan: "premium" | "creator" }
+ * Body: { user_id, email, plan: "premium" }
  * Renvoie { url } vers la page de paiement hébergée par Stripe.
  *
  * Inactif tant que STRIPE_SECRET_KEY n'est pas défini (renvoie 503 clair).
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       plan?: PlanId;
     };
 
-    if (!user_id || !plan || (plan !== "premium" && plan !== "creator")) {
+    if (!user_id || plan !== "premium") {
       return NextResponse.json({ error: "bad_request" }, { status: 400 });
     }
 

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const setTier = async (
     userId: string,
-    tier: "premium" | "creator" | "free",
+    tier: "premium" | "free",
     status: string,
     customerId?: string | null,
     periodEnd?: number | null
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const s = event.data.object as Stripe.Checkout.Session;
         const userId = s.metadata?.user_id;
-        const plan = (s.metadata?.plan as "premium" | "creator") || "premium";
+        const plan = (s.metadata?.plan as "premium") || "premium";
         if (userId) await setTier(userId, plan, "active", s.customer as string);
         break;
       }
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
         const userId = sub.metadata?.user_id;
-        const plan = (sub.metadata?.plan as "premium" | "creator") || "premium";
+        const plan = (sub.metadata?.plan as "premium") || "premium";
         if (userId) {
           // statuts considérés "actifs" : active, trialing, past_due (grâce)
           const active = ["active", "trialing", "past_due"].includes(sub.status);

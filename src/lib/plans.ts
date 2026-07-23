@@ -4,7 +4,7 @@
  * (quotas + choix du modèle IA selon le tier).
  */
 
-export type PlanId = "free" | "premium" | "creator";
+export type PlanId = "free" | "premium";
 
 export interface Plan {
   id: PlanId;
@@ -22,6 +22,8 @@ export interface Plan {
   limits: {
     chatPerDay: number;
     nutritionPerDay: number;
+    /** Missions illimitées (les missions supplémentaires du Premium). */
+    missionsUnlimited: boolean;
     ads: boolean;
     exclusiveContent: boolean;
   };
@@ -37,52 +39,36 @@ export const PLANS: Record<PlanId, Plan> = {
     tagline: "Pour découvrir Vaiiya",
     aiModel: "llama-3.1-8b-instant", // modèle léger & rapide → coûts maîtrisés
     features: [
-      "Accès au feed & à la communauté",
-      "Publier, liker, commenter",
+      "Les missions de base pour gagner de l'EXP",
       "Coach IA — 5 messages/jour",
-      "Analyse nutrition — 3/jour",
+      "Analyse nutrition — 2/jour",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 3, ads: true, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, missionsUnlimited: false, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",
     name: "Premium",
-    priceCents: 599,
+    priceCents: 999,
     currency: "eur",
     trialDays: 3,
     tagline: "L'expérience Vaiiya complète",
     aiModel: "llama-3.3-70b-versatile", // modèle avancé
     features: [
+      "Missions supplémentaires en illimité",
       "Coach IA avancé — illimité",
       "Analyse nutrition illimitée",
-      "Contenus & programmes exclusifs",
-      "Sans publicité",
+      "Détails complets de tes entraînements",
+      "Programmes & entraînements exclusifs",
       "Badge Premium",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, ads: false, exclusiveContent: true },
-  },
-  creator: {
-    id: "creator",
-    name: "Créateur",
-    priceCents: 999,
-    currency: "eur",
-    trialDays: 3,
-    tagline: "Pour les coachs & créateurs qui veulent grandir",
-    aiModel: "llama-3.3-70b-versatile",
-    features: [
-      "Tout le Premium",
-      "Mise en avant dans le feed & la découverte",
-      "Statistiques détaillées sur tes posts",
-      "Badge Créateur",
-    ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, ads: false, exclusiveContent: true },
   },
 };
 
-export const PAID_PLANS: PlanId[] = ["premium", "creator"];
+export const PAID_PLANS: PlanId[] = ["premium"];
 
 export function getPlan(id: string | null | undefined): Plan {
-  if (id && (id === "premium" || id === "creator")) return PLANS[id];
+  if (id === "premium") return PLANS.premium;
   return PLANS.free;
 }
 
