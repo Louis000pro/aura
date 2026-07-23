@@ -764,6 +764,19 @@ function RangsModal({
   );
 }
 
+/** Pastille « mission accomplie » : un rond teal avec une coche (réussite = teal). */
+function CocheMission() {
+  return (
+    <span
+      className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+      style={{ background: "linear-gradient(135deg,#2BD4A0,#12b98a)", boxShadow: "0 2px 8px rgba(43,212,160,0.35)" }}
+      aria-label="Mission accomplie"
+    >
+      <Check size={16} strokeWidth={3} color="#fff" />
+    </span>
+  );
+}
+
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
@@ -793,6 +806,10 @@ function Dashboard() {
   void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
+  // Missions du jour : coche verte dès que l'action du jour est faite.
+  // Séance = une workout_session aujourd'hui ; repas = un nutrition_log aujourd'hui ;
+  // connexion = toujours validée (l'utilisateur EST là).
+  const [missions, setMissions] = useState({ seanceOk: false, repasOk: false, loaded: false });
   const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string|null>(null);
   const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
@@ -825,6 +842,24 @@ function Dashboard() {
     calculerAura(supabase, user.id)
       .then((etat) => { setAura(etat); setAuraLoaded(true); })
       .catch(() => setAuraLoaded(true));
+  }, [user, mealsRefreshKey, statsTick]);
+
+  // Coches des missions du jour : y a-t-il une séance / un repas AUJOURD'HUI ?
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    const today = new Date().toISOString().slice(0, 10);
+    (async () => {
+      try {
+        const [seanceRes, repasRes] = await Promise.all([
+          supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("started_at", today),
+          supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("date", today),
+        ]);
+        setMissions({ seanceOk: (seanceRes.count ?? 0) > 0, repasOk: (repasRes.count ?? 0) > 0, loaded: true });
+      } catch {
+        setMissions((m) => ({ ...m, loaded: true }));
+      }
+    })();
   }, [user, mealsRefreshKey, statsTick]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
@@ -1285,7 +1320,6 @@ function Dashboard() {
             className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
             style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
           >
-            <Sparkles size={14} strokeWidth={2.4} />
             Voir tous les rangs
           </button>
         </div>
@@ -1295,7 +1329,7 @@ function Dashboard() {
         {/* ── La série, racontée comme une histoire (animation scopée au rectangle) ── */}
         <SerieCard streak={aura.detail.streak} />
 
-        {/* ── Actions du jour (gagne de l'EXP) ── */}
+        {/* ── Actions du jour (gagne de l'EXP) — coche verte quand c'est fait ── */}
         <section>
           <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>
             Gagne de l&apos;EXP aujourd&apos;hui
@@ -1306,42 +1340,81 @@ function Dashboard() {
               type="button"
               onClick={() => router.push("/progression")}
               className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
-              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)" }}
+              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: missions.seanceOk ? 0.72 : 1 }}
             >
               <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>🏋️</span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Faire ma séance</span>
-                <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>La plus grosse montée d&apos;aura</span>
+                {missions.seanceOk
+                  ? <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Séance faite · +30 EXP</span>
+                  : <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>La plus grosse montée d&apos;aura</span>}
               </span>
-              <span className="text-[14px] font-extrabold" style={{ color: "#C13BC1" }}>+30</span>
+              {missions.seanceOk ? <CocheMission /> : <span className="text-[14px] font-extrabold" style={{ color: "#C13BC1" }}>+30</span>}
             </button>
 
-            {/* Connexion du jour — déjà validée par le fait d'être là (teal) */}
+            {/* Connexion du jour — toujours validée par le fait d'être là (teal) */}
             <div
               className="w-full rounded-2xl px-3.5 py-3 flex items-center gap-3"
               style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: 0.72 }}
             >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#2BD4A0,#12b98a)" }}>✅</span>
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#2BD4A0,#12b98a)" }}>
+                <Check size={19} strokeWidth={3} color="#fff" />
+              </span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Connexion du jour</span>
-                <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Déjà validé ✓</span>
+                <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Validée · +5 EXP</span>
               </span>
-              <span className="text-[14px] font-extrabold" style={{ color: "#12b98a" }}>+5</span>
+              <CocheMission />
             </div>
 
-            {/* Repas — ouvre le log rapide (orange = énergie) */}
+            {/* Repas — ouvre le vrai flux Nutrition (estimation calories + enregistrement) */}
             <button
               type="button"
-              onClick={() => setShowRepas(true)}
+              onClick={() => router.push("/nutrition")}
               className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
-              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)" }}
+              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: missions.repasOk ? 0.72 : 1 }}
             >
               <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>🍽️</span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Logger un repas</span>
-                <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>Note ce que tu manges</span>
+                {missions.repasOk
+                  ? <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Repas noté · +5 EXP</span>
+                  : <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>Estime les calories, ça s&apos;enregistre</span>}
               </span>
-              <span className="text-[14px] font-extrabold" style={{ color: "#E8620C" }}>+5</span>
+              {missions.repasOk ? <CocheMission /> : <span className="text-[14px] font-extrabold" style={{ color: "#E8620C" }}>+5</span>}
+            </button>
+          </div>
+
+          {/* ── Missions bonus (pour aller plus loin — pas d'EXP, des habitudes) ── */}
+          <p className="text-[11px] font-bold tracking-[0.06em] uppercase mt-5 mb-2" style={{ color: "var(--text-3)" }}>
+            Missions bonus
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => router.push("/profil")}
+              className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2.5 outline-none active:opacity-90 transition-opacity"
+              style={{ background: "rgba(var(--accent-rgb),0.04)", border: "1px dashed rgba(var(--accent-rgb),0.16)" }}
+            >
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: "rgba(43,212,160,0.12)" }}>⚖️</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] font-semibold" style={{ color: "var(--text-0)" }}>Note ton poids</span>
+                <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>Suis ta progression corps</span>
+              </span>
+              <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/communaute")}
+              className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2.5 outline-none active:opacity-90 transition-opacity"
+              style={{ background: "rgba(var(--accent-rgb),0.04)", border: "1px dashed rgba(var(--accent-rgb),0.16)" }}
+            >
+              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: "rgba(139,92,246,0.12)" }}>🤝</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] font-semibold" style={{ color: "var(--text-0)" }}>Lance un défi à deux</span>
+                <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>Tiens la série avec un pote</span>
+              </span>
+              <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
             </button>
           </div>
         </section>
