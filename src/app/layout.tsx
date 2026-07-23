@@ -9,6 +9,7 @@ import OnboardingWrapper from "@/components/OnboardingWrapper";
 import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
+import PremiumBanner from "@/components/PremiumBanner";
 import { AssistantProvider } from "@/context/AssistantContext";
 import AssistantSheet from "@/components/AssistantSheet";
 import { Analytics } from "@vercel/analytics/next";
@@ -192,6 +193,7 @@ export default function RootLayout({
               <GuidedTour />
               <PWARegister />
               <AssistantSheet />
+              <PremiumBanner />
             </GuidedTourProvider>
           </AssistantProvider>
         </AuthProvider>
