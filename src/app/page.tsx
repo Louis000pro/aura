@@ -876,6 +876,23 @@ function MissionsModal({
                 </button>
               ))}
             </div>
+
+            {/* Teaser Premium : plus de missions + le reste de l'offre */}
+            <button
+              type="button"
+              onClick={() => onNavigate("/premium")}
+              className="w-full text-left rounded-2xl px-4 py-3.5 mt-5 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 20px rgba(193,59,193,0.30)" }}
+            >
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
+                <Sparkles size={20} strokeWidth={2.4} color="#fff" />
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[14px] font-extrabold" style={{ color: "#fff" }}>Découvre bien plus de missions</span>
+                <span className="block text-[11.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>Avec le Premium — et pas que : assistant &amp; nutrition illimités, planning IA</span>
+              </span>
+              <ArrowRight size={18} strokeWidth={2.6} color="#fff" className="flex-shrink-0" />
+            </button>
           </motion.div>
         </motion.div>
       )}
