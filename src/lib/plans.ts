@@ -48,7 +48,7 @@ export const PLANS: Record<PlanId, Plan> = {
   premium: {
     id: "premium",
     name: "Premium",
-    priceCents: 999,
+    priceCents: 599,
     currency: "eur",
     trialDays: 3,
     tagline: "L'expérience Vaiiya complète",
