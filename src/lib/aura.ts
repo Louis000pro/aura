@@ -52,11 +52,20 @@ export const RANGS: Rang[] = [
     neon: ["#E45FE4", "#B02FC0"],
     pierre: ["#FFD98A", "#E8930C", "#7a3d0a"],
   },
+  {
+    id: "zenith",
+    nom: "Zénith",
+    min: 200, // 200 EXP pour atteindre le rang 2 (= le palier déjà affiché sur l'accueil)
+    image: "/rangs/zenith-v1.png", // étoile-gemme dorée (soleil au sommet), détourée
+    neon: ["#FFDE7A", "#E89A15"],
+    pierre: ["#FFE9A8", "#E8930C", "#7a4d08"],
+  },
 ];
 
-// Tant qu'il n'y a qu'un rang, on vise un palier « prochain rang » symbolique
-// (le rang 2 arrivera avec son logo). Dès qu'un RANGS[1] existe, on utilise son `min`.
-export const PALIER_PROVISOIRE = 200;
+// Palier « prochain rang » provisoire pour le DERNIER rang connu (tant que le
+// rang suivant n'a pas son logo). Dès qu'un rang de plus existe, on utilise son
+// `min`. Relevé au-dessus du seuil de Zénith pour donner un cap sensé au-delà.
+export const PALIER_PROVISOIRE = 500;
 
 export type EtatAura = {
   exp: number;
