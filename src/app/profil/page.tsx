@@ -18,6 +18,11 @@ import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
 import FollowListModal from "@/components/FollowListModal";
+import Image from "next/image";
+import GemmeRang from "@/components/GemmeRang";
+import { calculerAura, type EtatAura } from "@/lib/aura";
+import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
+import { chargerBadges } from "@/lib/messagerie";
 
 /* ─────────────── Helpers ─────────────── */
 function formatViews(n: number): string {
@@ -1377,7 +1382,10 @@ function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages" | "enregistres" | "badges">("performances");
+  const [activeTab, setActiveTab] = useState<"sillages" | "seances" | "amis">("sillages");
+  const [aura, setAura] = useState<EtatAura | null>(null);
+  const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
+  const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
@@ -1535,6 +1543,28 @@ export default function ProfilPage() {
       .subscribe();
 
     return () => { supabaseRT.removeChannel(channel).catch(() => {}); };
+  }, [user?.id]);
+
+  /* Rang (aura), amis (les gens que je suis) + affiches gagnées */
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    const uid = user.id;
+
+    void calculerAura(supabase, uid).then(setAura).catch(() => {});
+
+    // Amis = les profils que je suis (following)
+    void (async () => {
+      const { data: rows } = await supabase.from("followers").select("following_id").eq("follower_id", uid);
+      const ids = (rows ?? []).map((r) => r.following_id as string);
+      if (ids.length === 0) { setAmis([]); return; }
+      const { data: profiles } = await supabase
+        .from("profiles").select("id, pseudo, avatar_url").in("id", ids);
+      setAmis((profiles ?? []) as { id: string; pseudo: string; avatar_url?: string }[]);
+    })().catch(() => setAmis([]));
+
+    // Affiches de relais débloquées (slugs serie-<x>)
+    void chargerBadges(uid).then((slugs) => setBadgeSlugs(new Set(slugs))).catch(() => {});
   }, [user?.id]);
 
   useEffect(() => {
@@ -1963,6 +1993,44 @@ export default function ProfilPage() {
           )}
         </motion.div>
 
+        {/* ─── Rang (l'aura) — la pièce maîtresse ─── */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.06 }}
+          whileTap={{ scale: 0.985 }}
+          onClick={() => router.push("/")}
+          className="w-full flex items-center gap-4 mb-3 px-4 py-3.5 rounded-3xl overflow-hidden cursor-pointer text-left"
+          style={{
+            background: "rgba(var(--surface-rgb),0.8)",
+            border: "1px solid rgba(var(--accent-rgb),0.14)",
+            boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          {aura ? (
+            <>
+              <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--text-3)" }}>Ton rang</span>
+                <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
+                <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
+                  <span style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                </p>
+                <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
+                  <div className="h-full rounded-full" style={{
+                    width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
+                    background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
+                  }} />
+                </div>
+              </div>
+              <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+            </>
+          ) : (
+            <div className="h-[60px] w-full rounded-2xl animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+          )}
+        </motion.button>
+
         {/* Stats row */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -1977,10 +2045,10 @@ export default function ProfilPage() {
           }}
         >
           {[
-            { label: "Publications", value: String(postCount), clickable: false },
-            { label: "Abonnés", value: followerCount !== null ? String(followerCount) : "0", clickable: true },
-            { label: "Abonnements", value: followingCount !== null ? String(followingCount) : "0", clickable: true },
-          ].map(({ label, value, clickable }, i) => (
+            { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const },
+            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "seances" as const },
+            { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null },
+          ].map(({ label, value, clickable, tab }, i) => (
             <div key={label} className="flex items-stretch flex-1">
               {i > 0 && (
                 <div className="w-px self-stretch my-3.5" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
@@ -1988,7 +2056,7 @@ export default function ProfilPage() {
               <motion.button
                 whileHover={clickable ? { scale: 1.05 } : {}}
                 whileTap={clickable ? { scale: 0.94 } : {}}
-                onClick={() => { if (clickable) setShowFollowList(label as "Abonnés" | "Abonnements"); }}
+                onClick={() => { if (tab) setActiveTab(tab); }}
                 className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
@@ -2000,87 +2068,6 @@ export default function ProfilPage() {
                 </span>
               </motion.button>
             </div>
-          ))}
-        </motion.div>
-
-        {/* ─── Stories à la une ─── */}
-        <motion.div
-          data-tour-anchor="profil-highlights"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.17 }}
-          className="flex items-center gap-4 mb-5 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {/* Bouton Nouveau */}
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.93 }}
-            onClick={() => setShowNewHighlight(true)}
-            className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-          >
-            <div
-              className="w-[68px] h-[68px] rounded-full flex items-center justify-center"
-              style={{
-                background: "rgba(var(--surface-rgb),0.9)",
-                border: "2px dashed rgba(var(--accent-rgb),0.45)",
-                boxShadow: "0 3px 14px rgba(var(--accent-rgb),0.1)",
-              }}
-            >
-              <Plus size={24} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
-            </div>
-            <span className="text-[10px] font-semibold" style={{ color: "var(--text-3)", letterSpacing: "0.02em" }}>Nouveau</span>
-          </motion.button>
-
-          {/* Highlights créés */}
-          {highlights.map((h, i) => (
-            <motion.div
-              key={h.id}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.06, type: "spring", bounce: 0.4 }}
-            >
-              {/* Circle — tap = open viewer */}
-              <div className="relative">
-                <motion.div
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => openHighlightViewer(h)}
-                  className="cursor-pointer"
-                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,var(--accent) 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.25)" }}
-                >
-                  <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
-                    <div
-                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5),rgba(var(--cream-mid-rgb),0.5))", color: "var(--accent)", fontSize: 20, fontWeight: 700 }}
-                    >
-                      {h.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img loading="lazy" decoding="async" src={h.cover_url} alt={h.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : h.name.charAt(0).toUpperCase()}
-                    </div>
-                  </div>
-                </motion.div>
-                {/* Loading spinner */}
-                {viewerLoading && (
-                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)" }}>
-                    <motion.div className="w-5 h-5 rounded-full border-2"
-                      style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
-                      animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-                  </div>
-                )}
-                {/* Pencil badge — tap = edit */}
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={(e) => { e.stopPropagation(); setEditHighlight(h); }}
-                  className="absolute -bottom-0.5 -right-0.5 w-[20px] h-[20px] rounded-full flex items-center justify-center cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))", border: "2.5px solid white", boxShadow: "0 1px 6px rgba(var(--accent-rgb),0.4)" }}
-                >
-                  <Pencil size={8} strokeWidth={3} style={{ color: "#3D2F6B" }} />
-                </motion.button>
-              </div>
-              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "var(--text-2)", letterSpacing: "0.02em" }}>{h.name}</span>
-            </motion.div>
           ))}
         </motion.div>
 
@@ -2096,11 +2083,9 @@ export default function ProfilPage() {
           }}
         >
           {([
-            { id: "performances" as const, Icon: Camera,   label: "Posts" },
-            { id: "seances"      as const, Icon: Film,     label: "Vidéos" },
-            { id: "enregistres"  as const, Icon: Bookmark, label: "Enregistrés" },
-            { id: "reglages"     as const, Icon: Dumbbell, label: "Séances" },
-            { id: "badges"       as const, Icon: Award,    label: "Badges" },
+            { id: "sillages" as const, Icon: Sparkles, label: "Sillages" },
+            { id: "seances"  as const, Icon: Dumbbell, label: "Séances" },
+            { id: "amis"     as const, Icon: Users,    label: "Amis" },
           ]).map(({ id, Icon, label }) => (
             <motion.button
               key={id}
@@ -2124,292 +2109,98 @@ export default function ProfilPage() {
 
       {/* ─── Tab content ─── */}
       <AnimatePresence mode="wait">
-        {activeTab === "performances" && (
+        {/* ─── Sillages : les affiches ─── */}
+        {activeTab === "sillages" && (
           <motion.div
-            key="publications"
+            key="sillages"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
-            {userPosts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Camera size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Termine une séance pour créer ton premier poster.</p>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push("/progression")}
-                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
-                >
-                  Lancer une séance
-                </motion.button>
-              </motion.div>
-            ) : (() => {
-                const allPosts = userPosts;
-                return allPosts.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                    style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
+            {/* Affiches du relais — gagnées en clair, verrouillées en cadenas */}
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+              Affiches du relais
+            </p>
+            <div className="grid grid-cols-2 gap-3 mb-8">
+              {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
+                const serie = SERIES[slug];
+                const gagnee = badgeSlugs.has(`serie-${slug}`);
+                return (
+                  <div
+                    key={slug}
+                    className="relative rounded-2xl overflow-hidden"
+                    style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
                   >
-                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                      <Camera size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                    <Image
+                      src={imageEtat(slug, 4)}
+                      alt={serie.nom}
+                      fill
+                      sizes="(max-width:768px) 45vw, 200px"
+                      className="object-cover"
+                      style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
+                    />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.72))" }} />
+                    {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>✦</div>}
+                    <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
+                      <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
+                      <p className="text-[10.5px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
+                        {gagnee ? "Dévoilée · à deux" : serie.promesse}
+                      </p>
                     </div>
-                    <div className="text-center px-8">
-                      <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
-                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {allPosts.map((post, idx) => (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: idx * 0.06 }}
-                        className="rounded-3xl overflow-hidden cv-auto"
-                        style={{
-                          background: "rgba(var(--surface-rgb),0.85)",
-                          border: "1px solid rgba(var(--accent-rgb),0.14)",
-                          boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-                        }}
-                      >
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-4 pt-4 pb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
-                              {displayAvatar
-                                // eslint-disable-next-line @next/next/no-img-element
-                                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                                : displayPseudo.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
-                                {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
-                                  <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--accent),#7C5CFA)" }}>
-                                    <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                                {(() => {
-                                  const diff = Date.now() - new Date(post.created_at).getTime();
-                                  const h = Math.floor(diff / 3600000);
-                                  const d = Math.floor(h / 24);
-                                  if (h < 1) return "À l'instant";
-                                  if (h < 24) return `${h}h`;
-                                  if (d < 7) return `${d}j`;
-                                  return new Date(post.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-                                })()}
-                              </p>
-                            </div>
-                          </div>
-                          {/* Bouton options */}
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => { setSelectedPost(post); setEditCaption(post.caption ?? ""); setEditBio(post.description ?? ""); setEditingSelectedPost(true); }}
-                            className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-                            style={{ background: "rgba(var(--accent-rgb),0.1)" }}
-                          >
-                            <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#7C5CFA" }} />
-                          </motion.button>
-                        </div>
-
-                        {/* Titre / Caption */}
-                        {post.caption && (
-                          <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
-                            {post.caption}
-                          </p>
-                        )}
-
-                        {/* Media */}
-                        {post.media_url && (
-                          <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
-                            {post.media_type === "video"
-                              ? <VideoPlayer src={post.media_url} maxHeight={380} controls />
-                              // eslint-disable-next-line @next/next/no-img-element
-                              : <img loading="lazy" decoding="async" src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
-                            }
-                          </div>
-                        )}
-
-                        {/* Séance → poster « aura » (cliquable → détail) ; repas/jour → carte classique */}
-                        {post.type === "workout" && post.performance_data ? (
-                          <motion.div
-                            className="px-4 mb-3 flex justify-center cursor-pointer"
-                            whileTap={{ scale: 0.985 }}
-                            onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
-                          >
-                            <PerfShareCard
-                              data={perfDataToShare(post.performance_data as PerformanceData, { user: displayPseudo })}
-                              width="min(330px, 100%)"
-                            />
-                          </motion.div>
-                        ) : post.performance_data && (["meal", "day"] as const).includes(
-                          (post.performance_data as { type?: string }).type as "meal" | "day"
-                        ) ? (
-                          <motion.div
-                            className="px-4 mb-3 cursor-pointer"
-                            whileTap={{ scale: 0.985 }}
-                            onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
-                          >
-                            <PerformanceCard data={post.performance_data as PerformanceData} size="md" interactive />
-                          </motion.div>
-                        ) : null}
-
-                        {/* Description */}
-                        {post.description && (
-                          <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-                            {post.description}
-                          </p>
-                        )}
-
-                        {/* Action bar */}
-                        {(() => {
-                          const liked = likedPostIds.has(post.id);
-                          const reposted = repostedPostIds.has(post.id);
-                          const commentsOpen = openPostComments.has(post.id);
-                          const likesCount = post.post_likes?.length ?? post.likes_count ?? 0;
-                          const commentsCount = post.post_comments?.length ?? 0;
-                          const repostsCount = post.post_reposts?.length ?? 0;
-                          return (
-                            <>
-                              <div className="flex items-center gap-4 px-4 pt-3">
-                                {/* Like */}
-                                <motion.button whileTap={{ scale: 0.7 }} onClick={() => togglePostLike(post.id)} className="relative flex items-center cursor-pointer">
-                                  {burstPostId === post.id && [0,1,2,3,4].map((i) => (
-                                    <motion.div key={`b-${post.id}-${i}`} className="absolute pointer-events-none"
-                                      style={{ width: 5, height: 5, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
-                                      initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-                                      animate={{ scale: [0,1.2,0], x: [0,(i-2)*18], y: [0,-20-i*4], opacity: [1,1,0] }}
-                                      transition={{ duration: 0.55, delay: i*0.04 }} />
-                                  ))}
-                                  <motion.div animate={liked ? { scale: [1,1.5,0.9,1.15,1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                                    <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-1)" }} />
-                                  </motion.div>
-                                </motion.button>
-
-                                {/* Commentaire */}
-                                <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85, rotate: -15 }}
-                                  onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                                  className="flex items-center cursor-pointer">
-                                  <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"} style={{ color: commentsOpen ? "var(--accent)" : "var(--text-1)" }} />
-                                </motion.button>
-
-                                {/* Repost */}
-                                <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
-                                  onClick={() => togglePostRepost(post.id)} className="flex items-center cursor-pointer">
-                                  <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#2BD4A0" : "var(--text-1)" }} />
-                                  </motion.div>
-                                </motion.button>
-
-                                {/* Partager */}
-                                <motion.button whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.85 }} className="flex items-center cursor-pointer">
-                                  <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-                                </motion.button>
-                              </div>
-
-                              {/* Stats */}
-                              <div className="px-4 pt-2 pb-1">
-                                {likesCount > 0 && (
-                                  <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                                    {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
-                                  </p>
-                                )}
-                                <motion.p whileHover={{ color: "var(--text-1)" }}
-                                  className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "var(--text-3)" }}
-                                  onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}>
-                                  {commentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
-                                </motion.p>
-                              </div>
-
-                              {/* Section commentaires */}
-                              <AnimatePresence>
-                                {commentsOpen && (
-                                  <CommentsSection
-                                    postId={post.id}
-                                    initialCount={commentsCount}
-                                    onClose={() => setOpenPostComments((p) => { const n = new Set(p); n.delete(post.id); return n; })}
-                                    onCommentAdded={() => setUserPosts((prev) => prev.map((pp) => pp.id !== post.id ? pp : { ...pp, post_comments: [...pp.post_comments, { id: `opt-${Date.now()}` }] }))}
-                                  />
-                                )}
-                              </AnimatePresence>
-                            </>
-                          );
-                        })()}
-                      </motion.div>
-                    ))}
+                    {!gagnee && (
+                      <div className="absolute inset-0 grid place-items-center" style={{ background: "rgba(10,6,18,0.42)" }}>
+                        <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
+                      </div>
+                    )}
                   </div>
                 );
-              })()}
-          </motion.div>
-        )}
+              })}
+            </div>
 
-        {activeTab === "seances" && (
-          <motion.div
-            key="videos"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-3xl mx-auto"
-          >
+            {/* Tes affiches de perf (posts séance) */}
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+              Tes affiches de perf
+            </p>
             {(() => {
-              const videoPosts = userPosts.filter(p => p.media_type === "video");
-              return videoPosts.length === 0 ? (
+              const posters = userPosts.filter((p) => p.type === "workout" && p.performance_data);
+              return posters.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                  className="flex flex-col items-center justify-center py-14 gap-4 rounded-3xl"
                   style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
                 >
-                  <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                    <Film size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.35))" }}>
+                    <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                   </div>
                   <div className="text-center px-8">
-                    <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune vidéo</p>
-                    <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes publications vidéo apparaîtront ici automatiquement.</p>
+                    <p className="text-[15px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Pas encore d&apos;affiche</p>
+                    <p className="text-[12.5px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>Termine une séance pour créer ton premier sillage.</p>
                   </div>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => router.push("/progression")}
+                    className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                    style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
+                  >
+                    Lancer une séance
+                  </motion.button>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-3 gap-1">
-                  {videoPosts.map((post) => (
+                <div className="grid grid-cols-2 gap-4">
+                  {posters.map((post, idx) => (
                     <motion.div
                       key={post.id}
-                      className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
-                      style={{ background: "#000" }}
-                      whileHover={{ scale: 0.97 }}
-                      onClick={() => setSelectedPost(post)}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.32, delay: idx * 0.05 }}
+                      className="cursor-pointer flex justify-center"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
                     >
-                      <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
-                      {/* Play icon overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-                          <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
-                        style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <span className="text-[10px] font-semibold text-white">{formatViews(post.views ?? 0)}</span>
-                      </div>
+                      <PerfShareCard data={perfDataToShare(post.performance_data as PerformanceData, { user: displayPseudo })} width="100%" />
                     </motion.div>
                   ))}
                 </div>
@@ -2418,83 +2209,10 @@ export default function ProfilPage() {
           </motion.div>
         )}
 
-        {activeTab === "enregistres" && (
+        {/* ─── Séances : historique ─── */}
+        {activeTab === "seances" && (
           <motion.div
-            key="enregistres"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-3xl mx-auto"
-          >
-            {savedPosts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Bookmark size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun enregistrement</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Les vidéos que tu sauvegardes dans le feed apparaîtront ici.</p>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="grid grid-cols-3 gap-1">
-                {savedPosts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
-                    style={{ background: "#000" }}
-                    whileHover={{ scale: 0.97 }}
-                    onClick={() => setSelectedPost(post)}
-                  >
-                    {post.media_type === "video"
-                      ? <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
-                      // eslint-disable-next-line @next/next/no-img-element
-                      : <img loading="lazy" decoding="async" src={post.media_url ?? undefined} alt="" className="w-full h-full object-cover" />
-                    }
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-                        {post.media_type === "video"
-                          ? <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
-                          : <Bookmark size={12} fill="white" style={{ color: "white" }} />
-                        }
-                      </div>
-                    </div>
-                    {/* Badge bookmark */}
-                    <div className="absolute top-1.5 right-1.5">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.85)" }}>
-                        <Bookmark size={10} fill="white" style={{ color: "white" }} />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === "badges" && (
-          <motion.div
-            key="badges"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-3xl mx-auto"
-          >
-            {user && <BadgesRelais userId={user.id} />}
-            <Badges />
-          </motion.div>
-        )}
-
-        {activeTab === "reglages" && (
-          <motion.div
-            key="seances-enr"
+            key="seances-list"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -2512,8 +2230,8 @@ export default function ProfilPage() {
                   <Dumbbell size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance enregistrée</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes séances enregistrées apparaîtront ici une fois complétées.</p>
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes séances terminées apparaîtront ici, chacune vaut +30 EXP.</p>
                 </div>
               </motion.div>
             ) : (
@@ -2540,7 +2258,7 @@ export default function ProfilPage() {
                           {durationMin ? ` · ${durationMin} min` : ""}
                         </p>
                       </div>
-                      {/* Delete button */}
+                      <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#2BD4A0" }}>+30</span>
                       <motion.button
                         whileTap={{ scale: 0.85 }}
                         onClick={async () => {
@@ -2557,6 +2275,61 @@ export default function ProfilPage() {
                     </motion.div>
                   );
                 })}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ─── Amis ─── */}
+        {activeTab === "amis" && (
+          <motion.div
+            key="amis"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-3xl mx-auto"
+          >
+            {amis === null ? (
+              <div className="flex justify-center py-16">
+                <motion.div className="w-6 h-6 rounded-full border-2"
+                  style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
+                  animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              </div>
+            ) : amis.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
+              >
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+                  <Users size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun ami pour l&apos;instant</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Lance un relais à deux pour t&apos;entourer.</p>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push("/communaute")}
+                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}>
+                  Ouvrir la communauté
+                </motion.button>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-4 gap-x-2 gap-y-5">
+                {amis.map((ami) => (
+                  <Link key={ami.id} href={`/profil/${ami.pseudo}`} className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold"
+                      style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", border: "2px solid rgba(var(--surface-rgb),1)", boxShadow: "0 3px 10px -3px rgba(var(--accent-rgb),0.5)" }}>
+                      {ami.avatar_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img loading="lazy" decoding="async" src={ami.avatar_url} alt={ami.pseudo} className="w-full h-full object-cover" />
+                        : ami.pseudo.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[10.5px] font-semibold max-w-[64px] truncate" style={{ color: "var(--text-2)" }}>{ami.pseudo}</span>
+                  </Link>
+                ))}
               </div>
             )}
           </motion.div>
