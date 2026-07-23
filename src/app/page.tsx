@@ -764,6 +764,126 @@ function RangsModal({
   );
 }
 
+/**
+ * La liste défilante de TOUTES les missions (bottom-sheet, comme RangsModal).
+ * Montre chaque mission, ce qu'elle rapporte en EXP, et une coche si elle est
+ * déjà faite aujourd'hui. En bas : les « bonnes habitudes » (sans EXP).
+ */
+function MissionsModal({
+  open,
+  onClose,
+  seanceOk,
+  repasOk,
+  onNavigate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  seanceOk: boolean;
+  repasOk: boolean;
+  onNavigate: (path: string) => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!mounted) return null;
+
+  // Missions qui rapportent de l'EXP (le barème rendu lisible).
+  const missionsExp: { emoji: string; bg: string; titre: string; sous: string; exp: string; done?: boolean; path?: string }[] = [
+    { emoji: "🏋️", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Terminer une séance", sous: "La plus grosse montée d'aura", exp: "+30", done: seanceOk, path: "/progression" },
+    { emoji: "🔥", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Enchaîner les séances", sous: "Bonus « série » après chaque séance", exp: "+5" },
+    { emoji: "👋", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Connexion du jour", sous: "Rien qu'en revenant aujourd'hui", exp: "+5", done: true },
+    { emoji: "🍽️", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Logger un repas", sous: "Estime les calories, ça s'enregistre", exp: "+5", done: repasOk, path: "/nutrition" },
+  ];
+  // Bonnes habitudes : pas d'EXP, mais elles font avancer.
+  const habitudes: { emoji: string; bg: string; titre: string; sous: string; path: string }[] = [
+    { emoji: "⚖️", bg: "rgba(43,212,160,0.14)", titre: "Note ton poids", sous: "Suis ta progression corps", path: "/profil" },
+    { emoji: "🤝", bg: "rgba(139,92,246,0.14)", titre: "Lance un défi à deux", sous: "Tiens la série avec un pote", path: "/communaute" },
+  ];
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={onClose}
+          style={{ background: "rgba(10,6,20,0.55)", backdropFilter: "blur(4px)" }}
+        >
+          <motion.div
+            className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--page-bg)", boxShadow: "0 -8px 40px rgba(0,0,0,0.3)" }}
+          >
+            <div className="mx-auto sm:hidden h-1.5 w-10 rounded-full mb-3" style={{ background: "rgba(var(--accent-rgb),0.25)" }} />
+            <div className="flex items-center justify-between mb-1 mt-1">
+              <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Toutes les missions</h2>
+              <button
+                type="button" onClick={onClose} aria-label="Fermer"
+                className="grid place-items-center h-8 w-8 rounded-full outline-none active:opacity-80"
+                style={{ background: "rgba(var(--accent-rgb),0.08)", color: "var(--text-soft)" }}
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+            <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>Chaque action fait monter ton aura.</p>
+
+            {/* Missions à EXP */}
+            <div className="flex flex-col gap-2.5">
+              {missionsExp.map((m) => (
+                <div
+                  key={m.titre}
+                  {...(m.path ? { role: "button" as const, tabIndex: 0, onClick: () => onNavigate(m.path!) } : {})}
+                  className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+                  style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: m.done ? 0.72 : 1, cursor: m.path ? "pointer" : "default" }}
+                >
+                  <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: m.bg }}>{m.emoji}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>{m.titre}</span>
+                    <span className="block text-[11.5px]" style={{ color: m.done ? "#2B9E7A" : "var(--text-3)" }}>{m.done ? "Déjà fait aujourd'hui" : m.sous}</span>
+                  </span>
+                  {m.done
+                    ? <CocheMission />
+                    : <span className="rounded-full px-2.5 py-1 text-[12px] font-extrabold flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--accent)" }}>{m.exp} EXP</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Bonnes habitudes (sans EXP) */}
+            <p className="text-[11px] font-bold tracking-[0.06em] uppercase mt-5 mb-2" style={{ color: "var(--text-3)" }}>Bonnes habitudes</p>
+            <div className="flex flex-col gap-2">
+              {habitudes.map((m) => (
+                <button
+                  key={m.titre}
+                  type="button"
+                  onClick={() => onNavigate(m.path)}
+                  className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2.5 outline-none active:opacity-90 transition-opacity"
+                  style={{ background: "rgba(var(--accent-rgb),0.04)", border: "1px dashed rgba(var(--accent-rgb),0.16)" }}
+                >
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: m.bg }}>{m.emoji}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-semibold" style={{ color: "var(--text-0)" }}>{m.titre}</span>
+                    <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>{m.sous}</span>
+                  </span>
+                  <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
 /** Pastille « mission accomplie » : un rond teal avec une coche (réussite = teal). */
 function CocheMission() {
   return (
@@ -866,6 +986,7 @@ function Dashboard() {
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
   const [expGain, setExpGain] = useState<number | null>(null);
   const [showRangs, setShowRangs] = useState(false);
+  const [showMissions, setShowMissions] = useState(false);
   const prevExpRef = useRef<number | null>(null);
   useEffect(() => {
     if (!auraLoaded) return;
@@ -1357,9 +1478,7 @@ function Dashboard() {
               className="w-full rounded-2xl px-3.5 py-3 flex items-center gap-3"
               style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: 0.72 }}
             >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,#2BD4A0,#12b98a)" }}>
-                <Check size={19} strokeWidth={3} color="#fff" />
-              </span>
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#FF8FC7,#F45BA0)" }}>👋</span>
               <span className="flex-1 min-w-0">
                 <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Connexion du jour</span>
                 <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Validée · +5 EXP</span>
@@ -1385,39 +1504,26 @@ function Dashboard() {
             </button>
           </div>
 
-          {/* ── Missions bonus (pour aller plus loin — pas d'EXP, des habitudes) ── */}
-          <p className="text-[11px] font-bold tracking-[0.06em] uppercase mt-5 mb-2" style={{ color: "var(--text-3)" }}>
-            Missions bonus
-          </p>
-          <div className="flex flex-col gap-2">
+          {/* ── Bouton missions supplémentaires (ouvre la liste défilante + EXP) ── */}
+          <div className="flex justify-center mt-4">
             <button
               type="button"
-              onClick={() => router.push("/profil")}
-              className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2.5 outline-none active:opacity-90 transition-opacity"
-              style={{ background: "rgba(var(--accent-rgb),0.04)", border: "1px dashed rgba(var(--accent-rgb),0.16)" }}
+              onClick={() => setShowMissions(true)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
+              style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
             >
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: "rgba(43,212,160,0.12)" }}>⚖️</span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-semibold" style={{ color: "var(--text-0)" }}>Note ton poids</span>
-                <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>Suis ta progression corps</span>
-              </span>
-              <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push("/communaute")}
-              className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2.5 outline-none active:opacity-90 transition-opacity"
-              style={{ background: "rgba(var(--accent-rgb),0.04)", border: "1px dashed rgba(var(--accent-rgb),0.16)" }}
-            >
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: "rgba(139,92,246,0.12)" }}>🤝</span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-semibold" style={{ color: "var(--text-0)" }}>Lance un défi à deux</span>
-                <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>Tiens la série avec un pote</span>
-              </span>
-              <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
+              Missions supplémentaires
             </button>
           </div>
         </section>
+
+        <MissionsModal
+          open={showMissions}
+          onClose={() => setShowMissions(false)}
+          seanceOk={missions.seanceOk}
+          repasOk={missions.repasOk}
+          onNavigate={(p) => { setShowMissions(false); router.push(p); }}
+        />
       </div>
 
       {/* ────────────────── DRAWER STATS (top → down) — carousel 3 zones ── */}
