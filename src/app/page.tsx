@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
 import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Footprints, ChevronUp, ChevronDown, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,7 +17,7 @@ import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import GemmeRang from "@/components/GemmeRang";
-import { calculerAura, etatDepuisExp, histoireSerie, RANGS, type EtatAura } from "@/lib/aura";
+import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, type EtatAura } from "@/lib/aura";
 import { persistLieu } from "@/lib/planning";
 
 /* ─── Compute & save Aura score dynamically ─── */
@@ -525,6 +525,91 @@ const DAILY_AI_LIMIT = 5;
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
 let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
 
+/* ════════════════════════════════════════════════════════════════════
+   La série, racontée comme une histoire — avec une animation SCOPÉE au
+   rectangle (jamais plein écran) : la flamme pulse, le compteur s'égrène
+   « jour 1 → jour 2 → … » jusqu'au jour courant, puis le gain d'EXP du
+   jour (+5, connexion) pop. Rejouée à chaque arrivée sur l'accueil.
+   ════════════════════════════════════════════════════════════════════ */
+function SerieCard({ streak }: { streak: number }) {
+  const reduce = useReducedMotion();
+  const h = histoireSerie(streak);
+  const hasStreak = streak > 0;
+
+  const [dayShown, setDayShown] = useState(streak);
+  const [showExp, setShowExp] = useState(false);
+
+  useEffect(() => {
+    if (reduce || !hasStreak) { setDayShown(streak); setShowExp(true); return; }
+    setDayShown(1);
+    setShowExp(false);
+    // Durée totale bornée (~1,1 s) même pour une grosse série.
+    const total = Math.min(1100, streak * 160);
+    const step = streak > 1 ? total / (streak - 1) : 0;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let d = 2; d <= streak; d++) timers.push(setTimeout(() => setDayShown(d), step * (d - 1)));
+    timers.push(setTimeout(() => setShowExp(true), Math.max(step * (streak - 1), 260)));
+    return () => timers.forEach(clearTimeout);
+  }, [streak, hasStreak, reduce]);
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl px-4 py-3 flex items-center gap-3"
+      style={{ background: "linear-gradient(135deg,rgba(245,177,32,0.14),rgba(232,98,12,0.11))", border: "1px solid rgba(232,98,12,0.18)" }}
+    >
+      <motion.span
+        className="text-2xl leading-none flex-shrink-0"
+        style={{ transformOrigin: "center bottom" }}
+        animate={reduce ? {} : { scale: [1, 1.18, 0.96, 1.08, 1], rotate: [0, -5, 5, -2, 0] }}
+        transition={{ duration: 0.9, ease: "easeInOut", repeat: Infinity, repeatDelay: 2.4 }}
+      >
+        🔥
+      </motion.span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{h.titre}</p>
+        <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "#b06a1e" }}>{h.sous}</p>
+      </div>
+
+      {hasStreak && (
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <div
+            className="flex items-baseline gap-1 px-2.5 py-1 rounded-full"
+            style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 3px 10px rgba(232,98,12,0.4)" }}
+          >
+            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.85)" }}>Jour</span>
+            <motion.span
+              key={dayShown}
+              initial={reduce ? false : { scale: 0.5, opacity: 0, y: 4 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 22 }}
+              className="text-[15px] font-extrabold leading-none"
+              style={{ color: "#fff" }}
+            >
+              {dayShown}
+            </motion.span>
+          </div>
+          <AnimatePresence>
+            {showExp && (
+              <motion.span
+                key="exp"
+                initial={reduce ? false : { opacity: 0, y: -4, scale: 0.7 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="text-[11px] font-extrabold whitespace-nowrap"
+                style={{ color: "#c05a12" }}
+              >
+                +{EXP_CONNEXION} EXP aujourd&apos;hui
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
@@ -1031,22 +1116,8 @@ function Dashboard() {
           </p>
         </div>
 
-        {/* ── La série, racontée comme une histoire ── */}
-        {(() => {
-          const h = histoireSerie(aura.detail.streak);
-          return (
-            <div
-              className="rounded-2xl px-4 py-3 flex items-center gap-3"
-              style={{ background: "linear-gradient(135deg,rgba(245,177,32,0.14),rgba(232,98,12,0.11))", border: "1px solid rgba(232,98,12,0.18)" }}
-            >
-              <span className="text-2xl leading-none">🔥</span>
-              <div className="min-w-0">
-                <p className="text-[14px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{h.titre}</p>
-                <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "#b06a1e" }}>{h.sous}</p>
-              </div>
-            </div>
-          );
-        })()}
+        {/* ── La série, racontée comme une histoire (animation scopée au rectangle) ── */}
+        <SerieCard streak={aura.detail.streak} />
 
         {/* ── Actions du jour (gagne de l'EXP) ── */}
         <section>
