@@ -5,10 +5,8 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown, Link2,
-  ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
-  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
-  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2, Award,
+  X, Check, Lock, Crown, Link2, Camera, ChevronRight,
+  Pencil, Dumbbell, Play, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Trash2,
 } from "lucide-react";
 import Badges from "@/components/Badges";
 import BadgesRelais from "@/components/defi/BadgesRelais";
@@ -17,19 +15,11 @@ import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
-import FollowListModal from "@/components/FollowListModal";
 import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
 import { calculerAura, type EtatAura } from "@/lib/aura";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
-
-/* ─────────────── Helpers ─────────────── */
-function formatViews(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".0", "")}K`;
-  return String(n);
-}
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -44,128 +34,8 @@ type UserPost = {
   media_type?: string | null;
   views?: number;
   likes_count?: number;
-  post_likes: { user_id: string }[];
-  post_comments: { id: string }[];
-  post_reposts: { user_id: string }[];
 };
 
-/* ─────────────── CommentsSection ─────────────── */
-type ProfilComment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  author: { pseudo: string; avatar_url?: string | null } | null;
-};
-
-function postTimeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "À l'instant";
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}j`;
-}
-
-function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { postId: string; initialCount: number; onClose: () => void; onCommentAdded?: () => void }) {
-  const { user } = useAuth();
-  const [comments, setComments] = useState<ProfilComment[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [input, setInput]       = useState("");
-  const [sending, setSending]   = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("post_comments")
-      .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-      .eq("post_id", postId)
-      .order("created_at", { ascending: true })
-      .limit(50)
-      .then(({ data }) => {
-        setComments((data as unknown as ProfilComment[]) ?? []);
-        setLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      });
-  }, [postId]);
-
-  const handleSend = async () => {
-    if (!input.trim() || !user || sending) return;
-    const content = input.trim();
-    setInput("");
-    setSending(true);
-    const tmpId = `tmp-${Date.now()}`;
-    const optimistic: ProfilComment = {
-      id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id,
-      author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
-    };
-    setComments((prev) => [...prev, optimistic]);
-    const supabase = createClient();
-    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text: content });
-    setSending(false);
-    if (error) { setComments((prev) => prev.filter((c) => c.id !== tmpId)); setInput(content); }
-    else { onCommentAdded?.(); }
-  };
-
-  void onClose;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="overflow-hidden"
-    >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(var(--tint-violet-rgb),0.8)" }}>
-        <div className="flex flex-col gap-2.5 mb-3 max-h-52 overflow-y-auto">
-          {loading ? (
-            <div className="flex justify-center py-3">
-              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "var(--text-3)" }}>Sois le premier à commenter</p>
-          ) : comments.map((c, i) => {
-            const pseudo = c.author?.pseudo ?? "inconnu";
-            const avatar = c.author?.avatar_url;
-            return (
-              <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2">
-                <Link href={`/profil/${encodeURIComponent(pseudo)}`} className="flex-shrink-0">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
-                    {avatar
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
-                      : pseudo[0]?.toUpperCase()}
-                  </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-1)" }}>
-                    <Link href={`/profil/${encodeURIComponent(pseudo)}`}><span className="font-semibold mr-1.5 hover:underline">{pseudo}</span></Link>
-                    <span className="font-light">{c.content}</span>
-                  </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{postTimeAgo(c.created_at)}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-2">
-          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"} disabled={!user}
-            className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-          <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: input.trim() && user ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)", transition: "background 0.2s" }}>
-            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }} />
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 type WorkoutSessionItem = {
   id: string;
   title: string | null;
@@ -174,7 +44,6 @@ type WorkoutSessionItem = {
   elapsed_seconds: number;
 };
 import NotificationBell from "@/components/NotificationBell";
-import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
@@ -569,8 +438,6 @@ function EditProfileModal({
   );
 }
 
-/* FollowListModal → extrait dans un composant partagé (utilisé aussi par le
-   profil public) : src/components/FollowListModal.tsx */
 
 /* ─────────────── Goals Edit Modal ─────────────── */
 const GOALS_LIST = [
@@ -981,403 +848,6 @@ const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: str
   public:  { label: "Public", icon: Globe,  color: "#2BD4A0" },
 };
 
-type Highlight = { id: string; name: string; cover_url: string; user_id?: string };
-
-/* ─────────────── Create Highlight Modal ─────────────── */
-function NewHighlightModal({ userId, onCreated, onClose }: {
-  userId: string;
-  onCreated: (h: Highlight) => void;
-  onClose: () => void;
-}) {
-  const [name, setName]         = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const coverRef = useRef<HTMLInputElement>(null);
-
-  const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const ext  = file.name.split(".").pop();
-      const path = `${userId}/highlight_${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "31536000" });
-      if (!error) {
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        setCoverUrl(data.publicUrl + "?t=" + Date.now());
-      }
-    } finally { setUploading(false); }
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) return;
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("highlights")
-        .insert({ user_id: userId, name: name.trim(), cover_url: coverUrl || null })
-        .select("id, name, cover_url, user_id")
-        .single();
-      if (!error && data) {
-        onCreated(data as Highlight);
-      }
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
-        className="w-full max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-8"
-        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.2)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-center mb-5 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.2)" }} />
-        </div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Nouvelle catégorie</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Cover */}
-        <div className="flex flex-col items-center mb-6">
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-            onClick={() => coverRef.current?.click()}
-            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
-            style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.4))" }}>
-            {coverUrl
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
-              : uploading
-              ? <div className="text-xs font-medium" style={{ color: "var(--accent)" }}>Upload…</div>
-              : <div className="flex flex-col items-center gap-1">
-                  <Camera size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                  <span className="text-[9px] font-semibold" style={{ color: "var(--accent)" }}>Cover</span>
-                </div>
-            }
-          </motion.div>
-          <input ref={coverRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleCover} />
-          <p className="text-[11px] mt-2 font-light" style={{ color: "var(--text-3)" }}>Photo de couverture (optionnel)</p>
-        </div>
-
-        {/* Name */}
-        <div className="mb-6">
-          <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Nom</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Ex : Sport, Voyage, Nutrition…" maxLength={24}
-            className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.2)", color: "var(--text-0)" }}
-          />
-        </div>
-
-        <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
-          onClick={handleSave}
-          disabled={!name.trim() || saving || uploading}
-          className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
-          style={{
-            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,var(--accent) 100%)" : "rgba(220,220,220,0.5)",
-            color: name.trim() ? "#3D2F6B" : "var(--text-3)",
-            boxShadow: name.trim() ? "0 4px 18px rgba(var(--accent-rgb),0.3)" : "none",
-            opacity: saving || uploading ? 0.7 : 1,
-          }}>
-          {saving ? "Création…" : "Créer la catégorie"}
-        </motion.button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ─────────────── Edit Highlight Modal (médias, rename, delete) ─────────────── */
-function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }: {
-  highlight: Highlight;
-  userId: string;
-  onUpdated: (h: Highlight) => void;
-  onDeleted: () => void;
-  onClose: () => void;
-}) {
-  const [name, setName]           = useState(highlight.name);
-  const [coverUrl, setCoverUrl]   = useState(highlight.cover_url ?? "");
-  const [items, setItems]         = useState<HighlightItem[]>([]);
-  const [loadingItems, setLoadingItems] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const [delConfirm, setDelConfirm] = useState(false);
-  const coverRef = useRef<HTMLInputElement>(null);
-  const mediaRef = useRef<HTMLInputElement>(null);
-
-  /* Load items */
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("highlight_items")
-      .select("id, media_url, media_type, caption")
-      .eq("highlight_id", highlight.id)
-      .order("display_order", { ascending: true })
-      .then(({ data }) => {
-        setItems((data ?? []) as HighlightItem[]);
-        setLoadingItems(false);
-      });
-  }, [highlight.id]);
-
-  /* Cover upload */
-  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const ext  = file.name.split(".").pop();
-      const path = `${userId}/highlight_cover_${highlight.id}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (!error) {
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        setCoverUrl(data.publicUrl + "?t=" + Date.now());
-      }
-    } finally { setUploading(false); }
-  };
-
-  /* Add media items */
-  const handleAddMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []).slice(0, 50 - items.length);
-    if (!files.length) return;
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const newItems: HighlightItem[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const ext  = file.name.split(".").pop();
-        const isVid = file.type.startsWith("video/");
-        const path = `${userId}/hi_${highlight.id}_${Date.now()}_${i}.${ext}`;
-        const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "31536000" });
-        if (error) continue;
-        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-        const order = items.length + newItems.length;
-        const { data: inserted } = await supabase
-          .from("highlight_items")
-          .insert({
-            highlight_id: highlight.id,
-            media_url: urlData.publicUrl + "?t=" + Date.now(),
-            media_type: isVid ? "video" : "image",
-            display_order: order,
-          })
-          .select("id, media_url, media_type, caption")
-          .single();
-        if (inserted) newItems.push(inserted as HighlightItem);
-      }
-      setItems((prev) => [...prev, ...newItems]);
-      // Update cover if first item and no cover
-      const firstMediaUrl = newItems[0]?.media_url;
-      if (!coverUrl && firstMediaUrl) {
-        await supabase.from("highlights").update({ cover_url: firstMediaUrl }).eq("id", highlight.id);
-        setCoverUrl(firstMediaUrl);
-      }
-    } finally { setUploading(false); if (mediaRef.current) mediaRef.current.value = ""; }
-  };
-
-  /* Delete item */
-  const handleDeleteItem = async (itemId: string) => {
-    const supabase = createClient();
-    await supabase.from("highlight_items").delete().eq("id", itemId);
-    const remaining = items.filter((i) => i.id !== itemId);
-    setItems(remaining);
-    // Update cover if deleted item was cover
-    const nextCoverUrl = remaining[0]?.media_url;
-    if (coverUrl.includes(itemId) && nextCoverUrl) {
-      await supabase.from("highlights").update({ cover_url: nextCoverUrl }).eq("id", highlight.id);
-      setCoverUrl(nextCoverUrl);
-    }
-  };
-
-  /* Save info (name + cover) */
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      await supabase.from("highlights").update({ name: name.trim(), cover_url: coverUrl || null }).eq("id", highlight.id);
-      onUpdated({ ...highlight, name: name.trim(), cover_url: coverUrl });
-    } finally { setSaving(false); }
-  };
-
-  /* Delete highlight */
-  const handleDelete = async () => {
-    const supabase = createClient();
-    await supabase.from("highlights").delete().eq("id", highlight.id);
-    onDeleted();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
-        className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
-        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.2)", maxHeight: "92dvh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.2)" }} />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-3 pb-3 flex-shrink-0">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Modifier la catégorie</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-2" style={{ scrollbarWidth: "none" }}>
-
-          {/* Name + Cover row */}
-          <div className="flex items-center gap-4 mb-5">
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-              onClick={() => coverRef.current?.click()}
-              className="w-[60px] h-[60px] rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center cursor-pointer"
-              style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.4))" }}>
-              {coverUrl
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
-                : <Camera size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />}
-            </motion.div>
-            <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-            <div className="flex-1">
-              <label className="text-[9px] font-bold tracking-widest uppercase mb-1 block" style={{ color: "var(--text-3)" }}>Nom</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={24}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.2)", color: "var(--text-0)" }} />
-            </div>
-          </div>
-
-          {/* Media grid */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
-              Médias ({items.length}/50)
-            </span>
-            {items.length < 50 && (
-              <motion.button whileTap={{ scale: 0.93 }} onClick={() => mediaRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
-                style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.7),rgba(var(--cream-mid-rgb),0.7))", color: "#3D2F6B" }}>
-                <Plus size={11} strokeWidth={3} />
-                {uploading ? "Upload…" : "Ajouter"}
-              </motion.button>
-            )}
-          </div>
-          <input ref={mediaRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleAddMedia} />
-
-          {loadingItems ? (
-            <div className="flex justify-center py-8">
-              <motion.div className="w-6 h-6 rounded-full border-2"
-                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
-                animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-            </div>
-          ) : items.length === 0 ? (
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => mediaRef.current?.click()}
-              className="w-full py-10 rounded-2xl flex flex-col items-center gap-3 cursor-pointer"
-              style={{ border: "2px dashed rgba(var(--accent-rgb),0.3)", background: "rgba(var(--tint-violet-rgb),0.2)" }}>
-              <Plus size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>Ajouter des photos / vidéos</span>
-              <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Jusqu&apos;à 50 médias</span>
-            </motion.button>
-          ) : (
-            <div className="grid grid-cols-3 gap-1.5 mb-4">
-              {items.map((item) => (
-                <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden group">
-                  {item.media_url && (item.media_type === "video"
-                    ? <video src={item.media_url} className="w-full h-full object-cover" muted playsInline />
-                    // eslint-disable-next-line @next/next/no-img-element
-                    : <img loading="lazy" decoding="async" src={item.media_url} alt="" className="w-full h-full object-cover" />)}
-                  <motion.button
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer"
-                    style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-                    whileTap={{ scale: 0.85 }}
-                  >
-                    <X size={9} strokeWidth={3} style={{ color: "white" }} />
-                  </motion.button>
-                  {item.media_type === "video" && (
-                    <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-bold" style={{ background: "rgba(0,0,0,0.55)", color: "white" }}>
-                      VID
-                    </div>
-                  )}
-                </div>
-              ))}
-              {items.length < 50 && (
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => mediaRef.current?.click()}
-                  className="aspect-square rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ border: "2px dashed rgba(var(--accent-rgb),0.35)", background: "rgba(var(--tint-violet-rgb),0.2)" }}>
-                  <Plus size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-                </motion.button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 pb-8 pt-3 flex-shrink-0 flex flex-col gap-2">
-          <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
-            onClick={handleSave}
-            disabled={!name.trim() || saving}
-            className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg,#C4A8FF 0%,var(--accent) 100%)",
-              color: "#3D2F6B",
-              boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.3)",
-              opacity: saving ? 0.7 : 1,
-            }}>
-            {saving ? "Sauvegarde…" : "Sauvegarder"}
-          </motion.button>
-
-          {!delConfirm ? (
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => setDelConfirm(true)}
-              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-              style={{ color: "#E53E3E", background: "rgba(229,62,62,0.06)", border: "1px solid rgba(229,62,62,0.15)" }}>
-              Supprimer la catégorie
-            </motion.button>
-          ) : (
-            <div className="flex gap-2">
-              <motion.button whileTap={{ scale: 0.97 }} onClick={() => setDelConfirm(false)}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-2)" }}>
-                Annuler
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.97 }} onClick={handleDelete}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold cursor-pointer"
-                style={{ background: "#E53E3E", color: "white" }}>
-                Confirmer
-              </motion.button>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
@@ -1388,32 +858,17 @@ export default function ProfilPage() {
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [showNewHighlight, setShowNewHighlight] = useState(false);
-  const [editHighlight, setEditHighlight]   = useState<Highlight | null>(null);
-  const [viewingHighlight, setViewingHighlight] = useState<HighlightViewData | null>(null);
-  const [viewerLoading, setViewerLoading]   = useState(false);
-  const [highlights, setHighlights]         = useState<Highlight[]>([]);
-  const [activeStories, setActiveStories]   = useState<HighlightItem[]>([]);
-  const [hasActiveStory, setHasActiveStory] = useState(false);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
   const [profileFullName, setProfileFullName] = useState("");
   const [profileBio, setProfileBio] = useState("");
   const [profileGoals, setProfileGoals] = useState<string[]>([]);
   const [profileLevel, setProfileLevel] = useState<string>("");
-  const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
-  const [postCount, setPostCount] = useState<number>(0);
   const [showGoals, setShowGoals] = useState(false);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
-  const [savedPosts, setSavedPosts] = useState<UserPost[]>([]);
-  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
-  const [repostedPostIds, setRepostedPostIds] = useState<Set<string>>(new Set());
-  const [openPostComments, setOpenPostComments] = useState<Set<string>>(new Set());
-  const [burstPostId, setBurstPostId] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [editingSelectedPost, setEditingSelectedPost] = useState(false);
 
@@ -1435,64 +890,6 @@ export default function ProfilPage() {
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
   const { settings, updateSettings } = useProfileSettings();
 
-  /* Fetch highlights + active stories from Supabase */
-  useEffect(() => {
-    if (!user?.id) return;
-    const supabase = createClient();
-
-    // Highlights
-    supabase
-      .from("highlights")
-      .select("id, name, cover_url, user_id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => { if (data) setHighlights(data as Highlight[]); });
-
-    // Toutes les stories actives (photo, vidéo, texte, repas, séance) — ring + viewer
-    void Promise.resolve(
-      supabase
-        .from("stories")
-        .select("id, media_url, media_type, caption, content_type, content_data")
-        .eq("user_id", user.id)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: true })
-    ).then(({ data }) => {
-      if (data) {
-        setActiveStories(data as HighlightItem[]);
-        setHasActiveStory(data.length > 0);
-      }
-    }).catch(() => {});
-  }, [user?.id]);
-
-  /* Open highlight viewer — loads items lazily */
-  const openHighlightViewer = async (h: Highlight) => {
-    setViewerLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("highlight_items")
-      .select("id, media_url, media_type, caption")
-      .eq("highlight_id", h.id)
-      .order("display_order", { ascending: true });
-    setViewingHighlight({ id: h.id, name: h.name, cover_url: h.cover_url, items: (data ?? []) as HighlightItem[] });
-    setViewerLoading(false);
-  };
-
-  /* Delete viewer item — update items list live */
-  const handleViewerDeleteItem = async (itemId: string) => {
-    if (!viewingHighlight) return;
-    const supabase = createClient();
-    // "__stories__" = story propre de l'utilisateur → supprimer dans la table stories
-    if (viewingHighlight.id === "__stories__") {
-      await supabase.from("stories").delete().eq("id", itemId);
-      // Refresh activeStories state too
-      setActiveStories((prev) => prev.filter((s) => s.id !== itemId));
-      if (activeStories.length <= 1) setHasActiveStory(false);
-    } else {
-      await supabase.from("highlight_items").delete().eq("id", itemId);
-    }
-    setViewingHighlight((prev) => prev ? { ...prev, items: prev.items.filter((i) => i.id !== itemId) } : null);
-  };
-
   /* Fetch profile + stats */
   useEffect(() => {
     if (!user?.id) return;
@@ -1513,36 +910,12 @@ export default function ProfilPage() {
       });
 
     Promise.all([
-      supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", user.id),
       supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", user.id),
       supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    ]).then(([f1, f2, f3, f4]) => {
-      setFollowerCount(f1.count ?? 0);
+    ]).then(([f2, f3]) => {
       setFollowingCount(f2.count ?? 0);
       setSessionCount(f3.count ?? 0);
-      setPostCount(f4.count ?? 0);
     });
-
-    // Temps réel — mise à jour du compteur publications
-    const supabaseRT = createClient();
-    const channel = supabaseRT
-      .channel("post-count")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "posts",
-        filter: `user_id=eq.${user.id}`,
-      }, async () => {
-        const { count } = await supabaseRT
-          .from("posts")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id);
-        setPostCount(count ?? 0);
-      })
-      .subscribe();
-
-    return () => { supabaseRT.removeChannel(channel).catch(() => {}); };
   }, [user?.id]);
 
   /* Rang (aura), amis (les gens que je suis) + affiches gagnées */
@@ -1571,57 +944,18 @@ export default function ProfilPage() {
     if (!user?.id) return;
     const supabase = createClient();
 
-    // Publications : posts de l'utilisateur
+    // Affiches de perf : posts « séance » de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, views, post_likes(user_id), post_comments(id), post_reposts(user_id)")
+      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, views")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) { console.error("posts query error:", error.message); return; }
-        if (data) {
-          const posts = (data as unknown as UserPost[]).map((p) => ({
-            ...p,
-            post_likes: p.post_likes ?? [],
-            post_comments: p.post_comments ?? [],
-            post_reposts: p.post_reposts ?? [],
-            likes_count: p.post_likes?.length ?? 0,
-          }));
-          setUserPosts(posts);
-          // Initialiser les sets de likes/reposts
-          const liked = new Set<string>();
-          const reposted = new Set<string>();
-          posts.forEach((p) => {
-            if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
-            if (p.post_reposts.some((r) => r.user_id === user.id)) reposted.add(p.id);
-          });
-          setLikedPostIds(liked);
-          setRepostedPostIds(reposted);
-        }
+        if (data) setUserPosts(data as unknown as UserPost[]);
       });
 
-    // Vidéos enregistrées depuis post_saves (distinct des likes)
-    supabase
-      .from("post_saves")
-      .select("post_id, posts!post_id(id, type, caption, performance_data, created_at, user_id, media_url, media_type)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          const posts = data
-            .map(({ posts }) => Array.isArray(posts) ? posts[0] : posts)
-            .filter((post) => post != null)
-            .map((post) => ({
-              ...post,
-              post_likes: [],
-              post_comments: [],
-              post_reposts: [],
-            }));
-          setSavedPosts(posts);
-        }
-      });
-
-    // Séances enregistrées : workout sessions
+    // Séances : workout sessions
     supabase
       .from("workout_sessions")
       .select("id, title, started_at, duration_minutes, elapsed_seconds")
@@ -1629,123 +963,11 @@ export default function ProfilPage() {
       .order("started_at", { ascending: false })
       .limit(50)
       .then(({ data }) => { if (data) setWorkoutSessions(data as WorkoutSessionItem[]); });
-
-    // ── Temps réel : likes / commentaires / reposts ──
-    const rt = createClient();
-
-    // Quelqu'un like un post de l'utilisateur
-    const likesChannel = rt.channel("profile-post-likes")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_likes" }, (payload) => {
-        const { post_id, user_id } = payload.new as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_likes: p.post_likes.some((l) => l.user_id === user_id) ? p.post_likes : [...p.post_likes, { user_id }],
-          likes_count: (p.likes_count ?? p.post_likes.length) + 1,
-        }));
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "post_likes" }, (payload) => {
-        const { post_id, user_id } = payload.old as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_likes: p.post_likes.filter((l) => l.user_id !== user_id),
-          likes_count: Math.max(0, (p.likes_count ?? p.post_likes.length) - 1),
-        }));
-      })
-      .subscribe();
-
-    // Quelqu'un commente un post de l'utilisateur
-    const commentsChannel = rt.channel("profile-post-comments")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_comments" }, (payload) => {
-        const { post_id, id } = payload.new as { post_id: string; id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_comments: p.post_comments.some((c) => c.id === id) ? p.post_comments : [...p.post_comments, { id }],
-        }));
-      })
-      .subscribe();
-
-    // Quelqu'un reposte un post de l'utilisateur
-    const repostsChannel = rt.channel("profile-post-reposts")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_reposts" }, (payload) => {
-        const { post_id, user_id } = payload.new as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_reposts: p.post_reposts.some((r) => r.user_id === user_id) ? p.post_reposts : [...p.post_reposts, { user_id }],
-        }));
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "post_reposts" }, (payload) => {
-        const { post_id, user_id } = payload.old as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_reposts: p.post_reposts.filter((r) => r.user_id !== user_id),
-        }));
-      })
-      .subscribe();
-
-    return () => {
-      rt.removeChannel(likesChannel).catch(() => {});
-      rt.removeChannel(commentsChannel).catch(() => {});
-      rt.removeChannel(repostsChannel).catch(() => {});
-    };
   }, [user?.id]);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
-  };
-
-  const togglePostLike = async (postId: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    const isLiked = likedPostIds.has(postId);
-    setLikedPostIds((prev) => { const n = new Set(prev); isLiked ? n.delete(postId) : n.add(postId); return n; });
-    setUserPosts((prev) => prev.map((p) => p.id !== postId ? p : {
-      ...p,
-      post_likes: isLiked ? p.post_likes.filter((l) => l.user_id !== user.id) : [...p.post_likes, { user_id: user.id }],
-      likes_count: isLiked ? (p.likes_count ?? 1) - 1 : (p.likes_count ?? 0) + 1,
-    }));
-    if (!isLiked) {
-      setBurstPostId(postId);
-      setTimeout(() => setBurstPostId(null), 700);
-      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      // ── Notification au propriétaire du post ──
-      const post = userPosts.find((p) => p.id === postId) ?? savedPosts.find((p) => p.id === postId);
-      if (post && post.user_id !== user.id) {
-        void fetch("/api/notifications/like", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: postId }),
-        }).catch(() => {});
-      }
-    } else {
-      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
-    }
-  };
-
-  const togglePostRepost = async (postId: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    const isReposted = repostedPostIds.has(postId);
-    setRepostedPostIds((prev) => { const n = new Set(prev); isReposted ? n.delete(postId) : n.add(postId); return n; });
-    setUserPosts((prev) => prev.map((p) => p.id !== postId ? p : {
-      ...p,
-      post_reposts: isReposted ? p.post_reposts.filter((r) => r.user_id !== user.id) : [...p.post_reposts, { user_id: user.id }],
-    }));
-    if (!isReposted) {
-      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      showToast("Post boosté ! 🔄");
-      // ── Notification au propriétaire du post ──
-      const post = userPosts.find((p) => p.id === postId) ?? savedPosts.find((p) => p.id === postId);
-      if (post && post.user_id !== user.id) {
-        void fetch("/api/notifications/repost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: postId }),
-        }).catch(() => {});
-      }
-    } else {
-      await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
-    }
   };
 
   const handleLogout = () => {
@@ -1762,26 +984,6 @@ export default function ProfilPage() {
     showToast("Profil mis à jour ✓");
     // Rafraîchit le user dans le contexte (nav, initiale, avatar partout)
     void refreshProfile();
-  };
-
-  const handleHighlightCreated = (h: Highlight) => {
-    setHighlights((prev) => [...prev, h]);
-    setShowNewHighlight(false);
-    showToast("Catégorie créée ✓");
-    // Open edit immediately so user can add media
-    setEditHighlight(h);
-  };
-
-  const handleHighlightUpdated = (updated: Highlight) => {
-    setHighlights((prev) => prev.map((h) => h.id === updated.id ? updated : h));
-    setEditHighlight(null);
-    showToast("Catégorie modifiée ✓");
-  };
-
-  const handleHighlightDeleted = (id: string) => {
-    setHighlights((prev) => prev.filter((h) => h.id !== id));
-    setEditHighlight(null);
-    showToast("Catégorie supprimée");
   };
 
   const displayPseudo = profilePseudo || user?.pseudo || "";
@@ -1883,31 +1085,20 @@ export default function ProfilPage() {
             <motion.div
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
-              onClick={() => hasActiveStory
-                ? setViewingHighlight({ id: "__stories__", name: "Ma story", cover_url: activeStories[0]?.media_url ?? null, items: activeStories })
-                : setShowEdit(true)}
+              onClick={() => setShowEdit(true)}
               className="absolute inset-0 cursor-pointer rounded-full"
             >
-              {/* Ring rotatif story */}
-              {hasActiveStory && (
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: "conic-gradient(#C4A8FF, var(--accent), #7C5CFA, var(--cream-mid), var(--gold), #C4A8FF)" }}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                />
-              )}
               {/* Séparateur blanc */}
-              <div className="absolute rounded-full bg-white" style={{ inset: hasActiveStory ? 3 : 0 }} />
+              <div className="absolute rounded-full bg-white" style={{ inset: 0 }} />
               {/* Photo */}
               <div
                 className="absolute rounded-full overflow-hidden flex items-center justify-center text-4xl"
                 style={{
-                  inset: hasActiveStory ? 7 : 3,
+                  inset: 3,
                   background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
                   color: "#7C5CFA",
                   fontWeight: 300,
-                  boxShadow: hasActiveStory ? "none" : "0 12px 40px rgba(var(--accent-rgb),0.35)",
+                  boxShadow: "0 12px 40px rgba(var(--accent-rgb),0.35)",
                 }}
               >
                 {displayAvatar
@@ -2357,38 +1548,6 @@ export default function ProfilPage() {
             onSave={() => { showToast("Objectifs mis à jour ✓"); refreshGoals(); }}
           />
         )}
-        {showNewHighlight && user && (
-          <NewHighlightModal
-            userId={user.id}
-            onCreated={handleHighlightCreated}
-            onClose={() => setShowNewHighlight(false)}
-          />
-        )}
-        {editHighlight && user && (
-          <EditHighlightModal
-            highlight={editHighlight}
-            userId={user.id}
-            onUpdated={handleHighlightUpdated}
-            onDeleted={() => handleHighlightDeleted(editHighlight.id)}
-            onClose={() => setEditHighlight(null)}
-          />
-        )}
-        {viewingHighlight && user && (
-          <StoryHighlightViewer
-            highlight={viewingHighlight}
-            isOwner={viewingHighlight.id === "__stories__" || (!!viewingHighlight.id && highlights.some((h) => h.id === viewingHighlight.id))}
-            onClose={() => setViewingHighlight(null)}
-            onDeleteItem={handleViewerDeleteItem}
-            onAddItems={() => {
-              setViewingHighlight(null);
-              const h = highlights.find((x) => x.id === viewingHighlight.id);
-              if (h) setEditHighlight(h);
-            }}
-          />
-        )}
-        {showFollowList && user && (
-          <FollowListModal type={showFollowList} ownerId={user.id} onClose={() => setShowFollowList(null)} />
-        )}
         {toast && <Toast message={toast} />}
         {/* WorkoutGuideModal lancé depuis un post du profil */}
         {profileWorkout && (
@@ -2587,12 +1746,7 @@ export default function ProfilPage() {
                       {selectedPost.description}
                     </p>
                   )}
-                  <div className="px-4 pb-5 flex items-center gap-2">
-                    <Heart size={16} strokeWidth={0} fill="#F43F5E" style={{ color: "#F43F5E" }} />
-                    <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                      {selectedPost.likes_count ?? 0}{" "}j&apos;aime
-                    </span>
-                  </div>
+                  <div className="pb-3" />
                 </>
               )}
 
