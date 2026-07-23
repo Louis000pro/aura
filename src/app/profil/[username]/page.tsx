@@ -4,17 +4,14 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check,
-  MessageCircle, Camera, Film, LayoutList,
-  Heart, Share2, Repeat2, X, Send, MoreHorizontal,
-  Sparkles, Lock, Users, ChevronRight,
+  UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, LayoutList,
+  X, Sparkles, Lock, Users, ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import VideoPlayer from "@/components/VideoPlayer";
 import FollowListModal from "@/components/FollowListModal";
-import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
 import GemmeRang from "@/components/GemmeRang";
 import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
@@ -22,12 +19,6 @@ import { type PerformanceData } from "@/components/PerformanceCard";
 import { calculerAura, type EtatAura } from "@/lib/aura";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
-
-function formatViews(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".0", "")}K`;
-  return String(n);
-}
 
 type Profile = {
   id: string;
@@ -62,169 +53,6 @@ type DbPost = {
   post_reposts: { user_id: string }[];
 };
 
-type ProfilComment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  author: { pseudo: string; avatar_url?: string | null } | null;
-};
-
-function InlineComments({ postId, postOwnerId, onCommentAdded }: { postId: string; postOwnerId?: string; onCommentAdded?: () => void }) {
-  const { user } = useAuth();
-  const [comments, setComments] = useState<ProfilComment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("post_comments")
-      .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-      .eq("post_id", postId)
-      .order("created_at", { ascending: true })
-      .limit(50)
-      .then(({ data }) => {
-        setComments((data as unknown as ProfilComment[]) ?? []);
-        setLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      });
-  }, [postId]);
-
-  const handleSend = async () => {
-    if (!input.trim() || !user || sending) return;
-    const content = input.trim();
-    setInput("");
-    setSending(true);
-    const tmpId = `tmp-${Date.now()}`;
-    setComments((prev) => [
-      ...prev,
-      {
-        id: tmpId,
-        content,
-        created_at: new Date().toISOString(),
-        user_id: user.id,
-        author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
-      },
-    ]);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("post_comments")
-      .insert({ post_id: postId, user_id: user.id, text: content });
-    setSending(false);
-    if (error) {
-      setComments((prev) => prev.filter((c) => c.id !== tmpId));
-      setInput(content);
-    } else {
-      onCommentAdded?.();
-      if (postOwnerId && postOwnerId !== user.id) {
-        void fetch("/api/notifications/comment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            commenter_id: user.id,
-            post_owner_id: postOwnerId,
-            post_id: postId,
-            comment_preview: content.slice(0, 100),
-          }),
-        }).catch(() => {});
-      }
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.3 }}
-      className="overflow-hidden"
-    >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(var(--tint-violet-rgb),0.8)" }}>
-        <div className="flex flex-col gap-2 mb-3 max-h-40 overflow-y-auto">
-          {loading ? (
-            <div className="flex justify-center py-3">
-              <motion.div
-                className="w-4 h-4 rounded-full border-2"
-                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-              />
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "var(--text-3)" }}>
-              Sois le premier à commenter
-            </p>
-          ) : (
-            comments.map((c) => (
-              <div key={c.id} className="flex items-start gap-2">
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden flex-shrink-0"
-                  style={{
-                    background: c.author?.avatar_url
-                      ? "transparent"
-                      : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
-                    color: "var(--text-1)",
-                  }}
-                >
-                  {c.author?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" decoding="async" src={c.author.avatar_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (c.author?.pseudo?.[0] ?? "?").toUpperCase()
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs" style={{ color: "var(--text-1)" }}>
-                    <span className="font-semibold mr-1">{c.author?.pseudo}</span>
-                    <span className="font-light">{c.content}</span>
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi"}
-            disabled={!user}
-            className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
-            style={{
-              background: "rgba(var(--tint-violet-rgb),0.5)",
-              border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
-              color: "var(--text-1)",
-            }}
-          />
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={handleSend}
-            disabled={!input.trim() || !user || sending}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{
-              background:
-                input.trim() && user
-                  ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
-                  : "rgba(var(--tint-violet-rgb),0.5)",
-            }}
-          >
-            <Send
-              size={12}
-              strokeWidth={2}
-              style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }}
-            />
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -246,14 +74,8 @@ export default function PublicProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [profileStories, setProfileStories] = useState<HighlightItem[]>([]);
-  const [viewingStories, setViewingStories] = useState<HighlightViewData | null>(null);
-  // Stories à la une (highlights permanents) du profil visité
-  const [profileHighlights, setProfileHighlights] = useState<{ id: string; name: string; cover_url: string | null }[]>([]);
-  const [viewerLoading, setViewerLoading] = useState(false);
   const [certified, setCertified] = useState(false); // is_certified (fetch défensif)
   const [userPosts, setUserPosts] = useState<DbPost[]>([]);
-  const [postCount, setPostCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [profileTab, setProfileTab] = useState<"sillages" | "seances">("sillages");
   const [aura, setAura] = useState<EtatAura | null>(null);
@@ -279,10 +101,6 @@ export default function PublicProfilePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPost?.id]);
 
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
-  const [repostedIds, setRepostedIds] = useState<Set<string>>(new Set());
-  const [openComments, setOpenComments] = useState<Set<string>>(new Set());
-  const [burstId, setBurstId] = useState<string | null>(null);
 
   const isOwnProfile = !!(user && profile && user.id === profile.id);
 
@@ -329,26 +147,13 @@ export default function PublicProfilePage() {
         if (recentRes.data) setRecentSessions(recentRes.data);
 
         // ── Posts de l'utilisateur ──
-        const { data: postsData, count: postsCount } = await supabase
+        const { data: postsData } = await supabase
           .from("posts")
-          .select("id, type, caption, description, media_url, media_type, performance_data, created_at, views, post_likes(user_id), post_comments(id), post_reposts(user_id)", { count: "exact" })
+          .select("id, type, caption, description, media_url, media_type, performance_data, created_at, views")
           .eq("user_id", data.id)
           .order("created_at", { ascending: false })
           .limit(20);
-        if (postsData) {
-          setUserPosts(postsData as unknown as DbPost[]);
-          const liked = new Set<string>();
-          const reposted = new Set<string>();
-          if (user) {
-            (postsData as unknown as DbPost[]).forEach((p) => {
-              if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
-              if (p.post_reposts?.some((r) => r.user_id === user.id)) reposted.add(p.id);
-            });
-          }
-          setLikedIds(liked);
-          setRepostedIds(reposted);
-        }
-        setPostCount(postsCount ?? 0);
+        if (postsData) setUserPosts(postsData as unknown as DbPost[]);
 
         // ── Streak (jours consécutifs avec séance) ──
         const { data: streakData } = await supabase
@@ -382,40 +187,9 @@ export default function PublicProfilePage() {
           setIsFollowing(!!followData);
         }
 
-        // Charger les stories actives du profil
-        const { data: storiesData } = await supabase
-          .from("stories")
-          .select("id, media_url, media_type, caption")
-          .eq("user_id", data.id)
-          .gt("expires_at", new Date().toISOString())
-          .not("media_url", "is", null)
-          .order("created_at", { ascending: true });
-        if (storiesData) setProfileStories(storiesData as HighlightItem[]);
-
-        // Charger les "stories à la une" (highlights permanents) — visibles par tous
-        const { data: hlData } = await supabase
-          .from("highlights")
-          .select("id, name, cover_url")
-          .eq("user_id", data.id)
-          .order("created_at", { ascending: true });
-        if (hlData) setProfileHighlights(hlData as { id: string; name: string; cover_url: string | null }[]);
-
         setLoading(false);
       });
   }, [username, user]);
-
-  /* Ouvre une story à la une (charge ses médias) */
-  const openProfileHighlight = async (h: { id: string; name: string; cover_url: string | null }) => {
-    setViewerLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("highlight_items")
-      .select("id, media_url, media_type, caption")
-      .eq("highlight_id", h.id)
-      .order("display_order", { ascending: true });
-    setViewingStories({ id: h.id, name: h.name, cover_url: h.cover_url, items: (data ?? []) as HighlightItem[] });
-    setViewerLoading(false);
-  };
 
   const handleFollow = async () => {
     if (!user || !profile || isOwnProfile) return;
@@ -460,91 +234,6 @@ export default function PublicProfilePage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
-  };
-
-  const toggleLike = async (postId: string) => {
-    if (!user || !profile) return;
-    const supabase = createClient();
-    const isLiked = likedIds.has(postId);
-    setLikedIds((prev) => {
-      const n = new Set(prev);
-      isLiked ? n.delete(postId) : n.add(postId);
-      return n;
-    });
-    setUserPosts((prev) =>
-      prev.map((p) =>
-        p.id !== postId
-          ? p
-          : {
-              ...p,
-              post_likes: isLiked
-                ? p.post_likes.filter((l) => l.user_id !== user.id)
-                : [...p.post_likes, { user_id: user.id }],
-            }
-      )
-    );
-    if (!isLiked) {
-      setBurstId(postId);
-      setTimeout(() => setBurstId(null), 700);
-      await supabase
-        .from("post_likes")
-        .upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      if (profile.id !== user.id) {
-        void fetch("/api/notifications/like", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ liker_id: user.id, post_owner_id: profile.id, post_id: postId }),
-        }).catch(() => {});
-      }
-    } else {
-      await supabase
-        .from("post_likes")
-        .delete()
-        .eq("post_id", postId)
-        .eq("user_id", user.id);
-    }
-  };
-
-  const toggleRepost = async (postId: string) => {
-    if (!user || !profile) return;
-    const supabase = createClient();
-    const isReposted = repostedIds.has(postId);
-    setRepostedIds((prev) => {
-      const n = new Set(prev);
-      isReposted ? n.delete(postId) : n.add(postId);
-      return n;
-    });
-    setUserPosts((prev) =>
-      prev.map((p) =>
-        p.id !== postId
-          ? p
-          : {
-              ...p,
-              post_reposts: isReposted
-                ? (p.post_reposts ?? []).filter((r) => r.user_id !== user.id)
-                : [...(p.post_reposts ?? []), { user_id: user.id }],
-            }
-      )
-    );
-    if (!isReposted) {
-      await supabase
-        .from("post_reposts")
-        .upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      if (profile.id !== user.id) {
-        void fetch("/api/notifications/repost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reposter_id: user.id, post_owner_id: profile.id, post_id: postId }),
-        }).catch(() => {});
-      }
-      showToast("Post boosté ! 🔄");
-    } else {
-      await supabase
-        .from("post_reposts")
-        .delete()
-        .eq("post_id", postId)
-        .eq("user_id", user.id);
-    }
   };
 
   const formatDate = (iso: string) => {
@@ -706,29 +395,17 @@ export default function PublicProfilePage() {
         />
 
         <div className="flex flex-col items-center text-center relative z-10 mb-4">
-          {/* Avatar — ring animé si story active */}
-          <motion.div
-            className="relative mb-3 cursor-pointer"
+          {/* Avatar */}
+          <div
+            className="relative mb-3"
             style={{
               width: 88,
               height: 88,
               borderRadius: "50%",
               padding: 3,
-              background: profileStories.length > 0
-                ? "linear-gradient(135deg,var(--accent) 0%,var(--cream-mid) 50%,#C4A8FF 100%)"
-                : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-              boxShadow: profileStories.length > 0
-                ? "0 6px 28px rgba(var(--accent-rgb),0.5)"
-                : "0 6px 24px rgba(var(--accent-rgb),0.28)",
+              background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+              boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.28)",
             }}
-            whileHover={{ scale: profileStories.length > 0 ? 1.05 : 1 }}
-            whileTap={{ scale: profileStories.length > 0 ? 0.95 : 1 }}
-            onClick={() => profileStories.length > 0 && setViewingStories({
-              id: "__profile_stories__",
-              name: displayPseudo,
-              cover_url: profileStories[0]?.media_url,
-              items: profileStories,
-            })}
           >
             <div
               className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
@@ -739,14 +416,7 @@ export default function PublicProfilePage() {
                 ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
                 : <span>{initial}</span>}
             </div>
-            {/* Indicateur story */}
-            {profileStories.length > 0 && (
-              <div className="absolute -bottom-0.5 -right-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold"
-                style={{ background: "linear-gradient(135deg,var(--accent),var(--cream-mid))", color: "#3D2F6B", border: "2px solid white" }}>
-                STORY
-              </div>
-            )}
-          </motion.div>
+          </div>
 
           {/* Pseudo + badge certifié */}
           <div className="flex items-center gap-2 justify-center">
@@ -1135,128 +805,22 @@ export default function PublicProfilePage() {
                 </div>
               )}
 
-              {/* Action bar */}
-              {(() => {
-                const liked = likedIds.has(selectedPost.id);
-                const reposted = repostedIds.has(selectedPost.id);
-                const commentsOpen = openComments.has(selectedPost.id);
-                const likesCount = selectedPost.post_likes?.length ?? 0;
-                const repostsCount = selectedPost.post_reposts?.length ?? 0;
-                return (
-                  <>
-                    <div className="flex items-center gap-4 px-4 pt-2">
-                      <motion.button
-                        whileTap={{ scale: 0.7 }}
-                        onClick={() => toggleLike(selectedPost.id)}
-                        className="relative flex items-center cursor-pointer"
-                      >
-                        {burstId === selectedPost.id &&
-                          [0, 1, 2, 3, 4].map((i) => (
-                            <motion.div
-                              key={i}
-                              className="absolute pointer-events-none"
-                              style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: "50%",
-                                background: i % 2 === 0 ? "#F43F5E" : "#FB7185",
-                              }}
-                              initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-                              animate={{
-                                scale: [0, 1.2, 0],
-                                x: [0, (i - 2) * 18],
-                                y: [0, -20 - i * 4],
-                                opacity: [1, 1, 0],
-                              }}
-                              transition={{ duration: 0.55, delay: i * 0.04 }}
-                            />
-                          ))}
-                        <motion.div
-                          animate={liked ? { scale: [1, 1.5, 0.9, 1.15, 1] } : { scale: 1 }}
-                        >
-                          <Heart
-                            size={20}
-                            strokeWidth={liked ? 0 : 1.5}
-                            fill={liked ? "#F43F5E" : "none"}
-                            style={{ color: liked ? "#F43F5E" : "var(--text-1)" }}
-                          />
-                        </motion.div>
-                      </motion.button>
+              {/* Affiche de perf (posts séance) */}
+              {selectedPost.type === "workout" && selectedPost.performance_data && (
+                <div className="px-4 pb-4 flex justify-center">
+                  <PerfShareCard
+                    data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: profile?.pseudo ?? "" })}
+                    width="min(320px, 100%)"
+                  />
+                </div>
+              )}
 
-                      <motion.button
-                        whileTap={{ scale: 0.85 }}
-                        onClick={() =>
-                          setOpenComments((p) => {
-                            const n = new Set(p);
-                            n.has(selectedPost.id) ? n.delete(selectedPost.id) : n.add(selectedPost.id);
-                            return n;
-                          })
-                        }
-                        className="cursor-pointer"
-                      >
-                        <MessageCircle
-                          size={20}
-                          strokeWidth={1.5}
-                          fill={commentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"}
-                          style={{ color: commentsOpen ? "var(--accent)" : "var(--text-1)" }}
-                        />
-                      </motion.button>
-
-                      <motion.button
-                        whileTap={{ scale: 0.85 }}
-                        onClick={() => toggleRepost(selectedPost.id)}
-                        className="cursor-pointer"
-                      >
-                        <motion.div
-                          animate={reposted ? { rotate: [0, 360], scale: [1, 1.3, 1] } : { rotate: 0 }}
-                        >
-                          <Repeat2
-                            size={20}
-                            strokeWidth={1.5}
-                            style={{ color: reposted ? "#2BD4A0" : "var(--text-1)" }}
-                          />
-                        </motion.div>
-                      </motion.button>
-
-                      <motion.button whileTap={{ scale: 0.85 }} className="cursor-pointer">
-                        <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-                      </motion.button>
-                    </div>
-
-                    <div className="px-4 pt-2 pb-1">
-                      {likesCount > 0 && (
-                        <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                          {likesCount} j&apos;aime
-                          {repostsCount > 0
-                            ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}`
-                            : ""}
-                        </p>
-                      )}
-                      <motion.p
-                        whileHover={{ color: "var(--text-1)" }}
-                        className="text-[11px] mt-1 cursor-pointer mb-3"
-                        style={{ color: "var(--text-3)" }}
-                        onClick={() =>
-                          setOpenComments((p) => {
-                            const n = new Set(p);
-                            n.has(selectedPost.id) ? n.delete(selectedPost.id) : n.add(selectedPost.id);
-                            return n;
-                          })
-                        }
-                      >
-                        {commentsOpen ? "Masquer" : "Voir les commentaires"}
-                      </motion.p>
-                    </div>
-
-                    {/* Comments inline */}
-                    <AnimatePresence>
-                      {commentsOpen && (
-                        <InlineComments postId={selectedPost.id} postOwnerId={profile?.id} />
-                      )}
-                    </AnimatePresence>
-                  </>
-                );
-              })()}
+              {selectedPost.description && (
+                <p className="px-4 pb-5 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+                  {selectedPost.description}
+                </p>
+              )}
+              <div className="pb-4" />
             </motion.div>
           </motion.div>
         )}
@@ -1284,13 +848,6 @@ export default function PublicProfilePage() {
               {toast}
             </span>
           </motion.div>
-        )}
-        {viewingStories && (
-          <StoryHighlightViewer
-            highlight={viewingStories}
-            isOwner={false}
-            onClose={() => setViewingStories(null)}
-          />
         )}
       </AnimatePresence>
 
