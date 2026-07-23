@@ -538,65 +538,87 @@ function SerieCard({ streak }: { streak: number }) {
 
   const [dayShown, setDayShown] = useState(streak);
   const [showExp, setShowExp] = useState(false);
+  // Change à chaque (re)lecture de la série → retriggere l'embrasement + le glint.
+  const [playKey, setPlayKey] = useState(0);
 
   useEffect(() => {
-    if (reduce || !hasStreak) { setDayShown(streak); setShowExp(true); return; }
+    setPlayKey((k) => k + 1);
+    if (reduce || !hasStreak) { setDayShown(streak); setShowExp(hasStreak); return; }
     setDayShown(1);
     setShowExp(false);
-    // Durée totale bornée (~1,1 s) même pour une grosse série.
-    const total = Math.min(1100, streak * 160);
-    const step = streak > 1 ? total / (streak - 1) : 0;
+    // Compteur « Jour 1 → Jour N » : ~230 ms par palier, borné à ~1,4 s.
+    const step = streak > 1 ? Math.min(230, 1400 / (streak - 1)) : 0;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let d = 2; d <= streak; d++) timers.push(setTimeout(() => setDayShown(d), step * (d - 1)));
-    timers.push(setTimeout(() => setShowExp(true), Math.max(step * (streak - 1), 260)));
+    for (let d = 2; d <= streak; d++) timers.push(setTimeout(() => setDayShown(d), 300 + step * (d - 1)));
+    timers.push(setTimeout(() => setShowExp(true), 300 + step * (streak - 1) + 200));
     return () => timers.forEach(clearTimeout);
   }, [streak, hasStreak, reduce]);
 
   return (
-    <div
+    <motion.div
+      initial={reduce ? false : { opacity: 0, scale: 0.97, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
       className="relative overflow-hidden rounded-2xl px-4 py-3 flex items-center gap-3"
-      style={{ background: "linear-gradient(135deg,rgba(245,177,32,0.14),rgba(232,98,12,0.11))", border: "1px solid rgba(232,98,12,0.18)" }}
+      style={{ background: "linear-gradient(135deg,rgba(245,177,32,0.16),rgba(232,98,12,0.12))", border: "1px solid rgba(232,98,12,0.20)" }}
     >
+      {/* Glint doré qui balaie la carte une fois à l'arrivée */}
+      {!reduce && (
+        <motion.div
+          key={`glint-${playKey}`}
+          initial={{ x: "-120%" }}
+          animate={{ x: "220%" }}
+          transition={{ duration: 0.9, ease: "easeInOut", delay: 0.15 }}
+          className="absolute inset-y-0 w-1/3 pointer-events-none"
+          style={{ background: "linear-gradient(105deg,transparent,rgba(255,255,255,0.45),transparent)", filter: "blur(2px)" }}
+        />
+      )}
+
+      {/* Flamme qui s'embrase à l'arrivée puis flare en boucle */}
       <motion.span
-        className="text-2xl leading-none flex-shrink-0"
+        key={`flame-${playKey}`}
+        className="text-[26px] leading-none flex-shrink-0 relative z-10"
         style={{ transformOrigin: "center bottom" }}
-        animate={reduce ? {} : { scale: [1, 1.18, 0.96, 1.08, 1], rotate: [0, -5, 5, -2, 0] }}
-        transition={{ duration: 0.9, ease: "easeInOut", repeat: Infinity, repeatDelay: 2.4 }}
+        initial={reduce ? false : { scale: 0.4, rotate: -12 }}
+        animate={reduce ? {} : { scale: [0.4, 1.45, 0.92, 1.14, 1], rotate: [-12, 6, -4, 2, 0] }}
+        transition={{ duration: 1.05, ease: "easeOut", times: [0, 0.35, 0.6, 0.82, 1] }}
       >
         🔥
       </motion.span>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 relative z-10">
         <p className="text-[14px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{h.titre}</p>
         <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "#b06a1e" }}>{h.sous}</p>
       </div>
 
       {hasStreak && (
-        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-          <div
+        <div className="flex flex-col items-end gap-1 flex-shrink-0 relative z-10">
+          <motion.div
             className="flex items-baseline gap-1 px-2.5 py-1 rounded-full"
-            style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 3px 10px rgba(232,98,12,0.4)" }}
+            style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 3px 12px rgba(232,98,12,0.45)" }}
+            animate={reduce ? {} : { scale: [1, 1.14, 1], boxShadow: ["0 3px 12px rgba(232,98,12,0.45)", "0 4px 18px rgba(232,98,12,0.65)", "0 3px 12px rgba(232,98,12,0.45)"] }}
+            transition={{ duration: 0.5, ease: "easeOut", repeat: Infinity, repeatDelay: 2.8 }}
           >
             <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.85)" }}>Jour</span>
             <motion.span
-              key={dayShown}
-              initial={reduce ? false : { scale: 0.5, opacity: 0, y: 4 }}
+              key={`${playKey}-${dayShown}`}
+              initial={reduce ? false : { scale: 0.3, opacity: 0, y: 6 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 500, damping: 22 }}
-              className="text-[15px] font-extrabold leading-none"
+              transition={{ type: "spring", stiffness: 520, damping: 20 }}
+              className="text-[16px] font-extrabold leading-none tabular-nums"
               style={{ color: "#fff" }}
             >
               {dayShown}
             </motion.span>
-          </div>
+          </motion.div>
           <AnimatePresence>
             {showExp && (
               <motion.span
                 key="exp"
-                initial={reduce ? false : { opacity: 0, y: -4, scale: 0.7 }}
+                initial={reduce ? false : { opacity: 0, y: -6, scale: 0.6 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                transition={{ type: "spring", stiffness: 380, damping: 18 }}
                 className="text-[11px] font-extrabold whitespace-nowrap"
                 style={{ color: "#c05a12" }}
               >
@@ -606,7 +628,7 @@ function SerieCard({ streak }: { streak: number }) {
           </AnimatePresence>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -667,7 +689,11 @@ function Dashboard() {
     calculerAura(supabase, user.id)
       .then((etat) => { setAura(etat); setAuraLoaded(true); })
       .catch(() => setAuraLoaded(true));
-  }, [user, mealsRefreshKey]);
+    // liveStats.streak/loaded en dépendance : au 1er chargement (ou après un
+    // reset), la série est réécrite dans daily_stats par l'effet des stats APRÈS
+    // ce calcul → on relit l'aura une fois la série connue, sinon la carte série
+    // resterait bloquée sur « le début » (streak lu à 0 par la race).
+  }, [user, mealsRefreshKey, liveStats.streak, liveStats.loaded]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
