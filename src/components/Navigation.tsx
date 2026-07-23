@@ -255,6 +255,18 @@ export default function Navigation() {
 
             Les pages qui possèdent leur propre barre du haut portent la
             cloche elles-mêmes : sinon celle-ci vient se poser dessus. ══ */}
+      {/* ══ Voile du haut (mobile) : donne un « toit » aux boutons flottants
+            (avatar + cloche) pour que le contenu scrolle proprement dessous au
+            lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
+            lourde. ══ */}
+      {user && pathname !== "/profil" && pathname !== "/communaute" && (
+        <div className="md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
+          style={{
+            height: "calc(env(safe-area-inset-top) + 56px)",
+            background: "linear-gradient(to bottom, rgba(var(--surface-rgb),0.96) 0%, rgba(var(--surface-rgb),0.80) 42%, rgba(var(--surface-rgb),0) 100%)",
+          }} />
+      )}
+
       {user && pathname !== "/profil" && pathname !== "/communaute" && (
         <div className="md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>

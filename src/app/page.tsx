@@ -398,6 +398,11 @@ function LandingPage() {
       {/* ════════ HERO — premier écran ════════ */}
       <section className="relative w-full min-h-[100svh] flex flex-col overflow-hidden">
 
+      {/* ── Nappe chaude pleine largeur ancrée au bas : le dégradé atteint
+            vraiment le bord de l'écran (fini le « cut » net sur mobile). ── */}
+      <div className="absolute inset-x-0 bottom-0 pointer-events-none z-0"
+        style={{ height: "60%", background: "linear-gradient(to top, rgba(245,220,130,0.34) 0%, rgba(245,220,130,0.13) 45%, transparent 100%)" }} />
+
       {/* ── Grands blobs ambiants ── */}
       <motion.div className="absolute rounded-full pointer-events-none"
         style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)", willChange: "transform" }}
