@@ -26,7 +26,7 @@ const SUGGESTIONS = [
 ];
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe } = useAssistant();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -43,11 +43,11 @@ export default function AssistantSheet() {
     // La carte de séance s'anime et grandit après le 1er rendu : on re-scroll
     // une fois sa hauteur stabilisée pour que ses boutons (Créer/Annuler)
     // soient toujours visibles et cliquables.
-    if (pendingSeance || pendingPlan) {
+    if (pendingSeance || pendingPlan || pendingRecipe) {
       const t = setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }), 360);
       return () => clearTimeout(t);
     }
-  }, [messages, isOpen, pendingSeance, pendingPlan, actionLoading]);
+  }, [messages, isOpen, pendingSeance, pendingPlan, pendingRecipe, actionLoading]);
 
   // Échap pour fermer
   useEffect(() => {
@@ -294,6 +294,82 @@ export default function AssistantSheet() {
                       className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
                       style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
                       <Check size={15} strokeWidth={2.4} /> Confirmer
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── Carte RECETTE ── */}
+              {pendingRecipe && (
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="w-full rounded-3xl overflow-hidden"
+                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 text-[17px]"
+                      style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
+                      🍽️
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Recette</p>
+                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingRecipe.nom}</p>
+                    </div>
+                  </div>
+
+                  {/* Repères */}
+                  <div className="flex flex-wrap gap-1.5 px-4 pt-2.5">
+                    {[
+                      `${pendingRecipe.prepMin + pendingRecipe.cookMin} min`,
+                      `${pendingRecipe.portions} portion${pendingRecipe.portions > 1 ? "s" : ""}`,
+                      pendingRecipe.difficulty,
+                      `${pendingRecipe.calories} kcal`,
+                      `${pendingRecipe.proteins} g prot.`,
+                    ].map((t) => (
+                      <span key={t} className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--text-2)" }}>{t}</span>
+                    ))}
+                  </div>
+
+                  {/* Ingrédients + étapes */}
+                  <div className="px-4 pt-2.5 pb-1 flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 190, scrollbarWidth: "none" }}>
+                    {pendingRecipe.ingredients.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        {pendingRecipe.ingredients.map((ing, i) => (
+                          <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
+                            style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
+                            <span className="text-[13px] font-light truncate" style={{ color: "var(--text-1)" }}>{ing.nom}</span>
+                            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{ing.quantite}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {pendingRecipe.steps.length > 0 && (
+                      <ol className="flex flex-col gap-1.5 pl-1">
+                        {pendingRecipe.steps.map((s, i) => (
+                          <li key={i} className="flex gap-2 text-[12.5px] font-light leading-snug" style={{ color: "var(--text-2)" }}>
+                            <span className="flex-shrink-0 font-bold" style={{ color: "var(--accent)" }}>{i + 1}.</span>
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                    {pendingRecipe.safetyNote && (
+                      <p className="text-[11.5px] font-medium leading-snug px-3 py-2 rounded-xl"
+                        style={{ background: "rgba(245,177,32,0.12)", color: "var(--text-2)" }}>
+                        ⚠️ {pendingRecipe.safetyNote}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 px-4 py-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={cancelRecipe}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
+                      Fermer
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={confirmRecipe}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+                      <Check size={15} strokeWidth={2.4} /> Ajouter au repas
                     </motion.button>
                   </div>
                 </motion.div>

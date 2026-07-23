@@ -44,6 +44,22 @@ const GOAL_LABELS: Record<string, string> = {
   souplesse: "souplesse",
 };
 
+/** Recette proposée par l'IA, en attente d'ajout aux repas du jour. */
+export type PendingRecipe = {
+  nom: string;
+  portions: number;
+  prepMin: number;
+  cookMin: number;
+  difficulty: string;
+  ingredients: { nom: string; quantite: string }[];
+  steps: string[];
+  calories: number;
+  proteins: number;
+  carbs: number;
+  fats: number;
+  safetyNote?: string;
+};
+
 /** Changement de planning proposé par l'IA, en attente de confirmation. */
 type PendingPlan = {
   title: string;            // titre de la carte (nom de la séance ou jour déplacé)
@@ -82,11 +98,14 @@ type AssistantContextValue = {
   memoryNotice: string | null;
   pendingSeance: ProposedSeance | null;
   pendingPlan: PendingPlan | null;
+  pendingRecipe: PendingRecipe | null;
   actionLoading: boolean;
   confirmSeance: () => void;
   cancelSeance: () => void;
   confirmPlan: () => void;
   cancelPlan: () => void;
+  confirmRecipe: () => void;
+  cancelRecipe: () => void;
 };
 
 const Ctx = createContext<AssistantContextValue | null>(null);
@@ -117,6 +136,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [memoryNotice, setMemoryNotice] = useState<string | null>(null);
   const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
+  const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const userContextRef = useRef<UserContext | null>(null);
@@ -613,7 +633,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     let parsed: {
       memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string; theme?: string };
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string; theme?: string; dish?: string; theme_recette?: string; ingredients?: unknown; mealType?: string };
     } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
@@ -654,6 +674,43 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         : pref === "light" ? "Retour en clair ✦"
         : "Thème réglé sur automatique — il suivra ton téléphone ✦";
       setMessages((prev) => [...prev, { role: "assistant" as const, content: motTheme, id: uid() }]);
+      return;
+    }
+
+    // 2a-ter) RECETTE : l'IA cuisine (un plat, un thème, ou les restes qu'on a
+    // sous la main) puis propose une carte. Rien n'est loggé sans validation.
+    if (action.intent === "create_recipe") {
+      setActionLoading(true);
+      setPendingRecipe(null);
+      try {
+        const ingredients = Array.isArray(action.ingredients)
+          ? (action.ingredients as unknown[]).filter((i): i is string => typeof i === "string")
+          : [];
+        const res = await fetch("/api/nutrition/recipe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            dish: action.dish ?? "",
+            theme: action.theme_recette ?? "",
+            ingredients,
+            mealType: action.mealType ?? "",
+            portions: 2,
+          }),
+        });
+        if (!res.ok) throw new Error("recette HTTP " + res.status);
+        const data = await res.json();
+        if (!data?.recipe) throw new Error(data?.error ?? "réponse vide");
+        setPendingRecipe(data.recipe as PendingRecipe);
+      } catch (e) {
+        const detail = (e as { message?: string })?.message ?? String(e);
+        setMessages((prev) => [...prev, {
+          role: "assistant" as const,
+          content: `⚠️ Je n'ai pas réussi à écrire la recette — ${detail}`,
+          id: uid(),
+        }]);
+      } finally {
+        setActionLoading(false);
+      }
       return;
     }
 
@@ -890,6 +947,34 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   const cancelPlan = useCallback(() => setPendingPlan(null), []);
 
+  /* ── Validation de la recette : la logge dans les repas du jour (même
+     plomberie que la nutrition — une portion, macros de la recette). ── */
+  const confirmRecipe = useCallback(async () => {
+    if (!user?.id || !pendingRecipe) return;
+    const supabase = createClient();
+    const now = new Date();
+    const { error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id,
+      date: now.toISOString().slice(0, 10),
+      meal_type: "dejeuner",
+      food_name: pendingRecipe.nom,
+      description: null,
+      calories: pendingRecipe.calories,
+      proteins: pendingRecipe.proteins,
+      carbs: pendingRecipe.carbs,
+      fats: pendingRecipe.fats,
+      has_photo: false,
+      time: now.toTimeString().slice(0, 8),
+    });
+    if (error) { setMemoryNotice("Oups, impossible d'ajouter le repas."); return; }
+    const nom = pendingRecipe.nom;
+    setPendingRecipe(null);
+    setMemoryNotice(`« ${nom} » ajouté à tes repas ✓`);
+    setTimeout(() => { setIsOpen(false); router.push("/nutrition"); }, 900);
+  }, [user?.id, pendingRecipe, router]);
+
+  const cancelRecipe = useCallback(() => setPendingRecipe(null), []);
+
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   // La notice mémoire ("Je m'en souviendrai") s'efface seule
@@ -900,7 +985,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe }}>
       {children}
     </Ctx.Provider>
   );
