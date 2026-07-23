@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Footprints, ChevronUp, ChevronDown, type LucideIcon } from "lucide-react";
+import { Sparkles, X, Check, ArrowRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatsDrawer from "@/components/StatsDrawer";
@@ -91,126 +91,6 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   return { score, calories, burned, steps: 0, sleepHours: 0, streak };
 }
 
-/* ─── Welcome Overlay ─── */
-function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: boolean; onDismiss: () => void }) {
-  const [progress, setProgress] = useState(100);
-  const duration = useRef(3500);
-
-  const hour = new Date().getHours();
-  const timeGreeting = hour < 5 ? "Bonne nuit" : hour < 12 ? "Bon matin" : hour < 18 ? "Bonjour" : "Bonsoir";
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setProgress(0), 100);
-    const t2 = setTimeout(onDismiss, duration.current);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [onDismiss]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.04 }}
-      transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
-      style={{ background: "var(--page-bg)" }}
-      onClick={onDismiss}
-    >
-      {/* Halos de fond */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-20%", left: "-15%", width: 640, height: 640, background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.55) 0%, transparent 65%)", filter: "blur(60px)" }}
-        animate={{ scale: [1,1.12,1], x: [-8,18,-8] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-20%", right: "-15%", width: 560, height: 560, background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.5) 0%, transparent 65%)", filter: "blur(60px)" }}
-        animate={{ scale: [1,1.18,1], x: [8,-18,8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.6 }} />
-
-      {/* Carte principale */}
-      <motion.div
-        initial={{ scale: 0.88, opacity: 0, y: 32 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.94, opacity: 0, y: -16 }}
-        transition={{ type: "spring", damping: 22, stiffness: 260, delay: 0.05 }}
-        className="relative z-10 flex flex-col items-center text-center mx-5 rounded-[2.5rem] overflow-hidden"
-        style={{
-          background: "rgba(var(--surface-rgb),0.78)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(var(--surface-rgb),0.92)",
-          boxShadow: "0 40px 100px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(var(--gold-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-          maxWidth: 360,
-          width: "100%",
-          paddingTop: 40,
-          paddingBottom: 0,
-          paddingLeft: 32,
-          paddingRight: 32,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Particules internes */}
-        {Array.from({ length: 6 }).map((_, i) => (
-          <motion.div key={i} className="absolute rounded-full pointer-events-none"
-            style={{ width: 5 + (i % 3) * 3, height: 5 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(var(--accent-rgb),0.75)" : "rgba(var(--gold-rgb),0.65)", left: `${8 + i * 16}%`, top: `${8 + (i % 3) * 20}%`, willChange: "transform, opacity" }}
-            animate={{ y: [0, -70, 0], opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
-            transition={{ duration: 2.2, delay: 0.4 + i * 0.22, repeat: Infinity, repeatDelay: 2 }} />
-        ))}
-
-        {/* Badge salutation */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full mb-7"
-          style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.12), rgba(var(--gold-rgb),0.10))", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-            {isNew ? "Nouvelle aventure" : timeGreeting}
-          </span>
-          <span className="text-sm" style={{ color: "var(--gold)" }}>✦</span>
-        </motion.div>
-
-        {/* Avatar */}
-        <div className="relative mb-6">
-          {/* Halo pulsant derrière l'avatar */}
-          <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ inset: -16, background: "radial-gradient(circle, rgba(var(--accent-rgb),0.22) 0%, transparent 70%)" }}
-            animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.15, 0.6] }}
-            transition={{ duration: 2.4, repeat: Infinity }} />
-          <motion.div
-            initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", bounce: 0.52, delay: 0.14 }}
-            className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-4xl font-bold"
-            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 14px 48px rgba(var(--accent-rgb),0.38), 0 4px 16px rgba(var(--gold-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }}
-          >
-            {(pseudo || "?")[0]?.toUpperCase()}
-          </motion.div>
-          {[0,1,2,3].map((i) => (
-            <motion.div key={i} className="absolute pointer-events-none"
-              style={{ left: `${[2,82,42,-14][i]}%`, top: `${[-10,-6,96,42][i]}%` }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0,1.4,0], opacity: [0,1,0], y: i % 2 === 0 ? [-3,-18,-3] : [3,18,3] }}
-              transition={{ duration: 1.6, delay: 0.28 + i * 0.22, repeat: Infinity, repeatDelay: 1.4 }}>
-              <Sparkles size={12} style={{ color: i % 2 === 0 ? "var(--accent)" : "var(--gold)" }} />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Texte */}
-        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.27 }}
-          className="text-3xl font-extralight mb-1" style={{ color: "var(--text-1)" }}>
-          {isNew ? "Bienvenue !" : "Bon retour !"}
-        </motion.p>
-        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}
-          className="text-xl font-light mb-3" style={{ background: "linear-gradient(135deg, var(--accent), var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-          @{pseudo || "toi"}
-        </motion.p>
-        <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.44 }}
-          className="text-sm font-light leading-relaxed mb-8" style={{ color: "var(--text-2)" }}>
-          {isNew ? "Votre parcours commence maintenant ✦" : "Prêt à repousser vos limites ? 💪"}
-        </motion.p>
-
-        {/* Barre de progression en bas de la carte */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52 }}
-          className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
-          <div className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, var(--accent), var(--gold))", width: `${progress}%`, transition: progress === 0 ? `width ${duration.current}ms linear` : "none" }} />
-        </motion.div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 /* ─── Home Toast ─── */
 function HomeToast({ message }: { message: string }) {
   return (
@@ -289,84 +169,6 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
   );
 }
 
-/* ─── Objectif Modal ─── */
-type GoalType = "workouts" | "calories" | "steps" | "sleep";
-const goalTypesList: { id: GoalType; label: string; desc: string; unit: string; defaultVal: string; icon: LucideIcon; color: string }[] = [
-  { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,     color: "var(--accent)" },
-  { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,       color: "var(--accent)" },
-  { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "var(--gold)" },
-  { id: "sleep",    label: "Sommeil",  desc: "/ nuit",    unit: "h/nuit",      defaultVal: "8",     icon: Moon,      color: "var(--gold)" },
-];
-function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (label: string) => void }) {
-  const [type, setType] = useState<GoalType>("workouts");
-  const [value, setValue] = useState("4");
-  const selected = goalTypesList.find((g) => g.id === type)!;
-  const handleTypeChange = (id: GoalType) => { setType(id); setValue(goalTypesList.find((g) => g.id === id)!.defaultVal); };
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(var(--tint-cream-rgb),0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
-      <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
-        transition={{ type: "spring", damping: 28, stiffness: 280 }}
-        className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--gold-rgb),0.12),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Performance</p><h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Définir un objectif</h2></div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-cream-rgb),0.8)" }}><X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} /></motion.button>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-5">
-          {goalTypesList.map(({ id, label, desc, icon: Icon, color }) => (
-            <motion.button key={id} whileTap={{ scale: 0.95 }} onClick={() => handleTypeChange(id)}
-              className="flex items-center gap-2.5 px-3 py-3 rounded-2xl cursor-pointer text-left transition-all duration-150"
-              style={type === id ? { background: "linear-gradient(135deg,rgba(var(--tint-violet-rgb),0.95) 0%,rgba(var(--tint-cream-rgb),0.95) 100%)", border: "1px solid rgba(var(--surface-rgb),0.8)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" } : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid transparent" }}>
-              <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: type === id ? "rgba(var(--surface-rgb),0.8)" : "rgba(var(--surface-rgb),0.5)" }}>
-                <Icon size={13} strokeWidth={1.5} style={{ color: type === id ? color : "var(--text-3)" }} />
-              </div>
-              <div><p className="text-xs font-semibold" style={{ color: type === id ? "var(--text-1)" : "var(--text-3)" }}>{label}</p><p className="text-[9px]" style={{ color: "var(--text-3)" }}>{desc}</p></div>
-            </motion.button>
-          ))}
-        </div>
-        <div className="mb-5">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Cible</label>
-          <div className="relative">
-            <input type="number" value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-4 py-3 pr-28 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-cream-rgb),0.35)", border: "1px solid rgba(var(--cream-mid-rgb),0.55)", color: "var(--text-1)" }} />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>{selected.unit}</span>
-          </div>
-        </div>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => onSave(`${value} ${selected.unit}`)}
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-          style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9),0 4px 16px rgba(var(--accent-rgb),0.2)" }}>
-          Définir l'objectif
-        </motion.button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ─── Quick Action Card ─── */
-function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { icon: LucideIcon; label: string; color: string; bg: string; index: number; onClick?: () => void }) {
-  const [tapped, setTapped] = useState(false);
-  return (
-    <motion.button type="button" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 + index * 0.05, type: "spring", bounce: 0.35 }}
-      whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.15 } }}
-      whileTap={{ scale: 0.93, transition: { duration: 0.08 } }}
-      onClick={() => { setTapped(true); setTimeout(() => setTapped(false), 500); onClick?.(); }}
-      className={`${bg} lg-highlight relative flex-1 rounded-2xl py-4 flex flex-col items-center gap-2 cursor-pointer overflow-hidden`}>
-      <AnimatePresence>
-        {tapped && (<motion.div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: "rgba(var(--surface-rgb),0.4)" }} initial={{ opacity: 1 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} />)}
-      </AnimatePresence>
-      <Icon size={17} strokeWidth={1.5} style={{ color }} />
-      <span className="text-[10px] font-semibold tracking-wide" style={{ color: "var(--text-1)" }}>{label}</span>
-    </motion.button>
-  );
-}
-const quickActionsConfig = [
-  { icon: Flame,    label: "Séance",   color: "var(--accent)", bg: "lg-rose" },
-  { icon: Utensils, label: "Repas",    color: "var(--gold)", bg: "lg-turquoise" },
-  { icon: Zap,      label: "Objectif", color: "var(--accent)", bg: "lg-bicolor" },
-];
 
 /* ─────────────────────────────────────────────────
    LANDING PAGE — Spectaculaire
@@ -983,7 +785,6 @@ function Dashboard() {
   // Séance = une workout_session aujourd'hui ; repas = un nutrition_log aujourd'hui ;
   // connexion = toujours validée (l'utilisateur EST là).
   const [missions, setMissions] = useState({ seanceOk: false, repasOk: false, loaded: false });
-  const [showObjectif, setShowObjectif] = useState(false);
   const [toast, setToast] = useState<string|null>(null);
   const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
@@ -1395,19 +1196,7 @@ function Dashboard() {
     }
   }, [user, userContext, liveStats]);
 
-  const handleVoiceTranscript = useCallback((text: string) => {
-    sendMessage(text);
-    setShowChat(true);
-  }, [sendMessage]);
-
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
-
-  const quickActionHandlers = [
-    () => { setShowChat(true); sendMessage("Génère-moi une séance d'entraînement pour aujourd'hui selon mon profil et mes objectifs"); },
-    () => { setShowChat(true); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
-    () => { setShowChat(true); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
-  ];
-  void quickActionHandlers; void handleVoiceTranscript;
 
   return (
     <div
@@ -1650,7 +1439,6 @@ function Dashboard() {
               .catch(() => {});
           }
         }} />}
-        {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
         {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}
         {showOnboarding && user && (
