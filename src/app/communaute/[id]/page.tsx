@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import ConversationListPane from "@/components/communaute/ConversationListPane";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import {
@@ -317,7 +318,13 @@ export default function FilPage() {
     && autres.every((p) => !!p.luA && p.luA >= monDernier.createdAt);
 
   return (
-    <div className="relative flex h-[100dvh] flex-col">
+    <div className="flex h-[100dvh] overflow-hidden">
+      <ConversationListPane
+        activeId={convId}
+        className="hidden w-[440px] shrink-0 border-r border-[rgba(var(--text-3-rgb),.14)] md:flex"
+      />
+
+      <div className="relative flex h-[100dvh] min-w-0 flex-1 flex-col">
       {/* ─── Le fond : l'affiche à son état courant ─── */}
       {surAffiche && (
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -349,7 +356,7 @@ export default function FilPage() {
           paddingTop: "max(.75rem, env(safe-area-inset-top))",
         }}
       >
-        <button onClick={() => router.push("/communaute")} aria-label="Retour" className="p-1">
+        <button onClick={() => router.push("/communaute")} aria-label="Retour" className="p-1 md:hidden">
           <ArrowLeft className="h-5 w-5" style={{ color: c.t0 }} />
         </button>
 
@@ -540,6 +547,7 @@ export default function FilPage() {
           />
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
