@@ -37,16 +37,23 @@ export default function InfosPage() {
   const [nom, setNom]       = useState("");
   const [occupe, setOccupe] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
   const [ajout, setAjout]   = useState(false);
   const [confirmeAnnul, setConfirmeAnnul] = useState(false);
 
   const fichierRef = useRef<HTMLInputElement>(null);
 
   const recharger = useCallback(async () => {
-    const { conversation } = await chargerFil(convId);
-    setConv(conversation);
-    setNom(conversation?.nom ?? "");
-    setCharge(false);
+    try {
+      setErreurChargement(null);
+      const { conversation } = await chargerFil(convId);
+      setConv(conversation);
+      setNom(conversation?.nom ?? "");
+    } catch {
+      setErreurChargement("Impossible de charger les informations de cette discussion.");
+    } finally {
+      setCharge(false);
+    }
   }, [convId]);
 
   useEffect(() => {
@@ -57,8 +64,13 @@ export default function InfosPage() {
 
   const enregistrerNom = async () => {
     setOccupe("nom");
-    await majConversation(convId, { nom });
+    const r = await majConversation(convId, { nom });
     setOccupe(null);
+    if (!r.ok) {
+      setErreur("Le nom du groupe n'a pas pu être enregistré.");
+      return;
+    }
+    setErreur(null);
     setEdite(false);
     void recharger();
   };
@@ -87,8 +99,13 @@ export default function InfosPage() {
     }
 
     const { data } = supabase.storage.from("avatars").getPublicUrl(chemin);
-    await majConversation(convId, { image: data.publicUrl });
+    const maj = await majConversation(convId, { image: data.publicUrl });
     setOccupe(null);
+    if (!maj.ok) {
+      setErreur("La photo a été envoyée, mais le groupe n'a pas pu être mis à jour.");
+      return;
+    }
+    setErreur(null);
     void recharger();
   };
 
@@ -132,7 +149,17 @@ export default function InfosPage() {
   const quitter = async () => {
     if (!user) return;
     setOccupe("quitter");
-    await quitterConversation(convId, user.id);
+    setErreur(null);
+    const r = await quitterConversation(convId, user.id);
+    setOccupe(null);
+    if (!r.ok) {
+      setErreur(
+        /policy|permission|row-level security/i.test(String(r.raison ?? ""))
+          ? "Le départ n'est pas encore activé côté serveur."
+          : "Impossible de quitter cette discussion pour le moment.",
+      );
+      return;
+    }
     router.replace("/communaute");
   };
 
@@ -140,6 +167,21 @@ export default function InfosPage() {
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--text-3)" }} />
+      </div>
+    );
+  }
+
+  if (erreurChargement) {
+    return (
+      <div className="flex h-[70vh] flex-col items-center justify-center gap-4 px-8 text-center">
+        <p className="text-[15px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
+        <button
+          onClick={() => { setCharge(true); void recharger(); }}
+          className="rounded-2xl px-5 py-3 text-[15px] font-semibold text-white"
+          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+        >
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -414,11 +456,13 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
   const [erreur, setErreur]   = useState<string | null>(null);
 
   useEffect(() => {
-    void mesRelations(moi).then((g) => {
-      setGens(g.filter((p) => !dejaLa.includes(p.id)));
-      setCharge(false);
-    });
+    void mesRelations(moi)
+      .then((g) => setGens(g.filter((p) => !dejaLa.includes(p.id))))
+      .catch(() => setErreur("Impossible de charger tes contacts."))
+      .finally(() => setCharge(false));
   }, [moi, dejaLa]);
+
+  const placesRestantes = Math.max(0, 5 - dejaLa.length);
 
   const valider = async () => {
     if (!choisis.length) return;
@@ -426,7 +470,13 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
     const r = await ajouterMembres(convId, choisis);
     setOccupe(false);
     if (r.ok) { onAjoute(); return; }
-    setErreur("Impossible d'ajouter pour le moment.");
+    setErreur(
+      r.raison === "groupe_complet"
+        ? "Ce groupe compte déjà cinq personnes."
+        : r.raison === "relation_requise"
+        ? "Tu peux ajouter uniquement une personne déjà liée à ton compte."
+        : "Impossible d'ajouter pour le moment.",
+    );
   };
 
   return (
@@ -456,7 +506,17 @@ function AjouterDesGens({ moi, dejaLa, convId, onFermer, onAjoute }: {
               const pris = choisis.includes(p.id);
               return (
                 <button key={p.id}
-                  onClick={() => setChoisis((c) => (pris ? c.filter((x) => x !== p.id) : [...c, p.id]))}
+                  onClick={() => {
+                    setErreur(null);
+                    setChoisis((c) => {
+                      if (pris) return c.filter((x) => x !== p.id);
+                      if (c.length >= placesRestantes) {
+                        setErreur("Un groupe peut réunir cinq personnes maximum.");
+                        return c;
+                      }
+                      return [...c, p.id];
+                    });
+                  }}
                   className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left">
                   <Avatar personne={p} taille={38} />
                   <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>

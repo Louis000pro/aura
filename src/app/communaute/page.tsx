@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Loader2, PenLine, Check, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
+import { createClient } from "@/lib/supabase";
 import { imageEtat } from "@/lib/defi";
 import {
   chargerConversations, titreConversation, autresMembres, mesRelations,
@@ -32,11 +33,18 @@ export default function CommunautePage() {
   const [sheet, setSheet]     = useState<"non" | "choix" | "nouvelle">("non");
   const [occupe, setOccupe]   = useState(false);
   const [erreur, setErreur]   = useState<string | null>(null);
+  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
 
   const recharger = useCallback(async () => {
     if (!user) return;
-    setConvs(await chargerConversations(user.id));
-    setCharge(false);
+    try {
+      setErreurChargement(null);
+      setConvs(await chargerConversations(user.id));
+    } catch {
+      setErreurChargement("Impossible d'actualiser tes discussions.");
+    } finally {
+      setCharge(false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -44,6 +52,41 @@ export default function CommunautePage() {
     if (!user) { router.replace("/auth"); return; }
     void recharger();
   }, [authLoading, user, router, recharger]);
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    let minuterie: number | null = null;
+    const actualiserBientot = () => {
+      if (minuterie) window.clearTimeout(minuterie);
+      minuterie = window.setTimeout(() => { void recharger(); }, 180);
+    };
+
+    const canal = supabase
+      .channel(`liste-conversations:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        actualiserBientot,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_members", filter: `user_id=eq.${user.id}` },
+        actualiserBientot,
+      )
+      .subscribe();
+
+    const surVisibilite = () => {
+      if (document.visibilityState === "visible") void recharger();
+    };
+    document.addEventListener("visibilitychange", surVisibilite);
+
+    return () => {
+      if (minuterie) window.clearTimeout(minuterie);
+      document.removeEventListener("visibilitychange", surVisibilite);
+      void supabase.removeChannel(canal);
+    };
+  }, [user, recharger]);
 
   const lancerRelais = async () => {
     setOccupe(true);
@@ -118,6 +161,16 @@ export default function CommunautePage() {
 
       {erreur && (
         <p className="px-4 pb-2 text-[13.5px] font-medium" style={{ color: "#E8620C" }}>{erreur}</p>
+      )}
+
+      {erreurChargement && (
+        <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl px-3 py-2.5"
+          style={{ background: "rgba(232,98,12,.1)", color: "#E8620C" }}>
+          <p className="text-[12.5px] font-medium">{erreurChargement}</p>
+          <button onClick={() => void recharger()} className="shrink-0 text-[12px] font-bold">
+            Réessayer
+          </button>
+        </div>
       )}
 
       {convs.length === 0
@@ -364,7 +417,10 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
   const [erreur, setErreur]   = useState<string | null>(null);
 
   useEffect(() => {
-    void mesRelations(moi).then((g) => { setGens(g); setCharge(false); });
+    void mesRelations(moi)
+      .then((g) => setGens(g))
+      .catch(() => setErreur("Impossible de charger tes contacts."))
+      .finally(() => setCharge(false));
   }, [moi]);
 
   const basculer = (id: string) =>
@@ -380,6 +436,10 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
     setErreur(
       /function|does not exist|schema cache/i.test(String(r.raison ?? ""))
         ? "La messagerie n'est pas encore activée côté serveur."
+        : r.raison === "groupe_complet"
+        ? "Un groupe peut réunir cinq personnes maximum."
+        : r.raison === "relation_requise"
+        ? "Tu peux écrire uniquement aux personnes déjà liées à ton compte."
         : "Impossible de créer la discussion.",
     );
   };

@@ -14,19 +14,19 @@
    lignes système.
    ───────────────────────────────────────────────────────────── */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Send, Loader2, ChevronRight, Sparkles, Reply, Copy, Trash2, X,
+  ArrowLeft, Send, Loader2, ChevronRight, ChevronUp, Sparkles, Reply, Copy, Trash2, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import {
-  chargerFil, envoyerMessage, marquerLu, titreConversation, autresMembres,
+  chargerFil, chargerMessagesAvant, envoyerMessage, marquerLu, titreConversation, autresMembres,
   reagir, supprimerMessage, heureExacte, memeJour, libelleJour,
   type Conversation, type Message,
 } from "@/lib/messagerie";
@@ -39,11 +39,13 @@ export default function FilPage() {
   const params = useParams<{ id: string }>();
   const convId = (params?.id ?? "").toString();
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, session, isLoading: authLoading } = useAuth();
 
   const [conv, setConv]         = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [charge, setCharge]     = useState(true);
+  const [chargeAvant, setChargeAvant] = useState(false);
+  const [encoreAvant, setEncoreAvant] = useState(false);
   const [texte, setTexte]       = useState("");
   const [envoi, setEnvoi]       = useState(false);
   const [repondA, setRepondA]   = useState<Message | null>(null);
@@ -51,19 +53,30 @@ export default function FilPage() {
   const [ecrivent, setEcrivent] = useState<string[]>([]);
   const [occupe, setOccupe]     = useState(false);
   const [erreur, setErreur]     = useState<string | null>(null);
+  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
 
+  const listeRef = useRef<HTMLDivElement>(null);
   const basRef   = useRef<HTMLDivElement>(null);
   const canalRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
   const dernierSignal = useRef(0);
+  const hauteurAvant = useRef<number | null>(null);
+  const ignorerAutoScroll = useRef(false);
 
   // La barre du bas laisse la place au fil, comme dans le tunnel.
   useEffect(() => lockBodyModal(), []);
 
   const recharger = useCallback(async () => {
-    const { conversation, messages: m } = await chargerFil(convId);
-    setConv(conversation);
-    setMessages(m);
-    setCharge(false);
+    try {
+      setErreurChargement(null);
+      const { conversation, messages: m, encoreAvant: encore } = await chargerFil(convId);
+      setConv(conversation);
+      setMessages(m);
+      setEncoreAvant(encore);
+    } catch {
+      setErreurChargement("Impossible de charger cette conversation.");
+    } finally {
+      setCharge(false);
+    }
   }, [convId]);
 
   useEffect(() => {
@@ -125,9 +138,42 @@ export default function FilPage() {
     void marquerLu(convId, user.id);
   }, [user, convId, charge, messages.length]);
 
+  useLayoutEffect(() => {
+    if (hauteurAvant.current == null || !listeRef.current) return;
+    listeRef.current.scrollTop = listeRef.current.scrollHeight - hauteurAvant.current;
+    hauteurAvant.current = null;
+    ignorerAutoScroll.current = true;
+  }, [messages.length]);
+
   useEffect(() => {
+    if (ignorerAutoScroll.current) {
+      ignorerAutoScroll.current = false;
+      return;
+    }
     basRef.current?.scrollIntoView({ behavior: charge ? "auto" : "smooth" });
   }, [messages.length, charge, ecrivent.length]);
+
+  const chargerAvant = async () => {
+    const premier = messages[0];
+    if (!premier || chargeAvant || !encoreAvant) return;
+
+    setChargeAvant(true);
+    setErreur(null);
+    hauteurAvant.current = listeRef.current?.scrollHeight ?? null;
+    try {
+      const page = await chargerMessagesAvant(convId, premier.createdAt);
+      setMessages((actuels) => [
+        ...page.messages.filter((m) => !actuels.some((a) => a.id === m.id)),
+        ...actuels,
+      ]);
+      setEncoreAvant(page.encoreAvant);
+    } catch {
+      hauteurAvant.current = null;
+      setErreur("Les messages précédents n'ont pas pu être chargés.");
+    } finally {
+      setChargeAvant(false);
+    }
+  };
 
   /* On signale qu'on écrit au plus une fois toutes les 2 s. */
   const signalerFrappe = () => {
@@ -141,9 +187,14 @@ export default function FilPage() {
   const envoyerTexte = async (contenu: string) => {
     if (!user || envoi) return;
     setEnvoi(true);
-    const r = await envoyerMessage(convId, user.id, contenu, null);
+    const r = await envoyerMessage(convId, user.id, contenu, null, session?.access_token);
     setEnvoi(false);
-    if (r.ok) void recharger();
+    if (r.ok) {
+      setErreur(null);
+      void recharger();
+    } else {
+      setErreur("Le message n'est pas parti. Réessaie.");
+    }
   };
 
   const envoyer = async () => {
@@ -153,9 +204,15 @@ export default function FilPage() {
     setTexte("");
     setRepondA(null);
     setEnvoi(true);
-    const r = await envoyerMessage(convId, user.id, contenu, cite);
+    const r = await envoyerMessage(convId, user.id, contenu, cite, session?.access_token);
     setEnvoi(false);
-    if (!r.ok) { setTexte(contenu); return; }   // on rend le texte plutôt que de le perdre
+    if (!r.ok) {
+      setTexte(contenu);
+      setRepondA(cite ? messages.find((m) => m.id === cite) ?? null : null);
+      setErreur("Le message n'est pas parti. Ton texte est resté ici.");
+      return;
+    }
+    setErreur(null);
     void recharger();
   };
 
@@ -183,21 +240,44 @@ export default function FilPage() {
     if (!user) return;
     setMenu(null);
     const mienne = m.reactions.find((r) => r.userIds.includes(user.id))?.emoji ?? null;
-    await reagir(m.id, user.id, emoji, mienne);
+    const r = await reagir(m.id, user.id, emoji, mienne);
+    if (!r.ok) {
+      setErreur("La réaction n'a pas pu être ajoutée.");
+      return;
+    }
     void recharger();
   };
 
   const surSuppression = async (m: Message) => {
     setMenu(null);
+    const r = await supprimerMessage(m.id);
+    if (!r.ok) {
+      setErreur("Le message n'a pas pu être supprimé.");
+      return;
+    }
     setMessages((prev) => prev.filter((x) => x.id !== m.id));
-    await supprimerMessage(m.id);
-    void recharger();
+    setErreur(null);
   };
 
   if (authLoading || charge) {
     return (
       <div className="flex h-[100dvh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--text-3)" }} />
+      </div>
+    );
+  }
+
+  if (erreurChargement) {
+    return (
+      <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 px-8 text-center">
+        <p className="text-[15px]" style={{ color: "var(--text-body)" }}>{erreurChargement}</p>
+        <button
+          onClick={() => { setCharge(true); void recharger(); }}
+          className="rounded-2xl px-5 py-3 text-[15px] font-semibold text-white"
+          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+        >
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -299,7 +379,23 @@ export default function FilPage() {
       )}
 
       {/* ─── Les messages ─── */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-3 py-2">
+      <div ref={listeRef} className="relative z-10 flex-1 overflow-y-auto px-3 py-2">
+        {encoreAvant && (
+          <div className="flex justify-center pb-2 pt-1">
+            <button
+              onClick={() => void chargerAvant()}
+              disabled={chargeAvant}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11.5px] font-semibold disabled:opacity-60"
+              style={{ background: c.carte, border: `1px solid ${c.trait}`, color: c.t2 }}
+            >
+              {chargeAvant
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <ChevronUp className="h-3.5 w-3.5" />}
+              Messages précédents
+            </button>
+          </div>
+        )}
+
         {messages.length === 0 && (
           <div className="mt-8 flex flex-col items-center px-6 text-center">
             <p className="text-[13.5px] leading-relaxed" style={{ color: c.t3 }}>
