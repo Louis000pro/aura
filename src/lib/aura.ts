@@ -43,32 +43,69 @@ export type Rang = {
 // Rang 1 seul pour l'instant. Ajouter un rang = une entrée ici (logos + paliers
 // fournis par Louis/Kisotil au fur et à mesure). Le thème de nommage est
 // « la lumière qui monte » : Aurore → … → rang ultime.
+// Ladder VALIDÉ par Louis le 2026-07-24 : 6 rangs « métaux » Bronze → Éternel.
+// Cadence de référence = un utilisateur engagé gagne ≈50 EXP/jour (connexion +5,
+// 1 séance +35, 2 repas +10). Les seuils = 50 × le nombre de jours voulu :
+//   Bronze  jour 1  ·  Argent  ~3 j  ·  Or  ~1 sem  ·  Platine  ~2 sem
+//   Diamant ~1 mois ·  Éternel ~2,5 mois (sommet très dur, atteignable même
+//   gratuitement avant la fin d'une saison de 3 mois).
+// Les métaux qui ne tiennent pas ce rythme max mettent plus longtemps → c'est
+// voulu, l'Éternel doit rester rare. Toutes les images sont détourées, fond
+// transparent, nom versionné (casse le cache navigateur/SW).
 export const RANGS: Rang[] = [
   {
-    id: "aurore",
-    nom: "Aurore",
+    id: "bronze",
+    nom: "Bronze",
     min: 0,
-    image: "/rangs/aurore-v2.png", // nom versionné = casse le cache navigateur/SW (l'ancien avait un halo)
-    neon: ["#E45FE4", "#B02FC0"],
-    pierre: ["#FFD98A", "#E8930C", "#7a3d0a"],
+    image: "/rangs/bronze-v1.png",
+    neon: ["#E8A05A", "#B0672A"],
+    pierre: ["#F5C88A", "#B87333", "#5c3410"],
   },
   {
-    id: "zenith",
-    nom: "Zénith",
-    // 150 EXP = ~3 jours d'un utilisateur engagé (connexion +5, 1 séance +35,
-    // 2 repas +10 ≈ 50/jour × 3). Rythme voulu par Louis : rang 2 atteignable vite.
-    min: 150,
-    image: "/rangs/zenith-v1.png", // étoile-gemme dorée (soleil au sommet), détourée
-    neon: ["#FFDE7A", "#E89A15"],
+    id: "argent",
+    nom: "Argent",
+    min: 150, // ~3 jours
+    image: "/rangs/argent-v1.png",
+    neon: ["#DDE6F0", "#9AA6B8"],
+    pierre: ["#F2F6FC", "#B8C2D0", "#6a7280"],
+  },
+  {
+    id: "or",
+    nom: "Or",
+    min: 350, // ~1 semaine
+    image: "/rangs/or-v1.png",
+    neon: ["#FFDE7A", "#E8A015"],
     pierre: ["#FFE9A8", "#E8930C", "#7a4d08"],
+  },
+  {
+    id: "platine",
+    nom: "Platine",
+    min: 700, // ~2 semaines
+    image: "/rangs/platine-v1.png",
+    neon: ["#CFF3EE", "#86CDC4"],
+    pierre: ["#EAF8F5", "#A8D4CE", "#5c7472"],
+  },
+  {
+    id: "diamant",
+    nom: "Diamant",
+    min: 1500, // ~1 mois
+    image: "/rangs/diamant-v1.png",
+    neon: ["#A8E0FF", "#5AA8E8"],
+    pierre: ["#DBF0FF", "#8CC8F0", "#3a6a90"],
+  },
+  {
+    id: "eternel",
+    nom: "Éternel",
+    min: 3750, // ~2,5 mois — le sommet, très dur, avant la fin de saison (3 mois)
+    image: "/rangs/eternel-v1.png", // gemme d'or, monture violette gothique
+    neon: ["#C9A8FF", "#8B5CF6"],
+    pierre: ["#FFE9A8", "#E8A015", "#5a3a1a"],
   },
 ];
 
-// Palier « prochain rang » provisoire pour le DERNIER rang connu (tant que le
-// rang suivant n'a pas son logo). Dès qu'un rang de plus existe, on utilise son
-// `min`. Fixé à ~1 semaine d'un utilisateur engagé (≈50 EXP/jour × 7 = 350),
-// pour que le rang APRÈS Zénith demande environ une semaine (cadence Louis).
-export const PALIER_PROVISOIRE = 350;
+// Cap du DERNIER rang (Éternel) : c'est le sommet, il n'y a pas de « suivant ».
+// Égal à son `min` → la jauge affiche l'Éternel comme accompli.
+export const PALIER_PROVISOIRE = 3750;
 
 export type EtatAura = {
   exp: number;
