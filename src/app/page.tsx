@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
-import { Sparkles, X, Check, ArrowRight, ChevronDown } from "lucide-react";
+import { Sparkles, X, Check, ArrowRight, ChevronDown, Play, ChevronRight, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatsDrawer from "@/components/StatsDrawer";
@@ -18,7 +18,9 @@ import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import GemmeRang from "@/components/GemmeRang";
 import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, type EtatAura } from "@/lib/aura";
-import { persistLieu } from "@/lib/planning";
+import { persistLieu, fetchDay, hasSeance, dayTitle, dayLabel, todayYmd, type PlanningDay } from "@/lib/planning";
+import { chargerDefi, imageEtat, etatPoster, SERIES, type Defi, type SerieSlug } from "@/lib/defi";
+import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
@@ -740,6 +742,182 @@ function CocheMission() {
   );
 }
 
+/* ═══════════ Accueil « Ta journée, en un écran » — briques ═══════════ */
+const TUILE_STYLE = {
+  background: "rgb(var(--surface-rgb))",
+  border: "1px solid rgba(var(--accent-rgb),0.08)",
+  boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.06)",
+};
+
+/** Phrase d'accueil synthétique (bloc 1), jamais culpabilisante. */
+function phraseDuJour(seance: PlanningDay | null, repasOk: boolean): string {
+  const bouts: string[] = [];
+  if (seance && hasSeance(seance) && seance.status !== "done") bouts.push(`séance ${dayTitle(seance).toLowerCase()} prévue`);
+  else if (seance && seance.status === "done") bouts.push("séance déjà bouclée");
+  else if (seance && seance.type.toLowerCase() === "repos") bouts.push("jour de repos");
+  if (repasOk) bouts.push("repas déjà noté");
+  if (bouts.length === 0) return "Ravi de te revoir. On avance ? ✦";
+  const s = bouts.join(", ");
+  return s.charAt(0).toUpperCase() + s.slice(1) + " — belle journée. ✦";
+}
+
+/** Le mot du coach (bloc 6). Le dimanche → bilan de la semaine. */
+function motDuCoach(streak: number, seance: PlanningDay | null): { titre: string; texte: string } {
+  if (new Date().getDay() === 0) {
+    return { titre: "Ton bilan de la semaine", texte: "Ouvre l'assistant : je te fais le point sur tes séances et ta nutrition des 7 derniers jours." };
+  }
+  if (seance && hasSeance(seance) && seance.status !== "done") {
+    return { titre: "Ta séance t'attend", texte: `Un échauffement et c'est parti. Besoin d'adapter ${dayTitle(seance).toLowerCase()} ? Demande-moi.` };
+  }
+  if (streak >= 3) {
+    return { titre: `${streak} jours d'affilée, continue`, texte: "Ta régularité paie. Dis-moi comment tu te sens, j'ajuste la suite." };
+  }
+  return { titre: "Je suis là quand tu veux", texte: "Une question nutrition, une séance à créer, un programme à revoir ? Parle-moi." };
+}
+
+/** Bloc 2 — le nœud du jour : la séance planifiée, en grand. */
+function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loaded: boolean; onGo: () => void }) {
+  if (!loaded) {
+    return <div className="rounded-3xl h-[150px] animate-pulse" style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.06)" }} />;
+  }
+  // Jour de repos → carte positive (zéro culpabilisation)
+  if (seance && seance.type.toLowerCase() === "repos") {
+    return (
+      <div className="rounded-3xl px-5 py-6 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(43,212,160,0.14), rgba(43,212,160,0.05))", border: "1px solid rgba(43,212,160,0.22)" }}>
+        <span className="text-[30px]">🌙</span>
+        <div>
+          <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#1F9E78" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
+          <h2 className="text-[19px] font-extrabold" style={{ color: "var(--text-0)" }}>Jour de repos</h2>
+          <p className="text-[12.5px]" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
+        </div>
+      </div>
+    );
+  }
+  // Rien de planifié → invitation
+  if (!seance || !hasSeance(seance)) {
+    return (
+      <button type="button" onClick={onGo} className="w-full text-left rounded-3xl px-5 py-6 flex items-center gap-4 outline-none active:opacity-95" style={{ background: "rgb(var(--surface-rgb))", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}>
+        <span className="text-[28px]">✦</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Aujourd&apos;hui</p>
+          <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Rien de prévu</h2>
+          <p className="text-[12.5px]" style={{ color: "var(--text-soft)" }}>Choisis ta séance du jour — l&apos;assistant peut t&apos;en proposer une.</p>
+        </div>
+        <ChevronRight size={20} style={{ color: "var(--text-3)" }} />
+      </button>
+    );
+  }
+  // Séance planifiée → héros
+  const fait = seance.status === "done";
+  const nbEx = seance.exerciseList.length;
+  const lieu = seance.location === "salle" ? "En salle" : seance.location === "halteres" ? "Haltères" : seance.location === "poids" ? "Poids du corps" : "";
+  return (
+    <div className="rounded-3xl overflow-hidden relative flex flex-col justify-end min-h-[210px]" style={{ boxShadow: "0 10px 30px -16px rgba(139,92,246,0.5)", background: "linear-gradient(180deg, rgba(10,6,20,0) 30%, rgba(10,6,20,0.82) 100%), radial-gradient(120% 90% at 80% 0%, #7C4DD6, transparent 55%), linear-gradient(150deg, #4B2E86 0%, #7A2E9E 48%, #C13BC1 120%)" }}>
+      <div className="absolute top-3.5 left-3.5 text-[10.5px] font-extrabold tracking-wide uppercase px-2.5 py-1 rounded-full" style={{ color: "#fff", background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.22)" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</div>
+      <div className="p-4">
+        <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>{seance.type}</p>
+        <h2 className="text-[23px] font-extrabold leading-tight mt-0.5" style={{ color: "#fff" }}>{dayTitle(seance)}</h2>
+        <p className="text-[12.5px] mb-3" style={{ color: "rgba(255,255,255,0.82)" }}>{nbEx} exercice{nbEx > 1 ? "s" : ""}{lieu ? " · " + lieu : ""}</p>
+        {fait ? (
+          <div className="flex items-center gap-2 rounded-2xl px-4 py-3 justify-center" style={{ background: "rgba(43,212,160,0.92)", color: "#06231A" }}>
+            <Check size={17} strokeWidth={3} /> <span className="text-[14px] font-extrabold">Séance faite aujourd&apos;hui</span>
+          </div>
+        ) : (
+          <button type="button" onClick={onGo} className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 outline-none active:opacity-95" style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 10px 24px -10px rgba(193,59,193,0.7)" }}>
+            <Play size={16} fill="#fff" /> <span className="text-[15px] font-extrabold">Lancer la séance</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Une tuile à anneau (bloc 3 — nutrition). */
+function TuileAnneau({ label, valeur, pct, couleur, onClick }: { label: string; valeur: string; pct: number; couleur: string; onClick: () => void }) {
+  const r = 20, c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(1, pct));
+  return (
+    <button type="button" onClick={onClick} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
+      <div className="relative w-[46px] h-[46px]">
+        <svg width="46" height="46" viewBox="0 0 46 46" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx="23" cy="23" r={r} fill="none" stroke="rgba(var(--accent-rgb),0.10)" strokeWidth="5" />
+          <circle cx="23" cy="23" r={r} fill="none" stroke={couleur} strokeWidth="5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - p)} />
+        </svg>
+        <span className="absolute inset-0 grid place-items-center text-[11px] font-extrabold" style={{ color: couleur }}>{Math.round(p * 100)}%</span>
+      </div>
+      <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>{label}</span>
+      <span className="text-[11px] font-bold" style={{ color: "var(--text-soft)" }}>{valeur}</span>
+    </button>
+  );
+}
+
+/** Bloc 4 — le relais en cours (n'apparaît que s'il existe). */
+function BlocRelais({ defi, moi, onGo }: { defi: Defi; moi: string; onGo: () => void }) {
+  const joursFaits = defi.actions.length;
+  const etat = etatPoster(joursFaits, defi.objectif);
+  const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
+  const reste = defi.objectif - joursFaits;
+  const reussi = defi.statut === "reussi";
+  const serieNom = SERIES[defi.serie as SerieSlug]?.nom ?? "Relais";
+  return (
+    <button type="button" onClick={onGo} className="w-full flex items-center gap-3.5 rounded-3xl p-3 text-left outline-none active:opacity-95" style={TUILE_STYLE}>
+      <div className="w-[52px] h-[66px] rounded-xl flex-shrink-0" style={{ backgroundColor: "#1E6E86", backgroundImage: `linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.55)), url(${imageEtat(defi.serie, etat)})`, backgroundSize: "cover", backgroundPosition: "center", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)" }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-[10.5px] font-bold tracking-wide uppercase truncate" style={{ color: "#22C296" }}>{serieNom}{equipier ? " · avec " + equipier.pseudo : ""}</p>
+        <h3 className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>{reussi ? "Affiche débloquée ✦" : reste <= 1 ? "Plus qu'un maillon" : `Encore ${reste} maillons`}</h3>
+        <p className="text-[12px]" style={{ color: "var(--text-soft)" }}>{reussi ? "Vous l'avez fait à deux." : "L'affiche se dévoile à chaque séance."}</p>
+      </div>
+      <ChevronRight size={20} style={{ color: "var(--text-3)" }} className="flex-shrink-0" />
+    </button>
+  );
+}
+
+/** Bloc 5 — ta progression (poids sur 30 j, ou invitation à se peser). */
+function BlocProgression({ poids, onGo }: { poids: { courant: number; delta: number; points: number[] } | null; onGo: () => void }) {
+  if (!poids) {
+    return (
+      <button type="button" onClick={onGo} className="w-full flex items-center gap-3.5 rounded-3xl px-4 py-4 text-left outline-none active:opacity-95" style={TUILE_STYLE}>
+        <span className="w-11 h-11 rounded-2xl grid place-items-center flex-shrink-0" style={{ background: "rgba(43,212,160,0.14)" }}><TrendingUp size={20} style={{ color: "#22C296" }} /></span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] font-bold" style={{ color: "var(--text-0)" }}>Suis ta progression</p>
+          <p className="text-[12px]" style={{ color: "var(--text-soft)" }}>Pèse-toi pour voir ta courbe évoluer ici.</p>
+        </div>
+        <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
+      </button>
+    );
+  }
+  const { courant, delta, points } = poids;
+  const baisse = delta < 0;
+  const min = Math.min(...points), max = Math.max(...points);
+  const span = max - min || 1;
+  const w = 300, h = 42;
+  const coords = points.map((pt, i) => {
+    const x = points.length === 1 ? w : (i / (points.length - 1)) * w;
+    const y = h - ((pt - min) / span) * (h - 6) - 3;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const d = "M" + coords.join(" L");
+  return (
+    <div className="rounded-3xl px-4 py-4" style={TUILE_STYLE}>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[12.5px] font-bold" style={{ color: "var(--text-0)" }}>Poids <span style={{ color: "var(--text-3)", fontWeight: 500 }}>· 30 jours</span></p>
+        {delta !== 0 && (
+          <span className="text-[11.5px] font-extrabold px-2 py-0.5 rounded-full" style={{ color: baisse ? "#1F9E78" : "#E8620C", background: baisse ? "rgba(43,212,160,0.14)" : "rgba(232,98,12,0.12)" }}>
+            {baisse ? "▼" : "▲"} {Math.abs(delta).toFixed(1)} kg
+          </span>
+        )}
+      </div>
+      <div className="flex items-end gap-1.5 mb-2">
+        <span className="text-[26px] font-extrabold leading-none" style={{ color: "var(--text-0)", fontVariantNumeric: "tabular-nums" }}>{courant.toFixed(1).replace(".", ",")}</span>
+        <span className="text-[13px] font-semibold mb-0.5" style={{ color: "var(--text-soft)" }}>kg</span>
+      </div>
+      <svg width="100%" height="42" viewBox="0 0 300 42" preserveAspectRatio="none" style={{ display: "block", overflow: "visible" }}>
+        <path d={d} fill="none" stroke="#22C296" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
@@ -769,6 +947,12 @@ function Dashboard() {
   void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
+  // ── Données des nouveaux blocs de l'accueil ──
+  const { goals } = useNutritionGoals();
+  const [seanceJour, setSeanceJour] = useState<PlanningDay | null>(null);
+  const [seanceLoaded, setSeanceLoaded] = useState(false);
+  const [relais, setRelais] = useState<Defi | null>(null);
+  const [poids, setPoids] = useState<{ courant: number; delta: number; points: number[] } | null>(null);
   // Missions du jour : coche verte dès que l'action du jour est faite.
   // Séance = une workout_session aujourd'hui ; repas = un nutrition_log aujourd'hui ;
   // connexion = toujours validée (l'utilisateur EST là).
@@ -917,6 +1101,38 @@ function Dashboard() {
       .eq("user_id", user.id)
       .gte("started_at", monday.toISOString())
       .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
+  }, [user]);
+
+  // Séance planifiée du jour (le « nœud du jour »)
+  useEffect(() => {
+    if (!user) return;
+    fetchDay(user.id, todayYmd())
+      .then((d) => { setSeanceJour(d); setSeanceLoaded(true); })
+      .catch(() => setSeanceLoaded(true));
+  }, [user, statsTick]);
+
+  // Relais en cours (le bloc ne s'affiche que s'il existe)
+  useEffect(() => {
+    if (!user) return;
+    chargerDefi(user.id).then(setRelais).catch(() => {});
+  }, [user]);
+
+  // Progression : pesées des 30 derniers jours pour la courbe teal
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    const since = new Date(); since.setDate(since.getDate() - 30);
+    supabase.from("weight_logs")
+      .select("weight_kg, date")
+      .eq("user_id", user.id)
+      .gte("date", since.toISOString().slice(0, 10))
+      .order("date", { ascending: true })
+      .then(({ data }) => {
+        const pts = (data ?? []).map((r) => Number((r as { weight_kg: number }).weight_kg)).filter((n) => n > 0);
+        if (pts.length >= 2) setPoids({ courant: pts[pts.length - 1], delta: pts[pts.length - 1] - pts[0], points: pts });
+        else if (pts.length === 1) setPoids({ courant: pts[0], delta: 0, points: pts });
+        else setPoids(null);
+      });
   }, [user]);
 
   // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
@@ -1198,154 +1414,88 @@ function Dashboard() {
           paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
         }}
       >
-        {/* ── Salutation (centrée, au-dessus du rang) ── */}
-        <div className="text-center">
-          <p className="text-[12px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
-          <h1 className="text-[32px] font-extrabold leading-tight mt-0.5" style={{ color: "var(--text-0)" }}>
-            <span
-              style={{
-                background: "linear-gradient(135deg,var(--accent),var(--gold))",
-                WebkitBackgroundClip: "text", backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                display: "inline-block", paddingRight: "0.08em", // évite que la dernière lettre soit coupée
-              }}
-            >
+        {/* ─────────── 1. En-tête vivant ─────────── */}
+        <div className="flex items-center gap-3.5 pt-1">
+          <div className="flex-shrink-0">
+            <GemmeRang rang={aura.rang} size={62} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold tracking-[0.16em] uppercase" style={{ color: "var(--text-3)" }}>{greeting}</p>
+            <h1 className="text-[23px] font-extrabold leading-tight truncate" style={{ color: "var(--text-0)" }}>
               {(user?.pseudo ?? user?.name ?? "")}
-            </span>
-          </h1>
+            </h1>
+            <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>
+              {phraseDuJour(seanceJour, missions.repasOk)}
+            </p>
+          </div>
         </div>
 
-        {/* ── HÉROS : le rang (l'aura) au centre ── */}
-        <div className="flex flex-col items-center pt-1">
-          <GemmeRang rang={aura.rang} size={150} />
+        {/* ─────────── 2. Le nœud du jour ─────────── */}
+        <NoeudDuJour seance={seanceJour} loaded={seanceLoaded} onGo={() => router.push("/progression")} />
 
-          <div className="mt-1 text-[26px] font-bold tracking-[0.06em] uppercase" style={{ color: "var(--text-0)" }}>
-            {aura.rang.nom}
-          </div>
-          <div className="mt-1 text-[13px] font-semibold tracking-wide" style={{ color: "#9a5a12" }}>
-            Rang {RANGS.findIndex((r) => r.id === aura.rang.id) + 1}
-          </div>
-
-          {/* EXP en chiffres (pas de barre) + animation de gain */}
-          <div className="relative mt-3 inline-flex justify-center">
-            <AnimatePresence>
-              {expGain != null && (
-                <motion.div
-                  key="expgain"
-                  initial={{ opacity: 0, y: 6, scale: 0.6 }}
-                  animate={{ opacity: 1, y: -16, scale: 1 }}
-                  exit={{ opacity: 0, y: -32 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="absolute -top-2 left-1/2 -translate-x-1/2 pointer-events-none px-2.5 py-0.5 rounded-full text-[12px] font-extrabold whitespace-nowrap"
-                  style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 14px rgba(193,59,193,0.5)" }}
-                >
-                  +{expGain} EXP
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <motion.div
-              className="inline-flex items-baseline gap-1 rounded-full px-[18px] py-2"
-              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.10)", boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.12)" }}
-              animate={expGain != null ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-            >
-              <span
-                className="text-[22px] font-extrabold leading-none"
-                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}
-              >
-                {auraLoaded ? aura.exp : "—"}
-              </span>
-              <span className="text-[14px] font-semibold" style={{ color: "var(--text-soft)" }}>/ {aura.seuilHaut} EXP</span>
-            </motion.div>
-          </div>
-          <p className="mt-2 text-[11.5px]" style={{ color: "var(--text-3)" }}>
-            {auraLoaded
-              ? <>Plus que <b style={{ color: "var(--text-soft)" }}>{aura.restant} EXP</b> avant le prochain rang</>
-              : "Calcul de ton EXP…"}
-          </p>
-
-          {/* Voir tous les rangs */}
-          <button
-            type="button"
-            onClick={() => setShowRangs(true)}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
-            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
-          >
-            Voir tous les rangs
-          </button>
-        </div>
-
-        <RangsModal open={showRangs} onClose={() => setShowRangs(false)} expActuel={auraLoaded ? aura.exp : 0} rangActuelId={aura.rang.id} />
-
-        {/* ── La série, racontée comme une histoire (animation scopée au rectangle) ── */}
-        <SerieCard streak={aura.detail.streak} />
-
-        {/* ── Actions du jour (gagne de l'EXP) — coche verte quand c'est fait ── */}
+        {/* ─────────── 3. Ta journée ─────────── */}
         <section>
-          <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>
-            Gagne de l&apos;EXP aujourd&apos;hui
-          </p>
-          <div className="flex flex-col gap-2.5">
-            {/* Séance — action principale (violet → magenta) */}
-            <button
-              type="button"
-              onClick={() => router.push("/progression")}
-              className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
-              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: missions.seanceOk ? 0.72 : 1 }}
-            >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>🏋️</span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Faire ma séance</span>
-                {missions.seanceOk
-                  ? <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Séance faite · +30 EXP</span>
-                  : <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>La plus grosse montée d&apos;EXP</span>}
-              </span>
-              {missions.seanceOk ? <CocheMission /> : <span className="text-[14px] font-extrabold" style={{ color: "#C13BC1" }}>+30</span>}
-            </button>
-
-            {/* Connexion du jour — toujours validée par le fait d'être là (teal) */}
-            <div
-              className="w-full rounded-2xl px-3.5 py-3 flex items-center gap-3"
-              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: 0.72 }}
-            >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#FF8FC7,#F45BA0)" }}>👋</span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Connexion du jour</span>
-                <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Validée · +5 EXP</span>
-              </span>
-              <CocheMission />
-            </div>
-
-            {/* Repas — ouvre le vrai flux Nutrition (estimation calories + enregistrement) */}
-            <button
-              type="button"
+          <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>Ta journée</p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {/* Nutrition — anneau teal (calories du jour / objectif) */}
+            <TuileAnneau
+              label="Nutrition"
+              valeur={`${liveStats.calories || 0} kcal`}
+              pct={goals.calories ? (liveStats.calories || 0) / goals.calories : 0}
+              couleur="#22C296"
               onClick={() => router.push("/nutrition")}
-              className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
-              style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: missions.repasOk ? 0.72 : 1 }}
-            >
-              <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>🍽️</span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>Logger un repas</span>
-                {missions.repasOk
-                  ? <span className="block text-[11.5px] font-semibold" style={{ color: "#2B9E7A" }}>Repas noté · +5 EXP</span>
-                  : <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>Estime les calories, ça s&apos;enregistre</span>}
-              </span>
-              {missions.repasOk ? <CocheMission /> : <span className="text-[14px] font-extrabold" style={{ color: "#E8620C" }}>+5</span>}
-            </button>
-          </div>
-
-          {/* ── Bouton missions supplémentaires (ouvre la liste défilante + EXP) ── */}
-          <div className="flex justify-center mt-4">
-            <button
-              type="button"
-              onClick={() => setShowMissions(true)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
-              style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
-            >
-              Missions supplémentaires
+            />
+            {/* Série 🔥 (énergie orange) */}
+            <div className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center" style={TUILE_STYLE}>
+              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[24px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(232,98,12,0.16), transparent 70%)" }}>🔥</div>
+              <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Série</span>
+              <span className="text-[15px] font-extrabold" style={{ color: "#E8620C" }}>{aura.detail.streak} <span className="text-[11px] font-bold">j</span></span>
+            </div>
+            {/* Rang / EXP (ouvre la liste des rangs) */}
+            <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
+              <div className="w-[46px] h-[46px] grid place-items-center"><GemmeRang rang={aura.rang} size={42} /></div>
+              <span className="text-[10px] font-bold tracking-wide uppercase truncate max-w-full" style={{ color: "var(--text-3)" }}>Rang · {aura.rang.nom}</span>
+              <span className="text-[12px] font-extrabold" style={{ color: "var(--accent)" }}>{auraLoaded ? aura.exp : "—"} / {aura.seuilHaut}</span>
             </button>
           </div>
         </section>
+
+        <RangsModal open={showRangs} onClose={() => setShowRangs(false)} expActuel={auraLoaded ? aura.exp : 0} rangActuelId={aura.rang.id} />
+
+        {/* ─────────── 4. Le relais (si actif) ─────────── */}
+        {relais && (relais.statut === "en_cours" || relais.statut === "reussi") && (
+          <BlocRelais defi={relais} moi={user?.id ?? ""} onGo={() => router.push("/defi")} />
+        )}
+
+        {/* ─────────── 5. Ta progression ─────────── */}
+        <BlocProgression poids={poids} onGo={() => router.push("/progression")} />
+
+        {/* ─────────── 6. Le mot de l'✦ ─────────── */}
+        {(() => {
+          const mot = motDuCoach(aura.detail.streak, seanceJour);
+          return (
+            <button type="button" onClick={() => setShowChat(true)} className="w-full flex items-start gap-3 rounded-3xl p-4 text-left outline-none active:opacity-95" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.07), rgba(193,59,193,0.05)), rgb(var(--surface-rgb))", border: "1px solid rgba(139,92,246,0.18)" }}>
+              <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 14px -6px rgba(139,92,246,0.7)" }}>✦</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-extrabold" style={{ color: "var(--text-0)" }}>{mot.titre}</p>
+                <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>{mot.texte}</p>
+                <p className="text-[12px] font-extrabold mt-1.5" style={{ color: "var(--accent)" }}>Parler à l&apos;assistant →</p>
+              </div>
+            </button>
+          );
+        })()}
+
+        {/* Missions du jour (EXP supplémentaire / teaser Premium) */}
+        <div className="flex justify-center pt-0.5">
+          <button
+            type="button"
+            onClick={() => setShowMissions(true)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
+            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
+          >
+            Mes missions du jour
+          </button>
+        </div>
 
         <MissionsModal
           open={showMissions}
