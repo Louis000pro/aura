@@ -23,7 +23,10 @@ import { X, ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, formatPrice } from "@/lib/plans";
 
-const DELAI_APPARITION = 1400;   // laisse l'app se poser avant de solliciter
+// SplashIntro couvre l'écran en z-[9999] pendant 2 s + 0,55 s de fondu. On
+// arrive APRÈS, sinon le bandeau joue son entrée derrière le splash et on ne
+// voit jamais l'animation.
+const DELAI_APPARITION = 2900;
 
 /**
  * Qui a déjà vu le rappel dans CE chargement de page.
@@ -53,28 +56,37 @@ export default function PremiumBanner() {
   const [visible, setVisible] = useState(false);
   const [benefice, setBenefice] = useState(BENEFICES[0]);
 
-  const estAbonne = !!(user?.is_premium || user?.is_admin);
+  // On masque le rappel aux SEULS abonnés payants. Les admins le voient :
+  // ils ne sont pas des clients qui ont payé, et ils doivent pouvoir constater
+  // ce que voit un utilisateur normal (c'est ce qui empêchait Louis de le voir).
+  const estAbonne = !!user?.is_premium;
   const pageExclue =
     pathname.startsWith("/premium") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/rejoindre");
+  // Trappe de vérification : ?promo=1 force l'affichage quoi qu'il arrive
+  // (même abonné, même déjà vu) — pour pouvoir le contrôler à tout moment.
+  const force = typeof window !== "undefined"
+    && new URLSearchParams(window.location.search).get("promo") === "1";
 
   useEffect(() => {
     // Déconnecté → on réarme : la prochaine connexion réaffichera le rappel.
     if (!user) { dernierUtilisateurMontre = null; return; }
-    if (estAbonne || pageExclue) return;
-    // Déjà montré à cette personne depuis le chargement → on ne rejoue pas
-    // à chaque navigation interne.
-    if (dernierUtilisateurMontre === user.id) return;
+    if (!force) {
+      if (estAbonne || pageExclue) return;
+      // Déjà montré à cette personne depuis le chargement → on ne rejoue pas
+      // à chaque navigation interne.
+      if (dernierUtilisateurMontre === user.id) return;
+    }
 
     dernierUtilisateurMontre = user.id;
     setBenefice(BENEFICES[Math.floor(Math.random() * BENEFICES.length)]);
 
     // Pas de fermeture automatique : le rappel reste tant que l'utilisateur ne
     // l'a pas fermé (ou n'a pas touché « Voir »). C'est un rappel, pas un flash.
-    const tOuvre = setTimeout(() => setVisible(true), DELAI_APPARITION);
+    const tOuvre = setTimeout(() => setVisible(true), force ? 400 : DELAI_APPARITION);
     return () => clearTimeout(tOuvre);
-  }, [user, estAbonne, pageExclue]);
+  }, [user, estAbonne, pageExclue, force]);
 
   const ouvrirPremium = () => {
     setVisible(false);
