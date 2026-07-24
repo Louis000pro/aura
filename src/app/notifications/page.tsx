@@ -10,7 +10,7 @@ import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais";
+type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais" | "message";
 
 type Notification = {
   id: string;
@@ -68,6 +68,7 @@ function notifText(n: Notification): string {
     case "repost":  return `@${n.from_pseudo} a repartagé ta publication`;
     case "mention": return `@${n.from_pseudo} t'a mentionné dans un commentaire`;
     case "relais":  return `@${n.from_pseudo} a franchi son maillon — l'affiche s'est dévoilée`;
+    case "message": return `@${n.from_pseudo} t'a envoyé un message`;
     default:        return `@${n.from_pseudo} a interagi`;
   }
 }
@@ -82,6 +83,7 @@ function TypeBadge({ type }: { type: NotifType }) {
     repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(43,212,160,0.2)",   color: "#2BD4A0" },
     mention: { icon: <AtSign size={9} />,                   bg: "rgba(var(--violet-mid-rgb),0.6)",  color: "var(--accent)" },
     relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
+    message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
   const cfg = cfgMap[type] ?? cfgMap.like;
 
@@ -392,6 +394,7 @@ export default function NotificationsPage() {
                         {notif.type === "repost" && "a repartagé ta publication"}
                         {notif.type === "mention" && "t'a mentionné dans un commentaire"}
                         {notif.type === "relais" && "a franchi son maillon — l'affiche s'est dévoilée"}
+                        {notif.type === "message" && "t'a envoyé un message"}
                       </span>
                     </p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>

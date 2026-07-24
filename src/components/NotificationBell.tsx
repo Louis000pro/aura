@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
-type NotifType = "follow" | "like" | "comment" | "repost";
+type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais" | "message";
 
 type Notif = {
   id: string;
@@ -19,6 +19,7 @@ type Notif = {
   from_avatar_url?: string;
   from_user_id?: string;
   post_id?: string | null;
+  lien?: string | null;
   read: boolean;
   created_at: string;
 };
@@ -28,6 +29,9 @@ function notifLabel(n: Notif): string {
     case "like":    return `a aimé ta publication`;
     case "comment": return `a commenté ton post`;
     case "repost":  return `a reposté ta publication`;
+    case "mention": return `t'a mentionné dans un commentaire`;
+    case "relais":  return `a franchi son maillon`;
+    case "message": return `t'a envoyé un message`;
     default:        return `te suit maintenant`;
   }
 }
@@ -38,6 +42,9 @@ function NotifIcon({ type }: { type: NotifType }) {
     comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#8B5CF6" },
     repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#2BD4A0" },
     follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
+    mention: { icon: <MessageCircle size={9} />,                bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
+    relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
+    message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
   const c = cfg[type];
   return (
@@ -259,7 +266,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               </div>
             ) : (
               notifs.map((n, i) => (
-                <Link key={n.id} href={n.post_id ? `/profil` : `/profil/${encodeURIComponent(n.from_pseudo)}`} onClick={() => setOpen(false)}>
+                <Link key={n.id} href={n.lien ?? (n.post_id ? `/profil` : `/profil/${encodeURIComponent(n.from_pseudo)}`)} onClick={() => setOpen(false)}>
                   <motion.div
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
