@@ -90,8 +90,13 @@ export default function CommunautePage() {
           )}
         </button>
 
-        <h1 className="flex-1 text-[21px] font-bold tracking-tight" style={{ color: "var(--text-0)" }}>
-          Communauté
+        <h1 className="flex-1 text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
+          <em className="not-italic font-light" style={{
+            background: "linear-gradient(135deg,var(--accent),var(--gold))",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            fontStyle: "italic",
+            display: "inline-block", paddingRight: "0.14em",
+          }}>Communauté</em>
         </h1>
 
         {/* La cloche vit ICI sur mobile : cet écran a sa propre barre du
