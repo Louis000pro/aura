@@ -21,6 +21,7 @@ export const EXP_SEANCE_STREAK = 5; // bonus « série de séances » : +5 aprè
 export const EXP_CONNEXION = 5;
 export const EXP_REPAS = 5;
 export const EXP_BIENVENUE = 10; // coup de pouce d'inscription : +10 offerts à tout compte
+export const EXP_MULTI_PREMIUM = 1.5; // les abonnés Premium gagnent l'EXP d'action ×1,5
 
 // ── Reset global de l'aura ──
 // L'EXP est dérivée des données : pour repartir tout le monde de 0, on ne compte
@@ -145,7 +146,7 @@ export function etatDepuisExp(
 export async function calculerAura(supabase: SB, userId: string): Promise<EtatAura> {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const [seancesRes, repasRes, joursRes, todayRes] = await Promise.all([
+    const [seancesRes, repasRes, joursRes, todayRes, profilRes] = await Promise.all([
       // On ne compte que les actions à partir de AURA_EPOCH (reset global).
       supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("started_at", AURA_EPOCH),
       // Repas : dates >= époque ET <= aujourd'hui (les faux repas datés dans le
@@ -153,18 +154,23 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
       supabase.from("daily_stats").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
       supabase.from("daily_stats").select("streak").eq("user_id", userId).eq("date", today).maybeSingle(),
+      // Statut Premium : les abonnés (et admins) gagnent l'EXP d'action ×1,5.
+      supabase.from("profiles").select("is_premium, is_admin").eq("id", userId).maybeSingle(),
     ]);
 
     const seances = seancesRes.count ?? 0;
     const repas = repasRes.count ?? 0;
     const jours = joursRes.count ?? 0;
     const streak = (todayRes.data?.streak as number | undefined) ?? 0;
+    const premium = !!(profilRes.data?.is_premium || profilRes.data?.is_admin);
 
-    const exp =
-      EXP_BIENVENUE + // +10 offerts à l'inscription (tout le monde démarre avec un peu d'avance)
+    // Le bonus de bienvenue est un socle fixe ; le multiplicateur Premium ne
+    // s'applique qu'à l'EXP GAGNÉE par les actions (séances / repas / connexions).
+    const expActions =
       seances * (EXP_SEANCE + EXP_SEANCE_STREAK) + // séance +30, +5 de série à chaque séance
       repas * EXP_REPAS +
       jours * EXP_CONNEXION;
+    const exp = EXP_BIENVENUE + Math.round(expActions * (premium ? EXP_MULTI_PREMIUM : 1));
 
     return etatDepuisExp(exp, { seances, repas, jours, streak });
   } catch {
