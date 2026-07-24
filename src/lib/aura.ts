@@ -20,6 +20,7 @@ export const EXP_SEANCE = 30;
 export const EXP_SEANCE_STREAK = 5; // bonus « série de séances » : +5 après chaque séance
 export const EXP_CONNEXION = 5;
 export const EXP_REPAS = 5;
+export const EXP_BIENVENUE = 10; // coup de pouce d'inscription : +10 offerts à tout compte
 
 // ── Reset global de l'aura ──
 // L'EXP est dérivée des données : pour repartir tout le monde de 0, on ne compte
@@ -45,7 +46,7 @@ export type Rang = {
 // + un `min`). Le composant lit ce tableau, tout suit automatiquement.
 // Cadence de référence = un utilisateur engagé gagne ≈50 EXP/jour (connexion +5,
 // 1 séance +35, 2 repas +10). Les seuils = 50 × le nombre de jours voulu :
-//   Bronze  jour 1  ·  Argent  ~3 j  ·  Or  ~1 sem  ·  Platine  ~2 sem
+//   Bronze  fini jour 1 (Argent = 50)  ·  Or  ~1 sem  ·  Platine  ~2 sem
 //   Diamant ~1 mois ·  Éternel ~2,5 mois (sommet très dur, atteignable même
 //   gratuitement avant la fin d'une saison de 3 mois).
 // Les métaux qui ne tiennent pas ce rythme max mettent plus longtemps → c'est
@@ -63,7 +64,7 @@ export const RANGS: Rang[] = [
   {
     id: "argent",
     nom: "Argent",
-    min: 150, // ~3 jours
+    min: 50, // fin du Bronze dès le 1er jour : 1 séance +35, connexion +5, repas +5, +10 de bienvenue
     image: "/rangs/argent-v2.png",
     neon: ["#DDE6F0", "#9AA6B8"],
     pierre: ["#F2F6FC", "#B8C2D0", "#6a7280"],
@@ -160,6 +161,7 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
     const streak = (todayRes.data?.streak as number | undefined) ?? 0;
 
     const exp =
+      EXP_BIENVENUE + // +10 offerts à l'inscription (tout le monde démarre avec un peu d'avance)
       seances * (EXP_SEANCE + EXP_SEANCE_STREAK) + // séance +30, +5 de série à chaque séance
       repas * EXP_REPAS +
       jours * EXP_CONNEXION;
