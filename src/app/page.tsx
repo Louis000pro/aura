@@ -507,7 +507,6 @@ function RangsModal({
               {RANGS.map((rang, i) => {
                 const atteint = expActuel >= rang.min;
                 const courant = rang.id === rangActuelId;
-                const suivant = RANGS[i + 1];
                 return (
                   <div
                     key={rang.id}
@@ -535,13 +534,13 @@ function RangsModal({
                       <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>
                         {rang.min === 0
                           ? "Le point de départ"
-                          : suivant
-                            ? <>À partir de <b style={{ color: "var(--text-soft)" }}>{rang.min} EXP</b></>
-                            : <>À partir de <b style={{ color: "var(--text-soft)" }}>{rang.min} EXP</b></>}
+                          : atteint
+                            ? "Débloqué"
+                            : "À débloquer"}
                       </p>
                     </div>
-                    <div className="shrink-0 text-[11px] font-bold" style={{ color: atteint ? "var(--accent)" : "var(--text-3)" }}>
-                      {atteint ? "Atteint ✦" : `${Math.max(0, rang.min - expActuel)} EXP`}
+                    <div className="shrink-0 text-[11px] font-bold" style={{ color: atteint ? "var(--accent)" : "var(--text-soft)" }}>
+                      {atteint ? "Atteint ✦" : `${rang.min} EXP`}
                     </div>
                   </div>
                 );
