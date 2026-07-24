@@ -545,17 +545,6 @@ function RangsModal({
                   </div>
                 );
               })}
-
-              {/* Teasing du prochain rang à venir */}
-              <div className="flex items-center gap-3.5 rounded-2xl px-3.5 py-3 opacity-70" style={{ border: "1px dashed rgba(var(--accent-rgb),0.2)" }}>
-                <div className="grid place-items-center h-[52px] w-[40px] shrink-0 rounded-xl" style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--text-3)" }}>
-                  <Sparkles size={20} strokeWidth={2} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="text-[15px] font-extrabold" style={{ color: "var(--text-soft)" }}>Bientôt…</span>
-                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>De nouveaux rangs arrivent. Continue à monter.</p>
-                </div>
-              </div>
             </div>
           </motion.div>
         </motion.div>
