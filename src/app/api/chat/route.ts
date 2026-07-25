@@ -1,27 +1,38 @@
 import { NextRequest } from "next/server";
+import type OpenAI from "openai";
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+type ChatMessage = { role: "user" | "assistant"; content: string | ContentPart[] };
+
+/** Un contenu (string ou parties) est-il vide ? */
+function contentEmpty(content: string | ContentPart[]): boolean {
+  if (typeof content === "string") return !content.trim();
+  return content.length === 0;
+}
 
 /**
  * Nettoie l'historique pour Mistral (plus strict que Groq) : la conversation
  * doit commencer par un message `user`, alterner user/assistant, et n'avoir
  * aucun contenu vide. On ignore les messages vides, on retire les messages
- * `assistant` en tête, et on fusionne deux messages consécutifs de même rôle.
+ * `assistant` en tête, et on fusionne deux messages TEXTE consécutifs de même
+ * rôle. Un contenu multimodal (avec image) n'est jamais fusionné : on le garde tel quel.
  */
 function sanitizeHistory(msgs: ChatMessage[]): ChatMessage[] {
   const out: ChatMessage[] = [];
   for (const m of msgs) {
-    const content = (m?.content ?? "").trim();
-    if (!content) continue;
+    if (!m || contentEmpty(m.content)) continue;
     if (out.length === 0 && m.role !== "user") continue; // démarre sur un user
     const last = out[out.length - 1];
-    if (last && last.role === m.role) {
-      last.content += `\n${content}`; // rôles consécutifs → fusion
+    // Fusion uniquement si les DEUX contenus sont du texte simple.
+    if (last && last.role === m.role && typeof last.content === "string" && typeof m.content === "string") {
+      last.content += `\n${m.content.trim()}`;
     } else {
-      out.push({ role: m.role, content });
+      out.push({ role: m.role, content: typeof m.content === "string" ? m.content.trim() : m.content });
     }
   }
   return out;
@@ -159,6 +170,8 @@ Tu réponds UNIQUEMENT avec ce message (adapté naturellement) :
 TON : positif, chaleureux, motivant, concret (propose des actions précises, jamais de réponse vague), célèbre les progrès. Termine TOUJOURS par UNE seule question courte et naturelle.
 
 MISE EN FORME (important, lisibilité humaine) : écris en texte simple et naturel, comme un message. N'utilise AUCUN markdown : jamais d'astérisques (* ou **), de dièses (#), d'accents circonflexes (^), de tildes (~) ni de backticks (\`). Pour une liste, va à la ligne et commence par un tiret « - ». Pour insister sur un mot, choisis-le bien, ne le décore pas de symboles. Des phrases claires valent mieux qu'une mise en page chargée.
+
+IMAGES : l'utilisateur peut t'envoyer une photo (un plat, une étiquette nutritionnelle, une machine de salle, une posture d'exercice, une blessure visible…). Regarde-la attentivement et réponds à partir de ce que tu vois, dans ton domaine (sport, nutrition, santé). Si l'image est floue ou hors sujet, dis-le gentiment et demande une précision.
 
 DONNÉES : tiens compte de la conversation ET du profil/stats/repas/séances ci-dessous ; ne redemande jamais une info déjà donnée. Pour "qu'est-ce que j'ai mangé / ma dernière séance", réponds à partir des données réelles (matin = petit-déj, midi = déjeuner, soir = dîner). N'INVENTE JAMAIS un repas ou une séance absent des données ; si rien n'est enregistré, dis-le et propose d'ajouter.
 
@@ -327,7 +340,7 @@ export async function POST(req: NextRequest) {
       messages: [
         { role: "system", content: systemPrompt },
         ...sanitizeHistory(messages),
-      ],
+      ] as OpenAI.Chat.ChatCompletionMessageParam[],
       stream: true,
       max_tokens: maxTokens,
       temperature: 0.4,

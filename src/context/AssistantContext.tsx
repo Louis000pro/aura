@@ -73,6 +73,8 @@ export type AssistantMsg = {
   content: string;
   id: string;
   streaming?: boolean;
+  /** Data URL d'une image jointe (messages user). Non persistée (trop lourde). */
+  image?: string;
 };
 
 interface UserContext {
@@ -93,7 +95,7 @@ type AssistantContextValue = {
   clear: () => void;
   messages: AssistantMsg[];
   isStreaming: boolean;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string, image?: string) => void;
   pseudo?: string;
   memoryNotice: string | null;
   pendingSeance: ProposedSeance | null;
@@ -182,7 +184,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const persist = useCallback((msgs: AssistantMsg[]) => {
     if (!historyKey || typeof window === "undefined") return;
     try {
-      const clean = msgs.slice(-60).map((m) => ({ ...m, streaming: false }));
+      // On ne persiste PAS les data URLs d'images (base64 lourd → quota
+      // sessionStorage explosé). Le fil garde le texte ; l'image ne vit que
+      // le temps de la session en mémoire.
+      const clean = msgs.slice(-60).map(({ image: _img, ...m }) => ({ ...m, streaming: false }));
       sessionStorage.setItem(historyKey, JSON.stringify({ ts: Date.now(), msgs: clean }));
     } catch { /* ignore */ }
   }, [historyKey]);
@@ -792,14 +797,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, persistMemoryAction, preparePlanAction, buildNutritionNote]);
 
-  /* ── Envoi d'un message ── */
-  const sendMessage = useCallback(async (text: string) => {
+  /* ── Envoi d'un message (avec image optionnelle → vision) ── */
+  const sendMessage = useCallback(async (text: string, image?: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isStreaming) return;
+    if ((!trimmed && !image) || isStreaming) return;
 
     void ensureContext();
 
-    const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid() };
+    const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(image ? { image } : {}) };
     const assistantId = uid();
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
     setIsStreaming(true);
@@ -834,7 +839,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
     // → évite le 413 « request too large » de Groq sur les longues conversations).
-    const history = [...messages, userMsg].slice(-10).map(({ role, content }) => ({ role, content }));
+    // Un message user porteur d'une image devient un contenu multimodal
+    // (texte + image_url) que le modèle vision sait lire.
+    const history = [...messages, userMsg].slice(-10).map((m) => {
+      if (m.role === "user" && m.image) {
+        return {
+          role: m.role,
+          content: [
+            ...(m.content ? [{ type: "text" as const, text: m.content }] : [{ type: "text" as const, text: "Regarde cette image." }]),
+            { type: "image_url" as const, image_url: { url: m.image } },
+          ],
+        };
+      }
+      return { role: m.role, content: m.content };
+    });
 
     try {
       const abort = new AbortController();

@@ -12,11 +12,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays, Play } from "lucide-react";
+import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays, Play, ImagePlus } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
+import { fichierEnDataUrl } from "@/lib/assistantImage";
 import { AssistantAvatar } from "@/components/AssistantMark";
 
 /** 6 jours à venir → puces de programmation (tokens compris par resolveWhen). */
@@ -119,8 +120,12 @@ export default function AssistantSheet() {
   const { launchWorkout } = useWorkoutLaunch();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<string | null>(null); // data URL image à envoyer
+  const [attaching, setAttaching] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const voice = useVoiceCapture({ onTranscript: (t) => sendMessage(t) });
 
@@ -160,10 +165,30 @@ export default function AssistantSheet() {
 
   const submit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    if (!input.trim() || isStreaming) return;
-    sendMessage(input);
+    if ((!input.trim() && !attachment) || isStreaming) return;
+    sendMessage(input, attachment ?? undefined);
     setInput("");
+    setAttachment(null);
+    setAttachError(null);
   };
+
+  // Choix d'une image → compression navigateur → aperçu, prête à partir.
+  const onPickImage = async (file: File | undefined) => {
+    if (fileRef.current) fileRef.current.value = ""; // permet de re-choisir le même fichier
+    if (!file) return;
+    setAttachError(null);
+    setAttaching(true);
+    try {
+      setAttachment(await fichierEnDataUrl(file));
+    } catch (err) {
+      const m = (err as { message?: string })?.message;
+      setAttachError(m === "trop_lourde" ? "Image trop lourde" : "Image illisible");
+    } finally {
+      setAttaching(false);
+    }
+  };
+
+  const canSend = (!!input.trim() || !!attachment) && !isStreaming;
 
   // « La faire maintenant » : lance le tunnel avec la séance qu'on vient de créer.
   const faireMaintenant = () => {
@@ -288,6 +313,11 @@ export default function AssistantSheet() {
                           ? { background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", borderBottomRightRadius: 8 }
                           : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-1)", borderBottomLeftRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.10)" }),
                       }}>
+                      {msg.role === "user" && msg.image && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={msg.image} alt="" className="block rounded-2xl mb-1.5"
+                          style={{ maxWidth: "100%", maxHeight: 220, objectFit: "cover" }} />
+                      )}
                       {msg.role === "assistant" ? <AssistantContent text={msg.content} /> : msg.content}
                       {msg.streaming && msg.role === "assistant" && msg.content === "" && (
                         <span className="flex items-center gap-1 py-0.5">
@@ -558,6 +588,42 @@ export default function AssistantSheet() {
               {voice.error && (
                 <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--accent)" }}>{voice.error}</p>
               )}
+              {attachError && (
+                <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--accent)" }}>{attachError}</p>
+              )}
+
+              {/* Aperçu de l'image jointe (prête à partir) */}
+              <AnimatePresence>
+                {(attachment || attaching) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+                    className="w-fit mb-2 relative">
+                    {attaching ? (
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                        style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
+                        <motion.span className="w-4 h-4 rounded-full border-2"
+                          style={{ borderColor: "var(--violet-mid)", borderTopColor: "var(--accent)" }}
+                          animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+                      </div>
+                    ) : (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={attachment!} alt="" className="w-16 h-16 rounded-2xl object-cover"
+                          style={{ border: "1px solid rgba(var(--accent-rgb),0.22)" }} />
+                        <button type="button" onClick={() => setAttachment(null)} aria-label="Retirer l'image"
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{ background: "var(--accent)", color: "#fff" }}>
+                          <X size={11} strokeWidth={3} />
+                        </button>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                onChange={(e) => onPickImage(e.target.files?.[0])} />
+
               <form onSubmit={submit} className="flex items-end gap-2">
                 <div className="flex-1 flex items-center px-4 py-2 rounded-3xl"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
@@ -576,6 +642,16 @@ export default function AssistantSheet() {
                   />
                 </div>
 
+                {/* Joindre une image */}
+                <motion.button type="button" whileTap={{ scale: 0.92 }}
+                  onClick={() => fileRef.current?.click()}
+                  disabled={isStreaming || attaching || voice.state !== "idle"}
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0 cursor-pointer disabled:opacity-50"
+                  style={{ background: "rgba(var(--accent-rgb),0.12)" }}
+                  aria-label="Joindre une image">
+                  <ImagePlus size={17} strokeWidth={2} style={{ color: "var(--accent)" }} />
+                </motion.button>
+
                 {/* Micro */}
                 <motion.button type="button" whileTap={{ scale: 0.92 }}
                   onClick={() => (voice.state === "recording" ? voice.stop() : voice.start())}
@@ -591,12 +667,12 @@ export default function AssistantSheet() {
                 </motion.button>
 
                 {/* Envoyer */}
-                <motion.button type="submit" whileTap={input.trim() && !isStreaming ? { scale: 0.92 } : {}}
-                  disabled={!input.trim() || isStreaming}
+                <motion.button type="submit" whileTap={canSend ? { scale: 0.92 } : {}}
+                  disabled={!canSend}
                   className="w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0 cursor-pointer"
                   style={{
-                    background: input.trim() && !isStreaming ? "linear-gradient(135deg, var(--accent), var(--violet-mid))" : "rgba(var(--accent-rgb),0.12)",
-                    opacity: input.trim() && !isStreaming ? 1 : 0.55,
+                    background: canSend ? "linear-gradient(135deg, var(--accent), var(--violet-mid))" : "rgba(var(--accent-rgb),0.12)",
+                    opacity: canSend ? 1 : 0.55,
                   }}
                   aria-label="Envoyer">
                   <Send size={15} strokeWidth={2.2} style={{ color: "#fff" }} />
