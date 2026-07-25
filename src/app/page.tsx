@@ -782,17 +782,8 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
   // animé, clippé au bord par le contour intérieur). Zéro culpabilisation.
   if (seance && seance.type.toLowerCase() === "repos") {
     return (
-      <div className="relative rounded-3xl p-[2px] overflow-hidden">
-        <motion.div
-          aria-hidden
-          className="absolute left-1/2 top-1/2 h-[170%] w-[170%] -translate-x-1/2 -translate-y-1/2"
-          style={{ background: reduce
-            ? "linear-gradient(135deg,#8B5CF6,#C13BC1)"
-            : "conic-gradient(from 0deg, transparent 0deg, #C13BC1 28deg, #8B5CF6 78deg, transparent 128deg, transparent 360deg)" }}
-          animate={reduce ? undefined : { rotate: 360 }}
-          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-        />
-        <div className="relative w-full flex items-start gap-3 rounded-[22px] p-4" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.10), rgba(193,59,193,0.06)), rgb(var(--surface-rgb))" }}>
+      <div className="relative rounded-3xl">
+        <div className="relative w-full flex items-start gap-3 rounded-3xl p-4" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.10), rgba(193,59,193,0.06)), rgb(var(--surface-rgb))", border: "1px solid rgba(139,92,246,0.16)" }}>
           <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 16px -6px rgba(139,92,246,0.75)" }}>🌙</span>
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#8B5CF6" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
@@ -800,6 +791,28 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
             <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
           </div>
         </div>
+        {/* Une lueur qui court le long du contour EXACT du rectangle (tracé rect
+            SVG, segment qui se déplace via pathOffset). prefers-reduced-motion → rien. */}
+        {!reduce && (
+          <svg className="absolute inset-0 h-full w-full pointer-events-none" aria-hidden style={{ overflow: "visible" }}>
+            <defs>
+              <linearGradient id="reposGlow" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#8B5CF6" />
+                <stop offset="1" stopColor="#C13BC1" />
+              </linearGradient>
+            </defs>
+            <motion.rect
+              x="0" y="0" width="100%" height="100%" rx="24"
+              fill="none" stroke="url(#reposGlow)" strokeWidth="2.5" strokeLinecap="round"
+              pathLength={100}
+              strokeDasharray="22 78"
+              initial={{ strokeDashoffset: 0 }}
+              animate={{ strokeDashoffset: -100 }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
+              style={{ filter: "drop-shadow(0 0 4px rgba(139,92,246,0.9))" }}
+            />
+          </svg>
+        )}
       </div>
     );
   }
@@ -839,25 +852,6 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
         )}
       </div>
     </div>
-  );
-}
-
-/** Une tuile à anneau (bloc 3 — nutrition). */
-function TuileAnneau({ label, valeur, pct, couleur, onClick }: { label: string; valeur: string; pct: number; couleur: string; onClick: () => void }) {
-  const r = 20, c = 2 * Math.PI * r;
-  const p = Math.max(0, Math.min(1, pct));
-  return (
-    <button type="button" onClick={onClick} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
-      <div className="relative w-[46px] h-[46px]">
-        <svg width="46" height="46" viewBox="0 0 46 46" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="23" cy="23" r={r} fill="none" stroke="rgba(var(--accent-rgb),0.10)" strokeWidth="5" />
-          <circle cx="23" cy="23" r={r} fill="none" stroke={couleur} strokeWidth="5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - p)} />
-        </svg>
-        <span className="absolute inset-0 grid place-items-center text-[11px] font-extrabold" style={{ color: couleur }}>{Math.round(p * 100)}%</span>
-      </div>
-      <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>{label}</span>
-      <span className="text-[11px] font-bold" style={{ color: "var(--text-soft)" }}>{valeur}</span>
-    </button>
   );
 }
 
@@ -1386,14 +1380,12 @@ function Dashboard() {
         <section>
           <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>Ta journée</p>
           <div className="grid grid-cols-3 gap-2.5">
-            {/* Score du jour — anneau violet (0→100), ouvre le détail des stats */}
-            <TuileAnneau
-              label="Score"
-              valeur="du jour"
-              pct={(liveStats.score || 0) / 100}
-              couleur="#8B5CF6"
-              onClick={() => setShowStatsDrawer(true)}
-            />
+            {/* Séances de la semaine (ouvre la progression) */}
+            <button type="button" onClick={() => router.push("/progression")} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
+              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[22px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(139,92,246,0.16), transparent 70%)" }}>🏋️</div>
+              <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Séances</span>
+              <span className="text-[15px] font-extrabold" style={{ color: "var(--accent)" }}>{liveStats.sessionsWeek || 0} <span className="text-[11px] font-bold">/sem</span></span>
+            </button>
             {/* Rang / EXP au centre (ouvre la liste des rangs) */}
             <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
               <div className="w-[46px] h-[46px] grid place-items-center"><GemmeRang rang={aura.rang} size={42} /></div>
