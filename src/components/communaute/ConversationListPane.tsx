@@ -114,9 +114,12 @@ export default function ConversationListPane({
 
   if (authLoading || charge) {
     return (
-      <div className="flex h-[70vh] items-center justify-center">
+      <section
+        className={`flex min-h-screen items-center justify-center md:h-[100dvh] md:min-h-0 ${className}`}
+        style={{ background: "rgb(var(--bg-rgb))" }}
+      >
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--text-3)" }} />
-      </div>
+      </section>
     );
   }
 
