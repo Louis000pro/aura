@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowLeft, Check, Copy, Loader2, Search, Share2, UserPlus, Users, X,
+  Check, Copy, Loader2, Search, Share2, UserPlus, Users, X,
 } from "lucide-react";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import {
@@ -66,24 +66,26 @@ export default function FriendshipSheets({
     <AnimatePresence>
       {vue && (
         <Sheet onFermer={onFermer}>
+          <Entete titre="Amis" onFermer={onFermer} />
+          <NavigationAmis
+            vue={vue}
+            nombreDemandes={demandes.length}
+            onVue={onVue}
+          />
           {vue === "ajouter" ? (
             <AjouterAmi
               moi={moi}
               monPseudo={monPseudo}
               accessToken={accessToken}
               pseudoInitial={pseudoInitial}
-              nombreDemandes={demandes.length}
-              onDemandes={() => onVue("demandes")}
               onConversation={onConversation}
               onDemandeEnvoyee={() => void rechargerDemandes()}
-              onFermer={onFermer}
             />
           ) : (
             <DemandesAmi
               demandes={demandes}
               charge={chargeDemandes}
               erreur={erreurDemandes}
-              onRetour={() => onVue("ajouter")}
               onRecharger={() => void rechargerDemandes()}
               onDemandesChange={(prochaines) => {
                 setDemandes(prochaines);
@@ -132,21 +134,13 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
 
 function Entete({
   titre,
-  onRetour,
   onFermer,
 }: {
   titre: string;
-  onRetour?: () => void;
   onFermer?: () => void;
 }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      {onRetour && (
-        <button onClick={onRetour} aria-label="Retour" className="flex h-9 w-9 items-center justify-center rounded-full"
-          style={{ background: "rgba(var(--text-3-rgb), .1)", color: "var(--text-1)" }}>
-          <ArrowLeft className="h-4.5 w-4.5" />
-        </button>
-      )}
       <b className="min-w-0 flex-1 truncate text-[18px] font-bold" style={{ color: "var(--text-0)" }}>
         {titre}
       </b>
@@ -160,26 +154,76 @@ function Entete({
   );
 }
 
+function NavigationAmis({
+  vue,
+  nombreDemandes,
+  onVue,
+}: {
+  vue: Exclude<VueAmis, null>;
+  nombreDemandes: number;
+  onVue: (vue: Exclude<VueAmis, null>) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Gestion des amis"
+      className="mb-4 grid grid-cols-2 gap-1 rounded-2xl p-1"
+      style={{ background: "rgba(var(--text-3-rgb), .09)" }}
+    >
+      <button
+        role="tab"
+        aria-selected={vue === "ajouter"}
+        onClick={() => onVue("ajouter")}
+        className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all"
+        style={{
+          color: vue === "ajouter" ? "var(--text-0)" : "var(--text-3)",
+          background: vue === "ajouter" ? "rgb(var(--surface-rgb))" : "transparent",
+          boxShadow: vue === "ajouter" ? "0 2px 10px rgba(17, 10, 34, .08)" : "none",
+        }}
+      >
+        <UserPlus className="h-4 w-4" />
+        Ajouter
+      </button>
+      <button
+        role="tab"
+        aria-selected={vue === "demandes"}
+        onClick={() => onVue("demandes")}
+        className="flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all"
+        style={{
+          color: vue === "demandes" ? "var(--text-0)" : "var(--text-3)",
+          background: vue === "demandes" ? "rgb(var(--surface-rgb))" : "transparent",
+          boxShadow: vue === "demandes" ? "0 2px 10px rgba(17, 10, 34, .08)" : "none",
+        }}
+      >
+        <Users className="h-4 w-4" />
+        Demandes
+        {nombreDemandes > 0 && (
+          <span
+            className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white"
+            style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+          >
+            {nombreDemandes > 99 ? "99+" : nombreDemandes}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
 function AjouterAmi({
   moi,
   monPseudo,
   accessToken,
   pseudoInitial,
-  nombreDemandes,
-  onDemandes,
   onConversation,
   onDemandeEnvoyee,
-  onFermer,
 }: {
   moi: string;
   monPseudo: string;
   accessToken?: string;
   pseudoInitial: string;
-  nombreDemandes: number;
-  onDemandes: () => void;
   onConversation: (id: string) => void;
   onDemandeEnvoyee: () => void;
-  onFermer: () => void;
 }) {
   const [pseudo, setPseudo] = useState(pseudoInitial);
   const [resultats, setResultats] = useState<ResultatRechercheAmi[]>([]);
@@ -188,23 +232,32 @@ function AjouterAmi({
   const [actionId, setActionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const rechercheId = useRef(0);
 
   const rechercher = useCallback(async (saisie: string) => {
+    const id = ++rechercheId.current;
     setCharge(true);
     setErreur(null);
     try {
-      setResultats(await rechercherAmisParPseudo(moi, saisie));
+      const prochains = await rechercherAmisParPseudo(moi, saisie);
+      if (id !== rechercheId.current) return;
+      setResultats(prochains);
       setRechercheFaite(true);
     } catch {
+      if (id !== rechercheId.current) return;
       setErreur("La recherche n'a pas abouti. Réessaie.");
     } finally {
-      setCharge(false);
+      if (id === rechercheId.current) setCharge(false);
     }
   }, [moi]);
 
-  // Recherche LIVE (débouncée) : chaque frappe filtre ; saisie vide = liste de
-  // base. Se lance aussi au montage (affiche des gens tout de suite).
+  // Recherche LIVE débouncée. Sous 2 caractères, on efface immédiatement les
+  // résultats et une ancienne requête ne peut pas écraser la saisie courante.
   useEffect(() => {
+    if (pseudo.trim().replace(/^@/, "").length < 2) {
+      rechercheId.current += 1;
+      return;
+    }
     const minuterie = window.setTimeout(() => {
       void rechercher(pseudo);
     }, 260);
@@ -213,7 +266,18 @@ function AjouterAmi({
 
   const soumettre = (event: FormEvent) => {
     event.preventDefault();
+    if (pseudo.trim().replace(/^@/, "").length < 2) return;
     void rechercher(pseudo);
+  };
+
+  const changerPseudo = (prochain: string) => {
+    setPseudo(prochain);
+    if (prochain.trim().replace(/^@/, "").length >= 2) return;
+    rechercheId.current += 1;
+    setResultats([]);
+    setRechercheFaite(false);
+    setCharge(false);
+    setErreur(null);
   };
 
   const majRelation = (id: string, relation: RelationAmi) =>
@@ -301,38 +365,13 @@ function AjouterAmi({
 
   return (
     <>
-      <Entete titre="Ajouter des amis" onFermer={onFermer} />
-
-      {nombreDemandes > 0 && (
-        <button
-          onClick={onDemandes}
-          className="mb-4 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
-          style={{ background: "rgba(var(--tint-violet-rgb), .48)", color: "var(--text-1)" }}
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full text-white"
-            style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
-            <Users className="h-4.5 w-4.5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <b className="block text-[14.5px]">Demandes d&apos;amis</b>
-            <span className="text-[12.5px]" style={{ color: "var(--text-3)" }}>
-              {nombreDemandes} en attente
-            </span>
-          </span>
-          <span className="flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold text-white"
-            style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
-            {nombreDemandes > 99 ? "99+" : nombreDemandes}
-          </span>
-        </button>
-      )}
-
       <form onSubmit={soumettre} className="flex items-center gap-2">
         <label className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border px-3 py-3"
           style={{ borderColor: "rgba(var(--text-3-rgb), .22)", background: "rgb(var(--bg-rgb))" }}>
           <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-3)" }} />
           <input
             value={pseudo}
-            onChange={(event) => setPseudo(event.target.value)}
+            onChange={(event) => changerPseudo(event.target.value)}
             placeholder="Cherche un pseudo…"
             autoCapitalize="none"
             autoCorrect="off"
@@ -344,7 +383,7 @@ function AjouterAmi({
       </form>
 
       <p className="mt-2 px-1 text-[12px]" style={{ color: "var(--text-3)" }}>
-        Tape le début d&apos;un pseudo pour trouver quelqu&apos;un.
+        Saisis au moins 2 caractères : les pseudos les plus proches apparaissent pendant la frappe.
       </p>
 
       <button
@@ -366,9 +405,9 @@ function AjouterAmi({
       </button>
 
       <div className="min-h-[112px]">
-        {rechercheFaite && resultats.length === 0 && !charge && (
+        {rechercheFaite && pseudo.trim().replace(/^@/, "").length >= 2 && resultats.length === 0 && !charge && (
           <p className="py-8 text-center text-[14px]" style={{ color: "var(--text-3)" }}>
-            {pseudo.trim() ? "Aucun compte ne correspond à cette recherche." : "Aucun compte à afficher."}
+            Aucun pseudo proche trouvé.
           </p>
         )}
         {resultats.map((personne) => (
@@ -412,7 +451,6 @@ function DemandesAmi({
   demandes,
   charge,
   erreur,
-  onRetour,
   onRecharger,
   onDemandesChange,
   onConversation,
@@ -420,7 +458,6 @@ function DemandesAmi({
   demandes: Personne[];
   charge: boolean;
   erreur: string | null;
-  onRetour: () => void;
   onRecharger: () => void;
   onDemandesChange: (demandes: Personne[]) => void;
   onConversation: (id: string) => void;
@@ -455,7 +492,6 @@ function DemandesAmi({
 
   return (
     <>
-      <Entete titre="Demandes d'amis" onRetour={onRetour} />
       {charge ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--text-3)" }} />

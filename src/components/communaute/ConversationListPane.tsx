@@ -16,7 +16,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, PenLine, Check, X, Search, MoreHorizontal,
-  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus, Users,
+  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -298,33 +298,6 @@ export default function ConversationListPane({
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
         >
           <Plus className="h-5 w-5" />
-        </button>
-      </div>
-
-      <div className="flex gap-2 px-4 pb-3">
-        <button
-          onClick={() => { setPseudoInvite(""); setVueAmis("ajouter"); }}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[rgba(var(--tint-violet-rgb),.35)]"
-          style={{ borderColor: "rgba(var(--text-3-rgb), .16)", color: "var(--text-1)" }}
-        >
-          <UserPlus className="h-4 w-4" />
-          Ajouter
-        </button>
-        <button
-          onClick={() => setVueAmis("demandes")}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[rgba(var(--tint-violet-rgb),.35)]"
-          style={{ borderColor: "rgba(var(--text-3-rgb), .16)", color: "var(--text-1)" }}
-        >
-          <Users className="h-4 w-4" />
-          Demandes
-          {nombreDemandes > 0 && (
-            <span
-              className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
-            >
-              {nombreDemandes > 99 ? "99+" : nombreDemandes}
-            </span>
-          )}
         </button>
       </div>
 

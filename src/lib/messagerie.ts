@@ -897,30 +897,35 @@ export async function rechercherAmiParPseudo(
   };
 }
 
-/** Recherche PARTIELLE (choix de Louis, 2026-07-25) : on tape le début d'un
- * pseudo et tous ceux qui correspondent s'affichent ; saisie vide = liste de
- * base. Les relations sont résolues EN MASSE (2 requêtes au total, pas 2 par
- * personne). Reste borné (limite) — pas de scroll infini d'un annuaire. */
+/** Recherche PARTIELLE (choix de Louis, 2026-07-25) : les suggestions ne
+ * s'affichent qu'après 2 caractères saisis. On retrouve les pseudos qui
+ * commencent par la saisie en premier, puis ceux qui la contiennent, sans
+ * jamais exposer un annuaire au repos. Les relations sont résolues EN MASSE. */
 export async function rechercherAmisParPseudo(
   moi: string,
   saisie: string,
-  limite = 30,
+  limite = 8,
 ): Promise<ResultatRechercheAmi[]> {
   const pseudo = saisie.trim().replace(/^@/, "");
+  if (pseudo.length < 2) return [];
   const supabase = createClient();
-  let requete = supabase
+  const motif = `%${pseudo.replace(/[\\%_]/g, "\\$&")}%`;
+  const { data, error } = await supabase
     .from("profiles")
     .select("id, pseudo, avatar_url")
     .neq("id", moi)
-    .order("pseudo", { ascending: true })
-    .limit(limite);
-  if (pseudo) {
-    const motif = `%${pseudo.replace(/[\\%_]/g, "\\$&")}%`;
-    requete = requete.ilike("pseudo", motif);
-  }
-  const { data, error } = await requete;
+    .ilike("pseudo", motif)
+    .limit(Math.max(limite * 2, 12));
   if (error) throw new Error(error.message);
-  const profils = (data ?? []) as { id: string; pseudo: string; avatar_url: string | null }[];
+  const normalise = pseudo.toLocaleLowerCase("fr");
+  const profils = ((data ?? []) as { id: string; pseudo: string; avatar_url: string | null }[])
+    .sort((a, b) => {
+      const aCommence = a.pseudo.toLocaleLowerCase("fr").startsWith(normalise);
+      const bCommence = b.pseudo.toLocaleLowerCase("fr").startsWith(normalise);
+      if (aCommence !== bCommence) return aCommence ? -1 : 1;
+      return a.pseudo.localeCompare(b.pseudo, "fr", { sensitivity: "base" });
+    })
+    .slice(0, limite);
   if (!profils.length) return [];
 
   const ids = profils.map((p) => p.id);
