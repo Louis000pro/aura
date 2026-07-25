@@ -782,11 +782,13 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
   // animé, clippé au bord par le contour intérieur). Zéro culpabilisation.
   if (seance && seance.type.toLowerCase() === "repos") {
     return (
-      <div className="relative rounded-3xl p-[2px] overflow-hidden" style={{ boxShadow: "0 8px 30px -12px rgba(139,92,246,0.4)" }}>
+      <div className="relative rounded-3xl p-[2px] overflow-hidden">
         <motion.div
           aria-hidden
           className="absolute left-1/2 top-1/2 h-[170%] w-[170%] -translate-x-1/2 -translate-y-1/2"
-          style={{ background: "conic-gradient(from 0deg, transparent 0deg, #C13BC1 28deg, #8B5CF6 78deg, transparent 128deg, transparent 360deg)" }}
+          style={{ background: reduce
+            ? "linear-gradient(135deg,#8B5CF6,#C13BC1)"
+            : "conic-gradient(from 0deg, transparent 0deg, #C13BC1 28deg, #8B5CF6 78deg, transparent 128deg, transparent 360deg)" }}
           animate={reduce ? undefined : { rotate: 360 }}
           transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
         />
