@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { validerMaillon, CLE_DEVOILE } from "@/lib/defi";
 import { useAuth } from "@/context/AuthContext";
+import { useAssistant } from "@/context/AssistantContext";
 import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
 import type { PerfShareData } from "@/lib/perfShareExport";
@@ -104,6 +105,26 @@ export interface WorkoutGuideModalProps {
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
 type HiitSub    = "work" | "rest";
+
+/* Déduit une durée en secondes d'un libellé de reps (« 45s », « 30 sec »,
+   « 2 min », « 3x45s » → 45). null si ce n'est PAS un exercice chronométré
+   (« 12 reps », « Max reps », « 12 par jambe »…). Sert à lancer un vrai chrono
+   pour les gainages/tenues venus d'une séance custom (qui n'ont pas de champ auto). */
+function secondesDeReps(reps: string): number | null {
+  const r = (reps || "").toLowerCase();
+  const min = r.match(/(\d+)\s*min/);
+  if (min) return (parseInt(min[1], 10) || 0) * 60 || null;
+  const sec = r.match(/(\d+)\s*(?:secondes?|sec|s)\b/);
+  if (sec) return parseInt(sec[1], 10) || null;
+  return null;
+}
+
+/* Vibration (best-effort) : ignorée si le navigateur/appareil ne la supporte pas. */
+function vibrer(pattern: number | number[]) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try { navigator.vibrate(pattern); } catch { /* ignore */ }
+  }
+}
 
 /* ─── Constants ──────────────────────────────────────────── */
 const HIIT_WORK = 20;
@@ -570,7 +591,18 @@ export function resolveSessionId(title: string): string | null {
 export default function WorkoutGuideModal({
   sessionId, title, accent, duration, difficulty, category, heroImage, onClose, onComplete, exerciseList,
 }: WorkoutGuideModalProps) {
-  const exercises = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
+  // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
+  // séance custom (gainage « 45s », tenue « 30 sec »…) qui n'en portent pas.
+  const exercises = useMemo<Exercise[]>(() => {
+    const base = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
+    return base.map((e) => {
+      if (e.auto || e.hiit) return e;
+      const sec = secondesDeReps(e.reps);
+      return sec ? { ...e, auto: sec } : e;
+    });
+  }, [exerciseList, sessionId]);
+
+  const { open: openAssistant } = useAssistant();
 
   const [phase,         setPhase]         = useState<GuidePhase>("intro");
   const [exerciseIdx,   setExerciseIdx]   = useState(0);
@@ -579,6 +611,7 @@ export default function WorkoutGuideModal({
   const [restTotal,     setRestTotal]     = useState(0);
   const [restMode,      setRestMode]      = useState<"set" | "exercise">("set");
   const [autoCountdown, setAutoCountdown] = useState(0);
+  const [prep,          setPrep]          = useState(0); // décompte 3-2-1 avant un effort chronométré
   const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
   const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>({});
   const [startMs,       setStartMs]       = useState(0);
@@ -696,8 +729,8 @@ export default function WorkoutGuideModal({
       setAutoCountdown(0);   setHiitSub("work");
       setPhase("exercising");
       const e = exercises[nextEx];
-      if (e?.auto)      setAutoCountdown(e.auto);
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else {
       setPhase("done");
     }
@@ -711,8 +744,8 @@ export default function WorkoutGuideModal({
     if (nextSet < (exercises[exerciseIdx]?.sets ?? 1)) {
       setSetIdx(nextSet); setPhase("exercising");
       const e = exercises[exerciseIdx];
-      if (e?.auto)      setAutoCountdown(e.auto);
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else if (nextEx < exercises.length) {
       const restAfter = exercises[exerciseIdx]?.restAfter ?? 0;
       if (restAfter > 0) {
@@ -723,8 +756,8 @@ export default function WorkoutGuideModal({
       } else {
         setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
         const e = exercises[nextEx];
-        if (e?.auto)      setAutoCountdown(e.auto);
-        else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+        if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+        else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
         else              setAutoCountdown(0);
       }
     } else {
@@ -759,6 +792,7 @@ export default function WorkoutGuideModal({
   useEffect(() => {
     if (phase !== "resting" || paused) return;
     if (restCountdown <= 0) {
+      vibrer([70, 50, 70]); // fin de récup
       if (restMode === "exercise") { setRestMode("set"); skipExercise(); }
       else advance();
       return;
@@ -768,26 +802,35 @@ export default function WorkoutGuideModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, restCountdown, paused, restMode]);
 
+  /* ── Décompte 3-2-1 avant chaque effort chronométré ── */
+  useEffect(() => {
+    if (phase !== "exercising" || paused || prep <= 0) return;
+    const t = setTimeout(() => setPrep(p => p - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, prep, paused]);
+
   /* ── Auto / HIIT countdown ── */
   useEffect(() => {
     if (phase !== "exercising" || paused) return;
+    if (prep > 0) return; // on attend la fin du 3-2-1
     if (!cur?.auto && !cur?.hiit) return;
     if (autoCountdown <= 0) {
+      vibrer(90); // fin d'effort chronométré (ou fin d'un segment HIIT)
       if (cur.hiit && hiitSub === "work") { setHiitSub("rest"); setAutoCountdown(HIIT_REST); return; }
       completeSet(); return;
     }
     const t = setTimeout(() => setAutoCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, autoCountdown, hiitSub, cur, paused]);
+  }, [phase, autoCountdown, hiitSub, cur, paused, prep]);
 
   /* ── Start ── */
   const startWorkout = () => {
     setStartMs(Date.now());
     setExerciseIdx(0); setSetIdx(0); setDoneMap({}); setPaused(false); setShowInfo(false);
     setPhase("exercising");
-    if (exercises[0]?.auto)      setAutoCountdown(exercises[0].auto);
-    else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+    if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(3); }
+    else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
   };
 
   /* ── Timers ── */
@@ -862,6 +905,13 @@ export default function WorkoutGuideModal({
                 {fmt(elapsed)}
               </span>
               <div className="flex items-center gap-2">
+                {/* Raccourci discret vers le coach IA — une question pendant l'effort */}
+                <button onClick={() => openAssistant()}
+                  className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                  style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.32)" }}
+                  aria-label="Poser une question au coach IA">
+                  <AssistantSpark px={15} />
+                </button>
                 {canPause && (
                   <button onClick={togglePause}
                     className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
@@ -1043,7 +1093,9 @@ export default function WorkoutGuideModal({
                       <div className="absolute inset-0 flex items-center justify-center">
                         {paused
                           ? <Play size={30} strokeWidth={1.5} style={{ color: TUN.lav }} />
-                          : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff" }}>{autoCountdown}</span>}
+                          : prep > 0
+                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange }}>{prep}</motion.span>
+                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff" }}>{autoCountdown}</span>}
                       </div>
                     </motion.button>
                     <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>

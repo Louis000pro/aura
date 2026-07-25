@@ -76,7 +76,7 @@ export default function AssistantSheet() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={close}
-            className="fixed inset-0 z-[70]"
+            className="fixed inset-0 z-[110]"
             style={{ background: "rgba(10,7,24,0.42)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
           />
 
@@ -85,7 +85,7 @@ export default function AssistantSheet() {
             key="assistant-sheet"
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
-            className="fixed z-[71] left-0 right-0 bottom-0 mx-auto flex flex-col overflow-hidden
+            className="fixed z-[111] left-0 right-0 bottom-0 mx-auto flex flex-col overflow-hidden
                        md:left-auto md:right-6 md:bottom-6 md:w-[420px] md:rounded-3xl"
             style={{
               height: "min(88vh, 760px)",
