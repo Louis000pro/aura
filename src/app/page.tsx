@@ -17,7 +17,7 @@ import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import GemmeRang from "@/components/GemmeRang";
-import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, type EtatAura } from "@/lib/aura";
+import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, RECOMPENSE_RANG, type EtatAura } from "@/lib/aura";
 import { persistLieu, fetchDay, hasSeance, dayTitle, dayLabel, todayYmd, type PlanningDay } from "@/lib/planning";
 import { chargerDefi, SERIES, type Defi, type SerieSlug } from "@/lib/defi";
 
@@ -491,7 +491,7 @@ function RangsModal({
             <div className="flex items-center justify-between mb-1">
               <div className="mx-auto sm:hidden h-1.5 w-10 rounded-full" style={{ background: "rgba(var(--accent-rgb),0.25)" }} />
             </div>
-            <div className="flex items-center justify-between mb-4 mt-1">
+            <div className="flex items-center justify-between mb-1 mt-1">
               <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Les rangs</h2>
               <button
                 type="button"
@@ -503,46 +503,74 @@ function RangsModal({
                 <X size={16} strokeWidth={2.5} />
               </button>
             </div>
+            <p className="mb-4 text-[12.5px] leading-snug" style={{ color: "var(--text-3)" }}>
+              Chaque rang débloque une récompense. Grimpe pour les révéler ✦
+            </p>
 
             <div className="flex flex-col gap-3">
-              {RANGS.map((rang, i) => {
+              {RANGS.map((rang) => {
                 const atteint = expActuel >= rang.min;
                 const courant = rang.id === rangActuelId;
+                const reco = RECOMPENSE_RANG[rang.id];
                 return (
                   <div
                     key={rang.id}
-                    className="flex items-center gap-3.5 rounded-2xl px-3.5 py-3"
+                    className="rounded-2xl px-3.5 py-3"
                     style={{
                       background: courant ? "rgba(var(--accent-rgb),0.07)" : "rgb(var(--surface-rgb))",
                       border: courant ? "1.5px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--accent-rgb),0.08)",
                     }}
                   >
-                    <div
-                      className="shrink-0"
-                      style={{ filter: atteint ? "none" : "grayscale(0.85) opacity(0.45)" }}
-                    >
-                      <GemmeRang rang={rang} size={52} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[15px] font-extrabold" style={{ color: "var(--text-0)" }}>{rang.nom}</span>
-                        {courant && (
-                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
-                            Ton rang
-                          </span>
-                        )}
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className="shrink-0"
+                        style={{ filter: atteint ? "none" : "grayscale(0.85) opacity(0.45)" }}
+                      >
+                        <GemmeRang rang={rang} size={52} />
                       </div>
-                      <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>
-                        {rang.min === 0
-                          ? "Le point de départ"
-                          : atteint
-                            ? "Débloqué"
-                            : "À débloquer"}
-                      </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[15px] font-extrabold" style={{ color: "var(--text-0)" }}>{rang.nom}</span>
+                          {courant && (
+                            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
+                              Ton rang
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>
+                          {rang.min === 0
+                            ? "Le point de départ"
+                            : atteint
+                              ? "Débloqué"
+                              : "À débloquer"}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-[11px] font-bold" style={{ color: atteint ? "var(--accent)" : "var(--text-soft)" }}>
+                        {atteint ? "Atteint ✦" : `${rang.min} EXP`}
+                      </div>
                     </div>
-                    <div className="shrink-0 text-[11px] font-bold" style={{ color: atteint ? "var(--accent)" : "var(--text-soft)" }}>
-                      {atteint ? "Atteint ✦" : `${rang.min} EXP`}
-                    </div>
+
+                    {reco && (
+                      <div
+                        className="mt-2.5 flex items-center gap-2.5 rounded-xl px-3 py-2"
+                        style={{
+                          background: atteint ? "rgba(var(--accent-rgb),0.06)" : "rgba(var(--accent-rgb),0.03)",
+                          border: "1px solid rgba(var(--accent-rgb),0.08)",
+                        }}
+                      >
+                        <span className="text-[16px] shrink-0" style={{ filter: atteint ? "none" : "grayscale(1) opacity(0.5)" }}>
+                          {atteint ? reco.emoji : "🔒"}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12.5px] font-bold leading-tight" style={{ color: atteint ? "var(--text-0)" : "var(--text-soft)" }}>
+                            {reco.titre}
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-snug" style={{ color: "var(--text-3)" }}>
+                            {reco.desc}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

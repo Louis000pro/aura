@@ -108,6 +108,54 @@ export const RANGS: Rang[] = [
 // Égal à son `min` → la jauge affiche l'Éternel comme accompli.
 export const PALIER_PROVISOIRE = 3750;
 
+// ── Récompenses de rang ──
+// Principe validé avec Louis : que du STATUT / COSMÉTIQUE, jamais du fonctionnel.
+// On ne verrouille aucune fonction d'entraînement derrière un rang (tout le monde
+// doit pouvoir s'entraîner). Grimper = débloquer de la fierté visible. Le Premium
+// reste indépendant (×1,5 EXP) → ces récompenses sont gratuites et méritées.
+// Chaque récompense se lit depuis `rang.id` déjà calculé : aucune migration SQL.
+export type Recompense = {
+  /** Emoji d'illustration de la récompense. */
+  emoji: string;
+  /** Titre court de ce qu'on débloque. */
+  titre: string;
+  /** Une ligne d'explication. */
+  desc: string;
+};
+
+export const RECOMPENSE_RANG: Record<string, Recompense> = {
+  bronze: {
+    emoji: "🎁",
+    titre: "Coup de pouce de bienvenue",
+    desc: "+10 EXP offerts pour lancer ton aventure.",
+  },
+  argent: {
+    emoji: "🏷️",
+    titre: "Badge de rang",
+    desc: "Ta gemme s'affiche à côté de ton pseudo, partout.",
+  },
+  or: {
+    emoji: "🎨",
+    titre: "Thème d'accent « Or »",
+    desc: "Un habillage doré à activer dans les réglages.",
+  },
+  platine: {
+    emoji: "💫",
+    titre: "Anneau animé",
+    desc: "Un halo qui tourne autour de ton avatar.",
+  },
+  diamant: {
+    emoji: "📛",
+    titre: "Titre + thème exclusif",
+    desc: "Un titre sous ton pseudo et un 2ᵉ habillage.",
+  },
+  eternel: {
+    emoji: "✨",
+    titre: "Pseudo brillant + flair de champion",
+    desc: "Ton pseudo scintille et brille en tête du classement.",
+  },
+};
+
 export type EtatAura = {
   exp: number;
   rang: Rang;
