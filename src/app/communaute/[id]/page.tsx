@@ -24,11 +24,10 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import ConversationListPane from "@/components/communaute/ConversationListPane";
-import { lockBodyModal } from "@/lib/bodyModal";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import {
-  chargerFil, chargerMessagesAvant, envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
+  chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
+  envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
   reagir, supprimerMessage, heureExacte, memeJour, libelleJour,
   type Conversation, type Message,
 } from "@/lib/messagerie";
@@ -50,6 +49,7 @@ export default function FilPage() {
   const [encoreAvant, setEncoreAvant] = useState(false);
   const [texte, setTexte]       = useState("");
   const [envoi, setEnvoi]       = useState(false);
+  const [photoEnCours, setPhotoEnCours] = useState(false);
   const [repondA, setRepondA]   = useState<Message | null>(null);
   const [menu, setMenu]         = useState<Message | null>(null);
   const [ecrivent, setEcrivent] = useState<string[]>([]);
@@ -64,29 +64,73 @@ export default function FilPage() {
   const hauteurAvant = useRef<number | null>(null);
   const ignorerAutoScroll = useRef(false);
   const photoRef = useRef<HTMLInputElement>(null);
-
-  // La barre du bas laisse la place au fil, comme dans le tunnel.
-  useEffect(() => lockBodyModal(), []);
+  const initialiseeRef = useRef(false);
 
   const recharger = useCallback(async () => {
     try {
-      setErreurChargement(null);
       const { conversation, messages: m, encoreAvant: encore } = await chargerFil(convId);
+      setErreurChargement(null);
       setConv(conversation);
       setMessages(m);
       setEncoreAvant(encore);
+      initialiseeRef.current = true;
     } catch {
-      setErreurChargement("Impossible de charger cette conversation.");
+      if (initialiseeRef.current) {
+        setErreur("Impossible d'actualiser la conversation. Tes messages restent affichés.");
+      } else {
+        setErreurChargement("Impossible de charger cette conversation.");
+      }
     } finally {
       setCharge(false);
     }
   }, [convId]);
 
+  const ajouterMessage = useCallback(async (messageId: string) => {
+    try {
+      const message = await chargerMessage(convId, messageId);
+      if (!message) return;
+      setMessages((actuels) => {
+        if (actuels.some((m) => m.id === message.id)) return actuels;
+        return [...actuels, message].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+      });
+    } catch {
+      setErreur("Un nouveau message n'a pas pu être affiché. Réouvre la discussion pour réessayer.");
+    }
+  }, [convId]);
+
+  const actualiserReactions = useCallback(async (messageId: string) => {
+    try {
+      const reactions = await chargerReactions(messageId);
+      setMessages((actuels) => actuels.map((m) => m.id === messageId ? { ...m, reactions } : m));
+    } catch {
+      setErreur("Les réactions n'ont pas pu être actualisées.");
+    }
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace("/auth"); return; }
-    void recharger();
-  }, [authLoading, user, router, recharger]);
+    let actif = true;
+    initialiseeRef.current = false;
+    void chargerFil(convId)
+      .then(({ conversation, messages: prochainsMessages, encoreAvant: encore }) => {
+        if (!actif) return;
+        setErreurChargement(null);
+        setConv(conversation);
+        setMessages(prochainsMessages);
+        setEncoreAvant(encore);
+        initialiseeRef.current = true;
+      })
+      .catch(() => {
+        if (actif) setErreurChargement("Impossible de charger cette conversation.");
+      })
+      .finally(() => {
+        if (actif) setCharge(false);
+      });
+    return () => { actif = false; };
+  }, [authLoading, user, router, convId]);
 
   /* Temps réel : messages, réactions, et « en train d'écrire ».
      Les deux premiers passent par la base, le troisième par un
@@ -103,33 +147,26 @@ export default function FilPage() {
         (payload) => {
           const m = payload.new as Record<string, unknown>;
           setEcrivent((p) => p.filter((x) => x !== (m.user_id as string)));
-          if (m.type === "image") {
-            void recharger();
-            return;
-          }
-          setMessages((prev) =>
-            prev.some((x) => x.id === m.id)
-              ? prev
-              : [...prev, {
-                  id: m.id as string,
-                  userId: (m.user_id as string | null) ?? null,
-                  contenu: m.contenu as string,
-                  type: m.type as "texte" | "systeme",
-                  mediaPath: null,
-                  mediaUrl: null,
-                  mediaWidth: null,
-                  mediaHeight: null,
-                  createdAt: m.created_at as string,
-                  repondA: (m.repond_a as string | null) ?? null,
-                  reactions: [],
-                }],
-          );
+          if (m.id) void ajouterMessage(m.id as string);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` },
+        (payload) => {
+          const ancien = payload.old as Record<string, unknown>;
+          if (ancien.id) setMessages((actuels) => actuels.filter((m) => m.id !== ancien.id));
         },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "message_reactions" },
-        () => { void recharger(); },
+        (payload) => {
+          const nouveau = payload.new as Record<string, unknown>;
+          const ancien = payload.old as Record<string, unknown>;
+          const messageId = (nouveau.message_id ?? ancien.message_id) as string | undefined;
+          if (messageId) void actualiserReactions(messageId);
+        },
       )
       .on("broadcast", { event: "ecrit" }, ({ payload }) => {
         const id = (payload as { id?: string })?.id;
@@ -141,7 +178,7 @@ export default function FilPage() {
 
     canalRef.current = canal;
     return () => { canalRef.current = null; void supabase.removeChannel(canal); };
-  }, [convId, user, recharger]);
+  }, [convId, user, ajouterMessage, actualiserReactions]);
 
   /* Lu dès qu'on est dedans. */
   useEffect(() => {
@@ -196,20 +233,20 @@ export default function FilPage() {
 
   /** Envoi d'un contenu déjà décidé (le « Salut l'ami ! » d'ouverture). */
   const envoyerTexte = async (contenu: string) => {
-    if (!user || envoi) return;
+    if (!user || envoi || photoEnCours) return;
     setEnvoi(true);
     const r = await envoyerMessage(convId, user.id, contenu, null, session?.access_token);
     setEnvoi(false);
     if (r.ok) {
       setErreur(null);
-      void recharger();
+      if (r.messageId) void ajouterMessage(r.messageId);
     } else {
       setErreur("Le message n'est pas parti. Réessaie.");
     }
   };
 
   const envoyer = async () => {
-    if (!user || !texte.trim() || envoi) return;
+    if (!user || !texte.trim() || envoi || photoEnCours) return;
     const contenu = texte.trim();
     const cite = repondA?.id ?? null;
     setTexte("");
@@ -224,16 +261,16 @@ export default function FilPage() {
       return;
     }
     setErreur(null);
-    void recharger();
+    if (r.messageId) void ajouterMessage(r.messageId);
   };
 
   const envoyerUnePhoto = async (fichier?: File) => {
-    if (!user || !fichier || envoi) return;
+    if (!user || !fichier || envoi || photoEnCours) return;
     const cite = repondA?.id ?? null;
-    setEnvoi(true);
+    setPhotoEnCours(true);
     setErreur(null);
     const r = await envoyerPhoto(convId, user.id, fichier, cite, session?.access_token);
-    setEnvoi(false);
+    setPhotoEnCours(false);
     if (photoRef.current) photoRef.current.value = "";
     if (!r.ok) {
       const raison = String(r.raison ?? "");
@@ -247,7 +284,7 @@ export default function FilPage() {
       return;
     }
     setRepondA(null);
-    void recharger();
+    if (r.messageId) void ajouterMessage(r.messageId);
   };
 
   const surEtincelle = async () => {
@@ -279,7 +316,7 @@ export default function FilPage() {
       setErreur("La réaction n'a pas pu être ajoutée.");
       return;
     }
-    void recharger();
+    void actualiserReactions(m.id);
   };
 
   const surSuppression = async (m: Message) => {
@@ -351,13 +388,7 @@ export default function FilPage() {
     && autres.every((p) => !!p.luA && p.luA >= monDernier.createdAt);
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden">
-      <ConversationListPane
-        activeId={convId}
-        className="hidden w-[440px] shrink-0 border-r border-[rgba(var(--text-3-rgb),.14)] md:flex"
-      />
-
-      <div className="relative flex h-[100dvh] min-w-0 flex-1 flex-col">
+    <div className="relative flex h-[100dvh] min-w-0 flex-1 flex-col">
       {/* ─── Le fond : l'affiche à son état courant ─── */}
       {surAffiche && (
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -447,7 +478,7 @@ export default function FilPage() {
                 « Salut l'ami ! ». */}
             <button
               onClick={() => void envoyerTexte("Salut l'ami ! 👋")}
-              disabled={envoi}
+              disabled={envoi || photoEnCours}
               className="mt-4 rounded-full px-5 py-2.5 text-[14px] font-semibold text-white transition-transform active:scale-95 disabled:opacity-50"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
@@ -532,7 +563,7 @@ export default function FilPage() {
       >
         <button
           onClick={surEtincelle}
-          disabled={occupe}
+          disabled={occupe || envoi || photoEnCours}
           aria-label={conv.defi ? "Voir l'affiche" : "Lancer un relais"}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
           style={{
@@ -553,20 +584,24 @@ export default function FilPage() {
         />
         <button
           onClick={() => photoRef.current?.click()}
-          disabled={envoi}
+          disabled={envoi || photoEnCours}
           aria-label="Envoyer une photo"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
           style={{ background: c.carte, border: `1px solid ${c.trait}`, color: c.t2 }}
         >
-          <ImagePlus className="h-[18px] w-[18px]" />
+          {photoEnCours
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <ImagePlus className="h-[18px] w-[18px]" />}
         </button>
 
         <textarea
           value={texte}
+          disabled={photoEnCours}
           onChange={(e) => { setTexte(e.target.value); signalerFrappe(); }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void envoyer(); }
           }}
+          maxLength={4000}
           rows={1}
           placeholder="Message…"
           className="max-h-28 min-h-[40px] flex-1 resize-none rounded-[20px] border px-4 py-2.5 text-[14px] outline-none"
@@ -575,7 +610,7 @@ export default function FilPage() {
 
         <button
           onClick={envoyer}
-          disabled={!texte.trim() || envoi}
+          disabled={!texte.trim() || envoi || photoEnCours}
           aria-label="Envoyer"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
@@ -599,7 +634,6 @@ export default function FilPage() {
           />
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }
@@ -857,7 +891,9 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
         onClick={onFermer}
       />
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-4 pt-4"
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-4 pt-4 md:left-1/2 md:right-auto md:bottom-6 md:-ml-[220px] md:w-[440px] md:rounded-[26px]"
         style={{
           background: "rgb(var(--surface-rgb))",
           paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))",

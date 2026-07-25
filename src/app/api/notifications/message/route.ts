@@ -77,9 +77,18 @@ export async function POST(req: NextRequest) {
       ? "📷 Photo"
       : String(message.contenu).replace(/\s+/g, " ").trim().slice(0, 110);
 
-    await Promise.allSettled(
-      cibles.map(async (userId) => {
-        await admin.from("notifications").insert({
+    const resultats = await Promise.allSettled(
+      cibles.map(async (userId): Promise<boolean> => {
+        const reservation = await admin
+          .from("message_notification_deliveries")
+          .insert({ message_id: message.id, user_id: userId });
+
+        if (reservation.error?.code === "23505") return false;
+        const migrationManquante = reservation.error
+          && /message_notification_deliveries|schema cache|does not exist|relation/i.test(reservation.error.message);
+        if (reservation.error && !migrationManquante) return false;
+
+        const notification = await admin.from("notifications").insert({
           user_id: userId,
           from_user_id: caller.id,
           from_pseudo: pseudo,
@@ -87,6 +96,16 @@ export async function POST(req: NextRequest) {
           type: "message",
           lien,
         });
+        if (notification.error) {
+          if (!migrationManquante) {
+            await admin
+              .from("message_notification_deliveries")
+              .delete()
+              .eq("message_id", message.id)
+              .eq("user_id", userId);
+          }
+          throw notification.error;
+        }
 
         await sendPushToUser({
           user_id: userId,
@@ -94,10 +113,12 @@ export async function POST(req: NextRequest) {
           body: apercu || "Nouveau message",
           url: lien,
         });
+        return true;
       }),
     );
 
-    return NextResponse.json({ ok: true, envoyees: cibles.length });
+    const envoyees = resultats.filter((resultat) => resultat.status === "fulfilled" && resultat.value).length;
+    return NextResponse.json({ ok: true, envoyees });
   } catch {
     // Une notification ratée ne doit jamais faire échouer l'envoi du message.
     return NextResponse.json({ ok: false }, { status: 200 });

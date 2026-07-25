@@ -50,8 +50,9 @@ export default function ConversationListPane({
   const recharger = useCallback(async () => {
     if (!user) return;
     try {
+      const prochaines = await chargerConversations(user.id);
       setErreurChargement(null);
-      setConvs(await chargerConversations(user.id));
+      setConvs(prochaines);
     } catch {
       setErreurChargement("Impossible d'actualiser tes discussions.");
     } finally {
@@ -62,8 +63,21 @@ export default function ConversationListPane({
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace("/auth"); return; }
-    void recharger();
-  }, [authLoading, user, router, recharger]);
+    let actif = true;
+    void chargerConversations(user.id)
+      .then((prochaines) => {
+        if (!actif) return;
+        setErreurChargement(null);
+        setConvs(prochaines);
+      })
+      .catch(() => {
+        if (actif) setErreurChargement("Impossible d'actualiser tes discussions.");
+      })
+      .finally(() => {
+        if (actif) setCharge(false);
+      });
+    return () => { actif = false; };
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -150,6 +164,7 @@ export default function ConversationListPane({
         : a.epinglee ? -1 : 1));
     setSheet("non");
     setSelection(null);
+    if (reglage === "archivee" && !active) setVoirArchives(false);
     if (reglage === "archivee" && active && activeId === conversation.id) {
       router.push("/communaute");
     }
@@ -160,16 +175,14 @@ export default function ConversationListPane({
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase();
   const terme = normaliser(recherche.trim());
+  const nombreArchives = convs.filter((c) => c.archivee).length;
+  const archivesActives = voirArchives && nombreArchives > 0;
   const convsVisibles = convs.filter((c) => {
-    if (c.archivee !== voirArchives) return false;
+    if (c.archivee !== archivesActives) return false;
     if (!terme) return true;
     const texte = `${titreConversation(c, user!.id)} ${c.dernier?.contenu ?? ""}`;
     return normaliser(texte).includes(terme);
   });
-  const nombreArchives = convs.filter((c) => c.archivee).length;
-  useEffect(() => {
-    if (voirArchives && nombreArchives === 0) setVoirArchives(false);
-  }, [voirArchives, nombreArchives]);
 
   if (authLoading || charge) {
     return (
@@ -260,8 +273,8 @@ export default function ConversationListPane({
                 onClick={() => setVoirArchives(false)}
                 className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors"
                 style={{
-                  color: voirArchives ? "var(--text-3)" : "var(--text-0)",
-                  background: voirArchives ? "transparent" : "rgb(var(--surface-rgb))",
+                  color: archivesActives ? "var(--text-3)" : "var(--text-0)",
+                  background: archivesActives ? "transparent" : "rgb(var(--surface-rgb))",
                 }}
               >
                 Discussions
@@ -270,8 +283,8 @@ export default function ConversationListPane({
                 onClick={() => setVoirArchives(true)}
                 className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors"
                 style={{
-                  color: voirArchives ? "var(--text-0)" : "var(--text-3)",
-                  background: voirArchives ? "rgb(var(--surface-rgb))" : "transparent",
+                  color: archivesActives ? "var(--text-0)" : "var(--text-3)",
+                  background: archivesActives ? "rgb(var(--surface-rgb))" : "transparent",
                 }}
               >
                 Archives · {nombreArchives}
@@ -311,6 +324,7 @@ export default function ConversationListPane({
             moi={user!.id}
             activeId={activeId}
             onOuvrir={(id) => router.push(`/communaute/${id}`)}
+            onPrefetch={(id) => router.prefetch(`/communaute/${id}`)}
             onActions={(conversation) => {
               setSelection(conversation);
               setSheet("actions");
@@ -404,11 +418,12 @@ export default function ConversationListPane({
 }
 
 /* ─── Liste ──────────────────────────────────────────────────── */
-function Liste({ convs, moi, activeId, onOuvrir, onActions }: {
+function Liste({ convs, moi, activeId, onOuvrir, onPrefetch, onActions }: {
   convs: Conversation[];
   moi: string;
   activeId?: string;
   onOuvrir: (id: string) => void;
+  onPrefetch: (id: string) => void;
   onActions: (conversation: Conversation) => void;
 }) {
   return (
@@ -441,6 +456,8 @@ function Liste({ convs, moi, activeId, onOuvrir, onActions }: {
           >
             <button
               onClick={() => onOuvrir(c.id)}
+              onPointerEnter={() => onPrefetch(c.id)}
+              onFocus={() => onPrefetch(c.id)}
               className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left active:bg-[rgba(var(--tint-violet-rgb),.6)]"
             >
               <ConversationAvatar conversation={c} autres={autres} titre={titre} />
@@ -666,7 +683,9 @@ function Sheet({ children, onFermer }: { children: React.ReactNode; onFermer: ()
         onClick={onFermer}
       />
       <motion.div
-        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-5 pt-5"
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-x-0 bottom-0 z-[91] rounded-t-[26px] px-5 pt-5 md:left-[88px] md:right-auto md:bottom-6 md:w-[440px] md:rounded-[26px]"
         style={{
           background: "rgb(var(--surface-rgb))",
           paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",

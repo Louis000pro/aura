@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import ConversationListPane from "@/components/communaute/ConversationListPane";
 import { imageEtat, etatPoster, lancerRelaisDansConversation, annulerRelais } from "@/lib/defi";
 import {
   chargerFil, titreConversation, autresMembres, mesRelations, majConversation,
@@ -46,8 +45,8 @@ export default function InfosPage() {
 
   const recharger = useCallback(async () => {
     try {
-      setErreurChargement(null);
       const { conversation } = await chargerFil(convId);
+      setErreurChargement(null);
       setConv(conversation);
       setNom(conversation?.nom ?? "");
     } catch {
@@ -60,8 +59,22 @@ export default function InfosPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace("/auth"); return; }
-    void recharger();
-  }, [authLoading, user, router, recharger]);
+    let actif = true;
+    void chargerFil(convId)
+      .then(({ conversation }) => {
+        if (!actif) return;
+        setErreurChargement(null);
+        setConv(conversation);
+        setNom(conversation?.nom ?? "");
+      })
+      .catch(() => {
+        if (actif) setErreurChargement("Impossible de charger les informations de cette discussion.");
+      })
+      .finally(() => {
+        if (actif) setCharge(false);
+      });
+    return () => { actif = false; };
+  }, [authLoading, user, router, convId]);
 
   const enregistrerNom = async () => {
     setOccupe("nom");
@@ -204,13 +217,7 @@ export default function InfosPage() {
   const dejaLa  = conv.membres.map((m) => m.id);
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden">
-      <ConversationListPane
-        activeId={convId}
-        className="hidden w-[440px] shrink-0 border-r border-[rgba(var(--text-3-rgb),.14)] md:flex"
-      />
-
-      <div className="min-w-0 flex-1 overflow-y-auto pb-10">
+    <div className="h-[100dvh] min-w-0 overflow-y-auto pb-10">
       {/* ─── Barre ─── */}
       <div className="flex items-center gap-2 px-3 py-3" style={{ paddingTop: "max(.75rem, env(safe-area-inset-top))" }}>
         <button onClick={() => router.push(`/communaute/${convId}`)} aria-label="Retour" className="p-1">
@@ -428,7 +435,6 @@ export default function InfosPage() {
           />
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }

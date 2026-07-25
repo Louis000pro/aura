@@ -110,7 +110,9 @@ async function signerPhotos(
   const signes = await Promise.all(chemins.map(async (chemin) => {
     const { data, error } = await supabase.storage
       .from("conversation-media")
-      .createSignedUrl(chemin, 60 * 60 * 24 * 7);
+      // Une URL privée déjà signée n'est plus soumise à la RLS. Une heure
+      // limite donc fortement la fenêtre résiduelle si quelqu'un quitte le fil.
+      .createSignedUrl(chemin, 60 * 60);
     return [chemin, error ? null : data?.signedUrl ?? null] as const;
   }));
   return new Map(signes.filter((entree): entree is readonly [string, string] => Boolean(entree[1])));
@@ -458,6 +460,65 @@ export async function chargerMessagesAvant(
   };
 }
 
+export async function chargerReactions(messageId: string): Promise<Reaction[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("message_reactions")
+    .select("user_id, emoji")
+    .eq("message_id", messageId);
+  if (error) throw new Error(error.message);
+
+  const parEmoji = new Map<string, string[]>();
+  for (const reaction of data ?? []) {
+    const emoji = reaction.emoji as string;
+    parEmoji.set(emoji, [...(parEmoji.get(emoji) ?? []), reaction.user_id as string]);
+  }
+  return [...parEmoji].map(([emoji, userIds]) => ({ emoji, userIds }));
+}
+
+/** Charge un seul message après un événement Realtime, sans écraser les
+ * pages d'historique que l'utilisateur a déjà remontées. */
+export async function chargerMessage(convId: string, messageId: string): Promise<Message | null> {
+  const supabase = createClient();
+  let resultat = await supabase
+    .from("messages")
+    .select(COLONNES_MESSAGE)
+    .eq("conversation_id", convId)
+    .eq("id", messageId)
+    .maybeSingle();
+
+  if (resultat.error && migrationMediasManquante(resultat.error.message)) {
+    const ancien = await supabase
+      .from("messages")
+      .select(COLONNES_MESSAGE_ANCIENNES)
+      .eq("conversation_id", convId)
+      .eq("id", messageId)
+      .maybeSingle();
+    resultat = ancien as typeof resultat;
+  }
+  if (resultat.error) throw new Error(resultat.error.message);
+  if (!resultat.data) return null;
+
+  const brut = resultat.data as MessageBrut;
+  const [urls, reactions] = await Promise.all([
+    signerPhotos([brut]),
+    chargerReactions(messageId),
+  ]);
+  return {
+    id: brut.id,
+    userId: brut.user_id,
+    contenu: brut.contenu,
+    type: brut.type,
+    mediaPath: brut.media_path ?? null,
+    mediaUrl: brut.media_path ? urls.get(brut.media_path) ?? null : null,
+    mediaWidth: brut.media_width ?? null,
+    mediaHeight: brut.media_height ?? null,
+    createdAt: brut.created_at,
+    repondA: brut.repond_a,
+    reactions,
+  };
+}
+
 function notifierMessage(messageId: string, accessToken?: string) {
   if (!accessToken) return;
   void fetch("/api/notifications/message", {
@@ -494,37 +555,97 @@ export async function envoyerMessage(
   return { ok: !error, raison: error?.message, messageId: data?.id as string | undefined };
 }
 
+async function decoderPhoto(fichier: File): Promise<{
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  fermer: () => void;
+}> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(fichier, { imageOrientation: "from-image" });
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        fermer: () => bitmap.close(),
+      };
+    } catch {
+      // Safari sait parfois afficher un format natif que createImageBitmap
+      // refuse : on retente alors via un élément image.
+    }
+  }
+
+  const url = URL.createObjectURL(fichier);
+  const image = document.createElement("img");
+  image.decoding = "async";
+  try {
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("format_invalide"));
+      image.src = url;
+    });
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      fermer: () => URL.revokeObjectURL(url),
+    };
+  } catch (error) {
+    URL.revokeObjectURL(url);
+    throw error;
+  }
+}
+
 async function compresserPhoto(fichier: File) {
   if (!fichier.type.startsWith("image/")) throw new Error("format_invalide");
   if (fichier.size > 15 * 1024 * 1024) throw new Error("photo_trop_lourde");
 
-  const bitmap = await createImageBitmap(fichier, { imageOrientation: "from-image" });
-  const ratio = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * ratio));
-  const height = Math.max(1, Math.round(bitmap.height * ratio));
+  const image = await decoderPhoto(fichier);
+  if (!image.width || !image.height) {
+    image.fermer();
+    throw new Error("format_invalide");
+  }
+  const ratio = Math.min(1, 1600 / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * ratio));
+  const height = Math.max(1, Math.round(image.height * ratio));
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const contexte = canvas.getContext("2d");
   if (!contexte) {
-    bitmap.close();
+    image.fermer();
     throw new Error("compression_impossible");
   }
-  contexte.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
+  try {
+    contexte.drawImage(image.source, 0, 0, width, height);
+  } finally {
+    image.fermer();
+  }
 
-  const encoder = (qualite: number) => new Promise<Blob>((resolve, reject) => {
+  const encoder = (type: "image/webp" | "image/jpeg", qualite: number) => new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => blob ? resolve(blob) : reject(new Error("compression_impossible")),
-      "image/webp",
+      type,
       qualite,
     );
   });
 
-  let blob = await encoder(0.8);
-  if (blob.size > 5 * 1024 * 1024) blob = await encoder(0.62);
+  let contentType: "image/webp" | "image/jpeg" = "image/webp";
+  let blob = await encoder(contentType, 0.8);
+  if (blob.type !== contentType) {
+    contentType = "image/jpeg";
+    blob = await encoder(contentType, 0.82);
+  }
+  if (blob.size > 5 * 1024 * 1024) blob = await encoder(contentType, 0.62);
   if (blob.size > 5 * 1024 * 1024) throw new Error("photo_trop_lourde");
-  return { blob, width, height };
+  return {
+    blob,
+    width,
+    height,
+    contentType,
+    extension: contentType === "image/webp" ? "webp" : "jpg",
+  };
 }
 
 export async function envoyerPhoto(
@@ -536,16 +657,16 @@ export async function envoyerPhoto(
 ) {
   try {
     const supabase = createClient();
-    const { blob, width, height } = await compresserPhoto(fichier);
+    const { blob, width, height, contentType, extension } = await compresserPhoto(fichier);
     const identifiant = typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
-    const chemin = `${convId}/${userId}/${Date.now()}-${identifiant}.webp`;
+    const chemin = `${convId}/${userId}/${Date.now()}-${identifiant}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from("conversation-media")
       .upload(chemin, blob, {
         upsert: false,
-        contentType: "image/webp",
+        contentType,
         cacheControl: "31536000",
       });
     if (uploadError) return { ok: false, raison: uploadError.message };
