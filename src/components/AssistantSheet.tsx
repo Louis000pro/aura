@@ -18,6 +18,7 @@ import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { fichierEnDataUrl } from "@/lib/assistantImage";
+import { heroImageForSeance } from "@/lib/workoutArt";
 import { AssistantAvatar } from "@/components/AssistantMark";
 
 /** 6 jours à venir → puces de programmation (tokens compris par resolveWhen). */
@@ -201,6 +202,7 @@ export default function AssistantSheet() {
       duration: pc.duration,
       difficulty: pc.difficulty,
       category: pc.category,
+      heroImage: heroImageForSeance({ title: pc.title, category: pc.category, muscles: pc.muscles }),
       exerciseList: pc.exerciseList.map((e) => ({
         name: e.name, sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter,
         tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],

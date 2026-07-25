@@ -47,6 +47,8 @@ type WorkoutSessionItem = {
 };
 import NotificationBell from "@/components/NotificationBell";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
+import { heroImageForSeance } from "@/lib/workoutArt";
+import type { WorkoutCategory } from "@/lib/assistantActions";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
@@ -1593,6 +1595,7 @@ export default function ProfilPage() {
             duration={profileWorkout.duration}
             difficulty={profileWorkout.difficulty}
             category={profileWorkout.category}
+            heroImage={heroImageForSeance({ title: profileWorkout.title, category: profileWorkout.category as WorkoutCategory })}
             exerciseList={profileWorkout.exerciseList}
             onClose={() => setProfileWorkout(null)}
           />
