@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import ConversationAvatar from "@/components/communaute/ConversationAvatar";
 import { imageEtat, etatPoster, lancerRelaisDansConversation, annulerRelais } from "@/lib/defi";
 import {
   chargerFil, titreConversation, autresMembres, mesRelations, majConversation,
@@ -213,7 +214,6 @@ export default function InfosPage() {
   const autres  = autresMembres(conv, moi);
   const groupe  = conv.type === "groupe";
   const etat    = conv.defi ? etatPoster(conv.defi.faits, conv.defi.objectif) : 0;
-  const photo   = conv.image ?? (groupe ? null : autres[0]?.avatar ?? null);
   const dejaLa  = conv.membres.map((m) => m.id);
 
   return (
@@ -229,15 +229,13 @@ export default function InfosPage() {
       {/* ─── Identité ─── */}
       <div className="flex flex-col items-center px-6 pt-2">
         <div className="relative">
-          {photo ? (
-            <Image src={photo} alt="" width={96} height={96}
-              className="h-24 w-24 rounded-full object-cover" unoptimized />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-full text-[34px] font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
-              {titre.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <ConversationAvatar
+            conversation={conv}
+            autres={autres}
+            titre={titre}
+            taille={96}
+            afficherDefi={false}
+          />
 
           {groupe && (
             <button
