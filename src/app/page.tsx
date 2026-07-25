@@ -967,11 +967,36 @@ function Dashboard() {
   const [statsTick, setStatsTick] = useState(0);
   const [aura, setAura] = useState<EtatAura>(() => etatDepuisExp(0));
   const [auraLoaded, setAuraLoaded] = useState(false);
+  const didInitAuraRef = useRef(false);
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
+    const cacheKey = `vaiiya_aura_exp_${user.id}`;
+    const firstRun = !didInitAuraRef.current;
+    didInitAuraRef.current = true;
+
+    // Affichage OPTIMISTE : au tout premier chargement, on montre tde suite le
+    // dernier rang connu (cache localStorage) au lieu d'un « — » le temps que
+    // les 5 requêtes de calculerAura reviennent. Le vrai calcul rafraîchit juste après.
+    if (firstRun) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached != null) {
+          const exp = parseInt(cached, 10) || 0;
+          prevExpRef.current = exp;           // pas de faux « +EXP » quand le frais arrive
+          setAura(etatDepuisExp(exp));
+          setAuraLoaded(true);
+        }
+      } catch { /* ignore */ }
+    }
+
     calculerAura(supabase, user.id)
-      .then((etat) => { setAura(etat); setAuraLoaded(true); })
+      .then((etat) => {
+        if (firstRun) prevExpRef.current = etat.exp; // le premier chargement ne s'anime jamais
+        setAura(etat);
+        setAuraLoaded(true);
+        try { localStorage.setItem(cacheKey, String(etat.exp)); } catch { /* ignore */ }
+      })
       .catch(() => setAuraLoaded(true));
   }, [user, mealsRefreshKey, statsTick]);
 

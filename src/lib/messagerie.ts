@@ -897,6 +897,52 @@ export async function rechercherAmiParPseudo(
   };
 }
 
+/** Recherche PARTIELLE (choix de Louis, 2026-07-25) : on tape le début d'un
+ * pseudo et tous ceux qui correspondent s'affichent ; saisie vide = liste de
+ * base. Les relations sont résolues EN MASSE (2 requêtes au total, pas 2 par
+ * personne). Reste borné (limite) — pas de scroll infini d'un annuaire. */
+export async function rechercherAmisParPseudo(
+  moi: string,
+  saisie: string,
+  limite = 30,
+): Promise<ResultatRechercheAmi[]> {
+  const pseudo = saisie.trim().replace(/^@/, "");
+  const supabase = createClient();
+  let requete = supabase
+    .from("profiles")
+    .select("id, pseudo, avatar_url")
+    .neq("id", moi)
+    .order("pseudo", { ascending: true })
+    .limit(limite);
+  if (pseudo) {
+    const motif = `%${pseudo.replace(/[\\%_]/g, "\\$&")}%`;
+    requete = requete.ilike("pseudo", motif);
+  }
+  const { data, error } = await requete;
+  if (error) throw new Error(error.message);
+  const profils = (data ?? []) as { id: string; pseudo: string; avatar_url: string | null }[];
+  if (!profils.length) return [];
+
+  const ids = profils.map((p) => p.id);
+  const [sortantes, entrantes] = await Promise.all([
+    supabase.from("followers").select("following_id").eq("follower_id", moi).in("following_id", ids),
+    supabase.from("followers").select("follower_id").eq("following_id", moi).in("follower_id", ids),
+  ]);
+  const erreur = sortantes.error ?? entrantes.error;
+  if (erreur) throw new Error(erreur.message);
+  const suit = new Set((sortantes.data ?? []).map((r) => r.following_id as string));
+  const suiviPar = new Set((entrantes.data ?? []).map((r) => r.follower_id as string));
+
+  return profils.map((p) => {
+    const relation: RelationAmi =
+      suit.has(p.id) && suiviPar.has(p.id) ? "ami"
+      : suit.has(p.id) ? "envoyee"
+      : suiviPar.has(p.id) ? "recue"
+      : "aucune";
+    return { id: p.id, pseudo: p.pseudo, avatar: p.avatar_url ?? null, relation };
+  });
+}
+
 export async function chargerDemandesAmi(moi: string): Promise<Personne[]> {
   const supabase = createClient();
   const [entrantes, sortantes] = await Promise.all([

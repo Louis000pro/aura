@@ -8,8 +8,8 @@ import {
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import {
   accepterDemandeAmi, chargerDemandesAmi, creerConversation, demanderAmi,
-  ignorerDemandeAmi, rechercherAmiParPseudo,
-  type Personne, type ResultatRechercheAmi,
+  ignorerDemandeAmi, rechercherAmisParPseudo,
+  type Personne, type RelationAmi, type ResultatRechercheAmi,
 } from "@/lib/messagerie";
 
 export type VueAmis = "ajouter" | "demandes" | null;
@@ -182,20 +182,18 @@ function AjouterAmi({
   onFermer: () => void;
 }) {
   const [pseudo, setPseudo] = useState(pseudoInitial);
-  const [resultat, setResultat] = useState<ResultatRechercheAmi | null>(null);
+  const [resultats, setResultats] = useState<ResultatRechercheAmi[]>([]);
   const [rechercheFaite, setRechercheFaite] = useState(false);
   const [charge, setCharge] = useState(false);
-  const [action, setAction] = useState(false);
+  const [actionId, setActionId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
   const rechercher = useCallback(async (saisie: string) => {
-    if (!saisie.trim()) return;
     setCharge(true);
     setErreur(null);
-    setMessage(null);
     try {
-      setResultat(await rechercherAmiParPseudo(moi, saisie));
+      setResultats(await rechercherAmisParPseudo(moi, saisie));
       setRechercheFaite(true);
     } catch {
       setErreur("La recherche n'a pas abouti. Réessaie.");
@@ -204,18 +202,22 @@ function AjouterAmi({
     }
   }, [moi]);
 
+  // Recherche LIVE (débouncée) : chaque frappe filtre ; saisie vide = liste de
+  // base. Se lance aussi au montage (affiche des gens tout de suite).
   useEffect(() => {
-    if (!pseudoInitial) return;
     const minuterie = window.setTimeout(() => {
-      void rechercher(pseudoInitial);
-    }, 0);
+      void rechercher(pseudo);
+    }, 260);
     return () => window.clearTimeout(minuterie);
-  }, [pseudoInitial, rechercher]);
+  }, [pseudo, rechercher]);
 
   const soumettre = (event: FormEvent) => {
     event.preventDefault();
     void rechercher(pseudo);
   };
+
+  const majRelation = (id: string, relation: RelationAmi) =>
+    setResultats((rs) => rs.map((r) => (r.id === id ? { ...r, relation } : r)));
 
   const notifier = (cible: string) => {
     if (!accessToken) return;
@@ -229,46 +231,46 @@ function AjouterAmi({
     }).catch(() => {});
   };
 
-  const agir = async () => {
-    if (!resultat || action) return;
-    setAction(true);
+  const agir = async (cible: ResultatRechercheAmi) => {
+    if (actionId) return;
+    setActionId(cible.id);
     setErreur(null);
     setMessage(null);
 
-    if (resultat.relation === "ami") {
-      const conversation = await creerConversation([resultat.id]);
-      setAction(false);
+    if (cible.relation === "ami") {
+      const conversation = await creerConversation([cible.id]);
+      setActionId(null);
       if (conversation.ok && conversation.conversation_id) onConversation(conversation.conversation_id);
       else setErreur("Impossible d'ouvrir votre discussion.");
       return;
     }
 
-    if (resultat.relation === "recue") {
-      const accepte = await accepterDemandeAmi(resultat.id);
-      setAction(false);
+    if (cible.relation === "recue") {
+      const accepte = await accepterDemandeAmi(cible.id);
+      setActionId(null);
       if (!accepte.ok) {
         setErreur(messageMigration(accepte.raison));
         return;
       }
-      setResultat({ ...resultat, relation: "ami" });
+      majRelation(cible.id, "ami");
       onDemandeEnvoyee();
       if (accepte.conversation_id) onConversation(accepte.conversation_id);
       return;
     }
 
-    const demande = await demanderAmi(resultat.id);
-    setAction(false);
+    const demande = await demanderAmi(cible.id);
+    setActionId(null);
     if (!demande.ok) {
       setErreur(messageMigration(demande.raison));
       return;
     }
     if (demande.statut === "ami" && demande.conversation_id) {
-      setResultat({ ...resultat, relation: "ami" });
+      majRelation(cible.id, "ami");
       onConversation(demande.conversation_id);
       return;
     }
-    notifier(resultat.id);
-    setResultat({ ...resultat, relation: "envoyee" });
+    notifier(cible.id);
+    majRelation(cible.id, "envoyee");
     setMessage("Demande envoyée.");
   };
 
@@ -331,26 +333,18 @@ function AjouterAmi({
           <input
             value={pseudo}
             onChange={(event) => setPseudo(event.target.value)}
-            placeholder="@pseudo exact"
+            placeholder="Cherche un pseudo…"
             autoCapitalize="none"
             autoCorrect="off"
             className="min-w-0 flex-1 bg-transparent text-[14.5px] outline-none"
             style={{ color: "var(--text-1)" }}
           />
+          {charge && <Loader2 className="h-4 w-4 shrink-0 animate-spin" style={{ color: "var(--text-3)" }} />}
         </label>
-        <button
-          type="submit"
-          disabled={!pseudo.trim() || charge}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
-          aria-label="Rechercher"
-        >
-          {charge ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-        </button>
       </form>
 
       <p className="mt-2 px-1 text-[12px]" style={{ color: "var(--text-3)" }}>
-        Recherche exacte uniquement : Vaiiya ne suggère jamais d&apos;inconnus.
+        Tape le début d&apos;un pseudo pour trouver quelqu&apos;un.
       </p>
 
       <button
@@ -372,39 +366,40 @@ function AjouterAmi({
       </button>
 
       <div className="min-h-[112px]">
-        {rechercheFaite && !resultat && !charge && (
+        {rechercheFaite && resultats.length === 0 && !charge && (
           <p className="py-8 text-center text-[14px]" style={{ color: "var(--text-3)" }}>
-            Aucun compte ne correspond exactement à ce pseudo.
+            {pseudo.trim() ? "Aucun compte ne correspond à cette recherche." : "Aucun compte à afficher."}
           </p>
         )}
-        {resultat && (
-          <div className="flex items-center gap-3 py-4">
-            <PersonAvatar personne={resultat} taille={44} />
+        {resultats.map((personne) => (
+          <div key={personne.id} className="flex items-center gap-3 border-b py-3"
+            style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
+            <PersonAvatar personne={personne} taille={44} />
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[15px]" style={{ color: "var(--text-0)" }}>
-                {resultat.pseudo}
+                {personne.pseudo}
               </b>
               <span className="block truncate text-[12.5px]" style={{ color: "var(--text-3)" }}>
-                @{resultat.pseudo}
+                @{personne.pseudo}
               </span>
             </span>
             <button
-              onClick={() => void agir()}
-              disabled={action || resultat.relation === "envoyee"}
+              onClick={() => void agir(personne)}
+              disabled={actionId === personne.id || personne.relation === "envoyee"}
               className="flex min-w-[92px] items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-white disabled:opacity-55"
               style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
             >
-              {action ? <Loader2 className="h-4 w-4 animate-spin" />
-                : resultat.relation === "envoyee" ? <Check className="h-4 w-4" />
-                : resultat.relation === "ami" ? null
+              {actionId === personne.id ? <Loader2 className="h-4 w-4 animate-spin" />
+                : personne.relation === "envoyee" ? <Check className="h-4 w-4" />
+                : personne.relation === "ami" ? null
                 : <UserPlus className="h-4 w-4" />}
-              {resultat.relation === "ami" ? "Écrire"
-                : resultat.relation === "recue" ? "Accepter"
-                : resultat.relation === "envoyee" ? "Envoyée"
+              {personne.relation === "ami" ? "Écrire"
+                : personne.relation === "recue" ? "Accepter"
+                : personne.relation === "envoyee" ? "Envoyée"
                 : "Ajouter"}
             </button>
           </div>
-        )}
+        ))}
       </div>
 
       {message && <p className="text-center text-[13px] font-medium" style={{ color: "#2BD4A0" }}>{message}</p>}
