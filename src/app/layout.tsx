@@ -186,8 +186,8 @@ export default function RootLayout({
         <div aria-hidden style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(45,33,80,0.18), transparent)" }} />
         <SplashIntro />
         <AuthProvider>
-          <WorkoutLaunchProvider>
-            <AssistantProvider>
+          <AssistantProvider>
+            <WorkoutLaunchProvider>
               <GuidedTourProvider>
                 <Navigation />
                 <MainWrapper>{children}</MainWrapper>
@@ -197,8 +197,8 @@ export default function RootLayout({
                 <AssistantSheet />
                 <PremiumBanner />
               </GuidedTourProvider>
-            </AssistantProvider>
-          </WorkoutLaunchProvider>
+            </WorkoutLaunchProvider>
+          </AssistantProvider>
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

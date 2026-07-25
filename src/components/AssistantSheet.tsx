@@ -533,7 +533,7 @@ export default function AssistantSheet() {
                   style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
                   <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
                     <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, #2BD4A0, #22B98A)" }}>
+                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))" }}>
                       <Check size={17} strokeWidth={2.6} style={{ color: "#fff" }} />
                     </div>
                     <div className="flex-1 min-w-0">
