@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
-import { Sparkles, X, Check, ArrowRight, ChevronDown, Play, ChevronRight, TrendingUp } from "lucide-react";
+import { Sparkles, X, Check, ArrowRight, ChevronDown, Play, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatsDrawer from "@/components/StatsDrawer";
@@ -19,7 +19,7 @@ import { stripMemoryTags } from "@/lib/aiMemory";
 import GemmeRang from "@/components/GemmeRang";
 import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, type EtatAura } from "@/lib/aura";
 import { persistLieu, fetchDay, hasSeance, dayTitle, dayLabel, todayYmd, type PlanningDay } from "@/lib/planning";
-import { chargerDefi, imageEtat, etatPoster, SERIES, type Defi, type SerieSlug } from "@/lib/defi";
+import { chargerDefi, SERIES, type Defi, type SerieSlug } from "@/lib/defi";
 import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 
 /* ─── Compute & save Aura score dynamically ─── */
@@ -749,25 +749,23 @@ const TUILE_STYLE = {
   boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.06)",
 };
 
-/** Phrase d'accueil synthétique (bloc 1), jamais culpabilisante. */
-function phraseDuJour(seance: PlanningDay | null, repasOk: boolean): string {
-  const bouts: string[] = [];
-  if (seance && hasSeance(seance) && seance.status !== "done") bouts.push(`séance ${dayTitle(seance).toLowerCase()} prévue`);
-  else if (seance && seance.status === "done") bouts.push("séance déjà bouclée");
-  else if (seance && seance.type.toLowerCase() === "repos") bouts.push("jour de repos");
-  if (repasOk) bouts.push("repas déjà noté");
-  if (bouts.length === 0) return "Ravi de te revoir. On avance ? ✦";
-  const s = bouts.join(", ");
-  return s.charAt(0).toUpperCase() + s.slice(1) + " — belle journée. ✦";
+/** Phrase d'accueil (bloc 1). CÉLÈBRE ce qui est DÉJÀ fait — elle ne répète
+ *  jamais la séance du jour (le héros s'en charge), pour éviter le doublon. */
+function phraseDuJour(seanceOk: boolean, repasOk: boolean, hour: number): string {
+  if (seanceOk && repasOk) return "Séance faite, repas noté — journée solide 💪";
+  if (seanceOk) return "Séance bouclée aujourd'hui — bien joué 💪";
+  if (repasOk) return "Déjà un repas noté — continue comme ça ✦";
+  // Rien de fait encore : un mot chaleureux selon l'heure, jamais culpabilisant.
+  if (hour < 12) return "Nouvelle journée — on avance ✦";
+  if (hour < 18) return "L'après-midi est à toi ✦";
+  return "Il reste du temps pour bouger ✦";
 }
 
-/** Le mot du coach (bloc 6). Le dimanche → bilan de la semaine. */
-function motDuCoach(streak: number, seance: PlanningDay | null): { titre: string; texte: string } {
+/** Le mot du coach (dernier bloc). Ne parle JAMAIS de la séance du jour (le héros
+ *  s'en charge) : il apporte sa valeur propre = l'assistant à qui parler. */
+function motDuCoach(streak: number): { titre: string; texte: string } {
   if (new Date().getDay() === 0) {
     return { titre: "Ton bilan de la semaine", texte: "Ouvre l'assistant : je te fais le point sur tes séances et ta nutrition des 7 derniers jours." };
-  }
-  if (seance && hasSeance(seance) && seance.status !== "done") {
-    return { titre: "Ta séance t'attend", texte: `Un échauffement et c'est parti. Besoin d'adapter ${dayTitle(seance).toLowerCase()} ? Demande-moi.` };
   }
   if (streak >= 3) {
     return { titre: `${streak} jours d'affilée, continue`, texte: "Ta régularité paie. Dis-moi comment tu te sens, j'ajuste la suite." };
@@ -781,13 +779,13 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
     return <div className="rounded-3xl h-[150px] animate-pulse" style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.06)" }} />;
   }
   // Jour de repos → même DA que la carte coach (surface épurée + carré-icône
-  // dégradé), teinté teal (corps/récupération). Zéro culpabilisation.
+  // dégradé bleu-violet, comme la réflexion de l'✦). Zéro culpabilisation.
   if (seance && seance.type.toLowerCase() === "repos") {
     return (
-      <div className="w-full flex items-start gap-3 rounded-3xl p-4" style={{ background: "linear-gradient(180deg, rgba(43,212,160,0.08), rgba(43,212,160,0.04)), rgb(var(--surface-rgb))", border: "1px solid rgba(43,212,160,0.20)" }}>
-        <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#2BD4A0,#12A67D)", color: "#fff", boxShadow: "0 6px 14px -6px rgba(43,212,160,0.7)" }}>🌙</span>
+      <div className="w-full flex items-start gap-3 rounded-3xl p-4" style={{ background: "linear-gradient(180deg, rgba(91,124,250,0.08), rgba(139,92,246,0.05)), rgb(var(--surface-rgb))", border: "1px solid rgba(123,92,246,0.20)" }}>
+        <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#5B7CFA,#8B5CF6)", color: "#fff", boxShadow: "0 6px 16px -6px rgba(123,92,246,0.75)" }}>🌙</span>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#1F9E78" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
+          <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#6D5AE6" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
           <p className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>Jour de repos</p>
           <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
         </div>
@@ -852,70 +850,25 @@ function TuileAnneau({ label, valeur, pct, couleur, onClick }: { label: string; 
   );
 }
 
-/** Bloc 4 — le relais en cours (n'apparaît que s'il existe). */
+/** Bloc 4 — le relais en cours (n'apparaît que s'il existe). La vignette est un
+ *  emblème ✦ bleu-violet (réflexion de l'✦) plutôt qu'une mini-affiche sombre :
+ *  l'affiche complète se regarde en grand sur /defi. */
 function BlocRelais({ defi, moi, onGo }: { defi: Defi; moi: string; onGo: () => void }) {
   const joursFaits = defi.actions.length;
-  const etat = etatPoster(joursFaits, defi.objectif);
   const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
   const reste = defi.objectif - joursFaits;
   const reussi = defi.statut === "reussi";
   const serieNom = SERIES[defi.serie as SerieSlug]?.nom ?? "Relais";
   return (
     <button type="button" onClick={onGo} className="w-full flex items-center gap-3.5 rounded-3xl p-3 text-left outline-none active:opacity-95" style={TUILE_STYLE}>
-      <div className="w-[52px] h-[66px] rounded-xl flex-shrink-0" style={{ backgroundColor: "#1E6E86", backgroundImage: `linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.55)), url(${imageEtat(defi.serie, etat)})`, backgroundSize: "cover", backgroundPosition: "center", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.12)" }} />
+      <div className="w-[52px] h-[66px] rounded-xl flex-shrink-0 grid place-items-center text-[24px]" style={{ background: "linear-gradient(150deg,#5B7CFA,#8B5CF6)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.28), 0 8px 18px -8px rgba(123,92,246,0.7)" }}>✦</div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10.5px] font-bold tracking-wide uppercase truncate" style={{ color: "#22C296" }}>{serieNom}{equipier ? " · avec " + equipier.pseudo : ""}</p>
+        <p className="text-[10.5px] font-bold tracking-wide uppercase truncate" style={{ color: "#7B5CF6" }}>{serieNom}{equipier ? " · avec " + equipier.pseudo : ""}</p>
         <h3 className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>{reussi ? "Affiche débloquée ✦" : reste <= 1 ? "Plus qu'un maillon" : `Encore ${reste} maillons`}</h3>
         <p className="text-[12px]" style={{ color: "var(--text-soft)" }}>{reussi ? "Vous l'avez fait à deux." : "L'affiche se dévoile à chaque séance."}</p>
       </div>
       <ChevronRight size={20} style={{ color: "var(--text-3)" }} className="flex-shrink-0" />
     </button>
-  );
-}
-
-/** Bloc 5 — ta progression (poids sur 30 j, ou invitation à se peser). */
-function BlocProgression({ poids, onGo }: { poids: { courant: number; delta: number; points: number[] } | null; onGo: () => void }) {
-  if (!poids) {
-    return (
-      <button type="button" onClick={onGo} className="w-full flex items-center gap-3.5 rounded-3xl px-4 py-4 text-left outline-none active:opacity-95" style={TUILE_STYLE}>
-        <span className="w-11 h-11 rounded-2xl grid place-items-center flex-shrink-0" style={{ background: "rgba(43,212,160,0.14)" }}><TrendingUp size={20} style={{ color: "#22C296" }} /></span>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-bold" style={{ color: "var(--text-0)" }}>Suis ta progression</p>
-          <p className="text-[12px]" style={{ color: "var(--text-soft)" }}>Pèse-toi pour voir ta courbe évoluer ici.</p>
-        </div>
-        <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
-      </button>
-    );
-  }
-  const { courant, delta, points } = poids;
-  const baisse = delta < 0;
-  const min = Math.min(...points), max = Math.max(...points);
-  const span = max - min || 1;
-  const w = 300, h = 42;
-  const coords = points.map((pt, i) => {
-    const x = points.length === 1 ? w : (i / (points.length - 1)) * w;
-    const y = h - ((pt - min) / span) * (h - 6) - 3;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const d = "M" + coords.join(" L");
-  return (
-    <div className="rounded-3xl px-4 py-4" style={TUILE_STYLE}>
-      <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[12.5px] font-bold" style={{ color: "var(--text-0)" }}>Poids <span style={{ color: "var(--text-3)", fontWeight: 500 }}>· 30 jours</span></p>
-        {delta !== 0 && (
-          <span className="text-[11.5px] font-extrabold px-2 py-0.5 rounded-full" style={{ color: baisse ? "#1F9E78" : "#E8620C", background: baisse ? "rgba(43,212,160,0.14)" : "rgba(232,98,12,0.12)" }}>
-            {baisse ? "▼" : "▲"} {Math.abs(delta).toFixed(1)} kg
-          </span>
-        )}
-      </div>
-      <div className="flex items-end gap-1.5 mb-2">
-        <span className="text-[26px] font-extrabold leading-none" style={{ color: "var(--text-0)", fontVariantNumeric: "tabular-nums" }}>{courant.toFixed(1).replace(".", ",")}</span>
-        <span className="text-[13px] font-semibold mb-0.5" style={{ color: "var(--text-soft)" }}>kg</span>
-      </div>
-      <svg width="100%" height="42" viewBox="0 0 300 42" preserveAspectRatio="none" style={{ display: "block", overflow: "visible" }}>
-        <path d={d} fill="none" stroke="#22C296" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
   );
 }
 
@@ -953,7 +906,6 @@ function Dashboard() {
   const [seanceJour, setSeanceJour] = useState<PlanningDay | null>(null);
   const [seanceLoaded, setSeanceLoaded] = useState(false);
   const [relais, setRelais] = useState<Defi | null>(null);
-  const [poids, setPoids] = useState<{ courant: number; delta: number; points: number[] } | null>(null);
   // Missions du jour : coche verte dès que l'action du jour est faite.
   // Séance = une workout_session aujourd'hui ; repas = un nutrition_log aujourd'hui ;
   // connexion = toujours validée (l'utilisateur EST là).
@@ -1116,24 +1068,6 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     chargerDefi(user.id).then(setRelais).catch(() => {});
-  }, [user]);
-
-  // Progression : pesées des 30 derniers jours pour la courbe teal
-  useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    const since = new Date(); since.setDate(since.getDate() - 30);
-    supabase.from("weight_logs")
-      .select("weight_kg, date")
-      .eq("user_id", user.id)
-      .gte("date", since.toISOString().slice(0, 10))
-      .order("date", { ascending: true })
-      .then(({ data }) => {
-        const pts = (data ?? []).map((r) => Number((r as { weight_kg: number }).weight_kg)).filter((n) => n > 0);
-        if (pts.length >= 2) setPoids({ courant: pts[pts.length - 1], delta: pts[pts.length - 1] - pts[0], points: pts });
-        else if (pts.length === 1) setPoids({ courant: pts[0], delta: 0, points: pts });
-        else setPoids(null);
-      });
   }, [user]);
 
   // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
@@ -1431,7 +1365,7 @@ function Dashboard() {
             </span>
           </h1>
           <p className="text-[12.5px] leading-snug mt-1" style={{ color: "var(--text-soft)" }}>
-            {phraseDuJour(seanceJour, missions.repasOk)}
+            {phraseDuJour(missions.seanceOk, missions.repasOk, hour)}
           </p>
         </div>
 
@@ -1450,18 +1384,18 @@ function Dashboard() {
               couleur="#22C296"
               onClick={() => router.push("/nutrition")}
             />
-            {/* Série 🔥 (énergie orange) */}
-            <div className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center" style={TUILE_STYLE}>
-              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[24px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(232,98,12,0.16), transparent 70%)" }}>🔥</div>
-              <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Série</span>
-              <span className="text-[15px] font-extrabold" style={{ color: "#E8620C" }}>{aura.detail.streak} <span className="text-[11px] font-bold">j</span></span>
-            </div>
-            {/* Rang / EXP (ouvre la liste des rangs) */}
+            {/* Rang / EXP au centre (ouvre la liste des rangs) */}
             <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
               <div className="w-[46px] h-[46px] grid place-items-center"><GemmeRang rang={aura.rang} size={42} /></div>
               <span className="text-[10px] font-bold tracking-wide uppercase truncate max-w-full" style={{ color: "var(--text-3)" }}>Rang · {aura.rang.nom}</span>
               <span className="text-[12px] font-extrabold" style={{ color: "var(--accent)" }}>{auraLoaded ? aura.exp : "—"} / {aura.seuilHaut}</span>
             </button>
+            {/* Série 🔥 (énergie orange) — jamais 0 : dès le 1er jour tu es à 1 */}
+            <div className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center" style={TUILE_STYLE}>
+              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[24px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(232,98,12,0.16), transparent 70%)" }}>🔥</div>
+              <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Série</span>
+              <span className="text-[15px] font-extrabold" style={{ color: "#E8620C" }}>{Math.max(1, aura.detail.streak)} <span className="text-[11px] font-bold">j</span></span>
+            </div>
           </div>
         </section>
 
@@ -1472,12 +1406,9 @@ function Dashboard() {
           <BlocRelais defi={relais} moi={user?.id ?? ""} onGo={() => router.push("/defi")} />
         )}
 
-        {/* ─────────── 5. Ta progression ─────────── */}
-        <BlocProgression poids={poids} onGo={() => router.push("/progression")} />
-
-        {/* ─────────── 6. Le mot de l'✦ ─────────── */}
+        {/* ─────────── 5. Le mot de l'✦ ─────────── */}
         {(() => {
-          const mot = motDuCoach(aura.detail.streak, seanceJour);
+          const mot = motDuCoach(aura.detail.streak);
           return (
             <button type="button" onClick={() => setShowChat(true)} className="w-full flex items-start gap-3 rounded-3xl p-4 text-left outline-none active:opacity-95" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.07), rgba(193,59,193,0.05)), rgb(var(--surface-rgb))", border: "1px solid rgba(139,92,246,0.18)" }}>
               <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 14px -6px rgba(139,92,246,0.7)" }}>✦</span>
