@@ -20,7 +20,6 @@ import GemmeRang from "@/components/GemmeRang";
 import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, type EtatAura } from "@/lib/aura";
 import { persistLieu, fetchDay, hasSeance, dayTitle, dayLabel, todayYmd, type PlanningDay } from "@/lib/planning";
 import { chargerDefi, SERIES, type Defi, type SerieSlug } from "@/lib/defi";
-import { useNutritionGoals } from "@/hooks/useNutritionGoals";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
@@ -775,19 +774,29 @@ function motDuCoach(streak: number): { titre: string; texte: string } {
 
 /** Bloc 2 — le nœud du jour : la séance planifiée, en grand. */
 function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loaded: boolean; onGo: () => void }) {
+  const reduce = useReducedMotion();
   if (!loaded) {
     return <div className="rounded-3xl h-[150px] animate-pulse" style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.06)" }} />;
   }
-  // Jour de repos → même DA que la carte coach (surface épurée + carré-icône
-  // dégradé bleu-violet, comme la réflexion de l'✦). Zéro culpabilisation.
+  // Jour de repos → carte violette avec une LUEUR qui tourne autour (conic-gradient
+  // animé, clippé au bord par le contour intérieur). Zéro culpabilisation.
   if (seance && seance.type.toLowerCase() === "repos") {
     return (
-      <div className="w-full flex items-start gap-3 rounded-3xl p-4" style={{ background: "linear-gradient(180deg, rgba(91,124,250,0.08), rgba(139,92,246,0.05)), rgb(var(--surface-rgb))", border: "1px solid rgba(123,92,246,0.20)" }}>
-        <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#5B7CFA,#8B5CF6)", color: "#fff", boxShadow: "0 6px 16px -6px rgba(123,92,246,0.75)" }}>🌙</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#6D5AE6" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
-          <p className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>Jour de repos</p>
-          <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
+      <div className="relative rounded-3xl p-[2px] overflow-hidden" style={{ boxShadow: "0 8px 30px -12px rgba(139,92,246,0.4)" }}>
+        <motion.div
+          aria-hidden
+          className="absolute left-1/2 top-1/2 h-[170%] w-[170%] -translate-x-1/2 -translate-y-1/2"
+          style={{ background: "conic-gradient(from 0deg, transparent 0deg, #C13BC1 28deg, #8B5CF6 78deg, transparent 128deg, transparent 360deg)" }}
+          animate={reduce ? undefined : { rotate: 360 }}
+          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        />
+        <div className="relative w-full flex items-start gap-3 rounded-[22px] p-4" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.10), rgba(193,59,193,0.06)), rgb(var(--surface-rgb))" }}>
+          <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 16px -6px rgba(139,92,246,0.75)" }}>🌙</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#8B5CF6" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
+            <p className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>Jour de repos</p>
+            <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
+          </div>
         </div>
       </div>
     );
@@ -902,7 +911,6 @@ function Dashboard() {
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
   // ── Données des nouveaux blocs de l'accueil ──
-  const { goals } = useNutritionGoals();
   const [seanceJour, setSeanceJour] = useState<PlanningDay | null>(null);
   const [seanceLoaded, setSeanceLoaded] = useState(false);
   const [relais, setRelais] = useState<Defi | null>(null);
@@ -1376,13 +1384,13 @@ function Dashboard() {
         <section>
           <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>Ta journée</p>
           <div className="grid grid-cols-3 gap-2.5">
-            {/* Nutrition — anneau teal (calories du jour / objectif) */}
+            {/* Score du jour — anneau violet (0→100), ouvre le détail des stats */}
             <TuileAnneau
-              label="Nutrition"
-              valeur={`${liveStats.calories || 0} kcal`}
-              pct={goals.calories ? (liveStats.calories || 0) / goals.calories : 0}
-              couleur="#22C296"
-              onClick={() => router.push("/nutrition")}
+              label="Score"
+              valeur="du jour"
+              pct={(liveStats.score || 0) / 100}
+              couleur="#8B5CF6"
+              onClick={() => setShowStatsDrawer(true)}
             />
             {/* Rang / EXP au centre (ouvre la liste des rangs) */}
             <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
@@ -1400,6 +1408,18 @@ function Dashboard() {
         </section>
 
         <RangsModal open={showRangs} onClose={() => setShowRangs(false)} expActuel={auraLoaded ? aura.exp : 0} rangActuelId={aura.rang.id} />
+
+        {/* Missions du jour (EXP supplémentaire / teaser Premium) — au-dessus du relais */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowMissions(true)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
+            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
+          >
+            Mes missions du jour
+          </button>
+        </div>
 
         {/* ─────────── 4. Le relais (si actif) ─────────── */}
         {relais && (relais.statut === "en_cours" || relais.statut === "reussi") && (
@@ -1420,18 +1440,6 @@ function Dashboard() {
             </button>
           );
         })()}
-
-        {/* Missions du jour (EXP supplémentaire / teaser Premium) */}
-        <div className="flex justify-center pt-0.5">
-          <button
-            type="button"
-            onClick={() => setShowMissions(true)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
-            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
-          >
-            Mes missions du jour
-          </button>
-        </div>
 
         <MissionsModal
           open={showMissions}
