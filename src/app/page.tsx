@@ -803,13 +803,13 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
             </defs>
             <motion.rect
               x="0" y="0" width="100%" height="100%" rx="24"
-              fill="none" stroke="url(#reposGlow)" strokeWidth="2.5" strokeLinecap="round"
+              fill="none" stroke="url(#reposGlow)" strokeWidth="2" strokeLinecap="round" strokeOpacity={0.8}
               pathLength={100}
-              strokeDasharray="22 78"
+              strokeDasharray="46 54"
               initial={{ strokeDashoffset: 0 }}
               animate={{ strokeDashoffset: -100 }}
-              transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
-              style={{ filter: "drop-shadow(0 0 4px rgba(139,92,246,0.9))" }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              style={{ filter: "drop-shadow(0 0 2.5px rgba(139,92,246,0.5))" }}
             />
           </svg>
         )}
@@ -1376,24 +1376,24 @@ function Dashboard() {
         {/* ─────────── 2. Le nœud du jour ─────────── */}
         <NoeudDuJour seance={seanceJour} loaded={seanceLoaded} onGo={() => router.push("/progression")} />
 
-        {/* ─────────── 3. Ta journée ─────────── */}
+        {/* ─────────── 3. Tes stats ─────────── */}
         <section>
-          <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>Ta journée</p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>Tes stats</p>
+          <div className="grid grid-cols-3 gap-2.5 items-stretch">
             {/* Séances de la semaine (ouvre la progression) */}
-            <button type="button" onClick={() => router.push("/progression")} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
-              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[22px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(139,92,246,0.16), transparent 70%)" }}>🏋️</div>
+            <button type="button" onClick={() => router.push("/progression")} className="rounded-2xl px-2.5 py-3 flex flex-col items-center justify-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
+              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[22px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(139,92,246,0.16), transparent 70%)" }}>💪</div>
               <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Séances</span>
               <span className="text-[15px] font-extrabold" style={{ color: "var(--accent)" }}>{liveStats.sessionsWeek || 0} <span className="text-[11px] font-bold">/sem</span></span>
             </button>
-            {/* Rang / EXP au centre (ouvre la liste des rangs) */}
-            <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
-              <div className="w-[46px] h-[46px] grid place-items-center"><GemmeRang rang={aura.rang} size={42} /></div>
-              <span className="text-[10px] font-bold tracking-wide uppercase truncate max-w-full" style={{ color: "var(--text-3)" }}>Rang · {aura.rang.nom}</span>
-              <span className="text-[12px] font-extrabold" style={{ color: "var(--accent)" }}>{auraLoaded ? aura.exp : "—"} / {aura.seuilHaut}</span>
+            {/* Rang / EXP au centre, AGRANDI (ouvre la liste des rangs) */}
+            <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3.5 flex flex-col items-center justify-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
+              <div className="w-[58px] h-[58px] grid place-items-center"><GemmeRang rang={aura.rang} size={56} /></div>
+              <span className="text-[10.5px] font-bold tracking-wide uppercase truncate max-w-full" style={{ color: "var(--text-3)" }}>Rang · {aura.rang.nom}</span>
+              <span className="text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>{auraLoaded ? aura.exp : "—"} / {aura.seuilHaut}</span>
             </button>
             {/* Série 🔥 (énergie orange) — jamais 0 : dès le 1er jour tu es à 1 */}
-            <div className="rounded-2xl px-2.5 py-3 flex flex-col items-center gap-1.5 text-center" style={TUILE_STYLE}>
+            <div className="rounded-2xl px-2.5 py-3 flex flex-col items-center justify-center gap-1.5 text-center" style={TUILE_STYLE}>
               <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[24px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(232,98,12,0.16), transparent 70%)" }}>🔥</div>
               <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Série</span>
               <span className="text-[15px] font-extrabold" style={{ color: "#E8620C" }}>{Math.max(1, aura.detail.streak)} <span className="text-[11px] font-bold">j</span></span>
