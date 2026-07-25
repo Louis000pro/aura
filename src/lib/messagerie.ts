@@ -63,6 +63,21 @@ export type Conversation = {
 };
 
 const TAILLE_PAGE_MESSAGES = 50;
+const DUREE_CACHE_FIL = 30_000;
+
+type FilCharge = {
+  conversation: Conversation | null;
+  messages: Message[];
+  encoreAvant: boolean;
+};
+
+type EntreeCacheFil = {
+  data?: FilCharge;
+  promise?: Promise<FilCharge>;
+  expireA: number;
+};
+
+const cacheFils = new Map<string, EntreeCacheFil>();
 
 type ApercuConversation = {
   conversation_id: string;
@@ -278,11 +293,7 @@ export async function chargerConversations(userId: string): Promise<Conversation
 }
 
 /* ── Une conversation ────────────────────────────────────────── */
-export async function chargerFil(convId: string): Promise<{
-  conversation: Conversation | null;
-  messages: Message[];
-  encoreAvant: boolean;
-}> {
+async function chargerFilDepuisServeur(convId: string): Promise<FilCharge> {
   const supabase = createClient();
 
   const [convRes, membresRes, msgsRes, defiRes] = await Promise.all([
@@ -392,6 +403,39 @@ export async function chargerFil(convId: string): Promise<{
     })),
     encoreAvant,
   };
+}
+
+/** Données déjà prêtes, utilisées pour peindre immédiatement un fil revisité. */
+export function lireFilEnCache(convId: string): FilCharge | null {
+  const entree = cacheFils.get(convId);
+  if (!entree?.data || entree.expireA <= Date.now()) return null;
+  return entree.data;
+}
+
+/** Précharge aussi les données Supabase : le prefetch Next seul ne peut pas
+ * anticiper un fetch lancé dans un Client Component après son montage. */
+export function prechargerFil(convId: string): Promise<FilCharge> {
+  const entree = cacheFils.get(convId);
+  if (entree?.data && entree.expireA > Date.now()) return Promise.resolve(entree.data);
+  if (entree?.promise) return entree.promise;
+
+  const promise = chargerFilDepuisServeur(convId)
+    .then((data) => {
+      cacheFils.set(convId, { data, expireA: Date.now() + DUREE_CACHE_FIL });
+      return data;
+    })
+    .catch((error) => {
+      cacheFils.delete(convId);
+      throw error;
+    });
+  cacheFils.set(convId, { promise, expireA: Date.now() + DUREE_CACHE_FIL });
+  return promise;
+}
+
+export async function chargerFil(convId: string, forcer = false): Promise<FilCharge> {
+  if (!forcer) return prechargerFil(convId);
+  cacheFils.delete(convId);
+  return prechargerFil(convId);
 }
 
 /** Charge la page immédiatement antérieure sans relire tout le fil. */
@@ -807,6 +851,131 @@ export async function creerConversation(membres: string[], nom?: string) {
 /* ── Qui peut-on inviter dans une conversation ────────────────
    Les gens que je suis et ceux qui me suivent. Pas d'annuaire
    global : on ne parle qu'à des gens qu'on connaît déjà. */
+export type RelationAmi = "aucune" | "envoyee" | "recue" | "ami";
+export type ResultatRechercheAmi = Personne & { relation: RelationAmi };
+
+async function relationAvec(moi: string, autre: string): Promise<RelationAmi> {
+  const supabase = createClient();
+  const [sortante, entrante] = await Promise.all([
+    supabase.from("followers").select("follower_id")
+      .eq("follower_id", moi).eq("following_id", autre).maybeSingle(),
+    supabase.from("followers").select("follower_id")
+      .eq("follower_id", autre).eq("following_id", moi).maybeSingle(),
+  ]);
+  const erreur = sortante.error ?? entrante.error;
+  if (erreur) throw new Error(erreur.message);
+  if (sortante.data && entrante.data) return "ami";
+  if (sortante.data) return "envoyee";
+  if (entrante.data) return "recue";
+  return "aucune";
+}
+
+/** Recherche volontairement exacte : ce champ sert à retrouver quelqu'un que
+ * l'on connaît, jamais à parcourir un annuaire d'inconnus. */
+export async function rechercherAmiParPseudo(
+  moi: string,
+  saisie: string,
+): Promise<ResultatRechercheAmi | null> {
+  const pseudo = saisie.trim().replace(/^@/, "");
+  if (!pseudo) return null;
+  const motifExact = pseudo.replace(/[\\%_]/g, "\\$&");
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, pseudo, avatar_url")
+    .ilike("pseudo", motifExact)
+    .neq("id", moi)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    id: data.id as string,
+    pseudo: (data.pseudo as string) ?? pseudo,
+    avatar: (data.avatar_url as string | null) ?? null,
+    relation: await relationAvec(moi, data.id as string),
+  };
+}
+
+export async function chargerDemandesAmi(moi: string): Promise<Personne[]> {
+  const supabase = createClient();
+  const [entrantes, sortantes] = await Promise.all([
+    supabase.from("followers").select("follower_id").eq("following_id", moi),
+    supabase.from("followers").select("following_id").eq("follower_id", moi),
+  ]);
+  const erreur = entrantes.error ?? sortantes.error;
+  if (erreur) throw new Error(erreur.message);
+
+  const dejaReciproques = new Set((sortantes.data ?? []).map((r) => r.following_id as string));
+  const ids = (entrantes.data ?? [])
+    .map((r) => r.follower_id as string)
+    .filter((id) => id !== moi && !dejaReciproques.has(id));
+  if (!ids.length) return [];
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, pseudo, avatar_url")
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => ({
+    id: p.id as string,
+    pseudo: (p.pseudo as string) ?? "…",
+    avatar: (p.avatar_url as string | null) ?? null,
+  }));
+}
+
+export async function demanderAmi(cible: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("demander_ami", { p_cible: cible });
+  if (!error) {
+    return data as { ok: boolean; statut?: RelationAmi; conversation_id?: string; raison?: string };
+  }
+  if (!/demander_ami|schema cache|does not exist|404/i.test(error.message)) {
+    return { ok: false, raison: error.message } as const;
+  }
+
+  // Repli avant collage de la migration : l'envoi simple est déjà protégé
+  // par la RLS existante. L'acceptation/refus attendra la RPC sécurisée.
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, raison: "non_connecte" } as const;
+  const { error: insertion } = await supabase
+    .from("followers")
+    .upsert({ follower_id: auth.user.id, following_id: cible }, {
+      onConflict: "follower_id,following_id",
+      ignoreDuplicates: true,
+    });
+  return insertion
+    ? { ok: false, raison: insertion.message }
+    : { ok: true, statut: "envoyee" as const };
+}
+
+export async function accepterDemandeAmi(demandeur: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("accepter_demande_ami", { p_demandeur: demandeur });
+  if (!error) return data as { ok: boolean; conversation_id?: string; raison?: string };
+  if (!/accepter_demande_ami|schema cache|does not exist|404/i.test(error.message)) {
+    return { ok: false, raison: error.message } as const;
+  }
+
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, raison: "non_connecte" } as const;
+  const { error: insertion } = await supabase
+    .from("followers")
+    .upsert({ follower_id: auth.user.id, following_id: demandeur }, {
+      onConflict: "follower_id,following_id",
+      ignoreDuplicates: true,
+    });
+  if (insertion) return { ok: false, raison: insertion.message } as const;
+  return creerConversation([demandeur]);
+}
+
+export async function ignorerDemandeAmi(demandeur: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("ignorer_demande_ami", { p_demandeur: demandeur });
+  if (error) return { ok: false, raison: error.message } as const;
+  return data as { ok: boolean; raison?: string };
+}
+
 export async function mesRelations(userId: string): Promise<Personne[]> {
   const supabase = createClient();
   const [suivis, suiveurs] = await Promise.all([

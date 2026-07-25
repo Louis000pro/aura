@@ -11,20 +11,23 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Loader2, PenLine, Check, X, Search, MoreHorizontal,
-  Pin, Volume2, VolumeX, Archive, ArchiveRestore,
+  Pin, Volume2, VolumeX, Archive, ArchiveRestore, UserPlus, Users,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import ConversationAvatar, { PersonAvatar } from "@/components/communaute/ConversationAvatar";
+import FriendshipSheets, { type VueAmis } from "@/components/communaute/FriendshipSheets";
 import { createClient } from "@/lib/supabase";
 import { imageEtat } from "@/lib/defi";
 import {
   chargerConversations, titreConversation, autresMembres, mesRelations,
-  creerConversation, reglerConversation, heureCourte, type Conversation, type Personne,
+  creerConversation, reglerConversation, heureCourte, prechargerFil,
+  type Conversation, type Personne,
 } from "@/lib/messagerie";
 import { creerDefi } from "@/lib/defi";
 
@@ -35,7 +38,7 @@ export default function ConversationListPane({
   activeId?: string;
   className?: string;
 }) {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, session, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   const [convs, setConvs]     = useState<Conversation[]>([]);
@@ -47,6 +50,9 @@ export default function ConversationListPane({
   const [recherche, setRecherche] = useState("");
   const [voirArchives, setVoirArchives] = useState(false);
   const [selection, setSelection] = useState<Conversation | null>(null);
+  const [vueAmis, setVueAmis] = useState<VueAmis>(null);
+  const [nombreDemandes, setNombreDemandes] = useState(0);
+  const [pseudoInvite, setPseudoInvite] = useState("");
 
   const recharger = useCallback(async () => {
     if (!user) return;
@@ -63,7 +69,11 @@ export default function ConversationListPane({
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.replace("/auth"); return; }
+    if (!user) {
+      const destination = `${window.location.pathname}${window.location.search}`;
+      router.replace(`/auth?next=${encodeURIComponent(destination)}`);
+      return;
+    }
     let actif = true;
     void chargerConversations(user.id)
       .then((prochaines) => {
@@ -114,6 +124,36 @@ export default function ConversationListPane({
       void supabase.removeChannel(canal);
     };
   }, [user, recharger]);
+
+  useEffect(() => {
+    const minuterie = window.setTimeout(() => {
+      // Les deux fils les plus récents couvrent l'usage courant sans lancer
+      // une rafale de requêtes et de signatures photo sur toute la liste.
+      for (const conversation of convs.slice(0, 2)) {
+        void prechargerFil(conversation.id).catch(() => {});
+        router.prefetch(`/communaute/${conversation.id}`);
+      }
+    }, 250);
+    return () => window.clearTimeout(minuterie);
+  }, [convs, router]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pseudo = params.get("ajouter")?.trim() ?? "";
+    const ouvrirDemandes = params.get("amis") === "demandes";
+    if (!pseudo && !ouvrirDemandes) return;
+
+    const minuterie = window.setTimeout(() => {
+      if (pseudo) {
+        setPseudoInvite(pseudo);
+        setVueAmis("ajouter");
+      } else {
+        setVueAmis("demandes");
+      }
+    }, 0);
+    window.history.replaceState(null, "", window.location.pathname);
+    return () => window.clearTimeout(minuterie);
+  }, []);
 
   const lancerRelais = async () => {
     setOccupe(true);
@@ -235,12 +275,56 @@ export default function ConversationListPane({
         </div>
 
         <button
+          onClick={() => { setPseudoInvite(""); setVueAmis("ajouter"); }}
+          aria-label="Ajouter un ami"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full"
+          style={{ background: "rgba(var(--tint-violet-rgb), .52)", color: "var(--accent)" }}
+        >
+          <UserPlus className="h-4.5 w-4.5" />
+          {nombreDemandes > 0 && (
+            <span
+              className="absolute -right-1 -top-1 flex min-w-4.5 items-center justify-center rounded-full px-1 py-0.5 text-[9px] font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              {nombreDemandes > 9 ? "9+" : nombreDemandes}
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setSheet("choix")}
           aria-label="Nouvelle discussion"
           className="flex h-9 w-9 items-center justify-center rounded-full text-white"
           style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
         >
           <Plus className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="flex gap-2 px-4 pb-3">
+        <button
+          onClick={() => { setPseudoInvite(""); setVueAmis("ajouter"); }}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[rgba(var(--tint-violet-rgb),.35)]"
+          style={{ borderColor: "rgba(var(--text-3-rgb), .16)", color: "var(--text-1)" }}
+        >
+          <UserPlus className="h-4 w-4" />
+          Ajouter
+        </button>
+        <button
+          onClick={() => setVueAmis("demandes")}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-semibold transition-colors hover:bg-[rgba(var(--tint-violet-rgb),.35)]"
+          style={{ borderColor: "rgba(var(--text-3-rgb), .16)", color: "var(--text-1)" }}
+        >
+          <Users className="h-4 w-4" />
+          Demandes
+          {nombreDemandes > 0 && (
+            <span
+              className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+            >
+              {nombreDemandes > 99 ? "99+" : nombreDemandes}
+            </span>
+          )}
         </button>
       </div>
 
@@ -324,8 +408,10 @@ export default function ConversationListPane({
             convs={convsVisibles}
             moi={user!.id}
             activeId={activeId}
-            onOuvrir={(id) => router.push(`/communaute/${id}`)}
-            onPrefetch={(id) => router.prefetch(`/communaute/${id}`)}
+            onPrefetch={(id) => {
+              router.prefetch(`/communaute/${id}`);
+              void prechargerFil(id).catch(() => {});
+            }}
             onActions={(conversation) => {
               setSelection(conversation);
               setSheet("actions");
@@ -414,16 +500,34 @@ export default function ConversationListPane({
           />
         )}
       </AnimatePresence>
+
+      {user && (
+        <FriendshipSheets
+          vue={vueAmis}
+          moi={user.id}
+          monPseudo={user.pseudo}
+          accessToken={session?.access_token}
+          pseudoInitial={pseudoInvite}
+          onFermer={() => setVueAmis(null)}
+          onVue={setVueAmis}
+          onNombreDemandes={setNombreDemandes}
+          onConversation={(id) => {
+            setVueAmis(null);
+            void recharger();
+            void prechargerFil(id).catch(() => {});
+            router.push(`/communaute/${id}`);
+          }}
+        />
+      )}
     </section>
   );
 }
 
 /* ─── Liste ──────────────────────────────────────────────────── */
-function Liste({ convs, moi, activeId, onOuvrir, onPrefetch, onActions }: {
+function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
   convs: Conversation[];
   moi: string;
   activeId?: string;
-  onOuvrir: (id: string) => void;
   onPrefetch: (id: string) => void;
   onActions: (conversation: Conversation) => void;
 }) {
@@ -455,9 +559,11 @@ function Liste({ convs, moi, activeId, onOuvrir, onPrefetch, onActions }: {
               borderBottom: "1px solid rgba(var(--text-3-rgb), .10)",
             }}
           >
-            <button
-              onClick={() => onOuvrir(c.id)}
+            <Link
+              href={`/communaute/${c.id}`}
+              scroll={false}
               onPointerEnter={() => onPrefetch(c.id)}
+              onPointerDown={() => onPrefetch(c.id)}
               onFocus={() => onPrefetch(c.id)}
               className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left active:bg-[rgba(var(--tint-violet-rgb),.6)]"
             >
@@ -495,7 +601,7 @@ function Liste({ convs, moi, activeId, onOuvrir, onPrefetch, onActions }: {
                   </span>
                 )}
               </div>
-            </button>
+            </Link>
             <button
               onClick={() => onActions(c)}
               aria-label={`Options de ${titre}`}

@@ -29,7 +29,7 @@ import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi"
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
   envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
-  reagir, supprimerMessage, heureExacte, memeJour, libelleJour,
+  reagir, supprimerMessage, heureExacte, memeJour, libelleJour, lireFilEnCache,
   type Conversation, type Message,
 } from "@/lib/messagerie";
 
@@ -37,15 +37,37 @@ import {
  *  on choisit au lieu de réagir. */
 const EMOJIS = ["🔥", "💪", "👏", "😂", "❤️"];
 
+function FilSkeleton() {
+  return (
+    <div className="flex h-[100dvh] min-w-0 flex-1 animate-pulse flex-col" style={{ background: "rgb(var(--bg-rgb))" }}>
+      <div className="flex items-center gap-3 border-b px-4 py-3"
+        style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
+        <div className="h-8 w-8 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .14)" }} />
+        <div className="flex-1">
+          <div className="h-3.5 w-28 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .15)" }} />
+          <div className="mt-2 h-2.5 w-20 rounded-full" style={{ background: "rgba(var(--text-3-rgb), .09)" }} />
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col justify-end gap-3 px-4 py-5">
+        <div className="h-12 w-[58%] rounded-2xl" style={{ background: "rgba(var(--text-3-rgb), .09)" }} />
+        <div className="ml-auto h-16 w-[70%] rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb), .45)" }} />
+        <div className="h-11 w-[46%] rounded-2xl" style={{ background: "rgba(var(--text-3-rgb), .09)" }} />
+      </div>
+      <div className="mx-3 mb-3 h-12 rounded-2xl" style={{ background: "rgba(var(--text-3-rgb), .1)" }} />
+    </div>
+  );
+}
+
 export default function FilPage() {
   const params = useParams<{ id: string }>();
   const convId = (params?.id ?? "").toString();
   const router = useRouter();
   const { user, session, isLoading: authLoading } = useAuth();
+  const [cacheInitial] = useState(() => lireFilEnCache(convId));
 
-  const [conv, setConv]         = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [charge, setCharge]     = useState(true);
+  const [conv, setConv]         = useState<Conversation | null>(() => cacheInitial?.conversation ?? null);
+  const [messages, setMessages] = useState<Message[]>(() => cacheInitial?.messages ?? []);
+  const [charge, setCharge]     = useState(() => !cacheInitial);
   const [chargeAvant, setChargeAvant] = useState(false);
   const [encoreAvant, setEncoreAvant] = useState(false);
   const [texte, setTexte]       = useState("");
@@ -65,11 +87,11 @@ export default function FilPage() {
   const hauteurAvant = useRef<number | null>(null);
   const ignorerAutoScroll = useRef(false);
   const photoRef = useRef<HTMLInputElement>(null);
-  const initialiseeRef = useRef(false);
+  const initialiseeRef = useRef(Boolean(cacheInitial));
 
   const recharger = useCallback(async () => {
     try {
-      const { conversation, messages: m, encoreAvant: encore } = await chargerFil(convId);
+      const { conversation, messages: m, encoreAvant: encore } = await chargerFil(convId, true);
       setErreurChargement(null);
       setConv(conversation);
       setMessages(m);
@@ -112,10 +134,15 @@ export default function FilPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.replace("/auth"); return; }
+    if (!user) {
+      const destination = `${window.location.pathname}${window.location.search}`;
+      router.replace(`/auth?next=${encodeURIComponent(destination)}`);
+      return;
+    }
     let actif = true;
-    initialiseeRef.current = false;
-    void chargerFil(convId)
+    initialiseeRef.current = Boolean(cacheInitial);
+
+    void chargerFil(convId, Boolean(cacheInitial))
       .then(({ conversation, messages: prochainsMessages, encoreAvant: encore }) => {
         if (!actif) return;
         setErreurChargement(null);
@@ -131,7 +158,7 @@ export default function FilPage() {
         if (actif) setCharge(false);
       });
     return () => { actif = false; };
-  }, [authLoading, user, router, convId]);
+  }, [authLoading, user, router, convId, cacheInitial]);
 
   /* Temps réel : messages, réactions, et « en train d'écrire ».
      Les deux premiers passent par la base, le troisième par un
@@ -332,11 +359,7 @@ export default function FilPage() {
   };
 
   if (authLoading || charge) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--text-3)" }} />
-      </div>
-    );
+    return <FilSkeleton />;
   }
 
   if (erreurChargement) {
