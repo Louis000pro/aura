@@ -25,15 +25,102 @@ const SUGGESTIONS = [
   "Passer en mode sombre",
 ];
 
+/* ── Rendu lisible des réponses de l'✦ ──
+   Le modèle glisse parfois du markdown (**gras**, listes en *, titres #, `code`).
+   À l'écran, ces symboles sont moches à lire. On les transforme en présentation
+   propre : gras réel, puces à tiret « – », et on retire les artefacts (# ` ^ ~ *
+   isolés). Filet de sécurité — le prompt demande déjà d'écrire sans markdown. */
+function renderInline(text: string, keyBase: string): React.ReactNode[] {
+  // Découpe **gras** (et __gras__) en morceaux ; nettoie les symboles restants.
+  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+  return parts.map((part, i) => {
+    const bold = part.match(/^\*\*([^*]+)\*\*$/) || part.match(/^__([^_]+)__$/);
+    if (bold) {
+      return (
+        <strong key={`${keyBase}-b${i}`} style={{ fontWeight: 600 }}>
+          {clean(bold[1])}
+        </strong>
+      );
+    }
+    const c = clean(part);
+    return c ? <span key={`${keyBase}-s${i}`}>{c}</span> : null;
+  });
+}
+
+/** Retire les symboles markdown résiduels qui salissent la lecture. */
+function clean(s: string): string {
+  return s
+    .replace(/`+/g, "")        // `code`
+    .replace(/[\^~]/g, "")     // ^ ~ (exposants / barrés markdown)
+    .replace(/(^|\s)\*(?=\S)/g, "$1") // * d'emphase collé à un mot
+    .replace(/\*(?=\s|$)/g, ""); // * isolé
+}
+
+function AssistantContent({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <>
+      {lines.map((raw, i) => {
+        const line = raw.replace(/^\s+/, (m) => m); // garde l'indentation légère
+        // Puce ( - , * , • ) → tiret propre avec retrait pendu
+        const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+        if (bullet) {
+          return (
+            <span key={i} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+              <span style={{ color: "var(--accent)", flexShrink: 0 }}>–</span>
+              <span>{renderInline(bullet[1], `l${i}`)}</span>
+            </span>
+          );
+        }
+        // Liste numérotée → on garde le numéro
+        const num = line.match(/^\s*(\d+)[.)]\s+(.*)$/);
+        if (num) {
+          return (
+            <span key={i} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+              <span style={{ color: "var(--accent)", fontWeight: 600, flexShrink: 0 }}>{num[1]}.</span>
+              <span>{renderInline(num[2], `l${i}`)}</span>
+            </span>
+          );
+        }
+        // Titre markdown (#, ##…) → ligne en gras, sans les dièses
+        const head = line.match(/^\s*#{1,6}\s+(.*)$/);
+        if (head) {
+          return (
+            <span key={i} style={{ display: "block", fontWeight: 600 }}>
+              {renderInline(head[1], `l${i}`)}
+            </span>
+          );
+        }
+        return (
+          <span key={i} style={{ display: "block" }}>
+            {renderInline(line, `l${i}`)}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 export default function AssistantSheet() {
   const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe } = useAssistant();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   const voice = useVoiceCapture({ onTranscript: (t) => sendMessage(t) });
 
   useEffect(() => { setMounted(true); }, []);
+
+  // La saisie grandit VERTICALEMENT avec le texte (on voit tout ce qu'on écrit,
+  // on peut se relire et se corriger — plus de ligne unique qui défile à l'horizontale).
+  const autoGrow = () => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 132)}px`; // plafonné, puis scroll interne
+  };
+  useEffect(() => { autoGrow(); }, [input]);
 
   // Auto-scroll en bas à chaque nouveau contenu
   useEffect(() => {
@@ -57,7 +144,7 @@ export default function AssistantSheet() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, close]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     if (!input.trim() || isStreaming) return;
     sendMessage(input);
@@ -167,7 +254,7 @@ export default function AssistantSheet() {
                           ? { background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff", borderBottomRightRadius: 8 }
                           : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-1)", borderBottomLeftRadius: 8, border: "1px solid rgba(var(--accent-rgb),0.10)" }),
                       }}>
-                      {msg.content}
+                      {msg.role === "assistant" ? <AssistantContent text={msg.content} /> : msg.content}
                       {msg.streaming && msg.role === "assistant" && msg.content === "" && (
                         <span className="flex items-center gap-1 py-0.5">
                           {[0, 1, 2].map((i) => (
@@ -393,15 +480,21 @@ export default function AssistantSheet() {
               {voice.error && (
                 <p className="text-[11px] text-center mb-1.5" style={{ color: "var(--accent)" }}>{voice.error}</p>
               )}
-              <form onSubmit={submit} className="flex items-center gap-2">
-                <div className="flex-1 flex items-center px-4 py-2.5 rounded-3xl"
+              <form onSubmit={submit} className="flex items-end gap-2">
+                <div className="flex-1 flex items-center px-4 py-2 rounded-3xl"
                   style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
-                  <input
-                    type="text" value={input} onChange={(e) => setInput(e.target.value)}
+                  <textarea
+                    ref={taRef}
+                    rows={1}
+                    value={input} onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Entrée = envoyer ; Maj+Entrée = nouvelle ligne (pour se relire/corriger)
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(e); }
+                    }}
                     placeholder={voice.state === "recording" ? "Écoute en cours…" : "Pose ta question…"}
                     disabled={isStreaming || voice.state !== "idle"}
-                    className="flex-1 bg-transparent text-[14px] outline-none disabled:opacity-60"
-                    style={{ color: "var(--text-0)" }}
+                    className="flex-1 bg-transparent text-[14px] leading-relaxed outline-none disabled:opacity-60 resize-none py-1"
+                    style={{ color: "var(--text-0)", maxHeight: 132 }}
                   />
                 </div>
 
