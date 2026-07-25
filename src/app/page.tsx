@@ -17,9 +17,10 @@ import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import GemmeRang from "@/components/GemmeRang";
+import AccueilSignature from "@/components/AccueilSignature";
 import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, RECOMPENSE_RANG, type EtatAura } from "@/lib/aura";
-import { persistLieu, fetchDay, hasSeance, dayTitle, dayLabel, todayYmd, type PlanningDay } from "@/lib/planning";
-import { chargerDefi, SERIES, type Defi, type SerieSlug } from "@/lib/defi";
+import { persistLieu, hasSeance, dayTitle, dayLabel, type PlanningDay } from "@/lib/planning";
+import { SERIES, type Defi, type SerieSlug } from "@/lib/defi";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
@@ -934,10 +935,6 @@ function Dashboard() {
   void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
-  // ── Données des nouveaux blocs de l'accueil ──
-  const [seanceJour, setSeanceJour] = useState<PlanningDay | null>(null);
-  const [seanceLoaded, setSeanceLoaded] = useState(false);
-  const [relais, setRelais] = useState<Defi | null>(null);
   // Missions du jour : coche verte dès que l'action du jour est faite.
   // Séance = une workout_session aujourd'hui ; repas = un nutrition_log aujourd'hui ;
   // connexion = toujours validée (l'utilisateur EST là).
@@ -1022,7 +1019,6 @@ function Dashboard() {
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
   const [expGain, setExpGain] = useState<number | null>(null);
   const [showRangs, setShowRangs] = useState(false);
-  const [showMissions, setShowMissions] = useState(false);
   const prevExpRef = useRef<number | null>(null);
   useEffect(() => {
     if (!auraLoaded) return;
@@ -1111,20 +1107,6 @@ function Dashboard() {
       .eq("user_id", user.id)
       .gte("started_at", monday.toISOString())
       .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
-  }, [user]);
-
-  // Séance planifiée du jour (le « nœud du jour »)
-  useEffect(() => {
-    if (!user) return;
-    fetchDay(user.id, todayYmd())
-      .then((d) => { setSeanceJour(d); setSeanceLoaded(true); })
-      .catch(() => setSeanceLoaded(true));
-  }, [user, statsTick]);
-
-  // Relais en cours (le bloc ne s'affiche que s'il existe)
-  useEffect(() => {
-    if (!user) return;
-    chargerDefi(user.id).then(setRelais).catch(() => {});
   }, [user]);
 
   // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
@@ -1406,95 +1388,25 @@ function Dashboard() {
           paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
         }}
       >
-        {/* ─────────── 1. En-tête vivant ─────────── */}
-        <div className="pt-1">
-          <p className="text-[11px] font-bold tracking-[0.16em] uppercase" style={{ color: "var(--text-3)" }}>{greeting}</p>
-          <h1 className="text-[28px] font-extrabold leading-tight" style={{ color: "var(--text-0)" }}>
-            <span
-              style={{
-                background: "linear-gradient(135deg,var(--accent),var(--gold))",
-                WebkitBackgroundClip: "text", backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                display: "inline-block", paddingRight: "0.08em",
-              }}
-            >
-              {(user?.pseudo ?? user?.name ?? "")}
-            </span>
-          </h1>
-          <p className="text-[12.5px] leading-snug mt-1" style={{ color: "var(--text-soft)" }}>
-            {phraseDuJour(missions.seanceOk, missions.repasOk, hour)}
-          </p>
-        </div>
-
-        {/* ─────────── 2. Le nœud du jour ─────────── */}
-        <NoeudDuJour seance={seanceJour} loaded={seanceLoaded} onGo={() => router.push("/progression")} />
-
-        {/* ─────────── 3. Tes stats ─────────── */}
-        <section>
-          <p className="text-[12px] font-bold tracking-[0.06em] uppercase mb-2.5" style={{ color: "var(--text-soft)" }}>Tes stats</p>
-          <div className="grid grid-cols-3 gap-2.5 items-stretch">
-            {/* Séances de la semaine (ouvre la progression) */}
-            <button type="button" onClick={() => router.push("/progression")} className="rounded-2xl px-2.5 py-3 flex flex-col items-center justify-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
-              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[22px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(139,92,246,0.16), transparent 70%)" }}>💪</div>
-              <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Séances</span>
-              <span className="text-[15px] font-extrabold" style={{ color: "var(--accent)" }}>{liveStats.sessionsWeek || 0} <span className="text-[11px] font-bold">/sem</span></span>
-            </button>
-            {/* Rang / EXP au centre, AGRANDI (ouvre la liste des rangs) */}
-            <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3.5 flex flex-col items-center justify-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
-              <div className="w-[72px] h-[72px] grid place-items-center"><GemmeRang rang={aura.rang} size={70} /></div>
-              <span className="text-[10.5px] font-bold tracking-wide uppercase truncate max-w-full" style={{ color: "var(--text-3)" }}>Rang · {aura.rang.nom}</span>
-              <span className="text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>{auraLoaded ? aura.exp : "—"} / {aura.seuilHaut}</span>
-            </button>
-            {/* Série 🔥 (énergie orange) — jamais 0 : dès le 1er jour tu es à 1 */}
-            <div className="rounded-2xl px-2.5 py-3 flex flex-col items-center justify-center gap-1.5 text-center" style={TUILE_STYLE}>
-              <div className="w-[46px] h-[46px] rounded-full grid place-items-center text-[24px]" style={{ background: "radial-gradient(circle at 50% 60%, rgba(232,98,12,0.16), transparent 70%)" }}>🔥</div>
-              <span className="text-[10px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Série</span>
-              <span className="text-[15px] font-extrabold" style={{ color: "#E8620C" }}>{Math.max(1, aura.detail.streak)} <span className="text-[11px] font-bold">j</span></span>
-            </div>
-          </div>
-        </section>
-
-        <RangsModal open={showRangs} onClose={() => setShowRangs(false)} expActuel={auraLoaded ? aura.exp : 0} rangActuelId={aura.rang.id} />
-
-        {/* Missions du jour (EXP supplémentaire / teaser Premium) — au-dessus du relais */}
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => setShowMissions(true)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold outline-none active:opacity-90 transition-opacity"
-            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }}
-          >
-            Mes missions du jour
-          </button>
-        </div>
-
-        {/* ─────────── 4. Le relais (si actif) ─────────── */}
-        {relais && (relais.statut === "en_cours" || relais.statut === "reussi") && (
-          <BlocRelais defi={relais} moi={user?.id ?? ""} onGo={() => router.push("/defi")} />
-        )}
-
-        {/* ─────────── 5. Le mot de l'✦ ─────────── */}
-        {(() => {
-          const mot = motDuCoach(aura.detail.streak);
-          return (
-            <button type="button" onClick={() => setShowChat(true)} className="w-full flex items-start gap-3 rounded-3xl p-4 text-left outline-none active:opacity-95" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.07), rgba(193,59,193,0.05)), rgb(var(--surface-rgb))", border: "1px solid rgba(139,92,246,0.18)" }}>
-              <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 14px -6px rgba(139,92,246,0.7)" }}>✦</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-extrabold" style={{ color: "var(--text-0)" }}>{mot.titre}</p>
-                <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>{mot.texte}</p>
-                <p className="text-[12px] font-extrabold mt-1.5" style={{ color: "var(--accent)" }}>Parler à l&apos;assistant →</p>
-              </div>
-            </button>
-          );
-        })()}
-
-        <MissionsModal
-          open={showMissions}
-          onClose={() => setShowMissions(false)}
+        <AccueilSignature
+          greeting={greeting}
+          pseudo={user?.pseudo ?? user?.name ?? ""}
+          aura={aura}
+          auraLoaded={auraLoaded}
+          expGain={expGain}
           seanceOk={missions.seanceOk}
           repasOk={missions.repasOk}
-          isPremium={!!(user?.is_admin || user?.is_premium)}
-          onNavigate={(p) => { setShowMissions(false); router.push(p); }}
+          isPremium={!!user?.is_premium}
+          isAdmin={!!user?.is_admin}
+          onNavigate={(path) => router.push(path)}
+          onOpenRangs={() => setShowRangs(true)}
+        />
+
+        <RangsModal
+          open={showRangs}
+          onClose={() => setShowRangs(false)}
+          expActuel={auraLoaded ? aura.exp : 0}
+          rangActuelId={aura.rang.id}
         />
       </div>
 

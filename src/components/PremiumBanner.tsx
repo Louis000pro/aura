@@ -9,8 +9,8 @@
      quelqu'un qui a déjà payé.
    • UNE fois par session (sessionStorage) : il revient à chaque nouvelle
      visite, jamais deux fois dans la même navigation.
-   • Jamais sur /premium (on y est déjà), ni sur les pages publiques
-     (/auth, /rejoindre) où il n'a aucun sens.
+   • Jamais sur l'accueil (il porte désormais sa propre affiche Premium), sur
+     /premium, ni sur les pages publiques (/auth, /rejoindre).
    • Le message est PERSONNALISÉ (pseudo + un bénéfice qui tourne) — un
      rappel qui parle à la personne, pas une bannière publicitaire.
    • Se referme tout seul, et `prefers-reduced-motion` est respecté.
@@ -61,6 +61,7 @@ export default function PremiumBanner() {
   // ce que voit un utilisateur normal (c'est ce qui empêchait Louis de le voir).
   const estAbonne = !!user?.is_premium;
   const pageExclue =
+    pathname === "/" ||
     pathname.startsWith("/premium") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/rejoindre");
