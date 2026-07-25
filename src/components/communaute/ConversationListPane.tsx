@@ -13,14 +13,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Loader2, PenLine, Check, X } from "lucide-react";
+import {
+  Plus, Loader2, PenLine, Check, X, Search, MoreHorizontal,
+  Pin, Volume2, VolumeX, Archive, ArchiveRestore,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase";
 import { imageEtat } from "@/lib/defi";
 import {
   chargerConversations, titreConversation, autresMembres, mesRelations,
-  creerConversation, heureCourte, type Conversation, type Personne,
+  creerConversation, reglerConversation, heureCourte, type Conversation, type Personne,
 } from "@/lib/messagerie";
 import { creerDefi } from "@/lib/defi";
 
@@ -36,10 +39,13 @@ export default function ConversationListPane({
 
   const [convs, setConvs]     = useState<Conversation[]>([]);
   const [charge, setCharge]   = useState(true);
-  const [sheet, setSheet]     = useState<"non" | "choix" | "nouvelle">("non");
+  const [sheet, setSheet]     = useState<"non" | "choix" | "nouvelle" | "actions">("non");
   const [occupe, setOccupe]   = useState(false);
   const [erreur, setErreur]   = useState<string | null>(null);
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
+  const [recherche, setRecherche] = useState("");
+  const [voirArchives, setVoirArchives] = useState(false);
+  const [selection, setSelection] = useState<Conversation | null>(null);
 
   const recharger = useCallback(async () => {
     if (!user) return;
@@ -112,6 +118,59 @@ export default function ConversationListPane({
     );
   };
 
+  const agirSurConversation = async (
+    conversation: Conversation,
+    reglage: "epinglee" | "sourde" | "archivee",
+    active: boolean,
+  ) => {
+    if (!user) return;
+    setOccupe(true);
+    setErreur(null);
+    const r = await reglerConversation(conversation.id, user.id, reglage, active);
+    setOccupe(false);
+    if (!r.ok) {
+      setErreur(
+        /pinned_at|muted|archived_at|schema cache|column/i.test(String(r.raison ?? ""))
+          ? "Les réglages de discussion ne sont pas encore activés côté serveur."
+          : "Impossible de modifier cette discussion.",
+      );
+      return;
+    }
+    setConvs((actuelles) => actuelles
+      .map((c) => c.id === conversation.id
+        ? {
+            ...c,
+            epinglee: reglage === "epinglee" ? active : c.epinglee,
+            sourde: reglage === "sourde" ? active : c.sourde,
+            archivee: reglage === "archivee" ? active : c.archivee,
+          }
+        : c)
+      .sort((a, b) => a.epinglee === b.epinglee
+        ? new Date(b.majLe).getTime() - new Date(a.majLe).getTime()
+        : a.epinglee ? -1 : 1));
+    setSheet("non");
+    setSelection(null);
+    if (reglage === "archivee" && active && activeId === conversation.id) {
+      router.push("/communaute");
+    }
+  };
+
+  const normaliser = (valeur: string) => valeur
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+  const terme = normaliser(recherche.trim());
+  const convsVisibles = convs.filter((c) => {
+    if (c.archivee !== voirArchives) return false;
+    if (!terme) return true;
+    const texte = `${titreConversation(c, user!.id)} ${c.dernier?.contenu ?? ""}`;
+    return normaliser(texte).includes(terme);
+  });
+  const nombreArchives = convs.filter((c) => c.archivee).length;
+  useEffect(() => {
+    if (voirArchives && nombreArchives === 0) setVoirArchives(false);
+  }, [voirArchives, nombreArchives]);
+
   if (authLoading || charge) {
     return (
       <section
@@ -171,6 +230,57 @@ export default function ConversationListPane({
         </button>
       </div>
 
+      {convs.length > 0 && (
+        <div className="px-4 pb-3">
+          <label
+            className="flex items-center gap-2 rounded-xl border px-3 py-2.5"
+            style={{
+              borderColor: "rgba(var(--text-3-rgb), .18)",
+              background: "rgb(var(--surface-rgb))",
+            }}
+          >
+            <Search className="h-4 w-4 shrink-0" style={{ color: "var(--text-3)" }} />
+            <input
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              placeholder="Rechercher une discussion"
+              className="min-w-0 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-[var(--text-3)]"
+              style={{ color: "var(--text-1)" }}
+            />
+            {recherche && (
+              <button type="button" onClick={() => setRecherche("")} aria-label="Effacer la recherche">
+                <X className="h-3.5 w-3.5" style={{ color: "var(--text-3)" }} />
+              </button>
+            )}
+          </label>
+
+          {nombreArchives > 0 && (
+            <div className="mt-2 flex gap-1 rounded-xl p-1" style={{ background: "rgba(var(--text-3-rgb), .08)" }}>
+              <button
+                onClick={() => setVoirArchives(false)}
+                className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors"
+                style={{
+                  color: voirArchives ? "var(--text-3)" : "var(--text-0)",
+                  background: voirArchives ? "transparent" : "rgb(var(--surface-rgb))",
+                }}
+              >
+                Discussions
+              </button>
+              <button
+                onClick={() => setVoirArchives(true)}
+                className="flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors"
+                style={{
+                  color: voirArchives ? "var(--text-0)" : "var(--text-3)",
+                  background: voirArchives ? "rgb(var(--surface-rgb))" : "transparent",
+                }}
+              >
+                Archives · {nombreArchives}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {erreur && (
         <p className="px-4 pb-2 text-[13.5px] font-medium" style={{ color: "#E8620C" }}>{erreur}</p>
       )}
@@ -187,14 +297,78 @@ export default function ConversationListPane({
 
       {convs.length === 0
         ? <Vide onRelais={lancerRelais} onDiscussion={() => setSheet("nouvelle")} occupe={occupe} />
+        : convsVisibles.length === 0
+        ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-8 pb-16 text-center">
+            <Search className="h-6 w-6" style={{ color: "var(--text-3)" }} />
+            <p className="mt-3 text-[14px] font-medium" style={{ color: "var(--text-2)" }}>
+              {recherche ? "Aucune discussion trouvée." : "Aucune discussion archivée."}
+            </p>
+          </div>
+        )
         : <Liste
-            convs={convs}
+            convs={convsVisibles}
             moi={user!.id}
             activeId={activeId}
             onOuvrir={(id) => router.push(`/communaute/${id}`)}
+            onActions={(conversation) => {
+              setSelection(conversation);
+              setSheet("actions");
+            }}
           />}
 
       <AnimatePresence>
+        {sheet === "actions" && selection && (
+          <Sheet onFermer={() => { setSheet("non"); setSelection(null); }}>
+            <div className="mb-3 px-1">
+              <b className="block truncate text-[16px]" style={{ color: "var(--text-0)" }}>
+                {titreConversation(selection, user!.id)}
+              </b>
+              <span className="text-[12px]" style={{ color: "var(--text-3)" }}>
+                Ces réglages ne concernent que toi.
+              </span>
+            </div>
+
+            <button
+              disabled={occupe}
+              onClick={() => void agirSurConversation(selection, "epinglee", !selection.epinglee)}
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left disabled:opacity-50"
+              style={{ color: "var(--text-1)" }}
+            >
+              <Pin className="h-4.5 w-4.5" />
+              <span className="text-[14.5px] font-medium">
+                {selection.epinglee ? "Désépingler" : "Épingler"}
+              </span>
+            </button>
+            <button
+              disabled={occupe}
+              onClick={() => void agirSurConversation(selection, "sourde", !selection.sourde)}
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left disabled:opacity-50"
+              style={{ color: "var(--text-1)" }}
+            >
+              {selection.sourde
+                ? <Volume2 className="h-4.5 w-4.5" />
+                : <VolumeX className="h-4.5 w-4.5" />}
+              <span className="text-[14.5px] font-medium">
+                {selection.sourde ? "Réactiver les notifications" : "Mettre en sourdine"}
+              </span>
+            </button>
+            <button
+              disabled={occupe}
+              onClick={() => void agirSurConversation(selection, "archivee", !selection.archivee)}
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left disabled:opacity-50"
+              style={{ color: "var(--text-1)" }}
+            >
+              {selection.archivee
+                ? <ArchiveRestore className="h-4.5 w-4.5" />
+                : <Archive className="h-4.5 w-4.5" />}
+              <span className="text-[14.5px] font-medium">
+                {selection.archivee ? "Sortir des archives" : "Archiver"}
+              </span>
+            </button>
+          </Sheet>
+        )}
+
         {sheet === "choix" && (
           <Sheet onFermer={() => setSheet("non")}>
             <button
@@ -230,8 +404,12 @@ export default function ConversationListPane({
 }
 
 /* ─── Liste ──────────────────────────────────────────────────── */
-function Liste({ convs, moi, activeId, onOuvrir }: {
-  convs: Conversation[]; moi: string; activeId?: string; onOuvrir: (id: string) => void;
+function Liste({ convs, moi, activeId, onOuvrir, onActions }: {
+  convs: Conversation[];
+  moi: string;
+  activeId?: string;
+  onOuvrir: (id: string) => void;
+  onActions: (conversation: Conversation) => void;
 }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto pb-4">
@@ -243,15 +421,15 @@ function Liste({ convs, moi, activeId, onOuvrir }: {
         const apercu =
           c.dernier == null                 ? "Dis-lui bonjour 👋"
         : c.dernier.type === "systeme"      ? c.dernier.contenu
+        : c.dernier.type === "image"         ? c.dernier.userId === moi ? "Toi : 📷 Photo" : "📷 Photo"
         : c.dernier.userId === moi          ? `Toi : ${c.dernier.contenu}`
         : c.type === "groupe"               ? `${c.membres.find((m) => m.id === c.dernier!.userId)?.pseudo ?? "…"} : ${c.dernier.contenu}`
         :                                     c.dernier.contenu;
 
         return (
-          <button
+          <div
             key={c.id}
-            onClick={() => onOuvrir(c.id)}
-            className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[rgba(var(--tint-violet-rgb),.42)] active:bg-[rgba(var(--tint-violet-rgb),.6)]"
+            className="group flex w-full items-center text-left transition-colors hover:bg-[rgba(var(--tint-violet-rgb),.42)]"
             style={{
               background: activeId === c.id
                 ? "rgba(var(--tint-violet-rgb),.58)"
@@ -261,37 +439,54 @@ function Liste({ convs, moi, activeId, onOuvrir }: {
               borderBottom: "1px solid rgba(var(--text-3-rgb), .10)",
             }}
           >
-            <ConversationAvatar conversation={c} autres={autres} titre={titre} />
+            <button
+              onClick={() => onOuvrir(c.id)}
+              className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left active:bg-[rgba(var(--tint-violet-rgb),.6)]"
+            >
+              <ConversationAvatar conversation={c} autres={autres} titre={titre} />
 
-            <div className="min-w-0 flex-1">
-              <b
-                className="block truncate text-[14.5px]"
-                style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
-              >
-                {titre}
-              </b>
-              <span
-                className="mt-0.5 block truncate text-[13px]"
-                style={{ color: c.nonLus > 0 ? "var(--text-1)" : "var(--text-3)", fontWeight: c.nonLus > 0 ? 600 : 400 }}
-              >
-                {apercu}
-              </span>
-            </div>
-
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                {c.dernier ? heureCourte(c.dernier.createdAt) : ""}
-              </span>
-              {c.nonLus > 0 && (
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <b
+                    className="block min-w-0 truncate text-[14.5px]"
+                    style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
+                  >
+                    {titre}
+                  </b>
+                  {c.epinglee && <Pin className="h-3 w-3 shrink-0" style={{ color: "var(--text-3)" }} />}
+                  {c.sourde && <VolumeX className="h-3 w-3 shrink-0" style={{ color: "var(--text-3)" }} />}
+                </div>
                 <span
-                  className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white"
-                  style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+                  className="mt-0.5 block truncate text-[13px]"
+                  style={{ color: c.nonLus > 0 ? "var(--text-1)" : "var(--text-3)", fontWeight: c.nonLus > 0 ? 600 : 400 }}
                 >
-                  {c.nonLus > 99 ? "99+" : c.nonLus}
+                  {apercu}
                 </span>
-              )}
-            </div>
-          </button>
+              </div>
+
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                  {c.dernier ? heureCourte(c.dernier.createdAt) : ""}
+                </span>
+                {c.nonLus > 0 && (
+                  <span
+                    className="flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white"
+                    style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
+                  >
+                    {c.nonLus > 99 ? "99+" : c.nonLus}
+                  </span>
+                )}
+              </div>
+            </button>
+            <button
+              onClick={() => onActions(c)}
+              aria-label={`Options de ${titre}`}
+              className="mr-2 flex h-9 w-8 shrink-0 items-center justify-center rounded-full opacity-60 transition-opacity hover:opacity-100"
+              style={{ color: "var(--text-3)" }}
+            >
+              <MoreHorizontal className="h-4.5 w-4.5" />
+            </button>
+          </div>
         );
       })}
     </div>

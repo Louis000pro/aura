@@ -36,17 +36,26 @@ export async function POST(req: NextRequest) {
     if (
       messageError
       || !message
-      || message.type !== "texte"
+      || !["texte", "image"].includes(message.type)
       || message.user_id !== caller.id
     ) {
       return NextResponse.json({ ok: false, error: "message_invalide" }, { status: 403 });
     }
 
     const [membresRes, profilRes] = await Promise.all([
-      admin
-        .from("conversation_members")
-        .select("user_id")
-        .eq("conversation_id", message.conversation_id),
+      (async () => {
+        const moderne = await admin
+          .from("conversation_members")
+          .select("user_id, muted")
+          .eq("conversation_id", message.conversation_id);
+        if (!moderne.error || !/muted|schema cache|column/i.test(moderne.error.message)) {
+          return moderne;
+        }
+        return admin
+          .from("conversation_members")
+          .select("user_id")
+          .eq("conversation_id", message.conversation_id);
+      })(),
       admin
         .from("profiles")
         .select("pseudo, avatar_url")
@@ -59,10 +68,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "pas_membre" }, { status: 403 });
     }
 
-    const cibles = membres.filter((id) => id !== caller.id);
+    const cibles = (membresRes.data ?? [])
+      .filter((m) => m.user_id !== caller.id && !("muted" in m && m.muted))
+      .map((m) => m.user_id as string);
     const pseudo = profilRes.data?.pseudo ?? "Quelqu'un";
     const lien = `/communaute/${message.conversation_id}`;
-    const apercu = String(message.contenu).replace(/\s+/g, " ").trim().slice(0, 110);
+    const apercu = message.type === "image"
+      ? "📷 Photo"
+      : String(message.contenu).replace(/\s+/g, " ").trim().slice(0, 110);
 
     await Promise.allSettled(
       cibles.map(async (userId) => {

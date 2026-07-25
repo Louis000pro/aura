@@ -20,6 +20,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Send, Loader2, ChevronRight, ChevronUp, Sparkles, Reply, Copy, Trash2, X,
+  ImagePlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -27,7 +28,7 @@ import ConversationListPane from "@/components/communaute/ConversationListPane";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import {
-  chargerFil, chargerMessagesAvant, envoyerMessage, marquerLu, titreConversation, autresMembres,
+  chargerFil, chargerMessagesAvant, envoyerMessage, envoyerPhoto, marquerLu, titreConversation, autresMembres,
   reagir, supprimerMessage, heureExacte, memeJour, libelleJour,
   type Conversation, type Message,
 } from "@/lib/messagerie";
@@ -62,6 +63,7 @@ export default function FilPage() {
   const dernierSignal = useRef(0);
   const hauteurAvant = useRef<number | null>(null);
   const ignorerAutoScroll = useRef(false);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   // La barre du bas laisse la place au fil, comme dans le tunnel.
   useEffect(() => lockBodyModal(), []);
@@ -101,6 +103,10 @@ export default function FilPage() {
         (payload) => {
           const m = payload.new as Record<string, unknown>;
           setEcrivent((p) => p.filter((x) => x !== (m.user_id as string)));
+          if (m.type === "image") {
+            void recharger();
+            return;
+          }
           setMessages((prev) =>
             prev.some((x) => x.id === m.id)
               ? prev
@@ -109,6 +115,10 @@ export default function FilPage() {
                   userId: (m.user_id as string | null) ?? null,
                   contenu: m.contenu as string,
                   type: m.type as "texte" | "systeme",
+                  mediaPath: null,
+                  mediaUrl: null,
+                  mediaWidth: null,
+                  mediaHeight: null,
                   createdAt: m.created_at as string,
                   repondA: (m.repond_a as string | null) ?? null,
                   reactions: [],
@@ -217,6 +227,29 @@ export default function FilPage() {
     void recharger();
   };
 
+  const envoyerUnePhoto = async (fichier?: File) => {
+    if (!user || !fichier || envoi) return;
+    const cite = repondA?.id ?? null;
+    setEnvoi(true);
+    setErreur(null);
+    const r = await envoyerPhoto(convId, user.id, fichier, cite, session?.access_token);
+    setEnvoi(false);
+    if (photoRef.current) photoRef.current.value = "";
+    if (!r.ok) {
+      const raison = String(r.raison ?? "");
+      setErreur(
+        raison === "photo_trop_lourde" ? "Cette photo est trop lourde."
+        : raison === "format_invalide" ? "Ce format d'image n'est pas pris en charge."
+        : /bucket|row-level security|media_path|schema cache/i.test(raison)
+        ? "Les photos ne sont pas encore activées côté serveur."
+        : "La photo n'est pas partie. Réessaie.",
+      );
+      return;
+    }
+    setRepondA(null);
+    void recharger();
+  };
+
   const surEtincelle = async () => {
     if (!conv) return;
     if (conv.defi) { router.push("/defi"); return; }
@@ -313,7 +346,7 @@ export default function FilPage() {
 
   /* Le « Vu » ne se pose que sous MON dernier message, et seulement
      si tout le monde l'a lu. */
-  const monDernier = [...messages].reverse().find((m) => m.userId === moi && m.type === "texte");
+  const monDernier = [...messages].reverse().find((m) => m.userId === moi && m.type !== "systeme");
   const vu = !!monDernier && autres.length > 0
     && autres.every((p) => !!p.luA && p.luA >= monDernier.createdAt);
 
@@ -482,7 +515,9 @@ export default function FilPage() {
             <b className="block text-[10.5px] font-bold" style={{ color: "#D7A62A" }}>
               {repondA.userId === moi ? "Toi" : conv.membres.find((p) => p.id === repondA.userId)?.pseudo ?? "…"}
             </b>
-            <span className="block truncate text-[12px]" style={{ color: c.t2 }}>{repondA.contenu}</span>
+            <span className="block truncate text-[12px]" style={{ color: c.t2 }}>
+              {repondA.type === "image" ? "📷 Photo" : repondA.contenu}
+            </span>
           </span>
           <button onClick={() => setRepondA(null)} aria-label="Annuler la réponse">
             <X className="h-4 w-4" style={{ color: c.t3 }} />
@@ -507,6 +542,23 @@ export default function FilPage() {
           }}
         >
           {occupe ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-[18px] w-[18px]" />}
+        </button>
+
+        <input
+          ref={photoRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => void envoyerUnePhoto(e.target.files?.[0])}
+        />
+        <button
+          onClick={() => photoRef.current?.click()}
+          disabled={envoi}
+          aria-label="Envoyer une photo"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-50"
+          style={{ background: c.carte, border: `1px solid ${c.trait}`, color: c.t2 }}
+        >
+          <ImagePlus className="h-[18px] w-[18px]" />
         </button>
 
         <textarea
@@ -590,7 +642,7 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
         }}
         onPointerUp={stop}
         onPointerCancel={stop}
-        className="max-w-[80%] select-none px-3.5 py-2 text-[13.5px] leading-snug"
+        className={`max-w-[80%] select-none text-[13.5px] leading-snug ${m.type === "image" ? "p-1" : "px-3.5 py-2"}`}
         style={
           aMoi
             ? { background: "linear-gradient(135deg, #8B5CF6, #C13BC1)", color: "#fff",
@@ -608,10 +660,28 @@ function Bulle({ message: m, moi, conv, couleur: c, surAffiche, cite, onMenu }: 
             <b className="block text-[10px] font-bold" style={{ color: aMoi ? "#F5D98A" : "#D7A62A" }}>
               {cite.userId === moi ? "Toi" : conv.membres.find((p) => p.id === cite.userId)?.pseudo ?? "…"}
             </b>
-            <span className="block truncate text-[11.5px]">{cite.contenu}</span>
+            <span className="block truncate text-[11.5px]">
+              {cite.type === "image" ? "📷 Photo" : cite.contenu}
+            </span>
           </span>
         )}
-        {m.contenu}
+        {m.type === "image" ? (
+          m.mediaUrl ? (
+            <a href={m.mediaUrl} target="_blank" rel="noreferrer" aria-label="Ouvrir la photo">
+              <Image
+                src={m.mediaUrl}
+                alt="Photo envoyée dans la discussion"
+                width={m.mediaWidth ?? 1200}
+                height={m.mediaHeight ?? 1200}
+                sizes="(max-width: 768px) 78vw, 520px"
+                className="max-h-[440px] w-auto max-w-full rounded-[13px] object-contain"
+                unoptimized
+              />
+            </a>
+          ) : (
+            <span className="block px-2 py-1.5">Photo indisponible</span>
+          )
+        ) : m.contenu}
       </div>
 
       {m.reactions.length > 0 && (
@@ -771,11 +841,13 @@ function MenuMessage({ message, moi, mienne, onFermer, onReaction, onRepondre, o
 
   const actions = useMemo(() => [
     { cle: "repondre", libelle: "Répondre",  Icone: Reply, action: onRepondre, danger: false },
-    { cle: "copier",   libelle: "Copier",    Icone: Copy,  action: onCopier,   danger: false },
+    ...(message.type === "texte"
+      ? [{ cle: "copier", libelle: "Copier", Icone: Copy, action: onCopier, danger: false }]
+      : []),
     ...(aMoi
       ? [{ cle: "suppr", libelle: "Supprimer", Icone: Trash2, action: onSupprimer, danger: true }]
       : []),
-  ], [aMoi, onRepondre, onCopier, onSupprimer]);
+  ], [aMoi, message.type, onRepondre, onCopier, onSupprimer]);
 
   return (
     <>

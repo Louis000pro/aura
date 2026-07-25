@@ -28,7 +28,11 @@ export type Message = {
   id: string;
   userId: string | null;   // null = message système
   contenu: string;
-  type: "texte" | "systeme";
+  type: "texte" | "systeme" | "image";
+  mediaPath: string | null;
+  mediaUrl: string | null;
+  mediaWidth: number | null;
+  mediaHeight: number | null;
   createdAt: string;
   repondA: string | null;
   reactions: Reaction[];
@@ -53,6 +57,9 @@ export type Conversation = {
   nonLus: number;
   defi: DefiDuFil | null;
   majLe: string;
+  epinglee: boolean;
+  sourde: boolean;
+  archivee: boolean;
 };
 
 const TAILLE_PAGE_MESSAGES = 50;
@@ -60,13 +67,54 @@ const TAILLE_PAGE_MESSAGES = 50;
 type ApercuConversation = {
   conversation_id: string;
   last_read_at: string;
+  pinned_at?: string | null;
+  muted?: boolean;
+  archived_at?: string | null;
   non_lus: number;
   dernier_id: string | null;
   dernier_user_id: string | null;
   dernier_contenu: string | null;
-  dernier_type: "texte" | "systeme" | null;
+  dernier_type: "texte" | "systeme" | "image" | null;
+  dernier_media_path?: string | null;
+  dernier_media_width?: number | null;
+  dernier_media_height?: number | null;
   dernier_created_at: string | null;
 };
+
+const COLONNES_MESSAGE =
+  "id, user_id, contenu, type, created_at, repond_a, media_path, media_width, media_height";
+const COLONNES_MESSAGE_ANCIENNES = "id, user_id, contenu, type, created_at, repond_a";
+
+type MessageBrut = {
+  id: string;
+  user_id: string | null;
+  contenu: string;
+  type: "texte" | "systeme" | "image";
+  created_at: string;
+  repond_a: string | null;
+  media_path?: string | null;
+  media_width?: number | null;
+  media_height?: number | null;
+};
+
+function migrationMediasManquante(message: string) {
+  return /media_path|media_width|media_height|schema cache|does not exist|column/i.test(message);
+}
+
+async function signerPhotos(
+  messages: ReadonlyArray<{ media_path?: string | null }>,
+): Promise<Map<string, string>> {
+  const chemins = [...new Set(messages.map((m) => m.media_path).filter(Boolean) as string[])];
+  if (!chemins.length) return new Map();
+  const supabase = createClient();
+  const signes = await Promise.all(chemins.map(async (chemin) => {
+    const { data, error } = await supabase.storage
+      .from("conversation-media")
+      .createSignedUrl(chemin, 60 * 60 * 24 * 7);
+    return [chemin, error ? null : data?.signedUrl ?? null] as const;
+  }));
+  return new Map(signes.filter((entree): entree is readonly [string, string] => Boolean(entree[1])));
+}
 
 /** Le titre d'une conversation : son nom si c'est un groupe, sinon l'autre. */
 export function titreConversation(c: Conversation, moi: string): string {
@@ -85,7 +133,12 @@ export function autresMembres(c: Conversation, moi: string): Personne[] {
 export async function chargerConversations(userId: string): Promise<Conversation[]> {
   const supabase = createClient();
 
-  const { data: apercusRpc, error: apercusError } = await supabase.rpc("apercus_conversations");
+  let { data: apercusRpc, error: apercusError } = await supabase.rpc("apercus_conversations_v2");
+  if (apercusError && /apercus_conversations_v2|schema cache|does not exist|404/i.test(apercusError.message)) {
+    const ancien = await supabase.rpc("apercus_conversations");
+    apercusRpc = ancien.data;
+    apercusError = ancien.error;
+  }
   let apercus = apercusRpc as ApercuConversation[] | null;
 
   // Le frontend reste utilisable entre le déploiement Vercel et le collage
@@ -129,6 +182,9 @@ export async function chargerConversations(userId: string): Promise<Conversation
         dernier_user_id: dernierRes.data?.user_id ?? null,
         dernier_contenu: dernierRes.data?.contenu ?? null,
         dernier_type: dernierRes.data?.type ?? null,
+        dernier_media_path: null,
+        dernier_media_width: null,
+        dernier_media_height: null,
         dernier_created_at: dernierRes.data?.created_at ?? null,
       };
     }));
@@ -188,7 +244,11 @@ export async function chargerConversations(userId: string): Promise<Conversation
             id: apercu.dernier_id as string,
             userId: (apercu.dernier_user_id as string | null) ?? null,
             contenu: apercu.dernier_contenu as string,
-            type: apercu.dernier_type as "texte" | "systeme",
+            type: apercu.dernier_type as "texte" | "systeme" | "image",
+            mediaPath: apercu.dernier_media_path ?? null,
+            mediaUrl: null,
+            mediaWidth: apercu.dernier_media_width ?? null,
+            mediaHeight: apercu.dernier_media_height ?? null,
             createdAt: apercu.dernier_created_at as string,
             repondA: null,
             reactions: [],
@@ -205,7 +265,13 @@ export async function chargerConversations(userId: string): Promise<Conversation
           }
         : null,
       majLe: c.last_message_at as string,
+      epinglee: Boolean(apercu?.pinned_at),
+      sourde: Boolean(apercu?.muted),
+      archivee: Boolean(apercu?.archived_at),
     };
+  }).sort((a, b) => {
+    if (a.epinglee !== b.epinglee) return a.epinglee ? -1 : 1;
+    return new Date(b.majLe).getTime() - new Date(a.majLe).getTime();
   });
 }
 
@@ -221,10 +287,17 @@ export async function chargerFil(convId: string): Promise<{
     supabase.from("conversations").select("id, type, nom, image_url, last_message_at")
       .eq("id", convId).maybeSingle(),
     supabase.from("conversation_members").select("user_id, last_read_at").eq("conversation_id", convId),
-    supabase.from("messages").select("id, user_id, contenu, type, created_at, repond_a")
-      .eq("conversation_id", convId)
-      .order("created_at", { ascending: false })
-      .limit(TAILLE_PAGE_MESSAGES + 1),
+    (async () => {
+      const moderne = await supabase.from("messages").select(COLONNES_MESSAGE)
+        .eq("conversation_id", convId)
+        .order("created_at", { ascending: false })
+        .limit(TAILLE_PAGE_MESSAGES + 1);
+      if (!moderne.error || !migrationMediasManquante(moderne.error.message)) return moderne;
+      return supabase.from("messages").select(COLONNES_MESSAGE_ANCIENNES)
+        .eq("conversation_id", convId)
+        .order("created_at", { ascending: false })
+        .limit(TAILLE_PAGE_MESSAGES + 1);
+    })(),
     // Surtout PAS `.maybeSingle()` : dès qu'un deuxième relais est lancé
     // dans le même fil (après un gagné ou un arrêté), il y a plusieurs
     // lignes et maybeSingle échoue — le défi disparaîtrait du fil.
@@ -237,9 +310,10 @@ export async function chargerFil(convId: string): Promise<{
   if (premiereErreur) throw new Error(premiereErreur.message);
   if (!convRes.data) return { conversation: null, messages: [], encoreAvant: false };
 
-  const messagesDesc = msgsRes.data ?? [];
+  const messagesDesc = (msgsRes.data ?? []) as MessageBrut[];
   const encoreAvant = messagesDesc.length > TAILLE_PAGE_MESSAGES;
   const messagesBruts = messagesDesc.slice(0, TAILLE_PAGE_MESSAGES).reverse();
+  const urlsPhotos = await signerPhotos(messagesBruts);
 
   const ids = (membresRes.data ?? []).map((m) => m.user_id as string);
   const { data: profils } = await supabase
@@ -297,12 +371,19 @@ export async function chargerFil(convId: string): Promise<{
       nonLus: 0,
       defi,
       majLe: convRes.data.last_message_at as string,
+      epinglee: false,
+      sourde: false,
+      archivee: false,
     },
     messages: messagesBruts.map((m) => ({
       id: m.id as string,
       userId: (m.user_id as string | null) ?? null,
       contenu: m.contenu as string,
-      type: m.type as "texte" | "systeme",
+      type: m.type as "texte" | "systeme" | "image",
+      mediaPath: (m.media_path as string | null | undefined) ?? null,
+      mediaUrl: m.media_path ? urlsPhotos.get(m.media_path as string) ?? null : null,
+      mediaWidth: (m.media_width as number | null | undefined) ?? null,
+      mediaHeight: (m.media_height as number | null | undefined) ?? null,
       createdAt: m.created_at as string,
       repondA: (m.repond_a as string | null) ?? null,
       reactions: reactionsDe(m.id as string),
@@ -317,19 +398,31 @@ export async function chargerMessagesAvant(
   avant: string,
 ): Promise<{ messages: Message[]; encoreAvant: boolean }> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let resultat = await supabase
     .from("messages")
-    .select("id, user_id, contenu, type, created_at, repond_a")
+    .select(COLONNES_MESSAGE)
     .eq("conversation_id", convId)
     .lt("created_at", avant)
     .order("created_at", { ascending: false })
     .limit(TAILLE_PAGE_MESSAGES + 1);
 
+  if (resultat.error && migrationMediasManquante(resultat.error.message)) {
+    const ancien = await supabase
+      .from("messages")
+      .select(COLONNES_MESSAGE_ANCIENNES)
+      .eq("conversation_id", convId)
+      .lt("created_at", avant)
+      .order("created_at", { ascending: false })
+      .limit(TAILLE_PAGE_MESSAGES + 1);
+    resultat = ancien as typeof resultat;
+  }
+  const { data, error } = resultat;
   if (error) throw new Error(error.message);
-  const desc = data ?? [];
+  const desc = (data ?? []) as MessageBrut[];
   const encoreAvant = desc.length > TAILLE_PAGE_MESSAGES;
   const bruts = desc.slice(0, TAILLE_PAGE_MESSAGES).reverse();
   const ids = bruts.map((m) => m.id as string);
+  const urlsPhotos = await signerPhotos(bruts);
   const { data: reacs, error: reacsError } = ids.length
     ? await supabase
         .from("message_reactions")
@@ -351,7 +444,11 @@ export async function chargerMessagesAvant(
         id: m.id as string,
         userId: (m.user_id as string | null) ?? null,
         contenu: m.contenu as string,
-        type: m.type as "texte" | "systeme",
+        type: m.type as "texte" | "systeme" | "image",
+        mediaPath: (m.media_path as string | null | undefined) ?? null,
+        mediaUrl: m.media_path ? urlsPhotos.get(m.media_path as string) ?? null : null,
+        mediaWidth: (m.media_width as number | null | undefined) ?? null,
+        mediaHeight: (m.media_height as number | null | undefined) ?? null,
         createdAt: m.created_at as string,
         repondA: (m.repond_a as string | null) ?? null,
         reactions: [...parEmoji].map(([emoji, userIds]) => ({ emoji, userIds })),
@@ -359,6 +456,18 @@ export async function chargerMessagesAvant(
     }),
     encoreAvant,
   };
+}
+
+function notifierMessage(messageId: string, accessToken?: string) {
+  if (!accessToken) return;
+  void fetch("/api/notifications/message", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ message_id: messageId }),
+  }).catch(() => {});
 }
 
 export async function envoyerMessage(
@@ -380,18 +489,91 @@ export async function envoyerMessage(
     .select("id")
     .single();
 
-  if (!error && data?.id && accessToken) {
-    void fetch("/api/notifications/message", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ message_id: data.id }),
-    }).catch(() => {});
-  }
+  if (!error && data?.id) notifierMessage(data.id as string, accessToken);
 
   return { ok: !error, raison: error?.message, messageId: data?.id as string | undefined };
+}
+
+async function compresserPhoto(fichier: File) {
+  if (!fichier.type.startsWith("image/")) throw new Error("format_invalide");
+  if (fichier.size > 15 * 1024 * 1024) throw new Error("photo_trop_lourde");
+
+  const bitmap = await createImageBitmap(fichier, { imageOrientation: "from-image" });
+  const ratio = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * ratio));
+  const height = Math.max(1, Math.round(bitmap.height * ratio));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const contexte = canvas.getContext("2d");
+  if (!contexte) {
+    bitmap.close();
+    throw new Error("compression_impossible");
+  }
+  contexte.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+
+  const encoder = (qualite: number) => new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => blob ? resolve(blob) : reject(new Error("compression_impossible")),
+      "image/webp",
+      qualite,
+    );
+  });
+
+  let blob = await encoder(0.8);
+  if (blob.size > 5 * 1024 * 1024) blob = await encoder(0.62);
+  if (blob.size > 5 * 1024 * 1024) throw new Error("photo_trop_lourde");
+  return { blob, width, height };
+}
+
+export async function envoyerPhoto(
+  convId: string,
+  userId: string,
+  fichier: File,
+  repondA?: string | null,
+  accessToken?: string,
+) {
+  try {
+    const supabase = createClient();
+    const { blob, width, height } = await compresserPhoto(fichier);
+    const identifiant = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    const chemin = `${convId}/${userId}/${Date.now()}-${identifiant}.webp`;
+    const { error: uploadError } = await supabase.storage
+      .from("conversation-media")
+      .upload(chemin, blob, {
+        upsert: false,
+        contentType: "image/webp",
+        cacheControl: "31536000",
+      });
+    if (uploadError) return { ok: false, raison: uploadError.message };
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: convId,
+        user_id: userId,
+        contenu: "Photo",
+        type: "image",
+        repond_a: repondA ?? null,
+        media_path: chemin,
+        media_width: width,
+        media_height: height,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      await supabase.storage.from("conversation-media").remove([chemin]);
+      return { ok: false, raison: error.message };
+    }
+    notifierMessage(data.id as string, accessToken);
+    return { ok: true, messageId: data.id as string };
+  } catch (error) {
+    return { ok: false, raison: error instanceof Error ? error.message : "envoi_impossible" };
+  }
 }
 
 /* ── Réagir, répondre, supprimer ──────────────────────────────
@@ -412,7 +594,15 @@ export async function reagir(messageId: string, userId: string, emoji: string, a
 
 export async function supprimerMessage(messageId: string) {
   const supabase = createClient();
+  const { data: message } = await supabase
+    .from("messages")
+    .select("media_path")
+    .eq("id", messageId)
+    .maybeSingle();
   const { error } = await supabase.from("messages").delete().eq("id", messageId);
+  if (!error && message?.media_path) {
+    await supabase.storage.from("conversation-media").remove([message.media_path as string]);
+  }
   return { ok: !error, raison: error?.message };
 }
 
@@ -429,6 +619,25 @@ export async function majConversation(
   if (!Object.keys(patch).length) return { ok: true };
 
   const { error } = await supabase.from("conversations").update(patch).eq("id", convId);
+  return { ok: !error, raison: error?.message };
+}
+
+export async function reglerConversation(
+  convId: string,
+  userId: string,
+  reglage: "epinglee" | "sourde" | "archivee",
+  active: boolean,
+) {
+  const supabase = createClient();
+  const patch =
+    reglage === "epinglee" ? { pinned_at: active ? new Date().toISOString() : null }
+    : reglage === "sourde" ? { muted: active }
+    : { archived_at: active ? new Date().toISOString() : null };
+  const { error } = await supabase
+    .from("conversation_members")
+    .update(patch)
+    .eq("conversation_id", convId)
+    .eq("user_id", userId);
   return { ok: !error, raison: error?.message };
 }
 
