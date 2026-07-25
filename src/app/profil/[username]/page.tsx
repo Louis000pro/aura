@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, LayoutList,
-  X, Sparkles, Lock, Users, ChevronRight,
+  X, Sparkles, Lock, Users, ChevronRight, UserMinus,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
@@ -72,6 +72,7 @@ export default function PublicProfilePage() {
   const [recentSessions, setRecentSessions] = useState<DbSession[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [certified, setCertified] = useState(false); // is_certified (fetch défensif)
@@ -205,6 +206,7 @@ export default function PublicProfilePage() {
       if (error) { console.error("unfollow:", error); showToast("Impossible de retirer, réessaie"); setFollowLoading(false); return; }
       setIsFollowing(false);
       setFollowerCount((c) => Math.max(0, c - 1));
+      setShowRemoveConfirm(false);
       showToast("Retiré de tes amis");
     } else {
       const { error } = await supabase
@@ -234,6 +236,14 @@ export default function PublicProfilePage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleFriendButton = () => {
+    if (isFollowing) {
+      setShowRemoveConfirm(true);
+      return;
+    }
+    void handleFollow();
   };
 
   const formatDate = (iso: string) => {
@@ -347,7 +357,7 @@ export default function PublicProfilePage() {
             {!isOwnProfile && user && (
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                onClick={handleFollow}
+                onClick={handleFriendButton}
                 disabled={followLoading}
                 className="px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer"
                 style={isFollowing
@@ -473,7 +483,7 @@ export default function PublicProfilePage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.92 }}
-                onClick={handleFollow}
+                onClick={handleFriendButton}
                 disabled={followLoading}
                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer flex-shrink-0"
                 style={
@@ -821,6 +831,84 @@ export default function PublicProfilePage() {
                 </p>
               )}
               <div className="pb-4" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Une relation d'amitié ne se retire jamais sur un clic accidentel. */}
+      <AnimatePresence>
+        {showRemoveConfirm && profile && (
+          <motion.div
+            role="presentation"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-end justify-center p-0 md:items-center md:p-6"
+            style={{ background: "rgba(0,0,0,.48)", backdropFilter: "blur(5px)" }}
+            onClick={() => setShowRemoveConfirm(false)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="retirer-ami-titre"
+              initial={{ y: "100%", opacity: .7 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: .7 }}
+              transition={{ type: "spring", damping: 30, stiffness: 340 }}
+              className="w-full max-w-md rounded-t-[26px] px-5 pb-6 pt-3 md:rounded-[26px] md:p-6"
+              style={{
+                background: "rgb(var(--surface-rgb))",
+                paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+                boxShadow: "0 24px 70px rgba(17,10,34,.24)",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                className="mx-auto mb-5 h-1 w-10 rounded-full md:hidden"
+                style={{ background: "rgba(var(--text-3-rgb),.35)" }}
+              />
+              <div
+                className="mx-auto flex h-12 w-12 items-center justify-center rounded-full"
+                style={{ background: "rgba(var(--text-3-rgb),.1)", color: "var(--text-2)" }}
+              >
+                <UserMinus className="h-5 w-5" />
+              </div>
+              <h2
+                id="retirer-ami-titre"
+                className="mt-4 text-center text-[18px] font-bold"
+                style={{ color: "var(--text-0)" }}
+              >
+                Retirer {profile.pseudo} de tes amis ?
+              </h2>
+              <p className="mx-auto mt-2 max-w-xs text-center text-[13.5px] leading-relaxed" style={{ color: "var(--text-3)" }}>
+                Cette action supprimera votre lien d&apos;amitié. Votre conversation restera disponible.
+              </p>
+              <div className="mt-5 grid gap-2">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setShowRemoveConfirm(false)}
+                  className="rounded-2xl px-4 py-3 text-[14px] font-semibold text-white"
+                  style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}
+                >
+                  Garder comme ami
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleFollow()}
+                  disabled={followLoading}
+                  className="flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[14px] font-semibold disabled:opacity-50"
+                  style={{ color: "var(--text-2)", background: "rgba(var(--text-3-rgb),.08)" }}
+                >
+                  {followLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    <UserMinus className="h-4 w-4" />
+                  )}
+                  Retirer de mes amis
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

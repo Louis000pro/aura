@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check, Copy, Loader2, Search, Share2, UserPlus, Users, X,
@@ -37,6 +38,7 @@ export default function FriendshipSheets({
   onNombreDemandes,
   onConversation,
 }: Props) {
+  const router = useRouter();
   const [demandes, setDemandes] = useState<Personne[]>([]);
   const [chargeDemandes, setChargeDemandes] = useState(true);
   const [erreurDemandes, setErreurDemandes] = useState<string | null>(null);
@@ -80,6 +82,10 @@ export default function FriendshipSheets({
               pseudoInitial={pseudoInitial}
               onConversation={onConversation}
               onDemandeEnvoyee={() => void rechargerDemandes()}
+              onProfil={(pseudo) => {
+                onFermer();
+                router.push(`/profil/${encodeURIComponent(pseudo)}`);
+              }}
             />
           ) : (
             <DemandesAmi
@@ -217,6 +223,7 @@ function AjouterAmi({
   pseudoInitial,
   onConversation,
   onDemandeEnvoyee,
+  onProfil,
 }: {
   moi: string;
   monPseudo: string;
@@ -224,6 +231,7 @@ function AjouterAmi({
   pseudoInitial: string;
   onConversation: (id: string) => void;
   onDemandeEnvoyee: () => void;
+  onProfil: (pseudo: string) => void;
 }) {
   const [pseudo, setPseudo] = useState(pseudoInitial);
   const [resultats, setResultats] = useState<ResultatRechercheAmi[]>([]);
@@ -413,7 +421,14 @@ function AjouterAmi({
         {resultats.map((personne) => (
           <div key={personne.id} className="flex items-center gap-3 border-b py-3"
             style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
-            <PersonAvatar personne={personne} taille={44} />
+            <button
+              type="button"
+              onClick={() => onProfil(personne.pseudo)}
+              aria-label={`Voir le profil de ${personne.pseudo}`}
+              className="shrink-0 rounded-full transition-transform active:scale-95"
+            >
+              <PersonAvatar personne={personne} taille={44} />
+            </button>
             <span className="min-w-0 flex-1">
               <b className="block truncate text-[15px]" style={{ color: "var(--text-0)" }}>
                 {personne.pseudo}
