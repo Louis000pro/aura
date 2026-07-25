@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import ConversationAvatar from "@/components/communaute/ConversationAvatar";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
@@ -428,7 +429,7 @@ export default function FilPage() {
           onClick={() => router.push(`/communaute/${convId}/infos`)}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
         >
-          <Vignette conv={conv} autres={autres} titre={titre} taille={32} />
+          <ConversationAvatar conversation={conv} autres={autres} titre={titre} taille={32} />
           <span className="min-w-0 flex-1">
             <b className="block truncate text-[15px] font-semibold" style={{ color: c.t0 }}>{titre}</b>
             <span className="block truncate text-[11.5px]" style={{ color: c.t2 }}>
@@ -794,29 +795,6 @@ function EnTrainDEcrire({ noms, couleur: c, surAffiche }: {
       <span className="text-[10.5px]" style={{ color: c.t3 }}>
         {noms.length === 1 ? `${noms[0]} écrit…` : "plusieurs personnes écrivent…"}
       </span>
-    </div>
-  );
-}
-
-/* ─── Vignette d'en-tête ─────────────────────────────────────── */
-function Vignette({ conv, autres, titre, taille }: {
-  conv: Conversation; autres: Conversation["membres"]; titre: string; taille: number;
-}) {
-  const src = conv.image ?? (conv.type === "duo" ? autres[0]?.avatar : null);
-  const s = { width: taille, height: taille };
-
-  if (src) {
-    return (
-      <Image src={src} alt="" width={taille} height={taille}
-        className="shrink-0 rounded-full object-cover" style={s} unoptimized />
-    );
-  }
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
-      style={{ ...s, fontSize: taille * 0.4, background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
-    >
-      {titre.charAt(0).toUpperCase()}
     </div>
   );
 }

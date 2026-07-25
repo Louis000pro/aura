@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
+import ConversationAvatar, { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import { createClient } from "@/lib/supabase";
 import { imageEtat } from "@/lib/defi";
 import {
@@ -510,126 +511,6 @@ function Liste({ convs, moi, activeId, onOuvrir, onPrefetch, onActions }: {
   );
 }
 
-function ConversationAvatar({ conversation, autres, titre }: {
-  conversation: Conversation;
-  autres: Personne[];
-  titre: string;
-}) {
-  if (conversation.defi) return <Sceau defi={conversation.defi} />;
-
-  if (conversation.image) {
-    return (
-      <Image
-        src={conversation.image}
-        alt=""
-        width={46}
-        height={46}
-        className="h-[46px] w-[46px] shrink-0 rounded-full object-cover"
-        unoptimized
-      />
-    );
-  }
-
-  if (conversation.type === "groupe" && autres.length >= 2) {
-    const visibles = autres.slice(0, 3);
-    const positions = [
-      "left-0 top-0",
-      "right-0 top-0",
-      "bottom-0 left-1/2 -translate-x-1/2",
-    ];
-    return (
-      <div
-        className="relative h-[46px] w-[46px] shrink-0 rounded-full"
-        aria-label={`Groupe ${titre}`}
-        style={{ background: "rgb(var(--surface-rgb))" }}
-      >
-        {visibles.map((personne, index) => (
-          <span
-            key={personne.id}
-            className={`absolute rounded-full ${positions[index]}`}
-            style={{ boxShadow: "0 0 0 2px rgb(var(--bg-rgb))", lineHeight: 0 }}
-          >
-            <Avatar personne={personne} taille={28} />
-          </span>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <Avatar
-      personne={conversation.type === "duo" ? autres[0] : undefined}
-      taille={46}
-      nom={conversation.type === "groupe" ? titre : undefined}
-    />
-  );
-}
-
-/* ─── Le sceau ───────────────────────────────────────────────
-   Quand une conversation porte un relais, l'affiche remplace
-   l'avatar et un trait d'or se referme autour d'elle, un quart
-   par maillon. Bouclé = contour entier + l'étincelle.
-
-   C'est l'inverse exact d'une flamme Snapchat : une flamme
-   menace de s'éteindre, le sceau se construit. Aucun compteur
-   de jours consécutifs, aucune dette. */
-const PERIMETRE = 156;   // rect 39×45, rayon 7
-
-function Sceau({ defi }: { defi: NonNullable<Conversation["defi"]> }) {
-  const etat = defi.faits <= 0 ? 1
-    : defi.faits >= defi.objectif ? 4
-    : Math.min(3, 1 + Math.round((3 * defi.faits) / defi.objectif));
-
-  const part    = Math.min(1, defi.faits / Math.max(1, defi.objectif));
-  const boucle  = defi.faits >= defi.objectif;
-  const dessine = PERIMETRE * part;
-
-  return (
-    <div className="relative h-[46px] w-[46px] shrink-0">
-      <div className="absolute left-[5px] top-[2px] h-[42px] w-[36px] overflow-hidden rounded-[6px] shadow-md">
-        <Image src={imageEtat(defi.serie, etat)} alt="" fill sizes="36px" className="object-cover" />
-      </div>
-
-      <svg viewBox="0 0 46 46" fill="none" className="absolute inset-0" aria-hidden="true">
-        <rect x="3.5" y="0.5" width="39" height="45" rx="7"
-          stroke="rgba(215,166,42,.22)" strokeWidth="1.6" />
-        {part > 0 && (
-          <rect x="3.5" y="0.5" width="39" height="45" rx="7"
-            stroke="#D7A62A" strokeWidth={boucle ? 1.9 : 1.6} strokeLinecap="round"
-            strokeDasharray={`${dessine} ${PERIMETRE}`} strokeDashoffset={-20} />
-        )}
-      </svg>
-
-      {boucle && (
-        <span className="absolute -right-[3px] -top-[3px] text-[11px]"
-          style={{ color: "#D7A62A", textShadow: "0 0 7px rgba(215,166,42,.8)" }}>
-          ✦
-        </span>
-      )}
-    </div>
-  );
-}
-
-function Avatar({ personne, taille = 44, nom }: {
-  personne?: Personne; taille?: number; nom?: string;
-}) {
-  const s = { width: taille, height: taille };
-  if (!nom && personne?.avatar) {
-    return (
-      <Image src={personne.avatar} alt="" width={taille} height={taille}
-        className="shrink-0 rounded-full object-cover" style={s} unoptimized />
-    );
-  }
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
-      style={{ ...s, fontSize: taille * 0.36, background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}
-    >
-      {(nom ?? personne?.pseudo ?? "?").charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
 /* ─── État vide ──────────────────────────────────────────────
    L'écran que verront presque tous les nouveaux. Il ne s'excuse
    pas d'être vide : il propose les deux seules choses qu'on
@@ -775,7 +656,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
                 onClick={() => basculer(p.id)}
                 className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left"
               >
-                <Avatar personne={p} taille={38} />
+                <PersonAvatar personne={p} taille={38} />
                 <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
                   {p.pseudo}
                 </span>
