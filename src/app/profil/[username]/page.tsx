@@ -202,10 +202,10 @@ export default function PublicProfilePage() {
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", profile.id);
-      if (error) { console.error("unfollow:", error); showToast("Impossible de se désabonner, réessaie"); setFollowLoading(false); return; }
+      if (error) { console.error("unfollow:", error); showToast("Impossible de retirer, réessaie"); setFollowLoading(false); return; }
       setIsFollowing(false);
       setFollowerCount((c) => Math.max(0, c - 1));
-      showToast("Abonnement annulé");
+      showToast("Retiré de tes amis");
     } else {
       const { error } = await supabase
         .from("followers")
@@ -213,7 +213,7 @@ export default function PublicProfilePage() {
           { follower_id: user.id, following_id: profile.id },
           { onConflict: "follower_id,following_id", ignoreDuplicates: true }
         );
-      if (error) { console.error("follow:", error); showToast("Impossible de suivre, réessaie"); setFollowLoading(false); return; }
+      if (error) { console.error("follow:", error); showToast("Impossible d'ajouter, réessaie"); setFollowLoading(false); return; }
       // Notification in-app + email via route admin (insertion unique)
       void supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) return;
@@ -225,7 +225,7 @@ export default function PublicProfilePage() {
       });
       setIsFollowing(true);
       setFollowerCount((c) => c + 1);
-      showToast("Abonné ! 🎉");
+      showToast("Ami ajouté ! 🎉");
     }
 
     setFollowLoading(false);
@@ -355,7 +355,7 @@ export default function PublicProfilePage() {
                   : { background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }
                 }
               >
-                {isFollowing ? "Suivi" : "Suivre"}
+                {isFollowing ? "Ami" : "Ajouter"}
               </motion.button>
             )}
           </motion.div>
@@ -491,9 +491,9 @@ export default function PublicProfilePage() {
                 }
               >
                 {isFollowing ? (
-                  <><UserCheck size={13} strokeWidth={2} />Suivi</>
+                  <><UserCheck size={13} strokeWidth={2} />Ami</>
                 ) : (
-                  <><UserPlus size={13} strokeWidth={2} />Suivre</>
+                  <><UserPlus size={13} strokeWidth={2} />Ajouter</>
                 )}
               </motion.button>
             </>

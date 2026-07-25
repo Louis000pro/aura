@@ -42,6 +42,8 @@ type WorkoutSessionItem = {
   started_at: string | null;
   duration_minutes: number;
   elapsed_seconds: number;
+  exercises?: unknown;
+  category?: string | null;
 };
 import NotificationBell from "@/components/NotificationBell";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
@@ -958,7 +960,7 @@ export default function ProfilPage() {
     // Séances : workout sessions
     supabase
       .from("workout_sessions")
-      .select("id, title, started_at, duration_minutes, elapsed_seconds")
+      .select("id, title, started_at, duration_minutes, elapsed_seconds, exercises, category")
       .eq("user_id", user.id)
       .order("started_at", { ascending: false })
       .limit(50)
@@ -968,6 +970,27 @@ export default function ProfilPage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  // Rejouer une séance de l'historique : on relance le tunnel avec ses exercices
+  // enregistrés ; à défaut, on tente de retrouver une séance « builtin » par son
+  // titre. Si rien n'est rejouable (vieille séance sans exercices), on prévient.
+  const refaireSeance = (session: WorkoutSessionItem) => {
+    const exList = Array.isArray(session.exercises) ? (session.exercises as Exercise[]) : [];
+    const builtinId = resolveSessionId(session.title ?? "");
+    if (exList.length === 0 && !builtinId) {
+      showToast("Séance trop ancienne pour être rejouée 🙏");
+      return;
+    }
+    setProfileWorkout({
+      sessionId: exList.length > 0 ? "profile-history" : builtinId!,
+      title: session.title ?? "Séance",
+      accent: "var(--accent)",
+      duration: session.elapsed_seconds ? Math.round(session.elapsed_seconds / 60) : (session.duration_minutes || 30),
+      difficulty: "Intermédiaire",
+      category: session.category ?? "force",
+      exerciseList: exList,
+    });
   };
 
   const handleLogout = () => {
@@ -1434,10 +1457,12 @@ export default function ProfilPage() {
                   return (
                     <motion.div
                       key={session.id}
-                      className="flex items-center gap-4 px-4 py-3.5 rounded-2xl"
+                      onClick={() => refaireSeance(session)}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer"
                       style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.06)" }}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
+                      whileTap={{ scale: 0.99 }}
                     >
                       <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
                         <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
@@ -1449,10 +1474,20 @@ export default function ProfilPage() {
                           {durationMin ? ` · ${durationMin} min` : ""}
                         </p>
                       </div>
-                      <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#2BD4A0" }}>+30</span>
                       <motion.button
                         whileTap={{ scale: 0.85 }}
-                        onClick={async () => {
+                        onClick={(e) => { e.stopPropagation(); refaireSeance(session); }}
+                        className="h-8 px-3 rounded-xl flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer"
+                        style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}
+                        title="Refaire cette séance"
+                      >
+                        <Play size={12} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+                        <span className="text-[11.5px] font-bold" style={{ color: "var(--accent)" }}>Refaire</span>
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           const supabase = createClient();
                           const { error } = await supabase.from("workout_sessions").delete().eq("id", session.id);
                           if (!error) setWorkoutSessions(prev => prev.filter(s => s.id !== session.id));
