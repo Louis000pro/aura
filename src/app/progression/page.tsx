@@ -540,14 +540,14 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
   let story: React.ReactNode = null;
   if (week) {
     if (todayDay?.status === "done") {
-      story = <><b style={{ color: "#2BD4A0", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — dont celle d&apos;aujourd&apos;hui. 💪</>;
+      story = <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — dont celle d&apos;aujourd&apos;hui. 💪</>;
     } else if (hasSeance(todayDay)) {
       story = doneCount > 0
-        ? <><b style={{ color: "#2BD4A0", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
+        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
         : <>Ta semaine commence — <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
     } else {
       story = doneCount > 0
-        ? <><b style={{ color: "#2BD4A0", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — repos aujourd&apos;hui.</>
+        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — repos aujourd&apos;hui.</>
         : <>Repos aujourd&apos;hui — ta semaine se construit.</>;
     }
   }
@@ -594,8 +594,8 @@ function WeekStrip({ week, todayIdx, onOrganise }: {
                   <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(5,4,9,0.8) 0%, rgba(5,4,9,0.12) 52%, transparent)" }} />
                   {isDone && (
                     <span className="absolute top-1 right-1 rounded-full flex items-center justify-center"
-                      style={{ width: 14, height: 14, background: "#1FBF8C", boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
-                      <Check size={9} strokeWidth={3.4} style={{ color: "#06281E" }} />
+                      style={{ width: 14, height: 14, background: "#8B5CF6", boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
+                      <Check size={9} strokeWidth={3.4} style={{ color: "#fff" }} />
                     </span>
                   )}
                 </>
@@ -671,16 +671,16 @@ function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void
               <div key={i} className="flex flex-col items-center gap-1.5">
                 <span className="w-[9px] rounded-full" style={{
                   height: barH(b.min),
-                  background: b.today ? "#2BD4A0" : b.done ? "rgba(43,212,160,0.55)" : "rgba(255,255,255,0.10)",
+                  background: b.today ? "#8B5CF6" : b.done ? "rgba(139,92,246,0.55)" : "rgba(255,255,255,0.10)",
                 }} />
-                <span className="text-[8.5px] font-bold" style={{ color: b.today ? "#2BD4A0" : "var(--text-3)" }}>{b.label}</span>
+                <span className="text-[8.5px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
           <div className="text-right">
             <p className="text-[9.5px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: "var(--text-3)" }}>Cette semaine</p>
             <p className="leading-none">
-              <span className="text-[22px] font-extrabold" style={{ color: "#2BD4A0" }}>{sessions}</span>
+              <span className="text-[22px] font-extrabold" style={{ color: "#8B5CF6" }}>{sessions}</span>
               <span className="text-[12px] font-semibold ml-1" style={{ color: "var(--text-2)" }}>séance{sessions > 1 ? "s" : ""}</span>
             </p>
             <p className="text-[11px] font-semibold mt-1.5 flex items-center justify-end gap-1.5" style={{ color: "var(--text-3)" }}>
@@ -744,15 +744,15 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
             {bars.map((b, i) => (
               <div key={i} className="flex flex-col items-center justify-end gap-1.5 h-full">
                 {b.min > 0 && b.min === maxMin && (
-                  <span className="text-[9.5px] font-extrabold" style={{ color: "#2BD4A0" }}>{b.min} min</span>
+                  <span className="text-[9.5px] font-extrabold" style={{ color: "#8B5CF6" }}>{b.min} min</span>
                 )}
                 <span className="w-[12px] rounded-full" style={{
                   height: barH(b.min),
-                  background: b.today && b.min > 0 ? "#2BD4A0"
-                    : b.done ? "rgba(43,212,160,0.5)" : "rgba(255,255,255,0.09)",
-                  boxShadow: b.today && b.min > 0 ? "0 0 14px rgba(43,212,160,0.4)" : undefined,
+                  background: b.today && b.min > 0 ? "#8B5CF6"
+                    : b.done ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.09)",
+                  boxShadow: b.today && b.min > 0 ? "0 0 14px rgba(139,92,246,0.4)" : undefined,
                 }} />
-                <span className="text-[9px] font-bold" style={{ color: b.today ? "#2BD4A0" : "var(--text-3)" }}>{b.label}</span>
+                <span className="text-[9px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
               </div>
             ))}
           </div>
@@ -760,7 +760,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
           {/* Détails */}
           <div style={{ width: 128 }}>
             {([
-              ["Séances", sessions > 0 ? String(sessions) : "—", "#2BD4A0"],
+              ["Séances", sessions > 0 ? String(sessions) : "—", "#8B5CF6"],
               ["Temps", minutes > 0 ? fmtDur(minutes) : "—", "var(--text-1)"],
               ["Calories", kcal > 0 ? kcal.toLocaleString("fr-FR") : "—", "#EF9F27"],
               ["Moyenne", avg > 0 ? `${avg} min` : "—", "var(--text-1)"],
@@ -778,7 +778,7 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
         {/* Comparaison vs semaine dernière — jamais un reproche */}
         {prevMinutes > 0 && delta > 0 && (
           <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-bold"
-            style={{ background: "rgba(43,212,160,0.09)", border: "1px solid rgba(43,212,160,0.22)", color: "#2BD4A0" }}>
+            style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "#8B5CF6" }}>
             ▲ +{delta} min vs la semaine dernière — ça monte.
           </div>
         )}
