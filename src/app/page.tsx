@@ -808,7 +808,7 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
               strokeDasharray="46 54"
               initial={{ strokeDashoffset: 0 }}
               animate={{ strokeDashoffset: -100 }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }}
               style={{ filter: "drop-shadow(0 0 2.5px rgba(139,92,246,0.5))" }}
             />
           </svg>
@@ -1388,7 +1388,7 @@ function Dashboard() {
             </button>
             {/* Rang / EXP au centre, AGRANDI (ouvre la liste des rangs) */}
             <button type="button" onClick={() => setShowRangs(true)} className="rounded-2xl px-2.5 py-3.5 flex flex-col items-center justify-center gap-1.5 text-center outline-none active:opacity-90" style={TUILE_STYLE}>
-              <div className="w-[58px] h-[58px] grid place-items-center"><GemmeRang rang={aura.rang} size={56} /></div>
+              <div className="w-[72px] h-[72px] grid place-items-center"><GemmeRang rang={aura.rang} size={70} /></div>
               <span className="text-[10.5px] font-bold tracking-wide uppercase truncate max-w-full" style={{ color: "var(--text-3)" }}>Rang · {aura.rang.nom}</span>
               <span className="text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>{auraLoaded ? aura.exp : "—"} / {aura.seuilHaut}</span>
             </button>
