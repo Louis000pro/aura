@@ -99,9 +99,13 @@ type AssistantContextValue = {
   pendingSeance: ProposedSeance | null;
   pendingPlan: PendingPlan | null;
   pendingRecipe: PendingRecipe | null;
+  /** Séance qui vient d'être créée : on demande quand la faire (jour) ou de la lancer tout de suite. */
+  pendingCreated: ProposedSeance | null;
   actionLoading: boolean;
   confirmSeance: () => void;
   cancelSeance: () => void;
+  scheduleCreated: (when: string) => void;
+  dismissCreated: () => void;
   confirmPlan: () => void;
   cancelPlan: () => void;
   confirmRecipe: () => void;
@@ -137,6 +141,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
+  const [pendingCreated, setPendingCreated] = useState<ProposedSeance | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const userContextRef = useRef<UserContext | null>(null);
@@ -920,13 +925,49 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     const { error } = await supabase.from("custom_sessions").insert(seanceToRow(pendingSeance, user.id));
     if (error) { setMemoryNotice("Oups, impossible de créer la séance."); return; }
-    const title = pendingSeance.title;
+    // La séance existe désormais dans la bibliothèque. Au lieu de la « perdre »
+    // dans /progression, on enchaîne : on demande QUAND la faire (un jour du
+    // planning) ou de la LANCER tout de suite. La carte de suite s'affiche.
+    const created = pendingSeance;
     setPendingSeance(null);
-    setMemoryNotice(`Séance « ${title} » créée ✓`);
-    setTimeout(() => { setIsOpen(false); router.push("/progression"); }, 900);
-  }, [user?.id, pendingSeance, router]);
+    setMemoryNotice(`Séance « ${created.title} » créée ✓`);
+    setPendingCreated(created);
+  }, [user?.id, pendingSeance]);
 
   const cancelSeance = useCallback(() => setPendingSeance(null), []);
+
+  /* ── Suite de création : programmer la séance sur un jour du planning.
+     On copie la séance créée sur le jour cible (liée via sessionId) — même
+     plomberie que « poser une séance de la biblio ». ── */
+  const scheduleCreated = useCallback(async (whenRaw: string) => {
+    if (!user?.id || !pendingCreated) return;
+    const day = resolveWhen(whenRaw);
+    if (!day) return;
+    const s = pendingCreated;
+    const category = normalizeWorkoutCategory(s.category);
+    const saved = readLieu(user.id);
+    const planningDay: PlanningDay = {
+      date: day,
+      type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
+      title: s.title,
+      difficulty: normalizeDifficulty(s.difficulty),
+      location: ctxFromLieu(saved.location, saved.equip),
+      exerciseList: normalizeExercises(s.exerciseList),
+      sessionId: s.id,
+      status: "planned",
+    };
+    try {
+      await saveDay(user.id, planningDay);
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: day } }));
+      setPendingCreated(null);
+      setMemoryNotice(`Programmée · ${dayLabelLong(day)} ✓`);
+      setTimeout(() => setIsOpen(false), 1100);
+    } catch {
+      setMemoryNotice("Oups, impossible de programmer la séance.");
+    }
+  }, [user?.id, pendingCreated]);
+
+  const dismissCreated = useCallback(() => setPendingCreated(null), []);
 
   /* ── Validation de la carte planning : écrit les jours en base (aucune écriture sans clic) ── */
   const confirmPlan = useCallback(async () => {
@@ -985,7 +1026,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe }}>
       {children}
     </Ctx.Provider>
   );

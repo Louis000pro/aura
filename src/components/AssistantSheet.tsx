@@ -12,11 +12,24 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays } from "lucide-react";
+import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays, Play } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
+import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { AssistantAvatar } from "@/components/AssistantMark";
+
+/** 6 jours à venir → puces de programmation (tokens compris par resolveWhen). */
+function joursProposes() {
+  return Array.from({ length: 6 }, (_, n) => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n);
+    const token = n === 0 ? "aujourd_hui" : `dans_${n}_jour`;
+    const label = n === 0 ? "Aujourd'hui"
+      : n === 1 ? "Demain"
+      : d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+    return { token, label };
+  });
+}
 
 const SUGGESTIONS = [
   "Comment créer une séance ?",
@@ -102,7 +115,8 @@ function AssistantContent({ text }: { text: string }) {
 }
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, actionLoading, confirmSeance, cancelSeance, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe } = useAssistant();
+  const { launchWorkout } = useWorkoutLaunch();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -130,11 +144,11 @@ export default function AssistantSheet() {
     // La carte de séance s'anime et grandit après le 1er rendu : on re-scroll
     // une fois sa hauteur stabilisée pour que ses boutons (Créer/Annuler)
     // soient toujours visibles et cliquables.
-    if (pendingSeance || pendingPlan || pendingRecipe) {
+    if (pendingSeance || pendingPlan || pendingRecipe || pendingCreated) {
       const t = setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }), 360);
       return () => clearTimeout(t);
     }
-  }, [messages, isOpen, pendingSeance, pendingPlan, pendingRecipe, actionLoading]);
+  }, [messages, isOpen, pendingSeance, pendingPlan, pendingRecipe, pendingCreated, actionLoading]);
 
   // Échap pour fermer
   useEffect(() => {
@@ -149,6 +163,26 @@ export default function AssistantSheet() {
     if (!input.trim() || isStreaming) return;
     sendMessage(input);
     setInput("");
+  };
+
+  // « La faire maintenant » : lance le tunnel avec la séance qu'on vient de créer.
+  const faireMaintenant = () => {
+    const pc = pendingCreated;
+    if (!pc) return;
+    launchWorkout({
+      sessionId: pc.id,
+      title: pc.title,
+      accent: "var(--accent)",
+      duration: pc.duration,
+      difficulty: pc.difficulty,
+      category: pc.category,
+      exerciseList: pc.exerciseList.map((e) => ({
+        name: e.name, sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter,
+        tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],
+      })),
+    });
+    dismissCreated();
+    close();
   };
 
   if (!mounted) return null;
@@ -457,6 +491,50 @@ export default function AssistantSheet() {
                       className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
                       style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
                       <Check size={15} strokeWidth={2.4} /> Ajouter au repas
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Carte de SUITE — la séance vient d'être créée : quand la faire ? */}
+              {pendingCreated && (
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="w-full rounded-3xl overflow-hidden"
+                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, #2BD4A0, #22B98A)" }}>
+                      <Check size={17} strokeWidth={2.6} style={{ color: "#fff" }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Séance créée ✓</p>
+                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingCreated.title}</p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 pt-3 pb-1">
+                    <p className="text-[13px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>Quand veux-tu la faire ?</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {joursProposes().map((j) => (
+                        <motion.button key={j.token} whileTap={{ scale: 0.94 }} onClick={() => scheduleCreated(j.token)}
+                          className="px-3 py-1.5 rounded-full text-[12.5px] font-medium cursor-pointer capitalize flex items-center gap-1"
+                          style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-1)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+                          <CalendarDays size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />{j.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 px-4 py-3 mt-1" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={dismissCreated}
+                      className="py-2.5 px-4 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
+                      Plus tard
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={faireMaintenant}
+                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
+                      <Play size={15} strokeWidth={2.4} fill="#fff" /> La faire maintenant
                     </motion.button>
                   </div>
                 </motion.div>
