@@ -780,15 +780,16 @@ function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loa
   if (!loaded) {
     return <div className="rounded-3xl h-[150px] animate-pulse" style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.06)" }} />;
   }
-  // Jour de repos → carte positive (zéro culpabilisation)
+  // Jour de repos → même DA que la carte coach (surface épurée + carré-icône
+  // dégradé), teinté teal (corps/récupération). Zéro culpabilisation.
   if (seance && seance.type.toLowerCase() === "repos") {
     return (
-      <div className="rounded-3xl px-5 py-6 flex items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(43,212,160,0.14), rgba(43,212,160,0.05))", border: "1px solid rgba(43,212,160,0.22)" }}>
-        <span className="text-[30px]">🌙</span>
-        <div>
+      <div className="w-full flex items-start gap-3 rounded-3xl p-4" style={{ background: "linear-gradient(180deg, rgba(43,212,160,0.08), rgba(43,212,160,0.04)), rgb(var(--surface-rgb))", border: "1px solid rgba(43,212,160,0.20)" }}>
+        <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#2BD4A0,#12A67D)", color: "#fff", boxShadow: "0 6px 14px -6px rgba(43,212,160,0.7)" }}>🌙</span>
+        <div className="flex-1 min-w-0">
           <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#1F9E78" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
-          <h2 className="text-[19px] font-extrabold" style={{ color: "var(--text-0)" }}>Jour de repos</h2>
-          <p className="text-[12.5px]" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
+          <p className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>Jour de repos</p>
+          <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
         </div>
       </div>
     );
@@ -1415,19 +1416,23 @@ function Dashboard() {
         }}
       >
         {/* ─────────── 1. En-tête vivant ─────────── */}
-        <div className="flex items-center gap-3.5 pt-1">
-          <div className="flex-shrink-0">
-            <GemmeRang rang={aura.rang} size={62} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold tracking-[0.16em] uppercase" style={{ color: "var(--text-3)" }}>{greeting}</p>
-            <h1 className="text-[23px] font-extrabold leading-tight truncate" style={{ color: "var(--text-0)" }}>
+        <div className="pt-1">
+          <p className="text-[11px] font-bold tracking-[0.16em] uppercase" style={{ color: "var(--text-3)" }}>{greeting}</p>
+          <h1 className="text-[28px] font-extrabold leading-tight" style={{ color: "var(--text-0)" }}>
+            <span
+              style={{
+                background: "linear-gradient(135deg,var(--accent),var(--gold))",
+                WebkitBackgroundClip: "text", backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                display: "inline-block", paddingRight: "0.08em",
+              }}
+            >
               {(user?.pseudo ?? user?.name ?? "")}
-            </h1>
-            <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>
-              {phraseDuJour(seanceJour, missions.repasOk)}
-            </p>
-          </div>
+            </span>
+          </h1>
+          <p className="text-[12.5px] leading-snug mt-1" style={{ color: "var(--text-soft)" }}>
+            {phraseDuJour(seanceJour, missions.repasOk)}
+          </p>
         </div>
 
         {/* ─────────── 2. Le nœud du jour ─────────── */}
