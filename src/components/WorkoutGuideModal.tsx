@@ -17,6 +17,7 @@ import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
 import { WAVE_2_EXERCISES } from "@/lib/workoutWave2";
 import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
+import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -561,6 +562,9 @@ const exerciseData: Record<string, Exercise[]> = {
       benefit: "Un repère concret de ta progression. Mesurer ton gainage maximal te donne un objectif clair à dépasser et transforme chaque séance en défi personnel.",
       muscles: ["Core", "Gainage"] },
   ],
+
+  // Placée à la fin pour moderniser aussi la séance cardio-endurance historique.
+  ...WAVE_4_EXERCISES,
 };
 
 /* ─── Util ───────────────────────────────────────────────── */
@@ -576,6 +580,7 @@ export function resolveSessionId(title: string): string | null {
   const MAP: Record<string, string> = {
     "Force Haut du Corps":   "force-haut",
     "Full Body Débutant":    "fullbody-deb",
+    "HIIT 20/10":            "hiit",
     "HIIT Brûle-Graisses":   "hiit",
     "Jambes & Fessiers":     "jambes",
     "Mobilité Matinale":     "mobilite",
@@ -605,6 +610,11 @@ export function resolveSessionId(title: string): string | null {
     "Colonne mobile": "colonne-mobile",
     "Mobilité complète": "mobilite-complete",
     "Mobilité active": "mobilite-active",
+    "Cardio sans saut": "cardio-sans-saut",
+    "Tabata Express": "tabata-express",
+    "Cardio de salle": "cardio-salle",
+    "Pyramide cardio": "pyramide-cardio",
+    "Cardio & force — Haltères": "cardio-halteres",
   };
   if (MAP[title]) return MAP[title];
   // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")
