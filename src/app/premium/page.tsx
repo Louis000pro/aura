@@ -7,6 +7,7 @@ import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, formatPrice, type PlanId } from "@/lib/plans";
 import PremiumCelebration from "@/components/PremiumCelebration";
+import styles from "./page.module.css";
 
 const ICONS: Record<PlanId, React.ReactNode> = {
   free: <Sparkles size={20} strokeWidth={1.8} />,
@@ -96,17 +97,17 @@ function PremiumInner() {
   const order: PlanId[] = ["free", "premium", "premium_plus"];
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col"
-      style={{ background: "var(--page-bg)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
+    <div className={`${styles.page} relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col`}
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-12%", left: "-8%", width: 460, height: 460, background: "rgba(212,192,255,0.40)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
+      <motion.div className={`${styles.violetHalo} absolute rounded-full pointer-events-none`}
+        style={{ top: "-12%", left: "-8%", width: 460, height: 460, filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.15, 1] }}
         transition={isMobile ? undefined : { duration: 10, repeat: Infinity, ease: "easeInOut" }} />
       {/* Touche dorée subtile en haut à droite (rappel de marque, sans couper le bas) */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "6%", right: "-12%", width: 340, height: 340, background: "rgba(245,230,163,0.28)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
+      <motion.div className={`${styles.goldHalo} absolute rounded-full pointer-events-none`}
+        style={{ top: "6%", right: "-12%", width: 340, height: 340, filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.1, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
 
@@ -114,10 +115,11 @@ function PremiumInner() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="text-center mb-4 md:mb-8 flex-shrink-0">
-          <span className="inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full"
-            style={{ color: "#7C5CFA", background: "rgba(167,139,250,0.12)" }}>VAIIYA PREMIUM ✦</span>
+          <span className={`${styles.eyebrow} inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
+            VAIIYA PREMIUM ✦
+          </span>
           <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "var(--text-0)" }}>
-            Passe au niveau supérieur
+            Passe au <span className={styles.titleAccent}>niveau supérieur</span>
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
             Coach IA <strong style={{ color: "var(--accent)" }}>sans limite</strong>, programmes exclusifs, zéro pub.
@@ -151,21 +153,18 @@ function PremiumInner() {
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0"
+                className={`${styles.cardFrame} relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0`}
                 style={{
-                  background: highlight
-                    ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
-                    : "rgba(220,215,235,0.7)",
-                  boxShadow: highlight ? "0 18px 50px -22px rgba(167,139,250,0.32)" : "0 10px 30px rgba(167,139,250,0.08)",
                   scrollSnapAlign: "center",
                   scrollSnapStop: "always",
                 }}>
-                <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
+                <div className={`${styles.cardSurface} relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden`}
+                  style={{ backdropFilter: isMobile ? "none" : "blur(8px)" }}>
 
                   {highlight && (
-                    <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white"
-                      style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>POPULAIRE</div>
+                    <div className={`${styles.popularBadge} absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white`}>
+                      POPULAIRE
+                    </div>
                   )}
 
                   {/* Nom de l'offre */}
@@ -193,15 +192,12 @@ function PremiumInner() {
 
                   {/* CTA — juste sous le prix */}
                   {id === "free" ? (
-                    <div className="text-center py-3 rounded-2xl text-sm font-semibold"
-                      style={{ background: "rgba(240,235,255,0.7)", color: "var(--text-3)" }}>Ton offre actuelle</div>
+                    <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                      Ton offre actuelle
+                    </div>
                   ) : (
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id}
-                      className="py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60"
-                      style={{
-                        background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                        boxShadow: highlight ? "0 8px 24px rgba(193,59,193,0.4)" : "0 8px 24px rgba(139,92,246,0.3)",
-                      }}>
+                      className={`${styles.cta} ${highlight ? styles.ctaPrimary : styles.ctaSecondary} py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60`}>
                       {loading === id ? "Redirection…" : "Démarrer mes 3 jours gratuits"}
                     </motion.button>
                   )}
