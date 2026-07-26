@@ -14,6 +14,7 @@ import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
 import type { PerfShareData } from "@/lib/perfShareExport";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
+import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -141,6 +142,8 @@ const CC        = 2 * Math.PI * CR;
    sprites dans le vrai tunnel ; on les retire à la mise à jour. */
 
 const exerciseData: Record<string, Exercise[]> = {
+  ...WAVE_1_EXERCISES,
+
   ...Object.fromEntries(GUIDE_SECTIONS.map((sec) => [
     sectionSessionId(sec),
     sec.items.map((name) => ({
@@ -578,6 +581,13 @@ export function resolveSessionId(title: string): string | null {
     "Haut du corps — Salle": "salle-haut",
     "Récupération active":   "recup-active",
     "Défi Gainage":          "defi-gainage",
+    "Express 12":            "express-12",
+    "Reprendre en douceur":  "reprise-douce",
+    "Appartement silencieux":"appartement-silencieux",
+    "Jambes au poids du corps": "jambes-poids-corps",
+    "Haut du corps au sol":  "haut-corps-sol",
+    "Full Body Intermédiaire": "fullbody-inter",
+    "Puissance sans matériel": "puissance-sans-materiel",
   };
   if (MAP[title]) return MAP[title];
   // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")

@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
@@ -28,7 +29,6 @@ import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { FAMILY, resolveArt, type Family, type Art } from "@/lib/workoutArt";
-import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import {
   ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
@@ -37,6 +37,11 @@ import {
 
 /* ─── Workout sessions data (catalogue Vaiiya) ─────────────── */
 type WorkoutCategory = "force" | "cardio" | "mobilite" | "fullbody";
+type CatalogCollection =
+  | "express" | "masse" | "perte" | "renfo" | "cardiohiit"
+  | "abdos" | "jambes" | "haut" | "fullbody" | "salle"
+  | "sansmateriel" | "debuter" | "mobilite" | "recup"
+  | "defis" | "conseils";
 
 type WorkoutSession = {
   id: string;
@@ -51,16 +56,11 @@ type WorkoutSession = {
   icon: typeof Dumbbell | string;   // composant (catalogue) ou nom stocké en base (perso)
   exerciseList?: Exercise[];
   visibility?: "private" | "friends" | "public";
+  access?: "free" | "premium";
+  collections?: CatalogCollection[];
 };
 
 const workoutSessions: WorkoutSession[] = [
-  {
-    id: "demo-avatars", category: "fullbody",
-    title: "Démo Avatars 3D ✦", subtitle: "17 animations 3D — match exact",
-    duration: 30, difficulty: "Débutant", exercises: 17,
-    muscles: ["Corps entier"],
-    accent: "#8B5CF6", icon: Sparkles,
-  },
   {
     id: "force-haut", category: "force",
     title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
@@ -73,7 +73,64 @@ const workoutSessions: WorkoutSession[] = [
     title: "Full Body Débutant", subtitle: "Corps complet · Sans matériel",
     duration: 35, difficulty: "Débutant", exercises: 7,
     muscles: ["Corps entier"],
-    accent: "#8B5CF6", icon: Layers,
+    accent: "#8B5CF6", icon: Layers, access: "free",
+    collections: ["sansmateriel", "debuter", "fullbody", "renfo"],
+  },
+  {
+    id: "express-12", category: "fullbody",
+    title: "Express 12", subtitle: "Corps complet · Peu de temps, une vraie séance",
+    duration: 12, difficulty: "Débutant", exercises: 5,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Zap, access: "free",
+    collections: ["sansmateriel", "express", "debuter", "fullbody"],
+  },
+  {
+    id: "reprise-douce", category: "fullbody",
+    title: "Reprendre en douceur", subtitle: "Sans saut · À ton rythme · Corps complet",
+    duration: 22, difficulty: "Débutant", exercises: 7,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["sansmateriel", "debuter", "fullbody"],
+  },
+  {
+    id: "appartement-silencieux", category: "fullbody",
+    title: "Appartement silencieux", subtitle: "Zéro saut · Zéro impact · Sans matériel",
+    duration: 20, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Corps entier", "Core"],
+    accent: "#8B5CF6", icon: Home, access: "premium",
+    collections: ["sansmateriel", "express", "renfo", "fullbody"],
+  },
+  {
+    id: "jambes-poids-corps", category: "force",
+    title: "Jambes au poids du corps", subtitle: "Cuisses · Fessiers · Mollets",
+    duration: 30, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Quadriceps", "Fessiers", "Mollets"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["sansmateriel", "jambes", "renfo"],
+  },
+  {
+    id: "haut-corps-sol", category: "force",
+    title: "Haut du corps au sol", subtitle: "Poussée · Épaules · Posture",
+    duration: 25, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Épaules", "Dos"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["sansmateriel", "haut", "renfo"],
+  },
+  {
+    id: "fullbody-inter", category: "fullbody",
+    title: "Full Body Intermédiaire", subtitle: "Volume · Cardio · Corps complet",
+    duration: 32, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "premium",
+    collections: ["sansmateriel", "fullbody", "renfo", "cardiohiit", "perte"],
+  },
+  {
+    id: "puissance-sans-materiel", category: "cardio",
+    title: "Puissance sans matériel", subtitle: "Explosivité · Vitesse · Cardio",
+    duration: 22, difficulty: "Avancé", exercises: 5,
+    muscles: ["Corps entier", "Cardio"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["sansmateriel", "fullbody", "cardiohiit", "perte", "defis"],
   },
   {
     id: "hiit", category: "cardio",
@@ -108,7 +165,8 @@ const workoutSessions: WorkoutSession[] = [
     title: "Core & Gainage", subtitle: "Planche · Crunchs · Relevés",
     duration: 30, difficulty: "Intermédiaire", exercises: 8,
     muscles: ["Abdominaux", "Lombaires"],
-    accent: "#8B5CF6", icon: Sparkles,
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["sansmateriel", "abdos", "renfo"],
   },
   {
     id: "cardio-endurance", category: "cardio",
@@ -138,20 +196,6 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Core", "Abdominaux", "Gainage"],
     accent: "#8B5CF6", icon: Flame,
   },
-  /* « Défi Animations » — un atelier par thème, généré depuis la source
-     unique des personnages-guides (src/lib/guideSections.ts). Le titre
-     contient « Défi » : la collection « Défis » du catalogue les ramasse
-     toute seule. TEMPORAIRE — ces fiches servent à valider les vagues de
-     sprites dans le vrai tunnel, on les retire à la mise à jour. */
-  ...GUIDE_SECTIONS.map((sec) => ({
-    id: sectionSessionId(sec), category: "fullbody" as const,
-    title: `Défi Animations ✦ — ${sec.title}`, subtitle: sec.subtitle,
-    /* ~25 s par geste + 8 s de repos, arrondi à la minute. */
-    duration: Math.round((sec.items.length * 33) / 60),
-    difficulty: "Intermédiaire" as const, exercises: sec.items.length,
-    muscles: ["Corps entier"],
-    accent: "#8B5CF6", icon: Sparkles,
-  })),
 ];
 
 const VIS_CONFIG = {
@@ -831,15 +875,18 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
   return out;
 }
 
-function SessionTile({ session, onStart, onManage, imgOverride }: {
+function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, imgOverride }: {
   session: MergedSession;
   onStart: (s: MergedSession) => void;
   onManage: (s: MergedSession) => void;
+  onPremium: () => void;
+  canAccessPremium: boolean;
   imgOverride?: string;
 }) {
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
   const img = imgOverride ?? tileArt.img;
   const level = DIFF_LEVEL[session.difficulty];
+  const premiumLocked = session.access === "premium" && !canAccessPremium;
   // Le différenciateur : les muscles. À défaut (séance sans muscles listés),
   // la famille de mouvement (« Poussée », « Tirage »…) fait un repli parlant.
   const muscles = session.muscles.filter(Boolean).slice(0, 3).join(" · ") || tileArt.label;
@@ -852,10 +899,10 @@ function SessionTile({ session, onStart, onManage, imgOverride }: {
           (lavande maison). Les coins portent la méta, le bas l'identité. */}
       <motion.button
         whileTap={{ scale: 0.97 }}
-        onClick={() => onStart(session)}
+        onClick={() => premiumLocked ? onPremium() : onStart(session)}
         className="w-full rounded-[18px] overflow-hidden relative cursor-pointer border-none p-0 block"
         style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
-        aria-label={`Lancer : ${session.title}`}
+        aria-label={premiumLocked ? `${session.title} — réservé à Premium` : `Lancer : ${session.title}`}
       >
         <Photo img={img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
 
@@ -902,6 +949,15 @@ function SessionTile({ session, onStart, onManage, imgOverride }: {
             }}>
             {muscles}
           </p>
+          {session.access === "premium" && (
+            <span className="mt-1.5 inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-[0.12em]"
+              style={{ color: "#FFD34E", textShadow: "0 1px 6px rgba(0,0,0,0.55)" }}>
+              {premiumLocked
+                ? <Lock size={8.5} strokeWidth={2.4} aria-hidden />
+                : <Sparkles size={8.5} strokeWidth={2.4} aria-hidden />}
+              Premium
+            </span>
+          )}
         </div>
       </motion.button>
 
@@ -1083,41 +1139,50 @@ type CatDef = {
 const hayOf = (s: MergedSession) =>
   `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")}`.toLowerCase();
 
+/** Les séances Vaiiya récentes déclarent leurs collections explicitement.
+    Les créations perso et l'ancien catalogue gardent le prédicat historique
+    en repli jusqu'à leur migration, sans perdre leur multi-appartenance. */
+const matchCollection = (
+  id: CatalogCollection,
+  fallback: (s: MergedSession, hay: string) => boolean,
+) => (s: MergedSession, hay: string) =>
+  s.collections ? s.collections.includes(id) : fallback(s, hay);
+
 const CATALOG: CatDef[] = [
   { id: "tiennes", name: "Les tiennes", tag: "Tes créations — elles vivent aussi dans les autres collections.",
     img: "cat-tiennes", match: (s) => s.perso },
-  { id: "express", name: "Séances express", tag: "20 minutes ou moins — zéro excuse.",
-    img: "cat-express", match: (s) => s.duration <= 20 },
+  { id: "express", name: "Séances express", tag: "Peu de temps, mais une vraie séance.",
+    img: "cat-express", match: matchCollection("express", (s) => s.duration <= 20) },
   { id: "masse", name: "Prise de masse", tag: "Construire du muscle, brique par brique.",
-    img: "cat-masse", match: (s, hay) => /masse|hypertroph|volume/.test(hay) || (s.category === "force" && s.duration >= 40) },
+    img: "cat-masse", match: matchCollection("masse", (s, hay) => /masse|hypertroph|volume/.test(hay) || (s.category === "force" && s.duration >= 40)) },
   { id: "perte", name: "Perte de poids", tag: "Brûler, sans se cramer.",
-    img: "cat-perte", match: (s, hay) => /perte|brûle|brule|minceur|sèche|seche|calorie/.test(hay) || s.category === "cardio" },
+    img: "cat-perte", match: matchCollection("perte", (s, hay) => /perte|brûle|brule|minceur|sèche|seche|calorie/.test(hay) || s.category === "cardio") },
   { id: "renfo", name: "Renfo musculaire", tag: "Plus fort, partout, pour de vrai.",
-    img: "cat-renfo", match: (s, hay) => s.category === "force" || /renfo|force|muscu/.test(hay) },
+    img: "cat-renfo", match: matchCollection("renfo", (s, hay) => s.category === "force" || /renfo|force|muscu/.test(hay)) },
   { id: "cardiohiit", name: "Cardio & HIIT", tag: "Le souffle court, le cœur solide.",
-    img: "cat-cardiohiit", match: (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay) },
+    img: "cat-cardiohiit", match: matchCollection("cardiohiit", (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay)) },
   { id: "abdos", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
-    img: "cat-abdos", match: (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay) },
+    img: "cat-abdos", match: matchCollection("abdos", (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay)) },
   { id: "jambes", name: "Jambes & fessiers", tag: "La base — on ne triche pas avec les jambes.",
-    img: "cat-jambes", match: (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay) },
+    img: "cat-jambes", match: matchCollection("jambes", (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay)) },
   { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras — l'armure.",
-    img: "cat-haut", match: (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay) },
+    img: "cat-haut", match: matchCollection("haut", (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay)) },
   { id: "fullbody", name: "Full body", tag: "Tout le corps, une seule séance.",
-    img: "cat-fullbody", match: (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay) },
+    img: "cat-fullbody", match: matchCollection("fullbody", (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay)) },
   { id: "salle", name: "À la salle", tag: "Machines, barres, charges — ton terrain.",
-    img: "cat-salle", match: (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay) },
+    img: "cat-salle", match: matchCollection("salle", (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay)) },
   { id: "sansmateriel", name: "Sans matériel", tag: "Ton corps suffit — partout, tout le temps.",
-    img: "cat-sansmateriel", match: (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay) },
+    img: "cat-sansmateriel", match: matchCollection("sansmateriel", (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay)) },
   { id: "debuter", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
-    img: "cat-debuter", match: (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay) },
+    img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
   { id: "mobilite", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",
-    img: "cat-mobilite", match: (s, hay) => s.category === "mobilite" || /mobilit|étirement|etirement|souplesse|posture|stretch/.test(hay) },
+    img: "cat-mobilite", match: matchCollection("mobilite", (s, hay) => s.category === "mobilite" || /mobilit|étirement|etirement|souplesse|posture|stretch/.test(hay)) },
   { id: "recup", name: "Récupération", tag: "Le muscle se construit au repos.",
-    img: "cat-recup", match: (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay) },
+    img: "cat-recup", match: matchCollection("recup", (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay)) },
   { id: "defis", name: "Défis", tag: "Un max, un chrono, un record à battre.",
-    img: "cat-defis", match: (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay) },
+    img: "cat-defis", match: matchCollection("defis", (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay)) },
   { id: "conseils", name: "Conseils & progresser", tag: "Comprendre, c'est déjà progresser.",
-    img: "cat-conseils", match: () => false },
+    img: "cat-conseils", match: matchCollection("conseils", () => false) },
 ];
 
 /** Tuile de collection — photo naturelle, titre blanc centré, compte.
@@ -1146,11 +1211,13 @@ function CatTile({ cat, count, onOpen }: { cat: CatDef; count: number; onOpen: (
   );
 }
 
-function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, onDelete, onVisibilityChange }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, onPremium, onCreate, onEdit, onDelete, onVisibilityChange }: {
   sessions: MergedSession[];
   loading: boolean;
+  canAccessPremium: boolean;
   onClose: () => void;
   onStart: (s: MergedSession) => void;
+  onPremium: () => void;
   onCreate: () => void;
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
@@ -1175,7 +1242,14 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
 
   const rowTile = (s: MergedSession) => (
     <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
-      <SessionTile session={s} onStart={onStart} onManage={setManage} imgOverride={artById.get(s.id)} />
+      <SessionTile
+        session={s}
+        onStart={onStart}
+        onManage={setManage}
+        onPremium={onPremium}
+        canAccessPremium={canAccessPremium}
+        imgOverride={artById.get(s.id)}
+      />
     </div>
   );
 
@@ -1259,7 +1333,15 @@ function ChooseSheet({ sessions, loading, onClose, onStart, onCreate, onEdit, on
           /* ── Niveau 2, « Les tiennes » : ta bibliothèque + créer ── */
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {perso.map((s) => (
-              <SessionTile key={s.id} session={s} onStart={onStart} onManage={setManage} imgOverride={artById.get(s.id)} />
+              <SessionTile
+                key={s.id}
+                session={s}
+                onStart={onStart}
+                onManage={setManage}
+                onPremium={onPremium}
+                canAccessPremium={canAccessPremium}
+                imgOverride={artById.get(s.id)}
+              />
             ))}
             {createCard}
           </div>
@@ -2414,6 +2496,8 @@ type LaunchTarget = {
 export default function ProgressionPage() {
   const { user } = useAuth();
   const { open: openAssistant } = useAssistant();
+  const router = useRouter();
+  const canAccessPremium = Boolean(user?.is_premium || user?.is_admin);
 
   /* ── Planning de la semaine (source de vérité du héros + du bandeau) ── */
   const [week, setWeek] = useState<PlanningDay[] | null>(null);
@@ -2692,6 +2776,11 @@ export default function ProgressionPage() {
   };
 
   const startSession = (s: MergedSession) => {
+    if (s.access === "premium" && !canAccessPremium) {
+      setSheet(null);
+      router.push("/premium");
+      return;
+    }
     setSheet(null);
     setActiveWorkout({
       id: s.id,
@@ -2888,8 +2977,10 @@ export default function ProgressionPage() {
           <ChooseSheet
             sessions={allSessions}
             loading={loadingCustom}
+            canAccessPremium={canAccessPremium}
             onClose={() => setSheet(null)}
             onStart={startSession}
+            onPremium={() => { setSheet(null); router.push("/premium"); }}
             onCreate={() => { setEditSession(null); setShowCreateModal(true); }}
             onEdit={(s) => { setEditSession(s); setShowCreateModal(true); }}
             onDelete={handleDelete}
