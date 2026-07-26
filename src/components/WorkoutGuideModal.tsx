@@ -19,6 +19,7 @@ import { WAVE_2_EXERCISES } from "@/lib/workoutWave2";
 import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
 import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
 import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
+import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -150,6 +151,7 @@ const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_2_EXERCISES,
   ...WAVE_3_EXERCISES,
   ...WAVE_5_EXERCISES,
+  ...WAVE_6_EXERCISES,
 
   ...Object.fromEntries(GUIDE_SECTIONS.map((sec) => [
     sectionSessionId(sec),
@@ -625,6 +627,15 @@ export function resolveSessionId(title: string): string | null {
     "Soir calme": "soir-calme",
     "Lendemain de séance": "lendemain-seance",
     "Récupération complète": "recup-complete",
+    "Les bases du mouvement": "bases-mouvement",
+    "Squat maîtrisé": "squat-maitrise",
+    "Pompes maîtrisées": "pompes-maitrise",
+    "Tractions — Construire le mouvement": "tractions-progression",
+    "Charnière de hanche": "charniere-hanche",
+    "Gainage — Progresser": "gainage-progression",
+    "Épaules — Mobilité & contrôle": "epaules-controle",
+    "Unilatéral — Maîtriser les appuis": "unilateral-maitrise",
+    "Tempo — Ralentir pour progresser": "tempo-controle",
   };
   if (MAP[title]) return MAP[title];
   // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")
