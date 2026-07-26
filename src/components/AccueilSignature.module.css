@@ -521,7 +521,11 @@
 }
 
 .premiumMissionExp {
+  display: flex;
   flex: 0 0 auto;
+  min-width: 62px;
+  flex-direction: column;
+  align-items: flex-end;
   padding: 4px 7px;
   border: 1px solid rgba(216, 153, 16, 0.18);
   border-radius: 999px;
@@ -532,6 +536,25 @@
   font-weight: 900;
   letter-spacing: -0.015em;
   white-space: nowrap;
+}
+
+.premiumMissionExp strong {
+  color: inherit;
+  font: inherit;
+}
+
+.premiumMissionExp small {
+  margin-top: 1px;
+  color: #9a7118;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.premiumMissionExp[data-earned] small {
+  color: #159c79;
 }
 
 .premiumFooter {

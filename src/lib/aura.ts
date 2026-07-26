@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { createClient } from "@/lib/supabase";
+import { isoWeekKey, parisDateStr, parisHour } from "@/lib/dates";
 
 type SB = ReturnType<typeof createClient>;
 
@@ -167,12 +168,61 @@ export type EtatAura = {
   restant: number;
   /** Détail (pour l'affichage / debug). */
   detail: { seances: number; repas: number; jours: number; streak: number };
+  /** Progression réelle des missions sur la période parisienne courante. */
+  missions: EtatMissionsAura;
 };
+
+export type ProgressionMission = {
+  progress: number;
+  target: number;
+  complete: boolean;
+  earned: boolean;
+};
+
+export type EtatMissionsAura = {
+  today: {
+    connexion: ProgressionMission;
+    seance: ProgressionMission;
+    repas: ProgressionMission;
+  };
+  premiumMissions: {
+    double: ProgressionMission;
+    matin: ProgressionMission;
+    intense: ProgressionMission;
+    nutrition: ProgressionMission;
+    parfaite: ProgressionMission;
+  };
+};
+
+const missionVide = (target: number): ProgressionMission => ({
+  progress: 0,
+  target,
+  complete: false,
+  earned: false,
+});
+
+export function missionsAuraVides(): EtatMissionsAura {
+  return {
+    today: {
+      connexion: missionVide(1),
+      seance: missionVide(1),
+      repas: missionVide(1),
+    },
+    premiumMissions: {
+      double: missionVide(2),
+      matin: missionVide(1),
+      intense: missionVide(5),
+      nutrition: missionVide(3),
+      parfaite: missionVide(7),
+    },
+  };
+}
 
 /** Décompose une EXP en rang courant + progression vers le suivant. */
 export function etatDepuisExp(
   exp: number,
   detail: EtatAura["detail"] = { seances: 0, repas: 0, jours: 0, streak: 0 },
+  missions: EtatMissionsAura = missionsAuraVides(),
 ): EtatAura {
   // Rang courant = le dernier rang dont `min` <= exp.
   let idx = 0;
@@ -184,7 +234,7 @@ export function etatDepuisExp(
   const rangSuivant = RANGS[idx + 1];
   const seuilHaut = rangSuivant ? rangSuivant.min : Math.max(PALIER_PROVISOIRE, seuilBas + 1);
   const restant = Math.max(0, seuilHaut - exp);
-  return { exp, rang, seuilBas, seuilHaut, restant, detail };
+  return { exp, rang, seuilBas, seuilHaut, restant, detail, missions };
 }
 
 /**
@@ -193,24 +243,92 @@ export function etatDepuisExp(
  */
 export async function calculerAura(supabase: SB, userId: string): Promise<EtatAura> {
   try {
-    const today = new Date().toISOString().slice(0, 10);
+    // Source de vérité après la migration 20260726_missions_aura.sql.
+    // Le repli juste dessous garde l'app fonctionnelle tant que Louis ne l'a
+    // pas encore collée dans Supabase.
+    const { data: missionState, error: missionError } = await supabase
+      .rpc("etat_missions_aura", { p_user: userId });
+    if (!missionError && missionState && typeof missionState === "object") {
+      const raw = missionState as {
+        exp?: number;
+        detail?: EtatAura["detail"];
+        today?: EtatMissionsAura["today"];
+        premiumMissions?: EtatMissionsAura["premiumMissions"];
+      };
+      const missions = missionsAuraVides();
+      if (raw.today) missions.today = raw.today;
+      if (raw.premiumMissions) missions.premiumMissions = raw.premiumMissions;
+      return etatDepuisExp(
+        Number(raw.exp ?? EXP_BIENVENUE),
+        raw.detail ?? { seances: 0, repas: 0, jours: 0, streak: 0 },
+        missions,
+      );
+    }
+
+    const today = parisDateStr();
+    const currentWeek = isoWeekKey(today);
     const [seancesRes, repasRes, joursRes, todayRes, profilRes] = await Promise.all([
       // On ne compte que les actions à partir de AURA_EPOCH (reset global).
-      supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("started_at", AURA_EPOCH),
+      supabase.from("workout_sessions").select("id, started_at, duration_minutes").eq("user_id", userId).gte("started_at", AURA_EPOCH),
       // Repas : dates >= époque ET <= aujourd'hui (les faux repas datés dans le
       // futur ne rapportent aucune EXP).
-      supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
-      supabase.from("daily_stats").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
+      supabase.from("nutrition_logs").select("id, date, meal_type").eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
+      supabase.from("daily_stats").select("id, date").eq("user_id", userId).gte("date", AURA_EPOCH).lte("date", today),
       supabase.from("daily_stats").select("streak").eq("user_id", userId).eq("date", today).maybeSingle(),
       // Statut Premium : les abonnés (et admins) gagnent l'EXP d'action ×1,5.
       supabase.from("profiles").select("is_premium, is_admin").eq("id", userId).maybeSingle(),
     ]);
 
-    const seances = seancesRes.count ?? 0;
-    const repas = repasRes.count ?? 0;
-    const jours = joursRes.count ?? 0;
+    const now = Date.now();
+    const sessions = ((seancesRes.data ?? []) as { started_at: string; duration_minutes: number | null }[])
+      .filter((session) => {
+        const startedAt = new Date(session.started_at);
+        return startedAt.getTime() <= now && parisDateStr(startedAt) <= today;
+      });
+    const meals = (repasRes.data ?? []) as { date: string; meal_type: string }[];
+    const days = (joursRes.data ?? []) as { date: string }[];
+    const seanceDays = new Set(sessions.filter((s) => (s.duration_minutes ?? 0) >= 1).map((s) => parisDateStr(new Date(s.started_at))));
+    const mealDays = new Set(meals.map((meal) => meal.date));
+    const activeDays = new Set(days.map((day) => day.date));
+    const seances = seanceDays.size;
+    const repas = mealDays.size;
+    const jours = activeDays.size;
     const streak = (todayRes.data?.streak as number | undefined) ?? 0;
     const premium = !!(profilRes.data?.is_premium || profilRes.data?.is_admin);
+    const validToday = sessions.filter((session) =>
+      (session.duration_minutes ?? 0) >= 5 &&
+      parisDateStr(new Date(session.started_at)) === today
+    );
+    const validWeek = sessions.filter((session) =>
+      (session.duration_minutes ?? 0) >= 5 &&
+      isoWeekKey(parisDateStr(new Date(session.started_at))) === currentWeek
+    );
+    const coreMeals = new Set(
+      meals
+        .filter((meal) => meal.date === today)
+        .map((meal) => {
+          const type = meal.meal_type.toLowerCase();
+          if (["petit-dejeuner", "petit-déjeuner", "breakfast"].includes(type)) return "matin";
+          if (["dejeuner", "déjeuner", "lunch"].includes(type)) return "midi";
+          if (["diner", "dîner", "dinner"].includes(type)) return "soir";
+          return null;
+        })
+        .filter(Boolean),
+    );
+    const daysThisWeek = new Set([...activeDays].filter((date) => isoWeekKey(date) === currentWeek));
+    const missions = missionsAuraVides();
+    missions.today.connexion = progression(activeDays.has(today) ? 1 : 0, 1, activeDays.has(today));
+    missions.today.seance = progression(seanceDays.has(today) ? 1 : 0, 1, seanceDays.has(today));
+    missions.today.repas = progression(mealDays.has(today) ? 1 : 0, 1, mealDays.has(today));
+    missions.premiumMissions.double = progression(validToday.length, 2, premium && validToday.length >= 2);
+    missions.premiumMissions.matin = progression(
+      validToday.some((session) => parisHour(new Date(session.started_at)) < 9) ? 1 : 0,
+      1,
+      premium && validToday.some((session) => parisHour(new Date(session.started_at)) < 9),
+    );
+    missions.premiumMissions.intense = progression(validWeek.length, 5, premium && validWeek.length >= 5);
+    missions.premiumMissions.nutrition = progression(coreMeals.size, 3, premium && coreMeals.size >= 3);
+    missions.premiumMissions.parfaite = progression(daysThisWeek.size, 7, premium && daysThisWeek.size >= 7);
 
     // Le bonus de bienvenue est un socle fixe ; le multiplicateur Premium ne
     // s'applique qu'à l'EXP GAGNÉE par les actions (séances / repas / connexions).
@@ -218,12 +336,80 @@ export async function calculerAura(supabase: SB, userId: string): Promise<EtatAu
       seances * (EXP_SEANCE + EXP_SEANCE_STREAK) + // séance +30, +5 de série à chaque séance
       repas * EXP_REPAS +
       jours * EXP_CONNEXION;
-    const exp = EXP_BIENVENUE + Math.round(expActions * (premium ? EXP_MULTI_PREMIUM : 1));
+    const premiumExp = premium
+      ? completedPeriodCount(sessions, "double", today) * 60 +
+        completedPeriodCount(sessions, "matin", today) * 40 +
+        completedWeekCount(sessions) * 50 +
+        completedNutritionDays(meals) * 15 +
+        completedPerfectWeeks(activeDays) * 35
+      : 0;
+    const exp = EXP_BIENVENUE + Math.round(expActions * (premium ? EXP_MULTI_PREMIUM : 1)) + premiumExp;
 
-    return etatDepuisExp(exp, { seances, repas, jours, streak });
+    return etatDepuisExp(exp, { seances, repas, jours, streak }, missions);
   } catch {
     return etatDepuisExp(0);
   }
+}
+
+function progression(progress: number, target: number, earned: boolean): ProgressionMission {
+  const capped = Math.min(progress, target);
+  return { progress: capped, target, complete: capped >= target, earned };
+}
+
+function completedPeriodCount(
+  sessions: { started_at: string; duration_minutes: number | null }[],
+  kind: "double" | "matin",
+  maxDate: string,
+): number {
+  const grouped = new Map<string, { count: number; early: boolean }>();
+  for (const session of sessions) {
+    if ((session.duration_minutes ?? 0) < 5) continue;
+    const date = new Date(session.started_at);
+    const key = parisDateStr(date);
+    if (key > maxDate) continue;
+    const current = grouped.get(key) ?? { count: 0, early: false };
+    current.count += 1;
+    current.early ||= parisHour(date) < 9;
+    grouped.set(key, current);
+  }
+  return [...grouped.values()].filter((group) => kind === "double" ? group.count >= 2 : group.early).length;
+}
+
+function completedWeekCount(
+  sessions: { started_at: string; duration_minutes: number | null }[],
+): number {
+  const weeks = new Map<string, number>();
+  for (const session of sessions) {
+    if ((session.duration_minutes ?? 0) < 5) continue;
+    const key = isoWeekKey(parisDateStr(new Date(session.started_at)));
+    weeks.set(key, (weeks.get(key) ?? 0) + 1);
+  }
+  return [...weeks.values()].filter((count) => count >= 5).length;
+}
+
+function completedNutritionDays(meals: { date: string; meal_type: string }[]): number {
+  const days = new Map<string, Set<string>>();
+  for (const meal of meals) {
+    const type = meal.meal_type.toLowerCase();
+    let core: string | null = null;
+    if (["petit-dejeuner", "petit-déjeuner", "breakfast"].includes(type)) core = "matin";
+    if (["dejeuner", "déjeuner", "lunch"].includes(type)) core = "midi";
+    if (["diner", "dîner", "dinner"].includes(type)) core = "soir";
+    if (!core) continue;
+    const day = days.get(meal.date) ?? new Set<string>();
+    day.add(core);
+    days.set(meal.date, day);
+  }
+  return [...days.values()].filter((day) => day.size >= 3).length;
+}
+
+function completedPerfectWeeks(days: Set<string>): number {
+  const weeks = new Map<string, number>();
+  for (const day of days) {
+    const key = isoWeekKey(day);
+    weeks.set(key, (weeks.get(key) ?? 0) + 1);
+  }
+  return [...weeks.values()].filter((count) => count >= 7).length;
 }
 
 /**

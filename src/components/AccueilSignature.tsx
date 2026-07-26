@@ -18,13 +18,15 @@ type MissionKind =
   | "parfaite";
 
 type DailyMissionKind = Extract<MissionKind, "connexion" | "seance" | "repas">;
+type PremiumMissionKind = Exclude<MissionKind, DailyMissionKind>;
 
 type PremiumMission = {
-  kind: MissionKind;
+  kind: PremiumMissionKind;
   titre: string;
   sous: string;
   exp: number;
   image: string;
+  period: "jour" | "semaine";
   path?: string;
 };
 
@@ -38,41 +40,46 @@ const MISSIONS_PREMIUM: PremiumMission[] = [
   {
     kind: "double",
     titre: "Double séance",
-    sous: "Deux séances dans la même journée",
+    sous: "Deux séances de 5 min minimum aujourd’hui",
     exp: 60,
     image: "/missions/premium/double-seance-v1.webp",
+    period: "jour",
     path: "/progression",
   },
   {
     kind: "matin",
     titre: "Lève-tôt",
-    sous: "Une séance avant 9 h",
+    sous: "Une séance de 5 min minimum avant 9 h",
     exp: 40,
     image: "/missions/premium/leve-tot-v1.webp",
+    period: "jour",
     path: "/progression",
   },
   {
     kind: "intense",
     titre: "Semaine intense",
-    sous: "Cinq séances dans la semaine",
+    sous: "Cinq séances de 5 min minimum cette semaine",
     exp: 50,
     image: "/missions/premium/semaine-intense-v1.webp",
+    period: "semaine",
     path: "/progression",
   },
   {
     kind: "nutrition",
     titre: "Journée nutrition complète",
-    sous: "Tous les repas du jour notés",
+    sous: "Petit-déjeuner, déjeuner et dîner notés",
     exp: 15,
     image: "/missions/premium/nutrition-complete-v1.webp",
+    period: "jour",
     path: "/nutrition",
   },
   {
     kind: "parfaite",
     titre: "Semaine parfaite",
-    sous: "Sept jours de connexion",
+    sous: "Sept jours de connexion dans la semaine",
     exp: 35,
     image: "/missions/premium/semaine-parfaite-v1.webp",
+    period: "semaine",
   },
 ];
 
@@ -82,8 +89,6 @@ export default function AccueilSignature({
   aura,
   auraLoaded,
   expGain,
-  seanceOk,
-  repasOk,
   isPremium,
   isAdmin,
   onNavigate,
@@ -94,8 +99,6 @@ export default function AccueilSignature({
   aura: EtatAura;
   auraLoaded: boolean;
   expGain: number | null;
-  seanceOk: boolean;
-  repasOk: boolean;
   isPremium: boolean;
   isAdmin: boolean;
   onNavigate: (path: string) => void;
@@ -104,10 +107,13 @@ export default function AccueilSignature({
   const reduce = useReducedMotion();
   const premiumUnlocked = isPremium || isAdmin;
   const showPremiumOffer = !isPremium;
+  const connexionOk = aura.missions.today.connexion.complete;
+  const seanceOk = aura.missions.today.seance.complete;
+  const repasOk = aura.missions.today.repas.complete;
   const streak = Math.max(1, aura.detail.streak);
   const prix = formatPrice(PLANS.premium.priceCents);
   const expDuJour =
-    EXP_CONNEXION +
+    (connexionOk ? EXP_CONNEXION : 0) +
     (seanceOk ? EXP_SEANCE + EXP_SEANCE_STREAK : 0) +
     (repasOk ? EXP_REPAS : 0);
 
@@ -189,7 +195,7 @@ export default function AccueilSignature({
             titre="Connexion du jour"
             sous="Présence validée"
             exp={EXP_CONNEXION}
-            done
+            done={connexionOk}
           />
           <MissionRow
             kind="seance"
@@ -212,10 +218,7 @@ export default function AccueilSignature({
       </section>
 
       <section>
-        <SectionHeading
-          title="Missions Premium"
-          subtitle="Tu vois exactement ce que tu pourrais débloquer."
-        />
+        <SectionHeading title="Missions Premium" />
         <div className={styles.premiumVault} data-locked={!premiumUnlocked ? "" : undefined}>
           <div className={styles.premiumHeading}>
             <span className={styles.premiumSeal} aria-hidden="true" />
@@ -228,6 +231,7 @@ export default function AccueilSignature({
           <div className={styles.premiumList}>
             {MISSIONS_PREMIUM.map((mission) => {
               const target = premiumUnlocked ? mission.path : "/premium";
+              const state = aura.missions.premiumMissions[mission.kind];
               return (
                 <button
                   key={mission.titre}
@@ -249,7 +253,16 @@ export default function AccueilSignature({
                     <strong>{mission.titre}</strong>
                     <small>{mission.sous}</small>
                   </span>
-                  <span className={styles.premiumMissionExp}>+{mission.exp} EXP</span>
+                  <span className={styles.premiumMissionExp} data-earned={state.earned ? "" : undefined}>
+                    <strong>+{mission.exp} EXP</strong>
+                    <small>
+                      {state.earned
+                        ? "Validée"
+                        : state.progress > 0
+                          ? `${state.progress}/${state.target}`
+                          : mission.period}
+                    </small>
+                  </span>
                 </button>
               );
             })}
@@ -279,14 +292,14 @@ function SectionHeading({
   aside,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   aside?: string;
 }) {
   return (
     <div className={styles.sectionHeading}>
       <div>
         <h2>{title}</h2>
-        <p>{subtitle}</p>
+        {subtitle && <p>{subtitle}</p>}
       </div>
       {aside && <span>{aside}</span>}
     </div>

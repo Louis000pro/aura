@@ -21,10 +21,11 @@ import AccueilSignature from "@/components/AccueilSignature";
 import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, RANGS, RECOMPENSE_RANG, type EtatAura } from "@/lib/aura";
 import { persistLieu, hasSeance, dayTitle, dayLabel, type PlanningDay } from "@/lib/planning";
 import { SERIES, type Defi, type SerieSlug } from "@/lib/defi";
+import { observeParisDay, parisDateStr, shiftDateStr } from "@/lib/dates";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = parisDateStr();
 
   const [{ data: sessions }, { data: nutrition }, { data: weight }] = await Promise.all([
     supabase.from("workout_sessions")
@@ -68,7 +69,7 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   const burned = todaySessions.reduce((sum: number, s: { calories_burned?: number }) => sum + (s.calories_burned || 0), 0);
 
   // ── Série de connexion : +1 par jour consécutif où l'on ouvre le site, reset si un jour est sauté ──
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yesterday = shiftDateStr(today, -1);
   const { data: streakRows } = await supabase.from("daily_stats")
     .select("date, streak").eq("user_id", userId).in("date", [yesterday, today]);
   const todayRow = streakRows?.find((r: { date: string; streak: number }) => r.date === today);
@@ -935,10 +936,7 @@ function Dashboard() {
   void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
-  // Missions du jour : coche verte dès que l'action du jour est faite.
-  // Séance = une workout_session aujourd'hui ; repas = un nutrition_log aujourd'hui ;
-  // connexion = toujours validée (l'utilisateur EST là).
-  const [missions, setMissions] = useState({ seanceOk: false, repasOk: false, loaded: false });
+  const [parisDay, setParisDay] = useState(() => parisDateStr());
   const [toast, setToast] = useState<string|null>(null);
   const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
@@ -954,6 +952,10 @@ function Dashboard() {
       return next;
     });
   };
+
+  // Une app laissée ouverte traverse réellement minuit : toutes les requêtes
+  // quotidiennes repartent alors sur le nouveau jour Europe/Paris.
+  useEffect(() => observeParisDay(setParisDay), []);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -995,25 +997,7 @@ function Dashboard() {
         try { localStorage.setItem(cacheKey, String(etat.exp)); } catch { /* ignore */ }
       })
       .catch(() => setAuraLoaded(true));
-  }, [user, mealsRefreshKey, statsTick]);
-
-  // Coches des missions du jour : y a-t-il une séance / un repas AUJOURD'HUI ?
-  useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    const today = new Date().toISOString().slice(0, 10);
-    (async () => {
-      try {
-        const [seanceRes, repasRes] = await Promise.all([
-          supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("started_at", today),
-          supabase.from("nutrition_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("date", today),
-        ]);
-        setMissions({ seanceOk: (seanceRes.count ?? 0) > 0, repasOk: (repasRes.count ?? 0) > 0, loaded: true });
-      } catch {
-        setMissions((m) => ({ ...m, loaded: true }));
-      }
-    })();
-  }, [user, mealsRefreshKey, statsTick]);
+  }, [user, mealsRefreshKey, statsTick, parisDay]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
@@ -1048,7 +1032,7 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = parisDay;
     (async () => {
       try {
         const { data, error } = await supabase
@@ -1091,7 +1075,7 @@ function Dashboard() {
         setStatsTick((t) => t + 1);
       }
     })();
-  }, [user]);
+  }, [user, parisDay]);
 
   // Fetch le nombre de séances de la semaine (lundi → maintenant)
   useEffect(() => {
@@ -1394,8 +1378,6 @@ function Dashboard() {
           aura={aura}
           auraLoaded={auraLoaded}
           expGain={expGain}
-          seanceOk={missions.seanceOk}
-          repasOk={missions.repasOk}
           isPremium={!!user?.is_premium}
           isAdmin={!!user?.is_admin}
           onNavigate={(path) => router.push(path)}
