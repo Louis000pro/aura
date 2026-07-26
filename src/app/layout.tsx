@@ -56,13 +56,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icons/icon-48.png", type: "image/png", sizes: "48x48" },
-      { url: "/icons/icon-96.png", type: "image/png", sizes: "96x96" },
-      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
-      { url: "/icons/icon-512.png", type: "image/png", sizes: "512x512" },
+      { url: "/icons/icon-48.png?v=6", type: "image/png", sizes: "48x48" },
+      { url: "/icons/icon-96.png?v=6", type: "image/png", sizes: "96x96" },
     ],
-    shortcut: "/favicon.ico",
+    shortcut: "/icons/icon-48.png?v=6",
     apple: "/icons/apple-touch-icon.png?v=5",
   },
   manifest: "/manifest.json",
