@@ -1,6 +1,9 @@
 .page {
   isolation: isolate;
-  background: var(--page-bg);
+  background:
+    radial-gradient(ellipse 62% 54% at -8% 10%, rgba(139, 92, 246, 0.13), transparent 72%),
+    radial-gradient(ellipse 58% 50% at 108% 7%, rgba(245, 177, 32, 0.075), transparent 70%),
+    var(--page-bg);
 }
 
 .page::before {
@@ -10,11 +13,9 @@
   content: "";
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(var(--surface-rgb), 0.72), rgba(var(--surface-rgb), 0.26) 48%, transparent 82%),
-    url("/premium/vaiiya-premium-home-v1.webp") center 4% / min(1160px, 88vw) auto no-repeat;
-  opacity: 0.065;
-  filter: saturate(0.78) contrast(0.82) brightness(1.28);
-  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.64) 46%, transparent 86%);
+    radial-gradient(ellipse 82% 66% at -13% 25%, transparent 61%, rgba(139, 92, 246, 0.035) 62%, transparent 64%),
+    radial-gradient(ellipse 72% 56% at 110% 6%, transparent 60%, rgba(245, 177, 32, 0.03) 61%, transparent 64%),
+    linear-gradient(118deg, transparent 24%, rgba(var(--surface-rgb), 0.34) 42%, transparent 57%);
 }
 
 .violetHalo {
@@ -142,9 +143,10 @@
 }
 
 :global([data-theme="dark"]) .page::before {
-  opacity: 0.14;
-  filter: saturate(0.92) contrast(0.84) brightness(0.76);
-  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse 82% 66% at -13% 25%, transparent 61%, rgba(139, 92, 246, 0.07) 62%, transparent 64%),
+    radial-gradient(ellipse 72% 56% at 110% 6%, transparent 60%, rgba(245, 177, 32, 0.045) 61%, transparent 64%),
+    linear-gradient(118deg, transparent 24%, rgba(255, 255, 255, 0.018) 42%, transparent 57%);
 }
 
 :global([data-theme="dark"]) .violetHalo {
@@ -190,10 +192,11 @@
 }
 
 @media (max-width: 767px) {
-  .page::before {
-    background-position: 58% 0;
-    background-size: auto 560px;
-    opacity: 0.045;
+  .page {
+    background:
+      radial-gradient(ellipse 105% 42% at -18% 6%, rgba(139, 92, 246, 0.12), transparent 74%),
+      radial-gradient(ellipse 90% 36% at 118% 4%, rgba(245, 177, 32, 0.065), transparent 72%),
+      var(--page-bg);
   }
 }
 
