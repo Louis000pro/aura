@@ -18,6 +18,7 @@ import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
 import { WAVE_2_EXERCISES } from "@/lib/workoutWave2";
 import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
 import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
+import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -148,6 +149,7 @@ const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_1_EXERCISES,
   ...WAVE_2_EXERCISES,
   ...WAVE_3_EXERCISES,
+  ...WAVE_5_EXERCISES,
 
   ...Object.fromEntries(GUIDE_SECTIONS.map((sec) => [
     sectionSessionId(sec),
@@ -615,6 +617,14 @@ export function resolveSessionId(title: string): string | null {
     "Cardio de salle": "cardio-salle",
     "Pyramide cardio": "pyramide-cardio",
     "Cardio & force — Haltères": "cardio-halteres",
+    "Retour au calme": "retour-au-calme",
+    "Pause détente": "pause-detente",
+    "Récupération jambes": "recup-jambes",
+    "Haut du corps relâché": "recup-haut-corps",
+    "Dos relâché": "dos-relache",
+    "Soir calme": "soir-calme",
+    "Lendemain de séance": "lendemain-seance",
+    "Récupération complète": "recup-complete",
   };
   if (MAP[title]) return MAP[title];
   // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")
