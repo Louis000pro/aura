@@ -1,52 +1,57 @@
 "use client";
 
-/* ════════════════════════════════════════════════════════════════════
-   PremiumBanner — le rappel Premium, façon chess.com.
-
-   À chaque arrivée sur le site, un bandeau descend du haut de l'écran et
-   met l'abonnement en valeur. Règles :
-   • JAMAIS pour un abonné (is_premium) ni un admin — on ne vend pas à
-     quelqu'un qui a déjà payé.
-   • UNE fois par session (sessionStorage) : il revient à chaque nouvelle
-     visite, jamais deux fois dans la même navigation.
-   • Jamais sur l'accueil (il porte désormais sa propre affiche Premium), sur
-     /premium, ni sur les pages publiques (/auth, /rejoindre).
-   • Le message est PERSONNALISÉ (pseudo + un bénéfice qui tourne) — un
-     rappel qui parle à la personne, pas une bannière publicitaire.
-   • Se referme tout seul, et `prefers-reduced-motion` est respecté.
-   ════════════════════════════════════════════════════════════════════ */
+/*
+ * Rappel Premium occasionnel.
+ *
+ * - Jamais pour un abonné.
+ * - Jamais sur l'accueil, qui porte sa propre campagne, ni sur les pages
+ *   publiques / Premium.
+ * - Une apparition maximum tous les 7 jours et par utilisateur.
+ * - Fermeture automatique après 7 secondes.
+ * - `?promo=1` reste la trappe de contrôle, sans modifier la cadence réelle.
+ */
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { useRouter, usePathname } from "next/navigation";
-import { X, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
+import { ArrowRight, X } from "lucide-react";
+import { AssistantSpark } from "@/components/AssistantMark";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, formatPrice } from "@/lib/plans";
+import styles from "./PremiumBanner.module.css";
 
-// SplashIntro couvre l'écran en z-[9999] pendant 2 s + 0,55 s de fondu. On
-// arrive APRÈS, sinon le bandeau joue son entrée derrière le splash et on ne
-// voit jamais l'animation.
 const DELAI_APPARITION = 2900;
+const DUREE_AFFICHAGE = 7000;
+const CADENCE_RAPPEL = 7 * 24 * 60 * 60 * 1000;
+const CLE_RAPPEL = "vaiiya:premium-rappel:v3";
 
-/**
- * Qui a déjà vu le rappel dans CE chargement de page.
- *
- * Volontairement une variable de module et PAS sessionStorage : sessionStorage
- * survit aux rechargements, donc le bandeau ne revenait plus tant que l'onglet
- * était ouvert. Ici la variable repart à zéro à chaque chargement du site →
- * **le rappel réapparaît à chaque connexion / réouverture**, tout en ne se
- * rejouant pas quand on navigue d'une page à l'autre.
- */
-let dernierUtilisateurMontre: string | null = null;
+let utilisateurMontreDansCeChargement: string | null = null;
 
-/** Les bénéfices tournent : le rappel ne dit pas deux fois la même chose. */
 const BENEFICES = [
-  "Missions illimitées pour faire monter ton EXP",
-  "Analyse nutrition illimitée, sans compteur",
-  "Tes entraînements en détail complet",
-  "Programmes & entraînements exclusifs",
-  "Ton coach ✦ en illimité",
+  "Des missions en plus pour faire monter ton EXP.",
+  "Ton analyse nutrition, sans compteur.",
+  "Tous les détails de tes entraînements.",
+  "Des programmes et entraînements exclusifs.",
+  "Ton coach ✦ disponible en illimité.",
 ];
+
+function dernierRappel(userId: string) {
+  try {
+    const rappels = JSON.parse(localStorage.getItem(CLE_RAPPEL) ?? "{}") as Record<string, number>;
+    return Number(rappels[userId]) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function memoriserRappel(userId: string) {
+  try {
+    const rappels = JSON.parse(localStorage.getItem(CLE_RAPPEL) ?? "{}") as Record<string, number>;
+    localStorage.setItem(CLE_RAPPEL, JSON.stringify({ ...rappels, [userId]: Date.now() }));
+  } catch {
+    // Le rappel reste fonctionnel si le stockage privé du navigateur est bloqué.
+  }
+}
 
 export default function PremiumBanner() {
   const { user } = useAuth();
@@ -56,38 +61,46 @@ export default function PremiumBanner() {
   const [visible, setVisible] = useState(false);
   const [benefice, setBenefice] = useState(BENEFICES[0]);
 
-  // On masque le rappel aux SEULS abonnés payants. Les admins le voient :
-  // ils ne sont pas des clients qui ont payé, et ils doivent pouvoir constater
-  // ce que voit un utilisateur normal (c'est ce qui empêchait Louis de le voir).
   const estAbonne = !!user?.is_premium;
   const pageExclue =
     pathname === "/" ||
     pathname.startsWith("/premium") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/rejoindre");
-  // Trappe de vérification : ?promo=1 force l'affichage quoi qu'il arrive
-  // (même abonné, même déjà vu) — pour pouvoir le contrôler à tout moment.
-  const force = typeof window !== "undefined"
-    && new URLSearchParams(window.location.search).get("promo") === "1";
 
   useEffect(() => {
-    // Déconnecté → on réarme : la prochaine connexion réaffichera le rappel.
-    if (!user) { dernierUtilisateurMontre = null; return; }
-    if (!force) {
-      if (estAbonne || pageExclue) return;
-      // Déjà montré à cette personne depuis le chargement → on ne rejoue pas
-      // à chaque navigation interne.
-      if (dernierUtilisateurMontre === user.id) return;
+    if (!user) {
+      utilisateurMontreDansCeChargement = null;
+      setVisible(false);
+      return;
     }
 
-    dernierUtilisateurMontre = user.id;
+    const force = new URLSearchParams(window.location.search).get("promo") === "1";
+    if (!force) {
+      if (estAbonne || pageExclue) {
+        setVisible(false);
+        return;
+      }
+      if (utilisateurMontreDansCeChargement === user.id) return;
+      if (Date.now() - dernierRappel(user.id) < CADENCE_RAPPEL) return;
+    }
+
+    utilisateurMontreDansCeChargement = user.id;
     setBenefice(BENEFICES[Math.floor(Math.random() * BENEFICES.length)]);
 
-    // Pas de fermeture automatique : le rappel reste tant que l'utilisateur ne
-    // l'a pas fermé (ou n'a pas touché « Voir »). C'est un rappel, pas un flash.
-    const tOuvre = setTimeout(() => setVisible(true), force ? 400 : DELAI_APPARITION);
-    return () => clearTimeout(tOuvre);
-  }, [user, estAbonne, pageExclue, force]);
+    const ouverture = window.setTimeout(() => {
+      if (!force) memoriserRappel(user.id);
+      setVisible(true);
+    }, force ? 350 : DELAI_APPARITION);
+
+    return () => window.clearTimeout(ouverture);
+  }, [user, estAbonne, pageExclue, pathname]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const fermeture = window.setTimeout(() => setVisible(false), DUREE_AFFICHAGE);
+    return () => window.clearTimeout(fermeture);
+  }, [visible]);
 
   const ouvrirPremium = () => {
     setVisible(false);
@@ -99,87 +112,64 @@ export default function PremiumBanner() {
   return (
     <AnimatePresence>
       {visible && (
-        <motion.div
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: -70 }}
-          animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -70 }}
-          transition={{ type: "spring", bounce: 0.22, duration: 0.5 }}
-          className="fixed left-0 right-0 z-[70] flex justify-center px-3 md:left-[88px]"
-          style={{ top: "calc(env(safe-area-inset-top) + 10px)" }}
-          role="status"
+        <motion.aside
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: -36, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -24, scale: 0.98 }}
+          transition={reduce
+            ? { duration: 0.18 }
+            : { type: "spring", stiffness: 390, damping: 30, mass: 0.85 }}
+          className={styles.position}
+          style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+          aria-label="Découvrir Vaiiya Premium"
         >
-          <div
-            className="w-full max-w-md rounded-[22px] p-[1.5px]"
-            style={{
-              background: "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 55%,#F5B120 100%)",
-              boxShadow: "0 14px 40px -14px rgba(193,59,193,0.55)",
-            }}
-          >
-            <div
-              className="flex items-center gap-3 rounded-[20px] px-3.5 py-3"
-              style={{ background: "rgb(var(--surface-rgb))", backdropFilter: "blur(12px)" }}
-            >
-              {/* Étincelle */}
-              <div
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-[20px]"
-                style={{
-                  background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                  boxShadow: "0 4px 14px -4px rgba(193,59,193,0.7)",
-                  color: "#fff",
-                }}
-              >
-                ✦
+          <div className={styles.halo} aria-hidden="true" />
+
+          <div className={styles.border}>
+            <div className={styles.card}>
+              <div className={styles.topline}>
+                <div className={styles.spark}>
+                  <AssistantSpark px={30} />
+                </div>
+
+                <div className={styles.heading}>
+                  <span className={styles.eyebrow}>VAIIYA PREMIUM</span>
+                  <h2 className={styles.title}>
+                    {user?.pseudo ? `${user.pseudo}, va plus loin.` : "Va plus loin avec Vaiiya."}
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setVisible(false)}
+                  className={styles.close}
+                  aria-label="Fermer le rappel Premium"
+                >
+                  <X size={17} strokeWidth={2.3} />
+                </button>
               </div>
 
-              {/* Texte personnalisé */}
-              <button
-                type="button"
-                onClick={ouvrirPremium}
-                className="flex-1 min-w-0 text-left cursor-pointer outline-none"
-              >
-                <p
-                  className="truncate text-[13.5px] font-black tracking-[-0.01em]"
-                  style={{ color: "var(--text-0)" }}
-                >
-                  {user?.pseudo ? `${user.pseudo}, passe Premium` : "Passe Premium"}
-                  <span style={{ color: "var(--accent)" }}> · {prix}/mois</span>
-                </p>
-                <p
-                  className="truncate text-[11.5px] font-medium"
-                  style={{ color: "var(--text-3)" }}
-                >
-                  {benefice}
-                </p>
-              </button>
+              <p className={styles.benefit}>{benefice}</p>
 
-              {/* CTA */}
-              <button
-                type="button"
-                onClick={ouvrirPremium}
-                aria-label="Découvrir Premium"
-                className="flex flex-shrink-0 items-center gap-0.5 rounded-xl px-3 py-2 text-[12px] font-bold text-white cursor-pointer outline-none"
-                style={{
-                  background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
-                  boxShadow: "0 4px 14px -4px rgba(193,59,193,0.6)",
-                }}
-              >
-                Voir
-                <ChevronRight size={13} strokeWidth={2.6} />
-              </button>
+              <div className={styles.actions}>
+                <div className={styles.price}>
+                  <strong>{prix}</strong>
+                  <span>/ mois · 3 jours offerts</span>
+                </div>
 
-              {/* Fermer */}
-              <button
-                type="button"
-                onClick={() => setVisible(false)}
-                aria-label="Fermer"
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full cursor-pointer outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}
-              >
-                <X size={13} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
-              </button>
+                <button type="button" onClick={ouvrirPremium} className={styles.cta}>
+                  Découvrir Premium
+                  <ArrowRight size={17} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              <div
+                className={`${styles.timer} ${reduce ? styles.timerReduced : ""}`}
+                aria-hidden="true"
+              />
             </div>
           </div>
-        </motion.div>
+        </motion.aside>
       )}
     </AnimatePresence>
   );
