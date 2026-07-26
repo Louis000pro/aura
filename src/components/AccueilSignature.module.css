@@ -302,30 +302,20 @@
   height: 42px;
   flex: 0 0 42px;
   place-items: center;
+  overflow: hidden;
   border-radius: 14px;
-  color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.1);
 }
 
-.sigil[data-tone="energy"] {
-  color: #e8620c;
-  background: rgba(232, 98, 12, 0.09);
-}
-
-.sigil[data-tone="success"] {
-  color: #159c79;
-  background: rgba(43, 212, 160, 0.11);
-}
-
-.sigil svg,
 .premiumSigil svg {
   overflow: visible;
   stroke-width: 1.55;
 }
 
-.sigil svg {
-  width: 27px;
-  height: 27px;
+.dailyMissionImage {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
 }
 
 .missionCopy {
