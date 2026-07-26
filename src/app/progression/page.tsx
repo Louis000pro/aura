@@ -1286,11 +1286,11 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             forcedColorAdjust:none → l'orange survit au mode « couleurs forcées »
             (hérité par les 3 points). */}
         {advice ? (
-          <span className="absolute top-2 left-2 max-w-[92px] flex items-center gap-1 px-[7px] py-[4px] rounded-full"
+          <span className="absolute top-2 left-2 flex items-center gap-1 px-[7px] py-[4px] rounded-full"
             style={{ background: "rgba(8,6,14,0.38)", backdropFilter: "blur(5px)", border: "1px solid rgba(255,255,255,0.24)" }}>
             <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
-            <span className="text-[7.5px] leading-none font-black uppercase tracking-[0.06em] text-white truncate">
-              {advice.theme}
+            <span className="text-[7.5px] leading-none font-black uppercase tracking-[0.06em] text-white">
+              {session.duration} min · lire
             </span>
           </span>
         ) : (
@@ -1305,10 +1305,12 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         )}
 
         {/* Durée — badge discret */}
-        <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
-          style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.34)" }}>
-          {session.duration} MIN{advice ? " · LIRE" : ""}
-        </span>
+        {!advice && (
+          <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
+            style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.34)" }}>
+            {session.duration} MIN
+          </span>
+        )}
 
         {/* Scrim bas : nom (blanc) + muscles (lavande = notre identité).
             forcedColorAdjust:none → en mode « couleurs forcées », on garde
@@ -1322,7 +1324,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           }}>
           <p className="text-[12.5px] font-black uppercase text-white leading-[1.12] tracking-tight"
             style={{
-              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+              display: "-webkit-box", WebkitLineClamp: advice ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden",
               textShadow: "0 2px 10px rgba(0,0,0,0.5)",
             }}>
             {session.title}
@@ -1330,10 +1332,10 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           <p className="text-[10.5px] font-semibold mt-1 leading-snug"
             style={{
               color: "#C9B8FF",
-              display: "-webkit-box", WebkitLineClamp: advice ? 2 : 1, WebkitBoxOrient: "vertical", overflow: "hidden",
+              display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden",
               textShadow: "0 1px 6px rgba(0,0,0,0.45)",
             }}>
-            {advice?.subtitle ?? muscles}
+            {advice?.theme ?? muscles}
           </p>
           {!session.perso && !isPremium && (
             <span className="mt-1.5 text-[8.5px] font-bold uppercase tracking-[0.12em]"

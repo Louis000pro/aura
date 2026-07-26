@@ -16,7 +16,14 @@ export default function AdviceReaderSheet({
   const scroller = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => lockBodyModal(), []);
+  useEffect(() => {
+    const unlockBody = lockBodyModal();
+    document.body.classList.add("advice-reader-open");
+    return () => {
+      document.body.classList.remove("advice-reader-open");
+      unlockBody();
+    };
+  }, []);
 
   const updateProgress = () => {
     const node = scroller.current;
@@ -60,7 +67,7 @@ export default function AdviceReaderSheet({
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={onClose}
-          className="absolute z-30 top-[calc(env(safe-area-inset-top)+14px)] md:top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-white"
+          className="absolute z-30 top-[calc(env(safe-area-inset-top)+14px)] md:top-4 right-4 h-9 px-3 rounded-full flex items-center justify-center gap-1.5 text-white"
           style={{
             background: "rgba(8,6,14,0.5)",
             border: "1px solid rgba(255,255,255,0.25)",
@@ -69,6 +76,7 @@ export default function AdviceReaderSheet({
           aria-label="Fermer le cours"
         >
           <X size={16} strokeWidth={2.2} />
+          <span className="text-[10px] font-extrabold">Fermer</span>
         </motion.button>
 
         <div
@@ -160,6 +168,16 @@ export default function AdviceReaderSheet({
                 </section>
               ))}
             </div>
+
+            <section className="mt-9 rounded-[22px] p-5"
+              style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+              <p className="text-[9.5px] font-black uppercase tracking-[0.16em]" style={{ color: "var(--accent)" }}>
+                Exemple concret
+              </p>
+              <p className="text-[14.5px] font-semibold leading-[1.72] mt-2" style={{ color: "var(--text-1)" }}>
+                {article.example}
+              </p>
+            </section>
 
             <section className="mt-9 rounded-[22px] p-5"
               style={{ background: "rgba(43,212,160,0.08)", border: "1px solid rgba(43,212,160,0.18)" }}>

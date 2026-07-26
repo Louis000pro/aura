@@ -260,7 +260,7 @@ export default function Navigation() {
             lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
             lourde. ══ */}
       {user && pathname !== "/profil" && pathname !== "/communaute" && (
-        <div className="md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
+        <div className="global-mobile-header md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
           style={{
             height: "calc(env(safe-area-inset-top) + 56px)",
             background: "linear-gradient(to bottom, rgba(var(--surface-rgb),0.96) 0%, rgba(var(--surface-rgb),0.80) 42%, rgba(var(--surface-rgb),0) 100%)",
@@ -268,7 +268,7 @@ export default function Navigation() {
       )}
 
       {user && pathname !== "/profil" && pathname !== "/communaute" && (
-        <div className="md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
+        <div className="global-mobile-header md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <NotificationBell side="top" />
         </div>
@@ -279,7 +279,7 @@ export default function Navigation() {
             Communauté (qui garde le sien dans sa propre barre). Limité aux onglets
             pour ne pas se poser sur les titres à gauche des pages secondaires. ══ */}
       {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
-        <div className="md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
+        <div className="global-mobile-header md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <button onClick={() => router.push("/profil")} aria-label="Mon profil"
             data-tour-anchor="nav-profil" className="relative shrink-0 active:opacity-80 transition-opacity">

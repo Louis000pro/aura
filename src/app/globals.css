@@ -112,6 +112,12 @@
   body.chat-open .mobile-nav,
   body.modal-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
 
+  /* Le lecteur de conseils possède sa propre commande de fermeture. L'en-tête
+     flottant global (avatar, cloche et voile) disparaît pour ne pas superposer
+     deux niveaux de navigation au-dessus de la photo. */
+  .global-mobile-header { transition: opacity 0.16s ease; }
+  body.advice-reader-open .global-mobile-header { opacity: 0; pointer-events: none; }
+
   /* Scanner code-barres : la <video> injectée par html5-qrcode remplit le viseur
      (object-fit cover), comme le viseur caméra de la Photo IA. */
   #aura-barcode-reader { line-height: 0; }
