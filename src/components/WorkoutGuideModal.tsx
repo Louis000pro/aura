@@ -16,6 +16,7 @@ import type { PerfShareData } from "@/lib/perfShareExport";
 import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
 import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
 import { WAVE_2_EXERCISES } from "@/lib/workoutWave2";
+import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -145,6 +146,7 @@ const CC        = 2 * Math.PI * CR;
 const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_1_EXERCISES,
   ...WAVE_2_EXERCISES,
+  ...WAVE_3_EXERCISES,
 
   ...Object.fromEntries(GUIDE_SECTIONS.map((sec) => [
     sectionSessionId(sec),
@@ -596,6 +598,13 @@ export function resolveSessionId(title: string): string | null {
     "Chaîne postérieure": "chaine-posterieure",
     "Épaules & bras": "epaules-bras",
     "Full Body Machines": "fullbody-machines",
+    "Posture après écran": "posture-ecran",
+    "Hanches libres": "hanches-libres",
+    "Épaules & haut du dos": "epaules-haut-dos-mobilite",
+    "Chevilles & squat": "chevilles-squat",
+    "Colonne mobile": "colonne-mobile",
+    "Mobilité complète": "mobilite-complete",
+    "Mobilité active": "mobilite-active",
   };
   if (MAP[title]) return MAP[title];
   // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")

@@ -20,10 +20,12 @@ export default function ExerciseGuide({
   name,
   genre,
   loading = "eager",
+  compact = false,
 }: {
   name: string;
   genre?: Genre;
   loading?: "eager" | "lazy";
+  compact?: boolean;
 }) {
   const guide = resolveGuide(name);
   const [frame, setFrame] = useState(0);
@@ -41,7 +43,10 @@ export default function ExerciseGuide({
   const halo = (
     <div className="pointer-events-none absolute left-1/2 -translate-x-1/2"
       style={{
-        top: "1%", width: 300, height: 300, borderRadius: "50%",
+        top: "1%",
+        width: compact ? 116 : 300,
+        height: compact ? 116 : 300,
+        borderRadius: "50%",
         background: "radial-gradient(circle, rgba(139,92,246,0.16), transparent 62%)",
       }} />
   );
@@ -50,7 +55,7 @@ export default function ExerciseGuide({
   const g = pickGenre(guide, genre);
 
   return (
-    <div className="relative z-[1] flex justify-center mt-1" style={{ height: 176 }} aria-hidden>
+    <div className="relative z-[1] flex justify-center mt-1" style={{ height: compact ? 72 : 176 }} aria-hidden>
       {halo}
       {Array.from({ length: guide.frames }).map((_, i) => (
         // eslint-disable-next-line @next/next/no-img-element

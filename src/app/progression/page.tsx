@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import ExerciseGuide from "@/components/ExerciseGuide";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
@@ -58,6 +59,7 @@ type WorkoutSession = {
   visibility?: "private" | "friends" | "public";
   access?: "free" | "premium";
   collections?: CatalogCollection[];
+  previewExercises?: string[];
 };
 
 const workoutSessions: WorkoutSession[] = [
@@ -108,6 +110,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier", "Core"],
     accent: "#8B5CF6", icon: Home, access: "premium",
     collections: ["sansmateriel", "express", "renfo", "fullbody"],
+    previewExercises: ["Chaise au mur", "Pike push-ups", "Fentes"],
   },
   {
     id: "jambes-poids-corps", category: "force",
@@ -116,6 +119,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Quadriceps", "Fessiers", "Mollets"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["sansmateriel", "jambes", "renfo"],
+    previewExercises: ["Squat", "Fentes", "Pont fessier"],
   },
   {
     id: "haut-corps-sol", category: "force",
@@ -124,6 +128,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Pectoraux", "Épaules", "Dos"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["sansmateriel", "haut", "renfo"],
+    previewExercises: ["Pompes", "Pike push-ups", "Pompes diamant"],
   },
   {
     id: "fullbody-inter", category: "fullbody",
@@ -132,6 +137,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Layers, access: "premium",
     collections: ["sansmateriel", "fullbody", "renfo", "cardiohiit", "perte"],
+    previewExercises: ["Squats sautés", "Pompes", "Fentes"],
   },
   {
     id: "puissance-sans-materiel", category: "cardio",
@@ -140,6 +146,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier", "Cardio"],
     accent: "#8B5CF6", icon: Flame, access: "premium",
     collections: ["sansmateriel", "fullbody", "cardiohiit", "perte", "defis"],
+    previewExercises: ["Sprint sur place", "Fentes sautées", "Pompes explosives"],
   },
   {
     id: "hiit", category: "cardio",
@@ -161,7 +168,70 @@ const workoutSessions: WorkoutSession[] = [
     title: "Mobilité Matinale", subtitle: "Yoga flow · Étirements actifs",
     duration: 20, difficulty: "Débutant", exercises: 10,
     muscles: ["Mobilité", "Souplesse"],
-    accent: "#8B5CF6", icon: Wind,
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["mobilite", "express", "debuter"],
+  },
+  {
+    id: "posture-ecran", category: "mobilite",
+    title: "Posture après écran", subtitle: "Nuque · Épaules · Haut du dos",
+    duration: 15, difficulty: "Débutant", exercises: 6,
+    muscles: ["Nuque", "Épaules", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["mobilite", "express", "debuter"],
+  },
+  {
+    id: "hanches-libres", category: "mobilite",
+    title: "Hanches libres", subtitle: "Rotation · Ouverture · Chaîne postérieure",
+    duration: 20, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Hanches", "Fessiers", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cercles de hanches", "World's greatest stretch", "Pigeon"],
+  },
+  {
+    id: "epaules-haut-dos-mobilite", category: "mobilite",
+    title: "Épaules & haut du dos", subtitle: "Rotation · Ouverture · Posture",
+    duration: 18, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Épaules", "Pectoraux", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cat-cow", "Thread the needle", "Downward dog / cobra"],
+  },
+  {
+    id: "chevilles-squat", category: "mobilite",
+    title: "Chevilles & squat", subtitle: "Appuis · Hanches · Amplitude",
+    duration: 15, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Chevilles", "Hanches", "Jambes"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Étirement mollet au mur", "Cercles de hanches", "World's greatest stretch"],
+  },
+  {
+    id: "colonne-mobile", category: "mobilite",
+    title: "Colonne mobile", subtitle: "Flexion · Rotation · Respiration",
+    duration: 18, difficulty: "Débutant", exercises: 6,
+    muscles: ["Colonne vertébrale", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cat-cow", "Thread the needle", "Downward dog / cobra"],
+  },
+  {
+    id: "mobilite-complete", category: "mobilite",
+    title: "Mobilité complète", subtitle: "Tout le corps · Routine profonde",
+    duration: 30, difficulty: "Intermédiaire", exercises: 10,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["mobilite"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
+  },
+  {
+    id: "mobilite-active", category: "mobilite",
+    title: "Mobilité active", subtitle: "Avant séance · Fluide · Corps entier",
+    duration: 20, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
   },
   {
     id: "dos-biceps", category: "force",
@@ -170,6 +240,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Dos", "Biceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Tractions supination", "Rowing barre buste penché", "Curl marteau"],
   },
   {
     id: "core", category: "fullbody",
@@ -178,6 +249,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Abdominaux", "Lombaires"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
     collections: ["sansmateriel", "abdos", "renfo"],
+    previewExercises: ["Planche frontale", "Crunch", "Russian Twist"],
   },
   {
     id: "cardio-endurance", category: "cardio",
@@ -193,6 +265,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Pectoraux", "Dos", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Développé couché barre", "Rowing machine assis", "Écarté à la poulie vis-à-vis"],
   },
   {
     id: "push-salle", category: "force",
@@ -201,6 +274,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Pectoraux", "Épaules", "Triceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Développé couché", "Développé incliné haltères", "Développé militaire haltères"],
   },
   {
     id: "jambes-quadriceps", category: "force",
@@ -209,6 +283,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Quadriceps", "Fessiers", "Mollets"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "jambes"],
+    previewExercises: ["Squat barre", "Presse à cuisses", "Squat bulgare"],
   },
   {
     id: "chaine-posterieure", category: "force",
@@ -217,6 +292,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Ischio-jambiers", "Fessiers", "Dos"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "jambes"],
+    previewExercises: ["Soulevé de terre roumain", "Hip thrust machine", "Leg curl allongé"],
   },
   {
     id: "epaules-bras", category: "force",
@@ -225,6 +301,7 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Épaules", "Biceps", "Triceps"],
     accent: "#8B5CF6", icon: Dumbbell, access: "premium",
     collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Développé Arnold", "Élévations latérales", "Oiseau haltères"],
   },
   {
     id: "fullbody-machines", category: "fullbody",
@@ -233,13 +310,15 @@ const workoutSessions: WorkoutSession[] = [
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Layers, access: "premium",
     collections: ["salle", "masse", "renfo", "fullbody"],
+    previewExercises: ["Presse à cuisses", "Développé épaules machine", "Tirage poitrine"],
   },
   {
     id: "recup-active", category: "mobilite",
     title: "Récupération active", subtitle: "Respiration · Étirements doux · Détente",
     duration: 25, difficulty: "Débutant", exercises: 7,
     muscles: ["Souplesse", "Respiration"],
-    accent: "#8B5CF6", icon: Wind,
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["mobilite", "recup", "debuter"],
   },
   {
     id: "defi-gainage", category: "fullbody",
@@ -931,28 +1010,46 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
   session: MergedSession;
   onStart: (s: MergedSession) => void;
   onManage: (s: MergedSession) => void;
-  onPremium: () => void;
+  onPremium: (s: MergedSession) => void;
   canAccessPremium: boolean;
   imgOverride?: string;
 }) {
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
   const img = imgOverride ?? tileArt.img;
   const level = DIFF_LEVEL[session.difficulty];
-  const premiumLocked = session.access === "premium" && !canAccessPremium;
+  const isPremium = session.access === "premium";
+  const premiumLocked = isPremium && !canAccessPremium;
   // Le différenciateur : les muscles. À défaut (séance sans muscles listés),
   // la famille de mouvement (« Poussée », « Tirage »…) fait un repli parlant.
   const muscles = session.muscles.filter(Boolean).slice(0, 3).join(" · ") || tileArt.label;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`relative ${isPremium ? "rounded-[20px] overflow-hidden p-px" : ""}`}
+      style={isPremium ? {
+        background: "linear-gradient(145deg,var(--accent),var(--gold))",
+        boxShadow: "0 12px 30px rgba(var(--accent-rgb),0.22)",
+      } : undefined}
+    >
+      {isPremium && (
+        <div className="h-7 px-2.5 flex items-center justify-between text-white"
+          style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
+          <span className="text-[9px] font-black uppercase tracking-[0.15em]">Premium</span>
+          {premiumLocked
+            ? <Lock size={11} strokeWidth={2.4} aria-label="Verrouillée" />
+            : <Sparkles size={11} strokeWidth={2.4} aria-label="Incluse dans ton offre" />}
+        </div>
+      )}
       {/* La tuile = un seul geste : lancer. Photo NATURELLE plein cadre.
           Quatre repères à leur place : difficulté (pastilles orange, coin
           haut-gauche) · durée (badge, coin haut-droite) · nom · muscles
           (lavande maison). Les coins portent la méta, le bas l'identité. */}
       <motion.button
         whileTap={{ scale: 0.97 }}
-        onClick={() => premiumLocked ? onPremium() : onStart(session)}
-        className="w-full rounded-[18px] overflow-hidden relative cursor-pointer border-none p-0 block"
+        onClick={() => premiumLocked ? onPremium(session) : onStart(session)}
+        className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "rounded-[17px]" : "rounded-[18px]"}`}
         style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
         aria-label={premiumLocked ? `${session.title} — réservé à Premium` : `Lancer : ${session.title}`}
       >
@@ -1001,13 +1098,10 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             }}>
             {muscles}
           </p>
-          {session.access === "premium" && (
-            <span className="mt-1.5 inline-flex items-center gap-1 text-[8.5px] font-black uppercase tracking-[0.12em]"
-              style={{ color: "#FFD34E", textShadow: "0 1px 6px rgba(0,0,0,0.55)" }}>
-              {premiumLocked
-                ? <Lock size={8.5} strokeWidth={2.4} aria-hidden />
-                : <Sparkles size={8.5} strokeWidth={2.4} aria-hidden />}
-              Premium
+          {!session.perso && !isPremium && (
+            <span className="mt-1.5 text-[8.5px] font-bold uppercase tracking-[0.12em]"
+              style={{ color: "rgba(255,255,255,0.68)", textShadow: "0 1px 6px rgba(0,0,0,0.55)" }}>
+              Incluse
             </span>
           )}
         </div>
@@ -1022,6 +1116,139 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
         </motion.button>
       )}
+    </motion.div>
+  );
+}
+
+/* Aperçu avant achat : on montre la valeur exacte de la séance avant de
+   parler prix. La photo reste naturelle et trois gestes animés rendent le
+   contenu concret ; le CTA Premium n'arrive qu'après cette preuve. */
+function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
+  session: MergedSession;
+  premiumCount: number;
+  onClose: () => void;
+  onUpgrade: () => void;
+}) {
+  const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const preview = (session.previewExercises
+    ?? session.exerciseList?.slice(0, 3).map((exercise) => exercise.name)
+    ?? []).slice(0, 3);
+  const others = Math.max(0, premiumCount - 1);
+  const promise = session.subtitle || session.muscles.join(" · ");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[145] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(8,5,16,0.64)", backdropFilter: "blur(5px)" }}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 44, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 390, damping: 34 }}
+        className="w-full max-w-lg rounded-t-[28px] md:rounded-[28px] overflow-hidden"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.2)",
+          boxShadow: "0 -18px 54px rgba(0,0,0,0.46)",
+          maxHeight: "92dvh",
+          overflowY: "auto",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="h-8 px-4 flex items-center justify-center gap-1.5 text-white"
+          style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
+          <Sparkles size={12} strokeWidth={2.3} aria-hidden />
+          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]">Aperçu Premium</span>
+        </div>
+
+        <div className="relative" style={{ aspectRatio: "16 / 9" }}>
+          <Photo img={art.img} pos="center 24%" style={{ position: "absolute", inset: 0 }} />
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-16"
+            style={{ background: "linear-gradient(to top,rgba(6,5,10,0.94),rgba(6,5,10,0.38),transparent)" }}>
+            <p className="text-[20px] font-black uppercase leading-[1.05] text-white"
+              style={{ textShadow: "0 2px 12px rgba(0,0,0,0.58)" }}>
+              {session.title}
+            </p>
+            <p className="text-[11px] font-semibold mt-1.5 text-white/75">{promise}</p>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-white"
+            style={{ background: "rgba(8,6,14,0.46)", border: "1px solid rgba(255,255,255,0.25)", backdropFilter: "blur(6px)" }}
+            aria-label="Fermer l’aperçu"
+          >
+            <X size={14} strokeWidth={2.2} />
+          </motion.button>
+        </div>
+
+        <div className="px-5 pt-4 pb-5">
+          <div className="flex items-center gap-2 text-[10px] font-bold" style={{ color: "var(--text-2)" }}>
+            <span>{session.duration} min</span>
+            <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
+            <span>{session.difficulty}</span>
+            <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
+            <span className="truncate">{session.muscles.slice(0, 2).join(" · ")}</span>
+          </div>
+
+          {preview.length > 0 && (
+            <div className="mt-4">
+              <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
+                Les premiers mouvements
+              </p>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {preview.map((name) => (
+                  <div key={name} className="rounded-2xl px-1.5 pt-1.5 pb-2 overflow-hidden text-center"
+                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.11)" }}>
+                    <ExerciseGuide name={name} compact loading="lazy" />
+                    <p className="text-[9px] font-bold leading-tight line-clamp-2 min-h-[22px]" style={{ color: "var(--text-2)" }}>
+                      {name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 rounded-2xl px-4 py-3.5"
+            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+            <p className="text-[13px] font-bold leading-snug" style={{ color: "var(--text-1)" }}>
+              {others > 0
+                ? `Cette séance et ${others} autre${others > 1 ? "s" : ""} sont incluses avec Premium.`
+                : "Cette séance est incluse avec Premium."}
+            </p>
+            <p className="text-[10.5px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
+              Débloque toute la collection, pas seulement cette séance.
+            </p>
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onUpgrade}
+            className="w-full h-12 mt-4 rounded-2xl text-[13px] font-black text-white"
+            style={{
+              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+              boxShadow: "0 8px 22px rgba(139,92,246,0.32)",
+            }}
+          >
+            Débloquer toutes les séances
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onClose}
+            className="w-full h-10 mt-1 text-[11.5px] font-semibold"
+            style={{ color: "var(--text-3)" }}
+          >
+            Pas maintenant
+          </motion.button>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -1172,6 +1399,63 @@ function SessionRow({ label, count, children }: {
   );
 }
 
+function PremiumSessionRow({ count, children }: {
+  count: number;
+  children: React.ReactNode;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const nudge = (dir: 1 | -1) =>
+    scroller.current?.scrollBy({ left: dir * (ROW_CARD_W + 12) * 2, behavior: "smooth" });
+
+  return (
+    <section className="mb-7 rounded-[24px] overflow-hidden"
+      style={{
+        background: "linear-gradient(145deg,rgba(var(--accent-rgb),0.13),rgba(245,177,32,0.08),rgb(var(--surface-rgb)))",
+        border: "1px solid rgba(var(--accent-rgb),0.2)",
+        boxShadow: "0 14px 34px rgba(var(--accent-rgb),0.1)",
+      }}>
+      <div className="px-4 pt-4 pb-3 flex items-start gap-3">
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+          style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 16px rgba(var(--accent-rgb),0.25)" }}>
+          <Sparkles size={15} strokeWidth={2.2} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-[15px] font-black leading-tight"
+              style={{
+                background: "linear-gradient(110deg,var(--accent),var(--gold))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}>
+              Continue avec Premium
+            </p>
+            <span className="text-[9.5px] font-black" style={{ color: "var(--text-3)" }}>{count}</span>
+          </div>
+          <p className="text-[10.5px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
+            Des séances plus ciblées pour aller plus loin, à ton rythme.
+          </p>
+        </div>
+        <div className="hidden md:flex items-center gap-1">
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(-1)}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(var(--surface-rgb),0.68)" }} aria-label="Précédent">
+            <ChevronLeft size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(1)}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(var(--surface-rgb),0.68)" }} aria-label="Suivant">
+            <ChevronRight size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+        </div>
+      </div>
+      <div ref={scroller} className="flex gap-3 overflow-x-auto px-4 pb-4"
+        style={{ scrollbarWidth: "none", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
 /* ════════════════════════════════════════════════════════════════════
    L'ENTONNOIR — grandes collections d'intention (réf. validée : ShapeYou).
    Volontairement chevauchantes : une séance vit dans PLUSIEURS collections
@@ -1239,9 +1523,17 @@ const CATALOG: CatDef[] = [
 
 /** Tuile de collection — photo naturelle, titre blanc centré, compte.
     Une collection vide dit « Bientôt » : la porte reste ouverte. */
-function CatTile({ cat, count, onOpen }: { cat: CatDef; count: number; onOpen: () => void }) {
+function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
+  cat: CatDef;
+  count: number;
+  freeCount: number;
+  premiumCount: number;
+  onOpen: () => void;
+}) {
   const sub = count > 0
-    ? `${count} séance${count > 1 ? "s" : ""}`
+    ? premiumCount > 0
+      ? `${freeCount} incluse${freeCount > 1 ? "s" : ""} · ${premiumCount} Premium`
+      : `${count} séance${count > 1 ? "s" : ""}`
     : cat.id === "tiennes" ? "À toi de jouer" : "Bientôt";
   return (
     <motion.button
@@ -1257,19 +1549,19 @@ function CatTile({ cat, count, onOpen }: { cat: CatDef; count: number; onOpen: (
           style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
           {cat.name}
         </p>
-        <p className="text-[9px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.62)" }}>{sub}</p>
+        <p className="text-[8.5px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.68)" }}>{sub}</p>
       </div>
     </motion.button>
   );
 }
 
-function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, onPremium, onCreate, onEdit, onDelete, onVisibilityChange }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange }: {
   sessions: MergedSession[];
   loading: boolean;
   canAccessPremium: boolean;
   onClose: () => void;
   onStart: (s: MergedSession) => void;
-  onPremium: () => void;
+  onUpgrade: () => void;
   onCreate: () => void;
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
@@ -1277,28 +1569,33 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
 }) {
   const [catId, setCatId] = useState<string | null>(null);
   const [manage, setManage] = useState<MergedSession | null>(null);
+  const [premiumPreview, setPremiumPreview] = useState<MergedSession | null>(null);
 
   const cat = catId ? CATALOG.find((c) => c.id === catId) ?? null : null;
 
   /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
   const matched = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
   const vaiiya = matched.filter((s) => !s.perso);
+  const vaiiyaFree = vaiiya.filter((s) => s.access !== "premium");
+  const vaiiyaPremium = vaiiya.filter((s) => s.access === "premium");
   const perso = matched.filter((s) => s.perso);
 
   /* Photo par séance, dé-doublonnée PAR RANGÉE (Vaiiya et « les tiennes »
      indépendamment) : deux cartes d'une même rangée ne tombent plus sur la
      même image. Fusionné en une map id → image (les id sont uniques). */
   const artById = new Map<string, string>();
-  dedupeRowArt(vaiiya).forEach((img, id) => artById.set(id, img));
+  dedupeRowArt(vaiiyaFree).forEach((img, id) => artById.set(id, img));
+  dedupeRowArt(vaiiyaPremium).forEach((img, id) => artById.set(id, img));
   dedupeRowArt(perso).forEach((img, id) => artById.set(id, img));
 
-  const rowTile = (s: MergedSession) => (
-    <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W, scrollSnapAlign: "start" }}>
+  const rowTile = (s: MergedSession, index = 0, premium = false) => (
+    <div key={s.id} className="flex-shrink-0"
+      style={{ width: premium && index === 0 ? 174 : ROW_CARD_W, scrollSnapAlign: "start" }}>
       <SessionTile
         session={s}
         onStart={onStart}
         onManage={setManage}
-        onPremium={onPremium}
+        onPremium={setPremiumPreview}
         canAccessPremium={canAccessPremium}
         imgOverride={artById.get(s.id)}
       />
@@ -1374,11 +1671,23 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {CATALOG.map((c) => (
-                <CatTile key={c.id} cat={c}
-                  count={sessions.reduce((n, s) => n + (c.match(s, hayOf(s)) ? 1 : 0), 0)}
-                  onOpen={() => setCatId(c.id)} />
-              ))}
+              {CATALOG.map((c) => {
+                const catSessions = sessions.filter((s) => c.match(s, hayOf(s)));
+                const official = catSessions.filter((s) => !s.perso);
+                const premiumCount = official.filter((s) => s.access === "premium").length;
+                const freeCount = official.length - premiumCount;
+                const count = premiumCount > 0 ? official.length : catSessions.length;
+                return (
+                  <CatTile
+                    key={c.id}
+                    cat={c}
+                    count={count}
+                    freeCount={freeCount}
+                    premiumCount={premiumCount}
+                    onOpen={() => setCatId(c.id)}
+                  />
+                );
+              })}
             </div>
           )
         ) : cat.id === "tiennes" ? (
@@ -1390,7 +1699,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
                 session={s}
                 onStart={onStart}
                 onManage={setManage}
-                onPremium={onPremium}
+                onPremium={setPremiumPreview}
                 canAccessPremium={canAccessPremium}
                 imgOverride={artById.get(s.id)}
               />
@@ -1415,16 +1724,22 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
             </motion.button>
           </div>
         ) : (
-          /* ── Niveau 2 : rangées slidables Vaiiya / Les tiennes ── */
+          /* ── Niveau 2 : le seuil Gratuit → Premium est volontairement
+             visible. On montre la base incluse, puis l'univers payant. ── */
           <>
-            {vaiiya.length > 0 && (
-              <SessionRow label="Vaiiya" count={vaiiya.length}>
-                {vaiiya.map(rowTile)}
+            {vaiiyaFree.length > 0 && (
+              <SessionRow label="Pour commencer" count={vaiiyaFree.length}>
+                {vaiiyaFree.map((session, index) => rowTile(session, index))}
               </SessionRow>
+            )}
+            {vaiiyaPremium.length > 0 && (
+              <PremiumSessionRow count={vaiiyaPremium.length}>
+                {vaiiyaPremium.map((session, index) => rowTile(session, index, true))}
+              </PremiumSessionRow>
             )}
             {perso.length > 0 && (
               <SessionRow label="Les tiennes" count={perso.length}>
-                {perso.map(rowTile)}
+                {perso.map((session, index) => rowTile(session, index))}
               </SessionRow>
             )}
           </>
@@ -1441,6 +1756,16 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
           onEdit={(s) => { setManage(null); onEdit(s); }}
           onDelete={(id) => { setManage(null); onDelete(id); }}
           onVisibilityChange={onVisibilityChange}
+        />
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {premiumPreview && (
+        <PremiumPreviewSheet
+          session={premiumPreview}
+          premiumCount={vaiiyaPremium.length}
+          onClose={() => setPremiumPreview(null)}
+          onUpgrade={() => { setPremiumPreview(null); onUpgrade(); }}
         />
       )}
     </AnimatePresence>
@@ -3032,7 +3357,7 @@ export default function ProgressionPage() {
             canAccessPremium={canAccessPremium}
             onClose={() => setSheet(null)}
             onStart={startSession}
-            onPremium={() => { setSheet(null); router.push("/premium"); }}
+            onUpgrade={() => { setSheet(null); router.push("/premium"); }}
             onCreate={() => { setEditSession(null); setShowCreateModal(true); }}
             onEdit={(s) => { setEditSession(s); setShowCreateModal(true); }}
             onDelete={handleDelete}
