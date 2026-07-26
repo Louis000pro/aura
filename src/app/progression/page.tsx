@@ -19,17 +19,25 @@ import { useRouter } from "next/navigation";
 import {
   Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
   Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
-  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical,
+  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
+import AdviceReaderSheet from "@/components/AdviceReaderSheet";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { levelToDifficulty } from "@/lib/assistantActions";
 import { FAMILY, resolveArt, type Family, type Art } from "@/lib/workoutArt";
+import {
+  ADVICE_ARTICLES,
+  ADVICE_THEMES,
+  getAdviceArticle,
+  type AdviceArticle,
+  type AdviceTheme,
+} from "@/lib/adviceArticles";
 import {
   ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
@@ -60,6 +68,7 @@ type WorkoutSession = {
   access?: "free" | "premium";
   collections?: CatalogCollection[];
   previewExercises?: string[];
+  contentType?: "article";
 };
 
 const workoutSessions: WorkoutSession[] = [
@@ -436,13 +445,28 @@ const workoutSessions: WorkoutSession[] = [
     collections: ["recup", "mobilite"],
     previewExercises: ["Cohérence cardiaque", "Cat-cow", "Cercles de hanches"],
   },
+  ...ADVICE_ARTICLES.map((article): WorkoutSession => ({
+    id: article.id,
+    category: "fullbody",
+    title: article.title,
+    subtitle: article.subtitle,
+    duration: article.readingMinutes,
+    difficulty: "Débutant",
+    exercises: article.sections.length,
+    muscles: [article.theme],
+    accent: "#8B5CF6",
+    icon: BookOpen,
+    access: article.access,
+    collections: ["conseils"],
+    contentType: "article",
+  })),
   {
     id: "bases-mouvement", category: "fullbody",
     title: "Les bases du mouvement", subtitle: "6 gestes · 6 repères · Pour bien commencer",
     duration: 20, difficulty: "Débutant", exercises: 6,
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Layers, access: "free",
-    collections: ["conseils", "debuter", "fullbody", "renfo"],
+    collections: ["debuter", "fullbody", "renfo"],
   },
   {
     id: "squat-maitrise", category: "force",
@@ -450,7 +474,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 22, difficulty: "Débutant", exercises: 5,
     muscles: ["Quadriceps", "Fessiers", "Chevilles"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
-    collections: ["conseils", "debuter", "jambes", "renfo"],
+    collections: ["debuter", "jambes", "renfo"],
   },
   {
     id: "pompes-maitrise", category: "force",
@@ -458,7 +482,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 20, difficulty: "Débutant", exercises: 5,
     muscles: ["Pectoraux", "Triceps", "Épaules"],
     accent: "#8B5CF6", icon: Dumbbell, access: "free",
-    collections: ["conseils", "debuter", "haut", "renfo", "sansmateriel"],
+    collections: ["debuter", "haut", "renfo", "sansmateriel"],
   },
   {
     id: "tractions-progression", category: "force",
@@ -466,7 +490,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 30, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Dos", "Biceps", "Épaules"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["conseils", "haut", "renfo", "salle"],
+    collections: ["haut", "renfo", "salle"],
     previewExercises: ["Ouverture des épaules", "Face pull poulie", "Rowing inversé"],
   },
   {
@@ -475,7 +499,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 30, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Fessiers", "Ischio-jambiers", "Dos"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["conseils", "jambes", "renfo", "salle"],
+    collections: ["jambes", "renfo", "salle"],
     previewExercises: ["Cat-cow", "Pont fessier", "Soulevé de terre roumain"],
   },
   {
@@ -484,7 +508,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 25, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Core", "Abdominaux", "Dos"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["conseils", "abdos", "renfo", "sansmateriel"],
+    collections: ["abdos", "renfo", "sansmateriel"],
     previewExercises: ["Dead bug", "Bird dog", "Planche frontale"],
   },
   {
@@ -493,7 +517,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 28, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Épaules", "Haut du dos", "Triceps"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["conseils", "haut", "renfo", "salle", "mobilite"],
+    collections: ["haut", "renfo", "salle", "mobilite"],
     previewExercises: ["Ouverture des épaules", "Étirement pectoraux au mur", "Pike push-ups"],
   },
   {
@@ -502,7 +526,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 28, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Jambes", "Fessiers", "Core"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["conseils", "jambes", "renfo", "sansmateriel"],
+    collections: ["jambes", "renfo", "sansmateriel"],
     previewExercises: ["Bird dog", "Step up banc", "Fentes"],
   },
   {
@@ -511,7 +535,7 @@ const workoutSessions: WorkoutSession[] = [
     duration: 32, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Corps entier"],
     accent: "#8B5CF6", icon: Sparkles, access: "premium",
-    collections: ["conseils", "renfo", "salle", "fullbody"],
+    collections: ["renfo", "salle", "fullbody"],
     previewExercises: ["Squat", "Pompes", "Fentes"],
   },
   {
@@ -1184,6 +1208,12 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
   const used = new Set<string>();
   const out = new Map<string, string>();
   for (const s of list) {
+    const advice = getAdviceArticle(s.id);
+    if (advice) {
+      used.add(advice.image);
+      out.set(s.id, advice.image);
+      continue;
+    }
     const art = resolveArt({ title: s.title, category: s.category, muscles: s.muscles });
     let img = art.img;
     if (used.has(img)) {
@@ -1208,8 +1238,9 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
   canAccessPremium: boolean;
   imgOverride?: string;
 }) {
+  const advice = getAdviceArticle(session.id);
   const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
-  const img = imgOverride ?? tileArt.img;
+  const img = imgOverride ?? advice?.image ?? tileArt.img;
   const level = DIFF_LEVEL[session.difficulty];
   const isPremium = session.access === "premium";
   const premiumLocked = isPremium && !canAccessPremium;
@@ -1245,26 +1276,38 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         onClick={() => premiumLocked ? onPremium(session) : onStart(session)}
         className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "rounded-[17px]" : "rounded-[18px]"}`}
         style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
-        aria-label={premiumLocked ? `${session.title} — réservé à Premium` : `Lancer : ${session.title}`}
+        aria-label={premiumLocked
+          ? `${session.title} — réservé à Premium`
+          : advice ? `Lire : ${session.title}` : `Lancer : ${session.title}`}
       >
-        <Photo img={img} pos="center 20%" style={{ position: "absolute", inset: 0 }} />
+        <Photo img={img} pos={advice?.imagePosition ?? "center 20%"} style={{ position: "absolute", inset: 0 }} />
 
         {/* Difficulté — pastilles (orange = énergie/intensité, système D).
             forcedColorAdjust:none → l'orange survit au mode « couleurs forcées »
             (hérité par les 3 points). */}
-        <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
-          style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)", forcedColorAdjust: "none" }}
-          aria-label={`Difficulté : ${session.difficulty}`}>
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="w-1 h-1 rounded-full"
-              style={{ background: i < level ? "#EF9F27" : "rgba(255,255,255,0.3)" }} />
-          ))}
-        </span>
+        {advice ? (
+          <span className="absolute top-2 left-2 max-w-[92px] flex items-center gap-1 px-[7px] py-[4px] rounded-full"
+            style={{ background: "rgba(8,6,14,0.38)", backdropFilter: "blur(5px)", border: "1px solid rgba(255,255,255,0.24)" }}>
+            <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
+            <span className="text-[7.5px] leading-none font-black uppercase tracking-[0.06em] text-white truncate">
+              {advice.theme}
+            </span>
+          </span>
+        ) : (
+          <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
+            style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)", forcedColorAdjust: "none" }}
+            aria-label={`Difficulté : ${session.difficulty}`}>
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="w-1 h-1 rounded-full"
+                style={{ background: i < level ? "#EF9F27" : "rgba(255,255,255,0.3)" }} />
+            ))}
+          </span>
+        )}
 
         {/* Durée — badge discret */}
         <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
           style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.34)" }}>
-          {session.duration} MIN
+          {session.duration} MIN{advice ? " · LIRE" : ""}
         </span>
 
         {/* Scrim bas : nom (blanc) + muscles (lavande = notre identité).
@@ -1287,10 +1330,10 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           <p className="text-[10.5px] font-semibold mt-1 leading-snug"
             style={{
               color: "#C9B8FF",
-              display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden",
+              display: "-webkit-box", WebkitLineClamp: advice ? 2 : 1, WebkitBoxOrient: "vertical", overflow: "hidden",
               textShadow: "0 1px 6px rgba(0,0,0,0.45)",
             }}>
-            {muscles}
+            {advice?.subtitle ?? muscles}
           </p>
           {!session.perso && !isPremium && (
             <span className="mt-1.5 text-[8.5px] font-bold uppercase tracking-[0.12em]"
@@ -1323,12 +1366,14 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
   onClose: () => void;
   onUpgrade: () => void;
 }) {
+  const advice = getAdviceArticle(session.id);
   const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
   const preview = (session.previewExercises
     ?? session.exerciseList?.slice(0, 3).map((exercise) => exercise.name)
     ?? []).slice(0, 3);
   const others = Math.max(0, premiumCount - 1);
-  const promise = session.subtitle || session.muscles.join(" · ");
+  const promise = advice?.subtitle ?? session.subtitle ?? session.muscles.join(" · ");
+  const premiumSubject = advice ? "Ce cours" : "Cette séance";
 
   return (
     <motion.div
@@ -1358,11 +1403,13 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
         <div className="h-8 px-4 flex items-center justify-center gap-1.5 text-white"
           style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
           <Sparkles size={12} strokeWidth={2.3} aria-hidden />
-          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]">Aperçu Premium</span>
+          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]">
+            {advice ? "Aperçu du cours Premium" : "Aperçu Premium"}
+          </span>
         </div>
 
         <div className="relative" style={{ aspectRatio: "16 / 9" }}>
-          <Photo img={art.img} pos="center 24%" style={{ position: "absolute", inset: 0 }} />
+          <Photo img={advice?.image ?? art.img} pos={advice?.imagePosition ?? "center 24%"} style={{ position: "absolute", inset: 0 }} />
           <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-16"
             style={{ background: "linear-gradient(to top,rgba(6,5,10,0.94),rgba(6,5,10,0.38),transparent)" }}>
             <p className="text-[20px] font-black uppercase leading-[1.05] text-white"
@@ -1384,14 +1431,38 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
 
         <div className="px-5 pt-4 pb-5">
           <div className="flex items-center gap-2 text-[10px] font-bold" style={{ color: "var(--text-2)" }}>
-            <span>{session.duration} min</span>
+            <span>{session.duration} min{advice ? " de lecture" : ""}</span>
             <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
-            <span>{session.difficulty}</span>
-            <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
-            <span className="truncate">{session.muscles.slice(0, 2).join(" · ")}</span>
+            {advice ? (
+              <span className="truncate">{advice.theme}</span>
+            ) : (
+              <>
+                <span>{session.difficulty}</span>
+                <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
+                <span className="truncate">{session.muscles.slice(0, 2).join(" · ")}</span>
+              </>
+            )}
           </div>
 
-          {preview.length > 0 && (
+          {advice ? (
+            <div className="mt-4">
+              <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
+                Dans ce mini-cours
+              </p>
+              <p className="text-[12.5px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-2)" }}>
+                {advice.intro}
+              </p>
+              <div className="mt-3 space-y-2">
+                {advice.sections.slice(0, 3).map((section, index) => (
+                  <div key={section.title} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.11)" }}>
+                    <span className="text-[9px] font-black" style={{ color: "var(--accent)" }}>0{index + 1}</span>
+                    <span className="text-[11px] font-bold" style={{ color: "var(--text-1)" }}>{section.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : preview.length > 0 && (
             <div className="mt-4">
               <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
                 Les premiers mouvements
@@ -1414,11 +1485,11 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
             style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
             <p className="text-[13px] font-bold leading-snug" style={{ color: "var(--text-1)" }}>
               {others > 0
-                ? `Cette séance et ${others} autre${others > 1 ? "s" : ""} sont incluses avec Premium.`
-                : "Cette séance est incluse avec Premium."}
+                ? `${premiumSubject} et ${others} autre${others > 1 ? "s" : ""} sont inclus${advice ? "" : "es"} avec Premium.`
+                : `${premiumSubject} est inclus${advice ? "" : "e"} avec Premium.`}
             </p>
             <p className="text-[10.5px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
-              Débloque toute la collection, pas seulement cette séance.
+              Débloque toute la collection, pas seulement {advice ? "cette lecture" : "cette séance"}.
             </p>
           </div>
 
@@ -1431,7 +1502,7 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
               boxShadow: "0 8px 22px rgba(139,92,246,0.32)",
             }}
           >
-            Débloquer toutes les séances
+            Débloquer {advice ? "tous les cours" : "toutes les séances"}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -1593,9 +1664,11 @@ function SessionRow({ label, count, children }: {
   );
 }
 
-function PremiumSessionRow({ count, children }: {
+function PremiumSessionRow({ count, children, title = "Continue avec Premium", description = "Des séances plus ciblées pour aller plus loin, à ton rythme." }: {
   count: number;
   children: React.ReactNode;
+  title?: string;
+  description?: string;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const nudge = (dir: 1 | -1) =>
@@ -1621,12 +1694,12 @@ function PremiumSessionRow({ count, children }: {
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}>
-              Continue avec Premium
+              {title}
             </p>
             <span className="text-[9.5px] font-black" style={{ color: "var(--text-3)" }}>{count}</span>
           </div>
           <p className="text-[10.5px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
-            Des séances plus ciblées pour aller plus loin, à ton rythme.
+            {description}
           </p>
         </div>
         <div className="hidden md:flex items-center gap-1">
@@ -1711,7 +1784,7 @@ const CATALOG: CatDef[] = [
     img: "cat-recup", match: matchCollection("recup", (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay)) },
   { id: "defis", name: "Défis", tag: "Un max, un chrono, un record à battre.",
     img: "cat-defis", match: matchCollection("defis", (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay)) },
-  { id: "conseils", name: "Conseils & progresser", tag: "Comprendre, c'est déjà progresser.",
+  { id: "conseils", name: "Conseils & progresser", tag: "Des conseils francs et utiles, à lire partout.",
     img: "cat-conseils", match: matchCollection("conseils", () => false) },
 ];
 
@@ -1764,15 +1837,20 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
   const [catId, setCatId] = useState<string | null>(null);
   const [manage, setManage] = useState<MergedSession | null>(null);
   const [premiumPreview, setPremiumPreview] = useState<MergedSession | null>(null);
+  const [adviceTheme, setAdviceTheme] = useState<AdviceTheme | "Tous">("Tous");
 
   const cat = catId ? CATALOG.find((c) => c.id === catId) ?? null : null;
 
   /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
-  const matched = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
+  const matchedAll = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
+  const matched = cat?.id === "conseils" && adviceTheme !== "Tous"
+    ? matchedAll.filter((session) => getAdviceArticle(session.id)?.theme === adviceTheme)
+    : matchedAll;
   const vaiiya = matched.filter((s) => !s.perso);
   const vaiiyaFree = vaiiya.filter((s) => s.access !== "premium");
   const vaiiyaPremium = vaiiya.filter((s) => s.access === "premium");
   const perso = matched.filter((s) => s.perso);
+  const totalPremiumCount = matchedAll.filter((s) => !s.perso && s.access === "premium").length;
 
   /* Photo par séance, dé-doublonnée PAR RANGÉE (Vaiiya et « les tiennes »
      indépendamment) : deux cartes d'une même rangée ne tombent plus sur la
@@ -1819,7 +1897,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
       <div className="px-5 pt-2 pb-3 flex-shrink-0 flex items-center gap-3">
         {cat ? (
           <>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCatId(null)}
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCatId(null); setAdviceTheme("Tous"); }}
               className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
               style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour aux collections">
               <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--text-2)" }} />
@@ -1835,7 +1913,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
               Entraînements
             </h2>
             <p className="text-[11.5px] font-light mt-1" style={{ color: "var(--text-3)" }}>
-              Un but, une envie — <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} séances t&apos;attendent</span>
+              Un but, une envie — <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} contenus t&apos;attendent</span>
             </p>
           </div>
         )}
@@ -1854,6 +1932,28 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
         className="overflow-y-auto px-5 flex-1"
         style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
+        {cat?.id === "conseils" && (
+          <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-4"
+            style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+            {(["Tous", ...ADVICE_THEMES] as const).map((theme) => {
+              const active = adviceTheme === theme;
+              return (
+                <motion.button
+                  key={theme}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setAdviceTheme(theme)}
+                  className="h-8 px-3 rounded-full flex-shrink-0 text-[10px] font-extrabold whitespace-nowrap"
+                  style={active
+                    ? { color: "white", background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 5px 14px rgba(139,92,246,0.22)" }
+                    : { color: "var(--text-2)", background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}
+                  aria-pressed={active}
+                >
+                  {theme}
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
         {!cat ? (
           /* ── Niveau 1 : la grille des collections ── */
           loading ? (
@@ -1878,7 +1978,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
                     count={count}
                     freeCount={freeCount}
                     premiumCount={premiumCount}
-                    onOpen={() => setCatId(c.id)}
+                    onOpen={() => { setCatId(c.id); setAdviceTheme("Tous"); }}
                   />
                 );
               })}
@@ -1922,12 +2022,18 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
              visible. On montre la base incluse, puis l'univers payant. ── */
           <>
             {vaiiyaFree.length > 0 && (
-              <SessionRow label="Pour commencer" count={vaiiyaFree.length}>
+              <SessionRow label={cat.id === "conseils" ? "À lire gratuitement" : "Pour commencer"} count={vaiiyaFree.length}>
                 {vaiiyaFree.map((session, index) => rowTile(session, index))}
               </SessionRow>
             )}
             {vaiiyaPremium.length > 0 && (
-              <PremiumSessionRow count={vaiiyaPremium.length}>
+              <PremiumSessionRow
+                count={vaiiyaPremium.length}
+                title={cat.id === "conseils" ? "Approfondis avec Premium" : undefined}
+                description={cat.id === "conseils"
+                  ? "Des sujets plus pointus pour comprendre tes plateaux, ta récupération et ta programmation."
+                  : undefined}
+              >
                 {vaiiyaPremium.map((session, index) => rowTile(session, index, true))}
               </PremiumSessionRow>
             )}
@@ -1957,7 +2063,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
       {premiumPreview && (
         <PremiumPreviewSheet
           session={premiumPreview}
-          premiumCount={vaiiyaPremium.length}
+          premiumCount={totalPremiumCount}
           onClose={() => setPremiumPreview(null)}
           onUpgrade={() => { setPremiumPreview(null); onUpgrade(); }}
         />
@@ -3081,6 +3187,7 @@ export default function ProgressionPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
+  const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
@@ -3352,6 +3459,11 @@ export default function ProgressionPage() {
       router.push("/premium");
       return;
     }
+    const article = getAdviceArticle(s.id);
+    if (article) {
+      setActiveArticle(article);
+      return;
+    }
     setSheet(null);
     setActiveWorkout({
       id: s.id,
@@ -3585,6 +3697,16 @@ export default function ProgressionPage() {
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
             onComplete={() => handleWorkoutComplete(activeWorkout)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Lecteur des mini-cours ══ */}
+      <AnimatePresence>
+        {activeArticle && (
+          <AdviceReaderSheet
+            article={activeArticle}
+            onClose={() => setActiveArticle(null)}
           />
         )}
       </AnimatePresence>
