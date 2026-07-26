@@ -22,15 +22,50 @@ type PremiumMission = {
   titre: string;
   sous: string;
   exp: number;
+  image: string;
   path?: string;
 };
 
 const MISSIONS_PREMIUM: PremiumMission[] = [
-  { kind: "double", titre: "Double séance", sous: "Deux séances dans la même journée", exp: 60, path: "/progression" },
-  { kind: "matin", titre: "Lève-tôt", sous: "Une séance avant 9 h", exp: 40, path: "/progression" },
-  { kind: "intense", titre: "Semaine intense", sous: "Cinq séances dans la semaine", exp: 50, path: "/progression" },
-  { kind: "nutrition", titre: "Journée nutrition complète", sous: "Tous les repas du jour notés", exp: 15, path: "/nutrition" },
-  { kind: "parfaite", titre: "Semaine parfaite", sous: "Sept jours de connexion", exp: 35 },
+  {
+    kind: "double",
+    titre: "Double séance",
+    sous: "Deux séances dans la même journée",
+    exp: 60,
+    image: "/missions/premium/double-seance-v1.webp",
+    path: "/progression",
+  },
+  {
+    kind: "matin",
+    titre: "Lève-tôt",
+    sous: "Une séance avant 9 h",
+    exp: 40,
+    image: "/missions/premium/leve-tot-v1.webp",
+    path: "/progression",
+  },
+  {
+    kind: "intense",
+    titre: "Semaine intense",
+    sous: "Cinq séances dans la semaine",
+    exp: 50,
+    image: "/missions/premium/semaine-intense-v1.webp",
+    path: "/progression",
+  },
+  {
+    kind: "nutrition",
+    titre: "Journée nutrition complète",
+    sous: "Tous les repas du jour notés",
+    exp: 15,
+    image: "/missions/premium/nutrition-complete-v1.webp",
+    path: "/nutrition",
+  },
+  {
+    kind: "parfaite",
+    titre: "Semaine parfaite",
+    sous: "Sept jours de connexion",
+    exp: 35,
+    image: "/missions/premium/semaine-parfaite-v1.webp",
+  },
 ];
 
 export default function AccueilSignature({
@@ -198,7 +233,13 @@ export default function AccueilSignature({
                   disabled={!target}
                 >
                   <span className={styles.premiumSigil}>
-                    <MissionSigil kind={mission.kind} />
+                    <Image
+                      src={mission.image}
+                      alt=""
+                      width={42}
+                      height={42}
+                      className={styles.premiumMissionImage}
+                    />
                   </span>
                   <span className={styles.premiumMissionCopy}>
                     <strong>{mission.titre}</strong>
