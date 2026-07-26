@@ -137,7 +137,12 @@ function PremiumInner() {
           ref={carouselRef}
           onScroll={onCarouselScroll}
           className="flex md:grid md:grid-cols-3 md:max-w-4xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
-          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never }}
+          style={{
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch" as never,
+            scrollSnapType: "x mandatory",
+            overscrollBehaviorX: "contain",
+          }}
         >
           {order.map((id) => {
             const p = PLANS[id];
@@ -152,6 +157,8 @@ function PremiumInner() {
                     ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
                     : "rgba(220,215,235,0.7)",
                   boxShadow: highlight ? "0 18px 50px -22px rgba(167,139,250,0.32)" : "0 10px 30px rgba(167,139,250,0.08)",
+                  scrollSnapAlign: "center",
+                  scrollSnapStop: "always",
                 }}>
                 <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
                   style={{ background: "rgba(var(--surface-rgb),0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
