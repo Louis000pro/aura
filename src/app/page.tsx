@@ -1053,6 +1053,18 @@ function Dashboard() {
             streak:     data.streak      ?? 0,
             loaded:     true,
           }));
+
+          // Une ligne déjà créée ne passait plus par l'upsert ci-dessous. Or le
+          // moteur de missions crédite la présence sur un INSERT/UPDATE de
+          // daily_stats : on touche donc explicitement la ligne à chaque vraie
+          // arrivée sur l'accueil. Le registre de crédits est idempotent, une
+          // même connexion ne peut toujours rapporter qu'une seule fois par jour.
+          const { error: presenceError } = await supabase
+            .from("daily_stats")
+            .update({ score: data.score })
+            .eq("user_id", user.id)
+            .eq("date", today);
+          if (presenceError) throw presenceError;
         } else {
           // Score absent ou nul — calcul dynamique (crée aussi la ligne du jour)
           const computed = await computeAndSaveScore(user.id, supabase);
