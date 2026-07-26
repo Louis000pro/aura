@@ -214,18 +214,14 @@ export default function AccueilSignature({
       <section>
         <SectionHeading
           title="Missions Premium"
-          subtitle={premiumUnlocked ? "Elles sont toutes débloquées." : "Tu vois exactement ce que tu pourrais débloquer."}
+          subtitle="Tu vois exactement ce que tu pourrais débloquer."
         />
-        <div className={styles.premiumVault}>
+        <div className={styles.premiumVault} data-locked={!premiumUnlocked ? "" : undefined}>
           <div className={styles.premiumHeading}>
             <span className={styles.premiumSeal} aria-hidden="true" />
             <span className={styles.premiumHeadingCopy}>
               <strong>Un autre terrain de jeu</strong>
               <small>Des missions supplémentaires, jamais obligatoires.</small>
-            </span>
-            <span className={styles.premiumPrice}>
-              <strong>{prix}</strong>
-              <small>par mois</small>
             </span>
           </div>
 
@@ -253,7 +249,7 @@ export default function AccueilSignature({
                     <strong>{mission.titre}</strong>
                     <small>{mission.sous}</small>
                   </span>
-                  <span className={styles.premiumMissionExp}>+{mission.exp}</span>
+                  <span className={styles.premiumMissionExp}>+{mission.exp} EXP</span>
                 </button>
               );
             })}
