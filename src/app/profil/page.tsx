@@ -271,7 +271,7 @@ function EditProfileModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-0 md:px-4"
+      className="fixed inset-0 z-[90] flex items-end md:items-center justify-center px-0 md:px-4 overflow-y-auto"
       style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
@@ -285,6 +285,10 @@ function EditProfileModal({
           background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.18)",
+          maxHeight: "100dvh",
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          paddingBottom: "calc(2rem + env(safe-area-inset-bottom))",
         }}
         onClick={(e) => e.stopPropagation()}
       >
