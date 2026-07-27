@@ -91,19 +91,6 @@
     0 7px 20px rgba(139, 92, 246, 0.3);
 }
 
-.popularBadge::after {
-  position: absolute;
-  top: 50%;
-  right: -8px;
-  width: 14px;
-  height: 14px;
-  content: "";
-  pointer-events: none;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(245, 177, 32, 0.56) 0 12%, rgba(245, 177, 32, 0.16) 38%, transparent 72%);
-  transform: translate(50%, -50%);
-}
-
 .currentPlan {
   color: var(--text-3);
   border: 1px solid rgba(139, 92, 246, 0.055);
@@ -201,8 +188,7 @@
 }
 
 @media (prefers-contrast: more) {
-  .page::before,
-  .popularBadge::after {
+  .page::before {
     display: none;
   }
 
