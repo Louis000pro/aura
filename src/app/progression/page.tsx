@@ -24,6 +24,7 @@ import {
 import WeeklyProgramme from "@/components/WeeklyProgramme";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
+import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
 import AdviceReaderSheet from "@/components/AdviceReaderSheet";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
@@ -2599,8 +2600,10 @@ function OrganiserSheet({ onClose }: { onClose: () => void }) {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Création / édition de séance perso (modale existante, conservée telle
-   quelle — l'IA peut aussi la remplir).
+   Création / édition de séance perso : la modale vit maintenant dans
+   src/components/seance/CreateSessionModal.tsx (parcours en 3 temps +
+   bibliothèque d'exercices animés). La page garde ce qui la regarde :
+   l'identifiant, l'accent, l'icône et l'enregistrement en base.
    ════════════════════════════════════════════════════════════════════ */
 
 // Système D — les séances sont toutes le même type d'objet → toutes VIOLET (action).
@@ -2611,550 +2614,12 @@ const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
 const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
   force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
 };
-
-const ALL_MUSCLES = [
-  "Pectoraux", "Dos", "Épaules", "Biceps", "Triceps",
-  "Abdominaux", "Obliques", "Core", "Lombaires",
-  "Quadriceps", "Fessiers", "Mollets", "Hanches", "Cardio",
-];
-
-type ExerciseForm = {
-  name: string;
-  sets: number;
-  reps: number;
-  rest: number;
-  restAfter: number;
-  tip?: string;
-  benefit?: string;
-  exMuscles?: string[];
+const SOUS_TITRE_CATEGORIE: Record<WorkoutCategory, string> = {
+  force: "Force", cardio: "Cardio", mobilite: "Mobilité", fullbody: "Full body",
 };
-const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: 10, rest: 60, restAfter: 90 };
+/** Hors composant : l'horloge n'a rien à faire dans un rendu React. */
+const nouvelIdSeance = () => `custom-${Date.now()}`;
 
-/** Durée calculée = temps actif + repos inter-séries + transitions, arrondie à 5 min */
-function calcDuration(forms: ExerciseForm[]): number {
-  const SEC_PER_REP = 3;
-  let total = 0;
-  forms.forEach((ex, i) => {
-    total += ex.sets * ex.reps * SEC_PER_REP;      // temps actif
-    total += (ex.sets - 1) * ex.rest;              // repos inter-séries
-    if (i < forms.length - 1) total += ex.restAfter; // transition entre exercices
-  });
-  return Math.max(5, Math.round((total / 60) / 5) * 5);
-}
-
-function CreateSessionModal({ onClose, onCreate, editSession }: {
-  onClose: () => void;
-  onCreate: (s: WorkoutSession) => void;
-  editSession?: WorkoutSession | null;
-}) {
-  const isEdit = !!editSession;
-
-  const [title, setTitle]       = useState(editSession?.title ?? "");
-  const [category, setCategory] = useState<WorkoutCategory>(editSession?.category ?? "force");
-  const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>(editSession?.difficulty ?? "Intermédiaire");
-  // Custom muscles = muscles from editSession that are not in the predefined list
-  const [customMuscles, setCustomMuscles] = useState<string[]>(
-    editSession?.muscles?.filter(m => !ALL_MUSCLES.includes(m)) ?? []
-  );
-  const [selectedMuscles, setSelectedMuscles] = useState<string[]>(editSession?.muscles ?? []);
-  const [newMuscleInput, setNewMuscleInput] = useState("");
-  const [exForms, setExForms] = useState<ExerciseForm[]>(
-    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest, restAfter: e.restAfter ?? 90 }))
-    ?? [{ ...DEFAULT_EX }]
-  );
-
-  // IA
-  const [aiDescription, setAiDescription] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
-
-  // Durée calculée automatiquement depuis les exercices
-  const duration = calcDuration(exForms);
-
-  // Tant que la modale est ouverte, on masque la barre de navigation du bas :
-  // sur mobile elle se superposait au pied de la modale (compositing du translateZ
-  // de la nav), rendant le bouton « Créer la séance » inaccessible.
-  useEffect(() => lockBodyModal(), []);
-
-  const handleAiGenerate = async () => {
-    if (!aiDescription.trim()) return;
-    setAiLoading(true);
-    setAiError("");
-    try {
-      const res = await fetch("/api/workout/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: aiDescription, category, difficulty, muscles: selectedMuscles }),
-      });
-      if (!res.ok) throw new Error("Erreur serveur");
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      if (data.title) setTitle(data.title);
-      if (Array.isArray(data.exercises) && data.exercises.length > 0) {
-        setExForms(data.exercises.map((e: { name: string; sets?: number; reps?: number; rest?: number; restAfter?: number; tip?: string; benefit?: string; muscles?: string[] }) => ({
-          name: e.name ?? "",
-          sets: Number(e.sets) || 3,
-          reps: Number(e.reps) || 10,
-          rest: Number(e.rest) || 60,
-          restAfter: Number(e.restAfter) || 90,
-          tip: e.tip,
-          benefit: e.benefit,
-          exMuscles: Array.isArray(e.muscles) ? e.muscles : undefined,
-        })));
-      }
-      if (Array.isArray(data.muscles) && data.muscles.length > 0) {
-        setSelectedMuscles(data.muscles);
-      }
-    } catch {
-      setAiError("Génération impossible, réessaie.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const toggleMuscle = (m: string) =>
-    setSelectedMuscles(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
-
-  const addCustomMuscle = () => {
-    const trimmed = newMuscleInput.trim();
-    if (!trimmed) return;
-    const allKnown = [...ALL_MUSCLES, ...customMuscles];
-    if (allKnown.some(m => m.toLowerCase() === trimmed.toLowerCase())) return;
-    setCustomMuscles(p => [...p, trimmed]);
-    setSelectedMuscles(p => [...p, trimmed]);
-    setNewMuscleInput("");
-  };
-
-  const removeCustomMuscle = (m: string) => {
-    setCustomMuscles(p => p.filter(x => x !== m));
-    setSelectedMuscles(p => p.filter(x => x !== m));
-  };
-
-  const addEx = () => setExForms(p => [...p, { ...DEFAULT_EX }]);
-  const removeEx = (i: number) => setExForms(p => p.filter((_, idx) => idx !== i));
-  const updateEx = <K extends keyof ExerciseForm>(i: number, key: K, val: ExerciseForm[K]) =>
-    setExForms(p => p.map((e, idx) => idx === i ? { ...e, [key]: val } : e));
-
-  const handleCreate = () => {
-    if (!title.trim()) return;
-    const validExs = exForms.filter(e => e.name.trim());
-    const exerciseList: Exercise[] = validExs.map(e => ({
-      name: e.name.trim(),
-      sets: e.sets,
-      reps: String(e.reps),
-      rest: e.rest,
-      restAfter: e.restAfter,
-      tip: e.tip ?? "Concentre-toi sur la forme et la respiration.",
-      benefit: e.benefit ?? "Renforce et améliore les performances.",
-      muscles: e.exMuscles ?? (selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"]),
-    }));
-    onCreate({
-      id: editSession?.id ?? `custom-${Date.now()}`,
-      title: title.trim(),
-      subtitle: `${category.charAt(0).toUpperCase() + category.slice(1)} · Ma séance`,
-      category,
-      duration,
-      difficulty,
-      exercises: validExs.length || 1,
-      muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
-      accent: ACCENT_BY_CATEGORY[category],
-      icon: ICON_BY_CATEGORY[category],
-      exerciseList: exerciseList.length > 0 ? exerciseList : [{
-        name: "Exercice libre",
-        sets: 3, reps: "10", rest: 60,
-        tip: "Concentre-toi sur la forme.",
-        benefit: "Renforce et améliore les performances.",
-        muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
-      }],
-    });
-    onClose();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-0"
-      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <motion.div
-        initial={{ y: 60, opacity: 0, scale: 0.97 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{
-          background: "rgba(var(--surface-rgb),0.96)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(var(--surface-rgb),0.9)",
-          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-          maxHeight: "92vh",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
-          <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
-              {isEdit ? "Modifier la séance" : "Nouvelle séance"}
-            </p>
-            <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
-              {isEdit ? "Éditer ma séance" : "Créer ma séance"}
-            </h2>
-          </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-6" style={{ scrollbarWidth: "none" }}>
-
-          {/* ── 0. Assistant IA ── */}
-          <div className="rounded-2xl p-4 flex flex-col gap-3"
-            style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.18) 0%, rgba(var(--cream-mid-rgb),0.12) 100%)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Assistant IA ✦</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)" }}>Optionnel</span>
-            </div>
-            <textarea
-              value={aiDescription}
-              onChange={e => setAiDescription(e.target.value)}
-              placeholder="Décris ta séance idéale… ex : séance push pour prise de masse, 45 min, avec développé couché et épaules"
-              rows={3}
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none resize-none"
-              style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.45)", color: "var(--text-1)", lineHeight: 1.5 }}
-            />
-            {aiError && (
-              <p className="text-[11px]" style={{ color: "#FC8181" }}>{aiError}</p>
-            )}
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={handleAiGenerate}
-              disabled={!aiDescription.trim() || aiLoading}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-              style={aiDescription.trim() && !aiLoading
-                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" }
-              }
-            >
-              {aiLoading ? (
-                <>
-                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  Génération en cours…
-                </>
-              ) : (
-                <>✦ Générer la séance avec l&apos;IA</>
-              )}
-            </motion.button>
-          </div>
-
-          {/* ── 1. Infos générales ── */}
-          <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Informations</p>
-
-            {/* Nom */}
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Nom de la séance (ex : Push Day, Cardio matin…)"
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-              style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
-              autoFocus={!isEdit}
-            />
-
-            {/* Catégorie */}
-            <div className="grid grid-cols-4 gap-2">
-              {(["force", "cardio", "mobilite", "fullbody"] as WorkoutCategory[]).map(cat => (
-                <motion.button key={cat} whileTap={{ scale: 0.93 }} onClick={() => setCategory(cat)}
-                  className="py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                  style={category === cat
-                    ? { background: `${ACCENT_BY_CATEGORY[cat]}22`, color: ACCENT_BY_CATEGORY[cat], border: `1px solid ${ACCENT_BY_CATEGORY[cat]}55` }
-                    : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
-                  }>
-                  {cat === "mobilite" ? "Mobilité" : cat === "fullbody" ? "Full" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Durée calculée + Difficulté */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "var(--text-3)" }}>Durée calculée</label>
-                <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl"
-                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
-                  <Clock size={13} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                  <span className="text-sm font-bold" style={{ color: "var(--accent)" }}>{duration} min</span>
-                </div>
-                <p className="text-[9px] mt-1 text-center" style={{ color: "var(--text-3)" }}>Mise à jour auto</p>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "var(--text-3)" }}>Niveau</label>
-                <div className="flex flex-col gap-1">
-                  {(["Débutant", "Intermédiaire", "Avancé"] as const).map(d => (
-                    <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
-                      className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
-                      style={difficulty === d
-                        ? { background: "rgba(139,92,246,0.14)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.35)" }
-                        : { background: "rgba(var(--surface-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
-                      }>
-                      {d}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 2. Groupes musculaires ── */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-                Muscles ciblés
-              </p>
-              {selectedMuscles.length > 0 && (
-                <button onClick={() => setSelectedMuscles([])} className="text-[10px] cursor-pointer" style={{ color: "var(--text-3)" }}>
-                  Tout décocher
-                </button>
-              )}
-            </div>
-
-            {/* Predefined muscles */}
-            <div className="flex flex-wrap gap-2">
-              {ALL_MUSCLES.map(m => {
-                const selected = selectedMuscles.includes(m);
-                return (
-                  <motion.button
-                    key={m}
-                    whileTap={{ scale: 0.92 }}
-                    onClick={() => toggleMuscle(m)}
-                    className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                    style={selected
-                      ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55` }
-                      : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)" }
-                    }
-                  >
-                    {selected ? "✓ " : ""}{m}
-                  </motion.button>
-                );
-              })}
-
-              {/* Custom muscles — with × to remove */}
-              {customMuscles.map(m => {
-                const selected = selectedMuscles.includes(m);
-                return (
-                  <div key={m} className="flex items-center gap-0.5">
-                    <motion.button
-                      whileTap={{ scale: 0.92 }}
-                      onClick={() => toggleMuscle(m)}
-                      className="pl-3 pr-1.5 py-1.5 rounded-l-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                      style={selected
-                        ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderRight: "none" }
-                        : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)", borderRight: "none" }
-                      }
-                    >
-                      {selected ? "✓ " : ""}{m}
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => removeCustomMuscle(m)}
-                      className="pr-2 py-1.5 rounded-r-full text-[10px] flex items-center cursor-pointer transition-all duration-150"
-                      style={selected
-                        ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderLeft: "none" }
-                        : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)", borderLeft: "none" }
-                      }
-                    >
-                      <X size={9} strokeWidth={2.5} />
-                    </motion.button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Add custom muscle */}
-            <div className="flex gap-2 mt-3">
-              <input
-                type="text"
-                value={newMuscleInput}
-                onChange={e => setNewMuscleInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomMuscle(); } }}
-                placeholder="Ajouter un muscle personnalisé…"
-                className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)", color: "var(--text-1)" }}
-              />
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={addCustomMuscle}
-                disabled={!newMuscleInput.trim()}
-                className="px-3 py-2 rounded-xl flex items-center justify-center cursor-pointer"
-                style={newMuscleInput.trim()
-                  ? { background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.35)" }
-                  : { background: "rgba(var(--tint-violet-rgb),0.4)", color: "#C4B5FD", border: "1px solid rgba(var(--violet-mid-rgb),0.2)" }
-                }
-              >
-                <Plus size={13} strokeWidth={2.5} />
-              </motion.button>
-            </div>
-          </div>
-
-          {/* ── 3. Exercices ── */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-                Exercices ({exForms.length})
-              </p>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={addEx}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl cursor-pointer text-[10px] font-semibold"
-                style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
-                <Plus size={10} strokeWidth={2.5} /> Ajouter
-              </motion.button>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {exForms.flatMap((ex, i) => {
-                const card = (
-                  <motion.div
-                    key={`ex-${i}`}
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl p-4"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}
-                  >
-                    {/* Name row */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[11px] font-bold w-6 text-center flex-shrink-0 rounded-lg py-0.5"
-                        style={{ background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category] }}>
-                        {i + 1}
-                      </span>
-                      <input
-                        type="text"
-                        value={ex.name}
-                        onChange={e => updateEx(i, "name", e.target.value)}
-                        placeholder={`Exercice ${i + 1} (ex : Squat, Pompes…)`}
-                        className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                        style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)", color: "var(--text-1)" }}
-                      />
-                      {exForms.length > 1 && (
-                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeEx(i)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                          style={{ background: "rgba(252,129,129,0.12)" }}>
-                          <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-                        </motion.button>
-                      )}
-                    </div>
-
-                    {/* Controls — 3 cols */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Séries */}
-                      <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Séries</p>
-                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.max(1, ex.sets - 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>−</motion.button>
-                          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{ex.sets}</span>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.min(10, ex.sets + 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>+</motion.button>
-                        </div>
-                      </div>
-
-                      {/* Reps */}
-                      <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Répétitions</p>
-                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.max(1, ex.reps - 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>−</motion.button>
-                          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{ex.reps}</span>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.min(100, ex.reps + 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>+</motion.button>
-                        </div>
-                      </div>
-
-                      {/* Repos entre séries */}
-                      <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Repos (s)</p>
-                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>−</motion.button>
-                          <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>{ex.rest}s</span>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>+</motion.button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-
-                /* Séparateur de récupération — uniquement entre deux exercices */
-                const separator = (i < exForms.length - 1) ? (
-                  <div key={`sep-${i}`}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl"
-                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}
-                  >
-                    <Clock size={11} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                    <span className="text-[10px] font-medium flex-1" style={{ color: "var(--accent)" }}>
-                      Récupération entre exercices
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <motion.button whileTap={{ scale: 0.85 }}
-                        onClick={() => updateEx(i, "restAfter", Math.max(0, ex.restAfter - 15))}
-                        className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                        style={{ color: "var(--accent)" }}>−</motion.button>
-                      <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "var(--text-1)" }}>
-                        {ex.restAfter}s
-                      </span>
-                      <motion.button whileTap={{ scale: 0.85 }}
-                        onClick={() => updateEx(i, "restAfter", Math.min(300, ex.restAfter + 15))}
-                        className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                        style={{ color: "var(--accent)" }}>+</motion.button>
-                    </div>
-                  </div>
-                ) : null;
-
-                return separator ? [card, separator] : [card];
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 pt-4" style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleCreate}
-            disabled={!title.trim()}
-            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-            style={{
-              background: title.trim()
-                ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)"
-                : "rgba(var(--tint-violet-rgb),0.5)",
-              color: title.trim() ? "var(--text-1)" : "var(--text-3)",
-              boxShadow: title.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
-            }}
-          >
-            {isEdit ? "Enregistrer les modifications" : "Créer la séance"}
-          </motion.button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 /* ════════════════════════════════════════════════════════════════════
    Page — Entraînement. La page vit au PRÉSENT : plus de sous-onglets,
@@ -3505,6 +2970,26 @@ export default function ProgressionPage() {
     showToast("Séance supprimée");
   };
 
+  /* La modale ne connaît que le contenu de la séance ; l'identité (id,
+     accent, icône, sous-titre) reste ici, avec l'enregistrement. */
+  const handleDraft = (draft: SessionDraft) => {
+    handleCreateOrEdit({
+      id: editSession?.id ?? nouvelIdSeance(),
+      title: draft.title,
+      subtitle: `${SOUS_TITRE_CATEGORIE[draft.category]} · Ma séance`,
+      category: draft.category,
+      duration: draft.duration,
+      difficulty: draft.difficulty,
+      exercises: draft.exerciseList.length || 1,
+      muscles: draft.muscles,
+      accent: ACCENT_BY_CATEGORY[draft.category],
+      icon: ICON_BY_CATEGORY[draft.category],
+      exerciseList: draft.exerciseList,
+      visibility: editSession?.visibility,
+      collections: editSession?.collections,
+    });
+  };
+
   const handleCreateOrEdit = async (s: WorkoutSession) => {
     const supabase = createClient();
     const existingSession = customSessions.find((cs) => cs.id === s.id);
@@ -3718,9 +3203,17 @@ export default function ProgressionPage() {
         {showCreateModal && (
           <CreateSessionModal
             key={editSession?.id ?? "new"}
+            isEdit={!!editSession}
+            initial={editSession ? {
+              title: editSession.title,
+              category: editSession.category,
+              difficulty: editSession.difficulty,
+              duration: editSession.duration,
+              muscles: editSession.muscles,
+              exerciseList: editSession.exerciseList ?? [],
+            } : null}
             onClose={() => { setShowCreateModal(false); setEditSession(null); }}
-            editSession={editSession}
-            onCreate={handleCreateOrEdit}
+            onSubmit={handleDraft}
           />
         )}
       </AnimatePresence>
