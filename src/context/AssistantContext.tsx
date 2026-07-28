@@ -172,6 +172,15 @@ function coachAskedLieu(messages: { role: string; content: string }[]): boolean 
   return /salle ou maison|maison ou (?:à la )?salle|halt[èe]re|poids du corps|o[ùu] tu t'entra[îi]n/.test(last);
 }
 
+/** Garde-fou anti-faux-positif du thème. Le petit modèle d'analyse hallucinait
+ *  parfois l'intention set_theme sur un message sans rapport → l'app basculait
+ *  en sombre « sans raison ». On n'applique le thème QUE si le message parle
+ *  vraiment de l'apparence (thème/mode/sombre/clair/luminosité/yeux/écran). */
+function textMentionsTheme(text: string): boolean {
+  const t = (text || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return /(theme|mode\s*(?:sombre|clair|nuit|jour|noir|blanc|auto)|\bsombre\b|\bclair\b|\bnuit\b|dark\s*mode|night\s*mode|apparence|affichage|luminos|eblou|trop\s*(?:blanc|lumineu|clair|brillant|vif)|mal\s*aux\s*yeux|\becran\b|\bfond\b\s*(?:noir|blanc|sombre|clair))/.test(t);
+}
+
 /* Au-delà de cette absence (app en arrière-plan / onglet en veille), revenir
    dans l'app rouvre un chat vierge. sessionStorage gère déjà les vraies
    fermetures ; ce filet couvre les PWA qui restent chaudes. */
@@ -729,6 +738,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         : /auto|system/.test(t) ? "system"
         : null;
       if (!pref) return;
+      // Garde anti-faux-positif : le petit modèle hallucinait parfois set_theme
+      // sur un message sans rapport (l'app basculait en sombre « sans raison »).
+      // On n'applique QUE si l'utilisateur a vraiment parlé d'apparence.
+      if (!textMentionsTheme(text)) return;
       setThemePreference(pref);
       const motTheme =
         pref === "dark" ? "C'est passé en sombre ✦"
