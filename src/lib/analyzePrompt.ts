@@ -17,6 +17,7 @@ Réponds UNIQUEMENT par cet objet JSON (rien autour) :
     | {"intent":"plan_regen","adjust":"none|leger|intense|cardio|force"}
     | {"intent":"set_theme","theme":"sombre|clair|auto"}
     | {"intent":"create_recipe","dish":"<plat demandé ou vide>","theme_recette":"<style/cuisine ou vide>","ingredients":["<restes à utiliser>"],"mealType":"petit-dejeuner|dejeuner|diner|collation|"}
+    | {"intent":"log_meal","food":"<ce que l'utilisateur dit avoir mangé/bu, tel quel>","mealType":"petit-dejeuner|dejeuner|gouter|diner|"}
 }
 
 MÉMOIRE — quand remplir "memory" :
@@ -40,6 +41,8 @@ ACTION — un seul "intent" à la fois. Distingue bien :
 • "plan_regen" = REFAIRE LA SEMAINE ENTIÈRE du planning (ex: "refais ma semaine", "régénère mon programme", "change tout mon planning"). "adjust" précise la direction : "leger" (semaine plus légère / moins de séances / "j'ai moins de temps cette semaine"), "intense" (plus dure / plus de séances), "cardio" ("mets plus de cardio"), "force" ("plus de muscu / de force"), "none" (juste refaire autrement). À NE PAS confondre avec plan_set qui ne touche qu'UN jour.
 
 • "create_recipe" = écrire une RECETTE de cuisine (ex: "donne-moi une recette de poulet", "qu'est-ce que je peux cuisiner avec du riz et des œufs ?", "une idée de dîner riche en protéines", "recette rapide pour ce soir"). "dish" = le plat s'il est nommé ; "theme_recette" = le style s'il est donné (italien, healthy, rapide…) ; "ingredients" = UNIQUEMENT les aliments que l'utilisateur dit AVOIR sous la main ; "mealType" si le moment est précisé. À NE PAS confondre avec une simple question nutritionnelle ("combien de calories dans une banane ?") qui n'est PAS une action.
+
+• "log_meal" = ENREGISTRER un repas que l'utilisateur dit avoir DÉJÀ mangé ou bu (ex: "j'ai mangé un burger ce midi", "au petit-déj j'ai pris deux œufs et un café", "note que j'ai mangé une pizza", "ajoute un yaourt à mes repas", "je viens de boire un smoothie", "ce soir salade de poulet"). "food" = la description des aliments telle quelle, en gardant les quantités ("deux œufs", "un bol de riz", "500ml de coca"). "mealType" si le moment est dit ou évident ("ce midi"/"au déj" → dejeuner, "au petit-déj"/"ce matin" → petit-dejeuner, "ce soir" → diner, "en collation"/"au goûter" → gouter), sinon vide. À NE PAS confondre avec create_recipe (là l'utilisateur veut une IDÉE à cuisiner, il n'a pas encore mangé) ni avec une simple question ("combien de calories dans une banane ?" = action null). Le signal clé de log_meal = un repas au PASSÉ / déjà pris.
 
 • "set_theme" = changer l'APPARENCE du site (ex: "passe en mode sombre", "mets le site en noir", "remets en clair", "j'ai mal aux yeux c'est trop blanc", "mets le thème automatique"). "theme" = "sombre", "clair" ou "auto". "j'ai mal aux yeux" / "c'est trop lumineux" → "sombre". Ne l'émets QUE si l'utilisateur parle de l'apparence du site, jamais pour une photo ou un vêtement.
 

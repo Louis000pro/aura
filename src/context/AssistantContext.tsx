@@ -60,6 +60,17 @@ export type PendingRecipe = {
   safetyNote?: string;
 };
 
+/** Repas décrit par l'utilisateur, estimé, en attente d'ajout au journal. */
+export type PendingMeal = {
+  foodName: string;
+  mealType: string; // petit-dejeuner | dejeuner | gouter | diner
+  calories: number;
+  proteins: number;
+  carbs: number;
+  fats: number;
+  confidence?: string;
+};
+
 /** Changement de planning proposé par l'IA, en attente de confirmation. */
 type PendingPlan = {
   title: string;            // titre de la carte (nom de la séance ou jour déplacé)
@@ -101,6 +112,7 @@ type AssistantContextValue = {
   pendingSeance: ProposedSeance | null;
   pendingPlan: PendingPlan | null;
   pendingRecipe: PendingRecipe | null;
+  pendingMeal: PendingMeal | null;
   /** Séance qui vient d'être créée : on demande quand la faire (jour) ou de la lancer tout de suite. */
   pendingCreated: ProposedSeance | null;
   actionLoading: boolean;
@@ -112,6 +124,8 @@ type AssistantContextValue = {
   cancelPlan: () => void;
   confirmRecipe: () => void;
   cancelRecipe: () => void;
+  confirmMeal: () => void;
+  cancelMeal: () => void;
 };
 
 const Ctx = createContext<AssistantContextValue | null>(null);
@@ -125,6 +139,20 @@ export function useAssistant(): AssistantContextValue {
 let _counter = 0;
 const uid = () => `${Date.now()}-${++_counter}`;
 const todayISODate = () => new Date().toISOString().slice(0, 10);
+
+/** Normalise un moment de repas vers les 4 valeurs canoniques du journal. */
+function normalizeMealType(raw?: string): string {
+  const t = (raw || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/petit|matin|breakfast/.test(t)) return "petit-dejeuner";
+  if (/dejeun|midi|lunch/.test(t)) return "dejeuner";
+  if (/gout|collation|snack/.test(t)) return "gouter";
+  if (/diner|soir|dinner/.test(t)) return "diner";
+  return "";
+}
+/** Repas le plus probable selon l'heure (repli quand le moment n'est pas dit). */
+function mealTypeFromHour(h = new Date().getHours()): string {
+  return h < 10 ? "petit-dejeuner" : h < 15 ? "dejeuner" : h < 18 ? "gouter" : "diner";
+}
 
 /* Au-delà de cette absence (app en arrière-plan / onglet en veille), revenir
    dans l'app rouvre un chat vierge. sessionStorage gère déjà les vraies
@@ -143,6 +171,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [pendingSeance, setPendingSeance] = useState<ProposedSeance | null>(null);
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
+  const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
   const [pendingCreated, setPendingCreated] = useState<ProposedSeance | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -643,7 +672,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     let parsed: {
       memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string; theme?: string; dish?: string; theme_recette?: string; ingredients?: unknown; mealType?: string };
+      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string; theme?: string; dish?: string; theme_recette?: string; ingredients?: unknown; mealType?: string; food?: string };
     } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
@@ -716,6 +745,49 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
           content: `⚠️ Je n'ai pas réussi à écrire la recette — ${detail}`,
+          id: uid(),
+        }]);
+      } finally {
+        setActionLoading(false);
+      }
+      return;
+    }
+
+    // 2a-quater) REPAS : l'utilisateur raconte ce qu'il a mangé/bu → on estime
+    // les macros (endpoint nutrition existant) et on propose une carte. Rien
+    // n'est loggé sans clic (même règle que la recette et les séances). Zéro
+    // jugement : on note ce qui a été mangé, quoi que ce soit.
+    if (action.intent === "log_meal") {
+      const food = (action.food ?? "").trim();
+      if (!food) return;
+      setActionLoading(true);
+      setPendingMeal(null);
+      try {
+        const res = await fetch("/api/nutrition/estimate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description: food }),
+        });
+        if (!res.ok) throw new Error("estimation HTTP " + res.status);
+        const data = await res.json();
+        if (!data || data.error || typeof data.calories !== "number") {
+          throw new Error(data?.error ?? "réponse vide");
+        }
+        const mealType = normalizeMealType(action.mealType) || normalizeMealType(data.mealType) || mealTypeFromHour();
+        setPendingMeal({
+          foodName: typeof data.foodName === "string" && data.foodName.trim() ? data.foodName.trim() : food,
+          mealType,
+          calories: Math.max(0, Math.round(data.calories ?? 0)),
+          proteins: Math.max(0, Math.round(data.proteins ?? 0)),
+          carbs: Math.max(0, Math.round(data.carbs ?? 0)),
+          fats: Math.max(0, Math.round(data.fats ?? 0)),
+          confidence: typeof data.confidence === "string" ? data.confidence : undefined,
+        });
+      } catch (e) {
+        const detail = (e as { message?: string })?.message ?? String(e);
+        setMessages((prev) => [...prev, {
+          role: "assistant" as const,
+          content: `⚠️ Je n'ai pas réussi à estimer ce repas — ${detail}`,
           id: uid(),
         }]);
       } finally {
@@ -1034,6 +1106,34 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   const cancelRecipe = useCallback(() => setPendingRecipe(null), []);
 
+  /* ── Validation d'un repas raconté : l'écrit dans le journal du jour (même
+     plomberie que la nutrition — le moment déduit, les macros estimées). ── */
+  const confirmMeal = useCallback(async () => {
+    if (!user?.id || !pendingMeal) return;
+    const supabase = createClient();
+    const now = new Date();
+    const { error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id,
+      date: now.toISOString().slice(0, 10),
+      meal_type: pendingMeal.mealType,
+      food_name: pendingMeal.foodName,
+      description: null,
+      calories: pendingMeal.calories,
+      proteins: pendingMeal.proteins,
+      carbs: pendingMeal.carbs,
+      fats: pendingMeal.fats,
+      has_photo: false,
+      time: now.toTimeString().slice(0, 8),
+    });
+    if (error) { setMemoryNotice("Oups, impossible d'ajouter le repas."); return; }
+    const nom = pendingMeal.foodName;
+    setPendingMeal(null);
+    setMemoryNotice(`« ${nom} » ajouté à tes repas ✓`);
+    setTimeout(() => { setIsOpen(false); router.push("/nutrition"); }, 900);
+  }, [user?.id, pendingMeal, router]);
+
+  const cancelMeal = useCallback(() => setPendingMeal(null), []);
+
   useEffect(() => () => { abortRef.current?.abort(); }, []);
 
   // La notice mémoire ("Je m'en souviendrai") s'efface seule
@@ -1044,7 +1144,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );
