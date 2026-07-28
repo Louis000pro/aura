@@ -154,6 +154,24 @@ function mealTypeFromHour(h = new Date().getHours()): string {
   return h < 10 ? "petit-dejeuner" : h < 15 ? "dejeuner" : h < 18 ? "gouter" : "diner";
 }
 
+/** Repère un lieu d'entraînement / du matériel mentionné dans un message libre. */
+function sniffLieu(text: string): { location?: "salle" | "maison"; equip?: "halteres" | "poids" } {
+  const t = (text || "").toLowerCase();
+  const out: { location?: "salle" | "maison"; equip?: "halteres" | "poids" } = {};
+  if (/salle|\bgym\b|basic\s*fit|fitness\s*park/.test(t)) out.location = "salle";
+  else if (/maison|chez\s*moi|domicile|appart|sans\s*mat|poids\s*du\s*corps|halt[èe]re/.test(t)) out.location = "maison";
+  if (/halt[èe]re|dumbbell|kettlebell|\bbanc\b|\bbarre\b/.test(t)) out.equip = "halteres";
+  else if (/poids\s*du\s*corps|sans\s*mat[ée]riel|sans\s*rien|au\s*poids/.test(t)) out.equip = "poids";
+  return out;
+}
+
+/** Le dernier message du coach demandait-il le lieu / le matériel ? (→ le message
+ *  suivant de l'utilisateur est une RÉPONSE au lieu, on peut l'enregistrer). */
+function coachAskedLieu(messages: { role: string; content: string }[]): boolean {
+  const last = [...messages].reverse().find((m) => m.role === "assistant")?.content?.toLowerCase() ?? "";
+  return /salle ou maison|maison ou (?:à la )?salle|halt[èe]re|poids du corps|o[ùu] tu t'entra[îi]n/.test(last);
+}
+
 /* Au-delà de cette absence (app en arrière-plan / onglet en veille), revenir
    dans l'app rouvre un chat vierge. sessionStorage gère déjà les vraies
    fermetures ; ce filet couvre les PWA qui restent chaudes. */
@@ -499,7 +517,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
       const saved = readLieu(user.id);
       if (!saved.location || (saved.location === "maison" && !saved.equip)) {
-        say("Dis-moi d'abord où tu t'entraînes (salle ou maison) et je te refais une semaine 🙂");
+        // Lieu incomplet → on reste MUET et on laisse le chat poser la question
+        // (salle/maison, puis matériel si maison), comme create_seance. Poster un
+        // message ici en plus de celui du chat = les deux couches se contredisent
+        // (c'était le bug). Dès que l'utilisateur répond, sendMessage enregistre
+        // le lieu et ce plan_regen (ré-émis) génère enfin la carte.
         return;
       }
       const adjust = action.adjust ?? "none";
@@ -895,6 +917,24 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
+    }
+
+    // ── Réponse au LIEU d'entraînement ──
+    // Si le coach venait de demander le lieu (salle/maison) ou le matériel et que
+    // l'utilisateur y répond, on l'enregistre TOUT DE SUITE (persistLieu écrit le
+    // localStorage de façon synchrone) : le coach de CE tour le connaît déjà et
+    // ne reboucle plus sur la question, et la génération de séance/semaine peut
+    // s'y fier. Scopé à une vraie réponse (le coach vient de poser la question)
+    // pour éviter les faux positifs — un « je mange à la maison » ne change pas
+    // le lieu d'entraînement. (Le tag [LIEU_UPDATE] du chat restait en retard d'un tour.)
+    if (user?.id && trimmed && coachAskedLieu(messages)) {
+      const sn = sniffLieu(trimmed);
+      if (sn.location || sn.equip) {
+        void persistLieu(user.id, {
+          ...(sn.location ? { location: sn.location } : {}),
+          ...(sn.equip ? { equip: sn.equip } : {}),
+        });
+      }
     }
 
     // Analyse (mémoire + action) en UN appel. On passe les derniers échanges
