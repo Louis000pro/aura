@@ -6,6 +6,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 
+/* Système « D » : bouton d'action toujours violet vers magenta. */
+const ACTION_BG = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
+const TEAL = "#2BD4A0"; // réussite
+
+/* Le fond de /auth : le dégradé du haut de la page de présentation, statique. */
+const FOND_PRESENTATION = [
+  "radial-gradient(700px 620px at 4% -10%, rgba(var(--accent-rgb),0.30) 0%, transparent 68%)",
+  "radial-gradient(660px 600px at 98% 106%, rgba(var(--gold-rgb),0.26) 0%, transparent 68%)",
+  "linear-gradient(to top, rgba(var(--gold-rgb),0.16) 0%, rgba(var(--gold-rgb),0.05) 38%, transparent 70%)",
+].join(",");
+
 function pwdStrength(p: string) {
   if (!p) return null;
   let s = 0;
@@ -15,12 +26,12 @@ function pwdStrength(p: string) {
   if (/[0-9]/.test(p))       s++;
   if (/[^A-Za-z0-9]/.test(p)) s++;
   const levels = [
-    { label: "Trop court",       color: "#FC8181", bars: 1 },
-    { label: "Faible 😬",        color: "#FC8181", bars: 1 },
-    { label: "Passable 👌",       color: "#F6AD55", bars: 2 },
-    { label: "Sécurisé 🔒",      color: "#68D391", bars: 3 },
-    { label: "Très sécurisé 💪", color: "var(--accent)", bars: 4 },
-    { label: "Incroyable 🔥",    color: "var(--gold)", bars: 5 },
+    { label: "Trop court",     color: "#E86A6A", bars: 1 },
+    { label: "Faible",         color: "#E86A6A", bars: 1 },
+    { label: "Passable",       color: "var(--gold)", bars: 2 },
+    { label: "Sécurisé",       color: TEAL, bars: 3 },
+    { label: "Très sécurisé",  color: TEAL, bars: 4 },
+    { label: "Excellent",      color: TEAL, bars: 5 },
   ];
   return { score: s, ...levels[Math.min(s, 5)] };
 }
@@ -32,14 +43,13 @@ function StrengthBar({ password }: { password: string }) {
     <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-1.5">
       <div className="flex gap-1">
         {[1,2,3,4,5].map(i => (
-          <motion.div key={i} className="flex-1 h-1 rounded-full"
-            animate={{ background: i <= s.bars ? s.color : "rgba(220,220,220,0.5)" }}
-            transition={{ duration: 0.3 }} />
+          <div key={i} className="flex-1 h-1 rounded-full"
+            style={{ background: i <= s.bars ? s.color : "rgba(var(--accent-rgb),0.14)", transition: "background 0.3s ease" }} />
         ))}
       </div>
-      <motion.p className="text-[10px] font-semibold" animate={{ color: s.color }} transition={{ duration: 0.3 }}>
+      <p className="text-[10px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
         {s.label}
-      </motion.p>
+      </p>
     </motion.div>
   );
 }
@@ -123,37 +133,28 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)" }}>
+      style={{ background: "var(--page-bg)" }}>
 
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top:"-10%",left:"-5%",width:500,height:500,background:"rgba(var(--violet-mid-rgb),0.45)",filter:"blur(80px)" }}
-        animate={{ scale:[1,1.25,1],x:[-20,30,-20],y:[-15,20,-15] }}
-        transition={{ duration:9,repeat:Infinity,ease:"easeInOut" }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom:"-10%",right:"-5%",width:450,height:450,background:"rgba(var(--cream-mid-rgb),0.4)",filter:"blur(80px)" }}
-        animate={{ scale:[1,1.2,1],x:[20,-25,20] }}
-        transition={{ duration:8,repeat:Infinity,ease:"easeInOut",delay:1 }} />
+      {/* Même fond que /auth : le dégradé du haut de la page de présentation, fixe. */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: FOND_PRESENTATION }} />
 
       <motion.div initial={{ opacity:0,y:36,scale:0.93 }} animate={{ opacity:1,y:0,scale:1 }}
         transition={{ duration:0.6,ease:[0.25,0.46,0.45,0.94] }}
         className="relative z-10 w-full max-w-md mx-4">
 
         <div className="relative rounded-3xl px-8 py-10"
-          style={{ background:"rgba(var(--surface-rgb),0.85)",backdropFilter:"blur(12px) saturate(200%)",border:"1px solid rgba(var(--surface-rgb),0.88)",boxShadow:"0 1px 0 rgba(var(--surface-rgb),0.95) inset,0 32px 80px -16px rgba(var(--accent-rgb),0.2),0 8px 32px -8px rgba(var(--cream-mid-rgb),0.15)" }}>
+          style={{ background:"rgba(var(--surface-rgb),0.88)",backdropFilter:"blur(12px) saturate(180%)",border:"1px solid rgba(var(--accent-rgb),0.16)",boxShadow:"0 1px 0 rgba(var(--surface-rgb),0.95) inset,0 32px 80px -16px rgba(var(--accent-rgb),0.22)" }}>
 
           <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
-            style={{ background:"linear-gradient(90deg,transparent,rgba(var(--surface-rgb),0.95),transparent)" }} />
+            style={{ background:"linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.55),transparent)" }} />
 
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <motion.div className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
-              style={{ background:"linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" }}
-              animate={{ boxShadow:["0 8px 28px rgba(var(--accent-rgb),0.4)","0 8px 36px rgba(var(--gold-rgb),0.45)","0 8px 28px rgba(var(--accent-rgb),0.4)"] }}
-              transition={{ duration:3,repeat:Infinity }}>
-              <motion.div className="absolute inset-0 rounded-2xl" style={{ border:"1px solid rgba(var(--accent-rgb),0.5)" }}
-                animate={{ scale:[1,1.35,1],opacity:[0.6,0,0.6] }} transition={{ duration:2,repeat:Infinity }} />
-              <span className="text-xl font-light relative z-10" style={{ color:"var(--text-1)" }}>A</span>
-            </motion.div>
+            <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+              style={{ background:"rgb(var(--surface-rgb))", border:"1px solid rgba(var(--accent-rgb),0.22)", boxShadow:"0 10px 30px -8px rgba(139,92,246,0.35)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-11 h-11 object-contain relative z-10" />
+            </div>
             <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
             <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Coach IA · Musculation · Nutrition</p>
           </div>
@@ -187,7 +188,7 @@ export default function ResetPasswordPage() {
               <motion.button whileHover={{ scale:1.02,y:-1 }} whileTap={{ scale:0.97 }}
                 onClick={() => router.push("/auth")}
                 className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background:"linear-gradient(135deg,var(--accent),var(--gold))",color:"#fff",boxShadow:"0 4px 20px rgba(var(--accent-rgb),0.4)" }}>
+                style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 20px rgba(139,92,246,0.42)" }}>
                 <ArrowLeft size={14} strokeWidth={2} />
                 Retour à la connexion
               </motion.button>
@@ -213,7 +214,7 @@ export default function ResetPasswordPage() {
               <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-2">
                   <motion.div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-                    style={{ background:"rgba(var(--surface-rgb),0.8)",border:"1px solid rgba(var(--surface-rgb),0.8)",backdropFilter:"blur(10px)",boxShadow:"0 4px 16px rgba(var(--accent-rgb),0.06)" }}>
+                    style={{ background:"rgba(var(--tint-violet-rgb),0.62)",border:"1px solid rgba(var(--accent-rgb),0.14)",boxShadow:"0 2px 8px rgba(var(--accent-rgb),0.04)" }}>
                     <Lock size={15} style={{ color:"var(--text-3)" }} />
                     <input type={showPwd?"text":"password"} placeholder="Nouveau mot de passe" value={password}
                       onChange={e => setPassword(e.target.value)} required autoFocus
@@ -227,7 +228,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <motion.div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-                  style={{ background:"rgba(var(--surface-rgb),0.8)",border:"1px solid rgba(var(--surface-rgb),0.8)",backdropFilter:"blur(10px)",boxShadow:"0 4px 16px rgba(var(--accent-rgb),0.06)" }}>
+                  style={{ background:"rgba(var(--tint-violet-rgb),0.62)",border:"1px solid rgba(var(--accent-rgb),0.14)",boxShadow:"0 2px 8px rgba(var(--accent-rgb),0.04)" }}>
                   <Lock size={15} style={{ color:"var(--text-3)" }} />
                   <input type={showCfm?"text":"password"} placeholder="Confirmer le mot de passe" value={confirm}
                     onChange={e => setConfirm(e.target.value)} required
@@ -241,13 +242,13 @@ export default function ResetPasswordPage() {
                 <motion.button type="submit" disabled={loading||!password||!confirm}
                   whileHover={!loading?{scale:1.02,y:-2}:{}} whileTap={!loading?{scale:0.97}:{}}
                   className="relative mt-1 w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
-                  style={{ background:"linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%)",color:"#fff",boxShadow:"0 4px 24px rgba(var(--accent-rgb),0.38),inset 0 1px 0 rgba(var(--surface-rgb),0.25)",opacity:(!password||!confirm)?0.6:1 }}>
+                  style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",opacity:(!password||!confirm)?0.6:1 }}>
                   <motion.div className="absolute inset-0 pointer-events-none"
-                    style={{ background:"linear-gradient(105deg,transparent 40%,rgba(var(--surface-rgb),0.28) 50%,transparent 60%)" }}
+                    style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
                     animate={{ x:["-120%","120%"] }} transition={{ duration:2.5,repeat:Infinity,repeatDelay:1.2 }} />
                   {loading ? (
                     <motion.div className="w-4 h-4 rounded-full border-2 mx-auto relative z-10"
-                      style={{ borderColor:"rgba(var(--surface-rgb),0.3)",borderTopColor:"#fff" }}
+                      style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
                       animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
                   ) : (
                     <span className="relative z-10">Enregistrer le nouveau mot de passe</span>
@@ -264,16 +265,16 @@ export default function ResetPasswordPage() {
               <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }}
                 transition={{ type:"spring",bounce:0.5 }}
                 className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background:"linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.6),rgba(var(--cream-mid-rgb),0.6))" }}>
-                <CheckCircle2 size={32} style={{ color:"var(--accent)" }} strokeWidth={1.5} />
+                style={{ background:`rgba(43,212,160,0.14)`,border:`1px solid ${TEAL}44` }}>
+                <CheckCircle2 size={32} style={{ color:TEAL }} strokeWidth={1.5} />
               </motion.div>
               <div>
-                <p className="text-lg font-light mb-1" style={{ color:"var(--text-1)" }}>Mot de passe mis à jour ! 🎉</p>
-                <p className="text-xs font-light" style={{ color:"var(--text-2)" }}>Redirection vers l'accueil…</p>
+                <p className="text-lg font-light mb-1" style={{ color:"var(--text-1)" }}>Mot de passe mis à jour</p>
+                <p className="text-xs font-light" style={{ color:"var(--text-2)" }}>Redirection vers l&rsquo;accueil…</p>
               </div>
               <motion.div className="w-40 h-0.5 rounded-full overflow-hidden" style={{ background:"rgba(var(--accent-rgb),0.15)" }}>
                 <motion.div className="h-full rounded-full"
-                  style={{ background:"linear-gradient(90deg,var(--accent),var(--gold))" }}
+                  style={{ background:ACTION_BG }}
                   initial={{ width:"100%" }} animate={{ width:"0%" }}
                   transition={{ duration:2.5,ease:"linear" }} />
               </motion.div>

@@ -25,10 +25,10 @@ const geist = Geist({
 export const metadata: Metadata = {
   metadataBase: new URL("https://vaiiya.fr"),
   title: {
-    default: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    default: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Coach IA, musculation, nutrition et communauté — tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
+  description: "Coach IA, musculation, nutrition et communauté, tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
   applicationName: "Vaiiya",
   keywords: [
     "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Vaiiya",
-    title: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     description: "Rejoins Vaiiya : ton coach fitness & nutrition piloté par l'IA. Partage tes performances, suis ta progression, et progresse avec ta communauté.",
     locale: "fr_FR",
     images: [
@@ -79,13 +79,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Vaiiya — Coach IA · Musculation · Nutrition",
+        alt: "Vaiiya · Coach IA · Musculation · Nutrition",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     description: "Ton coach fitness & nutrition piloté par l'IA. Rejoins la communauté Vaiiya.",
     images: ["/og-image.png"],
   },
@@ -148,7 +148,7 @@ export default function RootLayout({
                     height: 512,
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
-                  description: "Coach IA, musculation et nutrition — accompagnement de santé premium piloté par l'IA.",
+                  description: "Coach IA, musculation et nutrition : accompagnement de santé premium piloté par l'IA.",
                 },
                 {
                   "@type": "WebSite",
@@ -170,7 +170,7 @@ export default function RootLayout({
                     "@type": "Offer",
                     price: "0",
                     priceCurrency: "EUR",
-                    description: "Inscription gratuite — abonnements Premium et Créateur disponibles.",
+                    description: "Inscription gratuite, abonnement Premium disponible.",
                   },
                 },
               ],
