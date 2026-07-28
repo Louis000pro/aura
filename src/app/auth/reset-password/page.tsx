@@ -5,17 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import FondPresentation from "@/components/FondPresentation";
 
 /* Système « D » : bouton d'action toujours violet vers magenta. */
 const ACTION_BG = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
 const TEAL = "#2BD4A0"; // réussite
-
-/* Le fond de /auth : le dégradé du haut de la page de présentation, statique. */
-const FOND_PRESENTATION = [
-  "radial-gradient(700px 620px at 4% -10%, rgba(var(--accent-rgb),0.30) 0%, transparent 68%)",
-  "radial-gradient(660px 600px at 98% 106%, rgba(var(--gold-rgb),0.26) 0%, transparent 68%)",
-  "linear-gradient(to top, rgba(var(--gold-rgb),0.16) 0%, rgba(var(--gold-rgb),0.05) 38%, transparent 70%)",
-].join(",");
 
 function pwdStrength(p: string) {
   if (!p) return null;
@@ -135,8 +129,7 @@ export default function ResetPasswordPage() {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ background: "var(--page-bg)" }}>
 
-      {/* Même fond que /auth : le dégradé du haut de la page de présentation, fixe. */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: FOND_PRESENTATION }} />
+      <FondPresentation />
 
       <motion.div initial={{ opacity:0,y:36,scale:0.93 }} animate={{ opacity:1,y:0,scale:1 }}
         transition={{ duration:0.6,ease:[0.25,0.46,0.45,0.94] }}
