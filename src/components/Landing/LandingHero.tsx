@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * LandingHero — le premier écran de vaiiya.fr (visiteur non connecté).
+ * LandingHero : le premier écran de vaiiya.fr (visiteur non connecté).
  *
  * Promesse : « La constance n'est pas un don. C'est un choix. » Le titre porte
  * la philosophie (ce que Vaiiya récompense vraiment : revenir, pas performer un
@@ -70,7 +70,7 @@ export default function LandingHero() {
             <motion.span whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer whitespace-nowrap text-white"
               style={{ background: ACTION_BG, boxShadow: "0 6px 20px rgba(139,92,246,0.4)" }}>
-              Essayer
+              Commencer
               <ArrowRight size={13} strokeWidth={2.5} />
             </motion.span>
           </Link>
@@ -137,7 +137,7 @@ export default function LandingHero() {
                   style={{ background: "linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.32) 50%,transparent 65%)" }}
                   animate={{ x: ["-120%", "120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.8 }} />
               )}
-              <span className="relative z-10">Essayer une séance</span>
+              <span className="relative z-10">Commencer gratuitement</span>
               <ArrowRight size={16} strokeWidth={2.4} className="relative z-10" />
             </motion.span>
           </Link>
@@ -166,8 +166,8 @@ export default function LandingHero() {
         >
           {[
             { src: "/entrainement/cat-express.webp", label: "Express 12", meta: "12 min", big: false },
-            { src: "/entrainement/cat-sansmateriel.webp", label: "Sans matériel", meta: "25 min", big: true },
-            { src: "/entrainement/cat-mobilite.webp", label: "Mobilité", meta: "12 min", big: false },
+            { src: "/entrainement/cat-fullbody.webp", label: "Full Body", meta: "25 min", big: true },
+            { src: "/entrainement/cat-recup.webp", label: "Récupération", meta: "15 min", big: false },
           ].map((c) => (
             <div key={c.label}
               className="relative rounded-[18px] md:rounded-[22px] overflow-hidden flex-shrink-0"
