@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
-import { Sparkles, X, Check, ArrowRight, ChevronDown, Play, ChevronRight } from "lucide-react";
+import { Sparkles, X, Check, ArrowRight, Play, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import StatsDrawer from "@/components/StatsDrawer";
 import DailyDrawer from "@/components/DailyDrawer";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
-import LandingStory, { DISCOVER_ANCHOR } from "@/components/Landing/LandingStory";
+import LandingStory from "@/components/Landing/LandingStory";
+import LandingHero from "@/components/Landing/LandingHero";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import type { StatData } from "@/data/statsData";
@@ -174,155 +175,14 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
 
 
 /* ─────────────────────────────────────────────────
-   LANDING PAGE — Spectaculaire
+   LANDING PAGE — visiteur non connecté
+   Hero + présentation vivent dans src/components/Landing/ pour garder
+   ce fichier (partagé entre agents) le plus petit possible.
 ───────────────────────────────────────────────── */
-type Particle = { id: number; x: number; y: number; size: number; delay: number; duration: number; opacity: number };
-
-const heroLines = ["Devenez", "inarrêtable."];
-
 function LandingPage() {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setParticles(Array.from({ length: 18 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: i < 8 ? 2 + Math.random() * 2 : i < 14 ? 4 + Math.random() * 4 : 8 + Math.random() * 10,
-      delay: Math.random() * 4,
-      duration: 8 + Math.random() * 6,
-      opacity: i < 8 ? 0.7 : i < 14 ? 0.45 : 0.2,
-    })));
-  }, []);
-
   return (
     <div className="relative w-full" style={{ overflowX: "clip", background: "var(--page-bg)" }}>
-
-      {/* ════════ HERO — premier écran ════════ */}
-      <section className="relative w-full min-h-[100svh] flex flex-col overflow-hidden">
-
-      {/* ── Nappe chaude pleine largeur ancrée au bas : le dégradé atteint
-            vraiment le bord de l'écran (fini le « cut » net sur mobile). ── */}
-      <div className="absolute inset-x-0 bottom-0 pointer-events-none z-0"
-        style={{ height: "60%", background: "linear-gradient(to top, rgba(245,220,130,0.34) 0%, rgba(245,220,130,0.13) 45%, transparent 100%)" }} />
-
-      {/* ── Grands blobs ambiants ── */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)", willChange: "transform" }}
-        animate={{ scale: [1,1.12,1], y: [-15,20,-15] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-20%", right: "-12%", width: 750, height: 750, background: "rgba(245,220,130,0.3)", filter: "blur(100px)", willChange: "transform" }}
-        animate={{ scale: [1,1.1,1], y: [20,-25,20] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
-
-      {/* ── Particules ── */}
-      {mounted && particles.map(({ id, x, y, size, delay, duration, opacity }) => (
-        <motion.div key={id} className="absolute rounded-full pointer-events-none"
-          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, willChange: "transform, opacity", background: id % 3 === 0 ? `rgba(var(--accent-rgb),${opacity})` : id % 3 === 1 ? `rgba(var(--gold-rgb),${opacity})` : `rgba(var(--violet-mid-rgb),${opacity * 0.8})` }}
-          animate={{ y: ["-16px","16px","-16px"], opacity: [opacity * 0.2, opacity, opacity * 0.2] }}
-          transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }} />
-      ))}
-
-      {/* ── Anneau décoratif ── */}
-      <div className="absolute pointer-events-none rounded-full"
-        style={{ width: 600, height: 600, border: "1px solid rgba(var(--accent-rgb),0.07)", top: "50%", left: "50%", marginTop: -300, marginLeft: -300 }} />
-
-      {/* ── Nav bar ── */}
-      <motion.nav
-        initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-        className="relative z-20 flex items-center justify-between gap-2 px-4 md:px-10 py-4"
-      >
-        <span className="text-xl md:text-2xl font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "var(--text-1)" }}>
-          Vaiiya
-        </span>
-        <div className="flex items-stretch gap-2">
-          <Link href="/auth?mode=login" className="flex">
-            <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
-              className="flex items-center justify-center h-full px-3 py-2 rounded-xl text-xs font-medium cursor-pointer whitespace-nowrap"
-              style={{ background: "rgba(var(--surface-rgb),0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.85)", color: "var(--text-body)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
-              Se connecter
-            </motion.div>
-          </Link>
-          <Link href="/auth?mode=signup" className="flex">
-            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}
-              className="relative flex items-center justify-center h-full px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer overflow-hidden text-center leading-tight max-w-[120px]"
-              style={{ background: "linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.45), inset 0 1px 0 rgba(var(--surface-rgb),0.25)" }}>
-              <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(var(--surface-rgb),0.3) 50%,transparent 65%)" }}
-                animate={{ x: ["-120%","120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }} />
-              <span className="relative z-10 inline-flex items-center gap-1">
-                Commencer gratuitement
-                <ArrowRight size={12} strokeWidth={2.5} className="flex-shrink-0" />
-              </span>
-            </motion.div>
-          </Link>
-        </div>
-      </motion.nav>
-
-      {/* ── Hero principal ── */}
-      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 text-center" style={{ paddingTop: "2vh", paddingBottom: "4vh" }}>
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 md:mb-10"
-          style={{ background: "rgba(var(--surface-rgb),0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.25)", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.12)" }}
-        >
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} animate={{ opacity: [1,0.3,1], scale: [1,1.4,1] }} transition={{ duration: 1.6, repeat: Infinity }} />
-          <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#5A6177" }}>IA · Musculation · Nutrition</span>
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} animate={{ opacity: [0.3,1,0.3], scale: [1.4,1,1.4] }} transition={{ duration: 1.6, repeat: Infinity }} />
-        </motion.div>
-
-        {/* Titre — ligne par ligne */}
-        <div className="mb-6 md:mb-8">
-          {heroLines.map((line, li) => (
-            <div key={li} className="overflow-hidden">
-              <motion.div
-                initial={{ y: "110%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.9, delay: 0.3 + li * 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="text-[clamp(3.2rem,10vw,7rem)] font-extralight leading-[0.95] tracking-tight"
-                style={li === 1 ? { backgroundImage: "linear-gradient(135deg,var(--accent) 0%,#C4902A 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" } : { color: "var(--text-0)" }}
-              >
-                {line}
-              </motion.div>
-            </div>
-          ))}
-        </div>
-
-        {/* Sous-titre */}
-        <motion.p
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.6 }}
-          className="text-base md:text-lg font-light max-w-md leading-relaxed mb-10 md:mb-12"
-          style={{ color: "var(--text-2)" }}
-        >
-          Ton coach IA vocal, ton suivi musculaire, ta nutrition —<br />
-          <span style={{ color: "var(--accent)", fontWeight: 500 }}>tout au même endroit.</span>
-        </motion.p>
-
-        {/* ── Indice de scroll — invite claire à dérouler la page ── */}
-        <motion.button type="button" aria-label="Découvrir Vaiiya"
-          onClick={() => document.getElementById(DISCOVER_ANCHOR)?.scrollIntoView({ behavior: "smooth" })}
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }}
-          whileHover={{ y: -2 }}
-          className="absolute left-1/2 -translate-x-1/2 bottom-10 flex flex-col items-center cursor-pointer"
-        >
-          <motion.div
-            className="flex items-center justify-center rounded-full"
-            style={{ width: 44, height: 44, background: "rgba(var(--surface-rgb),0.72)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.3)", boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.28)" }}
-            animate={{ y: [0, 9, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <ChevronDown size={23} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
-          </motion.div>
-        </motion.button>
-      </div>
-      </section>
-
-      {/* ════════ STORY — présentation scrollable ════════ */}
+      <LandingHero />
       <LandingStory />
     </div>
   );
