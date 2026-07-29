@@ -1087,10 +1087,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // déduite, donc elle ne peut pas la contredire.
       if (!cleaned && action) cleaned = phraseDeRepli((action as AssistantAction).intent);
 
+      // ⚠️ Ne JAMAIS laisser un tour vide. Une version précédente supprimait la
+      // bulle sans contenu : l'utilisateur envoyait un message et il ne se
+      // passait rien du tout, sans la moindre explication. Un échec doit se
+      // voir, sinon on ne peut pas le corriger.
+      if (!cleaned) cleaned = "Je n'ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement.";
+
       setMessages((prev) => {
-        const next = prev
-          .map((m) => m.id === assistantId ? { ...m, content: cleaned, streaming: false } : m)
-          .filter((m) => m.content !== "" || m.role === "user");
+        const next = prev.map((m) => m.id === assistantId ? { ...m, content: cleaned, streaming: false } : m);
         persist(next);
         return next;
       });

@@ -399,33 +399,72 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
-        // Les appels d'outil arrivent en morceaux (le nom d'abord, puis les
-        // arguments JSON par fragments) : on les recolle par index.
+        /* Les appels d'outil arrivent en morceaux (le nom d'abord, puis les
+           arguments JSON par fragments) : on les recolle par index.
+           ⚠️ Mistral ne les met pas toujours dans `delta` : selon les cas, le
+           dernier chunk porte un `message` complet à la place. Lire seulement
+           `delta` faisait perdre l'appel en SILENCE (texte vide + aucune
+           carte, donc une bulle vide à l'écran). On lit donc les deux formes :
+           `delta` s'accumule (incrémental), `message` s'affecte (complet). */
+        type AppelBrut = { index?: number; function?: { name?: string; arguments?: string } };
         const appels: { name: string; args: string }[] = [];
+        let texteRecu = false;
+        let finish: string | null = null;
+
+        const noteAppels = (liste: AppelBrut[] | undefined, incremental: boolean) => {
+          for (const tc of liste ?? []) {
+            const i = tc.index ?? 0;
+            if (!appels[i]) appels[i] = { name: "", args: "" };
+            const nom = tc.function?.name;
+            const args = tc.function?.arguments;
+            if (nom) appels[i].name = incremental ? appels[i].name + nom : nom;
+            if (args) appels[i].args = incremental ? appels[i].args + args : args;
+          }
+        };
+
         try {
           for await (const chunk of stream) {
-            const delta = chunk.choices[0]?.delta as
-              | { content?: string | null; tool_calls?: { index?: number; function?: { name?: string; arguments?: string } }[] }
-              | undefined;
-            if (delta?.content) {
-              controller.enqueue(encoder.encode(outils ? ligne({ t: delta.content }) : delta.content));
+            const choice = chunk.choices?.[0] as {
+              delta?: { content?: string | null; tool_calls?: AppelBrut[] };
+              message?: { content?: string | null; tool_calls?: AppelBrut[] };
+              finish_reason?: string | null;
+            } | undefined;
+            if (choice?.finish_reason) finish = choice.finish_reason;
+
+            // Le texte : `delta` en streaming, `message` si le fournisseur a
+            // répondu d'un bloc. Jamais les deux (sinon on doublerait).
+            const texte = choice?.delta
+              ? (choice.delta.content ?? "")
+              : (typeof choice?.message?.content === "string" ? choice.message.content : "");
+            if (texte) {
+              texteRecu = true;
+              controller.enqueue(encoder.encode(outils ? ligne({ t: texte }) : texte));
             }
+
             if (!outils) continue;
-            for (const tc of delta?.tool_calls ?? []) {
-              const i = tc.index ?? 0;
-              if (!appels[i]) appels[i] = { name: "", args: "" };
-              if (tc.function?.name) appels[i].name += tc.function.name;
-              if (tc.function?.arguments) appels[i].args += tc.function.arguments;
-            }
+            noteAppels(choice?.delta?.tool_calls, true);
+            noteAppels(choice?.message?.tool_calls, false);
           }
+
           // Un seul intent à la fois : on ne remonte que le premier appel
           // exploitable, sinon deux cartes s'ouvriraient l'une sur l'autre.
+          let actionEnvoyee = false;
           for (const appel of appels) {
             if (!appel?.name) continue;
             let args: Record<string, unknown> = {};
             try { args = appel.args ? JSON.parse(appel.args) : {}; } catch { /* arguments tronqués */ }
             controller.enqueue(encoder.encode(ligne({ a: { ...args, intent: appel.name } as AssistantAction })));
+            actionEnvoyee = true;
             break;
+          }
+
+          // Un tour totalement vide ne doit JAMAIS passer inaperçu : sans ça,
+          // l'utilisateur envoie un message et il ne se passe rien du tout.
+          if (outils && !texteRecu && !actionEnvoyee) {
+            console.error("[chat] tour vide", { finish, appels: JSON.stringify(appels) });
+            controller.enqueue(encoder.encode(ligne({
+              e: `le modèle n'a rien renvoyé (fin: ${finish ?? "?"}, outils: ${appels.length})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`,
+            })));
           }
         } catch (err) {
           const m = (err as { message?: string })?.message ?? "flux interrompu";
