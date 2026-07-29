@@ -24,6 +24,14 @@ export interface Plan {
     nutritionPerDay: number;
     /** Missions illimitées (les missions supplémentaires du Premium). */
     missionsUnlimited: boolean;
+    /**
+     * Combien de séances à soi on GARDE (Infinity = illimité).
+     * On limite le stock, jamais le fait de créer ni de s'entraîner :
+     * supprimer une séance libère toujours une place, et ce qui est déjà
+     * gardé ne se verrouille jamais (un abonnement qui s'arrête ne
+     * reprend rien).
+     */
+    sessionsMax: number;
     ads: boolean;
     exclusiveContent: boolean;
   };
@@ -40,10 +48,11 @@ export const PLANS: Record<PlanId, Plan> = {
     aiModel: "llama-3.1-8b-instant", // modèle léger & rapide → coûts maîtrisés
     features: [
       "Les missions de base pour gagner de l'EXP",
+      "3 séances à toi, gardées",
       "Coach IA — 5 messages/jour",
       "Analyse nutrition — 2/jour",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 2, missionsUnlimited: false, ads: false, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, missionsUnlimited: false, sessionsMax: 3, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",
@@ -55,13 +64,14 @@ export const PLANS: Record<PlanId, Plan> = {
     aiModel: "llama-3.3-70b-versatile", // modèle avancé
     features: [
       "Missions supplémentaires en illimité",
+      "Tes propres séances, sans limite",
       "Coach IA avancé — illimité",
       "Analyse nutrition illimitée",
       "Détails complets de tes entraînements",
       "Programmes & entraînements exclusifs",
       "Badge Premium",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },
   premium_plus: {
     id: "premium_plus",
@@ -75,7 +85,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Tout ce qu'inclut Premium",
       "Des avantages exclusifs à venir ✦",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },
 };
 

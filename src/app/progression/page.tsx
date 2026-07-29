@@ -37,6 +37,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
+import { PLANS } from "@/lib/plans";
 import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
 import { FAMILY, resolveArt, type Family, type Art } from "@/lib/workoutArt";
 import {
@@ -1778,6 +1779,139 @@ function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityCha
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   « Mon espace » — le bandeau qui ouvre le catalogue.
+
+   Le haut de l'écran doit dire qu'il y a DEUX univers : ce que Vaiiya
+   propose (les collections photo, en dessous) et ce qui est à toi. D'où
+   un bloc qui ne ressemble à aucune tuile de collection : pas de photo,
+   la couleur de marque, un personnage animé. Il ne montre AUCUNE séance
+   — les tiennes sont derrière « Les voir », comme une collection.
+   ════════════════════════════════════════════════════════════════════ */
+function MonEspaceBloc({ count, max, onComposer, onVoir }: {
+  count: number;
+  max: number;            // Infinity = illimité
+  onComposer: () => void;
+  onVoir: () => void;
+}) {
+  const plein = count >= max;
+  /* Au-dessus du plafond (ancien abonné, plafond baissé) on ne montre pas
+     un « 5 sur 3 » absurde : ses séances sont à lui, elles restent. */
+  const compteur = max === Infinity || count > max
+    ? `${count} séance${count > 1 ? "s" : ""} à toi`
+    : `${count} sur ${max} gardées`;
+
+  return (
+    <section className="mb-7">
+      <div className="relative rounded-[22px] overflow-hidden"
+        style={{
+          background: "linear-gradient(118deg, rgba(var(--accent-rgb),0.16), rgba(var(--accent-rgb),0.05) 62%, rgba(var(--accent-rgb),0.11))",
+          border: "1px solid rgba(var(--accent-rgb),0.2)",
+        }}>
+        {/* Le halo + le personnage : la signature Vaiiya, jamais une photo */}
+        <div aria-hidden className="absolute pointer-events-none"
+          style={{
+            right: -34, top: "50%", transform: "translateY(-50%)",
+            width: 210, height: 210, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(var(--accent-rgb),0.22), transparent 68%)",
+          }} />
+        <div aria-hidden className="absolute right-2 sm:right-5 bottom-0 pointer-events-none opacity-90">
+          <ExerciseThumb name="Squat" size={112} />
+        </div>
+
+        <div className="relative px-4 py-4 sm:px-5 sm:py-5" style={{ paddingRight: 124 }}>
+          <p className="text-[9px] font-extrabold tracking-[0.18em] uppercase" style={{ color: "var(--accent)" }}>
+            Ton espace
+          </p>
+          <h3 className="text-[19px] sm:text-[21px] font-semibold leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+            Mes séances
+          </h3>
+          <p className="text-[11px] font-light mt-1 leading-snug" style={{ color: "var(--text-3)" }}>
+            {count === 0
+              ? "Composée par toi, dans 102 exercices animés."
+              : <>
+                  <span className="font-bold" style={{ color: plein ? "var(--gold)" : "var(--text-2)" }}>{compteur}</span>
+                  {" · 102 exercices animés"}
+                </>}
+          </p>
+
+          <div className="flex items-center gap-2 mt-3.5">
+            <motion.button whileTap={{ scale: 0.96 }} onClick={onComposer}
+              className="h-9 px-3.5 rounded-full flex items-center gap-1.5 cursor-pointer border-none text-white flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 16px rgba(139,92,246,0.32)" }}>
+              <Plus size={14} strokeWidth={2.6} />
+              <span className="text-[12px] font-bold">Composer</span>
+            </motion.button>
+            {count > 0 && (
+              <motion.button whileTap={{ scale: 0.96 }} onClick={onVoir}
+                className="h-9 px-3 rounded-full flex items-center gap-0.5 cursor-pointer bg-transparent flex-shrink-0"
+                style={{ border: "1px solid rgba(var(--accent-rgb),0.28)", color: "var(--accent)" }}>
+                <span className="text-[12px] font-bold">Les voir</span>
+                <ChevronRight size={13} strokeWidth={2.6} />
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* Le mur, quand les places gratuites sont prises. Il se voit AVANT
+   d'avoir composé quoi que ce soit, et il nomme la sortie gratuite. */
+function PleinSheet({ max, onVoir, onPremium, onClose }: {
+  max: number;
+  onVoir: () => void;
+  onPremium: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[150] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(8,5,16,0.6)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+        className="w-full max-w-md rounded-t-[26px] md:rounded-[26px] overflow-hidden"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.18)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-6 pb-5">
+          <span className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(var(--gold-rgb),0.14)" }}>
+            <Layers size={18} strokeWidth={1.9} style={{ color: "var(--gold)" }} />
+          </span>
+          <p className="text-[17px] font-semibold mt-3" style={{ color: "var(--text-1)" }}>
+            Tes places sont prises
+          </p>
+          <p className="text-[12px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
+            En gratuit tu gardes {max} séances à toi. Supprime celle que tu ne fais plus,
+            elle libère la place tout de suite. Avec Premium, tu en gardes autant que tu veux.
+          </p>
+
+          <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
+            className="w-full h-12 mt-5 rounded-2xl text-[13px] font-black text-white cursor-pointer border-none"
+            style={{ background: "linear-gradient(120deg,var(--accent),var(--gold))", boxShadow: "0 8px 22px rgba(139,92,246,0.3)" }}>
+            Passer Premium
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.97 }} onClick={onVoir}
+            className="w-full h-11 mt-1 text-[12px] font-semibold cursor-pointer bg-transparent border-none"
+            style={{ color: "var(--text-2)" }}>
+            Voir mes séances pour en libérer une
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* Largeur d'une carte du carrousel — 2,2 cartes visibles sur téléphone (peek). */
 const ROW_CARD_W = 150;
 
@@ -1977,11 +2111,13 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, week, loading, canAccessPremium, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, catInitial, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
   sessions: MergedSession[];
   week: PlanningDay[] | null;
   loading: boolean;
   canAccessPremium: boolean;
+  maxSeances: number;
+  catInitial: string | null;
   onClose: () => void;
   onStart: (s: MergedSession) => void;
   onUpgrade: () => void;
@@ -1992,7 +2128,10 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, onClose, onSta
   onInspirer: (s: MergedSession) => void;
   onPlanifier: (s: MergedSession, date: string) => void;
 }) {
-  const [catId, setCatId] = useState<string | null>(null);
+  /* Le catalogue peut s'ouvrir directement sur une collection (« libérer
+     une place » mène droit aux tiennes). Lu au montage seulement : la clé
+     de l'appelant remonte la feuille quand la cible change. */
+  const [catId, setCatId] = useState<string | null>(catInitial ?? null);
   const [manage, setManage] = useState<MergedSession | null>(null);
   const [premiumPreview, setPremiumPreview] = useState<MergedSession | null>(null);
   const [adviceTheme, setAdviceTheme] = useState<AdviceTheme | "Tous">("Tous");
@@ -2014,7 +2153,6 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, onClose, onSta
      catégorie éditoriale de plus, elle ne se range pas entre « Cardio »
      et « Mobilité » (décision de Louis, 2026-07-29). */
   const mesSeances = sessions.filter((s) => s.perso);
-  const artMes = dedupeRowArt(mesSeances);
 
   /* Photo par séance, dé-doublonnée PAR RANGÉE (Vaiiya et « les tiennes »
      indépendamment) : deux cartes d'une même rangée ne tombent plus sur la
@@ -2077,7 +2215,7 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, onClose, onSta
               Entraînements
             </h2>
             <p className="text-[11.5px] font-light mt-1" style={{ color: "var(--text-3)" }}>
-              Un but, une envie — <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} contenus t&apos;attendent</span>
+              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} contenus t&apos;attendent</span>
             </p>
           </div>
         )}
@@ -2129,64 +2267,13 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, onClose, onSta
             </div>
           ) : (
             <>
-            {/* ── Épinglé : mes séances, et la porte pour en composer une ── */}
-            <section className="mb-6">
-              <div className="flex items-center gap-2 mb-2.5">
-                <h3 className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>Mes séances</h3>
-                {mesSeances.length > 0 && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.85)", color: "var(--text-3)" }}>
-                    {mesSeances.length}
-                  </span>
-                )}
-                {mesSeances.length > 3 && (
-                  <motion.button whileTap={{ scale: 0.94 }} onClick={() => setCatId("tiennes")}
-                    className="ml-auto flex items-center gap-0.5 text-[11px] font-semibold cursor-pointer flex-shrink-0"
-                    style={{ color: "var(--accent)" }}>
-                    Tout voir <ChevronRight size={12} strokeWidth={2.4} />
-                  </motion.button>
-                )}
-              </div>
-
-              {mesSeances.length === 0 ? (
-                /* Aucune séance : une invitation large, pas une carte vide
-                   coincée au bout d'une grille. */
-                <motion.button whileTap={{ scale: 0.98 }} onClick={onCreate}
-                  className="w-full rounded-[18px] px-4 py-4 flex items-center gap-3 cursor-pointer text-left"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1.5px dashed rgba(var(--accent-rgb),0.34)" }}>
-                  <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-                    <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
-                  </span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-[13.5px] font-semibold" style={{ color: "var(--text-1)" }}>
-                      Composer ma séance
-                    </span>
-                    <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>
-                      102 exercices animés, tu choisis dedans
-                    </span>
-                  </span>
-                  <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                </motion.button>
-              ) : (
-                <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1"
-                  style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-                  <div className="flex-shrink-0" style={{ width: ROW_CARD_W }}>{createCard}</div>
-                  {mesSeances.slice(0, 8).map((s) => (
-                    <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W }}>
-                      <SessionTile
-                        session={s}
-                        onStart={onStart}
-                        onManage={setManage}
-                        onPremium={setPremiumPreview}
-                        canAccessPremium={canAccessPremium}
-                        imgOverride={artMes.get(s.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+            {/* ── Deux univers : le tien d'abord, les collections ensuite ── */}
+            <MonEspaceBloc
+              count={mesSeances.length}
+              max={maxSeances}
+              onComposer={onCreate}
+              onVoir={() => setCatId("tiennes")}
+            />
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {CATALOG.filter((c) => c.id !== "tiennes").map((c) => {
@@ -2899,6 +2986,10 @@ export default function ProgressionPage() {
   const [numeroCreation, setNumeroCreation] = useState(0);
   /* La vitrine des mouvements : ouverte à vide, ou sur une fiche précise. */
   const [mouvements, setMouvements] = useState<{ fiche: LibExercise | null } | null>(null);
+  /* Les places gratuites sont prises : on l'explique, on ne bloque pas sec. */
+  const [plein, setPlein] = useState(false);
+  /* Collection sur laquelle ouvrir le catalogue (null = la grille). */
+  const [choisirCible, setChoisirCible] = useState<string | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
   const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -2907,6 +2998,12 @@ export default function ProgressionPage() {
   /* ── Bibliothèque perso ── */
   const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
   const [loadingCustom, setLoadingCustom] = useState(false);
+
+  /* On limite le STOCK de séances gardées, jamais le fait de créer ni de
+     s'entraîner. Supprimer en libère une, et ce qui est déjà gardé n'est
+     jamais verrouillé : un abonnement qui s'arrête ne reprend rien. */
+  const maxSeances = canAccessPremium ? Infinity : PLANS.free.limits.sessionsMax;
+  const peutGarderUneSeance = customSessions.length < maxSeances;
 
   /* ── Stats du jour (état « fait » du héros) ── */
   const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
@@ -3222,6 +3319,9 @@ export default function ProgressionPage() {
      dont on s'inspire, ou depuis la fin d'une impro qu'on veut garder. */
 
   const ouvrirCreation = (seed: SessionDraft | null) => {
+    /* Le mur avant l'effort : on ne laisse jamais quelqu'un composer huit
+       exercices pour lui dire ensuite que sa place est prise. */
+    if (!peutGarderUneSeance) { setPlein(true); return; }
     setEditSession(null);
     setDraftSeed(seed);
     setNumeroCreation((n) => n + 1);
@@ -3344,6 +3444,8 @@ export default function ProgressionPage() {
   const handleCreateOrEdit = async (s: WorkoutSession) => {
     const supabase = createClient();
     const existingSession = customSessions.find((cs) => cs.id === s.id);
+    /* Dernier filet : modifier reste toujours possible, seul l'ajout compte. */
+    if (!existingSession && !peutGarderUneSeance) { setPlein(true); return; }
     const row = {
       id: s.id,
       user_id: user?.id,
@@ -3506,11 +3608,14 @@ export default function ProgressionPage() {
       <AnimatePresence>
         {sheet === "choisir" && (
           <ChooseSheet
+            key={choisirCible ?? "collections"}
             sessions={allSessions}
             week={week}
             loading={loadingCustom}
             canAccessPremium={canAccessPremium}
-            onClose={() => setSheet(null)}
+            maxSeances={maxSeances}
+            catInitial={choisirCible}
+            onClose={() => { setSheet(null); setChoisirCible(null); }}
             onStart={startSession}
             onUpgrade={() => { setSheet(null); router.push("/premium"); }}
             onCreate={() => ouvrirCreation(null)}
@@ -3519,6 +3624,16 @@ export default function ProgressionPage() {
             onVisibilityChange={handleVisibilityChange}
             onInspirer={inspirerDe}
             onPlanifier={(s, date) => { void planifierSeance(s, date); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {plein && (
+          <PleinSheet
+            max={maxSeances}
+            onClose={() => setPlein(false)}
+            onVoir={() => { setPlein(false); setChoisirCible("tiennes"); setSheet("choisir"); }}
+            onPremium={() => { setPlein(false); router.push("/premium"); }}
           />
         )}
       </AnimatePresence>
@@ -3578,8 +3693,9 @@ export default function ProgressionPage() {
             onComplete={() => handleWorkoutComplete(activeWorkout)}
             /* Seule une impro n'existe nulle part : c'est elle qu'on
                perdrait. Une séance du catalogue ou du planning est déjà
-               quelque part, on ne propose rien. */
-            onGarder={user && activeWorkout.id.startsWith("improv-") && activeWorkout.exerciseList?.length
+               quelque part, on ne propose rien. Places prises : on ne
+               propose rien non plus, plutôt qu'un mur en fin de séance. */
+            onGarder={user && peutGarderUneSeance && activeWorkout.id.startsWith("improv-") && activeWorkout.exerciseList?.length
               ? () => garderImpro(activeWorkout)
               : undefined}
           />
