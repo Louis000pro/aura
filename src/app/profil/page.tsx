@@ -20,6 +20,7 @@ import GemmeRang from "@/components/GemmeRang";
 import RangsModal from "@/components/rang/RangsModal";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
 import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
+import { noterRang } from "@/lib/celebrationRang";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
 
@@ -935,7 +936,12 @@ export default function ProfilPage() {
     const supabase = createClient();
     const uid = user.id;
 
-    void calculerAura(supabase, uid).then(setAura).catch(() => {});
+    void calculerAura(supabase, uid)
+      .then((etat) => {
+        setAura(etat);
+        noterRang(uid, etat.rang); // passage de rang : la célébration part du layout
+      })
+      .catch(() => {});
 
     // Amis = les profils que je suis (following)
     void (async () => {
@@ -1594,6 +1600,7 @@ export default function ProfilPage() {
         rangActuelId={rangCourant.id}
         pseudo={displayPseudo}
         avatarUrl={displayAvatar || null}
+        isAdmin={!!user?.is_admin}
       />
 
       {/* ── Modals ── */}

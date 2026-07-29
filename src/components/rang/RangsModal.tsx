@@ -5,16 +5,9 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import GemmeRang from "@/components/GemmeRang";
-import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
-import {
-  EXP_BIENVENUE,
-  RANGS,
-  RECOMPENSE_RANG,
-  TITRE_DIAMANT,
-  type ApercuCosmetique,
-  type Cosmetiques,
-  type Rang,
-} from "@/lib/aura";
+import ApercuRecompense from "@/components/rang/ApercuRecompense";
+import { rejouerCelebration } from "@/lib/celebrationRang";
+import { RANGS, RECOMPENSE_RANG } from "@/lib/aura";
 
 /**
  * La galerie de TOUS les rangs (bottom-sheet). Montre la gemme, le nom, le seuil
@@ -37,6 +30,7 @@ export default function RangsModal({
   rangActuelId,
   pseudo,
   avatarUrl,
+  isAdmin = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -45,6 +39,8 @@ export default function RangsModal({
   /** Pour montrer les aperçus sur SON pseudo (et pas un exemple abstrait). */
   pseudo: string;
   avatarUrl?: string | null;
+  /** Admin : rejouer la célébration d'un rang pour la vérifier sur son téléphone. */
+  isAdmin?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -186,89 +182,41 @@ export default function RangsModal({
                 );
               })}
             </div>
+
+            {/* Admin seulement : la célébration ne se joue qu'à une VRAIE montée
+                de rang, donc elle est invisible pour qui a déjà son rang. De quoi
+                la vérifier sur son téléphone sans toucher au stockage. */}
+            {isAdmin && (
+              <div className="mt-4 border-t pt-3" style={{ borderColor: "rgba(var(--accent-rgb),0.1)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+                  Admin · rejouer la célébration
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {RANGS.map((rang) => (
+                    <button
+                      key={rang.id}
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        rejouerCelebration(rang.id);
+                      }}
+                      className="rounded-full px-2.5 py-1 text-[11px] font-bold active:opacity-80"
+                      style={{
+                        background: "rgba(var(--accent-rgb),0.08)",
+                        color: "var(--accent)",
+                        border: "1px solid rgba(var(--accent-rgb),0.14)",
+                      }}
+                    >
+                      {rang.nom}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>,
     document.body,
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
- * Les aperçus — un seul cosmétique forcé à la fois, rendu par les VRAIS
- * composants pour qu'un aperçu ne puisse jamais mentir sur le résultat.
- * ────────────────────────────────────────────────────────────────────────── */
-
-const AUCUN: Cosmetiques = { badge: false, cadre: false, anneau: false, titre: null, brillant: false };
-
-function ApercuRecompense({
-  kind,
-  rang,
-  pseudo,
-  avatarUrl,
-}: {
-  kind: ApercuCosmetique;
-  rang: Rang;
-  pseudo: string;
-  avatarUrl?: string | null;
-}) {
-  const nom = pseudo.trim() || "toi";
-
-  if (kind === "exp") {
-    return (
-      <span
-        className="inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-black"
-        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}
-      >
-        +{EXP_BIENVENUE} EXP
-      </span>
-    );
-  }
-
-  if (kind === "titre") {
-    return (
-      <span className="flex flex-col items-start leading-tight">
-        <span className="text-[14px] font-black" style={{ color: "var(--text-0)" }}>{nom}</span>
-        <TitreRang cosmetiques={{ ...AUCUN, titre: TITRE_DIAMANT }} />
-      </span>
-    );
-  }
-
-  if (kind === "badge" || kind === "brillant") {
-    return (
-      <PseudoRang
-        rang={rang}
-        cosmetiques={{ ...AUCUN, badge: kind === "badge", brillant: kind === "brillant" }}
-        pseudo={nom}
-        className="text-[15px] font-black tracking-[-0.02em]"
-        style={{ color: "var(--text-0)" }}
-        tailleGemme={17}
-      />
-    );
-  }
-
-  // « cadre » et « anneau » : la décoration se voit autour de la photo.
-  return (
-    <div className="flex items-center gap-3">
-      <AvatarRang
-        rang={rang}
-        cosmetiques={{ ...AUCUN, cadre: kind === "cadre", anneau: kind === "anneau" }}
-        size={40}
-      >
-        <span
-          className="absolute inset-0 grid place-items-center overflow-hidden rounded-full text-[15px] font-bold"
-          style={{
-            background: avatarUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
-            color: "var(--accent)",
-          }}
-        >
-          {avatarUrl
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-            : nom.charAt(0).toUpperCase()}
-        </span>
-      </AvatarRang>
-      <span className="text-[14px] font-black" style={{ color: "var(--text-0)" }}>{nom}</span>
-    </div>
   );
 }

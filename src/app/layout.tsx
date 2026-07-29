@@ -11,6 +11,7 @@ import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
+import CelebrationRang from "@/components/rang/CelebrationRang";
 import { AssistantProvider } from "@/context/AssistantContext";
 import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
@@ -185,6 +186,8 @@ export default function RootLayout({
         <SplashIntro />
         <AuthProvider>
           <PresenceDuJour />
+          {/* Le rang peut monter n'importe où : la célébration vit au-dessus de tout. */}
+          <CelebrationRang />
           <AssistantProvider>
             <WorkoutLaunchProvider>
               <GuidedTourProvider>

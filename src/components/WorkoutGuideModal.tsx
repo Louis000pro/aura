@@ -9,6 +9,8 @@ import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { validerMaillon, CLE_DEVOILE } from "@/lib/defi";
+import { calculerAura } from "@/lib/aura";
+import { noterRang } from "@/lib/celebrationRang";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import PerfShareButton from "@/components/PerfShareButton";
@@ -727,6 +729,11 @@ export default function WorkoutGuideModal({
           if (r?.ok) sessionStorage.setItem(CLE_DEVOILE, "1");
         });
       }
+      // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine
+      // ouverture de l'accueil. Silencieux si le rang n'a pas bougé.
+      void calculerAura(supabase, user.id)
+        .then((etat) => noterRang(user.id, etat.rang))
+        .catch(() => {});
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);

@@ -20,6 +20,7 @@ import { stripMemoryTags } from "@/lib/aiMemory";
 import AccueilSignature from "@/components/AccueilSignature";
 import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, type EtatAura } from "@/lib/aura";
+import { noterRang } from "@/lib/celebrationRang";
 import { persistLieu, hasSeance, dayTitle, dayLabel, type PlanningDay } from "@/lib/planning";
 import { SERIES, type Defi, type SerieSlug } from "@/lib/defi";
 import { observeParisDay, parisDateStr, shiftDateStr } from "@/lib/dates";
@@ -713,6 +714,8 @@ function Dashboard() {
         setAura(etat);
         setAuraLoaded(true);
         try { localStorage.setItem(cacheKey, String(etat.exp)); } catch { /* ignore */ }
+        // Passage de rang : on note le rang FRAIS (jamais celui du cache d'affichage).
+        noterRang(user.id, etat.rang);
       })
       .catch(() => setAuraLoaded(true));
   }, [user, mealsRefreshKey, statsTick, parisDay]);
@@ -1115,6 +1118,7 @@ function Dashboard() {
           rangActuelId={aura.rang.id}
           pseudo={user?.pseudo ?? user?.name ?? ""}
           avatarUrl={user?.avatar}
+          isAdmin={!!user?.is_admin}
         />
       </div>
 
