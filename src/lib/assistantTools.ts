@@ -48,7 +48,39 @@ export type AssistantAction = {
   cible?: string;
   lieu?: string;
   materiel?: string;
+  // question à choix cliquables
+  question?: string;
+  choix?: unknown;
 };
+
+/** Une question posée à l'utilisateur avec ses réponses à toucher.
+ *  `relance` = ce qu'on renvoie au coach une fois la réponse connue (la
+ *  demande d'origine), pour qu'il enchaîne au lieu de repartir de zéro. */
+export type QuestionCliquable = {
+  choix: string[];
+  /** Réponse déjà donnée : la question devient inerte, on ne répond qu'une fois. */
+  repondu?: string;
+  /** `lieu` et `equip` sont posées par le code (déterministe) ; `libre` vient du coach. */
+  genre: "lieu" | "equip" | "libre";
+  relance?: string;
+};
+
+/** Nettoie les choix rendus par le modèle : 2 à 4 réponses courtes, non vides.
+ *  Au-delà de 4, ce n'est plus un choix, c'est un formulaire. */
+export function normaliserChoix(brut: unknown): string[] {
+  if (!Array.isArray(brut)) return [];
+  const vus = new Set<string>();
+  const out: string[] = [];
+  for (const c of brut) {
+    if (typeof c !== "string") continue;
+    const v = c.trim().slice(0, 32);
+    if (!v || vus.has(v.toLowerCase())) continue;
+    vus.add(v.toLowerCase());
+    out.push(v);
+    if (out.length === 4) break;
+  }
+  return out.length >= 2 ? out : [];
+}
 
 /** Événements du flux /api/chat (NDJSON, une ligne = un objet).
  *  `t` = morceau de texte, `a` = action décidée, `e` = erreur lisible. */
@@ -249,6 +281,26 @@ export const ASSISTANT_TOOLS: Tool[] = [
   {
     type: "function",
     function: {
+      name: "ask_choice",
+      description:
+        "Poser UNE question à l'utilisateur quand il te manque vraiment une information pour agir, en lui proposant 2 à 4 réponses qu'il pourra toucher du doigt. Conditions strictes : la réponse doit être un CHOIX FERMÉ (un lieu, un jour, une durée, un niveau, oui/non), jamais une question ouverte comme « comment tu te sens ? ». Ne pose JAMAIS une question dont la réponse est déjà dans le profil, les stats ou la conversation. Une seule question à la fois : si tu as besoin de deux informations, demande la première et attends. Si tu n'as pas besoin d'information pour répondre, n'appelle pas cet outil.",
+      parameters: {
+        type: "object",
+        properties: {
+          question: { type: "string", description: "La question, courte et directe, en une phrase." },
+          choix: {
+            type: "array",
+            items: { type: "string" },
+            description: "2 à 4 réponses possibles, très courtes (1 à 4 mots), distinctes et complètes.",
+          },
+        },
+        required: ["question", "choix"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "open_page",
       description:
         "Emmener l'utilisateur sur une page de l'app quand il veut clairement y ALLER (« montre mes repas », « ouvre mon programme », « je veux m'abonner »). Pas pour une simple question sur le contenu de la page.",
@@ -287,6 +339,9 @@ export function phraseDeRepli(action: AssistantAction): string {
     case "plan_regen": return "Ça marche, je te prépare une nouvelle semaine. Valide en dessous ✦";
     case "log_meal": return "C'est noté, je te prépare l'ajout. Valide juste en dessous 👇";
     case "create_recipe": return "Je t'écris ça, regarde juste en dessous 👇";
+    // La question EST la bulle : c'est le seul intent dont le texte vient du
+    // modèle, puisque c'est lui qui formule ce qu'il ne sait pas.
+    case "ask_choice": return (action.question ?? "").trim() || "J'ai besoin d'une précision ✦";
     case "open_page": return "Je t'emmène ✦";
     case "save_lieu": return "C'est noté, je m'en souviens ✦";
     case "set_theme":

@@ -9,11 +9,12 @@
    via les design tokens.
    ════════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays, Play, ImagePlus, Utensils } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
+import type { QuestionCliquable } from "@/lib/assistantTools";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
@@ -124,8 +125,51 @@ function AssistantContent({ text }: { text: string }) {
   );
 }
 
+/* ── Les réponses cliquables ──
+   Posées SOUS la bulle du coach, jamais dedans : une carte, chez nous, annonce
+   une écriture à valider. Une question ne demande rien à valider, elle ne doit
+   donc pas en porter le costume.
+
+   Une fois répondue, la puce choisie reste seule, en teal (la couleur du
+   « fait ✓ » dans tout le site) et n'est plus cliquable. Une question laissée
+   sans réponse s'efface dès qu'un message arrive après elle : on ne répond
+   qu'une fois, et jamais à une question sortie de son contexte. */
+function QuestionChips({ q, actif, onChoisir }: {
+  q: QuestionCliquable;
+  actif: boolean;
+  onChoisir: (choix: string) => void;
+}) {
+  const TEAL = "#2BD4A0";
+  if (q.repondu) {
+    return (
+      <div className="flex flex-wrap gap-1.5 pl-9">
+        <span className="px-3 py-1.5 rounded-full text-[12.5px] font-semibold flex items-center gap-1.5"
+          style={{ background: "rgba(43,212,160,0.12)", color: TEAL, border: `1px solid rgba(43,212,160,0.45)` }}>
+          <Check size={12} strokeWidth={3} /> {q.repondu}
+        </span>
+      </div>
+    );
+  }
+  if (!actif) return null; // question dépassée : on ne la laisse pas cliquable
+  return (
+    <div className="flex flex-wrap gap-1.5 pl-9">
+      {q.choix.map((c, i) => (
+        <motion.button key={c} type="button"
+          initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.05 + i * 0.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => onChoisir(c)}
+          className="px-3.5 py-2 rounded-full text-[12.5px] font-medium cursor-pointer"
+          style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-1)", border: "1px solid rgba(var(--accent-rgb),0.26)" }}>
+          {c}
+        </motion.button>
+      ))}
+    </div>
+  );
+}
+
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
   const { launchWorkout } = useWorkoutLaunch();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
@@ -198,6 +242,13 @@ export default function AssistantSheet() {
   };
 
   const canSend = (!!input.trim() || !!attachment) && !isStreaming;
+
+  // Les réponses cliquables déjà données sont visibles sur la puce cochée : le
+  // message envoyé au coach, lui, ne s'affiche pas (il ferait doublon).
+  const visibles = messages.filter((m) => !m.masque);
+  // Une question est en attente → on rappelle qu'on peut aussi taper.
+  const derniere = visibles[visibles.length - 1];
+  const questionEnAttente = !!derniere?.question && !derniere.question.repondu && !isStreaming;
 
   // « La faire maintenant » : lance le tunnel avec la séance qu'on vient de créer.
   const faireMaintenant = () => {
@@ -308,8 +359,9 @@ export default function AssistantSheet() {
               )}
 
               <AnimatePresence initial={false}>
-                {messages.map((msg) => (
-                  <motion.div key={msg.id}
+                {visibles.map((msg, i) => (
+                  <Fragment key={msg.id}>
+                  <motion.div
                     initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.26, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
@@ -344,6 +396,14 @@ export default function AssistantSheet() {
                       )}
                     </div>
                   </motion.div>
+                  {msg.question && (
+                    <QuestionChips
+                      q={msg.question}
+                      actif={i === visibles.length - 1 && !isStreaming}
+                      onChoisir={(c) => repondreQuestion(msg.id, c)}
+                    />
+                  )}
+                  </Fragment>
                 ))}
               </AnimatePresence>
             </div>
@@ -697,7 +757,9 @@ export default function AssistantSheet() {
                       // Entrée = envoyer ; Maj+Entrée = nouvelle ligne (pour se relire/corriger)
                       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(e); }
                     }}
-                    placeholder={voice.state === "recording" ? "Écoute en cours…" : "Pose ta question…"}
+                    placeholder={voice.state === "recording" ? "Écoute en cours…"
+                      : questionEnAttente ? "ou écris ta réponse…"
+                      : "Pose ta question…"}
                     disabled={isStreaming || voice.state !== "idle"}
                     className="flex-1 bg-transparent text-[14px] leading-relaxed outline-none disabled:opacity-60 resize-none py-1"
                     style={{ color: "var(--text-0)", maxHeight: 132 }}

@@ -25,7 +25,7 @@ import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
-import { phraseDeRepli, type AssistantAction, type ChatEvent } from "@/lib/assistantTools";
+import { phraseDeRepli, normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
 import {
   resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
   ctxFromLieu, readLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
@@ -88,6 +88,12 @@ export type AssistantMsg = {
   streaming?: boolean;
   /** Data URL d'une image jointe (messages user). Non persistée (trop lourde). */
   image?: string;
+  /** Question à choix cliquables posée sous cette bulle. */
+  question?: QuestionCliquable;
+  /** Message envoyé au coach mais PAS affiché : la réponse à une question
+   *  cliquable est déjà visible sous la forme de la puce cochée, l'écrire une
+   *  seconde fois en bulle utilisateur dirait deux fois la même chose. */
+  masque?: boolean;
 };
 
 interface UserContext {
@@ -109,6 +115,8 @@ type AssistantContextValue = {
   messages: AssistantMsg[];
   isStreaming: boolean;
   sendMessage: (text: string, image?: string) => void;
+  /** Réponse à une question cliquable (clic sur une puce). */
+  repondreQuestion: (msgId: string, choix: string) => void;
   pseudo?: string;
   memoryNotice: string | null;
   pendingSeance: ProposedSeance | null;
@@ -154,24 +162,6 @@ function normalizeMealType(raw?: string): string {
 /** Repas le plus probable selon l'heure (repli quand le moment n'est pas dit). */
 function mealTypeFromHour(h = new Date().getHours()): string {
   return h < 10 ? "petit-dejeuner" : h < 15 ? "dejeuner" : h < 18 ? "gouter" : "diner";
-}
-
-/** Repère un lieu d'entraînement / du matériel mentionné dans un message libre. */
-function sniffLieu(text: string): { location?: "salle" | "maison"; equip?: "halteres" | "poids" } {
-  const t = (text || "").toLowerCase();
-  const out: { location?: "salle" | "maison"; equip?: "halteres" | "poids" } = {};
-  if (/salle|\bgym\b|basic\s*fit|fitness\s*park/.test(t)) out.location = "salle";
-  else if (/maison|chez\s*moi|domicile|appart|sans\s*mat|poids\s*du\s*corps|halt[èe]re/.test(t)) out.location = "maison";
-  if (/halt[èe]re|dumbbell|kettlebell|\bbanc\b|\bbarre\b/.test(t)) out.equip = "halteres";
-  else if (/poids\s*du\s*corps|sans\s*mat[ée]riel|sans\s*rien|au\s*poids/.test(t)) out.equip = "poids";
-  return out;
-}
-
-/** Le dernier message du coach demandait-il le lieu / le matériel ? (→ le message
- *  suivant de l'utilisateur est une RÉPONSE au lieu, on peut l'enregistrer). */
-function coachAskedLieu(messages: { role: string; content: string }[]): boolean {
-  const last = [...messages].reverse().find((m) => m.role === "assistant")?.content?.toLowerCase() ?? "";
-  return /salle ou maison|maison ou (?:à la )?salle|halt[èe]re|poids du corps|o[ùu] tu t'entra[îi]n/.test(last);
 }
 
 /** Garde-fou anti-faux-positif du thème. Le petit modèle d'analyse hallucinait
@@ -456,9 +446,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id]);
 
+  /* Pose une question à choix cliquables sous une nouvelle bulle du coach.
+     `relance` = la demande d'origine, renvoyée au coach une fois la réponse
+     connue, pour qu'il enchaîne au lieu de repartir de zéro. */
+  const poserQuestion = useCallback((contenu: string, q: QuestionCliquable) => {
+    setMessages((prev) => [...prev, { role: "assistant" as const, content: contenu, id: uid(), question: q }]);
+  }, []);
+
   /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
-  const preparePlanAction = useCallback(async (action: AssistantAction) => {
+  const preparePlanAction = useCallback(async (action: AssistantAction, text: string) => {
     if (!user?.id) return;
     // Réponse courte du coach dans le fil (chaque impasse est explicite, jamais muette).
     const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
@@ -525,12 +522,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
       const saved = readLieu(user.id);
       if (!saved.location || (saved.location === "maison" && !saved.equip)) {
-        // Lieu incomplet. Le coach est censé poser la question AVANT d'appeler
-        // l'outil ; s'il ne l'a pas fait, on la pose ici plutôt que de rester
-        // muet sur une promesse (« je te prépare ça » suivi de rien).
-        say(!saved.location
-          ? "Tu t'entraînes en salle ou à la maison cette semaine ? 💪"
-          : "Tu as des haltères à la maison, ou je te fais tout au poids du corps ? 💪");
+        // Lieu incomplet : on le demande en puces plutôt que de rester muet
+        // sur une promesse. La demande d'origine repart dès qu'on a la réponse.
+        if (!saved.location) {
+          poserQuestion("Tu t'entraînes où cette semaine ?", { choix: ["En salle", "À la maison"], genre: "lieu", relance: text });
+        } else {
+          poserQuestion("Tu as des haltères à la maison ?", { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text });
+        }
         return;
       }
       const adjust = action.adjust ?? "none";
@@ -694,7 +692,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, buildNutritionNote]);
+  }, [user?.id, buildNutritionNote, poserQuestion]);
 
   /* ── Mémoire long terme (silencieuse, best-effort) ──
      Volontairement restée sur son propre petit appel : elle n'a rien à voir
@@ -725,6 +723,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     // Réponse courte du coach dans le fil (aucune impasse muette).
     const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
+
+    // La question du coach (ask_choice) est rattachée à sa bulle dans
+    // sendMessage : ici il n'y a rien à exécuter.
+    if (action.intent === "ask_choice") return;
 
     // NAVIGATION : le coach emmène l'utilisateur sur une page de l'app.
     if (action.intent === "open_page") {
@@ -848,7 +850,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
     // 2a) Pilotage du PLANNING (remplacer / décaler / changer le lieu / poser une séance de la biblio / refaire la semaine)
     if (action.intent === "plan_set" || action.intent === "plan_location" || action.intent === "plan_move" || action.intent === "plan_library" || action.intent === "plan_regen") {
-      void preparePlanAction(action);
+      void preparePlanAction(action, text);
       return;
     }
 
@@ -867,7 +869,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       else if (/salle|gym|basic\s*fit/.test(blob)) lieu = "salle";
     }
     if (!lieu) {
-      say("Avant de te la préparer : tu t'entraînes en salle ou à la maison ? 💪");
+      poserQuestion("Avant de te la préparer, tu t'entraînes où ?", {
+        choix: ["En salle", "À la maison"], genre: "lieu", relance: text,
+      });
       return;
     }
 
@@ -918,16 +922,39 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote]);
+  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion]);
 
-  /* ── Envoi d'un message (avec image optionnelle → vision) ── */
-  const sendMessage = useCallback(async (text: string, image?: string) => {
+  /* ── Ce qui manque AVANT d'agir ──
+     C'est le CODE qui sait de quoi il a besoin, pas le modèle : lui demander
+     de retenir nos prérequis marchait mal (il écrivait la question en texte au
+     lieu d'appeler l'outil, donc sans réponses à toucher). Ici c'est
+     déterministe : si le lieu manque pour une action qui en dépend, la bulle
+     du coach EST la question, et la demande d'origine repart après la réponse.
+     Sans ça le coach promettrait une carte, puis poserait une question. ── */
+  const questionManquante = useCallback((action: AssistantAction, text: string): { texte: string; question: QuestionCliquable } | null => {
+    if (!user?.id) return null;
+    const besoinDuLieu = action.intent === "create_seance" || action.intent === "plan_set" || action.intent === "plan_regen";
+    if (!besoinDuLieu) return null;
+    const { location, equip } = readLieu(user.id);
+    if (!location) {
+      return { texte: "Avant de te préparer ça, tu t'entraînes où ?", question: { choix: ["En salle", "À la maison"], genre: "lieu", relance: text } };
+    }
+    if (location === "maison" && !equip) {
+      return { texte: "Tu as des haltères à la maison ?", question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text } };
+    }
+    return null;
+  }, [user?.id]);
+
+  /* ── Envoi d'un message (avec image optionnelle → vision) ──
+     `masque` : le message part au coach mais ne s'affiche pas. Sert aux
+     réponses cliquables, déjà visibles sous la forme de la puce cochée. ── */
+  const sendMessage = useCallback(async (text: string, image?: string, masque?: boolean) => {
     const trimmed = text.trim();
     if ((!trimmed && !image) || isStreaming) return;
 
     void ensureContext();
 
-    const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(image ? { image } : {}) };
+    const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(image ? { image } : {}), ...(masque ? { masque: true } : {}) };
     const assistantId = uid();
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
     setIsStreaming(true);
@@ -948,23 +975,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
     }
 
-    // ── Réponse au LIEU d'entraînement ──
-    // Si le coach venait de demander le lieu (salle/maison) ou le matériel et que
-    // l'utilisateur y répond, on l'enregistre TOUT DE SUITE (persistLieu écrit le
-    // localStorage de façon synchrone) : le coach de CE tour le connaît déjà et
-    // ne reboucle plus sur la question, et la génération de séance/semaine peut
-    // s'y fier. Scopé à une vraie réponse (le coach vient de poser la question)
-    // pour éviter les faux positifs — un « je mange à la maison » ne change pas
-    // le lieu d'entraînement. (Le tag [LIEU_UPDATE] du chat restait en retard d'un tour.)
-    if (user?.id && trimmed && coachAskedLieu(messages)) {
-      const sn = sniffLieu(trimmed);
-      if (sn.location || sn.equip) {
-        void persistLieu(user.id, {
-          ...(sn.location ? { location: sn.location } : {}),
-          ...(sn.equip ? { equip: sn.equip } : {}),
-        });
-      }
-    }
+    /* Le lieu d'entraînement n'est plus DEVINÉ ici. Deux regex tentaient de
+       reconnaître qu'un message répondait à la question du tour précédent
+       (`coachAskedLieu` + `sniffLieu`), avec les faux positifs que ça suppose.
+       Désormais la question est posée en puces : un clic donne une réponse
+       structurée, et si l'utilisateur préfère taper, le coach dispose de
+       l'outil save_lieu. Plus rien à deviner. */
 
     // Mémoire long terme uniquement (l'action, elle, vient du même appel que
     // le texte). ⚠️ Mistral palier gratuit = 1 req/s : on décale cet appel
@@ -1077,10 +1093,32 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")
         .trim();
 
-      // ⚠️ Vérifié contre l'API : quand Mistral appelle un outil, il n'écrit
-      // RIEN. Ce n'est pas un cas limite, c'est le cas normal, donc la phrase
-      // déduite de l'action porte toute la parole du coach sur ces tours.
-      if (!cleaned && action) cleaned = phraseDeRepli(action);
+      // `action` n'est renseignée que dans une closure : TypeScript ne suit pas
+      // cette affectation et la croit toujours nulle. Le cast rétablit son vrai
+      // type pour les branches ci-dessous.
+      const recue = action as AssistantAction | null;
+
+      // Une information nous manque pour agir → la bulle EST la question, et
+      // l'action attend. Le coach ne promet donc jamais une carte qu'il ne
+      // peut pas encore préparer.
+      const manque = recue ? questionManquante(recue, trimmed) : null;
+      let questionAttachee: QuestionCliquable | undefined;
+
+      if (manque) {
+        cleaned = manque.texte;
+        questionAttachee = manque.question;
+      } else if (recue) {
+        // ⚠️ Vérifié contre l'API : quand Mistral appelle un outil, il n'écrit
+        // RIEN. Ce n'est pas un cas limite, c'est le cas normal, donc la phrase
+        // déduite de l'action porte toute la parole du coach sur ces tours.
+        if (!cleaned) cleaned = phraseDeRepli(recue);
+        // Question posée par le coach lui-même : ses réponses se rattachent à
+        // cette bulle, dont le texte est déjà la question.
+        if (recue.intent === "ask_choice") {
+          const choix = normaliserChoix(recue.choix);
+          if (choix.length >= 2) questionAttachee = { choix, genre: "libre" };
+        }
+      }
 
       // Ni texte ni action : ça ne doit JAMAIS passer inaperçu. Une version
       // précédente supprimait la bulle vide, du coup l'utilisateur envoyait un
@@ -1088,12 +1126,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (!cleaned) cleaned = "Je n'ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement.";
 
       setMessages((prev) => {
-        const next = prev.map((m) => m.id === assistantId ? { ...m, content: cleaned, streaming: false } : m);
+        const next = prev.map((m) => m.id === assistantId
+          ? { ...m, content: cleaned, streaming: false, ...(questionAttachee ? { question: questionAttachee } : {}) }
+          : m);
         persist(next);
         return next;
       });
 
-      if (action) void runAction(action, trimmed);
+      // L'action ne part que si rien ne manque. Sinon elle repartira toute
+      // seule après la réponse (`relance`).
+      if (recue && !manque) void runAction(recue, trimmed);
 
       const navMatch = accumulated.match(/\[NAV\]\s*([^[\]]+?)\s*\[\/NAV\]/i);
       if (navMatch) {
@@ -1108,7 +1150,58 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, runAction]);
+  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, runAction, questionManquante]);
+
+  /* ── Réponse à une question cliquable ──
+     La puce touchée reste affichée, cochée ; les autres disparaissent. On ne
+     crée PAS de bulle utilisateur : la réponse est déjà lisible sur la puce,
+     l'écrire une seconde fois dirait deux fois la même chose. Le coach, lui,
+     reçoit bien la réponse (message masqué).
+
+     Pour le lieu, la réponse est ENREGISTRÉE avant de relancer : le coach du
+     tour suivant le connaît déjà et ne repose pas la question. C'est ce qui
+     remplace les anciennes regex qui devinaient. ── */
+  const repondreQuestion = useCallback((msgId: string, choix: string) => {
+    if (isStreaming) return;
+    const cible = messages.find((m) => m.id === msgId);
+    const q = cible?.question;
+    if (!q || q.repondu) return; // on ne répond qu'une fois
+
+    setMessages((prev) => {
+      const next = prev.map((m) => m.id === msgId && m.question
+        ? { ...m, question: { ...m.question, repondu: choix } }
+        : m);
+      persist(next);
+      return next;
+    });
+
+    const relance = q.relance ?? "";
+
+    if (q.genre === "lieu" && user?.id) {
+      const location = /salle/i.test(choix) ? "salle" : "maison";
+      void persistLieu(user.id, { location });
+      // Une seule question à la fois : le matériel n'arrive qu'ICI, une fois
+      // le lieu connu, et jamais en même temps que la première question.
+      if (location === "maison" && !readLieu(user.id).equip) {
+        setMessages((prev) => [...prev, {
+          role: "assistant" as const, content: "Tu as des haltères à la maison ?", id: uid(),
+          question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip" as const, relance },
+        }]);
+        return;
+      }
+      if (relance) sendMessage(relance, undefined, true);
+      return;
+    }
+
+    if (q.genre === "equip" && user?.id) {
+      void persistLieu(user.id, { equip: /halt/i.test(choix) ? "halteres" : "poids" });
+      if (relance) sendMessage(relance, undefined, true);
+      return;
+    }
+
+    // Question libre du coach : sa réponse repart telle quelle.
+    sendMessage(choix, undefined, true);
+  }, [messages, isStreaming, user?.id, persist, sendMessage]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {
@@ -1261,7 +1354,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );
