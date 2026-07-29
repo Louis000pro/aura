@@ -14,6 +14,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -2418,7 +2419,7 @@ function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, on
       : halteres ? "à la maison avec haltères"
       : "à la maison au poids du corps, sans matériel";
     try {
-      const res = await fetch("/api/workout/generate", {
+      const res = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

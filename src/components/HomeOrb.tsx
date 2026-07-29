@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic } from "lucide-react";
 import { usePerfMode } from "@/lib/perfMode";
@@ -110,7 +111,7 @@ export default function HomeOrb({
         try {
           const form = new FormData();
           form.append("audio", blob, `voice.${extFromMime(mime)}`);
-          const res = await fetch("/api/transcribe", { method: "POST", body: form });
+          const res = await aiFetch("/api/transcribe", { method: "POST", body: form });
           if (!res.ok) throw new Error(await res.text());
           const data = await res.json();
           if (data?.text?.trim() && onTranscript) onTranscript(data.text.trim());

@@ -11,6 +11,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion } from "framer-motion";
 import { BookOpen } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -48,7 +49,7 @@ export default function RecipesByTheme({
       try {
         if (user) { const raw = localStorage.getItem(`vaiiya_diet_${user.id}`); if (raw) diet = JSON.parse(raw); }
       } catch { /* ignore */ }
-      const res = await fetch("/api/nutrition/recipe", {
+      const res = await aiFetch("/api/nutrition/recipe", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ theme, taste, diet }),
       });

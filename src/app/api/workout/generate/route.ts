@@ -1,14 +1,20 @@
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { NextResponse } from "next/server";
+import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const garde = await garderIA(req, "seance");
+  if (!garde.ok) return garde.reponse;
+
   try {
     const { description, category, difficulty, muscles, nutritionNote } = await req.json();
     if (!description?.trim())
       return NextResponse.json({ error: "description manquante" }, { status: 400 });
+    if (String(description).length > PLAFONDS.texteCourtChars)
+      return refusTaille("Cette description");
     if (!hasLLMKey())
       return NextResponse.json({ error: "Clé API manquante" }, { status: 500 });
 

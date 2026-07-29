@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Mic, MicOff, Sparkles, ArrowLeft, UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -377,21 +378,10 @@ export default function CoachPage() {
       setInput("");
       setIsStreaming(true);
 
-      // ── Limite quotidienne du coach pour les comptes gratuits (admin/premium = illimité) ──
-      const isUnlimited = !!(user?.is_admin || user?.is_premium);
-      if (!isUnlimited && user) {
-        const dayKey = `vaiiya_ai_count_${user.id}_${new Date().toISOString().slice(0, 10)}`;
-        const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
-        if (count >= 12) {
-          setMessages((prev) => prev.map((m) => m.id === assistantId
-            ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages/jour avec le coach. Passe au plan supérieur pour un coach illimité — je t'emmène voir les offres…", streaming: false }
-            : m));
-          setIsStreaming(false);
-          setTimeout(() => router.push("/premium"), 1900);
-          return;
-        }
-        try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
-      }
+      /* La limite du coach est comptée CÔTÉ SERVEUR (lib/aiLimits.ts).
+         L'ancien compteur vivait dans le localStorage : il annonçait 12
+         messages là où la page Premium en vend 5, et il suffisait de vider son
+         navigateur pour le remettre à zéro. Il ne protégeait donc rien. */
 
       /* Build history for API (excluding the placeholder assistant msg) */
       const history = [...messages, userMsg].map(({ role, content }) => ({
@@ -403,7 +393,7 @@ export default function CoachPage() {
         const abort = new AbortController();
         abortRef.current = abort;
 
-        const res = await fetch("/api/chat", {
+        const res = await aiFetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -415,6 +405,14 @@ export default function CoachPage() {
           }),
           signal: abort.signal,
         });
+
+        // Quota atteint ou session expirée : on affiche le message du serveur
+        // au lieu de laisser le JSON brut s'écrire dans la bulle.
+        const refus = await messageDeRefus(res);
+        if (refus) {
+          setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: refus, streaming: false } : m));
+          return;
+        }
 
         if (!res.body) throw new Error("No response body");
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, Check, Plus } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
@@ -32,7 +33,7 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
   useEffect(() => {
     let cancelled = false;
     setState("loading"); setVideoId(null);
-    fetch(`/api/exercise-video?q=${encodeURIComponent(exerciseName)}`)
+    aiFetch(`/api/exercise-video?q=${encodeURIComponent(exerciseName)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;

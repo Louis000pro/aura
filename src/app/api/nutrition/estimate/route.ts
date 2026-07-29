@@ -1,13 +1,18 @@
 ﻿import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
+import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
 
 export async function POST(req: Request) {
+  const garde = await garderIA(req, "estimation");
+  if (!garde.ok) return garde.reponse;
+
   try {
     const { description, enseigne, origin, niveau } = await req.json();
     if (!description?.trim()) return NextResponse.json({ error: "description manquante" }, { status: 400 });
+    if (String(description).length > PLAFONDS.texteCourtChars) return refusTaille("Ce texte");
     if (!process.env.GROQ_API_KEY) return NextResponse.json({ error: "GROQ_API_KEY manquante" }, { status: 500 });
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

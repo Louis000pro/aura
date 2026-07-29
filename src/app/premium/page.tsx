@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -323,8 +324,14 @@ function PremiumInner() {
           <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>2 offres · glisse pour comparer</span>
         </div>
 
+        {/* Information précontractuelle : la reconduction et le contrat doivent
+            se lire AVANT de payer, pas après. */}
         <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
           <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
+          <br />
+          Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
+          {" "}
+          <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
         </p>
       </div>
 

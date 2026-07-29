@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X, Lock, ChevronLeft, ChevronRight } from "lucide-react";
@@ -88,7 +89,7 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
   useEffect(() => {
     let cancelled = false;
     setState("loading"); setVideoId(null);
-    fetch(`/api/exercise-video?q=${encodeURIComponent(clean)}`)
+    aiFetch(`/api/exercise-video?q=${encodeURIComponent(clean)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;

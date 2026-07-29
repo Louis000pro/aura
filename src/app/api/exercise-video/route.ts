@@ -4,6 +4,7 @@
  * Scrape la recherche YouTube côté serveur (aucune clé API nécessaire) + cache mémoire.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { garderIA } from "@/lib/aiLimits";
 
 const cache = new Map<string, { id: string | null; t: number }>();
 const TTL = 1000 * 60 * 60 * 24; // 24h
@@ -12,11 +13,18 @@ export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") || "").trim();
   if (!q) return NextResponse.json({ videoId: null });
 
+  // Le cache mémoire répond en premier : inutile de compter un appel pour une
+  // réponse qu'on a déjà sous la main.
   const key = q.toLowerCase();
   const hit = cache.get(key);
   if (hit && Date.now() - hit.t < TTL) {
     return NextResponse.json({ videoId: hit.id });
   }
+
+  // Sans garde-fou, cette route va chercher une page YouTube depuis notre
+  // serveur à chaque appel : en boucle, c'est notre IP qui se fait bloquer.
+  const garde = await garderIA(req, "lookup");
+  if (!garde.ok) return garde.reponse;
 
   try {
     const query = encodeURIComponent(`${q} exercice musculation technique`);

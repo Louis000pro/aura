@@ -16,6 +16,7 @@
 import {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from "react";
+import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
@@ -652,7 +653,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // Bonus nutrition uniquement si on planifie AUJOURD'HUI (jamais un jour futur)
       const nutritionNote = when === richProfileRef.current?.todayDate ? buildNutritionNote() : null;
 
-      const genRes = await fetch("/api/workout/generate", {
+      const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote }),
@@ -703,7 +704,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const extractMemory = useCallback(async (text: string, context: string) => {
     if (!user?.id || !text.trim()) return;
     try {
-      const res = await fetch("/api/assistant/analyze", {
+      const res = await aiFetch("/api/assistant/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, context }),
@@ -779,7 +780,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const ingredients = Array.isArray(action.ingredients)
           ? (action.ingredients as unknown[]).filter((i): i is string => typeof i === "string")
           : [];
-        const res = await fetch("/api/nutrition/recipe", {
+        const res = await aiFetch("/api/nutrition/recipe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -817,7 +818,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setActionLoading(true);
       setPendingMeal(null);
       try {
-        const res = await fetch("/api/nutrition/estimate", {
+        const res = await aiFetch("/api/nutrition/estimate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ description: food }),
@@ -895,7 +896,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // Bonus nutrition : créer une séance = pour maintenant (aujourd'hui)
       const nutritionNote = buildNutritionNote();
 
-      const genRes = await fetch("/api/workout/generate", {
+      const genRes = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description, category, difficulty, muscles, nutritionNote }),
@@ -1000,7 +1001,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     try {
       const abort = new AbortController();
       abortRef.current = abort;
-      const res = await fetch("/api/chat", {
+      const res = await aiFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1018,6 +1019,21 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         }),
         signal: abort.signal,
       });
+
+      // Refus de quota ou de session : la réponse est un JSON, pas le flux
+      // NDJSON. Sans ce filet, la boucle de lecture ci-dessous ne trouverait
+      // ni `t` ni `a` et laisserait une bulle vide à l'écran.
+      const refus = await messageDeRefus(res);
+      if (refus) {
+        setMessages((prev) => {
+          const next = prev.map((m) => m.id === assistantId
+            ? { ...m, content: refus, streaming: false } : m);
+          persist(next);
+          return next;
+        });
+        return;
+      }
+
       if (!res.body) throw new Error("No response body");
 
       /* ── Lecture du flux NDJSON ──

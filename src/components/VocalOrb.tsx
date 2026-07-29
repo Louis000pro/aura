@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff } from "lucide-react";
 
@@ -130,7 +131,7 @@ export default function VocalOrb({ onTranscript }: { onTranscript?: (text: strin
           const form = new FormData();
           form.append("audio", blob, `rec.${ext}`);
 
-          const res = await fetch("/api/transcribe", { method: "POST", body: form });
+          const res = await aiFetch("/api/transcribe", { method: "POST", body: form });
           const data = await res.json();
 
           if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);

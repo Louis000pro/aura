@@ -1,6 +1,6 @@
 import Groq from "groq-sdk";
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -21,17 +21,18 @@ const VERDICT_RANK: Record<Verdict, number> = { recommande: 0, correct: 1, evite
 type RawDish = { name?: unknown; verdict?: unknown; reason?: unknown; best?: unknown };
 
 export async function POST(req: Request) {
-  try {
-    // ── Auth obligatoire (endpoint vision protégé, comme /analyze) ──
-    const admin = createAdminClient();
-    const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-    if (!token) return NextResponse.json({ error: "non_authentifié" }, { status: 401 });
-    const { data: userData, error: authErr } = await admin.auth.getUser(token);
-    if (authErr || !userData?.user) return NextResponse.json({ error: "token_invalide" }, { status: 401 });
+  // Même garde-fou que /analyze : c'est le même modèle de vision, donc le même
+  // poste de coût, donc le même compteur.
+  const garde = await garderIA(req, "vision");
+  if (!garde.ok) return garde.reponse;
 
+  try {
     const { image, mimeType, objective, goalKnown } = await req.json();
     if (!image || !mimeType) {
       return NextResponse.json({ error: "image et mimeType requis" }, { status: 400 });
+    }
+    if (typeof image === "string" && image.length > PLAFONDS.imageOctets) {
+      return refusTaille("Cette photo");
     }
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ error: "GROQ_API_KEY non configurée" }, { status: 500 });

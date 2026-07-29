@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import {
   X, Plus, Trash2, Clock, Check, ChevronLeft, Sparkles,
@@ -194,7 +195,7 @@ export default function CreateSessionModal({
     setIaCharge(true);
     setIaErreur("");
     try {
-      const res = await fetch("/api/workout/generate", {
+      const res = await aiFetch("/api/workout/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: iaTexte, category, difficulty, muscles }),

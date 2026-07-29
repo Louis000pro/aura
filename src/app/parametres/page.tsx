@@ -1017,6 +1017,8 @@ export default function ParametresPage() {
         {/* Pied de page : le légal et l'irréversible, une seule fois. */}
         <div className="flex flex-col items-center gap-3 mt-10">
           <div className="flex items-center gap-2 text-[11px] font-light" style={{ color: "var(--text-3)" }}>
+            <Link href="/conditions" className="hover:underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
+            <span>·</span>
             <Link href="/mentions-legales" className="hover:underline" style={{ color: "var(--text-2)" }}>Mentions légales</Link>
             <span>·</span>
             <Link href="/confidentialite" className="hover:underline" style={{ color: "var(--text-2)" }}>Confidentialité</Link>

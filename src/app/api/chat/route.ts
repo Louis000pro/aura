@@ -4,6 +4,7 @@ import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
 import { ASSISTANT_TOOLS, type AssistantAction, type ChatEvent } from "@/lib/assistantTools";
+import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -306,6 +307,12 @@ function fluxTexte(texte: string, ndjson: boolean) {
 }
 
 export async function POST(req: NextRequest) {
+  // Garde-fou : connexion obligatoire + plafond d'usage. Cette route était
+  // ouverte à tout internet, donc n'importe qui pouvait faire tourner la
+  // facture Mistral sans même avoir de compte Vaiiya.
+  const garde = await garderIA(req, "chat");
+  if (!garde.ok) return garde.reponse;
+
   let messages: ChatMessage[] = [];
   let userContext: UserContext | null = null;
   let pseudo = "";
@@ -338,6 +345,29 @@ export async function POST(req: NextRequest) {
   } catch {
     return new Response("Invalid request body", { status: 400 });
   }
+
+  // ── Plafonds de taille ──
+  // Le compteur d'appels ne suffit pas : un seul message de 200 000 caractères
+  // coûte autant que cent messages normaux. On coupe le texte (l'utilisateur
+  // garde sa réponse) et on refuse une image trop lourde (on ne peut pas la
+  // couper). Le client compresse déjà ses images à 1024 px.
+  for (const m of messages) {
+    if (typeof m.content === "string") {
+      if (m.content.length > PLAFONDS.messageChars) m.content = m.content.slice(0, PLAFONDS.messageChars);
+    } else if (Array.isArray(m.content)) {
+      for (const part of m.content) {
+        if (part.type === "text" && part.text.length > PLAFONDS.messageChars) {
+          part.text = part.text.slice(0, PLAFONDS.messageChars);
+        }
+        if (part.type === "image_url" && part.image_url.url.length > PLAFONDS.imageOctets) {
+          return refusTaille("Cette image");
+        }
+      }
+    }
+  }
+  // On ne renvoie au modèle que la fin de la conversation : au-delà, le
+  // contexte coûte cher sans rien apporter à la réponse.
+  if (messages.length > PLAFONDS.historique) messages = messages.slice(-PLAFONDS.historique);
 
   // Seul l'assistant global sait exécuter une action et lire le NDJSON.
   const outils = memoryEnabled;

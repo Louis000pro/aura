@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
 import { Sparkles, X, Check, ArrowRight, Play, ChevronRight } from "lucide-react";
@@ -960,7 +961,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await aiFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -980,6 +981,16 @@ function Dashboard() {
           lieu_equip: user ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,
         }),
       });
+
+      // Quota atteint ou session expirée : message clair plutôt qu'une erreur
+      // générique (le serveur sait si c'est la limite du gratuit ou le plafond
+      // d'usage raisonnable).
+      const refus = await messageDeRefus(response);
+      if (refus) {
+        setAiTyping(false);
+        setChatMessages((prev) => [...prev, { id: Date.now() + 1, from: "ai" as const, text: refus, time }]);
+        return;
+      }
 
       if (!response.ok || !response.body) throw new Error("API error");
 

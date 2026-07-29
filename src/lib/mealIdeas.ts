@@ -8,6 +8,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { macrosForDish } from "@/lib/macros";
+import { aiFetch } from "@/lib/aiFetch";
 
 export type Idea = {
   nom: string;
@@ -90,7 +91,7 @@ export async function fetchIdeas(params: {
 }): Promise<Idea[]> {
   const { mealType, calorieTarget, taste, diet = [], favorites = [] } = params;
   try {
-    const res = await fetch("/api/nutrition/menu", {
+    const res = await aiFetch("/api/nutrition/menu", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mealTypes: [mealType], perType: 10, calorieTarget, taste, diet, favorites }),
@@ -119,7 +120,7 @@ export async function fetchIdeasFromIngredients(params: {
 }): Promise<Idea[]> {
   const { ingredients, calorieTarget, mealType, taste, diet = [] } = params;
   try {
-    const res = await fetch("/api/nutrition/from-ingredients", {
+    const res = await aiFetch("/api/nutrition/from-ingredients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ingredients, calorieTarget, mealType, taste, diet }),

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { garderIA } from "@/lib/aiLimits";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -51,6 +52,11 @@ function hasRealNutrition(n: OFFNutriments): boolean {
 }
 
 export async function GET(req: Request) {
+  // OpenFoodFacts est gratuit, mais taper dessus en boucle depuis notre serveur
+  // nous ferait bloquer, et ça reste de la bande passante qu'on paye.
+  const garde = await garderIA(req, "lookup");
+  if (!garde.ok) return garde.reponse;
+
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code")?.trim();
 

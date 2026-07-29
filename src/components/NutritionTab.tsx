@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, Sparkles, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -191,25 +192,19 @@ function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
 
       const base64 = dataUrl.split(",")[1];
       try {
-        // Jeton d'auth (l'endpoint vision est protégé + limité par jour pour les gratuits)
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch("/api/nutrition/analyze", {
+        // aiFetch pose le jeton de session : l'endpoint vision est protégé et
+        // plafonné (voir lib/aiLimits.ts).
+        const res = await aiFetch("/api/nutrition/analyze", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: base64, mimeType: file.type }),
         });
-        if (res.status === 429) {
-          const err = await res.json().catch(() => ({}));
-          setError(`Tu as atteint ta limite gratuite de ${err.dailyLimit ?? 2} analyses photo/jour 📸 Passe en Premium pour des analyses illimitées.`);
-          setPhase("select");
-          return;
-        }
-        if (res.status === 401) {
-          setError("Connecte-toi pour analyser tes repas.");
+        // Le serveur sait si la limite touchée est celle du gratuit ou le
+        // plafond d'usage raisonnable : on affiche SON message, on ne réécrit
+        // pas ici une phrase qui pourrait mentir à un abonné.
+        const refus = await messageDeRefus(res);
+        if (refus) {
+          setError(refus);
           setPhase("select");
           return;
         }
@@ -676,7 +671,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     setPhase("loading");
     setError(null);
     try {
-      const res = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(code)}`);
+      const res = await aiFetch(`/api/nutrition/barcode?code=${encodeURIComponent(code)}`);
       const data = await res.json();
       if (res.status === 404) {
         // Produit totalement inconnu
@@ -709,7 +704,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     setEstimating(true);
     setError(null);
     try {
-      const res = await fetch("/api/nutrition/estimate", {
+      const res = await aiFetch("/api/nutrition/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: fallbackName.trim() }),
@@ -1243,7 +1238,7 @@ function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult,
       try {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch("/api/nutrition/carte", {
+        const res = await aiFetch("/api/nutrition/carte", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1590,7 +1585,7 @@ function ManualModal({ onClose, onAdd }: {
     setEstimateError(null);
     setEstimated(false);
     try {
-      const res = await fetch("/api/nutrition/estimate", {
+      const res = await aiFetch("/api/nutrition/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: name.trim() }),

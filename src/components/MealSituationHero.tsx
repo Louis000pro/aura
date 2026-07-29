@@ -11,6 +11,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useState, useRef, useEffect } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
@@ -301,7 +302,7 @@ export default function MealSituationHero({
       const calorieTarget = goals?.calories
         ? Math.round(goals.calories * MEAL_SHARE_ADVISOR[mealTypeNow()])
         : null;
-      const res = await fetch("/api/nutrition/recipe", {
+      const res = await aiFetch("/api/nutrition/recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -380,7 +381,7 @@ export default function MealSituationHero({
     setRestBusy(true); setRestErr(null);
     try {
       const p = PORTIONS.find((x) => x.key === portion)!;
-      const res = await fetch("/api/nutrition/estimate", {
+      const res = await aiFetch("/api/nutrition/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: `${dish} — ${p.phrase}` }),

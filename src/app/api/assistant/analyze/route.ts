@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { ANALYZE_SYSTEM as SYSTEM } from "@/lib/analyzePrompt";
+import { garderIA } from "@/lib/aiLimits";
 
 /* ════════════════════════════════════════════════════════════════════
    /api/assistant/analyze — extraction de la MÉMOIRE long terme.
@@ -15,6 +16,16 @@ import { ANALYZE_SYSTEM as SYSTEM } from "@/lib/analyzePrompt";
    ════════════════════════════════════════════════════════════════════ */
 
 export async function POST(req: NextRequest) {
+  // Cet appel part en parallèle de chaque message au coach : il a son propre
+  // compteur (mêmes plafonds que `chat`) pour ne pas consommer deux fois le
+  // quota de l'utilisateur sur un seul message.
+  const garde = await garderIA(req, "memoire");
+  if (!garde.ok) {
+    // La mémoire est silencieuse : si elle est bloquée, on ne dérange pas
+    // l'utilisateur avec une erreur, on n'apprend simplement rien ce tour-ci.
+    return Response.json({ memory: null });
+  }
+
   if (!hasLLMKey()) return Response.json({ memory: null });
 
   let message = "";

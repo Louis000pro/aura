@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Lock, Plus, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -432,7 +433,7 @@ export default function RecommendedMeals() {
       } catch { /* ignore */ }
 
       try {
-        const res = await fetch("/api/nutrition/menu", {
+        const res = await aiFetch("/api/nutrition/menu", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mealTypes: mealTypesForCount(mealsCount), perType: 8,

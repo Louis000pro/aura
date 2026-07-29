@@ -5,6 +5,8 @@
    pilote le bandeau visuel de la carte récap. Voir [[nutrition-onmangeou-redesign]].
    ════════════════════════════════════════════════════════════════════ */
 
+import { aiFetch } from "@/lib/aiFetch";
+
 export type Niveau = "fast-food" | "resto" | "healthy";
 export type OrderCategory =
   | "burger" | "pizza" | "asiatique"
@@ -127,7 +129,7 @@ export async function estimateOrder(params: {
   const { enseigne, category, lockCategory, articles, origin } = params;
   const description = articles.map((a) => a.trim()).filter(Boolean).join(", ");
 
-  const res = await fetch("/api/nutrition/estimate", {
+  const res = await aiFetch("/api/nutrition/estimate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ description, enseigne, origin, niveau: CATEGORY_NIVEAU[category] }),

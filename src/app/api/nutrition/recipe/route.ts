@@ -1,6 +1,7 @@
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { reconcileMacros } from "@/lib/macros";
 import { NextResponse } from "next/server";
+import { garderIA } from "@/lib/aiLimits";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -32,6 +33,9 @@ const strArr = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((s) => s.trim()) : [];
 
 export async function POST(req: Request) {
+  const garde = await garderIA(req, "recette");
+  if (!garde.ok) return garde.reponse;
+
   try {
     if (!hasLLMKey())
       return NextResponse.json({ error: "Clé API manquante" }, { status: 500 });
