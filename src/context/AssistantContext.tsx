@@ -24,6 +24,7 @@ import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
+import { phraseDeRepli, type AssistantAction, type ChatEvent } from "@/lib/assistantTools";
 import {
   resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
   ctxFromLieu, readLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
@@ -456,10 +457,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
      Aucune écriture en base ici — tout passe par confirmPlan() (clic). ── */
-  const preparePlanAction = useCallback(async (action: {
-    intent?: string; when?: string; to?: string; location?: string;
-    muscles?: unknown; category?: string; description?: string; title?: string; adjust?: string;
-  }) => {
+  const preparePlanAction = useCallback(async (action: AssistantAction) => {
     if (!user?.id) return;
     // Réponse courte du coach dans le fil (chaque impasse est explicite, jamais muette).
     const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
@@ -526,11 +524,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
       const saved = readLieu(user.id);
       if (!saved.location || (saved.location === "maison" && !saved.equip)) {
-        // Lieu incomplet → on reste MUET et on laisse le chat poser la question
-        // (salle/maison, puis matériel si maison), comme create_seance. Poster un
-        // message ici en plus de celui du chat = les deux couches se contredisent
-        // (c'était le bug). Dès que l'utilisateur répond, sendMessage enregistre
-        // le lieu et ce plan_regen (ré-émis) génère enfin la carte.
+        // Lieu incomplet. Le coach est censé poser la question AVANT d'appeler
+        // l'outil ; s'il ne l'a pas fait, on la pose ici plutôt que de rester
+        // muet sur une promesse (« je te prépare ça » suivi de rien).
+        say(!saved.location
+          ? "Tu t'entraînes en salle ou à la maison cette semaine ? 💪"
+          : "Tu as des haltères à la maison, ou je te fais tout au poids du corps ? 💪");
         return;
       }
       const adjust = action.adjust ?? "none";
@@ -696,15 +695,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, buildNutritionNote]);
 
-  /* ── Analyse unifiée : UN seul appel 8b décide s'il y a un fait à retenir
-     ET/OU une action (créer une séance) → moitié moins d'appels Groq ── */
-  const analyzeMessage = useCallback(async (text: string, context: string) => {
+  /* ── Mémoire long terme (silencieuse, best-effort) ──
+     Volontairement restée sur son propre petit appel : elle n'a rien à voir
+     avec ce que le coach répond à l'écran, personne ne la voit arriver, et
+     son prompt est affûté depuis des mois. Les ACTIONS, elles, ont quitté
+     cet appel : elles viennent maintenant du même tour que le texte. ── */
+  const extractMemory = useCallback(async (text: string, context: string) => {
     if (!user?.id || !text.trim()) return;
-
-    let parsed: {
-      memory?: MemoryAction;
-      action?: { intent?: string; description?: string; muscles?: unknown; category?: string; difficulty?: string; when?: string; to?: string; location?: string; title?: string; adjust?: string; theme?: string; dish?: string; theme_recette?: string; ingredients?: unknown; mealType?: string; food?: string };
-    } | null = null;
     try {
       const res = await fetch("/api/assistant/analyze", {
         method: "POST",
@@ -712,19 +709,38 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ message: text, context }),
       });
       if (!res.ok) return;
-      parsed = await res.json();
-    } catch { return; }
-    if (!parsed) return;
+      const parsed = (await res.json()) as { memory?: MemoryAction } | null;
+      const mem = parsed?.memory;
+      if (mem && (mem.type === "save" || mem.type === "forget")) void persistMemoryAction(mem);
+    } catch { /* silencieux par nature */ }
+  }, [user?.id, persistMemoryAction]);
 
-    // 1) Mémoire (best-effort, silencieux)
-    const mem = parsed.memory;
-    if (mem && (mem.type === "save" || mem.type === "forget")) {
-      void persistMemoryAction(mem);
+  /* ── Exécution d'une action décidée par le coach ──
+     L'action arrive du MÊME appel que sa phrase (outils de /api/chat), donc
+     le texte et la carte ne peuvent plus se contredire. Ajouter une capacité :
+     une entrée dans `assistantTools.ts`, une branche ici, une carte si ça écrit. ── */
+  const runAction = useCallback(async (action: AssistantAction, text: string, coachAParle: boolean) => {
+    if (!user?.id || !action?.intent) return;
+
+    // Réponse courte du coach dans le fil (aucune impasse muette).
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
+
+    // NAVIGATION : le coach emmène l'utilisateur sur une page de l'app.
+    if (action.intent === "open_page") {
+      const route = resolveNavTarget(action.cible ?? "");
+      if (route && route !== pathname) setTimeout(() => router.push(route), 700);
+      return;
     }
 
-    // 2) Action
-    const action = parsed.action;
-    if (!action || !action.intent) return;
+    // LIEU D'ENTRAÎNEMENT : mémorisé dès que l'utilisateur l'indique, pour que
+    // le tour suivant ne repose pas la question (localStorage + base).
+    if (action.intent === "save_lieu") {
+      const loc = action.lieu === "salle" ? "salle" : action.lieu === "maison" ? "maison" : null;
+      const eq = action.materiel === "halteres" ? "halteres" : action.materiel === "poids" ? "poids" : null;
+      if (!loc && !eq) return;
+      void persistLieu(user.id, { ...(loc ? { location: loc } : {}), ...(eq ? { equip: eq } : {}) });
+      return;
+    }
 
     // 2a-bis) THÈME du site (sombre / clair / auto). Appliqué TOUT DE SUITE,
     // sans carte de confirmation : c'est instantané, visible et réversible d'un
@@ -743,10 +759,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // On n'applique QUE si l'utilisateur a vraiment parlé d'apparence.
       if (!textMentionsTheme(text)) return;
       setThemePreference(pref);
+      // Le coach parle et agit dans le même tour : s'il a déjà annoncé le
+      // changement, on n'ajoute pas une deuxième bulle qui dit la même chose.
+      if (coachAParle) return;
       const motTheme =
         pref === "dark" ? "C'est passé en sombre ✦"
         : pref === "light" ? "Retour en clair ✦"
-        : "Thème réglé sur automatique — il suivra ton téléphone ✦";
+        : "Thème réglé sur automatique, il suivra ton téléphone ✦";
       setMessages((prev) => [...prev, { role: "assistant" as const, content: motTheme, id: uid() }]);
       return;
     }
@@ -840,12 +859,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // 2b) Création d'une séance réutilisable (bibliothèque) → génération + carte
     if (action.intent !== "create_seance") return;
 
-    // Coordination avec le chat : si le lieu d'entraînement est inconnu, le chat
-    // pose d'abord la question (« salle ou maison ? »). On NE génère donc PAS la
-    // carte tant qu'on ne connaît pas le lieu — sinon la séance se créerait avant
-    // que l'utilisateur ait répondu. Source = localStorage (la même que le chat,
-    // tenu à jour par [LIEU_UPDATE]) OU, en secours, le MESSAGE COURANT (pas le
-    // contexte : un « maison » d'un échange précédent ne doit pas court-circuiter).
+    // Le lieu conditionne le contenu de la séance (machines vs poids du corps).
+    // Le prompt demande au coach de poser la question AVANT d'appeler l'outil ;
+    // s'il l'appelle quand même, on ne reste plus MUET (c'était le bug : la
+    // phrase promettait une carte qui n'arrivait jamais), on pose la question.
     let lieu: string | null = null;
     try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
     if (!lieu) {
@@ -853,7 +870,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (/maison|chez\s*moi|domicile|sans\s*mat|halt[èe]re|poids\s*du\s*corps/.test(blob)) lieu = "maison";
       else if (/salle|gym|basic\s*fit/.test(blob)) lieu = "salle";
     }
-    if (!lieu) return; // lieu inconnu → on laisse le chat demander, on attend la réponse
+    if (!lieu) {
+      say("Avant de te la préparer : tu t'entraînes en salle ou à la maison ? 💪");
+      return;
+    }
 
     setActionLoading(true);
     setPendingSeance(null);
@@ -896,13 +916,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const detail = (e as { message?: string })?.message ?? String(e);
       setMessages((prev) => [...prev, {
         role: "assistant" as const,
-        content: `⚠️ Génération séance échouée — ${detail}\n(copie-moi ce message stp)`,
+        content: `⚠️ Génération séance échouée (${detail})\n(copie-moi ce message stp)`,
         id: uid(),
       }]);
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, persistMemoryAction, preparePlanAction, buildNutritionNote]);
+  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote]);
 
   /* ── Envoi d'un message (avec image optionnelle → vision) ── */
   const sendMessage = useCallback(async (text: string, image?: string) => {
@@ -950,17 +970,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Analyse (mémoire + action) en UN appel. On passe les derniers échanges
-    // (pas juste le dernier message) pour que le détecteur suive une demande
-    // étalée (ex: "séance pecs" puis "à la maison").
-    // ⚠️ Mistral free tier = 1 req/s : on DÉCALE l'analyse pour qu'elle n'entre
-    // pas en collision avec la requête de chat (sinon 429 → carte + mémoire
-    // perdues silencieusement). Le chat reste prioritaire et instantané.
+    // Mémoire long terme uniquement (l'action, elle, vient du même appel que
+    // le texte). ⚠️ Mistral palier gratuit = 1 req/s : on décale cet appel
+    // secondaire pour qu'il n'entre pas en collision avec le chat, qui reste
+    // prioritaire. Rien de visible n'en dépend.
     const recentContext = messages
       .slice(-4)
       .map((m) => `${m.role === "user" ? "Utilisateur" : "Coach"}: ${m.content}`)
       .join("\n");
-    setTimeout(() => { void analyzeMessage(trimmed, recentContext); }, 1200);
+    setTimeout(() => { void extractMemory(trimmed, recentContext); }, 1200);
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
     // → évite le 413 « request too large » de Groq sur les longues conversations).
@@ -1002,35 +1020,67 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
       if (!res.body) throw new Error("No response body");
 
+      /* ── Lecture du flux NDJSON ──
+         Une ligne = un événement : `t` un morceau de texte, `a` l'action
+         décidée dans le MÊME tour, `e` une erreur. Une ligne illisible est
+         traitée comme du texte brut (filet pour les réponses en clair). */
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = "";
       let accumulated = "";
+      let action: AssistantAction | null = null;
+
+      const lire = (raw: string) => {
+        const l = raw.trim();
+        if (!l) return;
+        if (l[0] !== "{") { accumulated += l; return; }
+        try {
+          const ev = JSON.parse(l) as ChatEvent;
+          if ("t" in ev) accumulated += ev.t;
+          else if ("a" in ev && ev.a?.intent) action = ev.a;
+          else if ("e" in ev) accumulated += `\n⚠️ ${ev.e}`;
+        } catch { accumulated += l; }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        accumulated += decoder.decode(value, { stream: true });
+        buffer += decoder.decode(value, { stream: true });
+        const lignes = buffer.split("\n");
+        buffer = lignes.pop() ?? "";
+        for (const l of lignes) lire(l);
         setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: accumulated, streaming: true } : m));
       }
+      if (buffer) lire(buffer);
 
-      // Mémorise le lieu d'entraînement annoncé par le chat → il ne le
-      // redemandera plus, et la création de séance peut s'y fier (même source).
+      // Filets pour les anciens tags : ils ne devraient plus arriver (le coach
+      // appelle open_page / save_lieu), mais un modèle peut encore en écrire un.
       const lieuMatch = accumulated.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
       if (lieuMatch && user?.id) {
-        void persistLieu(user.id, { location: lieuMatch[1].toLowerCase() as "salle" | "maison" }); // localStorage + base (cross-device)
+        void persistLieu(user.id, { location: lieuMatch[1].toLowerCase() as "salle" | "maison" });
       }
 
-      const cleaned = stripMemoryTags(accumulated)
+      let cleaned = stripMemoryTags(accumulated)
         .replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "")
         .replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "")
         .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")
         .trim();
+
+      // Le coach a agi sans écrire un mot : plutôt qu'une bulle vide suivie
+      // d'une carte, on met la phrase qui correspond à l'action. Elle en est
+      // déduite, donc elle ne peut pas la contredire.
+      if (!cleaned && action) cleaned = phraseDeRepli((action as AssistantAction).intent);
+
       setMessages((prev) => {
-        const next = prev.map((m) => m.id === assistantId ? { ...m, content: cleaned, streaming: false } : m);
+        const next = prev
+          .map((m) => m.id === assistantId ? { ...m, content: cleaned, streaming: false } : m)
+          .filter((m) => m.content !== "" || m.role === "user");
         persist(next);
         return next;
       });
 
-      // Orientation : exécute le tag [NAV] s'il est présent et connu
+      if (action) void runAction(action, trimmed, !!cleaned);
+
       const navMatch = accumulated.match(/\[NAV\]\s*([^[\]]+?)\s*\[\/NAV\]/i);
       if (navMatch) {
         const route = resolveNavTarget(navMatch[1]);
@@ -1044,7 +1094,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, analyzeMessage]);
+  }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, runAction]);
 
   /* ── Contrôles ── */
   const open = useCallback((prefill?: string) => {

@@ -3,19 +3,19 @@ import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { ANALYZE_SYSTEM as SYSTEM } from "@/lib/analyzePrompt";
 
 /* ════════════════════════════════════════════════════════════════════
-   /api/assistant/analyze — analyse unifiée (mémoire + action).
+   /api/assistant/analyze — extraction de la MÉMOIRE long terme.
 
-   UN seul appel 8b qui décide, pour le dernier message de l'utilisateur :
-   - s'il y a un FAIT DURABLE à retenir / oublier (mémoire long terme)
-   - s'il demande une ACTION (créer une séance) + ses paramètres
+   Décide, pour le dernier message de l'utilisateur, s'il y a un fait
+   DURABLE à retenir ou à oublier (blessure, régime, objectif de fond…).
 
-   Remplace les deux appels séparés (/memory-extract + /assistant/action)
-   → moitié moins d'appels LLM par message (limite de débit du palier
-   gratuit moins vite atteinte).
+   ⚠️ Cet endpoint ne décide PLUS d'actions : elles sont devenues des outils
+   appelés par le coach dans /api/chat, donc dans le même tour que sa
+   réponse (`lib/assistantTools.ts`). C'est ce qui a supprimé les
+   désynchronisations entre ce que le coach dit et ce que l'app fait.
    ════════════════════════════════════════════════════════════════════ */
 
 export async function POST(req: NextRequest) {
-  if (!hasLLMKey()) return Response.json({ memory: null, action: null });
+  if (!hasLLMKey()) return Response.json({ memory: null });
 
   let message = "";
   let context = "";
@@ -24,9 +24,9 @@ export async function POST(req: NextRequest) {
     message = String(body.message ?? "").slice(0, 1000);
     context = String(body.context ?? "").slice(0, 800);
   } catch {
-    return Response.json({ memory: null, action: null });
+    return Response.json({ memory: null });
   }
-  if (!message.trim()) return Response.json({ memory: null, action: null });
+  if (!message.trim()) return Response.json({ memory: null });
 
   const messages = [
     { role: "system" as const, content: SYSTEM },
@@ -45,10 +45,9 @@ export async function POST(req: NextRequest) {
     response_format: { type: "json_object" },
   });
 
-  // Mistral palier gratuit = 1 req/s : une correction rapide (« non, dans 2
-  // jours ») télescope la requête de chat et se prend un 429. On retente UNE
-  // fois après la fenêtre de débit — sinon l'action est perdue et « la carte
-  // ne s'ouvre pas » alors que l'utilisateur l'a explicitement demandée.
+  // Mistral palier gratuit = 1 req/s : cet appel suit de près celui du chat
+  // et peut se prendre un 429. On retente UNE fois après la fenêtre de débit
+  // plutôt que de perdre le fait à retenir.
   try {
     let completion;
     try {
@@ -57,10 +56,10 @@ export async function POST(req: NextRequest) {
       await new Promise((r) => setTimeout(r, 1300));
       completion = await ask();
     }
-    const raw = completion.choices[0]?.message?.content ?? '{"memory":null,"action":null}';
+    const raw = completion.choices[0]?.message?.content ?? '{"memory":null}';
     return new Response(raw, { headers: { "Content-Type": "application/json; charset=utf-8" } });
   } catch (err) {
     console.warn("[assistant/analyze] échec après retry:", (err as { message?: string })?.message);
-    return Response.json({ memory: null, action: null });
+    return Response.json({ memory: null });
   }
 }

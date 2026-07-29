@@ -3,6 +3,7 @@ import type OpenAI from "openai";
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
+import { ASSISTANT_TOOLS, type AssistantAction, type ChatEvent } from "@/lib/assistantTools";
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -175,28 +176,19 @@ IMAGES : l'utilisateur peut t'envoyer une photo (un plat, une étiquette nutriti
 
 DONNÉES : tiens compte de la conversation ET du profil/stats/repas/séances ci-dessous ; ne redemande jamais une info déjà donnée. Pour "qu'est-ce que j'ai mangé / ma dernière séance", réponds à partir des données réelles (matin = petit-déj, midi = déjeuner, soir = dîner). N'INVENTE JAMAIS un repas ou une séance absent des données ; si rien n'est enregistré, dis-le et propose d'ajouter.
 
-REDIRECTION VERS LES PAGES (navigation) :
-Quand l'utilisateur veut OUVRIR une rubrique ou ALLER quelque part dans l'app (ex: "fais-moi mes repas", "montre mes plats", "ouvre mon programme", "je veux passer au plan supérieur / m'abonner / premium", "montre ma progression", "ouvre le suivi nutrition"), tu réponds en 1 phrase enthousiaste PUIS tu termines EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
-[NAV]cible[/NAV]
-Où "cible" est EXACTEMENT l'une de ces valeurs :
-- repas        → ouvrir les repas/plats recommandés
-- seances      → ouvrir les séances recommandées / le programme
-- premium      → page d'abonnement (plan supérieur, premium, s'abonner)
-- progression  → page de progression / statistiques
-- nutrition    → suivi nutritionnel (journal, calendrier)
-- parametres   → réglages / profil
-Exemple : "montre ma progression" → "Allons voir tes progrès 💪\n[NAV]progression[/NAV]". N'utilise [NAV] QUE si l'utilisateur veut clairement aller quelque part.
-
-MODIFICATION DU PLANNING D'ENTRAÎNEMENT :
-Quand l'utilisateur veut changer son planning (ex: "remplace aujourd'hui par du dos", "mets du pecs jeudi", "repousse ma séance à demain", "vendredi je m'entraîne à la maison", "dans 2 jours = jambes", un empêchement : "je ne peux pas jeudi", refaire toute la semaine : "refais ma semaine", "semaine plus légère", "mets plus de cardio cette semaine", ou poser une séance qu'il a DÉJÀ créée : "mets ma séance Pompes perso mardi"), réponds en 1 phrase courte et enthousiaste disant que tu PRÉPARES la proposition à valider juste en dessous.
-⚠️ LIEU D'ABORD (surtout pour refaire une semaine ou générer une séance) : si tu ne connais PAS encore le lieu d'entraînement (voir la section LIEU ci-dessous — salle/maison, et pour la maison le matériel), tu ne promets RIEN et tu n'écris PAS « je te prépare / valide en dessous ». Tu poses d'abord la question du lieu (puis du matériel si maison) en UNE phrase, et tu attends la réponse. Tu ne promets la préparation QUE lorsque le lieu (et le matériel si maison) est connu. Ne pose la question qu'UNE fois : si l'utilisateur vient de répondre son lieu, enchaîne, ne le redemande pas. N'annonce JAMAIS que c'est déjà fait, et n'écris AUCUN tag ni JSON : le changement est appliqué séparément via une petite carte de confirmation que l'utilisateur valide d'un clic. Tu PEUX placer une séance existante de sa bibliothèque sur un jour — ne dis jamais que tu n'y as pas accès ; la carte s'en charge (si la séance est introuvable, il sera prévenu).
-Exemple : "remplace aujourd'hui par du dos" → "Carrément, je te prépare une séance dos pour aujourd'hui — valide-la juste en dessous 💪".
-Exemple : "je ne peux pas jeudi" → "Pas de souci, je te propose un jour de repli pour la séance de jeudi — valide juste en dessous 👇".
-Exemple : "refais ma semaine plus légère" → "Ça marche, je te prépare une semaine plus douce — valide-la juste en dessous ✦".
-
-ENREGISTREMENT D'UN REPAS (l'utilisateur raconte ce qu'il a mangé ou bu) :
-Quand l'utilisateur dit avoir DÉJÀ mangé/bu quelque chose (ex: "j'ai mangé un burger ce midi", "au petit-déj deux œufs", "je viens de boire un smoothie"), réponds en 1 phrase courte, chaleureuse et SANS jugement, et dis que tu prépares l'ajout à valider juste en dessous. N'écris JAMAIS toi-même les calories ou les macros et n'affirme PAS que c'est déjà enregistré : une carte de confirmation s'affiche sous ton message, l'utilisateur valide d'un clic. Zéro culpabilisation, quoi qu'il ait mangé.
-Exemple : "j'ai mangé un burger ce midi" → "C'est noté, je te prépare l'ajout à ton déjeuner — valide juste en dessous 👇".
+TES OUTILS (tu AGIS, tu ne fais pas que parler) :
+Tu disposes d'outils pour agir dans l'app : créer une séance, modifier le planning, noter un repas, écrire une recette, changer le thème, ouvrir une page, mémoriser le lieu d'entraînement. Règles ABSOLUES :
+1. Un outil ne fait rien tout seul : il prépare une petite CARTE que l'utilisateur valide d'un clic. Ne dis donc JAMAIS que c'est "déjà fait" ou "enregistré" ; dis que tu le prépares et qu'il valide juste en dessous.
+2. Quand tu appelles un outil, écris AUSSI une phrase courte et enthousiaste. Jamais d'appel muet.
+3. N'écris JAMAIS toi-même le contenu que la carte va afficher : ni la liste des exercices, ni les séries/répétitions, ni les calories ou les macros. La carte s'en charge.
+4. Un seul outil à la fois.
+5. Une simple QUESTION ("c'est quoi une bonne séance pecs ?", "combien de calories dans une banane ?", "je m'entraîne quel jour ?") n'appelle AUCUN outil : tu réponds, c'est tout.
+6. Si l'utilisateur corrige une action que tu viens de proposer ("non, plutôt vendredi", "pas demain", "tu t'es trompé"), RAPPELLE le même outil avec la valeur corrigée.
+⚠️ LIEU D'ABORD (pour créer une séance ou refaire une semaine) : si tu ne connais PAS encore le lieu d'entraînement (voir la section LIEU ci-dessous, salle/maison, et pour la maison le matériel), tu n'appelles AUCUN outil de séance et tu ne promets RIEN. Tu poses la question du lieu en UNE phrase et tu attends la réponse. Ne la pose qu'UNE fois : s'il vient de répondre, enchaîne sans redemander.
+Tu PEUX placer une séance existante de sa bibliothèque sur un jour, ne dis jamais que tu n'y as pas accès ; si elle est introuvable, il sera prévenu.
+Exemple : "remplace aujourd'hui par du dos" → tu appelles plan_set puis tu écris "Carrément, je te prépare une séance dos pour aujourd'hui, valide-la juste en dessous 💪".
+Exemple : "j'ai mangé un burger ce midi" → tu appelles log_meal puis tu écris "C'est noté, je te prépare l'ajout à ton déjeuner, valide juste en dessous 👇". Zéro culpabilisation, quoi qu'il ait mangé.
+Exemple : "montre ma progression" → tu appelles open_page puis tu écris "Allons voir tes progrès 💪".
 
 NUTRITION ↔ SÉANCES (la nutrition est un BONUS, JAMAIS une obligation) :
 - Tu proposes et adaptes les séances normalement, que l'utilisateur note ou non ses repas. Une séance ne dépend JAMAIS du fait d'avoir enregistré sa nutrition.
@@ -214,10 +206,9 @@ ${lieu === "salle"
       ? `Lieu : MAISON sans matériel → uniquement poids du corps (ni haltère, ni machine, ni élastique) ; joue sur variations/tempo/reps.`
       : `Lieu : MAISON, matériel inconnu → avant de proposer des exercices, demande "Tu as des haltères, ou je te fais tout au poids du corps ? 💪" et attends la réponse.`)
   : `Lieu d'entraînement inconnu → avant tout programme/séance/exercice, demande "Tu t'entraînes en salle (type Basic Fit) ou à la maison ? 💪" et attends la réponse (si maison, demande ensuite pour les haltères). Tu ne DÉDUIS JAMAIS le lieu (ni de ses anciennes séances, ni d'autre chose) et tu n'en SUPPOSES aucun : tu DOIS poser la question et attendre sa réponse avant de proposer une séance.`}
-Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
-[LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
+Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym", "j'ai des haltères"), appelle l'outil save_lieu en même temps que ta réponse : il évite de reposer la question au tour suivant.
 
-${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${memoryEnabled ? `\n\nACTIONS (création de séance) — RÈGLE ABSOLUE : Quand l'utilisateur demande de CRÉER / GÉNÉRER / ENREGISTRER / AJOUTER une séance, tu n'écris JAMAIS toi-même la liste des exercices, séries ou répétitions, et tu ne prétends PAS l'avoir créée. Réponds UNIQUEMENT par une phrase courte et enthousiaste (ex: « Voici une proposition de séance, regarde juste en dessous 👇 »). Une carte de confirmation contenant la séance s'affiche AUTOMATIQUEMENT sous ton message, et c'est l'utilisateur qui valide la création en cliquant. Tu n'as rien d'autre à faire.` : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
@@ -293,14 +284,28 @@ Profil de ${ctx.pseudo || pseudo || "l'utilisateur"} :
 ${statsBlock}${richBlock}`;
 }
 
-export async function POST(req: NextRequest) {
-  if (!hasLLMKey()) {
-    return new Response(
-      "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
-      { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-    );
-  }
+/* ── Deux formats de réponse, selon l'appelant ──
+   L'assistant global (memoryEnabled) reçoit du NDJSON : une ligne = un
+   événement, `t` pour un morceau de texte, `a` pour l'action décidée. Le
+   texte et l'action sortent ainsi du MÊME tour de modèle et ne peuvent plus
+   se contredire (avant, l'action venait d'un second appel parallèle qui
+   ignorait ce que le chat venait d'écrire).
+   Les appelants historiques (page coach, chat de l'accueil) ne savent lire
+   que du texte brut : ils gardent exactement l'ancien format, et donc aucun
+   outil ne leur est proposé. */
+const ligne = (e: ChatEvent) => JSON.stringify(e) + "\n";
 
+function fluxTexte(texte: string, ndjson: boolean) {
+  return new Response(ndjson ? ligne({ t: texte }) : texte, {
+    status: 200,
+    headers: {
+      "Content-Type": ndjson ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+    },
+  });
+}
+
+export async function POST(req: NextRequest) {
   let messages: ChatMessage[] = [];
   let userContext: UserContext | null = null;
   let pseudo = "";
@@ -334,12 +339,19 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
+  // Seul l'assistant global sait exécuter une action et lire le NDJSON.
+  const outils = memoryEnabled;
+
+  if (!hasLLMKey()) {
+    return fluxTexte(
+      "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
+      outils
+    );
+  }
+
   const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled);
 
   try {
-    // Gemini 2.0 Flash gère aussi bien la conversation que les grosses
-    // générations (programme, repas) → un seul modèle, pas de limite TPM
-    // basse à contourner.
     const stream = await llm.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
@@ -349,16 +361,45 @@ export async function POST(req: NextRequest) {
       stream: true,
       max_tokens: maxTokens,
       temperature: 0.4,
+      ...(outils
+        ? { tools: ASSISTANT_TOOLS as OpenAI.Chat.Completions.ChatCompletionTool[], tool_choice: "auto" as const }
+        : {}),
     });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
+        // Les appels d'outil arrivent en morceaux (le nom d'abord, puis les
+        // arguments JSON par fragments) : on les recolle par index.
+        const appels: { name: string; args: string }[] = [];
         try {
           for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content ?? "";
-            if (text) controller.enqueue(encoder.encode(text));
+            const delta = chunk.choices[0]?.delta as
+              | { content?: string | null; tool_calls?: { index?: number; function?: { name?: string; arguments?: string } }[] }
+              | undefined;
+            if (delta?.content) {
+              controller.enqueue(encoder.encode(outils ? ligne({ t: delta.content }) : delta.content));
+            }
+            if (!outils) continue;
+            for (const tc of delta?.tool_calls ?? []) {
+              const i = tc.index ?? 0;
+              if (!appels[i]) appels[i] = { name: "", args: "" };
+              if (tc.function?.name) appels[i].name += tc.function.name;
+              if (tc.function?.arguments) appels[i].args += tc.function.arguments;
+            }
           }
+          // Un seul intent à la fois : on ne remonte que le premier appel
+          // exploitable, sinon deux cartes s'ouvriraient l'une sur l'autre.
+          for (const appel of appels) {
+            if (!appel?.name) continue;
+            let args: Record<string, unknown> = {};
+            try { args = appel.args ? JSON.parse(appel.args) : {}; } catch { /* arguments tronqués */ }
+            controller.enqueue(encoder.encode(ligne({ a: { ...args, intent: appel.name } as AssistantAction })));
+            break;
+          }
+        } catch (err) {
+          const m = (err as { message?: string })?.message ?? "flux interrompu";
+          if (outils) controller.enqueue(encoder.encode(ligne({ e: m.slice(0, 200) })));
         } finally {
           controller.close();
         }
@@ -367,7 +408,7 @@ export async function POST(req: NextRequest) {
 
     return new Response(readable, {
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type": outils ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "X-Content-Type-Options": "nosniff",
       },
@@ -381,7 +422,7 @@ export async function POST(req: NextRequest) {
         ? `⏳ Limite/quota de l'IA atteint. Détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à diagnostiquer ✨)`
         : e?.status === 401 || e?.status === 403
         ? `🔑 Souci de clé API côté serveur. Détail : ${detail}`
-        : `Désolé, une erreur est survenue 😕 — détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
-    return new Response(msg, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        : `Désolé, une erreur est survenue 😕 (détail technique : ${detail})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
+    return fluxTexte(msg, outils);
   }
 }
