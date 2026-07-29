@@ -86,8 +86,6 @@ export type AssistantMsg = {
   content: string;
   id: string;
   streaming?: boolean;
-  /** Data URL d'une image jointe (messages user). Non persistée (trop lourde). */
-  image?: string;
   /** Question à choix cliquables posée sous cette bulle. */
   question?: QuestionCliquable;
   /** Message envoyé au coach mais PAS affiché : la réponse à une question
@@ -114,7 +112,7 @@ type AssistantContextValue = {
   clear: () => void;
   messages: AssistantMsg[];
   isStreaming: boolean;
-  sendMessage: (text: string, image?: string) => void;
+  sendMessage: (text: string) => void;
   /** Réponse à une question cliquable (clic sur une puce). */
   repondreQuestion: (msgId: string, choix: string) => void;
   pseudo?: string;
@@ -232,10 +230,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const persist = useCallback((msgs: AssistantMsg[]) => {
     if (!historyKey || typeof window === "undefined") return;
     try {
-      // On ne persiste PAS les data URLs d'images (base64 lourd → quota
-      // sessionStorage explosé). Le fil garde le texte ; l'image ne vit que
-      // le temps de la session en mémoire.
-      const clean = msgs.slice(-60).map(({ image: _img, ...m }) => ({ ...m, streaming: false }));
+      const clean = msgs.slice(-60).map((m) => ({ ...m, streaming: false }));
       sessionStorage.setItem(historyKey, JSON.stringify({ ts: Date.now(), msgs: clean }));
     } catch { /* ignore */ }
   }, [historyKey]);
@@ -721,9 +716,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const runAction = useCallback(async (action: AssistantAction, text: string) => {
     if (!user?.id || !action?.intent) return;
 
-    // Réponse courte du coach dans le fil (aucune impasse muette).
-    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
-
     // La question du coach (ask_choice) est rattachée à sa bulle dans
     // sendMessage : ici il n'y a rien à exécuter.
     if (action.intent === "ask_choice") return;
@@ -858,22 +850,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (action.intent !== "create_seance") return;
 
     // Le lieu conditionne le contenu de la séance (machines vs poids du corps).
-    // Le prompt demande au coach de poser la question AVANT d'appeler l'outil ;
-    // s'il l'appelle quand même, on ne reste plus MUET (c'était le bug : la
-    // phrase promettait une carte qui n'arrivait jamais), on pose la question.
-    let lieu: string | null = null;
-    try { lieu = localStorage.getItem(`vaiiya_lieu_${user.id}`); } catch { /* ignore */ }
-    if (!lieu) {
-      const blob = text.toLowerCase();
-      if (/maison|chez\s*moi|domicile|sans\s*mat|halt[èe]re|poids\s*du\s*corps/.test(blob)) lieu = "maison";
-      else if (/salle|gym|basic\s*fit/.test(blob)) lieu = "salle";
-    }
-    if (!lieu) {
-      poserQuestion("Avant de te la préparer, tu t'entraînes où ?", {
-        choix: ["En salle", "À la maison"], genre: "lieu", relance: text,
-      });
-      return;
-    }
+    // Il est forcément connu ici : `questionManquante` le vérifie AVANT
+    // d'exécuter l'action, et pose la question en puces s'il manque. On ne
+    // devine donc plus rien à partir du texte (les regex qui le faisaient
+    // produisaient des faux positifs).
+    const { location: lieu, equip } = readLieu(user.id);
+    if (!lieu) return;
 
     setActionLoading(true);
     setPendingSeance(null);
@@ -886,8 +868,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
         : [];
 
-      let equip: string | null = null;
-      try { equip = localStorage.getItem(`vaiiya_lieu_equip_${user.id}`); } catch { /* ignore */ }
       const lieuTxt = lieu === "maison"
         ? (equip === "halteres" ? " à la maison avec haltères" : " à la maison au poids du corps")
         : " en salle de sport";
@@ -922,7 +902,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion]);
+  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote]);
 
   /* ── Ce qui manque AVANT d'agir ──
      C'est le CODE qui sait de quoi il a besoin, pas le modèle : lui demander
@@ -945,16 +925,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     return null;
   }, [user?.id]);
 
-  /* ── Envoi d'un message (avec image optionnelle → vision) ──
+  /* ── Envoi d'un message ──
      `masque` : le message part au coach mais ne s'affiche pas. Sert aux
      réponses cliquables, déjà visibles sous la forme de la puce cochée. ── */
-  const sendMessage = useCallback(async (text: string, image?: string, masque?: boolean) => {
+  const sendMessage = useCallback(async (text: string, masque?: boolean) => {
     const trimmed = text.trim();
-    if ((!trimmed && !image) || isStreaming) return;
+    if (!trimmed || isStreaming) return;
 
     void ensureContext();
 
-    const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(image ? { image } : {}), ...(masque ? { masque: true } : {}) };
+    const userMsg: AssistantMsg = { role: "user", content: trimmed, id: uid(), ...(masque ? { masque: true } : {}) };
     const assistantId = uid();
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
     setIsStreaming(true);
@@ -993,21 +973,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => { void extractMemory(trimmed, recentContext); }, 1200);
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
-    // → évite le 413 « request too large » de Groq sur les longues conversations).
-    // Un message user porteur d'une image devient un contenu multimodal
-    // (texte + image_url) que le modèle vision sait lire.
-    const history = [...messages, userMsg].slice(-10).map((m) => {
-      if (m.role === "user" && m.image) {
-        return {
-          role: m.role,
-          content: [
-            ...(m.content ? [{ type: "text" as const, text: m.content }] : [{ type: "text" as const, text: "Regarde cette image." }]),
-            { type: "image_url" as const, image_url: { url: m.image } },
-          ],
-        };
-      }
-      return { role: m.role, content: m.content };
-    });
+    // → évite le 413 « request too large » sur les longues conversations).
+    const history = [...messages, userMsg].slice(-10).map((m) => ({ role: m.role, content: m.content }));
 
     try {
       const abort = new AbortController();
@@ -1189,18 +1156,18 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         }]);
         return;
       }
-      if (relance) sendMessage(relance, undefined, true);
+      if (relance) sendMessage(relance, true);
       return;
     }
 
     if (q.genre === "equip" && user?.id) {
       void persistLieu(user.id, { equip: /halt/i.test(choix) ? "halteres" : "poids" });
-      if (relance) sendMessage(relance, undefined, true);
+      if (relance) sendMessage(relance, true);
       return;
     }
 
     // Question libre du coach : sa réponse repart telle quelle.
-    sendMessage(choix, undefined, true);
+    sendMessage(choix, true);
   }, [messages, isStreaming, user?.id, persist, sendMessage]);
 
   /* ── Contrôles ── */
