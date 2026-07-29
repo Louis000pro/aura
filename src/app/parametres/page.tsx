@@ -891,13 +891,11 @@ export default function ParametresPage() {
         <div className="flex flex-col gap-2">
           <Row
             icon={Sparkles}
-            label="Refaire la visite guidée"
-            sublabel="Redécouvre les fonctionnalités principales en 9 étapes"
-            onClick={() => {
-              router.push("/");
-              // Laisser le temps à la home de monter avant de lancer la visite
-              setTimeout(() => startTour(), 250);
-            }}
+            label="Refaire la visite"
+            sublabel="Tout ce que Vaiiya sait faire, en une minute"
+            // La visite se joue par-dessus l'écran courant : on ne quitte
+            // plus les paramètres pour la lancer.
+            onClick={() => startTour()}
             iconBg="linear-gradient(135deg, rgba(var(--accent-rgb),0.4), rgba(34,211,238,0.25))"
           />
         </div>

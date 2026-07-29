@@ -126,7 +126,8 @@ export default function OnboardingWrapper() {
               if (!wasAlreadyCompleted && user?.id) {
                 const alreadyDone = await hasTourBeenCompleted(user.id);
                 if (!alreadyDone) {
-                  // Petit délai pour laisser la home se monter (les data-tour-anchor doivent exister)
+                  // Court silence après la célébration, pour ne pas empiler
+                  // deux plein-écrans d'un coup.
                   setTimeout(() => startTour({ showPlansAfter: true }), 500);
                   return;
                 }

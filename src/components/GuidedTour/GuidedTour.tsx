@@ -1,269 +1,297 @@
 "use client";
 
-/**
- * GuidedTour — Orchestrateur de la visite guidée chapitrée.
- *
- * Scènes :
- *  · slide      → plein écran narratif (intro / outro)
- *  · ANNONCE    → quand une étape porte `chapter`, un écran d'annonce
- *                 (« ✦ Progression — Là où tout se mesure ») s'affiche ~2 s,
- *                 FUSIONNÉ à la transition de page : le temps de navigation
- *                 devient narration, zéro clic en plus. L'utilisateur sait
- *                 qu'il change d'univers.
- *  · spotlight  → couche persistante (key stable) : le trou de lumière
- *                 MORPHE d'un élément au suivant sur une même page.
- *  · navigation → transitions intra-chapitre (changement de sous-onglet) :
- *                 simple voile + ✦ pulsante, bref.
- *
- * Clavier : → suivant · ← précédent · Échap quitter.
- * Suspense : useSearchParams() impose un boundary en Next 14+.
- */
+/* ════════════════════════════════════════════════════════════════════
+   GuidedTour — la coque de la visite.
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+   Un seul écran plein, tenu du début à la fin : la visite ne navigue
+   plus dans l'application et ne pointe plus le vrai DOM. Elle REJOUE
+   Vaiiya en miniature (cf. scenes.tsx), pour deux raisons tranchées :
+    · le jour de l'inscription, les vraies pages sont vides — l'ancienne
+      visite braquait un projecteur sur des écrans sans rien dedans ;
+    · les ancres DOM mouraient à chaque refonte, sans bruit.
+
+   La coque ne connaît que le nombre de chapitres. Contenu = chapitres.tsx.
+
+   Avancer : bouton, glissement horizontal, flèches du clavier.
+   Reculer : chevron, glissement inverse, flèche gauche.
+   Quitter : « Passer » ou Échap — dans les deux cas la visite est
+   marquée comme vue (on ne repropose pas ce qu'on a refusé).
+   ════════════════════════════════════════════════════════════════════ */
+
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, ChevronLeft, X } from "lucide-react";
 import { useGuidedTour } from "@/context/GuidedTourContext";
-import { TOUR_STEPS, type TourChapter } from "@/components/GuidedTour/steps";
-import TourSlide from "@/components/GuidedTour/TourSlide";
-import TourSpotlight from "@/components/GuidedTour/TourSpotlight";
-import TourProgress from "@/components/GuidedTour/TourProgress";
+import { useAuth } from "@/context/AuthContext";
+import { CHAPITRES } from "@/components/GuidedTour/chapitres";
 
-/** Durée de l'annonce de chapitre (entrée + lecture + sortie gérée par exit) */
-const CHAPTER_ANNOUNCE_MS = 2600;
+const EASE = [0.22, 1, 0.36, 1] as const;
+const BLANC = (a: number) => `rgba(255,255,255,${a})`;
 
-/** URL courante (path + query) pour comparaison avec step.route */
-function buildCurrentUrl(pathname: string, search: URLSearchParams): string {
-  const s = search.toString();
-  return s ? `${pathname}?${s}` : pathname;
-}
+/* Étoiles fixes du fond : positions déterministes (aucun Math.random →
+   aucun écart entre le rendu serveur et le rendu navigateur). */
+const POUSSIERE = Array.from({ length: 14 }, (_, i) => ({
+  left: `${(i * 37 + 11) % 100}%`,
+  top: `${(i * 61 + 5) % 100}%`,
+  or: i % 4 === 0,
+  taille: i % 3 === 0 ? 2.5 : 1.8,
+  delai: (i % 7) * 0.45,
+  duree: 3 + (i % 4) * 0.8,
+}));
 
-/* ── Écran d'annonce de chapitre ── */
-function ChapterAnnounce({ chapter }: { chapter: TourChapter }) {
+export default function GuidedTour() {
+  const { isOpen, stepIndex, totalSteps, next, prev, close } = useGuidedTour();
+  const { user } = useAuth();
+  const reduce = useReducedMotion();
+  const [sens, setSens] = useState(1);
+  const precedent = useRef(stepIndex);
+
+  /* Le sens de l'animation suit le sens de lecture. */
+  useEffect(() => {
+    setSens(stepIndex >= precedent.current ? 1 : -1);
+    precedent.current = stepIndex;
+  }, [stepIndex]);
+
+  /* La page derrière ne défile pas pendant la visite (elle est masquée). */
+  useEffect(() => {
+    if (!isOpen) return;
+    const avant = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = avant; };
+  }, [isOpen]);
+
+  /* Clavier : → suivant · ← précédent · Échap quitter. */
+  useEffect(() => {
+    if (!isOpen) return;
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+      else if (e.key === "Escape") { e.preventDefault(); close(true); }
+    };
+    window.addEventListener("keydown", surTouche);
+    return () => window.removeEventListener("keydown", surTouche);
+  }, [isOpen, next, prev, close]);
+
+  if (!isOpen) return null;
+
+  const chapitre = CHAPITRES[Math.min(stepIndex, CHAPITRES.length - 1)];
+  const { Scene } = chapitre;
+  const pseudo = user?.pseudo || "toi";
+  const premier = stepIndex === 0;
+  const dernier = stepIndex === totalSteps - 1;
+
   return (
     <motion.div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Visite de Vaiiya"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-8"
+      className="fixed inset-0 z-[120] flex flex-col overflow-hidden"
       style={{
         background:
-          "radial-gradient(120% 85% at 50% 45%, rgba(38,25,75,0.95) 0%, rgba(12,7,28,0.99) 100%)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
+          "radial-gradient(135% 92% at 50% 8%, #241849 0%, #100A22 58%, #07050F 100%)",
       }}
     >
-      {/* ✦ d'ouverture */}
-      <motion.span
-        aria-hidden
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          fontSize: 26,
-          color: "#F5E6A3",
-          textShadow: "0 0 22px rgba(245,230,163,0.55), 0 0 44px rgba(167,139,250,0.35)",
-          marginBottom: 18,
-        }}
-      >
-        ✦
-      </motion.span>
-
-      {/* Nom du chapitre */}
-      <motion.h2
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12, duration: 0.55, ease: "easeOut" }}
-        className="text-center"
-        style={{
-          fontSize: "clamp(26px, 4.5vw, 36px)",
-          fontWeight: 300,
-          letterSpacing: "-0.02em",
-          lineHeight: 1.15,
-          color: "#FFFFFF",
-          textShadow: "0 2px 18px rgba(167,139,250,0.35)",
-          margin: 0,
-        }}
-      >
-        {chapter.name}
-      </motion.h2>
-
-      {/* Ligne gradient */}
-      <motion.div
-        aria-hidden
-        initial={{ opacity: 0, scaleX: 0 }}
-        animate={{ opacity: 1, scaleX: 1 }}
-        transition={{ delay: 0.24, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          width: 64,
-          height: 2,
-          borderRadius: 2,
-          margin: "16px 0",
-          background: "linear-gradient(90deg, #A78BFA 0%, #F5E6A3 100%)",
-          boxShadow: "0 0 12px rgba(167,139,250,0.5)",
-        }}
-      />
-
-      {/* Tagline */}
-      <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.32, duration: 0.5, ease: "easeOut" }}
-        className="text-center"
-        style={{
-          fontSize: 14.5,
-          fontWeight: 300,
-          color: "rgba(255,255,255,0.7)",
-          letterSpacing: "0.01em",
-          margin: 0,
-        }}
-      >
-        {chapter.tagline}
-      </motion.p>
-    </motion.div>
-  );
-}
-
-function GuidedTourInner() {
-  const { isOpen, stepIndex, next, close, goTo } = useGuidedTour();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [announcing, setAnnouncing] = useState(false);
-
-  /* ── Retour arrière « intelligent » ──
-     On ne revient jamais SUR une étape « focus » (transition de passage qui
-     s'auto-avance : on resterait coincé). On recule jusqu'au contenu
-     précédent (slide ou spotlight). Permet de remonter toute la visite. ── */
-  const handlePrev = useCallback(() => {
-    let target = stepIndex - 1;
-    while (target > 0 && TOUR_STEPS[target].type === "focus") target--;
-    if (target < 0) target = 0;
-    goTo(target);
-  }, [stepIndex, goTo]);
-
-  const step = isOpen ? TOUR_STEPS[stepIndex] : null;
-  const chapter = step && step.type === "focus" ? step.chapter : undefined;
-  const targetRoute = step?.route;
-  const currentUrl = buildCurrentUrl(pathname, searchParams);
-
-  /* ── Navigation en arrière-plan vers la route de l'étape.
-        Fire-and-forget : AUCUN rendu ne dépend de la fin de la navigation
-        (sinon une comparaison d'URL ratée fige toute la visite). La page se
-        charge sous l'annonce / le voile, et les spotlights gèrent eux-mêmes
-        une ancre pas-encore-présente via leur polling. ── */
-  useEffect(() => {
-    if (!isOpen || !step || !targetRoute) return;
-    if (currentUrl !== targetRoute) {
-      router.push(targetRoute);
-    }
-  }, [isOpen, stepIndex, step, targetRoute, currentUrl, router]);
-
-  /* ── Annonce de chapitre : purement temporelle (jamais bloquée) ── */
-  useEffect(() => {
-    if (!isOpen) return;
-    const s = TOUR_STEPS[stepIndex];
-    const ch = s && s.type === "focus" ? s.chapter : undefined;
-    if (ch) {
-      setAnnouncing(true);
-      const t = setTimeout(() => setAnnouncing(false), CHAPTER_ANNOUNCE_MS);
-      return () => clearTimeout(t);
-    }
-    setAnnouncing(false);
-  }, [stepIndex, isOpen]);
-
-  /* ── Étapes « focus » : auto-avance après leur durée d'affichage.
-        Démarre une fois l'annonce terminée (la navigation s'est faite
-        pendant l'annonce). Purement temporel → jamais de blocage. ── */
-  useEffect(() => {
-    if (!isOpen || !step || step.type !== "focus") return;
-    if (announcing) return; // attendre la fin de l'annonce de chapitre
-    const t = setTimeout(() => next(), step.duration);
-    return () => clearTimeout(t);
-  }, [isOpen, stepIndex, step, announcing, next]);
-
-  /* ── Navigation clavier ── */
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        next();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        handlePrev();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        close(true);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, next, handlePrev, close]);
-
-  if (!isOpen || !step) return null;
-
-  // L'annonce est purement temporelle : elle couvre la navigation de page
-  // (qui se fait en arrière-plan) puis cède la place au focus.
-  const showChapterAnnounce = !!chapter && announcing;
-
-  return (
-    <>
-      <AnimatePresence mode="wait">
-        {showChapterAnnounce ? (
-          <ChapterAnnounce key={`chapter-${step.id}`} chapter={chapter!} />
-        ) : step.type === "slide" ? (
-          <TourSlide
-            key={step.id}
-            title={step.title}
-            subtitle={step.subtitle}
-            cta={step.cta}
-            decoration={step.decoration}
-            onNext={next}
+      {/* Poussière d'étoiles — le fond respire sans jamais attirer l'œil */}
+      {!reduce &&
+        POUSSIERE.map((p, i) => (
+          <motion.span
+            key={i}
+            aria-hidden
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: p.taille,
+              height: p.taille,
+              left: p.left,
+              top: p.top,
+              background: p.or ? "#F5E6A3" : "#A78BFA",
+              boxShadow: `0 0 8px ${p.or ? "rgba(245,230,163,0.7)" : "rgba(167,139,250,0.7)"}`,
+            }}
+            animate={{ opacity: [0.1, 0.6, 0.1] }}
+            transition={{ duration: p.duree, repeat: Infinity, delay: p.delai, ease: "easeInOut" }}
           />
-        ) : step.type === "focus" ? (
-          /* Focus : montre la transition d'onglet/sous-onglet (auto-avance).
-             Même key que le spotlight → la lumière GLISSE du pill au contenu. */
-          <TourSpotlight
-            key="spotlight"
-            anchorId={step.anchorId}
-            focusLabel={step.label}
-            shape={step.shape}
-            padding={step.padding}
-            canPrev={false}
-            onPrev={handlePrev}
-            onNext={next}
-          />
-        ) : (
-          /* key STABLE → la couche persiste entre étapes spotlight = morphing */
-          <TourSpotlight
-            key="spotlight"
-            anchorId={step.anchorId}
-            title={step.title}
-            description={step.description}
-            breadcrumb={step.breadcrumb}
-            shape={step.shape}
-            padding={step.padding}
-            tooltipPosition={step.tooltipPosition}
-            softOverlay={step.softOverlay}
-            secondaryAnchors={step.secondaryAnchors}
-            canPrev={stepIndex > 0}
-            onPrev={handlePrev}
-            onNext={next}
-          />
-        )}
+        ))}
+
+      {/* ── Haut : l'avancement, et la sortie ── */}
+      <div
+        className="relative z-10 flex items-center gap-3 px-5"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" }}
+      >
+        {/* L'avancement, façon segments du tunnel. Le chapitre en cours
+            s'allonge ; sa couleur est celle du chapitre. Le dégradé est un
+            calque en opacité (un dégradé ne s'interpole pas : l'animer
+            directement produirait un à-coup). */}
+        <div className="flex flex-1 items-center" style={{ gap: 4 }}>
+          {CHAPITRES.map((c, i) => (
+            <motion.span
+              key={c.id}
+              className="relative block overflow-hidden"
+              animate={{
+                flexGrow: i === stepIndex ? 2.2 : 1,
+                background: i < stepIndex ? "rgba(195,174,255,0.7)" : BLANC(0.13),
+              }}
+              transition={{ duration: 0.45, ease: EASE }}
+              style={{ height: 3, flexBasis: 0, borderRadius: 99 }}
+            >
+              <motion.span
+                className="absolute inset-0"
+                animate={{ opacity: i === stepIndex ? 1 : 0 }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  borderRadius: 99,
+                  background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
+                }}
+              />
+            </motion.span>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => close(true)}
+          aria-label="Passer la visite"
+          className="flex shrink-0 cursor-pointer items-center gap-1.5"
+          style={{
+            padding: "7px 12px",
+            borderRadius: 999,
+            fontSize: 12,
+            fontWeight: 500,
+            color: BLANC(0.62),
+            background: BLANC(0.06),
+            border: `1px solid ${BLANC(0.1)}`,
+          }}
+        >
+          Passer
+          <X size={11} strokeWidth={2.6} />
+        </button>
+      </div>
+
+      {/* ── Le chapitre ── */}
+      <AnimatePresence mode="wait" custom={sens} initial={false}>
+        <motion.div
+          key={chapitre.id}
+          custom={sens}
+          drag={reduce ? false : "x"}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.16}
+          onDragEnd={(_, info) => {
+            if (info.offset.x < -70) next();
+            else if (info.offset.x > 70) prev();
+          }}
+          initial={{ opacity: 0, x: sens * 44 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: sens * -32 }}
+          transition={{ duration: 0.42, ease: EASE }}
+          className="relative z-10 flex min-h-0 flex-1 flex-col"
+        >
+          {/* La scène — centrée quand la place le permet, défilante sur les
+              petits écrans plutôt que rognée. */}
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-7 py-4">
+            <div className="w-full" style={{ maxWidth: 340 }}>
+              <Scene pseudo={pseudo} />
+            </div>
+          </div>
+
+          {/* Le texte — une seule idée, jamais deux */}
+          <div className="shrink-0 px-7 pb-2" style={{ maxWidth: 460, margin: "0 auto", width: "100%" }}>
+            {chapitre.surtitre && (
+              <p
+                style={{
+                  margin: "0 0 9px",
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                {chapitre.surtitre}
+              </p>
+            )}
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "clamp(24px, 6.4vw, 31px)",
+                fontWeight: 300,
+                letterSpacing: "-0.025em",
+                lineHeight: 1.18,
+                color: "#FFFFFF",
+              }}
+            >
+              {chapitre.titre}
+            </h2>
+            <p
+              style={{
+                margin: "12px 0 0",
+                fontSize: 14.5,
+                fontWeight: 300,
+                lineHeight: 1.62,
+                color: BLANC(0.7),
+              }}
+            >
+              {chapitre.texte}
+            </p>
+          </div>
+        </motion.div>
       </AnimatePresence>
 
-      {/* Bouton Passer — monté une seule fois */}
-      <TourProgress onSkip={() => close(true)} />
-    </>
-  );
-}
+      {/* ── Bas : reculer, avancer ── */}
+      <div
+        className="relative z-10 flex items-center gap-3 px-7"
+        style={{
+          maxWidth: 460,
+          margin: "0 auto",
+          width: "100%",
+          paddingTop: 18,
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 22px)",
+        }}
+      >
+        {!premier && (
+          <motion.button
+            type="button"
+            onClick={prev}
+            aria-label="Chapitre précédent"
+            whileTap={{ scale: 0.94 }}
+            className="flex shrink-0 cursor-pointer items-center justify-center"
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: 999,
+              color: BLANC(0.7),
+              background: BLANC(0.06),
+              border: `1px solid ${BLANC(0.12)}`,
+            }}
+          >
+            <ChevronLeft size={19} strokeWidth={2.2} />
+          </motion.button>
+        )}
 
-export default function GuidedTour() {
-  return (
-    <Suspense fallback={null}>
-      <GuidedTourInner />
-    </Suspense>
+        <motion.button
+          type="button"
+          onClick={next}
+          whileTap={{ scale: 0.97 }}
+          className="flex flex-1 cursor-pointer items-center justify-center gap-2"
+          style={{
+            height: 52,
+            borderRadius: 999,
+            fontSize: 15,
+            fontWeight: 600,
+            color: "#FFFFFF",
+            background: "linear-gradient(135deg, #8B5CF6 0%, #C13BC1 100%)",
+            boxShadow: "0 16px 38px -14px rgba(139,92,246,0.95)",
+            border: "none",
+          }}
+        >
+          {chapitre.cta ?? (dernier ? "Terminer" : "Suivant")}
+          <ArrowRight size={16} strokeWidth={2.5} />
+        </motion.button>
+      </div>
+    </motion.div>
   );
 }

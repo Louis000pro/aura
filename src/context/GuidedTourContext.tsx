@@ -3,23 +3,26 @@
 /**
  * GuidedTourContext — État global de la visite guidée.
  *
- * Une visite = un parcours linéaire de N étapes (slides + spotlights).
+ * Une visite = un parcours linéaire de N chapitres (cf. chapitres.tsx).
  * Le context gère :
  *  - open/closed
- *  - step courant (index 0..N-1)
+ *  - chapitre courant (index 0..N-1)
  *  - next / prev / skip / start / close
  *  - persistance DB (profiles.tour_completed) + fallback localStorage
  *
  * La visite se lance dans deux cas :
  *  1. Après l'onboarding pour un nouvel utilisateur (auto, via OnboardingWrapper)
  *  2. Sur clic du bouton "Refaire la visite" dans /parametres (manuel)
+ *
+ * Elle ne navigue plus dans l'application (elle se joue en vase clos) :
+ * on peut donc la lancer depuis n'importe quel écran sans le quitter.
  */
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import { TOUR_STEPS } from "@/components/GuidedTour/steps";
+import { CHAPITRES } from "@/components/GuidedTour/chapitres";
 
 type GuidedTourCtx = {
   isOpen: boolean;
@@ -44,18 +47,16 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
   // Si true, on redirige vers les 3 offres à la fin de la visite (cas nouvelle inscription)
   const showPlansAfterRef = useRef(false);
 
-  const totalSteps = TOUR_STEPS.length;
+  const totalSteps = CHAPITRES.length;
 
-  /* ── Démarrer la visite ── */
+  /* ── Démarrer la visite ──
+     La visite se joue par-dessus l'écran courant : aucune redirection,
+     donc on ne perd jamais l'utilisateur là où il était. ── */
   const start = useCallback((opts?: { showPlansAfter?: boolean }) => {
     showPlansAfterRef.current = !!opts?.showPlansAfter;
     setStepIndex(0);
     setIsOpen(true);
-    // Toujours partir de la home pour que les ancres existent
-    if (typeof window !== "undefined" && window.location.pathname !== "/") {
-      router.push("/");
-    }
-  }, [router]);
+  }, []);
 
   /* ── Fin de visite → montrer les 3 offres si on vient de l'inscription ── */
   const goToPlansIfNeeded = useCallback(() => {
@@ -108,9 +109,8 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
     setStepIndex(index);
   }, [totalSteps]);
 
-  // NOTE : pas de verrou body.overflow ici — la visite doit pouvoir auto-scroller
-  // vers les éléments présentés (catalogue, bibliothèque…). L'overlay SVG bloque
-  // déjà les clics sur la page, et le spotlight suit le scroll en temps réel.
+  // Le verrou de défilement vit dans GuidedTour.tsx (la coque) : c'est elle
+  // qui sait quand l'écran plein est réellement monté.
 
   return (
     <GuidedTourContext.Provider value={{ isOpen, stepIndex, totalSteps, start, next, prev, goTo, close }}>
