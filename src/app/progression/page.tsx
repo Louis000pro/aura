@@ -27,6 +27,7 @@ import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
 import MouvementsRow from "@/components/seance/MouvementsRow";
 import ExerciseLibrarySheet from "@/components/seance/ExerciseLibrarySheet";
+import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import AdviceReaderSheet from "@/components/AdviceReaderSheet";
 import {
   titreDepuisExercices, categorieDepuisExercices, libelleReps,
@@ -48,6 +49,7 @@ import {
 import {
   ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
   weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
+  dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
   type PlanningDay, type GenInput, type Ctx,
 } from "@/lib/planning";
 
@@ -1199,6 +1201,13 @@ function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
    ════════════════════════════════════════════════════════════════════ */
 type MergedSession = WorkoutSession & { perso: boolean };
 
+/* Une carte du catalogue ne porte pas toujours sa liste : le tunnel la
+   retrouve par id. Tout ce qui montre ou recopie les exercices d'une
+   séance passe par ici, sinon les deux résolutions divergent. */
+function exosDeLaSeance(s: MergedSession): Exercise[] {
+  return s.exerciseList?.length ? s.exerciseList : (exerciseData[s.id] ?? []);
+}
+
 /* Difficulté → nombre de pastilles allumées. L'orange (énergie, système D)
    dit l'intensité ; on garde le teal pour le corps, la lavande pour l'identité. */
 const DIFF_LEVEL: Record<WorkoutSession["difficulty"], number> = {
@@ -1532,16 +1541,62 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
 
 /* Menu « Gérer » d'une séance perso — remplace la barre de réglages sous
    les tuiles : la grille reste pure, les réglages ont leur propre écran. */
-function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, onInspirer }: {
+/* Une ligne du menu — même gabarit pour toutes, l'icône porte le sens. */
+function LigneMenu({ icon: Icon, label, sub, onClick }: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>;
+  label: string;
+  sub?: string;
+  onClick: () => void;
+}) {
+  return (
+    <motion.button whileTap={{ scale: 0.98 }} onClick={onClick}
+      className="w-full flex items-center gap-3 px-5 py-3.5 cursor-pointer text-left border-none bg-transparent">
+      <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+        <Icon size={14} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>{label}</span>
+        {sub && (
+          <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>{sub}</span>
+        )}
+      </span>
+      <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+    </motion.button>
+  );
+}
+
+function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
   session: MergedSession;
+  week: PlanningDay[] | null;
   onClose: () => void;
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
   onVisibilityChange: (id: string, vis: Visibility) => void;
   onInspirer: (s: MergedSession) => void;
+  onPlanifier: (s: MergedSession, date: string) => void;
 }) {
   const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
   const [vis, setVis] = useState<Visibility>((session.visibility ?? "private") as Visibility);
+  /* Les deux détours restent DANS la feuille : empiler une modale sur une
+     modale sur téléphone, on ne sait plus d'où on vient ni où on ferme. */
+  const [vue, setVue] = useState<"menu" | "jours" | "exos">("menu");
+  const exos = exosDeLaSeance(session);
+  const dates = weekDates();
+  const todayIdx = todayWeekIndex();
+
+  const retour = (
+    <div className="flex items-center gap-2 px-5 pt-1 pb-2">
+      <motion.button whileTap={{ scale: 0.92 }} onClick={() => setVue("menu")}
+        className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer border-none flex-shrink-0"
+        style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour">
+        <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+      </motion.button>
+      <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>
+        {vue === "jours" ? "Quel jour ?" : `Les exercices · ${exos.length}`}
+      </p>
+    </div>
+  );
 
   return (
     <motion.div
@@ -1585,25 +1640,91 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, o
 
         <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
 
-        {/* ── Séance Vaiiya : une seule sortie, la plus utile ──
-           On ne modifie pas le catalogue, on en part. La copie n'est
-           écrite nulle part tant que la création n'est pas validée. */}
-        {!session.perso ? (
-          <motion.button whileTap={{ scale: 0.98 }} onClick={() => { onInspirer(session); onClose(); }}
-            className="w-full flex items-center gap-3 px-5 py-4 mb-1 cursor-pointer text-left border-none bg-transparent">
-            <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
-              <Layers size={14} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>M’en inspirer</span>
-              <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>
-                Ses exercices dans une séance à toi, à modifier comme tu veux
-              </span>
-            </span>
-            <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
+        {/* ── Le détour « quel jour ? » ── on écrit sur la semaine réelle,
+           donc on montre ce qui est déjà posé : remplacer, ça se voit. */}
+        {vue === "jours" ? (
+          <>
+            {retour}
+            <div className="px-5 pb-4">
+              {DAY_FULL.map((nom, i) => {
+                const date = dates[i];
+                const jour = week?.[i] ?? null;
+                const passe = i < todayIdx;
+                const prise = hasSeance(jour);
+                const faite = jour?.status === "done";
+                const bloque = passe || faite;
+                return (
+                  <motion.button key={date} whileTap={bloque ? undefined : { scale: 0.98 }}
+                    onClick={() => { if (!bloque) { onPlanifier(session, date); onClose(); } }}
+                    disabled={bloque}
+                    className="w-full flex items-center gap-3 py-2.5 text-left border-none bg-transparent"
+                    style={{ opacity: bloque ? 0.38 : 1, cursor: bloque ? "default" : "pointer" }}>
+                    <span className="w-[42px] text-[11px] font-extrabold uppercase flex-shrink-0"
+                      style={{ color: i === todayIdx ? "var(--accent)" : "var(--text-2)" }}>
+                      {nom.slice(0, 3)}
+                    </span>
+                    <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate"
+                      style={{ color: prise ? "var(--text-2)" : "var(--text-3)" }}>
+                      {faite ? "Séance faite ✓" : prise ? dayTitle(jour!) : "Repos"}
+                    </span>
+                    {!bloque && (
+                      <span className="text-[10px] font-bold flex-shrink-0"
+                        style={{ color: prise ? "#EF9F27" : "var(--accent)" }}>
+                        {prise ? "Remplacer" : i === todayIdx ? "Aujourd’hui" : "Choisir"}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </>
+        ) : vue === "exos" ? (
+          <>
+            {retour}
+            <div className="px-5 pb-4 overflow-y-auto" style={{ maxHeight: "58vh", scrollbarWidth: "none" }}>
+              {exos.map((e, i) => (
+                <div key={`${e.name}-${i}`} className="flex items-center gap-3 py-1.5">
+                  <span className="rounded-xl flex-shrink-0 flex items-center justify-center"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.55)", width: 52, height: 52 }}>
+                    <ExerciseThumb name={e.name} size={48} delay={i * 130} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[12.5px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{e.name}</span>
+                    <span className="block text-[10.5px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
+                      {e.sets} × {e.reps}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : !session.perso ? (
+          /* ── Séance Vaiiya : on ne la modifie pas, on s'en sert ──
+             La copie n'est écrite nulle part tant que la création
+             n'est pas validée. */
+          <>
+            <LigneMenu icon={Layers} label="M’en inspirer"
+              sub="Ses exercices dans une séance à toi, à modifier comme tu veux"
+              onClick={() => { onInspirer(session); onClose(); }} />
+            <LigneMenu icon={CalendarDays} label="Ajouter à ma semaine"
+              sub="Elle se pose sur le jour que tu choisis"
+              onClick={() => setVue("jours")} />
+            {exos.length > 0 && (
+              <LigneMenu icon={Dumbbell} label="Voir les exercices"
+                sub={`Les ${exos.length} mouvements, avant de te lancer`}
+                onClick={() => setVue("exos")} />
+            )}
+            <div style={{ height: 6 }} />
+          </>
         ) : (
         <>
+        {/* Poser sa propre séance sur un jour : même geste que le catalogue */}
+        <LigneMenu icon={CalendarDays} label="Ajouter à ma semaine"
+          sub="Elle se pose sur le jour que tu choisis"
+          onClick={() => setVue("jours")} />
+
+        <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+
         {/* Modifier */}
         <motion.button whileTap={{ scale: 0.98 }} onClick={() => onEdit(session)}
           className="w-full flex items-center gap-3 px-5 py-3.5 cursor-pointer text-left border-none bg-transparent">
@@ -1856,8 +1977,9 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer }: {
+function ChooseSheet({ sessions, week, loading, canAccessPremium, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
   sessions: MergedSession[];
+  week: PlanningDay[] | null;
   loading: boolean;
   canAccessPremium: boolean;
   onClose: () => void;
@@ -1868,6 +1990,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
   onDelete: (id: string) => void;
   onVisibilityChange: (id: string, vis: Visibility) => void;
   onInspirer: (s: MergedSession) => void;
+  onPlanifier: (s: MergedSession, date: string) => void;
 }) {
   const [catId, setCatId] = useState<string | null>(null);
   const [manage, setManage] = useState<MergedSession | null>(null);
@@ -2154,11 +2277,13 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
       {manage && (
         <ManageSheet
           session={manage}
+          week={week}
           onClose={() => setManage(null)}
           onEdit={(s) => { setManage(null); onEdit(s); }}
           onDelete={(id) => { setManage(null); onDelete(id); }}
           onVisibilityChange={onVisibilityChange}
           onInspirer={(s) => { setManage(null); onInspirer(s); }}
+          onPlanifier={(s, date) => { setManage(null); onPlanifier(s, date); }}
         />
       )}
     </AnimatePresence>
@@ -3136,7 +3261,7 @@ export default function ProgressionPage() {
     /* Une carte du catalogue ne porte pas forcément sa liste : le tunnel
        la retrouve par id. On fait pareil, sinon on ouvrirait une création
        vide en ayant promis « ses exercices ». */
-    const exos = s.exerciseList?.length ? s.exerciseList : (exerciseData[s.id] ?? []);
+    const exos = exosDeLaSeance(s);
     setSheet(null);
     ouvrirCreation({
       title: `${s.title} (ma version)`,
@@ -3147,6 +3272,34 @@ export default function ProgressionPage() {
       exerciseList: exos,
     });
     if (exos.length === 0) showToast("Séance sans liste détaillée, à toi de la composer");
+  };
+
+  /* « Ajouter à ma semaine » : on COPIE la séance sur le jour choisi et on
+     garde le renvoi vers son modèle (sessionId), comme le fait l'assistant.
+     Le jour cible est réécrit : c'est le sens de « Remplacer » à l'écran. */
+  const planifierSeance = async (s: MergedSession, date: string) => {
+    if (!user) return;
+    const saved = readLieu(user.id);
+    const jour: PlanningDay = {
+      date,
+      type: PLANNING_TYPE_BY_CATEGORY[s.category] ?? "Force",
+      title: s.title,
+      difficulty: normalizeDifficulty(s.difficulty),
+      location: ctxFromLieu(saved.location, saved.equip),
+      exerciseList: exosDeLaSeance(s),
+      sessionId: s.id,
+      status: "planned",
+    };
+    try {
+      await saveDay(user.id, jour);
+      setWeek((prev) => prev?.map((d) => (d.date === date ? jour : d)) ?? prev);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date } }));
+      }
+      showToast(`${s.title} · ${dayLabelLong(date)} ✓`);
+    } catch {
+      showToast("Impossible de l’ajouter à ta semaine");
+    }
   };
 
   /* Fin d'une impro : elle n'existe nulle part, on propose de la garder. */
@@ -3354,6 +3507,7 @@ export default function ProgressionPage() {
         {sheet === "choisir" && (
           <ChooseSheet
             sessions={allSessions}
+            week={week}
             loading={loadingCustom}
             canAccessPremium={canAccessPremium}
             onClose={() => setSheet(null)}
@@ -3364,6 +3518,7 @@ export default function ProgressionPage() {
             onDelete={handleDelete}
             onVisibilityChange={handleVisibilityChange}
             onInspirer={inspirerDe}
+            onPlanifier={(s, date) => { void planifierSeance(s, date); }}
           />
         )}
       </AnimatePresence>
