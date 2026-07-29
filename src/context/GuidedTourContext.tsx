@@ -58,7 +58,10 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
     setIsOpen(true);
   }, []);
 
-  /* ── Fin de visite → montrer les 3 offres si on vient de l'inscription ── */
+  /* ── Fin de visite → montrer les offres si on vient de l'inscription.
+        UNIQUEMENT quand la visite a été menée jusqu'au bout : quelqu'un qui
+        vient de toucher « Passer » a dit non, lui coller le tarif dans la
+        foulée est la pire réponse possible. ── */
   const goToPlansIfNeeded = useCallback(() => {
     if (showPlansAfterRef.current) {
       showPlansAfterRef.current = false;
@@ -78,17 +81,22 @@ export function GuidedTourProvider({ children }: { children: React.ReactNode }) 
     );
   }, [user?.id]);
 
-  /* ── Fermer ── */
+  /* ── Fermer (« Passer » ou Échap) ──
+        On retient qu'elle a été vue (on ne repropose pas ce qui a été
+        refusé), mais on ne redirige nulle part : l'utilisateur reste là
+        où il était. Seul `next` sur le dernier chapitre mène aux offres. ── */
   const close = useCallback((shouldMark = true) => {
     setIsOpen(false);
-    if (shouldMark) { void markCompleted(); goToPlansIfNeeded(); }
-  }, [markCompleted, goToPlansIfNeeded]);
+    if (shouldMark) void markCompleted();
+    showPlansAfterRef.current = false;
+  }, [markCompleted]);
 
   /* ── Suivant ── */
   const next = useCallback(() => {
     setStepIndex((i) => {
       if (i >= totalSteps - 1) {
-        // Dernière étape → fermer + marquer + (éventuellement) montrer les offres
+        // Visite menée à son terme → fermer, marquer, et montrer les offres
+        // si c'est une inscription (on a montré la valeur avant le prix).
         setIsOpen(false);
         void markCompleted();
         goToPlansIfNeeded();
