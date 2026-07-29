@@ -115,6 +115,19 @@ export const PALIER_PROVISOIRE = 3750;
 // doit pouvoir s'entraîner). Grimper = débloquer de la fierté visible. Le Premium
 // reste indépendant (×1,5 EXP) → ces récompenses sont gratuites et méritées.
 // Chaque récompense se lit depuis `rang.id` déjà calculé : aucune migration SQL.
+//
+// ⚠️ RÈGLE (2026-07-29, remontée de Louis) : on n'annonce QUE ce qui existe et se
+// VOIT. Chaque entrée ci-dessous est réellement rendue par `IdentiteRang.tsx` et
+// se montre en aperçu dans la galerie des rangs. Ajouter une récompense = 1) une
+// entrée ici avec son `apercu`, 2) son rendu dans `IdentiteRang.tsx`. Pas d'entrée
+// « vitrine » sans rendu : c'est exactement ce qui rendait l'écran incompréhensible.
+//
+// Deux anciennes promesses ont été retirées : les « thèmes d'accent » (Or/Diamant)
+// contredisaient le système de couleur VERROUILLÉ (violet = action partout), et le
+// « flair en tête du classement » de l'Éternel décrivait un classement qui n'existe
+// pas et n'existera pas (limite dure du rang : jamais de comparaison sociale).
+export type ApercuCosmetique = "exp" | "badge" | "cadre" | "anneau" | "titre" | "brillant";
+
 export type Recompense = {
   /** Emoji d'illustration de la récompense. */
   emoji: string;
@@ -122,40 +135,81 @@ export type Recompense = {
   titre: string;
   /** Une ligne d'explication. */
   desc: string;
+  /** Quel cosmétique la galerie doit montrer en aperçu réel. */
+  apercu: ApercuCosmetique;
 };
+
+/** Le titre débloqué au Diamant, affiché sous le pseudo. */
+export const TITRE_DIAMANT = "Inarrêtable";
 
 export const RECOMPENSE_RANG: Record<string, Recompense> = {
   bronze: {
     emoji: "🎁",
     titre: "Coup de pouce de bienvenue",
-    desc: "+10 EXP offerts pour lancer ton aventure.",
+    desc: `+${EXP_BIENVENUE} EXP offerts pour lancer ton aventure.`,
+    apercu: "exp",
   },
   argent: {
     emoji: "🏷️",
     titre: "Badge de rang",
-    desc: "Ta gemme s'affiche à côté de ton pseudo, partout.",
+    desc: "Ta gemme s'affiche à côté de ton pseudo, sur ton profil et celui que voient les autres.",
+    apercu: "badge",
   },
   or: {
-    emoji: "🎨",
-    titre: "Thème d'accent « Or »",
-    desc: "Un habillage doré à activer dans les réglages.",
+    emoji: "🖼️",
+    titre: "Cadre doré",
+    desc: "Un liseré doré encadre ta photo de profil.",
+    apercu: "cadre",
   },
   platine: {
     emoji: "💫",
     titre: "Anneau animé",
-    desc: "Un halo qui tourne autour de ton avatar.",
+    desc: "Un halo tourne lentement autour de ta photo.",
+    apercu: "anneau",
   },
   diamant: {
     emoji: "📛",
-    titre: "Titre + thème exclusif",
-    desc: "Un titre sous ton pseudo et un 2ᵉ habillage.",
+    titre: `Titre « ${TITRE_DIAMANT} »`,
+    desc: "Un titre s'affiche sous ton pseudo, sur ton profil.",
+    apercu: "titre",
   },
   eternel: {
     emoji: "✨",
-    titre: "Pseudo brillant + flair de champion",
-    desc: "Ton pseudo scintille et brille en tête du classement.",
+    titre: "Pseudo brillant",
+    desc: "Ton pseudo passe en dégradé lumineux, visible par les autres.",
+    apercu: "brillant",
   },
 };
+
+/** Ce que le rang `rangId` a débloqué, en CUMULÉ (un Platine garde son cadre d'Or). */
+export type Cosmetiques = {
+  /** Gemme du rang à côté du pseudo (Argent et plus). */
+  badge: boolean;
+  /** Liseré doré autour de la photo (Or et plus). */
+  cadre: boolean;
+  /** Halo qui tourne autour de la photo (Platine et plus). */
+  anneau: boolean;
+  /** Titre sous le pseudo (Diamant et plus), ou null. */
+  titre: string | null;
+  /** Pseudo en dégradé lumineux (Éternel). */
+  brillant: boolean;
+};
+
+/** Position d'un rang dans l'échelle (-1 si inconnu). */
+export function indexRang(rangId: string): number {
+  return RANGS.findIndex((rang) => rang.id === rangId);
+}
+
+export function cosmetiquesDuRang(rangId: string): Cosmetiques {
+  const i = indexRang(rangId);
+  return {
+    badge: i >= indexRang("argent"),
+    cadre: i >= indexRang("or"),
+    anneau: i >= indexRang("platine"),
+    titre: i >= indexRang("diamant") ? TITRE_DIAMANT : null,
+    brillant: i >= indexRang("eternel"),
+  };
+}
 
 export type EtatAura = {
   exp: number;

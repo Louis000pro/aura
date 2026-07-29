@@ -16,7 +16,8 @@ import GemmeRang from "@/components/GemmeRang";
 import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import { type PerformanceData } from "@/components/PerformanceCard";
-import { calculerAura, type EtatAura } from "@/lib/aura";
+import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
+import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
 
@@ -302,6 +303,9 @@ export default function PublicProfilePage() {
   const displayPseudo = profile?.pseudo ?? username;
   const displayAvatar = profile?.avatar_url ?? "";
   const initial = displayPseudo[0]?.toUpperCase() ?? "?";
+  // Décorations de rang de la personne regardée (déduites de son rang, rien en base).
+  const rangCourant = aura?.rang ?? RANGS[0];
+  const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
   const isCertified = certified || profile?.is_admin === true;
 
   return (
@@ -405,33 +409,39 @@ export default function PublicProfilePage() {
         />
 
         <div className="flex flex-col items-center text-center relative z-10 mb-4">
-          {/* Avatar */}
-          <div
-            className="relative mb-3"
-            style={{
-              width: 88,
-              height: 88,
-              borderRadius: "50%",
-              padding: 3,
-              background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
-              boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.28)",
-            }}
-          >
+          {/* Avatar — porte les décorations de rang de la personne (cadre à l'Or,
+              anneau au Platine) : c'est ici qu'elles se voient par les autres. */}
+          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={88} className="mb-3">
             <div
-              className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
-              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "var(--text-1)" }}
+              className="absolute inset-0"
+              style={{
+                borderRadius: "50%",
+                padding: 3,
+                background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+                boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.28)",
+              }}
             >
-              {displayAvatar
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                : <span>{initial}</span>}
+              <div
+                className="w-full h-full rounded-full overflow-hidden flex items-center justify-center text-3xl font-semibold"
+                style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,#F0EBFF 0%,#FFFBF0 100%)", color: "var(--text-1)" }}
+              >
+                {displayAvatar
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
+                  : <span>{initial}</span>}
+              </div>
             </div>
-          </div>
+          </AvatarRang>
 
           {/* Pseudo + badge certifié */}
           <div className="flex items-center gap-2 justify-center">
             <h1 className="text-[28px] font-black tracking-[-0.03em] leading-none" style={{ color: "var(--text-0)" }}>
-              {displayPseudo}
+              <PseudoRang
+                rang={rangCourant}
+                cosmetiques={cosmetiques}
+                pseudo={displayPseudo}
+                tailleGemme={22}
+              />
             </h1>
             {isCertified && (
               <motion.div
@@ -448,6 +458,9 @@ export default function PublicProfilePage() {
               </motion.div>
             )}
           </div>
+
+          {/* Titre débloqué au Diamant */}
+          <TitreRang cosmetiques={cosmetiques} />
 
           {/* Goals / titre */}
           {profile?.goals && profile.goals.length > 0 && (

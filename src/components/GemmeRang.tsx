@@ -12,15 +12,18 @@ import type { Rang } from "@/lib/aura";
 export default function GemmeRang({
   rang,
   size = 150,
+  flotte = true,
 }: {
   rang: Rang;
   size?: number;
+  /** Le flottement n'a pas de sens en badge inline (à côté d'un pseudo) : `false`. */
+  flotte?: boolean;
 }) {
   const h = Math.round(size * (200 / 150));
   const reduce = useReducedMotion();
   const [imgOk, setImgOk] = useState(true);
 
-  const flottement = reduce
+  const flottement = reduce || !flotte
     ? {}
     : { animate: { y: [0, -10, 0] }, transition: { duration: 3.6, ease: "easeInOut" as const, repeat: Infinity } };
 

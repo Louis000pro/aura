@@ -17,7 +17,9 @@ import { perfDataToShare } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
 import Image from "next/image";
 import GemmeRang from "@/components/GemmeRang";
-import { calculerAura, type EtatAura } from "@/lib/aura";
+import RangsModal from "@/components/rang/RangsModal";
+import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
+import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
 
@@ -865,6 +867,7 @@ export default function ProfilPage() {
   const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
   const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
+  const [showRangs, setShowRangs] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
@@ -1017,6 +1020,10 @@ export default function ProfilPage() {
 
   const displayPseudo = profilePseudo || user?.pseudo || "";
   const displayAvatar = profileAvatar || user?.avatar || "";
+  // Les décorations gagnées (gemme, cadre, anneau, titre, pseudo brillant) se
+  // déduisent du rang déjà calculé : rien à activer, rien à stocker.
+  const rangCourant = aura?.rang ?? RANGS[0];
+  const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
 
   const refreshGoals = () => {
     const pseudo = displayPseudo;
@@ -1108,8 +1115,10 @@ export default function ProfilPage() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col items-center text-center mb-6"
         >
-          {/* Avatar — container 120x120, crayon en badge bottom-right en dehors */}
-          <div className="relative mb-4" style={{ width: 120, height: 120 }}>
+          {/* Avatar — container 120x120, crayon en badge bottom-right en dehors.
+              AvatarRang pose par-dessus les décorations gagnées (cadre doré à l'Or,
+              anneau animé au Platine) : rien à activer, ça suit le rang. */}
+          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={120} className="mb-4">
             {/* Cercle avatar cliquable */}
             <motion.div
               whileHover={{ scale: 1.03 }}
@@ -1154,15 +1163,20 @@ export default function ProfilPage() {
             >
               <Pencil size={13} strokeWidth={2.3} style={{ color: "#3D2F6B" }} />
             </motion.button>
-          </div>
+          </AvatarRang>
 
-          {/* Pseudo + badge vérifié */}
+          {/* Pseudo + badge vérifié (+ gemme de rang à l'Argent, brillance à l'Éternel) */}
           <div className="flex items-center gap-2">
             <h1
               className="text-[28px] font-black tracking-[-0.03em] leading-none"
               style={{ color: "var(--text-0)" }}
             >
-              {displayPseudo}
+              <PseudoRang
+                rang={rangCourant}
+                cosmetiques={cosmetiques}
+                pseudo={displayPseudo}
+                tailleGemme={22}
+              />
             </h1>
             {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
               <motion.div
@@ -1183,6 +1197,9 @@ export default function ProfilPage() {
               </motion.div>
             )}
           </div>
+
+          {/* Titre débloqué au Diamant */}
+          <TitreRang cosmetiques={cosmetiques} />
 
           {/* Goals / titre */}
           {profileGoals.length > 0 && (
@@ -1219,7 +1236,7 @@ export default function ProfilPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.06 }}
           whileTap={{ scale: 0.985 }}
-          onClick={() => router.push("/")}
+          onClick={() => setShowRangs(true)}
           className="w-full flex items-center gap-4 mb-3 px-4 py-3.5 rounded-3xl overflow-hidden cursor-pointer text-left"
           style={{
             background: "rgba(var(--surface-rgb),0.8)",
@@ -1567,6 +1584,17 @@ export default function ProfilPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* La galerie des rangs s'ouvre ICI (elle porte son propre portail) : la
+          carte « Ton rang » renvoyait vers l'accueil, on perdait l'utilisateur. */}
+      <RangsModal
+        open={showRangs}
+        onClose={() => setShowRangs(false)}
+        expActuel={aura?.exp ?? 0}
+        rangActuelId={rangCourant.id}
+        pseudo={displayPseudo}
+        avatarUrl={displayAvatar || null}
+      />
 
       {/* ── Modals ── */}
       <AnimatePresence>
