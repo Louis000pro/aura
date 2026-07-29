@@ -9,7 +9,7 @@
    social vide qu'on a supprimé le 20 juillet.
    ───────────────────────────────────────────────────────────── */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -22,6 +22,8 @@ import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
 import ConversationAvatar, { PersonAvatar } from "@/components/communaute/ConversationAvatar";
 import FriendshipSheets, { type VueAmis } from "@/components/communaute/FriendshipSheets";
+import { PseudoRang } from "@/components/rang/IdentiteRang";
+import { useRangs } from "@/lib/rangsPublics";
 import { createClient } from "@/lib/supabase";
 import { imageEtat } from "@/lib/defi";
 import {
@@ -504,11 +506,19 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
   onPrefetch: (id: string) => void;
   onActions: (conversation: Conversation) => void;
 }) {
+  // Le rang ne s'affiche qu'en duo : un groupe n'a pas UN rang à montrer.
+  const idsDuo = useMemo(
+    () => convs.filter((c) => c.type === "duo").map((c) => autresMembres(c, moi)[0]?.id).filter(Boolean) as string[],
+    [convs, moi],
+  );
+  const rangs = useRangs(idsDuo);
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto pb-4">
       {convs.map((c) => {
         const titre  = titreConversation(c, moi);
         const autres = autresMembres(c, moi);
+        const rang   = c.type === "duo" ? rangs.get(autres[0]?.id ?? "") : undefined;
         // Un fil ouvert par une amitié mutuelle n'a aucun message :
         // il ne dit pas « vide », il dit quoi en faire.
         const apercu =
@@ -540,16 +550,28 @@ function Liste({ convs, moi, activeId, onPrefetch, onActions }: {
               onFocus={() => onPrefetch(c.id)}
               className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left active:bg-[rgba(var(--tint-violet-rgb),.6)]"
             >
-              <ConversationAvatar conversation={c} autres={autres} titre={titre} />
+              <ConversationAvatar conversation={c} autres={autres} titre={titre} rang={rang} />
 
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <b
-                    className="block min-w-0 truncate text-[14.5px]"
-                    style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
-                  >
-                    {titre}
-                  </b>
+                  {rang ? (
+                    <PseudoRang
+                      rang={rang.rang}
+                      cosmetiques={rang.cosmetiques}
+                      pseudo={titre}
+                      classNameEnveloppe="flex min-w-0 items-center gap-1.5"
+                      className="block min-w-0 truncate text-[14.5px]"
+                      style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
+                      tailleGemme={14}
+                    />
+                  ) : (
+                    <b
+                      className="block min-w-0 truncate text-[14.5px]"
+                      style={{ color: "var(--text-0)", fontWeight: c.nonLus > 0 ? 750 : 600 }}
+                    >
+                      {titre}
+                    </b>
+                  )}
                   {c.epinglee && <Pin className="h-3 w-3 shrink-0" style={{ color: "var(--text-3)" }} />}
                   {c.sourde && <VolumeX className="h-3 w-3 shrink-0" style={{ color: "var(--text-3)" }} />}
                 </div>
@@ -670,6 +692,7 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
   const [nom, setNom]         = useState("");
   const [occupe, setOccupe]   = useState(false);
   const [erreur, setErreur]   = useState<string | null>(null);
+  const rangs = useRangs(useMemo(() => gens.map((g) => g.id), [gens]));
 
   useEffect(() => {
     void mesRelations(moi)
@@ -729,16 +752,29 @@ function NouvelleDiscussion({ moi, onFermer, onCree }: {
         ) : (
           gens.map((p) => {
             const pris = choisis.includes(p.id);
+            const rang = rangs.get(p.id);
             return (
               <button
                 key={p.id}
                 onClick={() => basculer(p.id)}
                 className="flex w-full items-center gap-3 rounded-xl px-1 py-2.5 text-left"
               >
-                <PersonAvatar personne={p} taille={38} />
-                <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
-                  {p.pseudo}
-                </span>
+                <PersonAvatar personne={p} taille={38} rang={rang} />
+                {rang ? (
+                  <PseudoRang
+                    rang={rang.rang}
+                    cosmetiques={rang.cosmetiques}
+                    pseudo={p.pseudo}
+                    classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
+                    className="truncate text-[14.5px] font-medium"
+                    style={{ color: "var(--text-1)" }}
+                    tailleGemme={14}
+                  />
+                ) : (
+                  <span className="flex-1 truncate text-[14.5px] font-medium" style={{ color: "var(--text-1)" }}>
+                    {p.pseudo}
+                  </span>
+                )}
                 <span
                   className="flex h-6 w-6 items-center justify-center rounded-full border-2"
                   style={{

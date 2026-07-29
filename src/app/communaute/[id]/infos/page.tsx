@@ -9,7 +9,7 @@
    qui se connaissent déjà, des droits seraient du décor.
    ───────────────────────────────────────────────────────────── */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +19,8 @@ import {
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import ConversationAvatar from "@/components/communaute/ConversationAvatar";
+import { AvatarRang, PseudoRang } from "@/components/rang/IdentiteRang";
+import { useRangs, type RangPublic } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation, annulerRelais } from "@/lib/defi";
 import {
   chargerFil, titreConversation, autresMembres, mesRelations, majConversation,
@@ -41,6 +43,10 @@ export default function InfosPage() {
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
   const [ajout, setAjout]   = useState(false);
   const [confirmeAnnul, setConfirmeAnnul] = useState(false);
+
+  // Les décorations de rang de chaque membre : c'est l'écran où l'on regarde
+  // qui est là, donc l'endroit naturel pour les voir toutes.
+  const rangs = useRangs(useMemo(() => (conv?.membres ?? []).map((m) => m.id), [conv]));
 
   const fichierRef = useRef<HTMLInputElement>(null);
 
@@ -383,15 +389,31 @@ export default function InfosPage() {
           Membres
         </p>
         <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "rgba(var(--text-3-rgb), .18)", background: "rgb(var(--surface-rgb))" }}>
-          {conv.membres.map((p, i) => (
-            <div key={p.id} className="flex items-center gap-3 p-3"
-              style={{ borderTop: i ? "1px solid rgba(var(--text-3-rgb), .14)" : "none" }}>
-              <Avatar personne={p} taille={34} />
-              <span className="min-w-0 flex-1 truncate text-[14px] font-medium" style={{ color: "var(--text-1)" }}>
-                {p.id === moi ? "Toi" : p.pseudo}
-              </span>
-            </div>
-          ))}
+          {conv.membres.map((p, i) => {
+            const rang = rangs.get(p.id);
+            const nom = p.id === moi ? "Toi" : p.pseudo;
+            return (
+              <div key={p.id} className="flex items-center gap-3 p-3"
+                style={{ borderTop: i ? "1px solid rgba(var(--text-3-rgb), .14)" : "none" }}>
+                <Avatar personne={p} taille={34} rang={rang} />
+                {rang ? (
+                  <PseudoRang
+                    rang={rang.rang}
+                    cosmetiques={rang.cosmetiques}
+                    pseudo={nom}
+                    classNameEnveloppe="flex min-w-0 flex-1 items-center gap-1.5"
+                    className="truncate text-[14px] font-medium"
+                    style={{ color: "var(--text-1)" }}
+                    tailleGemme={14}
+                  />
+                ) : (
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-medium" style={{ color: "var(--text-1)" }}>
+                    {nom}
+                  </span>
+                )}
+              </div>
+            );
+          })}
 
           <button
             onClick={() => setAjout(true)}
@@ -437,7 +459,17 @@ export default function InfosPage() {
   );
 }
 
-function Avatar({ personne, taille = 34 }: { personne?: Personne; taille?: number }) {
+function Avatar({ personne, taille = 34, rang }: { personne?: Personne; taille?: number; rang?: RangPublic }) {
+  const photo = <AvatarNu personne={personne} taille={taille} />;
+  if (!rang) return photo;
+  return (
+    <AvatarRang rang={rang.rang} cosmetiques={rang.cosmetiques} size={taille} className="shrink-0">
+      {photo}
+    </AvatarRang>
+  );
+}
+
+function AvatarNu({ personne, taille = 34 }: { personne?: Personne; taille?: number }) {
   const s = { width: taille, height: taille };
   if (personne?.avatar) {
     return (

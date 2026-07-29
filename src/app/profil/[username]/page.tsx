@@ -17,7 +17,8 @@ import PerfShareCard from "@/components/PerfShareCard";
 import { perfDataToShare } from "@/lib/perfShareExport";
 import { type PerformanceData } from "@/components/PerformanceCard";
 import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
-import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
+import { calculerAura, cosmetiquesDuRang, etatDepuisExp, RANGS, type EtatAura } from "@/lib/aura";
+import { chargerRang } from "@/lib/rangsPublics";
 import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
 import { chargerBadges } from "@/lib/messagerie";
 
@@ -176,7 +177,16 @@ export default function PublicProfilePage() {
         }
 
         // ── Rang (aura) + affiches de relais débloquées ──
-        void calculerAura(supabase, data.id).then(setAura).catch(() => {});
+        // Le rang de QUELQU'UN D'AUTRE ne se calcule pas côté client : les tables
+        // sources sont en RLS « propriétaire seulement », donc `calculerAura`
+        // renvoyait ici Bronze pour tout le monde. On passe par `rangs_aura`, et
+        // on ne retombe sur l'ancien chemin que pour son propre profil.
+        void chargerRang(data.id)
+          .then((rangPublic) => {
+            if (rangPublic) setAura(etatDepuisExp(rangPublic.exp));
+            else if (user?.id === data.id) void calculerAura(supabase, data.id).then(setAura);
+          })
+          .catch(() => {});
         void chargerBadges(data.id).then((slugs) => setBadgeSlugs(new Set(slugs))).catch(() => {});
 
         if (user && user.id !== data.id) {

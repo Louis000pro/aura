@@ -25,6 +25,8 @@ import {
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import ConversationAvatar from "@/components/communaute/ConversationAvatar";
+import { PseudoRang } from "@/components/rang/IdentiteRang";
+import { useRangs } from "@/lib/rangsPublics";
 import { imageEtat, etatPoster, lancerRelaisDansConversation } from "@/lib/defi";
 import {
   chargerFil, chargerMessagesAvant, chargerMessage, chargerReactions,
@@ -79,6 +81,15 @@ export default function FilPage() {
   const [occupe, setOccupe]     = useState(false);
   const [erreur, setErreur]     = useState<string | null>(null);
   const [erreurChargement, setErreurChargement] = useState<string | null>(null);
+
+  // Le rang de l'autre, en duo seulement : ses décorations habillent l'en-tête,
+  // comme sur son profil. Un groupe n'a pas UN rang à montrer.
+  const idDuo = useMemo(
+    () => (conv?.type === "duo" ? conv.membres.find((m) => m.id !== user?.id)?.id ?? "" : ""),
+    [conv, user?.id],
+  );
+  const rangsDuo = useRangs(useMemo(() => (idDuo ? [idDuo] : []), [idDuo]));
+  const rangAutre = idDuo ? rangsDuo.get(idDuo) : undefined;
 
   const listeRef = useRef<HTMLDivElement>(null);
   const basRef   = useRef<HTMLDivElement>(null);
@@ -452,9 +463,21 @@ export default function FilPage() {
           onClick={() => router.push(`/communaute/${convId}/infos`)}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
         >
-          <ConversationAvatar conversation={conv} autres={autres} titre={titre} taille={32} />
+          <ConversationAvatar conversation={conv} autres={autres} titre={titre} taille={32} rang={rangAutre} />
           <span className="min-w-0 flex-1">
-            <b className="block truncate text-[15px] font-semibold" style={{ color: c.t0 }}>{titre}</b>
+            {rangAutre ? (
+              <PseudoRang
+                rang={rangAutre.rang}
+                cosmetiques={rangAutre.cosmetiques}
+                pseudo={titre}
+                classNameEnveloppe="flex min-w-0 items-center gap-1.5"
+                className="block truncate text-[15px] font-semibold"
+                style={{ color: c.t0 }}
+                tailleGemme={14}
+              />
+            ) : (
+              <b className="block truncate text-[15px] font-semibold" style={{ color: c.t0 }}>{titre}</b>
+            )}
             <span className="block truncate text-[11.5px]" style={{ color: c.t2 }}>
               {conv.type === "groupe"
                 ? `${autres.map((p) => p.pseudo).join(", ")}, toi`

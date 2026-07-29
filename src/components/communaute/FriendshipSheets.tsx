@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check, Copy, Loader2, Search, Share2, UserPlus, Users, X,
 } from "lucide-react";
 import { PersonAvatar } from "@/components/communaute/ConversationAvatar";
+import { PseudoRang } from "@/components/rang/IdentiteRang";
+import { useRangs } from "@/lib/rangsPublics";
 import {
   accepterDemandeAmi, chargerDemandesAmi, creerConversation, demanderAmi,
   ignorerDemandeAmi, rechercherAmisParPseudo,
@@ -241,6 +243,7 @@ function AjouterAmi({
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const rechercheId = useRef(0);
+  const rangs = useRangs(useMemo(() => resultats.map((r) => r.id), [resultats]));
 
   const rechercher = useCallback(async (saisie: string) => {
     const id = ++rechercheId.current;
@@ -418,7 +421,9 @@ function AjouterAmi({
             Aucun pseudo proche trouvé.
           </p>
         )}
-        {resultats.map((personne) => (
+        {resultats.map((personne) => {
+          const rang = rangs.get(personne.id);
+          return (
           <div key={personne.id} className="flex items-center gap-3 border-b py-3"
             style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
             <button
@@ -427,12 +432,24 @@ function AjouterAmi({
               aria-label={`Voir le profil de ${personne.pseudo}`}
               className="shrink-0 rounded-full transition-transform active:scale-95"
             >
-              <PersonAvatar personne={personne} taille={44} />
+              <PersonAvatar personne={personne} taille={44} rang={rang} />
             </button>
             <span className="min-w-0 flex-1">
-              <b className="block truncate text-[15px]" style={{ color: "var(--text-0)" }}>
-                {personne.pseudo}
-              </b>
+              {rang ? (
+                <PseudoRang
+                  rang={rang.rang}
+                  cosmetiques={rang.cosmetiques}
+                  pseudo={personne.pseudo}
+                  classNameEnveloppe="flex min-w-0 items-center gap-1.5"
+                  className="block truncate text-[15px] font-bold"
+                  style={{ color: "var(--text-0)" }}
+                  tailleGemme={15}
+                />
+              ) : (
+                <b className="block truncate text-[15px]" style={{ color: "var(--text-0)" }}>
+                  {personne.pseudo}
+                </b>
+              )}
               <span className="block truncate text-[12.5px]" style={{ color: "var(--text-3)" }}>
                 @{personne.pseudo}
               </span>
@@ -453,7 +470,8 @@ function AjouterAmi({
                 : "Ajouter"}
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {message && <p className="text-center text-[13px] font-medium" style={{ color: "#2BD4A0" }}>{message}</p>}
@@ -479,6 +497,7 @@ function DemandesAmi({
 }) {
   const [occupe, setOccupe] = useState<string | null>(null);
   const [erreurAction, setErreurAction] = useState<string | null>(null);
+  const rangs = useRangs(useMemo(() => demandes.map((d) => d.id), [demandes]));
 
   const accepter = async (personne: Personne) => {
     setOccupe(personne.id);
@@ -530,14 +549,28 @@ function DemandesAmi({
         </div>
       ) : (
         <div>
-          {demandes.map((personne) => (
+          {demandes.map((personne) => {
+            const rang = rangs.get(personne.id);
+            return (
             <div key={personne.id} className="flex items-center gap-3 border-b py-3"
               style={{ borderColor: "rgba(var(--text-3-rgb), .12)" }}>
-              <PersonAvatar personne={personne} taille={42} />
+              <PersonAvatar personne={personne} taille={42} rang={rang} />
               <span className="min-w-0 flex-1">
-                <b className="block truncate text-[14.5px]" style={{ color: "var(--text-0)" }}>
-                  {personne.pseudo}
-                </b>
+                {rang ? (
+                  <PseudoRang
+                    rang={rang.rang}
+                    cosmetiques={rang.cosmetiques}
+                    pseudo={personne.pseudo}
+                    classNameEnveloppe="flex min-w-0 items-center gap-1.5"
+                    className="block truncate text-[14.5px] font-bold"
+                    style={{ color: "var(--text-0)" }}
+                    tailleGemme={14}
+                  />
+                ) : (
+                  <b className="block truncate text-[14.5px]" style={{ color: "var(--text-0)" }}>
+                    {personne.pseudo}
+                  </b>
+                )}
                 <span className="text-[12px]" style={{ color: "var(--text-3)" }}>veut t&apos;ajouter</span>
               </span>
               <button
@@ -557,7 +590,8 @@ function DemandesAmi({
                 Ignorer
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {erreurAction && <p className="mt-3 text-center text-[13px]" style={{ color: "#E8620C" }}>{erreurAction}</p>}

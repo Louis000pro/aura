@@ -271,6 +271,42 @@
   to   { transform: rotate(360deg); }
 }
 
+/* ──────────────── PSEUDO BRILLANT (récompense du rang Éternel) ───────────────
+   La lumière traverse le pseudo EN CONTINU. Deux conditions pour que ce soit
+   fluide, apprises à la première version (pilotée par framer-motion, saccadée) :
+     • pas de JS dans la boucle : une animation CSS native, le navigateur la
+       tient seul même quand le fil principal travaille ;
+     • une boucle SANS raccord : le dégradé se répète tous les 260 px et on
+       décale d'exactement 260 px, donc l'image de fin est l'image de départ.
+       Un dégradé non périodique produit un saut visible à chaque tour.
+   Le décalage est horizontal exprès : à angle oblique, décaler en x ne vaut
+   plus une période entière et le raccord réapparaît. */
+.pseudo-brillant {
+  background-image: repeating-linear-gradient(
+    to right,
+    #FFD34E 0px,
+    #C13BC1 70px,
+    #8B5CF6 130px,
+    #C13BC1 190px,
+    #FFD34E 260px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: pseudo-brillance 5s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes pseudo-brillance {
+  from { background-position: 0 0; }
+  to   { background-position: 260px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pseudo-brillant { animation: none; }
+}
+
 /* ─────────────────────────── HASHTAG ─────────────────────────── */
 /* Uses <b> tag so [data-theme="dark"] span {!important} cannot override */
 .hashtag,

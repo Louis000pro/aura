@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { imageEtat } from "@/lib/defi";
 import type { Conversation, Personne } from "@/lib/messagerie";
+import type { RangPublic } from "@/lib/rangsPublics";
+import { AvatarRang } from "@/components/rang/IdentiteRang";
 
 const PERIMETRE_SCEAU = 156;
 
@@ -12,12 +14,16 @@ export default function ConversationAvatar({
   titre,
   taille = 46,
   afficherDefi = true,
+  rang,
 }: {
   conversation: Conversation;
   autres: Personne[];
   titre: string;
   taille?: number;
   afficherDefi?: boolean;
+  /** Le rang de l'autre, en duo seulement : un groupe n'a pas UN rang, et le
+   *  sceau du relais est une affiche rectangulaire qu'un cadre rond abîmerait. */
+  rang?: RangPublic;
 }) {
   if (afficherDefi && conversation.defi) {
     return <Sceau defi={conversation.defi} taille={taille} />;
@@ -46,6 +52,7 @@ export default function ConversationAvatar({
       personne={conversation.type === "duo" ? autres[0] : undefined}
       taille={taille}
       nom={conversation.type === "groupe" ? titre : undefined}
+      rang={conversation.type === "duo" ? rang : undefined}
     />
   );
 }
@@ -158,14 +165,17 @@ export function PersonAvatar({
   personne,
   taille,
   nom,
+  rang,
 }: {
   personne?: Personne;
   taille: number;
   nom?: string;
+  /** Décorations de rang de cette personne (cadre à l'Or, anneau au Platine). */
+  rang?: RangPublic;
 }) {
   const dimensions = { width: taille, height: taille };
-  if (!nom && personne?.avatar) {
-    return (
+  const photo = !nom && personne?.avatar
+    ? (
       <Image
         src={personne.avatar}
         alt=""
@@ -175,19 +185,25 @@ export function PersonAvatar({
         style={dimensions}
         unoptimized
       />
+    )
+    : (
+      <span
+        className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
+        style={{
+          ...dimensions,
+          fontSize: taille * 0.36,
+          background: "linear-gradient(135deg, #8B5CF6, #C13BC1)",
+        }}
+      >
+        {(nom ?? personne?.pseudo ?? "?").charAt(0).toUpperCase()}
+      </span>
     );
-  }
+
+  if (!rang) return photo;
 
   return (
-    <span
-      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white"
-      style={{
-        ...dimensions,
-        fontSize: taille * 0.36,
-        background: "linear-gradient(135deg, #8B5CF6, #C13BC1)",
-      }}
-    >
-      {(nom ?? personne?.pseudo ?? "?").charAt(0).toUpperCase()}
-    </span>
+    <AvatarRang rang={rang.rang} cosmetiques={rang.cosmetiques} size={taille} className="shrink-0">
+      {photo}
+    </AvatarRang>
   );
 }

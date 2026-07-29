@@ -38,6 +38,12 @@ export function AvatarRang({
 }) {
   const reduce = useReducedMotion();
   const [neon0, neon1] = rang.neon;
+  // Les décorations débordent PROPORTIONNELLEMENT : à 120 px sur un profil elles
+  // respirent, à 46 px dans une ligne de conversation elles ne doivent pas mordre
+  // sur le texte d'à côté ni sur la ligne du dessus.
+  const debordCadre = Math.max(2, size / 28);
+  const debordAnneau = Math.max(4, size / 11);
+  const epaisseurCadre = Math.max(1.5, size / 48);
 
   return (
     <div className={`relative${className ? ` ${className}` : ""}`} style={{ width: size, height: size }}>
@@ -49,14 +55,14 @@ export function AvatarRang({
           aria-hidden="true"
           className="absolute rounded-full pointer-events-none"
           style={{
-            inset: -4,
-            padding: 2.5,
+            inset: -debordCadre,
+            padding: epaisseurCadre,
             background: "linear-gradient(140deg,#FFE9A8,#E8A015 45%,#FFD34E)",
             WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
             WebkitMaskComposite: "xor",
             mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
             maskComposite: "exclude",
-            boxShadow: "0 0 14px rgba(232,160,21,0.45)",
+            boxShadow: `0 0 ${Math.max(6, size / 9)}px rgba(232,160,21,0.45)`,
           }}
         />
       )}
@@ -67,7 +73,7 @@ export function AvatarRang({
           aria-hidden="true"
           viewBox="0 0 100 100"
           className="absolute pointer-events-none"
-          style={{ inset: -11, width: "auto", height: "auto" }}
+          style={{ inset: -debordAnneau, width: "auto", height: "auto" }}
           {...(reduce
             ? {}
             : {
@@ -106,18 +112,23 @@ export function PseudoRang({
   cosmetiques,
   pseudo,
   className,
+  classNameEnveloppe = "inline-flex items-center gap-1.5",
   style,
   tailleGemme = 18,
 }: {
   rang: Rang;
   cosmetiques: Cosmetiques;
   pseudo: string;
+  /** Classes du TEXTE (c'est lui qui tronque dans une liste). */
   className?: string;
+  /** Classes de l'enveloppe, à surcharger dans une ligne qui tronque
+   *  (« flex min-w-0 items-center gap-1.5 »). */
+  classNameEnveloppe?: string;
   style?: CSSProperties;
   tailleGemme?: number;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className={classNameEnveloppe}>
       <TexteBrillant brillant={cosmetiques.brillant} className={className} style={style}>
         {pseudo}
       </TexteBrillant>
@@ -135,7 +146,14 @@ export function PseudoRang({
   );
 }
 
-/** Le pseudo scintillant de l'Éternel. Sans la récompense : texte normal. */
+/**
+ * Le pseudo scintillant de l'Éternel. Sans la récompense : texte normal.
+ *
+ * ⚠️ L'animation est 100 % CSS (`.pseudo-brillant` dans `globals.css`), surtout
+ * PAS framer-motion : la première version pilotait `backgroundPosition` en JS et
+ * saccadait dès que le fil principal travaillait (retour de séance, ouverture
+ * d'un fil). Le raccord de boucle est traité côté CSS. Ne pas repasser en JS.
+ */
 function TexteBrillant({
   brillant,
   className,
@@ -147,8 +165,6 @@ function TexteBrillant({
   style?: CSSProperties;
   children: ReactNode;
 }) {
-  const reduce = useReducedMotion();
-
   if (!brillant) {
     return (
       <span className={className} style={style}>
@@ -157,29 +173,13 @@ function TexteBrillant({
     );
   }
 
-  const brillance: CSSProperties = {
-    ...style,
-    backgroundImage: "linear-gradient(100deg,#FFD34E,#C13BC1 35%,#8B5CF6 50%,#FFD34E 70%,#FFD34E)",
-    backgroundSize: "220% 100%",
-    WebkitBackgroundClip: "text",
-    backgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    color: "transparent",
-  };
-
+  // `color` viendrait écraser la transparence qui laisse voir le dégradé.
+  const reste: CSSProperties = { ...style };
+  delete reste.color;
   return (
-    <motion.span
-      className={className}
-      style={brillance}
-      {...(reduce
-        ? {}
-        : {
-            animate: { backgroundPosition: ["0% 50%", "220% 50%"] },
-            transition: { duration: 5, ease: "linear" as const, repeat: Infinity },
-          })}
-    >
+    <span className={`pseudo-brillant${className ? ` ${className}` : ""}`} style={reste}>
       {children}
-    </motion.span>
+    </span>
   );
 }
 
