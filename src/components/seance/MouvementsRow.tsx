@@ -19,10 +19,13 @@ import { EXERCISE_LIBRARY, trouverExercice, type LibExercise } from "@/lib/exerc
    toujours reproposer la même chose à la même personne.
    ════════════════════════════════════════════════════════════════════ */
 
-/** Douze gestes que tout le monde reconnaît, toutes zones et matériels mêlés. */
+/** Douze gestes que tout le monde reconnaît, toutes zones et matériels mêlés.
+    Le cadrage compte autant que la notoriété : une planche où l'agrès prend
+    toute la hauteur (barre de traction) rapetisse le personnage sur une
+    vignette de 70 px. On préfère un geste qui se lit en entier. */
 const VITRINE = [
   "Squat", "Pompes", "Gainage", "Fentes",
-  "Tractions", "Burpees", "Développé couché", "Soulevé de terre classique",
+  "Jumping jacks", "Burpees", "Développé couché", "Soulevé de terre classique",
   "Rowing barre", "Élévations latérales", "Kettlebell swing", "Crunch",
 ];
 

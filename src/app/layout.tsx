@@ -10,6 +10,7 @@ import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
 import PremiumBanner from "@/components/PremiumBanner";
+import PresenceDuJour from "@/components/PresenceDuJour";
 import { AssistantProvider } from "@/context/AssistantContext";
 import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
@@ -183,6 +184,7 @@ export default function RootLayout({
         <div aria-hidden style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(45,33,80,0.18), transparent)" }} />
         <SplashIntro />
         <AuthProvider>
+          <PresenceDuJour />
           <AssistantProvider>
             <WorkoutLaunchProvider>
               <GuidedTourProvider>
