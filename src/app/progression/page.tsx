@@ -22,15 +22,21 @@ import {
   Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
 } from "lucide-react";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
-import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
+import WorkoutGuideModal, { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
+import MouvementsRow from "@/components/seance/MouvementsRow";
+import ExerciseLibrarySheet from "@/components/seance/ExerciseLibrarySheet";
 import AdviceReaderSheet from "@/components/AdviceReaderSheet";
+import {
+  titreDepuisExercices, categorieDepuisExercices, libelleReps,
+  type LibExercise,
+} from "@/lib/exerciseLibrary";
 import { useAuth } from "@/context/AuthContext";
 import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
-import { levelToDifficulty } from "@/lib/assistantActions";
+import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
 import { FAMILY, resolveArt, type Family, type Art } from "@/lib/workoutArt";
 import {
   ADVICE_ARTICLES,
@@ -1347,12 +1353,15 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
         </div>
       </motion.button>
 
-      {/* Gérer (perso) — un ⋯ discret en bas-droite, hors du chemin du nom */}
-      {session.perso && (
+      {/* Gérer — un ⋯ discret en bas-droite, hors du chemin du nom.
+          Sur TOUTES les cartes depuis le 2026-07-29 : sur une séance
+          Vaiiya, il ouvre « M'en inspirer », le chemin le moins
+          intimidant vers une séance à soi (pas de page blanche). */}
+      {!advice && !premiumLocked && (
         <motion.button whileTap={{ scale: 0.85 }} onClick={() => onManage(session)}
           className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
           style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}
-          aria-label={`Gérer : ${session.title}`}>
+          aria-label={session.perso ? `Gérer : ${session.title}` : `Options : ${session.title}`}>
           <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
         </motion.button>
       )}
@@ -1523,12 +1532,13 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
 
 /* Menu « Gérer » d'une séance perso — remplace la barre de réglages sous
    les tuiles : la grille reste pure, les réglages ont leur propre écran. */
-function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }: {
+function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange, onInspirer }: {
   session: MergedSession;
   onClose: () => void;
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
   onVisibilityChange: (id: string, vis: Visibility) => void;
+  onInspirer: (s: MergedSession) => void;
 }) {
   const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
   const [vis, setVis] = useState<Visibility>((session.visibility ?? "private") as Visibility);
@@ -1563,7 +1573,7 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }:
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
             <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
-              Séance perso · {session.duration} min
+              {session.perso ? "Séance perso" : "Séance Vaiiya"} · {session.duration} min
             </p>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -1575,6 +1585,25 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }:
 
         <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
 
+        {/* ── Séance Vaiiya : une seule sortie, la plus utile ──
+           On ne modifie pas le catalogue, on en part. La copie n'est
+           écrite nulle part tant que la création n'est pas validée. */}
+        {!session.perso ? (
+          <motion.button whileTap={{ scale: 0.98 }} onClick={() => { onInspirer(session); onClose(); }}
+            className="w-full flex items-center gap-3 px-5 py-4 mb-1 cursor-pointer text-left border-none bg-transparent">
+            <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+              <Layers size={14} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>M’en inspirer</span>
+              <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>
+                Ses exercices dans une séance à toi, à modifier comme tu veux
+              </span>
+            </span>
+            <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
+        ) : (
+        <>
         {/* Modifier */}
         <motion.button whileTap={{ scale: 0.98 }} onClick={() => onEdit(session)}
           className="w-full flex items-center gap-3 px-5 py-3.5 cursor-pointer text-left border-none bg-transparent">
@@ -1621,6 +1650,8 @@ function ManageSheet({ session, onClose, onEdit, onDelete, onVisibilityChange }:
           </span>
           <span className="text-[13px] font-semibold" style={{ color: "#FC8181" }}>Supprimer la séance</span>
         </motion.button>
+        </>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -1825,7 +1856,7 @@ function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
   );
 }
 
-function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange }: {
+function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer }: {
   sessions: MergedSession[];
   loading: boolean;
   canAccessPremium: boolean;
@@ -1836,6 +1867,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
   onEdit: (s: WorkoutSession) => void;
   onDelete: (id: string) => void;
   onVisibilityChange: (id: string, vis: Visibility) => void;
+  onInspirer: (s: MergedSession) => void;
 }) {
   const [catId, setCatId] = useState<string | null>(null);
   const [manage, setManage] = useState<MergedSession | null>(null);
@@ -1854,6 +1886,12 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
   const vaiiyaPremium = vaiiya.filter((s) => s.access === "premium");
   const perso = matched.filter((s) => s.perso);
   const totalPremiumCount = matchedAll.filter((s) => !s.perso && s.access === "premium").length;
+
+  /* Épinglées en haut du catalogue : ta bibliothèque n'est pas une
+     catégorie éditoriale de plus, elle ne se range pas entre « Cardio »
+     et « Mobilité » (décision de Louis, 2026-07-29). */
+  const mesSeances = sessions.filter((s) => s.perso);
+  const artMes = dedupeRowArt(mesSeances);
 
   /* Photo par séance, dé-doublonnée PAR RANGÉE (Vaiiya et « les tiennes »
      indépendamment) : deux cartes d'une même rangée ne tombent plus sur la
@@ -1886,9 +1924,9 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
       <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
         <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
       </span>
-      <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Créer la mienne</span>
+      <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Composer ma séance</span>
       <span className="text-[9px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
-        Elle rejoint tes collections
+        102 exercices animés
       </span>
     </motion.button>
   );
@@ -1967,8 +2005,68 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
               ))}
             </div>
           ) : (
+            <>
+            {/* ── Épinglé : mes séances, et la porte pour en composer une ── */}
+            <section className="mb-6">
+              <div className="flex items-center gap-2 mb-2.5">
+                <h3 className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>Mes séances</h3>
+                {mesSeances.length > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.85)", color: "var(--text-3)" }}>
+                    {mesSeances.length}
+                  </span>
+                )}
+                {mesSeances.length > 3 && (
+                  <motion.button whileTap={{ scale: 0.94 }} onClick={() => setCatId("tiennes")}
+                    className="ml-auto flex items-center gap-0.5 text-[11px] font-semibold cursor-pointer flex-shrink-0"
+                    style={{ color: "var(--accent)" }}>
+                    Tout voir <ChevronRight size={12} strokeWidth={2.4} />
+                  </motion.button>
+                )}
+              </div>
+
+              {mesSeances.length === 0 ? (
+                /* Aucune séance : une invitation large, pas une carte vide
+                   coincée au bout d'une grille. */
+                <motion.button whileTap={{ scale: 0.98 }} onClick={onCreate}
+                  className="w-full rounded-[18px] px-4 py-4 flex items-center gap-3 cursor-pointer text-left"
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1.5px dashed rgba(var(--accent-rgb),0.34)" }}>
+                  <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                    <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13.5px] font-semibold" style={{ color: "var(--text-1)" }}>
+                      Composer ma séance
+                    </span>
+                    <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>
+                      102 exercices animés, tu choisis dedans
+                    </span>
+                  </span>
+                  <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+                </motion.button>
+              ) : (
+                <div className="flex gap-3 overflow-x-auto -mx-5 px-5 pb-1"
+                  style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+                  <div className="flex-shrink-0" style={{ width: ROW_CARD_W }}>{createCard}</div>
+                  {mesSeances.slice(0, 8).map((s) => (
+                    <div key={s.id} className="flex-shrink-0" style={{ width: ROW_CARD_W }}>
+                      <SessionTile
+                        session={s}
+                        onStart={onStart}
+                        onManage={setManage}
+                        onPremium={setPremiumPreview}
+                        canAccessPremium={canAccessPremium}
+                        imgOverride={artMes.get(s.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {CATALOG.map((c) => {
+              {CATALOG.filter((c) => c.id !== "tiennes").map((c) => {
                 const catSessions = sessions.filter((s) => c.match(s, hayOf(s)));
                 const official = catSessions.filter((s) => !s.perso);
                 const premiumCount = official.filter((s) => s.access === "premium").length;
@@ -1986,6 +2084,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
                 );
               })}
             </div>
+            </>
           )
         ) : cat.id === "tiennes" ? (
           /* ── Niveau 2, « Les tiennes » : ta bibliothèque + créer ── */
@@ -2050,7 +2149,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
       </motion.div>
     </Sheet>
 
-    {/* Menu « Gérer » d'une séance perso */}
+    {/* Menu d'une carte : réglages si elle est à toi, « m'en inspirer » sinon */}
     <AnimatePresence>
       {manage && (
         <ManageSheet
@@ -2059,6 +2158,7 @@ function ChooseSheet({ sessions, loading, canAccessPremium, onClose, onStart, on
           onEdit={(s) => { setManage(null); onEdit(s); }}
           onDelete={(id) => { setManage(null); onDelete(id); }}
           onVisibilityChange={onVisibilityChange}
+          onInspirer={(s) => { setManage(null); onInspirer(s); }}
         />
       )}
     </AnimatePresence>
@@ -2617,6 +2717,17 @@ const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
 const SOUS_TITRE_CATEGORIE: Record<WorkoutCategory, string> = {
   force: "Force", cardio: "Cardio", mobilite: "Mobilité", fullbody: "Full body",
 };
+
+/* Une séance lancée porte une catégorie libre (« Full Body » de l'impro,
+   « HIIT » du planning). Pour la ranger dans la bibliothèque perso, il
+   faut la ramener aux quatre types de l'app. */
+function normaliserCategorie(c?: string): WorkoutCategory {
+  const t = (c ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/cardio|hiit|course|velo/.test(t)) return "cardio";
+  if (/mobil|etirement|yoga|souplesse|recup/.test(t)) return "mobilite";
+  if (/full/.test(t)) return "fullbody";
+  return "force";
+}
 /** Hors composant : l'horloge n'a rien à faire dans un rendu React. */
 const nouvelIdSeance = () => `custom-${Date.now()}`;
 
@@ -2653,6 +2764,16 @@ export default function ProgressionPage() {
   const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine">(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
+  /* Séance pré-remplie : arrive de la bibliothèque (mouvements cochés) ou
+     d'une séance Vaiiya dont on s'inspire. Rien n'est enregistré tant que
+     la création n'est pas validée (choix de Louis, 2026-07-29). */
+  const [draftSeed, setDraftSeed] = useState<SessionDraft | null>(null);
+  /* Change à chaque ouverture : la modale ne lit `initial` qu'au montage,
+     et une réouverture rapide peut réutiliser l'instance qui sort encore
+     de l'écran. Sans ce compteur, la 2ᵉ sélection serait ignorée. */
+  const [numeroCreation, setNumeroCreation] = useState(0);
+  /* La vitrine des mouvements : ouverte à vide, ou sur une fiche précise. */
+  const [mouvements, setMouvements] = useState<{ fiche: LibExercise | null } | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
   const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -2970,6 +3091,83 @@ export default function ProgressionPage() {
     showToast("Séance supprimée");
   };
 
+  /* ── Les trois portes vers la création ──────────────────────────────
+     Elles mènent toutes au même parcours, jamais à une page blanche :
+     depuis la bibliothèque (mouvements cochés), depuis une séance Vaiiya
+     dont on s'inspire, ou depuis la fin d'une impro qu'on veut garder. */
+
+  const ouvrirCreation = (seed: SessionDraft | null) => {
+    setEditSession(null);
+    setDraftSeed(seed);
+    setNumeroCreation((n) => n + 1);
+    setShowCreateModal(true);
+  };
+
+  /* La bibliothèque rend ses propres exos ; la création relit les reps
+     (« 45s », « 12 par jambe »), d'où le passage par leur libellé. */
+  const depuisMouvements = (exos: LibExercise[]) => {
+    if (exos.length === 0) return;
+    setMouvements(null);
+    setSheet(null);
+    ouvrirCreation({
+      title: titreDepuisExercices(exos),
+      category: categorieDepuisExercices(exos),
+      difficulty: levelToDifficulty(profileLevel),
+      duration: 0,               // recalculée par la modale
+      muscles: [],               // déduits des exercices
+      exerciseList: exos.map((e) => ({
+        name: e.name,
+        sets: e.sets,
+        reps: libelleReps(e.mode, e.reps, e.seconds, e.unite),
+        rest: e.rest,
+        restAfter: 90,
+        auto: e.mode === "temps" ? e.seconds : undefined,
+        tip: e.tip,
+        benefit: e.benefit,
+        muscles: e.muscles,
+      })),
+    });
+  };
+
+  /* « M'en inspirer » : on part d'une séance qui existe, la page blanche
+     est la première friction de toute création. Rien n'est écrit tant que
+     la création n'est pas validée. */
+  const inspirerDe = (s: MergedSession) => {
+    /* Une carte du catalogue ne porte pas forcément sa liste : le tunnel
+       la retrouve par id. On fait pareil, sinon on ouvrirait une création
+       vide en ayant promis « ses exercices ». */
+    const exos = s.exerciseList?.length ? s.exerciseList : (exerciseData[s.id] ?? []);
+    setSheet(null);
+    ouvrirCreation({
+      title: `${s.title} (ma version)`,
+      category: s.category,
+      difficulty: s.difficulty,
+      duration: s.duration,
+      muscles: s.muscles,
+      exerciseList: exos,
+    });
+    if (exos.length === 0) showToast("Séance sans liste détaillée, à toi de la composer");
+  };
+
+  /* Fin d'une impro : elle n'existe nulle part, on propose de la garder. */
+  const garderImpro = (t: LaunchTarget) => {
+    const exos = t.exerciseList ?? [];
+    handleCreateOrEdit({
+      id: nouvelIdSeance(),
+      title: t.title,
+      subtitle: `${SOUS_TITRE_CATEGORIE[normaliserCategorie(t.category)]} · Ma séance`,
+      category: normaliserCategorie(t.category),
+      duration: t.duration,
+      difficulty: normalizeDifficulty(t.difficulty),
+      exercises: exos.length || 1,
+      muscles: [...new Set(exos.flatMap((e) => e.muscles ?? []))],
+      accent: ACCENT_BY_CATEGORY[normaliserCategorie(t.category)],
+      icon: ICON_BY_CATEGORY[normaliserCategorie(t.category)],
+      exerciseList: exos,
+    });
+    showToast("Séance ajoutée à tes séances ✓");
+  };
+
   /* La modale ne connaît que le contenu de la séance ; l'identité (id,
      accent, icône, sous-titre) reste ici, avec l'enregistrement. */
   const handleDraft = (draft: SessionDraft) => {
@@ -3098,7 +3296,17 @@ export default function ProgressionPage() {
           <ForkCard kind="choisis" count={allSessions.length} onClick={() => setSheet("choisir")} />
         </motion.div>
 
-        {/* ── ③ Ma semaine ── */}
+        {/* ── ③ Les mouvements ──
+           La vitrine passe APRÈS la bifurcation : on répond d'abord à
+           « je fais quoi maintenant », on donne envie ensuite. */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.22 }}
+          className="mt-6"
+        >
+          <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
+        </motion.div>
+
+        {/* ── ④ Ma semaine ── */}
         <motion.div
           data-tour-anchor="prog-semaine"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
@@ -3107,7 +3315,7 @@ export default function ProgressionPage() {
           <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("semaine")} />
         </motion.div>
 
-        {/* ── ④ Ton élan ── */}
+        {/* ── ⑤ Ton élan ── */}
         <motion.div
           data-tour-anchor="prog-elan"
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
@@ -3151,10 +3359,11 @@ export default function ProgressionPage() {
             onClose={() => setSheet(null)}
             onStart={startSession}
             onUpgrade={() => { setSheet(null); router.push("/premium"); }}
-            onCreate={() => { setEditSession(null); setShowCreateModal(true); }}
-            onEdit={(s) => { setEditSession(s); setShowCreateModal(true); }}
+            onCreate={() => ouvrirCreation(null)}
+            onEdit={(s) => { setDraftSeed(null); setEditSession(s); setShowCreateModal(true); }}
             onDelete={handleDelete}
             onVisibilityChange={handleVisibilityChange}
+            onInspirer={inspirerDe}
           />
         )}
       </AnimatePresence>
@@ -3166,6 +3375,34 @@ export default function ProgressionPage() {
             difficulty={levelToDifficulty(profileLevel)}
             onClose={() => setSheet(null)}
             onLaunch={(t) => { setSheet(null); setActiveWorkout(t); showToast(`${t.title} prête ✦`); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ La vitrine des mouvements ══ */}
+      <AnimatePresence>
+        {mouvements && (
+          <ExerciseLibrarySheet
+            mode="exploration"
+            dejaChoisis={[]}
+            ficheInitiale={mouvements.fiche}
+            onClose={() => setMouvements(null)}
+            onAjouter={depuisMouvements}
+            onAjouterLibre={(nom) => {
+              /* Exo maison : il part sans animation, l'écran l'a dit. */
+              setMouvements(null);
+              ouvrirCreation({
+                title: "",
+                category: "force",
+                difficulty: levelToDifficulty(profileLevel),
+                duration: 0,
+                muscles: [],
+                exerciseList: [{
+                  name: nom, sets: 3, reps: "12 reps", rest: 60, restAfter: 90,
+                  tip: "", benefit: "", muscles: [],
+                }],
+              });
+            }}
           />
         )}
       </AnimatePresence>
@@ -3184,6 +3421,12 @@ export default function ProgressionPage() {
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
             onComplete={() => handleWorkoutComplete(activeWorkout)}
+            /* Seule une impro n'existe nulle part : c'est elle qu'on
+               perdrait. Une séance du catalogue ou du planning est déjà
+               quelque part, on ne propose rien. */
+            onGarder={user && activeWorkout.id.startsWith("improv-") && activeWorkout.exerciseList?.length
+              ? () => garderImpro(activeWorkout)
+              : undefined}
           />
         )}
       </AnimatePresence>
@@ -3202,7 +3445,7 @@ export default function ProgressionPage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreateSessionModal
-            key={editSession?.id ?? "new"}
+            key={editSession?.id ?? `new-${numeroCreation}`}
             isEdit={!!editSession}
             initial={editSession ? {
               title: editSession.title,
@@ -3211,8 +3454,8 @@ export default function ProgressionPage() {
               duration: editSession.duration,
               muscles: editSession.muscles,
               exerciseList: editSession.exerciseList ?? [],
-            } : null}
-            onClose={() => { setShowCreateModal(false); setEditSession(null); }}
+            } : draftSeed}
+            onClose={() => { setShowCreateModal(false); setEditSession(null); setDraftSeed(null); }}
             onSubmit={handleDraft}
           />
         )}

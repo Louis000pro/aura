@@ -480,3 +480,58 @@ export function chercherExercices(opts: { texte?: string; zone?: Zone | null; eq
     return aplatir(e.name).includes(q) || e.muscles.some(m => aplatir(m).includes(q));
   });
 }
+
+/* ── Deviner la séance derrière une poignée d'exercices ────────────────
+   Quand on arrive dans la création depuis la bibliothèque, les exercices
+   sont déjà là : il serait absurde de redemander « c'est quoi, du cardio
+   ou de la force ? » alors que la réponse est dans la sélection. On
+   propose donc un nom et un type, tous deux corrigeables. */
+
+const HAUT: Zone[] = ["pectoraux", "dos", "epaules", "bras"];
+const BAS: Zone[] = ["jambes", "fessiers"];
+
+/** Zone la plus représentée, avec le compte de chaque famille. */
+function repartition(exos: LibExercise[]) {
+  const parZone = new Map<Zone, number>();
+  exos.forEach(e => parZone.set(e.zone, (parZone.get(e.zone) ?? 0) + 1));
+  const compte = (zs: Zone[]) => zs.reduce((n, z) => n + (parZone.get(z) ?? 0), 0);
+  let dominante: Zone | null = null;
+  let max = 0;
+  parZone.forEach((n, z) => { if (n > max) { max = n; dominante = z; } });
+  return {
+    dominante: dominante as Zone | null,
+    haut: compte(HAUT),
+    bas: compte(BAS),
+    mobilite: parZone.get("mobilite") ?? 0,
+    cardio: parZone.get("cardio") ?? 0,
+    abdos: parZone.get("abdos") ?? 0,
+    total: exos.length,
+  };
+}
+
+/** Un nom de séance plausible, à partir de ce qui a été choisi. */
+export function titreDepuisExercices(exos: LibExercise[]): string {
+  if (!exos.length) return "";
+  const r = repartition(exos);
+  const moitie = r.total / 2;
+  if (r.mobilite > moitie) return "Ma séance mobilité";
+  if (r.cardio > moitie) return "Ma séance cardio";
+  if (r.haut > 0 && r.bas > 0) return "Ma séance full body";
+  if (r.bas > 0 && r.bas >= r.haut) return "Mon bas du corps";
+  if (r.haut > 0) return "Mon haut du corps";
+  if (r.abdos > 0) return "Mes abdos";
+  return "Ma séance";
+}
+
+/** Le type de séance déduit de la sélection (l'utilisateur peut le changer). */
+export function categorieDepuisExercices(
+  exos: LibExercise[],
+): "force" | "cardio" | "mobilite" | "fullbody" {
+  if (!exos.length) return "force";
+  const r = repartition(exos);
+  const moitie = r.total / 2;
+  if (r.mobilite > moitie) return "mobilite";
+  if (r.cardio > moitie) return "cardio";
+  if (r.haut > 0 && r.bas > 0) return "fullbody";
+  return "force";
+}

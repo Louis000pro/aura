@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown } from "lucide-react";
+import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, Check, Plus } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
 import ExerciseGuide from "@/components/ExerciseGuide";
+import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { validerMaillon, CLE_DEVOILE } from "@/lib/defi";
@@ -107,6 +108,9 @@ export interface WorkoutGuideModalProps {
   onClose: () => void;
   onComplete?: () => void;
   exerciseList?: Exercise[];
+  /** Présent = la séance n'existe nulle part (une impro) et peut être gardée.
+      La page décide, le tunnel ne fait qu'afficher la proposition. */
+  onGarder?: () => void;
 }
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
@@ -146,7 +150,11 @@ const CC        = 2 * Math.PI * CR;
    traite. TEMPORAIRE : ces séances servent à valider chaque vague de
    sprites dans le vrai tunnel ; on les retire à la mise à jour. */
 
-const exerciseData: Record<string, Exercise[]> = {
+/* Exporté depuis le 2026-07-29 : « M'en inspirer » a besoin des mêmes
+   exercices que le tunnel. Une carte du catalogue ne porte pas toujours
+   son `exerciseList` (le tunnel les retrouve ici par id), donc dupliquer
+   cette table côté page rejouerait la divergence déjà vécue ailleurs. */
+export const exerciseData: Record<string, Exercise[]> = {
   ...WAVE_1_EXERCISES,
   ...WAVE_2_EXERCISES,
   ...WAVE_3_EXERCISES,
@@ -648,6 +656,7 @@ export function resolveSessionId(title: string): string | null {
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
   sessionId, title, accent, duration, difficulty, category, heroImage, onClose, onComplete, exerciseList,
+  onGarder,
 }: WorkoutGuideModalProps) {
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
   // séance custom (gainage « 45s », tenue « 30 sec »…) qui n'en portent pas.
@@ -679,6 +688,7 @@ export default function WorkoutGuideModal({
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
   const [sessionSaved,  setSessionSaved]  = useState(false);
+  const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
 
   const { user } = useAuth();
 
@@ -1380,6 +1390,68 @@ export default function WorkoutGuideModal({
             {phase === "done" && (
               <motion.div key="done-actions" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-2.5">
+
+                {/* ── Garder la séance ──
+                   Une impro disparaissait une fois terminée : du travail
+                   jeté, à l'instant précis où l'on vient de prouver que la
+                   séance marchait. La carte passe AVANT le partage, et
+                   « Non » ne fait aucun commentaire. */}
+                {onGarder && garde !== "refusee" && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-3.5"
+                    style={{
+                      background: "linear-gradient(150deg, rgba(139,92,246,0.19), rgba(193,59,193,0.11))",
+                      border: "1px solid rgba(139,92,246,0.42)",
+                    }}>
+                    {garde === "gardee" ? (
+                      <div className="flex items-center justify-center gap-2 py-1">
+                        <Check size={14} strokeWidth={2.6} style={{ color: TUN.teal }} />
+                        <span className="text-[12.5px] font-semibold" style={{ color: TUN.teal }}>
+                          Ajoutée à tes séances
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-shrink-0">
+                            {exercises.slice(0, 3).map((e, i) => (
+                              <span key={`${e.name}-${i}`}
+                                className="rounded-xl flex items-center justify-center overflow-hidden"
+                                style={{
+                                  width: 36, height: 40, marginLeft: i === 0 ? 0 : -10,
+                                  background: "rgba(255,255,255,0.07)",
+                                  border: "1px solid rgba(255,255,255,0.14)",
+                                }}>
+                                <ExerciseThumb name={e.name} size={34} delay={i * 200} />
+                              </span>
+                            ))}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
+                            <p className="text-[10.5px] leading-snug mt-1" style={{ color: TUN.t2 }}>
+                              Elle rejoint tes séances, tu pourras la relancer ou la modifier.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <motion.button whileTap={{ scale: 0.97 }}
+                            onClick={() => { onGarder(); setGarde("gardee"); }}
+                            className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[12.5px] cursor-pointer text-white"
+                            style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
+                            <Plus size={14} strokeWidth={2.6} /> Garder la séance
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.97 }}
+                            onClick={() => setGarde("refusee")}
+                            className="px-4 py-2.5 rounded-xl font-semibold text-[12.5px] cursor-pointer"
+                            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
+                            Non
+                          </motion.button>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
                 <div className="flex justify-center mb-1">
                   <PerfShareCard data={perfShareData} width="min(200px, 56%)" />
                 </div>

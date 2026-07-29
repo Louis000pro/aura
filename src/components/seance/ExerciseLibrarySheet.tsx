@@ -1,21 +1,31 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { X, Search, Check, Plus, Sparkles } from "lucide-react";
 import ExerciseThumb from "./ExerciseThumb";
+import ExerciseDetailSheet from "./ExerciseDetailSheet";
 import {
   chercherExercices, libelleReps, estAnime, EXERCISE_LIBRARY, ZONES, EQUIPS,
   type LibExercise, type Zone, type Equip,
 } from "@/lib/exerciseLibrary";
 
 /* ════════════════════════════════════════════════════════════════════
-   LA BIBLIOTHÈQUE · l'écran où l'on choisit ses exercices.
+   LA BIBLIOTHÈQUE · l'écran où l'on regarde et où l'on choisit.
 
    Ce qui compte ici : on ne tape plus un nom au hasard, on PIQUE dans une
    liste où chaque exo a déjà son personnage animé, ses muscles et ses
    consignes. Ce qui arrive dans la séance perso est donc exactement de la
    même qualité que le catalogue Vaiiya.
+
+   Deux entrées, un seul écran :
+   • « selection » depuis la création, on complète une séance en cours ;
+   • « exploration » depuis Entraînement, où la bibliothèque est une
+     vitrine (les 102 personnages sont ce qu'on a de plus beau et ils ne
+     se voyaient jusqu'ici qu'une fois DANS une séance).
+
+   Dans les deux cas, toucher une carte ouvre sa fiche et la pastille
+   ajoute directement : on peut lire avant de choisir, ou aller vite.
 
    Le champ libre reste possible (dernière carte quand rien ne matche) :
    un exo maison n'aura simplement pas d'animation, et l'écran le dit
@@ -24,11 +34,16 @@ import {
 
 export default function ExerciseLibrarySheet({
   dejaChoisis,
+  mode = "selection",
+  ficheInitiale = null,
   onClose,
   onAjouter,
   onAjouterLibre,
 }: {
   dejaChoisis: string[];
+  mode?: "selection" | "exploration";
+  /** Ouvre l'écran directement sur ce mouvement (touché depuis la vitrine). */
+  ficheInitiale?: LibExercise | null;
   onClose: () => void;
   onAjouter: (exos: LibExercise[]) => void;
   onAjouterLibre: (nom: string) => void;
@@ -37,6 +52,8 @@ export default function ExerciseLibrarySheet({
   const [zone, setZone] = useState<Zone | null>(null);
   const [equip, setEquip] = useState<Equip | null>(null);
   const [choix, setChoix] = useState<string[]>([]);
+  const [fiche, setFiche] = useState<LibExercise | null>(ficheInitiale);
+  const exploration = mode === "exploration";
 
   const presents = useMemo(() => new Set(dejaChoisis.map(n => n.toLowerCase())), [dejaChoisis]);
   const resultats = useMemo(() => chercherExercices({ texte, zone, equip }), [texte, zone, equip]);
@@ -82,10 +99,10 @@ export default function ExerciseLibrarySheet({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-                Bibliothèque
+                {exploration ? `${EXERCISE_LIBRARY.length} exercices animés` : "Bibliothèque"}
               </p>
               <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
-                Choisis tes exercices
+                {exploration ? "Les mouvements" : "Choisis tes exercices"}
               </h2>
             </div>
             <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
@@ -170,60 +187,73 @@ export default function ExerciseLibrarySheet({
               {resultats.map((e, i) => {
                 const pris = presents.has(e.name.toLowerCase());
                 const actif = choix.includes(e.name);
+                /* La carte n'est PAS un seul bouton : son corps ouvre la
+                   fiche (on lit avant de choisir), la pastille ajoute tout
+                   de suite (on va vite quand on sait déjà). Deux boutons
+                   frères, jamais imbriqués. */
                 return (
-                  <motion.button
-                    key={e.name}
-                    whileTap={pris ? undefined : { scale: 0.96 }}
-                    onClick={() => { if (!pris) basculer(e); }}
-                    className="relative rounded-2xl p-3 flex flex-col items-center gap-1.5 text-center cursor-pointer"
-                    style={{
-                      background: actif
-                        ? "linear-gradient(160deg, rgba(139,92,246,0.16), rgba(193,59,193,0.10))"
-                        : "rgba(var(--tint-violet-rgb),0.32)",
-                      border: actif
-                        ? "1px solid rgba(var(--accent-rgb),0.55)"
-                        : "1px solid rgba(var(--violet-mid-rgb),0.32)",
-                      opacity: pris ? 0.55 : 1,
-                      cursor: pris ? "default" : "pointer",
-                    }}
-                  >
-                    <ExerciseThumb name={e.name} size={78} delay={i * 90} />
-                    <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
-                      {e.name}
-                    </p>
-                    <p className="text-[9.5px] leading-tight" style={{ color: "var(--text-3)" }}>
-                      {e.muscles.slice(0, 2).join(" · ")}
-                    </p>
-                    <p className="text-[9.5px] font-semibold" style={{ color: "var(--accent)" }}>
-                      {e.sets} × {libelleReps(e.mode, e.reps, e.seconds, e.unite)}
-                    </p>
+                  <div key={e.name} className="relative">
+                    <motion.button
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setFiche(e)}
+                      className="w-full h-full rounded-2xl p-3 flex flex-col items-center gap-1.5 text-center cursor-pointer"
+                      style={{
+                        background: actif
+                          ? "linear-gradient(160deg, rgba(139,92,246,0.16), rgba(193,59,193,0.10))"
+                          : "rgba(var(--tint-violet-rgb),0.32)",
+                        border: actif
+                          ? "1px solid rgba(var(--accent-rgb),0.55)"
+                          : "1px solid rgba(var(--violet-mid-rgb),0.32)",
+                        opacity: pris ? 0.55 : 1,
+                      }}
+                      aria-label={`${e.name}, voir la fiche`}
+                    >
+                      <ExerciseThumb name={e.name} size={78} delay={i * 90} />
+                      <p className="text-[12px] font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
+                        {e.name}
+                      </p>
+                      <p className="text-[9.5px] leading-tight" style={{ color: "var(--text-3)" }}>
+                        {e.muscles.slice(0, 2).join(" · ")}
+                      </p>
+                      <p className="text-[9.5px] font-semibold" style={{ color: "var(--accent)" }}>
+                        {e.sets} × {libelleReps(e.mode, e.reps, e.seconds, e.unite)}
+                      </p>
+                    </motion.button>
 
-                    {/* Pastille d'état */}
+                    {/* Pastille d'état, cliquable sauf quand l'exo est déjà pris */}
                     {pris ? (
                       <span className="absolute top-2 right-2 text-[8.5px] font-bold px-1.5 py-0.5 rounded-full"
                         style={{ background: "rgba(43,212,160,0.16)", color: "#2BD4A0" }}>
                         Ajouté
                       </span>
-                    ) : actif ? (
-                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }}>
-                        <Check size={11} strokeWidth={3} color="#fff" />
-                      </span>
                     ) : (
-                      <span className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ border: "1px solid rgba(var(--violet-mid-rgb),0.55)" }}>
-                        <Plus size={10} strokeWidth={2.5} style={{ color: "var(--text-3)" }} />
-                      </span>
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={() => basculer(e)}
+                        className="absolute top-0.5 right-0.5 w-8 h-8 flex items-center justify-center cursor-pointer"
+                        aria-label={actif ? `Retirer ${e.name}` : `Ajouter ${e.name}`}
+                        aria-pressed={actif}
+                      >
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center"
+                          style={actif
+                            ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }
+                            : { border: "1px solid rgba(var(--violet-mid-rgb),0.55)", background: "rgba(var(--surface-rgb),0.75)" }
+                          }>
+                          {actif
+                            ? <Check size={11} strokeWidth={3} color="#fff" />
+                            : <Plus size={10} strokeWidth={2.5} style={{ color: "var(--text-3)" }} />}
+                        </span>
+                      </motion.button>
                     )}
 
                     {/* Marque « animé » : jamais promise sans sprite. */}
                     {estAnime(e.name) && (
-                      <span className="absolute top-2 left-2 flex items-center gap-0.5 text-[8.5px] font-bold"
+                      <span className="absolute top-2 left-2 flex items-center gap-0.5 text-[8.5px] font-bold pointer-events-none"
                         style={{ color: "var(--gold)" }}>
                         <Sparkles size={9} strokeWidth={2.4} /> animé
                       </span>
                     )}
-                  </motion.button>
+                  </div>
                 );
               })}
             </div>
@@ -253,11 +283,28 @@ export default function ExerciseLibrarySheet({
             }
           >
             {choix.length === 0
-              ? "Sélectionne des exercices"
+              ? exploration ? "Choisis des mouvements pour en faire une séance" : "Sélectionne des exercices"
+              : exploration ? `En faire une séance (${choix.length})`
               : `Ajouter ${choix.length} exercice${choix.length > 1 ? "s" : ""}`}
           </motion.button>
         </div>
       </motion.div>
+
+      {/* ── La fiche, par-dessus la grille ──
+         Posée en dehors de la feuille : celle-ci s'anime en `transform`,
+         ce qui ferait d'elle le référentiel d'un enfant `fixed`. Le voile,
+         lui, ne bouge pas et couvre déjà tout l'écran. */}
+      <AnimatePresence>
+        {fiche && (
+          <ExerciseDetailSheet
+            exo={fiche}
+            choisi={choix.includes(fiche.name)}
+            dejaDansLaSeance={presents.has(fiche.name.toLowerCase())}
+            onBasculer={() => basculer(fiche)}
+            onClose={() => setFiche(null)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
