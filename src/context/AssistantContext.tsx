@@ -720,7 +720,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      L'action arrive du MÊME appel que sa phrase (outils de /api/chat), donc
      le texte et la carte ne peuvent plus se contredire. Ajouter une capacité :
      une entrée dans `assistantTools.ts`, une branche ici, une carte si ça écrit. ── */
-  const runAction = useCallback(async (action: AssistantAction, text: string, coachAParle: boolean) => {
+  const runAction = useCallback(async (action: AssistantAction, text: string) => {
     if (!user?.id || !action?.intent) return;
 
     // Réponse courte du coach dans le fil (aucune impasse muette).
@@ -760,14 +760,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // On n'applique QUE si l'utilisateur a vraiment parlé d'apparence.
       if (!textMentionsTheme(text)) return;
       setThemePreference(pref);
-      // Le coach parle et agit dans le même tour : s'il a déjà annoncé le
-      // changement, on n'ajoute pas une deuxième bulle qui dit la même chose.
-      if (coachAParle) return;
-      const motTheme =
-        pref === "dark" ? "C'est passé en sombre ✦"
-        : pref === "light" ? "Retour en clair ✦"
-        : "Thème réglé sur automatique, il suivra ton téléphone ✦";
-      setMessages((prev) => [...prev, { role: "assistant" as const, content: motTheme, id: uid() }]);
+      // Pas de message ici : le coach parle et agit dans le même tour, et
+      // `phraseDeRepli` annonce déjà le changement. En ajouter un deuxième
+      // ferait dire deux fois la même chose.
       return;
     }
 
@@ -1082,15 +1077,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")
         .trim();
 
-      // Le coach a agi sans écrire un mot : plutôt qu'une bulle vide suivie
-      // d'une carte, on met la phrase qui correspond à l'action. Elle en est
-      // déduite, donc elle ne peut pas la contredire.
-      if (!cleaned && action) cleaned = phraseDeRepli((action as AssistantAction).intent);
+      // ⚠️ Vérifié contre l'API : quand Mistral appelle un outil, il n'écrit
+      // RIEN. Ce n'est pas un cas limite, c'est le cas normal, donc la phrase
+      // déduite de l'action porte toute la parole du coach sur ces tours.
+      if (!cleaned && action) cleaned = phraseDeRepli(action);
 
-      // ⚠️ Ne JAMAIS laisser un tour vide. Une version précédente supprimait la
-      // bulle sans contenu : l'utilisateur envoyait un message et il ne se
-      // passait rien du tout, sans la moindre explication. Un échec doit se
-      // voir, sinon on ne peut pas le corriger.
+      // Ni texte ni action : ça ne doit JAMAIS passer inaperçu. Une version
+      // précédente supprimait la bulle vide, du coup l'utilisateur envoyait un
+      // message et il ne se passait rien du tout, sans la moindre explication.
       if (!cleaned) cleaned = "Je n'ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement.";
 
       setMessages((prev) => {
@@ -1099,7 +1093,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
 
-      if (action) void runAction(action, trimmed, !!cleaned);
+      if (action) void runAction(action, trimmed);
 
       const navMatch = accumulated.match(/\[NAV\]\s*([^[\]]+?)\s*\[\/NAV\]/i);
       if (navMatch) {

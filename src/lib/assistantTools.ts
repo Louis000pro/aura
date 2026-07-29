@@ -266,12 +266,19 @@ export const ASSISTANT_TOOLS: Tool[] = [
   },
 ];
 
-/** Phrase de repli quand le modèle appelle un outil SANS écrire un mot.
- *  Sans ça, l'utilisateur verrait une bulle vide suivie d'une carte : le
- *  symptôme exact qu'on cherche à supprimer. La phrase reste cohérente avec
- *  l'action puisqu'elle en est déduite. */
-export function phraseDeRepli(intent: string): string {
-  switch (intent) {
+/** Ce que dit le coach quand il appelle un outil SANS écrire un mot.
+ *
+ *  ⚠️ Ce n'est PAS un cas limite, c'est le cas NORMAL : vérifié en direct
+ *  contre l'API, `mistral-small-latest` renvoie `content: ""` dès qu'il
+ *  appelle un outil, quoi que le prompt lui demande. Cette fonction porte
+ *  donc à elle seule toute la parole du coach sur les tours d'action.
+ *
+ *  Elle DOIT couvrir tous les intents : une phrase vide laisserait une bulle
+ *  sans contenu, et c'est exactement le symptôme qu'on chasse. La phrase est
+ *  déduite de l'action, donc elle ne peut pas la contredire. */
+export function phraseDeRepli(action: AssistantAction): string {
+  const t = (action.theme ?? "").toLowerCase();
+  switch (action.intent) {
     case "create_seance": return "Voici une proposition de séance, regarde juste en dessous 👇";
     case "plan_set": return "Ça marche, je te prépare ça. Valide juste en dessous 👇";
     case "plan_move": return "Pas de souci, je te propose un nouveau jour. Valide en dessous 👇";
@@ -280,6 +287,12 @@ export function phraseDeRepli(intent: string): string {
     case "plan_regen": return "Ça marche, je te prépare une nouvelle semaine. Valide en dessous ✦";
     case "log_meal": return "C'est noté, je te prépare l'ajout. Valide juste en dessous 👇";
     case "create_recipe": return "Je t'écris ça, regarde juste en dessous 👇";
-    default: return "";
+    case "open_page": return "Je t'emmène ✦";
+    case "save_lieu": return "C'est noté, je m'en souviens ✦";
+    case "set_theme":
+      return t.startsWith("somb") ? "C'est passé en sombre ✦"
+        : t.startsWith("clair") ? "Retour en clair ✦"
+        : "Thème réglé sur automatique, il suivra ton téléphone ✦";
+    default: return "C'est noté ✦";
   }
 }
