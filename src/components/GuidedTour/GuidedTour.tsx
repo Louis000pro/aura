@@ -18,7 +18,7 @@
    marquée comme vue (on ne repropose pas ce qu'on a refusé).
    ════════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, X } from "lucide-react";
 import { useGuidedTour } from "@/context/GuidedTourContext";
@@ -30,6 +30,70 @@ const BLANC = (a: number) => `rgba(255,255,255,${a})`;
 
 /* Étoiles fixes du fond : positions déterministes (aucun Math.random →
    aucun écart entre le rendu serveur et le rendu navigateur). */
+/* ── La scène s'ajuste au trou qui lui reste ──
+   Chaque scène est dessinée à sa taille nominale (340 px de large, 250 à
+   330 px de haut). Au lieu de la laisser déborder — puis rogner, puis
+   inviter à faire défiler, ce que personne ne fait pendant une visite —
+   on mesure la place disponible et on met la scène à l'échelle. Le texte
+   et le bouton, eux, ne bougent jamais : ils sont la partie qui se lit.
+   Le facteur ne descend pas sous 0,5 (au-delà ce serait illisible). */
+function SceneAjustee({ children, cle }: { children: React.ReactNode; cle: string }) {
+  const zone = useRef<HTMLDivElement>(null);
+  const contenu = useRef<HTMLDivElement>(null);
+  const [facteur, setFacteur] = useState(1);
+
+  useLayoutEffect(() => {
+    const mesurer = () => {
+      const z = zone.current;
+      const c = contenu.current;
+      if (!z || !c) return;
+      // offsetHeight/Width ignorent le `transform` : on mesure donc toujours
+      // la taille NATURELLE, jamais la taille déjà réduite (pas de boucle).
+      const h = c.offsetHeight;
+      const w = c.offsetWidth;
+      if (!h || !w) return;
+      // La place réelle, c'est la zone MOINS ses marges internes : la
+      // comparer à `clientHeight` (qui les inclut) laissait dépasser le haut
+      // de la scène de quelques pixels sur les petits téléphones.
+      const cs = getComputedStyle(z);
+      const dispoH = z.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const dispoW = z.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const k = Math.min(1, dispoH / h, dispoW / w);
+      setFacteur(Math.max(0.5, Number.isFinite(k) ? k : 1));
+    };
+
+    mesurer();
+    const ro = new ResizeObserver(mesurer);
+    if (zone.current) ro.observe(zone.current);
+    if (contenu.current) ro.observe(contenu.current);
+    window.addEventListener("resize", mesurer);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", mesurer);
+    };
+  }, [cle]);
+
+  return (
+    <div
+      ref={zone}
+      className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-7"
+      style={{ paddingTop: 10, paddingBottom: 18 }}
+    >
+      <div
+        ref={contenu}
+        className="w-full"
+        style={{
+          maxWidth: 340,
+          transform: `scale(${facteur})`,
+          transformOrigin: "center center",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const POUSSIERE = Array.from({ length: 14 }, (_, i) => ({
   left: `${(i * 37 + 11) % 100}%`,
   top: `${(i * 61 + 5) % 100}%`,
@@ -117,7 +181,7 @@ export default function GuidedTour() {
 
       {/* ── Haut : l'avancement, et la sortie ── */}
       <div
-        className="relative z-10 flex items-center gap-3 px-5"
+        className="relative z-10 flex shrink-0 items-center gap-3 px-5"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)" }}
       >
         {/* L'avancement, façon segments du tunnel. Le chapitre en cours
@@ -185,22 +249,22 @@ export default function GuidedTour() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: sens * -32 }}
           transition={{ duration: 0.42, ease: EASE }}
-          className="relative z-10 min-h-0 flex-1 overflow-y-auto"
+          className="relative z-10 flex min-h-0 flex-1 flex-col"
         >
-          {/* Scène et texte forment UN bloc, centré tant qu'il tient dans la
-              hauteur, défilant sinon. L'ancienne mise en page les collait aux
-              deux extrémités : dès qu'un écran manquait de place, la scène se
-              faisait rogner (le bouton « Composer », la gemme, la série). */}
+          {/* On ne fait jamais défiler une visite : personne n'a l'idée de
+              tirer vers le bas pendant qu'on lui montre quelque chose. Le
+              texte et le bouton gardent donc leur place, et c'est la SCÈNE
+              qui se met à la taille de ce qui reste (cf. SceneAjustee). */}
+          <SceneAjustee cle={chapitre.id}>
+            <Scene pseudo={pseudo} />
+          </SceneAjustee>
+
           <div
-            className="flex min-h-full flex-col justify-center px-7 py-5"
+            className="shrink-0 px-7"
             style={{ maxWidth: 460, margin: "0 auto", width: "100%" }}
           >
-            <div className="mx-auto w-full" style={{ maxWidth: 340 }}>
-              <Scene pseudo={pseudo} />
-            </div>
-
             {/* Le texte — une seule idée, jamais deux */}
-            <div style={{ marginTop: 30 }}>
+            <div>
               {/* Le surtitre dit DE QUOI on parle : il doit se lire avant le
                   titre, pas se chercher après. D'où sa taille et son trait. */}
               {chapitre.surtitre && (
@@ -261,7 +325,7 @@ export default function GuidedTour() {
 
       {/* ── Bas : reculer, avancer ── */}
       <div
-        className="relative z-10 flex items-center gap-3 px-7"
+        className="relative z-10 flex shrink-0 items-center gap-3 px-7"
         style={{
           maxWidth: 460,
           margin: "0 auto",
