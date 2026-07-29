@@ -12,26 +12,16 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, Mic, Square, Dumbbell, Check, CalendarDays, Play, Utensils } from "lucide-react";
+import { Send, X, Mic, Square, Check, CalendarDays, Play, BookmarkPlus, Utensils } from "lucide-react";
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
+import type { JourDispo } from "@/context/AssistantContext";
+import CarteSeance from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { AssistantAvatar } from "@/components/AssistantMark";
-
-/** 6 jours à venir → puces de programmation (tokens compris par resolveWhen). */
-function joursProposes() {
-  return Array.from({ length: 6 }, (_, n) => {
-    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n);
-    const token = n === 0 ? "aujourd_hui" : `dans_${n}_jour`;
-    const label = n === 0 ? "Aujourd'hui"
-      : n === 1 ? "Demain"
-      : d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
-    return { token, label };
-  });
-}
 
 /** Libellé lisible d'un moment de repas (valeurs canoniques du journal). */
 const MEAL_LABEL: Record<string, string> = {
@@ -40,6 +30,13 @@ const MEAL_LABEL: Record<string, string> = {
   "gouter": "Collation",
   "diner": "Dîner",
 };
+
+/** Le jour tel qu'il est écrit sur sa puce (« demain », « ven. 1 ») : le bouton
+ *  de validation doit dire EXACTEMENT ce qui a été touché. */
+function libelleJour(jours: JourDispo[] | null, ymd: string | null): string {
+  const j = jours?.find((x) => x.ymd === ymd);
+  return (j?.label ?? "").toLowerCase();
+}
 
 const SUGGESTIONS = [
   "Comment créer une séance ?",
@@ -167,9 +164,112 @@ function QuestionChips({ q, actif, onChoisir }: {
   );
 }
 
-export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
+/* ── La carte d'une séance proposée pour la bibliothèque ──
+   Elle tient son propre état de choix (jour ouvert, jour touché) et porte une
+   `key` liée à la proposition : une nouvelle séance repart donc à zéro sans
+   qu'aucun effet n'ait à la remettre à plat. Garder le jour d'une carte
+   précédente ferait programmer la mauvaise séance. */
+function CarteProposition() {
+  const { pendingSeance, confirmSeance, garderSeance, cancelSeance, chargerJours, close } = useAssistant();
   const { launchWorkout } = useWorkoutLaunch();
+  const [jours, setJours] = useState<JourDispo[] | null>(null);
+  const [jourChoisi, setJourChoisi] = useState<string | null>(null);
+  const [ouvert, setOuvert] = useState(false);
+
+  if (!pendingSeance) return null;
+  const s = pendingSeance;
+
+  const ouvrirJours = () => {
+    setOuvert((v) => !v);
+    if (!jours) void chargerJours().then(setJours);
+  };
+
+  /* « La faire maintenant » lance la séance SANS rien garder ni programmer :
+     s'entraîner ne doit jamais obliger à ranger quelque chose d'abord. */
+  const faireMaintenant = () => {
+    launchWorkout({
+      sessionId: s.id,
+      title: s.title,
+      accent: "var(--accent)",
+      duration: s.duration,
+      difficulty: s.difficulty,
+      category: s.category,
+      heroImage: heroImageForSeance({ title: s.title, category: s.category, muscles: s.muscles }),
+      exerciseList: s.exerciseList.map((e) => ({
+        name: e.name, sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter,
+        tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],
+      })),
+      // Elle n'est rangée nulle part : le tunnel proposera de la garder une
+      // fois terminée, comme une impro.
+      onGarder: () => { void garderSeance(s); },
+    });
+    cancelSeance();
+    close();
+  };
+
+  return (
+    <CarteSeance
+      kicker="Proposition"
+      titre={s.title}
+      meta={[CATEGORY_LABEL[s.category], `${s.duration} min`, s.difficulty].join(" · ")}
+      exercices={s.exerciseList.map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
+      options={[
+        { id: "now", icone: <Play size={15} strokeWidth={2.2} fill="currentColor" />, ligne1: "La faire", ligne2: "maintenant", onClick: faireMaintenant },
+        { id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "La mettre", ligne2: "un jour", actif: ouvert, onClick: ouvrirJours },
+      ]}
+      jours={ouvert ? jours : null}
+      jourChoisi={jourChoisi}
+      onJour={(d) => setJourChoisi((v) => (v === d ? null : d))}
+      cta={jourChoisi ? `Garder et programmer ${libelleJour(jours, jourChoisi)}` : "Garder la séance"}
+      onValider={() => confirmSeance(jourChoisi)}
+      onFermer={cancelSeance}
+      hint={jourChoisi ? "Elle rejoint aussi tes séances" : null}
+    />
+  );
+}
+
+/* ── La carte d'un jour de planning qui va changer ──
+   Même coquille, autres sorties : le jour est déjà visé, donc le bouton le
+   nomme et le bandeau dit ce qu'on va remplacer. Le jour sélectionné n'est pas
+   un état local ici : c'est la date de la proposition elle-même. */
+function CartePlanning() {
+  const { pendingPlan, confirmPlan, retargetPlan, cancelPlan, chargerJours } = useAssistant();
+  const [jours, setJours] = useState<JourDispo[] | null>(null);
+  const [ouvert, setOuvert] = useState(false);
+  const [garderAussi, setGarderAussi] = useState(false);
+
+  if (!pendingPlan) return null;
+  const p = pendingPlan;
+
+  const ouvrirJours = () => {
+    setOuvert((v) => !v);
+    if (!jours) void chargerJours().then(setJours);
+  };
+
+  return (
+    <CarteSeance
+      kicker={p.kicker}
+      ton="jour"
+      titre={p.title}
+      meta={p.meta}
+      exercices={(p.preview?.exerciseList ?? []).map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
+      options={[
+        ...(p.retargetable ? [{ id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "Un autre", ligne2: "jour", actif: ouvert, onClick: ouvrirJours }] : []),
+        ...(p.gardable ? [{ id: "keep", icone: <BookmarkPlus size={15} strokeWidth={2} />, ligne1: "La garder", ligne2: "aussi", actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),
+      ]}
+      jours={ouvert ? jours : null}
+      jourChoisi={p.preview?.date ?? null}
+      onJour={(d) => { retargetPlan(d); setOuvert(false); }}
+      cta={p.cta}
+      onValider={() => confirmPlan(garderAussi)}
+      onFermer={cancelPlan}
+      hint={garderAussi ? "Elle rejoindra aussi tes séances" : null}
+    />
+  );
+}
+
+export default function AssistantSheet() {
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -194,14 +294,13 @@ export default function AssistantSheet() {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    // La carte de séance s'anime et grandit après le 1er rendu : on re-scroll
-    // une fois sa hauteur stabilisée pour que ses boutons (Créer/Annuler)
-    // soient toujours visibles et cliquables.
-    if (pendingSeance || pendingPlan || pendingRecipe || pendingMeal || pendingCreated) {
+    // La carte s'anime et grandit après le 1er rendu : on re-scroll une fois sa
+    // hauteur stabilisée pour que son bouton de validation reste atteignable.
+    if (pendingSeance || pendingPlan || pendingRecipe || pendingMeal) {
       const t = setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }), 360);
       return () => clearTimeout(t);
     }
-  }, [messages, isOpen, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading]);
+  }, [messages, isOpen, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading]);
 
   // Échap pour fermer
   useEffect(() => {
@@ -226,27 +325,6 @@ export default function AssistantSheet() {
   // Une question est en attente → on rappelle qu'on peut aussi taper.
   const derniere = visibles[visibles.length - 1];
   const questionEnAttente = !!derniere?.question && !derniere.question.repondu && !isStreaming;
-
-  // « La faire maintenant » : lance le tunnel avec la séance qu'on vient de créer.
-  const faireMaintenant = () => {
-    const pc = pendingCreated;
-    if (!pc) return;
-    launchWorkout({
-      sessionId: pc.id,
-      title: pc.title,
-      accent: "var(--accent)",
-      duration: pc.duration,
-      difficulty: pc.difficulty,
-      category: pc.category,
-      heroImage: heroImageForSeance({ title: pc.title, category: pc.category, muscles: pc.muscles }),
-      exerciseList: pc.exerciseList.map((e) => ({
-        name: e.name, sets: e.sets, reps: e.reps, rest: e.rest, restAfter: e.restAfter,
-        tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],
-      })),
-    });
-    dismissCreated();
-    close();
-  };
 
   if (!mounted) return null;
 
@@ -397,100 +475,8 @@ export default function AssistantSheet() {
                 </motion.div>
               )}
 
-              {/* Carte de confirmation — création de séance (aucune écriture sans clic) */}
-              {pendingSeance && (
-                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full rounded-3xl overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
-                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
-                      <Dumbbell size={16} strokeWidth={1.8} style={{ color: "#fff" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Nouvelle séance</p>
-                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingSeance.title}</p>
-                    </div>
-                  </div>
-
-                  <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
-                    {[CATEGORY_LABEL[pendingSeance.category], `${pendingSeance.duration} min`, pendingSeance.difficulty, `${pendingSeance.exercisesCount} exercices`].map((t) => (
-                      <span key={t} className="px-2.5 py-1 rounded-full text-[11px] font-medium"
-                        style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>{t}</span>
-                    ))}
-                  </div>
-
-                  <div className="px-4 pb-2 flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 150, scrollbarWidth: "none" }}>
-                    {pendingSeance.exerciseList.map((ex, i) => (
-                      <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
-                        style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
-                        <span className="text-[13px] font-light truncate" style={{ color: "var(--text-1)" }}>{ex.name}</span>
-                        <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{ex.sets} × {ex.reps}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2 px-4 py-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={cancelSeance}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
-                      Annuler
-                    </motion.button>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={confirmSeance}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
-                      <Check size={15} strokeWidth={2.4} /> Créer la séance
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Carte de confirmation — modification du planning (aucune écriture sans clic) */}
-              {pendingPlan && (
-                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full rounded-3xl overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
-                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))" }}>
-                      <CalendarDays size={16} strokeWidth={1.8} style={{ color: "#fff" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Modifier le planning</p>
-                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingPlan.title}</p>
-                    </div>
-                  </div>
-
-                  <div className="px-4 pt-2.5 pb-1">
-                    <p className="text-[12px] font-medium" style={{ color: "var(--text-2)" }}>{pendingPlan.summary}</p>
-                  </div>
-
-                  {pendingPlan.preview && pendingPlan.preview.exerciseList.length > 0 && (
-                    <div className="px-4 pb-2 pt-1 flex flex-col gap-1.5 overflow-y-auto" style={{ maxHeight: 150, scrollbarWidth: "none" }}>
-                      {pendingPlan.preview.exerciseList.map((ex, i) => (
-                        <div key={i} className="flex items-center justify-between gap-3 py-1.5 px-3 rounded-xl"
-                          style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}>
-                          <span className="text-[13px] font-light truncate" style={{ color: "var(--text-1)" }}>{ex.name}</span>
-                          <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{ex.sets} × {ex.reps}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 px-4 py-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={cancelPlan}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
-                      Annuler
-                    </motion.button>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={confirmPlan}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
-                      <Check size={15} strokeWidth={2.4} /> Confirmer
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
+              {pendingSeance && <CarteProposition key={pendingSeance.id} />}
+              {pendingPlan && <CartePlanning key={`${pendingPlan.title}-${pendingPlan.preview?.date ?? ""}`} />}
 
               {/* ── Carte RECETTE ── */}
               {pendingRecipe && (
@@ -620,49 +606,6 @@ export default function AssistantSheet() {
                 </motion.div>
               )}
 
-              {/* Carte de SUITE — la séance vient d'être créée : quand la faire ? */}
-              {pendingCreated && (
-                <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full rounded-3xl overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
-                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))" }}>
-                      <Check size={17} strokeWidth={2.6} style={{ color: "#fff" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Séance créée ✓</p>
-                      <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{pendingCreated.title}</p>
-                    </div>
-                  </div>
-
-                  <div className="px-4 pt-3 pb-1">
-                    <p className="text-[13px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>Quand veux-tu la faire ?</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {joursProposes().map((j) => (
-                        <motion.button key={j.token} whileTap={{ scale: 0.94 }} onClick={() => scheduleCreated(j.token)}
-                          className="px-3 py-1.5 rounded-full text-[12.5px] font-medium cursor-pointer capitalize flex items-center gap-1"
-                          style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-1)", border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
-                          <CalendarDays size={12} strokeWidth={2} style={{ color: "var(--accent)" }} />{j.label}
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 px-4 py-3 mt-1" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={dismissCreated}
-                      className="py-2.5 px-4 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                      style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
-                      Plus tard
-                    </motion.button>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={faireMaintenant}
-                      className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer flex items-center justify-center gap-1.5"
-                      style={{ background: "linear-gradient(135deg, var(--accent), var(--violet-mid))", color: "#fff" }}>
-                      <Play size={15} strokeWidth={2.4} fill="#fff" /> La faire maintenant
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
             </div>
 
             {/* Input */}

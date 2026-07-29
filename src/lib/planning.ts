@@ -164,6 +164,16 @@ export function weekDates(ref: Date = new Date()): string[] {
     const x = new Date(monday); x.setDate(monday.getDate() + i); return ymd(x);
   });
 }
+/** Les `n` prochaines dates À PARTIR d'aujourd'hui (et non du lundi) : c'est
+ *  ce qu'attend un choix « quand veux-tu la faire ? », qui ne doit jamais
+ *  proposer un jour déjà passé. */
+export function prochainsJours(n = 7): string[] {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  return Array.from({ length: n }, (_, i) => {
+    const x = new Date(d0); x.setDate(d0.getDate() + i); return ymd(x);
+  });
+}
+
 /** Les 7 dates de la semaine décalée de `offset` semaines vs aujourd'hui. */
 export function weekDatesForOffset(offset: number): string[] {
   const ref = new Date(); ref.setDate(ref.getDate() + offset * 7);

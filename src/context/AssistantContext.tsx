@@ -27,7 +27,7 @@ import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import { phraseDeRepli, normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
 import {
-  resolveWhen, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay,
+  resolveWhen, dayLabel, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay, prochainsJours,
   ctxFromLieu, readLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
@@ -73,13 +73,25 @@ export type PendingMeal = {
   confidence?: string;
 };
 
-/** Changement de planning proposé par l'IA, en attente de confirmation. */
+/** Changement de planning proposé par l'IA, en attente de confirmation.
+ *  `kicker`/`meta`/`cta` sont ce que la carte AFFICHE : ils sont composés ici,
+ *  au moment où on connaît le jour visé et ce qu'on va écraser. La carte, elle,
+ *  ne devine rien (elle ne saurait pas dire « à la place de Jambes »). */
 type PendingPlan = {
+  kicker: string;           // « Jeudi 6 août · à la place de « Jambes » »
   title: string;            // titre de la carte (nom de la séance ou jour déplacé)
-  summary: string;          // ligne contexte ("📅 vendredi 20 juin · à la maison")
+  meta: string;             // « Force · 5 mouvements · en salle »
+  cta: string;              // « Remplacer jeudi »
   writes: PlanningDay[];    // jours à écrire en base à la confirmation
   preview: PlanningDay | null; // jour dont on prévisualise les exercices
+  /** Le jour visé peut-il être changé depuis la carte ? (faux pour la semaine entière) */
+  retargetable?: boolean;
+  /** Cette séance peut-elle rejoindre la bibliothèque en plus du planning ? */
+  gardable?: boolean;
 };
+
+/** Un jour proposé dans le choix « quand ? » d'une carte. */
+export type JourDispo = { ymd: string; label: string; occupe?: string | null; bloque?: boolean };
 
 export type AssistantMsg = {
   role: "user" | "assistant";
@@ -121,15 +133,19 @@ type AssistantContextValue = {
   pendingPlan: PendingPlan | null;
   pendingRecipe: PendingRecipe | null;
   pendingMeal: PendingMeal | null;
-  /** Séance qui vient d'être créée : on demande quand la faire (jour) ou de la lancer tout de suite. */
-  pendingCreated: ProposedSeance | null;
   actionLoading: boolean;
-  confirmSeance: () => void;
+  /** Garde la séance proposée. `jour` la pose aussi sur le planning, en UNE
+   *  validation : le jour se choisit maintenant AVANT de valider, plus après. */
+  confirmSeance: (jour?: string | null) => void;
+  /** Range une séance proposée dans la bibliothèque (aussi utilisé APRÈS une séance lancée sans l'avoir gardée). */
+  garderSeance: (s: ProposedSeance) => Promise<boolean>;
   cancelSeance: () => void;
-  scheduleCreated: (when: string) => void;
-  dismissCreated: () => void;
-  confirmPlan: () => void;
+  confirmPlan: (garderAussi?: boolean) => void;
+  /** Change le jour visé par la carte planning (mêmes exercices, autre date). */
+  retargetPlan: (ymd: string) => void;
   cancelPlan: () => void;
+  /** Les 7 prochains jours avec ce qui y est déjà prévu (choix « quand ? »). */
+  chargerJours: () => Promise<JourDispo[]>;
   confirmRecipe: () => void;
   cancelRecipe: () => void;
   confirmMeal: () => void;
@@ -147,6 +163,36 @@ export function useAssistant(): AssistantContextValue {
 let _counter = 0;
 const uid = () => `${Date.now()}-${++_counter}`;
 const todayISODate = () => new Date().toISOString().slice(0, 10);
+
+const CAP = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/** « aujourd'hui », « demain », sinon le jour de la semaine (« jeudi »).
+ *  Sert au libellé du bouton, qui doit tenir sur une ligne. */
+function jourCourt(date: string): string {
+  if (date === todayYmd()) return "aujourd'hui";
+  if (date === resolveWhen("demain")) return "demain";
+  return dayLabel(date).toLowerCase();
+}
+
+/** Lieu d'un jour de planning, en français lisible. */
+const LIEU_LABEL: Record<string, string> = {
+  salle: "en salle",
+  halteres: "à la maison, haltères",
+  poids: "au poids du corps",
+};
+
+/** Ce que la carte planning affiche. Composé ICI, où l'on sait quel jour est
+ *  visé et ce qu'il portait déjà : la carte, elle, n'a aucun moyen de deviner
+ *  « à la place de Jambes ». Nommer ce qu'on écrase AVANT le clic, c'est la
+ *  même règle que « rien ne s'écrit sans validation ». */
+function texteCartePlan(jour: PlanningDay, remplace: string | null, verbe = "Programmer") {
+  return {
+    kicker: CAP(dayLabelLong(jour.date)) + (remplace ? ` · à la place de « ${remplace} »` : ""),
+    meta: [jour.type, `${jour.exerciseList.length} mouvements`, LIEU_LABEL[jour.location ?? ""] ?? ""]
+      .filter(Boolean).join(" · "),
+    cta: `${remplace ? "Remplacer" : verbe} ${jourCourt(jour.date)}`,
+  };
+}
 
 /** Normalise un moment de repas vers les 4 valeurs canoniques du journal. */
 function normalizeMealType(raw?: string): string {
@@ -189,7 +235,6 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
   const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
-  const [pendingCreated, setPendingCreated] = useState<ProposedSeance | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const userContextRef = useRef<UserContext | null>(null);
@@ -496,11 +541,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
       const restDay: PlanningDay = { date: from, type: "Repos", title: "", difficulty: src.difficulty, location: src.location, exerciseList: [], sessionId: null, status: "planned" };
+      const ecrase = hasSeance(weekMap[to]) ? dayTitle(weekMap[to]) : null;
+      const t = texteCartePlan(movedDay, ecrase, "Déplacer vers");
       setPendingPlan({
+        ...t,
+        kicker: `${CAP(dayLabelLong(from))} → ${dayLabelLong(to)}${ecrase ? ` · à la place de « ${ecrase} »` : ""}`,
         title: dayTitle(src),
-        summary: `📅 ${dayLabelLong(from)} → ${dayLabelLong(to)}`,
         writes: [movedDay, restDay],
         preview: movedDay,
+        retargetable: true,
       });
       return;
     }
@@ -557,8 +606,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         : adjust === "cardio" ? " · plus de cardio"
         : adjust === "force" ? " · plus de force" : "";
       setPendingPlan({
+        kicker: "Toute la semaine",
         title: "Nouvelle semaine ✦",
-        summary: `📅 dès aujourd'hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
+        meta: `Dès aujourd'hui · ${nbSeances} séance${nbSeances > 1 ? "s" : ""}${adjustLabel}`,
+        cta: "Remplacer ma semaine",
         writes,
         preview: writes.find(hasSeance) ?? null,
       });
@@ -603,11 +654,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         sessionId: row.id,
         status: "planned",
       };
+      const avant = await fetchDay(user.id, day);
       setPendingPlan({
+        ...texteCartePlan(libDay, hasSeance(avant) ? dayTitle(avant) : null),
         title: row.title,
-        summary: `📅 ${dayLabelLong(day)} · depuis ta bibliothèque`,
         writes: [libDay],
         preview: libDay,
+        retargetable: true,
       });
       return;
     }
@@ -630,8 +683,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       ? (action.muscles as unknown[]).filter((m): m is string => typeof m === "string")
       : [];
     let baseDesc = (action.description || "").trim();
+    const existing = await fetchDay(user.id, when);
     if (action.intent === "plan_location") {
-      const existing = await fetchDay(user.id, when);
       baseDesc = existing && existing.title ? existing.title : "séance complète";
     }
 
@@ -674,12 +727,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         status: "planned",
       };
 
-      const locTxt = location === "maison" ? "à la maison" : "en salle";
       setPendingPlan({
+        ...texteCartePlan(day, hasSeance(existing) ? dayTitle(existing) : null),
         title: seance.title,
-        summary: `📅 ${dayLabelLong(when)} · ${locTxt}`,
         writes: [day],
         preview: day,
+        retargetable: true,
+        // Générée à l'instant : elle n'existe nulle part ailleurs, donc on peut
+        // proposer de la garder AUSSI dans la bibliothèque, pas seulement sur
+        // ce jour-là (une séance de la biblio, elle, y est déjà).
+        gardable: true,
       });
     } catch (e) {
       const detail = (e as { message?: string })?.message ?? String(e);
@@ -1186,58 +1243,102 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [historyKey]);
 
-  /* ── Validation de la carte : crée réellement la séance dans custom_sessions ── */
-  const confirmSeance = useCallback(async () => {
+  /* ── Ranger une séance dans la bibliothèque ──
+     Sortie de `confirmSeance` parce qu'elle sert aussi APRÈS coup : une séance
+     lancée depuis la carte n'est enregistrée nulle part, et le tunnel propose
+     de la garder une fois terminée (même carte « Tu la gardes ? » que l'impro).
+     Sans ça, on jette le travail à l'instant où il vient de faire ses preuves. */
+  const garderSeance = useCallback(async (s: ProposedSeance): Promise<boolean> => {
+    if (!user?.id) return false;
+    const { error } = await createClient().from("custom_sessions").insert(seanceToRow(s, user.id));
+    return !error;
+  }, [user?.id]);
+
+  /* ── Validation de la carte séance ──
+     Une SEULE validation fait tout : la séance rejoint la bibliothèque, et si
+     un jour a été choisi sur la carte, elle est posée dessus dans la foulée
+     (liée par `sessionId`, même plomberie que « poser une séance de la
+     biblio »). Avant, il fallait créer, PUIS répondre à une deuxième carte qui
+     demandait quand la faire — deux cartes pour une seule intention. ── */
+  const confirmSeance = useCallback(async (jour?: string | null) => {
     if (!user?.id || !pendingSeance) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("custom_sessions").insert(seanceToRow(pendingSeance, user.id));
-    if (error) { setMemoryNotice("Oups, impossible de créer la séance."); return; }
-    // La séance existe désormais dans la bibliothèque. Au lieu de la « perdre »
-    // dans /progression, on enchaîne : on demande QUAND la faire (un jour du
-    // planning) ou de la LANCER tout de suite. La carte de suite s'affiche.
-    const created = pendingSeance;
-    setPendingSeance(null);
-    setMemoryNotice(`Séance « ${created.title} » créée ✓`);
-    setPendingCreated(created);
-  }, [user?.id, pendingSeance]);
+    const s = pendingSeance;
+    const ok = await garderSeance(s);
+    if (!ok) { setMemoryNotice("Oups, impossible de garder la séance."); return; }
+
+    if (!jour) {
+      setPendingSeance(null);
+      setMemoryNotice(`« ${s.title} » est dans tes séances ✓`);
+      return;
+    }
+
+    const category = normalizeWorkoutCategory(s.category);
+    const saved = readLieu(user.id);
+    try {
+      await saveDay(user.id, {
+        date: jour,
+        type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
+        title: s.title,
+        difficulty: normalizeDifficulty(s.difficulty),
+        location: ctxFromLieu(saved.location, saved.equip),
+        exerciseList: normalizeExercises(s.exerciseList),
+        sessionId: s.id,
+        status: "planned",
+      });
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: jour } }));
+      setPendingSeance(null);
+      setMemoryNotice(`Gardée et programmée · ${dayLabelLong(jour)} ✓`);
+      setTimeout(() => setIsOpen(false), 1100);
+    } catch {
+      // La séance EST gardée : on ne fait pas croire l'inverse, on ne signale
+      // que ce qui a raté.
+      setPendingSeance(null);
+      setMemoryNotice("Gardée, mais impossible de la programmer.");
+    }
+  }, [user?.id, pendingSeance, garderSeance]);
 
   const cancelSeance = useCallback(() => setPendingSeance(null), []);
 
-  /* ── Suite de création : programmer la séance sur un jour du planning.
-     On copie la séance créée sur le jour cible (liée via sessionId) — même
-     plomberie que « poser une séance de la biblio ». ── */
-  const scheduleCreated = useCallback(async (whenRaw: string) => {
-    if (!user?.id || !pendingCreated) return;
-    const day = resolveWhen(whenRaw);
-    if (!day) return;
-    const s = pendingCreated;
-    const category = normalizeWorkoutCategory(s.category);
-    const saved = readLieu(user.id);
-    const planningDay: PlanningDay = {
-      date: day,
-      type: PLANNING_TYPE_BY_CATEGORY[category] ?? "Force",
-      title: s.title,
-      difficulty: normalizeDifficulty(s.difficulty),
-      location: ctxFromLieu(saved.location, saved.equip),
-      exerciseList: normalizeExercises(s.exerciseList),
-      sessionId: s.id,
-      status: "planned",
-    };
-    try {
-      await saveDay(user.id, planningDay);
-      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: day } }));
-      setPendingCreated(null);
-      setMemoryNotice(`Programmée · ${dayLabelLong(day)} ✓`);
-      setTimeout(() => setIsOpen(false), 1100);
-    } catch {
-      setMemoryNotice("Oups, impossible de programmer la séance.");
-    }
-  }, [user?.id, pendingCreated]);
+  /* ── Les 7 prochains jours, avec ce qui y est déjà prévu ──
+     Le choix « quand ? » doit dire ce qu'il va écraser AVANT le clic, et ne
+     jamais proposer un jour passé ni une séance déjà faite. ── */
+  const chargerJours = useCallback(async (): Promise<JourDispo[]> => {
+    if (!user?.id) return [];
+    const dates = prochainsJours(7);
+    let map: Record<string, PlanningDay> = {};
+    try { map = await fetchRange(user.id, dates); } catch { /* planning illisible → jours nus */ }
+    return dates.map((d, i) => ({
+      ymd: d,
+      label: i === 0 ? "Aujourd'hui" : i === 1 ? "Demain" : CAP(dayLabel(d)).slice(0, 3) + ". " + Number(d.slice(8)),
+      occupe: hasSeance(map[d]) ? dayTitle(map[d]) : null,
+      bloque: map[d]?.status === "done",
+    }));
+  }, [user?.id]);
 
-  const dismissCreated = useCallback(() => setPendingCreated(null), []);
+  /* ── Changer le jour visé par une carte planning ──
+     Les exercices ne bougent pas, seule la date change : régénérer une séance
+     parce qu'on la décale d'un jour serait absurde (et coûterait un appel IA).
+     Le déplacement garde son jour de départ, qui reste libéré. ── */
+  const retargetPlan = useCallback((ymd: string) => {
+    setPendingPlan((prev) => {
+      if (!prev || !prev.preview) return prev;
+      const cible = prev.preview.date;
+      const writes = prev.writes
+        .map((w) => (w.date === cible ? { ...w, date: ymd } : w))
+        // Un déplacement écrit AUSSI un « Repos » sur le jour de départ. Si on
+        // ramène la séance sur ce jour-là, les deux écritures viseraient la même
+        // date et le Repos, écrit en dernier, effacerait la séance.
+        .filter((w, i, all) => all.findIndex((x) => x.date === w.date) === i);
+      const preview = { ...prev.preview, date: ymd };
+      // Le libellé doit suivre : il nomme le jour et ce qu'on y remplace. On ne
+      // connaît pas encore le contenu du nouveau jour → on repart d'un « à la
+      // place de » vide, la carte le redira à la validation.
+      return { ...prev, ...texteCartePlan(preview, null), writes, preview };
+    });
+  }, []);
 
   /* ── Validation de la carte planning : écrit les jours en base (aucune écriture sans clic) ── */
-  const confirmPlan = useCallback(async () => {
+  const confirmPlan = useCallback(async (garderAussi?: boolean) => {
     if (!user?.id || !pendingPlan) return;
     try {
       for (const w of pendingPlan.writes) await saveDay(user.id, w);
@@ -1245,8 +1346,24 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // semaine/jour pour que la modif soit visible (même en semaine suivante).
       const focusDate = pendingPlan.preview?.date ?? pendingPlan.writes[0]?.date ?? null;
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date: focusDate } }));
+
+      // « La garder aussi » : la séance générée pour ce jour rejoint la
+      // bibliothèque, sinon elle n'existerait QUE sur cette case du planning.
+      let gardee = false;
+      const p = pendingPlan.preview;
+      if (garderAussi && p && p.exerciseList.length > 0) {
+        const seance = assembleSeance({
+          title: p.title || pendingPlan.title,
+          category: normalizeWorkoutCategory(p.type),
+          difficulty: normalizeDifficulty(p.difficulty),
+          muscles: [],
+          rawExercises: p.exerciseList,
+        });
+        const { error } = await createClient().from("custom_sessions").insert(seanceToRow(seance, user.id));
+        gardee = !error;
+      }
       setPendingPlan(null);
-      setMemoryNotice("Planning mis à jour ✓");
+      setMemoryNotice(gardee ? "Planning mis à jour, séance gardée ✓" : "Planning mis à jour ✓");
       setTimeout(() => setIsOpen(false), 900);
     } catch {
       setMemoryNotice("Oups, impossible de mettre à jour le planning.");
@@ -1321,7 +1438,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, pendingCreated, actionLoading, confirmSeance, cancelSeance, scheduleCreated, dismissCreated, confirmPlan, cancelPlan, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );

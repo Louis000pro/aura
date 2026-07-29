@@ -26,6 +26,10 @@ export type WorkoutLaunchInput = {
   category?: string;
   heroImage?: string;
   exerciseList?: Exercise[];
+  /** Proposé en fin de séance (« Tu la gardes ? ») quand la séance lancée
+   *  n'existe nulle part : sans ça, le travail disparaît à l'instant précis
+   *  où l'on vient de prouver qu'il marchait. */
+  onGarder?: () => void;
 };
 
 type Value = { launchWorkout: (w: WorkoutLaunchInput) => void };
@@ -56,6 +60,7 @@ export function WorkoutLaunchProvider({ children }: { children: React.ReactNode 
             category={active.category}
             heroImage={active.heroImage}
             exerciseList={active.exerciseList}
+            onGarder={active.onGarder}
             onClose={() => setActive(null)}
           />
         )}
