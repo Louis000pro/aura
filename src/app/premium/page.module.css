@@ -59,13 +59,6 @@
     0 16px 34px -24px rgba(193, 59, 193, 0.44);
 }
 
-.cardFrame[data-tier="premium_plus"] {
-  background: linear-gradient(150deg, rgba(167, 139, 250, 0.72), rgba(193, 59, 193, 0.58) 72%, rgba(245, 177, 32, 0.52) 112%);
-  box-shadow:
-    0 24px 54px -38px rgba(139, 92, 246, 0.4),
-    0 10px 26px -22px rgba(245, 177, 32, 0.34);
-}
-
 .cardSurface {
   background:
     linear-gradient(145deg, rgba(var(--surface-rgb), 0.995), rgba(var(--surface-rgb), 0.955)),
@@ -156,10 +149,6 @@
   box-shadow:
     0 32px 76px -34px rgba(139, 92, 246, 0.5),
     0 12px 34px -22px rgba(193, 59, 193, 0.4);
-}
-
-:global([data-theme="dark"]) .cardFrame[data-tier="premium_plus"] {
-  background: linear-gradient(150deg, rgba(139, 92, 246, 0.7), rgba(193, 59, 193, 0.52) 72%, rgba(245, 177, 32, 0.46) 115%);
 }
 
 :global([data-theme="dark"]) .cardSurface {

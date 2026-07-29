@@ -4,7 +4,7 @@
  * (quotas + choix du modèle IA selon le tier).
  */
 
-export type PlanId = "free" | "premium" | "premium_plus";
+export type PlanId = "free" | "premium";
 
 export interface Plan {
   id: PlanId;
@@ -73,33 +73,23 @@ export const PLANS: Record<PlanId, Plan> = {
     ],
     limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },
-  premium_plus: {
-    id: "premium_plus",
-    name: "Premium+",
-    priceCents: 999,
-    currency: "eur",
-    trialDays: 3,
-    tagline: "Le palier ultime — bientôt encore plus",
-    aiModel: "llama-3.3-70b-versatile", // modèle avancé
-    features: [
-      "Tout ce qu'inclut Premium",
-      "Des avantages exclusifs à venir ✦",
-    ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, sessionsMax: Infinity, ads: false, exclusiveContent: true },
-  },
 };
 
-export const PAID_PLANS: PlanId[] = ["premium", "premium_plus"];
+export const PAID_PLANS: PlanId[] = ["premium"];
 
 export function getPlan(id: string | null | undefined): Plan {
   if (id === "premium") return PLANS.premium;
-  if (id === "premium_plus") return PLANS.premium_plus;
   return PLANS.free;
 }
 
-/** Un plan payant (n'importe quel palier) donne les accès Premium. */
+/**
+ * Un plan payant donne les accès Premium.
+ * Le palier « Premium+ » a été retiré le 2026-07-29 : il était facturé 9,99 €
+ * pour « des avantages exclusifs à venir », donc pour rien. On ne remet une
+ * offre en vente que le jour où elle contient quelque chose de réel.
+ */
 export function isPaidPlan(id: string | null | undefined): boolean {
-  return id === "premium" || id === "premium_plus";
+  return id === "premium";
 }
 
 /** Prix formaté pour l'affichage, ex. "5,99 €". */

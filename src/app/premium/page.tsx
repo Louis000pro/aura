@@ -12,7 +12,6 @@ import styles from "./page.module.css";
 const ICONS: Record<PlanId, React.ReactNode> = {
   free: <Sparkles size={20} strokeWidth={1.8} />,
   premium: <Crown size={20} strokeWidth={1.8} />,
-  premium_plus: <Crown size={20} strokeWidth={1.8} />,
 };
 
 export default function PremiumPage() {
@@ -24,12 +23,14 @@ export default function PremiumPage() {
 }
 
 function PremiumInner() {
-  const { user } = useAuth();
+  const { user, session, refreshProfile } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const [loading, setLoading] = useState<PlanId | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [verifPaiement, setVerifPaiement] = useState(false);
+  const [portail, setPortail] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activeIdx, setActiveIdx] = useState(1); // Premium centré par défaut
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -49,10 +50,51 @@ function PremiumInner() {
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
-    if (params?.get("success")) setCelebrate(true);
-    else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux");
+    if (params?.get("canceled")) setMsg("Paiement annulé, tu peux réessayer quand tu veux");
     else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 3 jours d'essai offerts.");
   }, [params]);
+
+  /**
+   * Retour de paiement : on ne fête RIEN sur la foi du paramètre d'URL.
+   * On demande à Stripe l'état réel de l'abonnement (ce qui répare aussi le
+   * compte si le webhook s'est perdu), et seulement ensuite on célèbre.
+   * Sans ce filet, un paiement encaissé dont le webhook a échoué laissait un
+   * compte en Gratuit avec une célébration à l'écran.
+   */
+  const retourTraite = useRef(false);
+  useEffect(() => {
+    if (!params?.get("success") || !session?.access_token || retourTraite.current) return;
+    retourTraite.current = true;
+
+    (async () => {
+      setVerifPaiement(true);
+      try {
+        const res = await fetch("/api/stripe/reconcile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ session_id: params.get("session_id") || undefined }),
+        });
+        const data = await res.json();
+        if (data?.premium) {
+          await refreshProfile();
+          setCelebrate(true);
+        } else {
+          setMsg(
+            "Ton paiement est bien reçu, l'activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
+          );
+        }
+      } catch {
+        setMsg(
+          "Ton paiement est bien reçu, l'activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
+        );
+      } finally {
+        setVerifPaiement(false);
+      }
+    })();
+  }, [params, session?.access_token, refreshProfile]);
 
   // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.
   // Plusieurs passes pour gérer le layout/polices qui se stabilisent (PWA & web).
@@ -76,16 +118,25 @@ function PremiumInner() {
   const subscribe = async (plan: PlanId) => {
     if (plan === "free") return;
     if (!user) { router.push("/auth?mode=signup"); return; }
+    // Le compte est identifié par le token côté serveur : on n'envoie plus
+    // d'identifiant dans le corps de la requête.
+    if (!session?.access_token) { setMsg("Reconnecte-toi pour continuer"); return; }
     setLoading(plan);
     setMsg(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, email: user.email, plan }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }
+      // 409 : un abonnement tourne déjà. Le serveur vient de remettre le profil
+      // d'aplomb, on rafraîchit pour que l'écran le montre.
+      if (res.status === 409) await refreshProfile();
       setMsg(data.message || "Les paiements seront bientôt activés");
     } catch {
       setMsg("Une erreur est survenue, réessaie");
@@ -94,7 +145,27 @@ function PremiumInner() {
     }
   };
 
-  const order: PlanId[] = ["free", "premium", "premium_plus"];
+  /** Ouvre le portail Stripe : factures, carte, résiliation. */
+  const ouvrirPortail = async () => {
+    if (!session?.access_token) { setMsg("Reconnecte-toi pour continuer"); return; }
+    setPortail(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.url) { window.location.href = data.url; return; }
+      setMsg(data.message || "Impossible d'ouvrir la gestion de l'abonnement");
+    } catch {
+      setMsg("Une erreur est survenue, réessaie");
+    } finally {
+      setPortail(false);
+    }
+  };
+
+  const order: PlanId[] = ["free", "premium"];
 
   return (
     <div className={`${styles.page} relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col`}
@@ -138,7 +209,7 @@ function PremiumInner() {
         <div
           ref={carouselRef}
           onScroll={onCarouselScroll}
-          className="flex md:grid md:grid-cols-3 md:max-w-4xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
+          className="flex md:grid md:grid-cols-2 md:max-w-3xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
           style={{
             scrollbarWidth: "none",
             WebkitOverflowScrolling: "touch" as never,
@@ -190,15 +261,29 @@ function PremiumInner() {
                   {/* Petite phrase entre le prix et le bouton (façon ChatGPT) */}
                   <p className="text-sm font-light mb-4" style={{ color: "var(--text-soft)", minHeight: 40 }}>{p.tagline}</p>
 
-                  {/* CTA — juste sous le prix */}
+                  {/* CTA — juste sous le prix. L'offre en cours ne propose
+                      jamais de repayer : elle propose de gérer ou d'arrêter. */}
                   {id === "free" ? (
-                    <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
-                      Ton offre actuelle
-                    </div>
+                    !user?.is_premium && (
+                      <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                        Ton offre actuelle
+                      </div>
+                    )
+                  ) : user?.is_premium ? (
+                    <>
+                      <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                        Ton abonnement est actif
+                      </div>
+                      <button onClick={ouvrirPortail} disabled={portail}
+                        className="mt-2 py-2 text-xs font-semibold underline underline-offset-4 cursor-pointer disabled:opacity-60"
+                        style={{ color: "var(--text-3)" }}>
+                        {portail ? "Ouverture…" : "Gérer ou résilier mon abonnement"}
+                      </button>
+                    </>
                   ) : (
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id}
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
                       className={`${styles.cta} ${highlight ? styles.ctaPrimary : styles.ctaSecondary} py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60`}>
-                      {loading === id ? "Redirection…" : "Démarrer mes 3 jours gratuits"}
+                      {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
                     </motion.button>
                   )}
 
@@ -235,7 +320,7 @@ function PremiumInner() {
               className="rounded-full transition-all cursor-pointer"
               style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
           ))}
-          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>3 offres · glisse pour comparer</span>
+          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>2 offres · glisse pour comparer</span>
         </div>
 
         <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>

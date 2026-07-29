@@ -6,7 +6,7 @@ import WelcomeCelebration from "@/components/WelcomeCelebration";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
 import { AssistantSpark } from "@/components/AssistantMark";
-import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -720,13 +720,15 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 
 /* ── Main Settings Page ──────────────────────────────────── */
 export default function ParametresPage() {
-  const { user, logout } = useAuth();
+  const { user, session, logout } = useAuth();
   const router = useRouter();
   const { isDark, preference, setPreference } = useTheme();
   const { quality, setQuality } = useVisualQuality();
   const { start: startTour } = useGuidedTour();
   const [showProfileModal, setShowProfileModal]   = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [portail, setPortail]                     = useState(false);
+  const [portailErreur, setPortailErreur]         = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
   const [showMemoryModal, setShowMemoryModal]     = useState(false);
   const [showTasteModal, setShowTasteModal]       = useState(false);
@@ -815,6 +817,30 @@ export default function ParametresPage() {
   const handleLogout = async () => {
     await logout();
     router.replace("/");
+  };
+
+  /**
+   * Envoie vers le portail Stripe (factures, carte, résiliation).
+   * Une erreur se lit sous la ligne : un bouton d'annulation qui ne dit rien
+   * quand il rate, c'est exactement ce qui fait écrire un client en colère.
+   */
+  const ouvrirPortail = async () => {
+    if (!session?.access_token) { setPortailErreur("Reconnecte-toi pour continuer"); return; }
+    setPortail(true);
+    setPortailErreur(null);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.url) { window.location.href = data.url; return; }
+      setPortailErreur(data.message || "Impossible d'ouvrir la gestion de l'abonnement");
+    } catch {
+      setPortailErreur("Impossible d'ouvrir la gestion de l'abonnement");
+    } finally {
+      setPortail(false);
+    }
   };
 
   return (
@@ -948,9 +974,21 @@ export default function ParametresPage() {
               icon={Gem}
               label="Vaiiya Premium"
               sub={user?.is_premium ? "Ton abonnement est actif" : "Séances exclusives, missions illimitées"}
-              right={user?.is_premium ? <Pastille texte="Actif" ton="teal" /> : <Pastille texte={`dès ${PRIX_PREMIUM} €`} />}
+              right={user?.is_premium ? <Pastille texte="Actif" ton="teal" /> : <Pastille texte={`${PRIX_PREMIUM} €`} />}
               onClick={() => router.push("/premium")}
             />
+            {/* Résilier doit être aussi simple que souscrire : la ligne vit
+                dans les réglages, là où on la cherche, et pas seulement sur la
+                page de vente. */}
+            {user?.is_premium && (
+              <Ligne
+                icon={CreditCard}
+                label="Gérer mon abonnement"
+                sub={portailErreur ?? "Factures, moyen de paiement, résiliation"}
+                right={portail ? <Pastille texte="Ouverture…" /> : undefined}
+                onClick={portail ? undefined : ouvrirPortail}
+              />
+            )}
             <Ligne
               icon={Lock}
               label="Mot de passe"
