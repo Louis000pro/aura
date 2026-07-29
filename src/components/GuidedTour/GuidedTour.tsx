@@ -185,58 +185,76 @@ export default function GuidedTour() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: sens * -32 }}
           transition={{ duration: 0.42, ease: EASE }}
-          className="relative z-10 flex min-h-0 flex-1 flex-col"
+          className="relative z-10 min-h-0 flex-1 overflow-y-auto"
         >
-          {/* La scène — centrée quand la place le permet, défilante sur les
-              petits écrans plutôt que rognée. */}
-          <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-7 py-4">
-            <div className="w-full" style={{ maxWidth: 340 }}>
+          {/* Scène et texte forment UN bloc, centré tant qu'il tient dans la
+              hauteur, défilant sinon. L'ancienne mise en page les collait aux
+              deux extrémités : dès qu'un écran manquait de place, la scène se
+              faisait rogner (le bouton « Composer », la gemme, la série). */}
+          <div
+            className="flex min-h-full flex-col justify-center px-7 py-5"
+            style={{ maxWidth: 460, margin: "0 auto", width: "100%" }}
+          >
+            <div className="mx-auto w-full" style={{ maxWidth: 340 }}>
               <Scene pseudo={pseudo} />
             </div>
-          </div>
 
-          {/* Le texte — une seule idée, jamais deux */}
-          <div className="shrink-0 px-7 pb-2" style={{ maxWidth: 460, margin: "0 auto", width: "100%" }}>
-            {chapitre.surtitre && (
-              <p
+            {/* Le texte — une seule idée, jamais deux */}
+            <div style={{ marginTop: 30 }}>
+              {/* Le surtitre dit DE QUOI on parle : il doit se lire avant le
+                  titre, pas se chercher après. D'où sa taille et son trait. */}
+              {chapitre.surtitre && (
+                <div className="flex items-center" style={{ gap: 9, margin: "0 0 11px" }}>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 22,
+                      height: 2,
+                      borderRadius: 99,
+                      background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
+                    }}
+                  />
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      letterSpacing: "0.13em",
+                      textTransform: "uppercase",
+                      background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
+                      WebkitBackgroundClip: "text",
+                      backgroundClip: "text",
+                      color: "transparent",
+                    }}
+                  >
+                    {chapitre.surtitre}
+                  </p>
+                </div>
+              )}
+              <h2
                 style={{
-                  margin: "0 0 9px",
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  background: `linear-gradient(90deg, ${chapitre.accent[0]}, ${chapitre.accent[1]})`,
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
+                  margin: 0,
+                  fontSize: "clamp(24px, 6.4vw, 31px)",
+                  fontWeight: 300,
+                  letterSpacing: "-0.025em",
+                  lineHeight: 1.18,
+                  color: "#FFFFFF",
                 }}
               >
-                {chapitre.surtitre}
+                {chapitre.titre}
+              </h2>
+              <p
+                style={{
+                  margin: "12px 0 0",
+                  fontSize: 14.5,
+                  fontWeight: 300,
+                  lineHeight: 1.62,
+                  color: BLANC(0.7),
+                }}
+              >
+                {chapitre.texte}
               </p>
-            )}
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "clamp(24px, 6.4vw, 31px)",
-                fontWeight: 300,
-                letterSpacing: "-0.025em",
-                lineHeight: 1.18,
-                color: "#FFFFFF",
-              }}
-            >
-              {chapitre.titre}
-            </h2>
-            <p
-              style={{
-                margin: "12px 0 0",
-                fontSize: 14.5,
-                fontWeight: 300,
-                lineHeight: 1.62,
-                color: BLANC(0.7),
-              }}
-            >
-              {chapitre.texte}
-            </p>
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>

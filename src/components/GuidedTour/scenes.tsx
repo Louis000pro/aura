@@ -155,6 +155,19 @@ export function SceneOuverture({ pseudo }: { pseudo: string }) {
 
 export function SceneTunnel() {
   const reduce = useReducedMotion();
+
+  /* Le décompte descend pour de vrai, et l'anneau se vide au même rythme :
+     un chiffre figé pendant qu'un anneau tourne, on voit tout de suite que
+     ça ne raconte rien. Un tick par seconde pilote les deux. */
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (reduce) return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [reduce]);
+  const reste = 5 - (tick % 5); // 5, 4, 3, 2, 1, 5, …
+  const retour = tick % 5 === 0; // au rebouclage, on ne rejoue pas l'anneau à l'envers
+
   return (
     <Cadre>
       {/* La barre segmentée du tunnel : fait en teal, en cours en violet */}
@@ -225,15 +238,15 @@ export function SceneTunnel() {
               strokeDasharray="1 1"
               transform="rotate(-90 31 31)"
               initial={{ strokeDashoffset: 0 }}
-              animate={reduce ? { strokeDashoffset: 0.35 } : { strokeDashoffset: [0, 1] }}
-              transition={reduce ? undefined : { duration: 5, repeat: Infinity, ease: "linear" }}
+              animate={{ strokeDashoffset: reduce ? 0.35 : (tick % 5) / 5 }}
+              transition={{ duration: retour ? 0 : 1, ease: "linear" }}
             />
           </svg>
           <span
             className="absolute text-center"
-            style={{ fontSize: 12, fontWeight: 600, color: "#FFC864", letterSpacing: "0.01em" }}
+            style={{ fontSize: 19, fontWeight: 600, color: "#FFC864", letterSpacing: "0.01em" }}
           >
-            45s
+            {reduce ? 3 : reste}
           </span>
         </div>
       </div>
@@ -431,7 +444,7 @@ export function SceneAssistant() {
 const LIEUX = [
   { img: "/nutrition/maison.jpg", nom: "À la maison" },
   { img: "/nutrition/resto.jpg", nom: "Resto & livraison" },
-  { img: "/nutrition/pouce.jpg", nom: "Sur le pouce" },
+  { img: "/nutrition/pouce.jpg", nom: "Sandwich & snack" },
 ];
 
 export function SceneNutrition() {
@@ -632,39 +645,13 @@ export function SceneRelais() {
           />
         ))}
 
-        {/* Le sceau : un trait d'or qui se referme, un quart par maillon */}
-        <svg
-          className="absolute pointer-events-none"
-          style={{ inset: -5 }}
-          width={160}
-          height={276}
-          viewBox="0 0 160 276"
+        {/* Un simple liseré : l'affiche se raconte toute seule en se
+            dévoilant, l'avancement est dit par les maillons en dessous. */}
+        <span
           aria-hidden
-        >
-          <defs>
-            <linearGradient id="tour-sceau" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={OR_CLAIR} />
-              <stop offset="100%" stopColor={OR_CHAUD} />
-            </linearGradient>
-          </defs>
-          <rect x="3" y="3" width="154" height="270" rx="22" fill="none" stroke={BLANC(0.12)} strokeWidth="2" />
-          <motion.rect
-            x="3"
-            y="3"
-            width="154"
-            height="270"
-            rx="22"
-            fill="none"
-            stroke="url(#tour-sceau)"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            pathLength={100}
-            strokeDasharray={100}
-            animate={{ strokeDashoffset: 100 - (etat + 1) * 25 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            style={{ transform: "rotate(-90deg)", transformOrigin: "80px 138px" }}
-          />
-        </svg>
+          className="pointer-events-none absolute inset-0"
+          style={{ borderRadius: 18, border: `1px solid ${BLANC(0.14)}` }}
+        />
       </div>
 
       {/* Les quatre maillons. Le remplissage se fait en OPACITÉ d'un calque

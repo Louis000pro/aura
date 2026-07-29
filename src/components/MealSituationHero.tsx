@@ -65,7 +65,10 @@ const SITUATIONS: { key: SituationKey; label: string; sub: string; Icon: Icon; g
     gradient: "radial-gradient(circle at 26% 24%,#D6BBFF,transparent 46%),radial-gradient(circle at 80% 70%,#C13BC1,transparent 52%),linear-gradient(158deg,#7A4FD0,#432170)",
   },
   {
-    key: "pouce", label: "Sur le pouce", sub: "sans cuisine", Icon: Sandwich,
+    // « Sur le pouce » ne disait rien à personne (test fait par Louis autour
+    // de lui) : on nomme la chose, pas l'expression. La clé reste `pouce`,
+    // elle sert aux chemins d'images (/nutrition/pouce-*.jpg).
+    key: "pouce", label: "Sandwich & snack", sub: "acheté tout prêt", Icon: Sandwich,
     img: "/nutrition/pouce.jpg",
     gradient: "radial-gradient(circle at 30% 24%,#C4F7E4,transparent 46%),radial-gradient(circle at 78% 70%,#2BD4A0,transparent 52%),linear-gradient(158deg,#54DCB0,#0E8A67)",
   },

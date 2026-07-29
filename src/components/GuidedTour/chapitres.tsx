@@ -94,7 +94,7 @@ export const CHAPITRES: Chapitre[] = [
     surtitre: "La nutrition",
     titre: "On part de ta réalité",
     texte:
-      "Pas de tableau à remplir : on te demande simplement où tu manges. Maison, resto, sur le pouce. Une photo de ton assiette suffit à estimer le reste.",
+      "Pas de tableau à remplir : on te demande simplement où tu manges. À la maison, au resto, ou un sandwich acheté en chemin. Une photo de ton assiette suffit à estimer le reste.",
     accent: [OR, "#E8620C"],
     Scene: SceneNutrition,
   },
