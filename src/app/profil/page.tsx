@@ -770,7 +770,6 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
 /* ─────────────── Privacy Modal ─────────────── */
 function PrivacyModal({ onClose }: { onClose: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
-  const [analytics, setAnalytics] = useState(true);
 
   return (
     <motion.div
@@ -801,8 +800,10 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex flex-col gap-3">
           {[
+            // « Analytiques » a été retiré avec PostHog le 2026-07-29 : l'interrupteur
+            // ne pilotait rien (état local jamais enregistré) et promettait une
+            // collecte qui n'existe plus.
             { label: "Partage de données", desc: "Partager vos stats avec la communauté", state: dataSharing, toggle: () => setDataSharing(v => !v) },
-            { label: "Analytiques", desc: "Améliorer l'app avec vos données anonymisées", state: analytics, toggle: () => setAnalytics(v => !v) },
           ].map(({ label, desc, state, toggle }) => (
             <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.4)" }}>
               <div className="flex-1">
