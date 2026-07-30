@@ -163,7 +163,6 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
       if (left + PANEL_W > window.innerWidth - MARGIN) {
         left = window.innerWidth - PANEL_W - MARGIN;
       }
-      if (top < MARGIN) top = MARGIN;
 
     } else if (side === "top") {
       // Header → panel EN DESSOUS aligné à droite du bouton
@@ -180,6 +179,16 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
       if (left + PANEL_W > window.innerWidth - MARGIN) left = window.innerWidth - PANEL_W - MARGIN;
       if (left < MARGIN) left = MARGIN;
     }
+
+    /* Le panneau doit tenir à l'écran, quelle que soit la hauteur de la
+       cloche. Sur desktop elle est tout en BAS de la barre latérale :
+       aligner le haut du panneau sur elle ne laissait qu'une centaine de
+       pixels, et la liste était coupée net par le bord de l'écran.
+       On le remonte donc juste ce qu'il faut. */
+    if (top + PANEL_H > window.innerHeight - MARGIN) {
+      top = window.innerHeight - MARGIN - PANEL_H;
+    }
+    if (top < MARGIN) top = MARGIN;
 
     // Hauteur max disponible depuis top jusqu'en bas de l'écran
     const maxH = Math.min(PANEL_H, window.innerHeight - top - MARGIN);
@@ -223,6 +232,10 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             width: Math.min(360, (typeof window !== "undefined" ? window.innerWidth : 360) - 24),
             maxHeight: panelPos.maxH,
             overflow: "hidden",
+            /* La liste doit défiler DANS la place disponible : sans ça une
+               hauteur figée se faisait couper par le bord de l'écran. */
+            display: "flex",
+            flexDirection: "column",
             zIndex: 99999,
             background: "rgba(var(--surface-rgb),0.98)",
             backdropFilter: "blur(16px)",
@@ -233,7 +246,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
         >
           {/* Header */}
           <div
-            className="px-4 pt-4 pb-2.5 flex items-center justify-between"
+            className="px-4 pt-4 pb-2.5 flex items-center justify-between flex-shrink-0"
             style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}
           >
             <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "var(--text-1)" }}>
@@ -247,7 +260,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
           </div>
 
           {/* List */}
-          <div className="max-h-[320px] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+          <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
             {/* Nouveautés (récap de mise à jour) épinglées en haut */}
             {ANNOUNCEMENTS.length > 0 && (
               <div className="px-3 pt-3 pb-1 flex flex-col gap-2">

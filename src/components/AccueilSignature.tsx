@@ -164,7 +164,7 @@ export default function AccueilSignature({
         </span>
         <span className={styles.rankCopy}>
           <strong>{aura.rang.nom} · Jour {streak}</strong>
-          <small>Te revoilà — ton histoire continue.</small>
+          <small>Te revoilà, ton histoire continue.</small>
         </span>
         <span className={styles.rankExp}>
           <strong>{auraLoaded ? aura.exp : "—"} EXP</strong>
