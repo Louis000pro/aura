@@ -28,7 +28,10 @@
   height: 100%;
   overflow: hidden;
   border-radius: 28px;
-  background: var(--surface);
+  /* Opaque, et jamais `var(--surface)` : ce token n'existe pas, seul
+     `--surface-rgb` est défini. Une feuille sans fond laisse voir la page
+     en dessous et le texte devient illisible. */
+  background: rgb(var(--surface-rgb));
   border: 1px solid rgba(var(--accent-rgb), 0.14);
   box-shadow: 0 -12px 48px rgba(10, 5, 28, 0.34);
 }
@@ -126,7 +129,7 @@
 .chiffre {
   padding: 13px 4px 12px;
   text-align: center;
-  background: var(--surface);
+  background: rgb(var(--surface-rgb));
 }
 .chiffre b {
   display: block;
@@ -326,7 +329,7 @@
 .pied {
   flex-shrink: 0;
   padding: 13px 18px 16px;
-  background: var(--surface);
+  background: rgb(var(--surface-rgb));
   border-top: 1px solid rgba(var(--accent-rgb), 0.14);
 }
 .cta {

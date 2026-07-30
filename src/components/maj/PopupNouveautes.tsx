@@ -23,8 +23,11 @@ import styles from "./PopupNouveautes.module.css";
 
 /* Les gestes du bandeau. Tous vérifiés animés : une vignette au halo
    violet dans un écran qui annonce 102 mouvements animés serait un
-   mensonge à l'écran. Si on en change, revérifier. */
-const BANDEAU = ["Fentes", "Mollets debout", "Squat", "Tractions", "Pompes"];
+   mensonge à l'écran. Si on en change, revérifier.
+   Pas d'exercice à agrès haut ici (tractions) : la barre occupe toute la
+   hauteur de la planche, donc le personnage rapetisse et la vignette
+   devient illisible. Même précaution que la vitrine des mouvements. */
+const BANDEAU = ["Fentes", "Mollets debout", "Squat", "Jumping jacks", "Pompes"];
 const TRIO = ["Squat", "Burpees", "Pompes"];
 
 const CHIFFRES: [string, string][] = [
