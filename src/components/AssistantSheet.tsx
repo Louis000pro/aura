@@ -20,6 +20,7 @@ import CarteSeance from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
+import { PLANS } from "@/lib/plans";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { AssistantAvatar } from "@/components/AssistantMark";
 
@@ -170,7 +171,7 @@ function QuestionChips({ q, actif, onChoisir }: {
    qu'aucun effet n'ait à la remettre à plat. Garder le jour d'une carte
    précédente ferait programmer la mauvaise séance. */
 function CarteProposition() {
-  const { pendingSeance, confirmSeance, garderSeance, cancelSeance, chargerJours, close } = useAssistant();
+  const { pendingSeance, confirmSeance, garderSeance, cancelSeance, chargerJours, close, bibliothequePleine } = useAssistant();
   const { launchWorkout } = useWorkoutLaunch();
   const [jours, setJours] = useState<JourDispo[] | null>(null);
   const [jourChoisi, setJourChoisi] = useState<string | null>(null);
@@ -200,8 +201,9 @@ function CarteProposition() {
         tip: e.tip ?? "", benefit: e.benefit ?? "", muscles: e.muscles ?? [],
       })),
       // Elle n'est rangée nulle part : le tunnel proposera de la garder une
-      // fois terminée, comme une impro.
-      onGarder: () => { void garderSeance(s); },
+      // fois terminée, comme une impro. Stock plein → on ne le propose pas du
+      // tout, plutôt qu'un bouton qui refuse après l'effort.
+      ...(bibliothequePleine ? {} : { onGarder: () => { void garderSeance(s); } }),
     });
     cancelSeance();
     close();
@@ -213,17 +215,25 @@ function CarteProposition() {
       titre={s.title}
       meta={[CATEGORY_LABEL[s.category], `${s.duration} min`, s.difficulty].join(" · ")}
       exercices={s.exerciseList.map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
-      options={[
+      /* Stock gratuit plein : la carte ne propose que ce qui reste possible.
+         Un bouton « Garder » qui refuserait au clic, ou un mur découvert après
+         l'effort, ce serait le contraire de la règle — le plafond se voit
+         AVANT. S'entraîner, lui, n'est jamais limité. */
+      options={bibliothequePleine ? [] : [
         { id: "now", icone: <Play size={15} strokeWidth={2.2} fill="currentColor" />, ligne1: "La faire", ligne2: "maintenant", onClick: faireMaintenant },
         { id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "La mettre", ligne2: "un jour", actif: ouvert, onClick: ouvrirJours },
       ]}
       jours={ouvert ? jours : null}
       jourChoisi={jourChoisi}
       onJour={(d) => setJourChoisi((v) => (v === d ? null : d))}
-      cta={jourChoisi ? `Garder et programmer ${libelleJour(jours, jourChoisi)}` : "Garder la séance"}
-      onValider={() => confirmSeance(jourChoisi)}
+      cta={bibliothequePleine
+        ? "La faire maintenant"
+        : jourChoisi ? `Garder et programmer ${libelleJour(jours, jourChoisi)}` : "Garder la séance"}
+      onValider={bibliothequePleine ? faireMaintenant : () => confirmSeance(jourChoisi)}
       onFermer={cancelSeance}
-      hint={jourChoisi ? "Elle rejoint aussi tes séances" : null}
+      hint={bibliothequePleine
+        ? `Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place dans Mes séances, ou passe en Premium.`
+        : jourChoisi ? "Elle rejoint aussi tes séances" : null}
     />
   );
 }

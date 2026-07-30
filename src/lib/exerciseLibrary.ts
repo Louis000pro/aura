@@ -481,6 +481,43 @@ export function chercherExercices(opts: { texte?: string; zone?: Zone | null; eq
   });
 }
 
+/* ── Ce que l'IA a le droit de proposer ───────────────────────────────
+   Décidé le 2026-07-30 avec Louis : une séance générée ne contient QUE
+   des exercices dont le personnage animé existe. Un exo sans planche
+   tombait sur le halo violet au milieu d'une carte qui montre des
+   animations partout : ça se voit tout de suite, et ça donne l'impression
+   que l'app est trouée.
+
+   Cette liste est donc la même que celle de la bibliothèque (102 gestes,
+   tous animés), filtrée par ce qu'on a sous la main. Le filtre `equip` ne
+   suffit pas : « Tractions » ou « Dips barres parallèles » sont au poids
+   du corps mais demandent une barre, qu'on n'a pas dans un salon. */
+
+/** Gestes au poids du corps qui exigent quand même un agrès (barre, barres
+ *  parallèles) : possibles en salle, pas à la maison. */
+const AGRES = ["Tractions", "Rowing inversé", "Dips barres parallèles"];
+
+/** Gestes de fonte qui demandent une BARRE ou un kettlebell : hors sujet
+ *  pour quelqu'un qui a une paire d'haltères chez lui. */
+const BARRE_SEULEMENT = [
+  "Développé couché", "Curl barre EZ", "Rowing barre", "Squat barre",
+  "Overhead squat", "Soulevé de terre classique", "Soulevé de terre roumain",
+  "Kettlebell swing",
+];
+
+/** Les exercices praticables dans un contexte donné, tous animés par
+ *  construction. `salle` = tout le matériel, `halteres` = maison + haltères,
+ *  `poids` = maison sans rien. */
+export function exercicesDisponibles(ctx: "salle" | "halteres" | "poids"): LibExercise[] {
+  if (ctx === "salle") return EXERCISE_LIBRARY;
+  const interdits = new Set(ctx === "halteres" ? [...AGRES, ...BARRE_SEULEMENT] : AGRES);
+  return EXERCISE_LIBRARY.filter((e) => {
+    if (interdits.has(e.name)) return false;
+    if (e.equip === "machine" || e.equip === "cardio") return false;
+    return ctx === "halteres" ? e.equip === "corps" || e.equip === "fonte" : e.equip === "corps";
+  });
+}
+
 /* ── Deviner la séance derrière une poignée d'exercices ────────────────
    Quand on arrive dans la création depuis la bibliothèque, les exercices
    sont déjà là : il serait absurde de redemander « c'est quoi, du cardio

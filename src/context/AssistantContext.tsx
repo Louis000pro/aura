@@ -26,9 +26,10 @@ import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory }
 import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import { phraseDeRepli, normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
+import { PLANS } from "@/lib/plans";
 import {
   resolveWhen, dayLabel, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay, prochainsJours,
-  ctxFromLieu, readLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
+  ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
 
@@ -134,6 +135,8 @@ type AssistantContextValue = {
   pendingRecipe: PendingRecipe | null;
   pendingMeal: PendingMeal | null;
   actionLoading: boolean;
+  /** Le stock gratuit de séances gardées est plein : la carte n'offre alors que ce qui reste possible. */
+  bibliothequePleine: boolean;
   /** Garde la séance proposée. `jour` la pose aussi sur le planning, en UNE
    *  validation : le jour se choisit maintenant AVANT de valider, plus après. */
   confirmSeance: (jour?: string | null) => void;
@@ -236,6 +239,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
   const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  /* Le stock gratuit de séances gardées est plein ? La carte le dit AVANT le
+     clic et ne propose alors que ce qui reste possible (s'entraîner). On ne
+     limite jamais le fait de créer ni de s'entraîner, seulement le rangement. */
+  const [bibliothequePleine, setBibliothequePleine] = useState(false);
 
   const userContextRef = useRef<UserContext | null>(null);
   const liveStatsRef = useRef<LiveStats | null>(null);
@@ -243,6 +250,26 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const memoriesRef = useRef<AiMemory[]>([]);
   const dataLoadedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  /* La demande mise en attente parce qu'il nous manquait le lieu. Elle repart
+     dès qu'on l'apprend, PAR N'IMPORTE QUEL CHEMIN : la puce touchée, mais
+     aussi la réponse tapée à la main (outil save_lieu). C'était le trou : on
+     enregistrait le lieu, on disait « c'est noté », et il fallait redemander
+     sa séance. Vu de l'utilisateur, la première demande ne donnait jamais de
+     carte. */
+  const attenteRef = useRef<string | null>(null);
+  /* `sendMessage` est défini plus bas ; `runAction` doit pouvoir relancer une
+     demande. Un ref évite de tout réordonner (et la boucle de dépendances). */
+  const sendRef = useRef<((text: string, masque?: boolean) => void) | null>(null);
+
+  /* Le lieu vit dans le localStorage (lecture synchrone) mais la source
+     durable, c'est la base. Sans cette hydratation, un appareil neuf, un
+     stockage vidé ou un navigateur privé refaisait poser la question alors
+     qu'on connaît déjà la réponse — et seul /progression hydratait. */
+  useEffect(() => {
+    if (!user?.id) return;
+    void loadLieu(user.id);
+  }, [user?.id]);
 
   /* ── Historique de SESSION (par utilisateur) ──
      Le fil de conversation ne vit QUE le temps de la session : il est rangé
@@ -486,10 +513,32 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id]);
 
+  /* ── Reste-t-il une place dans la bibliothèque ? ──
+     Même règle que /progression : on plafonne le STOCK, jamais la création ni
+     l'entraînement. Supprimer une séance libère une place tout de suite, et ce
+     qui est déjà gardé n'est ni verrouillé ni effacé. Compteur côté client :
+     c'est une limite douce assumée, pas une frontière de sécurité. */
+  const verifierPlaces = useCallback(async (): Promise<boolean> => {
+    if (!user?.id) return false;
+    if (user.is_premium || user.is_admin) { setBibliothequePleine(false); return false; }
+    const { count } = await createClient()
+      .from("custom_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+    const pleine = (count ?? 0) >= PLANS.free.limits.sessionsMax;
+    setBibliothequePleine(pleine);
+    return pleine;
+    // `user` en entier (et pas ses champs un à un) : c'est ce que le compilateur
+    // React déduit, et une dépendance plus fine lui fait renoncer à optimiser.
+  }, [user]);
+
   /* Pose une question à choix cliquables sous une nouvelle bulle du coach.
      `relance` = la demande d'origine, renvoyée au coach une fois la réponse
      connue, pour qu'il enchaîne au lieu de repartir de zéro. */
   const poserQuestion = useCallback((contenu: string, q: QuestionCliquable) => {
+    // Mémorisée ici aussi : si l'utilisateur tape sa réponse au lieu de toucher
+    // une puce, c'est `save_lieu` qui la reprendra.
+    if (q.relance) attenteRef.current = q.relance;
     setMessages((prev) => [...prev, { role: "assistant" as const, content: contenu, id: uid(), question: q }]);
   }, []);
 
@@ -727,6 +776,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         status: "planned",
       };
 
+      const pleine = await verifierPlaces();
       setPendingPlan({
         ...texteCartePlan(day, hasSeance(existing) ? dayTitle(existing) : null),
         title: seance.title,
@@ -735,8 +785,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         retargetable: true,
         // Générée à l'instant : elle n'existe nulle part ailleurs, donc on peut
         // proposer de la garder AUSSI dans la bibliothèque, pas seulement sur
-        // ce jour-là (une séance de la biblio, elle, y est déjà).
-        gardable: true,
+        // ce jour-là (une séance de la biblio, elle, y est déjà). Sauf si le
+        // stock gratuit est plein : on ne propose pas un bouton qui refusera.
+        gardable: !pleine,
       });
     } catch (e) {
       const detail = (e as { message?: string })?.message ?? String(e);
@@ -744,7 +795,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, buildNutritionNote, poserQuestion]);
+  }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces]);
 
   /* ── Mémoire long terme (silencieuse, best-effort) ──
      Volontairement restée sur son propre petit appel : elle n'a rien à voir
@@ -791,6 +842,25 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const eq = action.materiel === "halteres" ? "halteres" : action.materiel === "poids" ? "poids" : null;
       if (!loc && !eq) return;
       void persistLieu(user.id, { ...(loc ? { location: loc } : {}), ...(eq ? { equip: eq } : {}) });
+
+      /* Une demande attendait ce lieu : elle repart toute seule. Sans ça, le
+         coach répondait « c'est noté ✦ » et l'utilisateur devait redemander sa
+         séance — d'où l'impression que la première demande ne marche jamais.
+         (localStorage est déjà écrit par persistLieu, la relecture est bonne.) */
+      const attente = attenteRef.current;
+      if (!attente) return;
+      const { location, equip } = readLieu(user.id);
+      if (!location) return;
+      if (location === "maison" && !equip) {
+        // Une seule question à la fois : le matériel arrive maintenant, et
+        // c'est lui qui relancera la demande.
+        poserQuestion("Tu as des haltères à la maison ?", {
+          choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: attente,
+        });
+        return;
+      }
+      attenteRef.current = null;
+      sendRef.current?.(attente, true);
       return;
     }
 
@@ -906,13 +976,17 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // 2b) Création d'une séance réutilisable (bibliothèque) → génération + carte
     if (action.intent !== "create_seance") return;
 
-    // Le lieu conditionne le contenu de la séance (machines vs poids du corps).
-    // Il est forcément connu ici : `questionManquante` le vérifie AVANT
-    // d'exécuter l'action, et pose la question en puces s'il manque. On ne
-    // devine donc plus rien à partir du texte (les regex qui le faisaient
-    // produisaient des faux positifs).
+    /* Le lieu conditionne le contenu (machines vs poids du corps). Il est
+       normalement déjà connu — `questionManquante` le vérifie avant d'exécuter
+       l'action — mais ce filet ne renvoie JAMAIS en silence : un `return` nu
+       ici, c'était une demande sans réponse et sans explication. */
     const { location: lieu, equip } = readLieu(user.id);
-    if (!lieu) return;
+    if (!lieu) {
+      poserQuestion("Avant de te préparer ça, tu t'entraînes où ?", {
+        choix: ["En salle", "À la maison"], genre: "lieu", relance: text,
+      });
+      return;
+    }
 
     setActionLoading(true);
     setPendingSeance(null);
@@ -941,6 +1015,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const data = await genRes.json();
       if (!data || data.error) throw new Error("generation: " + (data?.error ?? "réponse vide"));
 
+      await verifierPlaces();
       setPendingSeance(assembleSeance({
         title: data.title,
         category,
@@ -959,7 +1034,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setActionLoading(false);
     }
-  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote]);
+  }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion, verifierPlaces]);
 
   /* ── Ce qui manque AVANT d'agir ──
      C'est le CODE qui sait de quoi il a besoin, pas le modèle : lui demander
@@ -973,10 +1048,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const besoinDuLieu = action.intent === "create_seance" || action.intent === "plan_set" || action.intent === "plan_regen";
     if (!besoinDuLieu) return null;
     const { location, equip } = readLieu(user.id);
+    // La demande est mise de côté : elle repart dès qu'on connaît la réponse,
+    // qu'elle soit touchée (puce) ou tapée à la main (outil save_lieu).
     if (!location) {
+      attenteRef.current = text;
       return { texte: "Avant de te préparer ça, tu t'entraînes où ?", question: { choix: ["En salle", "À la maison"], genre: "lieu", relance: text } };
     }
     if (location === "maison" && !equip) {
+      attenteRef.current = text;
       return { texte: "Tu as des haltères à la maison ?", question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text } };
     }
     return null;
@@ -1176,6 +1255,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   }, [messages, isStreaming, user, pathname, router, ensureContext, persist, extractMemory, runAction, questionManquante]);
 
+  // `runAction` relance une demande mise en attente sans dépendre de
+  // `sendMessage`, défini après lui (et qui dépend de lui).
+  useEffect(() => { sendRef.current = sendMessage; }, [sendMessage]);
+
   /* ── Réponse à une question cliquable ──
      La puce touchée reste affichée, cochée ; les autres disparaissent. On ne
      crée PAS de bulle utilisateur : la réponse est déjà lisible sur la puce,
@@ -1213,12 +1296,14 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         }]);
         return;
       }
+      attenteRef.current = null;
       if (relance) sendMessage(relance, true);
       return;
     }
 
     if (q.genre === "equip" && user?.id) {
       void persistLieu(user.id, { equip: /halt/i.test(choix) ? "halteres" : "poids" });
+      attenteRef.current = null;
       if (relance) sendMessage(relance, true);
       return;
     }
@@ -1250,9 +1335,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      Sans ça, on jette le travail à l'instant où il vient de faire ses preuves. */
   const garderSeance = useCallback(async (s: ProposedSeance): Promise<boolean> => {
     if (!user?.id) return false;
+    // Filet : le plafond gratuit se voit déjà sur la carte, mais une séance
+    // lancée puis gardée en fin de tunnel repasse par ici longtemps après.
+    if (await verifierPlaces()) return false;
     const { error } = await createClient().from("custom_sessions").insert(seanceToRow(s, user.id));
     return !error;
-  }, [user?.id]);
+  }, [user?.id, verifierPlaces]);
 
   /* ── Validation de la carte séance ──
      Une SEULE validation fait tout : la séance rejoint la bibliothèque, et si
@@ -1263,6 +1351,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const confirmSeance = useCallback(async (jour?: string | null) => {
     if (!user?.id || !pendingSeance) return;
     const s = pendingSeance;
+    if (await verifierPlaces()) {
+      setMemoryNotice(`Tes ${PLANS.free.limits.sessionsMax} séances gardées sont prises. Libère une place, ou passe en Premium.`);
+      return;
+    }
     const ok = await garderSeance(s);
     if (!ok) { setMemoryNotice("Oups, impossible de garder la séance."); return; }
 
@@ -1295,7 +1387,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       setPendingSeance(null);
       setMemoryNotice("Gardée, mais impossible de la programmer.");
     }
-  }, [user?.id, pendingSeance, garderSeance]);
+  }, [user?.id, pendingSeance, garderSeance, verifierPlaces]);
 
   const cancelSeance = useCallback(() => setPendingSeance(null), []);
 
@@ -1438,7 +1530,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );

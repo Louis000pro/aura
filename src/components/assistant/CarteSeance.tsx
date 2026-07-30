@@ -118,7 +118,11 @@ export default function CarteSeance({
           <p className="px-4 pb-1.5 text-[9.5px] font-semibold tracking-[0.13em] uppercase" style={{ color: "var(--text-3)" }}>
             Les mouvements · {exercices.length}
           </p>
-          <div className="px-2.5 overflow-y-auto" style={{ maxHeight: 172, scrollbarWidth: "none" }}>
+          {/* Assez haut pour couper une ligne en deux : c'est ce demi-mouvement
+              qui dit qu'il y en a d'autres en dessous. Une séance fait 5 à 8
+              mouvements, la liste défile — Louis, 2026-07-30 : « rien qu'un
+              petit slide vers le bas n'est pas très dérangeant ». */}
+          <div className="px-2.5 overflow-y-auto" style={{ maxHeight: 200, scrollbarWidth: "none" }}>
             {exercices.map((ex, i) => (
               <div key={`${ex.name}-${i}`} className="flex items-center gap-2.5 px-1.5 py-1 rounded-2xl"
                 style={i > 0 ? { boxShadow: "inset 0 1px 0 rgba(var(--accent-rgb),0.10)" } : undefined}>
