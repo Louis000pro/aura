@@ -32,6 +32,10 @@ function PremiumInner() {
   const [celebrate, setCelebrate] = useState(false);
   const [verifPaiement, setVerifPaiement] = useState(false);
   const [portail, setPortail] = useState(false);
+  // Acceptation des conditions avant paiement. On vend un abonnement qui se
+  // reconduit tout seul : le contrat doit être accepté explicitement, pas
+  // supposé accepté parce qu'un lien traînait en bas de page.
+  const [cguOk, setCguOk] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activeIdx, setActiveIdx] = useState(1); // Premium centré par défaut
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -122,6 +126,9 @@ function PremiumInner() {
     // Le compte est identifié par le token côté serveur : on n'envoie plus
     // d'identifiant dans le corps de la requête.
     if (!session?.access_token) { setMsg("Reconnecte-toi pour continuer"); return; }
+    // Le bouton reste cliquable exprès : un bouton éteint sans explication
+    // laisse croire à une panne. On dit ce qui manque.
+    if (!cguOk) { setMsg("Coche la case pour accepter les conditions"); return; }
     setLoading(plan);
     setMsg(null);
     try {
@@ -282,10 +289,28 @@ function PremiumInner() {
                       </button>
                     </>
                   ) : (
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
-                      className={`${styles.cta} ${highlight ? styles.ctaPrimary : styles.ctaSecondary} py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60`}>
-                      {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
-                    </motion.button>
+                    <>
+                      <label className="flex items-start gap-2.5 mb-3 cursor-pointer text-left">
+                        <input
+                          type="checkbox"
+                          checked={cguOk}
+                          onChange={(e) => { setCguOk(e.target.checked); if (e.target.checked) setMsg(null); }}
+                          className="mt-0.5 flex-shrink-0 w-4 h-4 cursor-pointer"
+                          style={{ accentColor: "#7C5CFA" }}
+                        />
+                        <span className="text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
+                          J&apos;ai lu et j&apos;accepte les{" "}
+                          <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>
+                            conditions générales
+                          </Link>{" "}
+                          et je demande que l&apos;accès commence tout de suite.
+                        </span>
+                      </label>
+                      <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
+                        className={`${styles.cta} ${highlight ? styles.ctaPrimary : styles.ctaSecondary} py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60`}>
+                        {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
+                      </motion.button>
+                    </>
                   )}
 
                   {/* Séparateur */}

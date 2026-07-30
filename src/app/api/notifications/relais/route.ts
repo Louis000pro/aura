@@ -11,15 +11,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendPushToUser } from "@/lib/sendPushToUser";
+import { compteAppelant, refusAuth } from "@/lib/apiAuth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { run_id, actor_id } = await req.json();
-    if (!run_id || !actor_id) {
+    // L'acteur est celui qui vient de franchir le maillon : c'est donc
+    // l'appelant, pas un identifiant envoyé dans la requête. Sinon n'importe
+    // qui pouvait déclencher une notification au nom de quelqu'un d'autre.
+    const appelant = await compteAppelant(req);
+    if (!appelant) return refusAuth();
+    const actor_id = appelant.id;
+
+    const { run_id } = await req.json();
+    if (!run_id) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
     const admin = createAdminClient();
+
+    // L'acteur doit appartenir au défi qu'il prétend faire avancer.
+    const { data: adhesion } = await admin
+      .from("challenge_run_members")
+      .select("user_id")
+      .eq("run_id", run_id)
+      .eq("user_id", actor_id)
+      .maybeSingle();
+    if (!adhesion) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
 
     const { data: run } = await admin
       .from("challenge_runs")

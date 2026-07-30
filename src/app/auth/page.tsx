@@ -624,6 +624,8 @@ export default function AuthPage() {
 
           <p className="text-center text-[10px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
             En continuant, tu acceptes nos{" "}
+            <Link href="/conditions" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Conditions générales</Link>
+            {", "}nos{" "}
             <Link href="/mentions-legales" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Mentions légales</Link>
             {" "}et notre{" "}
             <Link href="/confidentialite" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Politique de confidentialité</Link>.

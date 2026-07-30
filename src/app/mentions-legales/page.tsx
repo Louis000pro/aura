@@ -8,15 +8,15 @@ import { ArrowLeft } from "lucide-react";
 function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-7">
-      <h2 className="text-base font-semibold mb-2.5" style={{ color: "#2D3748" }}>{title}</h2>
+      <h2 className="text-base font-semibold mb-2.5" style={{ color: "var(--text-0)" }}>{title}</h2>
       <div
         className="rounded-3xl px-5 py-5 text-sm font-light leading-relaxed space-y-2.5"
         style={{
-          background: "rgba(255,255,255,0.7)",
-          border: "1px solid rgba(255,255,255,0.85)",
+          background: "rgba(var(--surface-rgb),0.7)",
+          border: "1px solid rgba(var(--accent-rgb),0.12)",
           backdropFilter: "blur(12px)",
-          boxShadow: "0 2px 12px rgba(167,139,250,0.05), inset 0 1px 0 rgba(255,255,255,0.9)",
-          color: "#4A5568",
+          boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.05)",
+          color: "var(--text-body)",
         }}
       >
         {children}
@@ -35,22 +35,22 @@ export default function MentionsLegalesPage() {
           whileTap={{ scale: 0.96 }}
           className="inline-flex items-center gap-2 mb-6 px-4 py-2.5 rounded-2xl cursor-pointer"
           style={{
-            background: "rgba(255,255,255,0.7)",
-            border: "1px solid rgba(255,255,255,0.85)",
+            background: "rgba(var(--surface-rgb),0.7)",
+            border: "1px solid rgba(var(--accent-rgb),0.12)",
             backdropFilter: "blur(12px)",
-            boxShadow: "0 2px 8px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
-            color: "#718096",
+            boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)",
+            color: "var(--text-2)",
           }}
         >
-          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "#A78BFA" }} />
+          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "var(--accent)" }} />
           <span className="text-sm font-medium">Retour</span>
         </motion.div>
       </Link>
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Mentions légales</h1>
-        <p className="text-sm font-light mt-1.5" style={{ color: "#A0AEC0" }}>
+        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>Mentions légales</h1>
+        <p className="text-sm font-light mt-1.5" style={{ color: "var(--text-3)" }}>
           Informations légales relatives au site et à l&apos;application Vaiiya.
         </p>
       </motion.div>
@@ -73,7 +73,7 @@ export default function MentionsLegalesPage() {
             {/* À COMPLÉTER : adresse email de contact officielle */}
             <li><strong>Contact :</strong> bonjour@vaiiya.fr</li>
           </ul>
-          <p className="text-xs mt-2" style={{ color: "#A0AEC0" }}>
+          <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
             En tant que micro-entreprise, l&apos;éditeur n&apos;est pas assujetti à la TVA (article 293 B du CGI),
             sauf mention contraire sur les factures.
           </p>
@@ -90,7 +90,7 @@ export default function MentionsLegalesPage() {
             <li><strong>Vercel Inc.</strong></li>
             <li>340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis</li>
             <li>
-              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "#A78BFA" }} className="hover:underline">
+              <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }} className="hover:underline">
                 vercel.com
               </a>
             </li>
@@ -145,13 +145,13 @@ export default function MentionsLegalesPage() {
           </p>
           <p>
             Pour les questions relatives à vos données personnelles, consultez notre{" "}
-            <Link href="/confidentialite" style={{ color: "#A78BFA" }} className="hover:underline">
+            <Link href="/confidentialite" style={{ color: "var(--accent)" }} className="hover:underline">
               Politique de confidentialité
             </Link>.
           </p>
         </LegalSection>
 
-        <p className="text-center text-[11px] font-light mt-8" style={{ color: "#C4C9D4" }}>
+        <p className="text-center text-[11px] font-light mt-8" style={{ color: "var(--text-3)" }}>
           Dernière mise à jour : Juin 2026 · Vaiiya
         </p>
       </motion.div>

@@ -1,6 +1,13 @@
 /**
  * push.ts — Client-side helpers for Web Push subscriptions
+ *
+ * Les appels passent par `fetchAuth` : le serveur rattache l'appareil au compte
+ * du JETON, jamais à un identifiant envoyé par le client. Sans ça, on pouvait
+ * enregistrer son propre appareil sur le compte d'un autre et recevoir ses
+ * notifications, donc le contenu de ses messages.
  */
+
+import { fetchAuth } from "./fetchAuth";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
@@ -21,7 +28,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
  * and persist the subscription to the server.
  * Returns "granted" | "denied" | "unsupported" | "error"
  */
-export async function subscribeToPush(userId: string): Promise<"granted" | "denied" | "unsupported" | "error"> {
+export async function subscribeToPush(): Promise<"granted" | "denied" | "unsupported" | "error"> {
   if (typeof window === "undefined") return "unsupported";
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
   if (!VAPID_PUBLIC_KEY) return "error";
@@ -57,10 +64,10 @@ export async function subscribeToPush(userId: string): Promise<"granted" | "deni
     }
 
     // Save subscription to server
-    await fetch("/api/notifications/push", {
+    await fetchAuth("/api/notifications/push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, subscription: sub.toJSON() }),
+      body: JSON.stringify({ subscription: sub.toJSON() }),
     });
 
     return "granted";
@@ -73,7 +80,7 @@ export async function subscribeToPush(userId: string): Promise<"granted" | "deni
 /**
  * Unsubscribe from push and remove from server.
  */
-export async function unsubscribeFromPush(userId: string): Promise<void> {
+export async function unsubscribeFromPush(): Promise<void> {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
   try {
@@ -81,10 +88,10 @@ export async function unsubscribeFromPush(userId: string): Promise<void> {
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       await sub.unsubscribe();
-      await fetch("/api/notifications/push", {
+      await fetchAuth("/api/notifications/push", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId, endpoint: sub.endpoint }),
+        body: JSON.stringify({ endpoint: sub.endpoint }),
       });
     }
   } catch (err) {

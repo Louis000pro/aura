@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { compteAppelant, refusAuth } from "@/lib/apiAuth";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
@@ -60,12 +61,17 @@ async function ensureTable() {
 // ── POST — save subscription ──────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, subscription } = await req.json() as {
-      user_id: string;
+    // Le compte vient du jeton. Avant, il venait du corps de la requête : on
+    // pouvait donc enregistrer SON appareil sur le compte de quelqu'un
+    // d'autre, et recevoir ses notifications (donc le contenu de ses messages).
+    const appelant = await compteAppelant(req);
+    if (!appelant) return refusAuth();
+
+    const { subscription } = await req.json() as {
       subscription: { endpoint: string; keys: { p256dh: string; auth: string } };
     };
 
-    if (!user_id || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+    if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
@@ -73,7 +79,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
     await supabase.from("push_subscriptions").upsert({
-      user_id,
+      user_id: appelant.id,
       endpoint: subscription.endpoint,
       p256dh:   subscription.keys.p256dh,
       auth:     subscription.keys.auth,
@@ -88,13 +94,17 @@ export async function POST(req: NextRequest) {
 // ── DELETE — remove subscription ─────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   try {
-    const { user_id, endpoint } = await req.json() as { user_id: string; endpoint: string };
-    if (!user_id || !endpoint) {
+    // Même raison qu'au POST : sans jeton, on pouvait désabonner les autres.
+    const appelant = await compteAppelant(req);
+    if (!appelant) return refusAuth();
+
+    const { endpoint } = await req.json() as { endpoint: string };
+    if (!endpoint) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
 
     const supabase = createAdminClient();
-    await supabase.from("push_subscriptions").delete().match({ user_id, endpoint });
+    await supabase.from("push_subscriptions").delete().match({ user_id: appelant.id, endpoint });
 
     return NextResponse.json({ ok: true });
   } catch (e) {

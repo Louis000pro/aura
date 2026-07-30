@@ -10,6 +10,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { createClient } from "@/lib/supabase";
+import { fetchAuth } from "@/lib/fetchAuth";
 
 /* ── Les séries d'affiches ────────────────────────────────────
    Une série = 4 états de la MÊME affiche, du vide au complet.
@@ -330,10 +331,10 @@ export async function validerMaillon(
 
   // On prévient l'équipier — sans jamais bloquer la fin de séance.
   if (reponse?.ok) {
-    void fetch("/api/notifications/relais", {
+    void fetchAuth("/api/notifications/relais", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ run_id: defi.runId, actor_id: userId }),
+      body: JSON.stringify({ run_id: defi.runId }),
     }).catch(() => {});
   }
 

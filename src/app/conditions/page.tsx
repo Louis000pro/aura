@@ -26,7 +26,7 @@ import { ArrowLeft } from "lucide-react";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { LIMITES, QUOTAS_PUBLICS } from "@/lib/aiQuotas";
 
-const MAJ = "29 juillet 2026";
+const MAJ = "30 juillet 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -232,23 +232,52 @@ export default function ConditionsPage() {
           </p>
         </Section>
 
-        <Section title="7. Disponibilité du service">
+        <Section title="7. Disponibilité, maintenance et évolutions">
           <p>
-            Nous faisons de notre mieux pour que Vaiiya fonctionne en continu, sans pouvoir le garantir :
-            maintenance, panne d&apos;un hébergeur ou d&apos;un prestataire d&apos;IA peuvent interrompre le
-            service. Une interruption longue et imputable à Vaiiya donne lieu, sur demande, à un geste
-            commercial au prorata.
+            Vaiiya est fourni <strong>en l&apos;état</strong> et évolue en permanence. Nous faisons de notre
+            mieux pour que tout fonctionne en continu, mais <strong>nous ne garantissons aucune
+            disponibilité ininterrompue</strong>, ni pour l&apos;application entière, ni pour une
+            fonctionnalité en particulier.
           </p>
           <p>
-            Des fonctionnalités peuvent évoluer, apparaître ou disparaître. Si une fonctionnalité
-            essentielle de l&apos;abonnement disparaissait durablement, vous pourriez résilier et être
-            remboursé au prorata.
+            <strong>Des interruptions et des maintenances peuvent survenir à tout moment</strong>, de façon
+            planifiée ou non, et concerner n&apos;importe quelle partie du service : entraînement, nutrition,
+            assistant, notifications, communauté, comptes, paiements. Elles peuvent toucher tous les
+            utilisateurs ou seulement certains, <strong>comptes gratuits comme abonnés</strong>, sur tout ou
+            partie de la période d&apos;abonnement.
+          </p>
+          <p>
+            Nous pouvons en particulier <strong>suspendre, limiter, corriger, modifier ou retirer une
+            fonctionnalité sans préavis</strong> lorsque c&apos;est nécessaire pour : corriger une anomalie,
+            protéger vos données ou celles des autres, contenir un abus ou une faille de sécurité, ou parce
+            qu&apos;un prestataire dont nous dépendons (hébergement, base de données, paiement, modèles
+            d&apos;intelligence artificielle) est indisponible, modifie ses conditions ou cesse son service.
+            Quand la situation le permet, nous prévenons dans l&apos;application.
+          </p>
+          <p>
+            Certaines fonctionnalités sont <strong>récentes ou expérimentales</strong> et peuvent comporter
+            des anomalies, en particulier celles reposant sur l&apos;intelligence artificielle. Elles peuvent
+            être ajustées, remplacées ou retirées.
+          </p>
+          <p>
+            Nous ne sommes pas responsables des indisponibilités qui ne nous sont pas imputables (panne d&apos;un
+            prestataire, de votre appareil, de votre connexion, force majeure), ni des conséquences
+            indirectes d&apos;une interruption. Notre responsabilité, lorsqu&apos;elle est engagée, est
+            limitée aux sommes que vous avez versées au titre de l&apos;abonnement sur les douze derniers
+            mois.
+          </p>
+          <p>
+            <strong>Ce que cette clause ne fait pas :</strong> elle n&apos;autorise pas à vous facturer un
+            service que vous n&apos;auriez pas. Si une interruption longue nous est imputable, vous obtenez
+            sur demande un geste commercial au prorata. Si une fonctionnalité essentielle de
+            l&apos;abonnement disparaissait durablement, vous pouvez résilier et être remboursé au prorata.
+            Rien ici ne vous prive de vos droits de consommateur.
           </p>
         </Section>
 
         <Section title="8. Réclamation et litige">
           <p>
-            En cas de problème, écrivez-nous d&apos;abord à <strong>[EMAIL DE CONTACT]</strong> : c&apos;est
+            En cas de problème, écrivez-nous d&apos;abord à <strong>bonjour@vaiiya.fr</strong> : c&apos;est
             presque toujours le plus rapide.
           </p>
           <p>

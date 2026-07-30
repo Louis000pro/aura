@@ -793,11 +793,11 @@ export default function ParametresPage() {
     setPushLoading(true);
     try {
       if (pushEnabled) {
-        await unsubscribeFromPush(user.id);
+        await unsubscribeFromPush();
         setPushEnabled(false);
         showToast("Notifications push désactivées");
       } else {
-        const result = await subscribeToPush(user.id);
+        const result = await subscribeToPush();
         if (result === "granted") {
           setPushEnabled(true);
           showToast("Notifications push activées !");
