@@ -6,7 +6,7 @@ import WelcomeCelebration from "@/components/WelcomeCelebration";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
 import { AssistantSpark } from "@/components/AssistantMark";
-import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, type LucideIcon } from "lucide-react";
+import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +19,7 @@ import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/p
 import { fetchTasteProfile } from "@/lib/tasteProfile";
 import { calculerAura, type EtatAura } from "@/lib/aura";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
+import { ouvrirNouveautes } from "@/lib/nouveautes";
 
 /* ════════════════════════════════════════════════════════════
    Un écran de réglages se LIT avant de s'ouvrir.
@@ -966,6 +967,14 @@ export default function ParametresPage() {
               // La visite se joue par-dessus l'écran courant : on ne quitte
               // plus les paramètres pour la lancer.
               onClick={() => startTour()}
+            />
+            {/* Le récap ne se voit qu'une fois tout seul : il doit rester
+                retrouvable, sinon un message important disparaît d'un clic. */}
+            <Ligne
+              icon={Sparkles}
+              label="Nouveautés"
+              sub="Le récap de la dernière mise à jour"
+              onClick={() => ouvrirNouveautes()}
             />
           </Groupe>
 

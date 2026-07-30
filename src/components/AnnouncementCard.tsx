@@ -9,6 +9,7 @@
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import type { Announcement } from "@/lib/announcements";
+import { ouvrirNouveautes } from "@/lib/nouveautes";
 
 function formatDate(iso: string): string {
   try {
@@ -129,6 +130,22 @@ export default function AnnouncementCard({
             </motion.div>
           ))}
         </div>
+
+        {/* Le détail vit dans le récap plein écran : cette carte reste courte. */}
+        {announcement.recapComplet && (
+          <button
+            type="button"
+            onClick={ouvrirNouveautes}
+            className={`${compact ? "mt-3" : "mt-4"} w-full rounded-2xl cursor-pointer font-bold text-white`}
+            style={{
+              padding: compact ? "9px" : "11px",
+              fontSize: compact ? 12 : 13,
+              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+            }}
+          >
+            Voir le récap complet
+          </button>
+        )}
       </div>
     </motion.div>
   );

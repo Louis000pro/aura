@@ -12,6 +12,7 @@ import SplashIntro from "@/components/SplashIntro";
 import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
+import PopupNouveautes from "@/components/maj/PopupNouveautes";
 import { AssistantProvider } from "@/context/AssistantContext";
 import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
@@ -195,6 +196,10 @@ export default function RootLayout({
                 <MainWrapper>{children}</MainWrapper>
                 <OnboardingWrapper />
                 <GuidedTour />
+                {/* Le récap de mise à jour : une fois par compte, puis dans
+                    Paramètres. Il vit DANS le fournisseur de la visite guidée
+                    pour ne jamais s'ouvrir par dessus elle. */}
+                <PopupNouveautes />
                 <PWARegister />
                 <AssistantSheet />
                 <PremiumBanner />
