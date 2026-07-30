@@ -89,9 +89,14 @@ export default function CarteSeance({
     : "linear-gradient(90deg, var(--accent), #C13BC1)";
 
   return (
+    /* La carte est une colonne qui ne dépasse JAMAIS la place qu'on lui
+       donne : en-tête et boutons gardent leur taille, c'est la liste des
+       mouvements qui absorbe. Sans ça, une séance de 8 mouvements poussait
+       le bouton violet sous le bord de la feuille (signalé par Louis). */
     <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="w-full rounded-3xl overflow-hidden relative"
+      className="w-full rounded-3xl overflow-hidden relative flex flex-col"
       style={{
+        minHeight: 0,
         background: "rgba(var(--surface-rgb),0.98)",
         border: "1px solid rgba(var(--accent-rgb),0.20)",
         boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.16)",
@@ -101,7 +106,7 @@ export default function CarteSeance({
           une séance à garder, orange = un jour du planning qui va changer. */}
       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: barre }} />
 
-      <div className="px-4 pt-3.5 pb-3 flex flex-col gap-0.5">
+      <div className="px-4 pt-3.5 pb-3 flex flex-col gap-0.5 flex-shrink-0">
         <button type="button" onClick={onFermer} aria-label="Fermer la proposition"
           className="absolute top-2.5 right-2.5 w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
           style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
@@ -115,14 +120,17 @@ export default function CarteSeance({
 
       {exercices.length > 0 && (
         <>
-          <p className="px-4 pb-1.5 text-[9.5px] font-semibold tracking-[0.13em] uppercase" style={{ color: "var(--text-3)" }}>
+          <p className="px-4 pb-1.5 text-[9.5px] font-semibold tracking-[0.13em] uppercase flex-shrink-0" style={{ color: "var(--text-3)" }}>
             Les mouvements · {exercices.length}
           </p>
           {/* Assez haut pour couper une ligne en deux : c'est ce demi-mouvement
               qui dit qu'il y en a d'autres en dessous. Une séance fait 5 à 8
               mouvements, la liste défile — Louis, 2026-07-30 : « rien qu'un
-              petit slide vers le bas n'est pas très dérangeant ». */}
-          <div className="px-2.5 overflow-y-auto" style={{ maxHeight: 200, scrollbarWidth: "none" }}>
+              petit slide vers le bas n'est pas très dérangeant ». Le plafond
+              de 200 px est une préférence, pas une garantie : sur un écran
+              court la liste descend plus bas encore, mais jamais au prix du
+              bouton. */}
+          <div className="px-2.5 overflow-y-auto flex-1" style={{ maxHeight: 200, minHeight: 76, scrollbarWidth: "none" }}>
             {exercices.map((ex, i) => (
               <div key={`${ex.name}-${i}`} className="flex items-center gap-2.5 px-1.5 py-1 rounded-2xl"
                 style={i > 0 ? { boxShadow: "inset 0 1px 0 rgba(var(--accent-rgb),0.10)" } : undefined}>
@@ -140,7 +148,7 @@ export default function CarteSeance({
         </>
       )}
 
-      <div className="px-3 pt-2.5 pb-3 mt-1 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+      <div className="px-3 pt-2.5 pb-3 mt-1 flex flex-col gap-2 flex-shrink-0" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
         {options.length > 0 && (
           <div className="flex gap-1.5">
             {options.map((o) => (

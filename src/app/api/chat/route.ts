@@ -3,7 +3,8 @@ import type OpenAI from "openai";
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
-import { ASSISTANT_TOOLS, type AssistantAction, type ChatEvent } from "@/lib/assistantTools";
+import { type ChatEvent } from "@/lib/assistantTools";
+import { deciderAction, cadreAction } from "@/lib/assistantRouter";
 import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
 type ContentPart =
@@ -177,20 +178,15 @@ IMAGES : l'utilisateur peut t'envoyer une photo (un plat, une étiquette nutriti
 
 DONNÉES : tiens compte de la conversation ET du profil/stats/repas/séances ci-dessous ; ne redemande jamais une info déjà donnée. Pour "qu'est-ce que j'ai mangé / ma dernière séance", réponds à partir des données réelles (matin = petit-déj, midi = déjeuner, soir = dîner). N'INVENTE JAMAIS un repas ou une séance absent des données ; si rien n'est enregistré, dis-le et propose d'ajouter.
 
-TES OUTILS (tu AGIS, tu ne fais pas que parler) :
-Tu disposes d'outils pour agir dans l'app : créer une séance, modifier le planning, noter un repas, écrire une recette, changer le thème, ouvrir une page, mémoriser le lieu d'entraînement. Règles ABSOLUES :
-1. Un outil ne fait rien tout seul : il prépare une petite CARTE que l'utilisateur valide d'un clic. Ne dis donc JAMAIS que c'est "déjà fait" ou "enregistré" ; dis que tu le prépares et qu'il valide juste en dessous.
-2. Quand tu appelles un outil, écris AUSSI une phrase courte et enthousiaste. Jamais d'appel muet.
-3. N'écris JAMAIS toi-même le contenu que la carte va afficher : ni la liste des exercices, ni les séries/répétitions, ni les calories ou les macros. La carte s'en charge.
-4. Un seul outil à la fois.
-5. Une simple QUESTION ("c'est quoi une bonne séance pecs ?", "combien de calories dans une banane ?", "je m'entraîne quel jour ?") n'appelle AUCUN outil : tu réponds, c'est tout.
-6. Si l'utilisateur corrige une action que tu viens de proposer ("non, plutôt vendredi", "pas demain", "tu t'es trompé"), RAPPELLE le même outil avec la valeur corrigée.
-7. QUAND IL TE MANQUE UNE INFORMATION, ne la demande pas en texte libre : appelle ask_choice, qui affiche 2 à 4 réponses que l'utilisateur touche du doigt. Uniquement pour un choix FERMÉ (un lieu, un jour, une durée, un niveau, oui/non) et jamais pour une question ouverte. Ne demande JAMAIS ce que tu sais déjà (profil, stats, conversation, lieu ci-dessous) : une question inutile est plus agaçante qu'une supposition raisonnable. Une seule question à la fois, et tu attends la réponse. Si tu peux répondre sans cette information, n'appelle pas cet outil.
-⚠️ LE LIEU D'ENTRAÎNEMENT, tu n'as PAS à t'en occuper : si tu ne le connais pas encore (voir la section LIEU ci-dessous), appelle quand même l'outil de séance normalement. L'app sait ce qui lui manque, elle posera elle-même la question à l'utilisateur avec des réponses à toucher, puis reprendra la demande toute seule. Ne demande donc jamais le lieu en texte, et ne suppose aucun lieu dans ta phrase.
-Tu PEUX placer une séance existante de sa bibliothèque sur un jour, ne dis jamais que tu n'y as pas accès ; si elle est introuvable, il sera prévenu.
-Exemple : "remplace aujourd'hui par du dos" → tu appelles plan_set puis tu écris "Carrément, je te prépare une séance dos pour aujourd'hui, valide-la juste en dessous 💪".
-Exemple : "j'ai mangé un burger ce midi" → tu appelles log_meal puis tu écris "C'est noté, je te prépare l'ajout à ton déjeuner, valide juste en dessous 👇". Zéro culpabilisation, quoi qu'il ait mangé.
-Exemple : "montre ma progression" → tu appelles open_page puis tu écris "Allons voir tes progrès 💪".
+TU AGIS, TU NE FAIS PAS QUE PARLER :
+L'app sait faire des choses pour l'utilisateur : créer une séance, modifier son planning, noter un repas, écrire une recette, changer le thème, l'emmener sur une page, retenir son lieu d'entraînement. Tu n'as RIEN à déclencher toi-même : dès qu'il demande une de ces choses, une petite CARTE apparaît toute seule sous ta réponse, et c'est lui qui la valide d'un clic. Règles ABSOLUES :
+1. Ne dis JAMAIS que c'est "déjà fait" ou "enregistré" : rien n'est écrit tant qu'il n'a pas validé. Dis que tu prépares ça et qu'il valide juste en dessous.
+2. N'écris JAMAIS toi-même le contenu que la carte va afficher : ni la liste des exercices, ni les séries/répétitions, ni les calories ou les macros. La carte s'en charge, et l'écrire deux fois donnerait deux versions différentes.
+3. Reste COURT sur ces tours : une ou deux phrases, chaleureuses et personnelles, jamais deux fois les mêmes mots. Le reste est sous tes yeux, en dessous.
+4. Une simple QUESTION ("c'est quoi une bonne séance pecs ?", "combien de calories dans une banane ?", "je m'entraîne quel jour ?") ne prépare aucune carte : tu réponds pour de vrai, avec du contenu, sans annoncer quoi que ce soit à valider.
+5. Tu PEUX placer une séance existante de sa bibliothèque sur un jour, ne dis jamais que tu n'y as pas accès ; si elle est introuvable, il sera prévenu.
+⚠️ LE LIEU D'ENTRAÎNEMENT, tu n'as PAS à t'en occuper : si tu ne le connais pas encore (voir la section LIEU ci-dessous), n'en parle simplement pas. L'app sait ce qui lui manque, elle posera elle-même la question avec des réponses à toucher, puis reprendra la demande toute seule. Ne demande donc jamais le lieu en texte, et ne suppose aucun lieu dans ta phrase.
+⚠️ Quand il te manque une précision pour répondre, pose UNE seule question courte, sur un choix fermé, et jamais une information que tu as déjà sous les yeux (profil, stats, conversation, lieu ci-dessous) : une question inutile est plus agaçante qu'une supposition raisonnable.
 
 NUTRITION ↔ SÉANCES (la nutrition est un BONUS, JAMAIS une obligation) :
 - Tu proposes et adaptes les séances normalement, que l'utilisateur note ou non ses repas. Une séance ne dépend JAMAIS du fait d'avoir enregistré sa nutrition.
@@ -288,13 +284,10 @@ ${statsBlock}${richBlock}`;
 
 /* ── Deux formats de réponse, selon l'appelant ──
    L'assistant global (memoryEnabled) reçoit du NDJSON : une ligne = un
-   événement, `t` pour un morceau de texte, `a` pour l'action décidée. Le
-   texte et l'action sortent ainsi du MÊME tour de modèle et ne peuvent plus
-   se contredire (avant, l'action venait d'un second appel parallèle qui
-   ignorait ce que le chat venait d'écrire).
+   événement, `t` pour un morceau de texte, `a` pour l'action décidée.
    Les appelants historiques (page coach, chat de l'accueil) ne savent lire
-   que du texte brut : ils gardent exactement l'ancien format, et donc aucun
-   outil ne leur est proposé. */
+   que du texte brut : ils gardent exactement l'ancien format, et aucune
+   action ne leur est envoyée. */
 const ligne = (e: ChatEvent) => JSON.stringify(e) + "\n";
 
 function fluxTexte(texte: string, ndjson: boolean) {
@@ -371,63 +364,50 @@ export async function POST(req: NextRequest) {
   if (messages.length > PLAFONDS.historique) messages = messages.slice(-PLAFONDS.historique);
 
   // Seul l'assistant global sait exécuter une action et lire le NDJSON.
-  const outils = memoryEnabled;
+  const ndjson = memoryEnabled;
 
   if (!hasLLMKey()) {
     return fluxTexte(
       "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
-      outils
+      ndjson
     );
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled);
+  const historique = sanitizeHistory(messages);
+
+  /* L'aiguilleur passe AVANT le coach (~550 ms) : sa décision devient le
+     contexte de la réponse. C'est ce qui rend le désaccord impossible — le
+     coach ne devine plus ce qui va s'afficher sous lui, on le lui dit. Voir
+     `assistantRouter` pour la mesure qui a imposé cette séparation. */
+  const action = ndjson ? await deciderAction(historique) : null;
+
+  const systemPrompt =
+    buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled) +
+    (ndjson ? cadreAction(action) : "");
 
   try {
     const stream = await llm.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        ...sanitizeHistory(messages),
+        ...historique,
       ] as OpenAI.Chat.ChatCompletionMessageParam[],
       stream: true,
       max_tokens: maxTokens,
       temperature: 0.4,
-      ...(outils
-        ? { tools: ASSISTANT_TOOLS as OpenAI.Chat.Completions.ChatCompletionTool[], tool_choice: "auto" as const }
-        : {}),
     });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
-        /* Les appels d'outil arrivent en morceaux (le nom d'abord, puis les
-           arguments JSON par fragments) : on les recolle par index.
-           ⚠️ Mistral ne les met pas toujours dans `delta` : selon les cas, le
-           dernier chunk porte un `message` complet à la place. Lire seulement
-           `delta` faisait perdre l'appel en SILENCE (texte vide + aucune
-           carte, donc une bulle vide à l'écran). On lit donc les deux formes :
-           `delta` s'accumule (incrémental), `message` s'affecte (complet). */
-        type AppelBrut = { index?: number; function?: { name?: string; arguments?: string } };
-        const appels: { name: string; args: string }[] = [];
         let texteRecu = false;
         let finish: string | null = null;
-
-        const noteAppels = (liste: AppelBrut[] | undefined, incremental: boolean) => {
-          for (const tc of liste ?? []) {
-            const i = tc.index ?? 0;
-            if (!appels[i]) appels[i] = { name: "", args: "" };
-            const nom = tc.function?.name;
-            const args = tc.function?.arguments;
-            if (nom) appels[i].name = incremental ? appels[i].name + nom : nom;
-            if (args) appels[i].args = incremental ? appels[i].args + args : args;
-          }
-        };
 
         try {
           for await (const chunk of stream) {
             const choice = chunk.choices?.[0] as {
-              delta?: { content?: string | null; tool_calls?: AppelBrut[] };
-              message?: { content?: string | null; tool_calls?: AppelBrut[] };
+              delta?: { content?: string | null };
+              message?: { content?: string | null };
               finish_reason?: string | null;
             } | undefined;
             if (choice?.finish_reason) finish = choice.finish_reason;
@@ -439,37 +419,26 @@ export async function POST(req: NextRequest) {
               : (typeof choice?.message?.content === "string" ? choice.message.content : "");
             if (texte) {
               texteRecu = true;
-              controller.enqueue(encoder.encode(outils ? ligne({ t: texte }) : texte));
+              controller.enqueue(encoder.encode(ndjson ? ligne({ t: texte }) : texte));
             }
-
-            if (!outils) continue;
-            noteAppels(choice?.delta?.tool_calls, true);
-            noteAppels(choice?.message?.tool_calls, false);
           }
 
-          // Un seul intent à la fois : on ne remonte que le premier appel
-          // exploitable, sinon deux cartes s'ouvriraient l'une sur l'autre.
-          let actionEnvoyee = false;
-          for (const appel of appels) {
-            if (!appel?.name) continue;
-            let args: Record<string, unknown> = {};
-            try { args = appel.args ? JSON.parse(appel.args) : {}; } catch { /* arguments tronqués */ }
-            controller.enqueue(encoder.encode(ligne({ a: { ...args, intent: appel.name } as AssistantAction })));
-            actionEnvoyee = true;
-            break;
-          }
+          // L'action est déjà décidée : elle ferme le flux. Le client ne
+          // l'exécute qu'une fois la lecture terminée, l'ordre n'a donc
+          // aucune importance.
+          if (action) controller.enqueue(encoder.encode(ligne({ a: action })));
 
           // Un tour totalement vide ne doit JAMAIS passer inaperçu : sans ça,
           // l'utilisateur envoie un message et il ne se passe rien du tout.
-          if (outils && !texteRecu && !actionEnvoyee) {
-            console.error("[chat] tour vide", { finish, appels: JSON.stringify(appels) });
+          if (ndjson && !texteRecu && !action) {
+            console.error("[chat] tour vide", { finish });
             controller.enqueue(encoder.encode(ligne({
-              e: `le modèle n'a rien renvoyé (fin: ${finish ?? "?"}, outils: ${appels.length})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`,
+              e: `le modèle n'a rien renvoyé (fin: ${finish ?? "?"})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`,
             })));
           }
         } catch (err) {
           const m = (err as { message?: string })?.message ?? "flux interrompu";
-          if (outils) controller.enqueue(encoder.encode(ligne({ e: m.slice(0, 200) })));
+          if (ndjson) controller.enqueue(encoder.encode(ligne({ e: m.slice(0, 200) })));
         } finally {
           controller.close();
         }
@@ -478,7 +447,7 @@ export async function POST(req: NextRequest) {
 
     return new Response(readable, {
       headers: {
-        "Content-Type": outils ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
+        "Content-Type": ndjson ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "X-Content-Type-Options": "nosniff",
       },
@@ -493,6 +462,6 @@ export async function POST(req: NextRequest) {
         : e?.status === 401 || e?.status === 403
         ? `🔑 Souci de clé API côté serveur. Détail : ${detail}`
         : `Désolé, une erreur est survenue 😕 (détail technique : ${detail})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
-    return fluxTexte(msg, outils);
+    return fluxTexte(msg, ndjson);
   }
 }

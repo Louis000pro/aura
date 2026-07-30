@@ -9,11 +9,13 @@
    à la main, et l'analyseur décidait avec MOINS d'informations que celui
    qui parlait (4 messages tronqués, ni profil ni stats).
 
-   Désormais UN seul appel : le modèle du chat écrit sa phrase ET appelle
-   l'outil dans le même tour. Les deux ne peuvent plus se contredire, c'est
-   structurel et non plus une affaire de prompt.
+   Depuis, un seul décideur : `assistantRouter` appelle ces outils dans un
+   appel court qui ne fait QUE ça, et le coach n'en a plus aucun (il se
+   contentait de les ignorer dès que son prompt dépassait quelques milliers
+   de caractères — la mesure est dans `assistantRouter.ts`). Aucun des deux
+   ne peut contredire l'autre : l'un décide, l'autre parle.
 
-   Ce fichier est la source unique : le serveur en fait des `tools` pour le
+   Ce fichier est la source unique : l'aiguilleur en fait des `tools` pour le
    modèle, le client route l'action reçue. Ajouter une capacité = 1) une
    entrée ici, 2) une branche dans `runAction` (AssistantContext), 3) une
    carte de confirmation si ça écrit quelque chose.
@@ -318,16 +320,17 @@ export const ASSISTANT_TOOLS: Tool[] = [
   },
 ];
 
-/** Ce que dit le coach quand il appelle un outil SANS écrire un mot.
+/** Ce que dit le coach quand une carte s'ouvre sans qu'il ait écrit un mot.
  *
- *  ⚠️ Ce n'est PAS un cas limite, c'est le cas NORMAL : vérifié en direct
- *  contre l'API, `mistral-small-latest` renvoie `content: ""` dès qu'il
- *  appelle un outil, quoi que le prompt lui demande. Cette fonction porte
- *  donc à elle seule toute la parole du coach sur les tours d'action.
+ *  Depuis que la décision d'action est sortie du prompt du coach (voir
+ *  `assistantRouter`), celui-ci parle normalement sur les tours d'action :
+ *  cette fonction n'est plus le chemin ordinaire, mais le filet. Elle sert
+ *  quand le texte revient vide (flux coupé, refus, réponse muette).
  *
- *  Elle DOIT couvrir tous les intents : une phrase vide laisserait une bulle
- *  sans contenu, et c'est exactement le symptôme qu'on chasse. La phrase est
- *  déduite de l'action, donc elle ne peut pas la contredire. */
+ *  Elle DOIT quand même couvrir tous les intents : une phrase vide
+ *  laisserait une bulle sans contenu, et c'est exactement le symptôme qu'on
+ *  chasse. La phrase est déduite de l'action, donc elle ne peut pas la
+ *  contredire. */
 export function phraseDeRepli(action: AssistantAction): string {
   const t = (action.theme ?? "").toLowerCase();
   switch (action.intent) {

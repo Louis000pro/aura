@@ -1098,15 +1098,16 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        structurée, et si l'utilisateur préfère taper, le coach dispose de
        l'outil save_lieu. Plus rien à deviner. */
 
-    // Mémoire long terme uniquement (l'action, elle, vient du même appel que
-    // le texte). ⚠️ Mistral palier gratuit = 1 req/s : on décale cet appel
-    // secondaire pour qu'il n'entre pas en collision avec le chat, qui reste
-    // prioritaire. Rien de visible n'en dépend.
+    // Mémoire long terme uniquement (l'action, elle, est décidée côté serveur
+    // dans le même aller-retour que le texte). ⚠️ Mistral palier gratuit =
+    // 1 req/s, et /api/chat en consomme désormais DEUX à la suite
+    // (l'aiguilleur puis le coach) : on décale d'autant cet appel secondaire,
+    // dont rien à l'écran ne dépend, pour lui laisser la voie libre.
     const recentContext = messages
       .slice(-4)
       .map((m) => `${m.role === "user" ? "Utilisateur" : "Coach"}: ${m.content}`)
       .join("\n");
-    setTimeout(() => { void extractMemory(trimmed, recentContext); }, 1200);
+    setTimeout(() => { void extractMemory(trimmed, recentContext); }, 2500);
 
     // On n'envoie que les derniers échanges au modèle (limite la taille de requête
     // → évite le 413 « request too large » sur les longues conversations).
@@ -1211,16 +1212,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         cleaned = manque.texte;
         questionAttachee = manque.question;
       } else if (recue) {
-        // ⚠️ Vérifié contre l'API : quand Mistral appelle un outil, il n'écrit
-        // RIEN. Ce n'est pas un cas limite, c'est le cas normal, donc la phrase
-        // déduite de l'action porte toute la parole du coach sur ces tours.
-        if (!cleaned) cleaned = phraseDeRepli(recue);
-        // Question posée par le coach lui-même : ses réponses se rattachent à
-        // cette bulle, dont le texte est déjà la question.
+        // Question posée par le modèle lui-même : la bulle DOIT être cette
+        // question et pas la phrase du coach, sinon les puces répondraient à
+        // autre chose que ce qui est écrit au-dessus d'elles.
         if (recue.intent === "ask_choice") {
           const choix = normaliserChoix(recue.choix);
-          if (choix.length >= 2) questionAttachee = { choix, genre: "libre" };
+          if (choix.length >= 2) {
+            questionAttachee = { choix, genre: "libre" };
+            cleaned = phraseDeRepli(recue);
+          }
         }
+        // Filet : le coach parle normalement sur ces tours depuis que la
+        // décision d'action est sortie de son prompt, mais un flux coupé ou
+        // un refus laisserait une bulle vide.
+        if (!cleaned) cleaned = phraseDeRepli(recue);
       }
 
       // Ni texte ni action : ça ne doit JAMAIS passer inaperçu. Une version

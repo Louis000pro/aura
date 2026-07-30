@@ -471,8 +471,12 @@ export default function AssistantSheet() {
             {/* Zone d'action ÉPINGLÉE au-dessus de la saisie : la carte reste
                 TOUJOURS entièrement visible (boutons compris), quelle que soit
                 la longueur de la conversation — elle n'est plus écrasée par le
-                fil de messages qui, lui, se réduit (flex-1) pour lui faire place. */}
-            <div className="flex-shrink-0 px-3 pb-1 flex flex-col gap-2">
+                fil de messages qui, lui, se réduit (flex-1) pour lui faire place.
+                Le plafond de 62 % est l'autre moitié de la promesse : sans lui,
+                une carte plus haute que la feuille débordait par le bas et son
+                bouton violet passait sous le bord (signalé par Louis). Borné,
+                c'est la liste des mouvements qui rétrécit, jamais le bouton. */}
+            <div className="flex-shrink-0 min-h-0 px-3 pb-1 flex flex-col gap-2" style={{ maxHeight: "62%" }}>
 
               {/* Génération en cours */}
               {actionLoading && (
@@ -491,9 +495,9 @@ export default function AssistantSheet() {
               {/* ── Carte RECETTE ── */}
               {pendingRecipe && (
                 <motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="w-full rounded-3xl overflow-hidden"
-                  style={{ background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
-                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                  className="w-full rounded-3xl overflow-hidden flex flex-col"
+                  style={{ minHeight: 0, background: "rgba(var(--surface-rgb),0.98)", border: "1px solid rgba(var(--accent-rgb),0.22)", boxShadow: "0 8px 28px rgba(var(--accent-rgb),0.18)" }}>
+                  <div className="flex items-center gap-3 px-4 pt-3.5 pb-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.10)" }}>
                     <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 text-[17px]"
                       style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)" }}>
                       🍽️
@@ -505,7 +509,7 @@ export default function AssistantSheet() {
                   </div>
 
                   {/* Repères */}
-                  <div className="flex flex-wrap gap-1.5 px-4 pt-2.5">
+                  <div className="flex flex-wrap gap-1.5 px-4 pt-2.5 flex-shrink-0">
                     {[
                       `${pendingRecipe.prepMin + pendingRecipe.cookMin} min`,
                       `${pendingRecipe.portions} portion${pendingRecipe.portions > 1 ? "s" : ""}`,
@@ -519,7 +523,7 @@ export default function AssistantSheet() {
                   </div>
 
                   {/* Ingrédients + étapes */}
-                  <div className="px-4 pt-2.5 pb-1 flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 190, scrollbarWidth: "none" }}>
+                  <div className="px-4 pt-2.5 pb-1 flex flex-col gap-2 overflow-y-auto flex-1" style={{ maxHeight: 190, minHeight: 64, scrollbarWidth: "none" }}>
                     {pendingRecipe.ingredients.length > 0 && (
                       <div className="flex flex-col gap-1">
                         {pendingRecipe.ingredients.map((ing, i) => (
@@ -549,7 +553,7 @@ export default function AssistantSheet() {
                     )}
                   </div>
 
-                  <div className="flex gap-2 px-4 py-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
+                  <div className="flex gap-2 px-4 py-3 flex-shrink-0" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.10)" }}>
                     <motion.button whileTap={{ scale: 0.97 }} onClick={cancelRecipe}
                       className="flex-1 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
                       style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--text-2)" }}>
