@@ -18,7 +18,7 @@ import { useGuidedTour } from "@/context/GuidedTourContext";
 import { subscribeToPush, unsubscribeFromPush, getPushPermission } from "@/lib/push";
 import { fetchTasteProfile } from "@/lib/tasteProfile";
 import { calculerAura, type EtatAura } from "@/lib/aura";
-import { PLANS } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 
 /* ════════════════════════════════════════════════════════════
    Un écran de réglages se LIT avant de s'ouvrir.
@@ -974,7 +974,13 @@ export default function ParametresPage() {
               icon={Gem}
               label="Vaiiya Premium"
               sub={user?.is_premium ? "Ton abonnement est actif" : "Séances exclusives, missions illimitées"}
-              right={user?.is_premium ? <Pastille texte="Actif" ton="teal" /> : <Pastille texte={`${PRIX_PREMIUM} €`} />}
+              right={
+                user?.is_premium
+                  ? <Pastille texte="Actif" ton="teal" />
+                  : VENTE_OUVERTE
+                    ? <Pastille texte={`${PRIX_PREMIUM} €`} />
+                    : <Pastille texte="Bientôt" />
+              }
               onClick={() => router.push("/premium")}
             />
             {/* Résilier doit être aussi simple que souscrire : la ligne vit

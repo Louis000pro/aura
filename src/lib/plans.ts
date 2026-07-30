@@ -4,6 +4,26 @@
  * (quotas + choix du modèle IA selon le tier).
  */
 
+/**
+ * L'abonnement est-il en vente ?
+ *
+ * Vendre au public en France suppose une entreprise déclarée : identité du
+ * vendeur, SIRET, adresse et médiateur de la consommation sont obligatoires
+ * dès le premier euro. Tant que ce n'est pas en place, on n'encaisse pas.
+ *
+ * Ce n'est PAS un drapeau de fonctionnalité : c'est une porte fermée. Elle est
+ * lue à la fois par l'écran (/premium) et par le serveur (/api/stripe/checkout),
+ * parce qu'une porte fermée seulement côté écran s'ouvre avec une requête.
+ *
+ * Pour rouvrir : passer à `true`, ET remplir l'identité dans
+ * /mentions-legales et /conditions, ET désigner le médiateur.
+ *
+ * Ce que ça ne coupe PAS, volontairement : les abonnements déjà actifs
+ * continuent, et le portail Stripe reste ouvert pour qu'on puisse toujours
+ * résilier. Fermer la sortie serait pire que fermer l'entrée.
+ */
+export const VENTE_OUVERTE = false;
+
 export type PlanId = "free" | "premium";
 
 export interface Plan {

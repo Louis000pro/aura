@@ -59,29 +59,27 @@ export default function MentionsLegalesPage() {
 
         <LegalSection title="Éditeur du site">
           <p>
-            Le site et l&apos;application <strong>Vaiiya</strong> sont édités par une micro-entreprise
-            immatriculée en France.
+            Le site et l&apos;application <strong>Vaiiya</strong> sont édités à titre non professionnel
+            par un particulier. Le service est proposé <strong>gratuitement</strong> : aucun abonnement
+            n&apos;est en vente et aucun paiement n&apos;est encaissé.
           </p>
           <ul className="list-none space-y-1.5 mt-2">
-            <li><strong>Dénomination :</strong> Vaiiya — Micro-entreprise</li>
-            {/* À COMPLÉTER : nom et prénom du dirigeant (auto-entrepreneur) */}
-            <li><strong>Dirigeant :</strong> [NOM PRÉNOM DU DIRIGEANT]</li>
-            {/* À COMPLÉTER : numéro SIRET de la micro-entreprise une fois immatriculée */}
-            <li><strong>SIRET :</strong> [NUMÉRO SIRET]</li>
-            {/* À COMPLÉTER : adresse complète du siège / de l'entrepreneur */}
-            <li><strong>Adresse :</strong> [ADRESSE]</li>
-            {/* À COMPLÉTER : adresse email de contact officielle */}
             <li><strong>Contact :</strong> bonjour@vaiiya.fr</li>
           </ul>
           <p className="text-xs mt-2" style={{ color: "var(--text-3)" }}>
-            En tant que micro-entreprise, l&apos;éditeur n&apos;est pas assujetti à la TVA (article 293 B du CGI),
-            sauf mention contraire sur les factures.
+            Conformément à l&apos;article 6 III 2 de la loi du 21 juin 2004 pour la confiance dans
+            l&apos;économie numérique, un éditeur non professionnel peut ne pas rendre publiques ses
+            coordonnées personnelles, à condition de les avoir communiquées à son hébergeur, qui les
+            tient à disposition de l&apos;autorité judiciaire. Ces informations seront publiées ici dès
+            l&apos;immatriculation de la structure qui exploitera le service.
           </p>
         </LegalSection>
 
         <LegalSection title="Directeur de la publication">
-          {/* À COMPLÉTER : nom et prénom du directeur de la publication (généralement le dirigeant) */}
-          <p>Le directeur de la publication est <strong>[NOM PRÉNOM]</strong>.</p>
+          <p>
+            La direction de la publication est assurée par l&apos;éditeur du site, joignable à
+            l&apos;adresse <strong>bonjour@vaiiya.fr</strong>.
+          </p>
         </LegalSection>
 
         <LegalSection title="Hébergement">
@@ -111,10 +109,10 @@ export default function MentionsLegalesPage() {
           </p>
           <p>
             Les utilisateurs <strong>conservent l&apos;intégralité des droits</strong> sur les contenus qu&apos;ils
-            publient (posts, commentaires, photos, stories, etc.). En publiant un contenu sur Vaiiya,
+            publient (affiches de performance, photos, messages, etc.). En publiant un contenu sur Vaiiya,
             l&apos;utilisateur accorde toutefois à l&apos;éditeur une licence non exclusive et gratuite d&apos;affichage
             et de diffusion de ce contenu, dans le seul but de faire fonctionner le service (affichage du
-            feed social, des profils et des fonctionnalités associées).
+            profil, des conversations et des fonctionnalités associées).
           </p>
         </LegalSection>
 
@@ -152,7 +150,7 @@ export default function MentionsLegalesPage() {
         </LegalSection>
 
         <p className="text-center text-[11px] font-light mt-8" style={{ color: "var(--text-3)" }}>
-          Dernière mise à jour : Juin 2026 · Vaiiya
+          Dernière mise à jour : 30 juillet 2026 · Vaiiya
         </p>
       </motion.div>
     </div>

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import GemmeRang from "@/components/GemmeRang";
 import { EXP_CONNEXION, EXP_REPAS, EXP_SEANCE, EXP_SEANCE_STREAK, type EtatAura } from "@/lib/aura";
-import { formatPrice, PLANS } from "@/lib/plans";
+import { formatPrice, PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import styles from "./AccueilSignature.module.css";
 
 type MissionKind =
@@ -152,7 +152,7 @@ export default function AccueilSignature({
             <h2>Tout Vaiiya. Sans limites.</h2>
             <p>Programmes exclusifs, assistant illimité et toutes les missions.</p>
             <button type="button" onClick={() => onNavigate("/premium")}>
-              Découvrir · {prix}
+              {VENTE_OUVERTE ? `Découvrir · ${prix}` : "Découvrir"}
             </button>
           </div>
         </motion.section>

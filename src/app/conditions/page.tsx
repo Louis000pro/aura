@@ -81,9 +81,16 @@ export default function ConditionsPage() {
 
         <Section title="1. Qui nous sommes, et ce que fait Vaiiya">
           <p>
-            Vaiiya est une application de sport et de nutrition éditée par [NOM PRÉNOM DU DIRIGEANT],
-            micro-entreprise immatriculée en France sous le numéro [NUMÉRO SIRET], dont les coordonnées
-            complètes figurent dans les <Link href="/mentions-legales" className="underline" style={{ color: "var(--accent)" }}>mentions légales</Link>.
+            Vaiiya est une application de sport et de nutrition éditée à titre non professionnel par un
+            particulier, joignable à <strong>bonjour@vaiiya.fr</strong>. Les informations relatives à
+            l&apos;éditeur figurent dans les <Link href="/mentions-legales" className="underline" style={{ color: "var(--accent)" }}>mentions légales</Link>.
+          </p>
+          <p>
+            <strong>Vaiiya est aujourd&apos;hui entièrement gratuit.</strong> L&apos;abonnement décrit à
+            l&apos;article 4 n&apos;est pas encore ouvert : aucun paiement n&apos;est possible, aucun moyen de
+            paiement ne vous est demandé, et rien ne vous est facturé. Les articles relatifs à
+            l&apos;abonnement ne s&apos;appliqueront qu&apos;à compter de son ouverture, qui sera annoncée dans
+            l&apos;application et accompagnée de la publication de l&apos;identité complète du vendeur.
           </p>
           <p>
             Vaiiya propose des séances d&apos;entraînement, un suivi nutritionnel et un assistant conversationnel.
@@ -281,9 +288,10 @@ export default function ConditionsPage() {
             presque toujours le plus rapide.
           </p>
           <p>
-            À défaut de solution, vous pouvez recourir gratuitement à un médiateur de la consommation :
-            [NOM ET COORDONNÉES DU MÉDIATEUR]. Vous pouvez également utiliser la plateforme européenne de
-            règlement en ligne des litiges.
+            Le recours gratuit à un médiateur de la consommation est ouvert aux litiges nés d&apos;un
+            contrat de vente ou de service conclu avec un professionnel. Le service étant aujourd&apos;hui
+            gratuit et sans vente, aucun médiateur n&apos;est désigné à ce jour. Un médiateur sera désigné
+            et ses coordonnées publiées ici avant l&apos;ouverture de l&apos;abonnement.
           </p>
           <p>
             Les présentes conditions sont soumises au droit français. Rien dans ce texte ne vous prive des

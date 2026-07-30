@@ -17,13 +17,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase-admin";
-import { PLANS, isPaidPlan, type PlanId } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE, isPaidPlan, type PlanId } from "@/lib/plans";
 import { souscriptionActiveChezStripe, synchroniserSouscription } from "@/lib/stripeSync";
 
 const SECRET = process.env.STRIPE_SECRET_KEY ?? "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://vaiiya.fr";
 
 export async function POST(req: NextRequest) {
+  // La vente est fermée tant que l'identité du vendeur n'est pas publiée.
+  // Ce refus doit vivre ICI et pas seulement sur l'écran : masquer un bouton
+  // n'empêche personne d'appeler la route.
+  if (!VENTE_OUVERTE) {
+    return NextResponse.json(
+      {
+        error: "vente_fermee",
+        message: "L'abonnement n'est pas encore ouvert. Tout est gratuit en attendant.",
+      },
+      { status: 503 }
+    );
+  }
+
   if (!SECRET) {
     return NextResponse.json(
       { error: "not_configured", message: "Les paiements seront bientôt activés" },

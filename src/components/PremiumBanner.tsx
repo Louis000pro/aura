@@ -17,7 +17,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowRight, X } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
 import { useAuth } from "@/context/AuthContext";
-import { PLANS, formatPrice } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE, formatPrice } from "@/lib/plans";
 import styles from "./PremiumBanner.module.css";
 
 const DELAI_APPARITION = 2900;
@@ -62,7 +62,10 @@ export default function PremiumBanner() {
   const [benefice, setBenefice] = useState(BENEFICES[0]);
 
   const estAbonne = !!user?.is_premium;
+  // Tant que la vente est fermée, ce rappel annoncerait un prix qu'on ne peut
+  // pas encaisser. On ne fait pas la promotion de ce qui n'est pas en vente.
   const pageExclue =
+    !VENTE_OUVERTE ||
     pathname === "/" ||
     pathname.startsWith("/premium") ||
     pathname.startsWith("/auth") ||

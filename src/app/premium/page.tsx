@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { PLANS, formatPrice, type PlanId } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE, formatPrice, type PlanId } from "@/lib/plans";
 import PremiumCelebration from "@/components/PremiumCelebration";
 import styles from "./page.module.css";
 
@@ -288,6 +288,17 @@ function PremiumInner() {
                         {portail ? "Ouverture…" : "Gérer ou résilier mon abonnement"}
                       </button>
                     </>
+                  ) : !VENTE_OUVERTE ? (
+                    /* La vente n'est pas ouverte : on le dit franchement au lieu
+                       d'afficher un bouton qui refuserait après le clic. */
+                    <div className="text-center py-3 px-3 rounded-2xl"
+                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.28)" }}>
+                      <p className="text-sm font-semibold" style={{ color: "#7C5CFA" }}>Bientôt disponible</p>
+                      <p className="text-[11px] font-light leading-snug mt-1" style={{ color: "var(--text-3)" }}>
+                        L&apos;abonnement n&apos;est pas encore ouvert. En attendant, tout ce qui est
+                        gratuit le reste, et rien ne t&apos;est facturé.
+                      </p>
+                    </div>
                   ) : (
                     <>
                       <label className="flex items-start gap-2.5 mb-3 cursor-pointer text-left">
@@ -351,13 +362,21 @@ function PremiumInner() {
 
         {/* Information précontractuelle : la reconduction et le contrat doivent
             se lire AVANT de payer, pas après. */}
-        <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
-          <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
-          <br />
-          Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
-          {" "}
-          <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
-        </p>
+        {VENTE_OUVERTE ? (
+          <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
+            <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
+            <br />
+            Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
+            {" "}
+            <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
+          </p>
+        ) : (
+          <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
+            Aucun paiement n&apos;est possible aujourd&apos;hui, et aucun moyen de paiement ne t&apos;est demandé.
+            {" "}
+            <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
+          </p>
+        )}
       </div>
 
       {/* ── Célébration au retour de paiement ── */}
