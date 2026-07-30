@@ -57,8 +57,8 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
     <motion.button type="button" whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.94 }} onClick={onClick}
       className="px-4 py-2.5 rounded-2xl text-sm font-medium cursor-pointer transition-all duration-150 border"
       style={active
-        ? { background: "linear-gradient(135deg,rgba(212,192,255,0.9) 0%,rgba(245,230,163,0.9) 100%)", borderColor: "rgba(167,139,250,0.5)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 12px rgba(167,139,250,0.2)" }
-        : { background: "rgba(255,255,255,0.55)", borderColor: "rgba(255,255,255,0.7)", color: "#718096" }
+        ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.9) 0%,rgba(var(--cream-mid-rgb),0.9) 100%)", borderColor: "rgba(var(--accent-rgb),0.5)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 12px rgba(var(--accent-rgb),0.2)" }
+        : { background: "rgba(var(--surface-rgb),0.55)", borderColor: "rgba(var(--surface-rgb),0.7)", color: "var(--text-2)" }
       }>
       {children}
     </motion.button>
@@ -72,17 +72,17 @@ function NumInput({ label, unit, value, onChange, placeholder }: {
   const [focused, setFocused] = useState(false);
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{label}</label>
+      <label className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{label}</label>
       <motion.div className="flex items-center gap-2 px-4 py-3 rounded-2xl"
-        style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.8)", backdropFilter: "blur(12px)" }}
-        animate={{ boxShadow: focused ? "0 0 0 2px rgba(167,139,250,0.45)" : "0 2px 8px rgba(167,139,250,0.06)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.8)", backdropFilter: "blur(12px)" }}
+        animate={{ boxShadow: focused ? "0 0 0 2px rgba(var(--accent-rgb),0.45)" : "0 2px 8px rgba(var(--accent-rgb),0.06)" }}
       >
         <input type="number" value={value} onChange={e => onChange(e.target.value)}
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
           placeholder={placeholder}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#C4CAD4]"
-          style={{ color: "#2D3748" }} />
-        <span className="text-xs font-medium" style={{ color: "#A0AEC0" }}>{unit}</span>
+          style={{ color: "var(--text-1)" }} />
+        <span className="text-xs font-medium" style={{ color: "var(--text-3)" }}>{unit}</span>
       </motion.div>
     </div>
   );
@@ -134,31 +134,31 @@ export default function OnboardingModal({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[300] flex items-center justify-center px-4"
-      style={{ background: "rgba(240,235,255,0.55)", backdropFilter: "blur(10px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.55)", backdropFilter: "blur(10px)" }}
     >
       {/* Blobs déco */}
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-15%", left: "-10%", width: 500, height: 500, background: "rgba(212,192,255,0.35)", filter: "blur(80px)" }}
+        style={{ top: "-15%", left: "-10%", width: 500, height: 500, background: "rgba(var(--violet-mid-rgb),0.35)", filter: "blur(80px)" }}
         animate={{ scale: [1,1.15,1] }} transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
       <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-15%", right: "-10%", width: 450, height: 450, background: "rgba(245,230,163,0.3)", filter: "blur(80px)" }}
+        style={{ bottom: "-15%", right: "-10%", width: 450, height: 450, background: "rgba(var(--cream-mid-rgb),0.3)", filter: "blur(80px)" }}
         animate={{ scale: [1,1.12,1] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
 
       <motion.div initial={{ scale: 0.9, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.92, opacity: 0 }} transition={{ type: "spring", damping: 24, stiffness: 260 }}
         className="relative w-full max-w-md overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.9)", borderRadius: "2rem", boxShadow: "0 32px 80px -16px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.95)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", borderRadius: "2rem", boxShadow: "0 32px 80px -16px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
       >
-        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.9),transparent)" }} />
+        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(var(--surface-rgb),0.9),transparent)" }} />
 
         {/* Header */}
         <div className="px-7 pt-7 pb-5">
           {/* Progress bar */}
           <div className="flex gap-1.5 mb-6">
             {steps.map((_, i) => (
-              <motion.div key={i} className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.12)" }}>
+              <motion.div key={i} className="h-1 flex-1 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
                 <motion.div className="h-full rounded-full"
-                  style={{ background: "linear-gradient(90deg,#A78BFA,#D4A843)" }}
+                  style={{ background: "linear-gradient(90deg,var(--accent),var(--gold))" }}
                   initial={{ width: i < step ? "100%" : "0%" }}
                   animate={{ width: i < step ? "100%" : i === step ? "60%" : "0%" }}
                   transition={{ duration: 0.5, ease: "easeOut" }} />
@@ -168,11 +168,11 @@ export default function OnboardingModal({
 
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                 Étape {step + 1} / {steps.length}
               </p>
-              <h2 className="text-xl font-light mt-0.5" style={{ color: "#2D3748" }}>{steps[step].title}</h2>
-              <p className="text-xs font-light mt-0.5" style={{ color: "#A0AEC0" }}>{steps[step].subtitle}</p>
+              <h2 className="text-xl font-light mt-0.5" style={{ color: "var(--text-1)" }}>{steps[step].title}</h2>
+              <p className="text-xs font-light mt-0.5" style={{ color: "var(--text-3)" }}>{steps[step].subtitle}</p>
             </div>
             <button onClick={onSkip} className="cursor-pointer p-1.5 rounded-xl hover:bg-white/40 transition-colors" style={{ color: "#C4CAD4" }}>
               <X size={16} strokeWidth={2} />
@@ -196,7 +196,7 @@ export default function OnboardingModal({
                     <NumInput label="Poids" unit="kg" value={data.weight} onChange={v => setData(d => ({...d, weight: v}))} placeholder="70" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "#A0AEC0" }}>Genre</label>
+                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Genre</label>
                     <div className="flex gap-2">
                       {GENDERS.map(g => (
                         <Pill key={g.id} active={data.gender === g.id} onClick={() => toggle("gender", g.id)}>{g.label}</Pill>
@@ -214,11 +214,11 @@ export default function OnboardingModal({
                       onClick={() => toggle("goals", g.id)}
                       className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer border text-left"
                       style={data.goals.includes(g.id)
-                        ? { background: "linear-gradient(135deg,rgba(212,192,255,0.85),rgba(245,230,163,0.85))", borderColor: "rgba(167,139,250,0.4)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                        : { background: "rgba(255,255,255,0.5)", borderColor: "rgba(255,255,255,0.7)" }
+                        ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.85),rgba(var(--cream-mid-rgb),0.85))", borderColor: "rgba(var(--accent-rgb),0.4)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                        : { background: "rgba(var(--surface-rgb),0.5)", borderColor: "rgba(var(--surface-rgb),0.7)" }
                       }>
                       <span className="text-xl">{g.emoji}</span>
-                      <span className="text-xs font-semibold" style={{ color: data.goals.includes(g.id) ? "#2D3748" : "#718096" }}>{g.label}</span>
+                      <span className="text-xs font-semibold" style={{ color: data.goals.includes(g.id) ? "var(--text-1)" : "var(--text-2)" }}>{g.label}</span>
                     </motion.button>
                   ))}
                 </div>
@@ -233,16 +233,16 @@ export default function OnboardingModal({
                         onClick={() => toggle("level", l.id)}
                         className="flex items-center justify-between px-4 py-3.5 rounded-2xl cursor-pointer border"
                         style={data.level === l.id
-                          ? { background: "linear-gradient(135deg,rgba(212,192,255,0.85),rgba(245,230,163,0.85))", borderColor: "rgba(167,139,250,0.4)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                          : { background: "rgba(255,255,255,0.5)", borderColor: "rgba(255,255,255,0.7)" }
+                          ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.85),rgba(var(--cream-mid-rgb),0.85))", borderColor: "rgba(var(--accent-rgb),0.4)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                          : { background: "rgba(var(--surface-rgb),0.5)", borderColor: "rgba(var(--surface-rgb),0.7)" }
                         }>
-                        <span className="text-sm font-semibold" style={{ color: data.level === l.id ? "#2D3748" : "#718096" }}>{l.label}</span>
-                        <span className="text-xs font-light" style={{ color: "#A0AEC0" }}>{l.sub}</span>
+                        <span className="text-sm font-semibold" style={{ color: data.level === l.id ? "var(--text-1)" : "var(--text-2)" }}>{l.label}</span>
+                        <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>{l.sub}</span>
                       </motion.button>
                     ))}
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "#A0AEC0" }}>Séances / semaine</label>
+                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Séances / semaine</label>
                     <div className="flex gap-1.5 flex-wrap">
                       {SESSIONS.map(s => (
                         <Pill key={s} active={data.sessionsPerWeek === s} onClick={() => toggle("sessionsPerWeek", s)}>{s}x</Pill>
@@ -256,7 +256,7 @@ export default function OnboardingModal({
               {step === 3 && (
                 <div className="flex flex-col gap-5">
                   <div>
-                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "#A0AEC0" }}>Repas par jour</label>
+                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Repas par jour</label>
                     <div className="flex gap-2 flex-wrap">
                       {MEALS.map(m => (
                         <Pill key={m} active={data.mealsPerDay === m} onClick={() => toggle("mealsPerDay", m)}>{m}</Pill>
@@ -264,18 +264,18 @@ export default function OnboardingModal({
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "#A0AEC0" }}>Alimentation</label>
+                    <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Alimentation</label>
                     <div className="grid grid-cols-2 gap-2">
                       {DIETS.map(d => (
                         <motion.button key={d.id} type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}
                           onClick={() => toggle("diet", d.id)}
                           className="flex items-center gap-2.5 px-4 py-3 rounded-2xl cursor-pointer border"
                           style={data.diet === d.id
-                            ? { background: "linear-gradient(135deg,rgba(212,192,255,0.85),rgba(245,230,163,0.85))", borderColor: "rgba(167,139,250,0.4)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }
-                            : { background: "rgba(255,255,255,0.5)", borderColor: "rgba(255,255,255,0.7)" }
+                            ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.85),rgba(var(--cream-mid-rgb),0.85))", borderColor: "rgba(var(--accent-rgb),0.4)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                            : { background: "rgba(var(--surface-rgb),0.5)", borderColor: "rgba(var(--surface-rgb),0.7)" }
                           }>
                           <span className="text-base">{d.emoji}</span>
-                          <span className="text-xs font-semibold" style={{ color: data.diet === d.id ? "#2D3748" : "#718096" }}>{d.label}</span>
+                          <span className="text-xs font-semibold" style={{ color: data.diet === d.id ? "var(--text-1)" : "var(--text-2)" }}>{d.label}</span>
                         </motion.button>
                       ))}
                     </div>
@@ -287,12 +287,12 @@ export default function OnboardingModal({
         </div>
 
         {/* Footer */}
-        <div className="px-7 py-5 flex flex-col gap-3" style={{ borderTop: "1px solid rgba(167,139,250,0.08)" }}>
+        <div className="px-7 py-5 flex flex-col gap-3" style={{ borderTop: "1px solid rgba(var(--accent-rgb),0.08)" }}>
           <div className="flex gap-3">
             {step > 0 && (
               <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} onClick={() => go(-1)}
                 className="flex items-center gap-1.5 px-4 py-3 rounded-2xl cursor-pointer"
-                style={{ background: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.8)", color: "#718096" }}>
+                style={{ background: "rgba(var(--surface-rgb),0.6)", border: "1px solid rgba(var(--surface-rgb),0.8)", color: "var(--text-2)" }}>
                 <ChevronLeft size={16} strokeWidth={2} />
                 <span className="text-sm font-medium">Retour</span>
               </motion.button>
@@ -302,9 +302,9 @@ export default function OnboardingModal({
               onClick={() => step < steps.length - 1 ? go(1) : onComplete(data)}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
               style={{
-                background: canNext ? "linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)" : "rgba(220,220,220,0.5)",
-                color: canNext ? "#fff" : "#A0AEC0",
-                boxShadow: canNext ? "0 4px 20px rgba(167,139,250,0.4)" : "none",
+                background: canNext ? "linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%)" : "rgba(220,220,220,0.5)",
+                color: canNext ? "#fff" : "var(--text-3)",
+                boxShadow: canNext ? "0 4px 20px rgba(var(--accent-rgb),0.4)" : "none",
                 opacity: canNext ? 1 : 0.6,
               }}>
               {step === steps.length - 1 ? <><Sparkles size={14} strokeWidth={1.5} /><span>Terminer</span></> : <><span>Continuer</span><ChevronRight size={16} strokeWidth={2} /></>}
@@ -313,7 +313,7 @@ export default function OnboardingModal({
 
           <button type="button" onClick={onSkip}
             className="text-center text-xs font-light cursor-pointer hover:underline transition-all"
-            style={{ color: "#A0AEC0" }}>
+            style={{ color: "var(--text-3)" }}>
             Répondre plus tard
           </button>
         </div>

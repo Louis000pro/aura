@@ -32,24 +32,24 @@ type Tab = "tout" | "comptes" | "seances";
 
 /* ─── Hardcoded trending tags ────────────────────────────────── */
 const TRENDING_TAGS = [
-  { tag: "#Force",     icon: <Dumbbell size={14} strokeWidth={1.5} />,  color: "#A78BFA" },
-  { tag: "#Cardio",    icon: <Activity  size={14} strokeWidth={1.5} />,  color: "#F97316" },
-  { tag: "#Nutrition", icon: <Salad     size={14} strokeWidth={1.5} />,  color: "#22C55E" },
-  { tag: "#Mobilité",  icon: <Zap       size={14} strokeWidth={1.5} />,  color: "#EAB308" },
+  { tag: "#Force",     icon: <Dumbbell size={14} strokeWidth={1.5} />,  color: "var(--accent)" },
+  { tag: "#Cardio",    icon: <Activity  size={14} strokeWidth={1.5} />,  color: "#E8620C" },
+  { tag: "#Nutrition", icon: <Salad     size={14} strokeWidth={1.5} />,  color: "#2BD4A0" },
+  { tag: "#Mobilité",  icon: <Zap       size={14} strokeWidth={1.5} />,  color: "#2BD4A0" },
 ];
 
 /* ─── Difficulty pill ────────────────────────────────────────── */
 const DIFFICULTY_STYLE: Record<string, { bg: string; color: string; label: string }> = {
-  debutant:      { bg: "rgba(34,197,94,0.12)",  color: "#16A34A", label: "Débutant" },
-  intermédiaire: { bg: "rgba(234,179,8,0.12)",  color: "#B45309", label: "Intermédiaire" },
-  intermediaire: { bg: "rgba(234,179,8,0.12)",  color: "#B45309", label: "Intermédiaire" },
+  debutant:      { bg: "rgba(43,212,160,0.12)",  color: "#2BD4A0", label: "Débutant" },
+  intermédiaire: { bg: "rgba(232,98,12,0.12)",  color: "#E8620C", label: "Intermédiaire" },
+  intermediaire: { bg: "rgba(232,98,12,0.12)",  color: "#E8620C", label: "Intermédiaire" },
   avancé:        { bg: "rgba(239,68,68,0.12)",  color: "#DC2626", label: "Avancé" },
   avance:        { bg: "rgba(239,68,68,0.12)",  color: "#DC2626", label: "Avancé" },
 };
 
 function DifficultyPill({ difficulty }: { difficulty: string }) {
   const key = difficulty.toLowerCase();
-  const style = DIFFICULTY_STYLE[key] ?? { bg: "rgba(167,139,250,0.12)", color: "#A78BFA", label: difficulty };
+  const style = DIFFICULTY_STYLE[key] ?? { bg: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)", label: difficulty };
   return (
     <span
       className="text-[9px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full"
@@ -68,9 +68,9 @@ function ProfileAvatar({ profile }: { profile: Profile }) {
       style={{
         background: profile.avatar_url
           ? "transparent"
-          : "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-        boxShadow: "0 2px 8px rgba(167,139,250,0.2)",
-        color: "#2D3748",
+          : "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+        boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.2)",
+        color: "var(--text-1)",
       }}
     >
       {profile.avatar_url
@@ -83,10 +83,10 @@ function ProfileAvatar({ profile }: { profile: Profile }) {
 
 /* ─── Glass card wrapper ─────────────────────────────────────── */
 const glassCard: React.CSSProperties = {
-  background: "rgba(255,255,255,0.65)",
+  background: "rgba(var(--surface-rgb),0.65)",
   backdropFilter: "blur(10px)",
-  border: "1px solid rgba(255,255,255,0.75)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)",
+  border: "1px solid rgba(var(--surface-rgb),0.75)",
+  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.85)",
 };
 
 /* ─── Follow button ──────────────────────────────────────────── */
@@ -107,8 +107,8 @@ function FollowButton({
       className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-medium cursor-pointer flex-shrink-0"
       style={
         isFollowing
-          ? { background: "rgba(167,139,250,0.15)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.3)" }
-          : { background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)", color: "#fff", border: "none" }
+          ? { background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.3)" }
+          : { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", border: "none" }
       }
     >
       {isFollowing
@@ -245,31 +245,31 @@ export default function RecherchePage() {
       >
         {/* Title */}
         <div className="mb-6">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "#A0AEC0" }}>
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
             Découvrir
           </p>
-          <h1 className="text-2xl font-extralight" style={{ color: "#2D3748" }}>Recherche</h1>
+          <h1 className="text-2xl font-extralight" style={{ color: "var(--text-1)" }}>Recherche</h1>
         </div>
 
         {/* Search bar */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
           style={{
-            background: "rgba(255,255,255,0.75)",
+            background: "rgba(var(--surface-rgb),0.75)",
             backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255,255,255,0.8)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 24px rgba(167,139,250,0.08)",
+            border: "1px solid rgba(var(--surface-rgb),0.8)",
+            boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 24px rgba(var(--accent-rgb),0.08)",
           }}
         >
-          <Search size={16} strokeWidth={1.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
+          <Search size={16} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Chercher un compte, une séance…"
             autoFocus
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0]"
-            style={{ color: "#2D3748" }}
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
+            style={{ color: "var(--text-1)" }}
           />
           <AnimatePresence>
             {query && (
@@ -280,7 +280,7 @@ export default function RecherchePage() {
                 onClick={() => setQuery("")}
                 className="cursor-pointer flex-shrink-0"
               >
-                <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
               </motion.button>
             )}
           </AnimatePresence>
@@ -300,14 +300,14 @@ export default function RecherchePage() {
                 style={
                   active
                     ? {
-                        background: "linear-gradient(135deg,#D4C0FF 0%,#A78BFA 100%)",
+                        background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)",
                         color: "#fff",
-                        boxShadow: "0 2px 8px rgba(167,139,250,0.35)",
+                        boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.35)",
                       }
                     : {
-                        background: "rgba(255,255,255,0.65)",
-                        color: "#A0AEC0",
-                        border: "1px solid rgba(255,255,255,0.75)",
+                        background: "rgba(var(--surface-rgb),0.65)",
+                        color: "var(--text-3)",
+                        border: "1px solid rgba(var(--surface-rgb),0.75)",
                       }
                 }
               >
@@ -328,7 +328,7 @@ export default function RecherchePage() {
             >
               {/* Trending tags */}
               <div className="mb-6">
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3" style={{ color: "var(--text-3)" }}>
                   Tendances
                 </p>
                 <div className="flex gap-2 flex-wrap">
@@ -340,10 +340,10 @@ export default function RecherchePage() {
                       onClick={() => setQuery(tag)}
                       className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl cursor-pointer"
                       style={{
-                        background: "rgba(255,255,255,0.7)",
+                        background: "rgba(var(--surface-rgb),0.7)",
                         backdropFilter: "blur(16px)",
-                        border: "1px solid rgba(255,255,255,0.8)",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                        border: "1px solid rgba(var(--surface-rgb),0.8)",
+                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                       }}
                     >
                       <Hash size={12} style={{ color }} />
@@ -357,7 +357,7 @@ export default function RecherchePage() {
 
               {/* Suggested accounts */}
               <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3" style={{ color: "var(--text-3)" }}>
                   Comptes suggérés
                 </p>
 
@@ -365,7 +365,7 @@ export default function RecherchePage() {
                   <div className="flex justify-center py-8">
                     <motion.div
                       className="w-5 h-5 rounded-full border-2"
-                      style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                      style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                       animate={{ rotate: 360 }}
                       transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                     />
@@ -375,10 +375,10 @@ export default function RecherchePage() {
                 {!suggestedLoading && suggested.length === 0 && (
                   <div className="flex flex-col items-center py-10 gap-3">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)", boxShadow: "0 4px 16px rgba(167,139,250,0.15)" }}>
+                      style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.8) 0%, rgba(255,251,240,0.8) 100%)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.15)" }}>
                       🌱
                     </div>
-                    <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>
+                    <p className="text-sm font-light text-center" style={{ color: "var(--text-3)" }}>
                       La communauté grandit 💜<br />Reviens bientôt pour découvrir de nouveaux membres
                     </p>
                   </div>
@@ -400,10 +400,10 @@ export default function RecherchePage() {
                       >
                         <ProfileAvatar profile={profile} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
+                          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>
                             {profile.full_name || profile.pseudo}
                           </p>
-                          <p className="text-[11px] font-light truncate" style={{ color: "#A78BFA" }}>
+                          <p className="text-[11px] font-light truncate" style={{ color: "var(--accent)" }}>
                             @{profile.pseudo}
                           </p>
                         </div>
@@ -428,7 +428,7 @@ export default function RecherchePage() {
               className="flex justify-center py-10">
               <motion.div
                 className="w-6 h-6 rounded-full border-2"
-                style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
                 animate={{ rotate: 360 }}
                 transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
               />
@@ -440,10 +440,10 @@ export default function RecherchePage() {
             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col items-center py-16 gap-3">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-                style={{ background: "rgba(240,235,255,0.6)" }}>
+                style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }}>
                 {activeTab === "seances" ? "🏋️" : "👤"}
               </div>
-              <p className="text-sm font-light text-center" style={{ color: "#A0AEC0" }}>
+              <p className="text-sm font-light text-center" style={{ color: "var(--text-3)" }}>
                 Aucun résultat pour «{" "}{query}{" "}»
               </p>
             </motion.div>
@@ -457,7 +457,7 @@ export default function RecherchePage() {
               {visibleProfiles.length > 0 && (
                 <div className="mb-5">
                   {activeTab === "tout" && (
-                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: "#A0AEC0" }}>
+                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: "var(--text-3)" }}>
                       Comptes
                     </p>
                   )}
@@ -479,14 +479,14 @@ export default function RecherchePage() {
                           <ProfileAvatar profile={profile} />
 
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
+                            <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>
                               {profile.full_name || profile.pseudo}
                             </p>
-                            <p className="text-[11px] font-light truncate" style={{ color: "#A78BFA" }}>
+                            <p className="text-[11px] font-light truncate" style={{ color: "var(--accent)" }}>
                               @{profile.pseudo}
                             </p>
                             {profile.bio && (
-                              <p className="text-[10px] truncate mt-0.5" style={{ color: "#A0AEC0" }}>
+                              <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--text-3)" }}>
                                 {profile.bio}
                               </p>
                             )}
@@ -500,7 +500,7 @@ export default function RecherchePage() {
                                 onToggle={toggleFollow}
                               />
                             )}
-                            <ChevronRight size={14} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                            <ChevronRight size={14} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
                           </div>
                         </motion.div>
                       </Link>
@@ -513,7 +513,7 @@ export default function RecherchePage() {
               {visibleSessions.length > 0 && (
                 <div>
                   {activeTab === "tout" && (
-                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: "#A0AEC0" }}>
+                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: "var(--text-3)" }}>
                       Séances
                     </p>
                   )}
@@ -534,28 +534,28 @@ export default function RecherchePage() {
                         {/* Icon */}
                         <div
                           className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.4) 0%,rgba(245,230,163,0.4) 100%)" }}
+                          style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.4) 100%)" }}
                         >
-                          <Dumbbell size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                          <Dumbbell size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>
+                          <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>
                             {session.title}
                           </p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             {session.category && (
                               <span
                                 className="text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
-                                style={{ background: "rgba(212,192,255,0.35)", color: "#A78BFA" }}
+                                style={{ background: "rgba(var(--violet-mid-rgb),0.35)", color: "var(--accent)" }}
                               >
                                 {session.category}
                               </span>
                             )}
                             {session.difficulty && <DifficultyPill difficulty={session.difficulty} />}
                             {session.duration > 0 && (
-                              <span className="flex items-center gap-1 text-[10px]" style={{ color: "#A0AEC0" }}>
+                              <span className="flex items-center gap-1 text-[10px]" style={{ color: "var(--text-3)" }}>
                                 <Clock size={10} strokeWidth={1.5} />
                                 {session.duration} min
                               </span>
@@ -563,7 +563,7 @@ export default function RecherchePage() {
                           </div>
                         </div>
 
-                        <ChevronRight size={14} strokeWidth={1.5} style={{ color: "#A0AEC0", flexShrink: 0 }} />
+                        <ChevronRight size={14} strokeWidth={1.5} style={{ color: "var(--text-3)", flexShrink: 0 }} />
                       </motion.div>
                     </motion.div>
                   ))}

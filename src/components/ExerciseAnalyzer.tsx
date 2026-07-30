@@ -189,8 +189,8 @@ function runAnalysis(id: ExerciseId, lm: Landmark[], phase: "up" | "down"): Anal
 
 /* ─── Feedback icon ──────────────────────────────────────────────── */
 function FeedIcon({ type }: { type: MsgType }) {
-  if (type === "good")  return <CheckCircle  size={14} style={{ color: "#059669", flexShrink: 0 }} />;
-  if (type === "warn")  return <AlertTriangle size={14} style={{ color: "#D97706", flexShrink: 0 }} />;
+  if (type === "good")  return <CheckCircle  size={14} style={{ color: "#12A87E", flexShrink: 0 }} />;
+  if (type === "warn")  return <AlertTriangle size={14} style={{ color: "#E8620C", flexShrink: 0 }} />;
   return <XCircle size={14} style={{ color: "#DC2626", flexShrink: 0 }} />;
 }
 
@@ -363,9 +363,9 @@ export default function ExerciseAnalyzer() {
           try {
             const du = new DrawingUtilsRef.current(ctx);
             du.drawConnectors(landmarks, connectionsRef.current, {
-              color: "rgba(167,139,250,0.55)", lineWidth: 2,
+              color: "rgba(var(--accent-rgb),0.55)", lineWidth: 2,
             });
-            du.drawLandmarks(landmarks, { color: "#A78BFA", radius: 3.5, lineWidth: 1.5 });
+            du.drawLandmarks(landmarks, { color: "var(--accent)", radius: 3.5, lineWidth: 1.5 });
           } catch { /* DrawingUtils failure non-fatal */ }
         }
 
@@ -405,7 +405,7 @@ export default function ExerciseAnalyzer() {
     reset();
   };
 
-  const scoreColor = score >= 80 ? "#34D399" : score >= 55 ? "#FBBF24" : "#F87171";
+  const scoreColor = score >= 80 ? "#2BD4A0" : score >= 55 ? "#E8620C" : "#F87171";
   const ex = EXERCISES.find(e => e.id === selected)!;
 
   return (
@@ -413,10 +413,10 @@ export default function ExerciseAnalyzer() {
 
       {/* En-tête */}
       <div>
-        <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+        <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
           Intelligence Mouvement
         </p>
-        <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Analyse en temps réel</h2>
+        <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Analyse en temps réel</h2>
       </div>
 
       {/* Sélecteur d'exercice */}
@@ -427,7 +427,7 @@ export default function ExerciseAnalyzer() {
             className="flex items-center px-3.5 py-2 rounded-2xl text-xs font-semibold flex-shrink-0 cursor-pointer transition-all"
             style={selected === e.id
               ? { background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "#fff", boxShadow: "0 3px 14px rgba(99,102,241,0.38)" }
-              : { background: "rgba(240,235,255,0.6)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.3)" }
+              : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }
             }>
             {e.name}
           </motion.button>
@@ -436,10 +436,10 @@ export default function ExerciseAnalyzer() {
 
       {/* Info exercice */}
       <div className="px-4 py-3 rounded-2xl"
-        style={{ background: "rgba(240,235,255,0.45)", border: "1px solid rgba(212,192,255,0.28)" }}>
-        <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>{ex.name}</p>
-        <p className="text-[11px] mt-1 font-light leading-snug" style={{ color: "#718096" }}>{ex.tip}</p>
-        <p className="text-[10px] mt-1.5 font-medium" style={{ color: "#A78BFA" }}>{ex.muscles}</p>
+        style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--violet-mid-rgb),0.28)" }}>
+        <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>{ex.name}</p>
+        <p className="text-[11px] mt-1 font-light leading-snug" style={{ color: "var(--text-2)" }}>{ex.tip}</p>
+        <p className="text-[10px] mt-1.5 font-medium" style={{ color: "var(--accent)" }}>{ex.muscles}</p>
       </div>
 
       {/* Zone caméra */}
@@ -483,7 +483,7 @@ export default function ExerciseAnalyzer() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
             style={{ background: "rgba(0,0,0,0.72)" }}>
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.75, repeat: Infinity, ease: "linear" }}>
-              <Loader2 size={24} style={{ color: "#A78BFA" }} />
+              <Loader2 size={24} style={{ color: "var(--accent)" }} />
             </motion.div>
             <p className="text-sm font-light" style={{ color: "rgba(255,255,255,0.5)" }}>Caméra en cours…</p>
           </div>
@@ -504,7 +504,7 @@ export default function ExerciseAnalyzer() {
           <motion.div key={phase} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
             className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold tracking-widest"
             style={{
-              background: phase === "down" ? "rgba(99,102,241,0.82)" : "rgba(52,211,153,0.82)",
+              background: phase === "down" ? "rgba(99,102,241,0.82)" : "rgba(43,212,160,0.82)",
               color: "#fff", backdropFilter: "blur(6px)",
             }}>
             {phase === "down" ? "BAS" : "HAUT"}
@@ -515,15 +515,15 @@ export default function ExerciseAnalyzer() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "RÉPÉTITIONS", value: String(reps),       icon: TrendingUp, color: "#A78BFA" },
+          { label: "RÉPÉTITIONS", value: String(reps),       icon: TrendingUp, color: "var(--accent)" },
           { label: "FORM SCORE",  value: `${score}%`,        icon: Target,     color: scoreColor },
-          { label: "PHASE",       value: selected === "plank" ? "—" : phase === "up" ? "HAUT" : "BAS", icon: Zap, color: "#D4A843" },
+          { label: "PHASE",       value: selected === "plank" ? "—" : phase === "up" ? "HAUT" : "BAS", icon: Zap, color: "var(--gold)" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="rounded-2xl p-3 flex flex-col gap-1.5"
-            style={{ background: "rgba(255,255,255,0.9)", border: "1px solid rgba(212,192,255,0.2)", boxShadow: "0 2px 8px rgba(167,139,250,0.06)" }}>
+            style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)" }}>
             <div className="flex items-center gap-1">
               <Icon size={11} style={{ color }} />
-              <p className="text-[7px] font-semibold tracking-widest uppercase leading-none" style={{ color: "#A0AEC0" }}>{label}</p>
+              <p className="text-[7px] font-semibold tracking-widest uppercase leading-none" style={{ color: "var(--text-3)" }}>{label}</p>
             </div>
             <p className="text-lg font-bold leading-none truncate" style={{ color }}>{value}</p>
           </div>
@@ -541,11 +541,11 @@ export default function ExerciseAnalyzer() {
               transition={{ duration: 0.2 }}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl"
               style={{
-                background: msg.type === "good" ? "rgba(52,211,153,0.08)" : msg.type === "warn" ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)",
-                border: `1px solid ${msg.type === "good" ? "rgba(52,211,153,0.25)" : msg.type === "warn" ? "rgba(251,191,36,0.25)" : "rgba(248,113,113,0.25)"}`,
+                background: msg.type === "good" ? "rgba(43,212,160,0.08)" : msg.type === "warn" ? "rgba(232,98,12,0.08)" : "rgba(248,113,113,0.08)",
+                border: `1px solid ${msg.type === "good" ? "rgba(43,212,160,0.25)" : msg.type === "warn" ? "rgba(232,98,12,0.25)" : "rgba(248,113,113,0.25)"}`,
               }}>
               <FeedIcon type={msg.type} />
-              <p className="text-sm font-medium" style={{ color: msg.type === "good" ? "#059669" : msg.type === "warn" ? "#D97706" : "#DC2626" }}>
+              <p className="text-sm font-medium" style={{ color: msg.type === "good" ? "#12A87E" : msg.type === "warn" ? "#E8620C" : "#DC2626" }}>
                 {msg.text}
               </p>
             </motion.div>
@@ -554,20 +554,20 @@ export default function ExerciseAnalyzer() {
           {running && messages.length === 0 && (
             <motion.div key="wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl"
-              style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.22)" }}>
-              <Camera size={13} style={{ color: "#A0AEC0", flexShrink: 0 }} />
-              <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>Place-toi devant la caméra…</p>
+              style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.22)" }}>
+              <Camera size={13} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+              <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Place-toi devant la caméra…</p>
             </motion.div>
           )}
 
           {!mpReady && !mpError && !running && (
             <motion.div key="loading-mp" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl"
-              style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.22)" }}>
+              style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.22)" }}>
               <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
-                <Loader2 size={13} style={{ color: "#A78BFA" }} />
+                <Loader2 size={13} style={{ color: "var(--accent)" }} />
               </motion.div>
-              <p className="text-sm font-light" style={{ color: "#718096" }}>Chargement du modèle IA…</p>
+              <p className="text-sm font-light" style={{ color: "var(--text-2)" }}>Chargement du modèle IA…</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -581,7 +581,7 @@ export default function ExerciseAnalyzer() {
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold cursor-pointer"
             style={(mpReady && !loading && !mpError)
               ? { background: "linear-gradient(135deg,#818CF8,#6366F1)", color: "#fff", boxShadow: "0 4px 18px rgba(99,102,241,0.4)" }
-              : { background: "rgba(240,235,255,0.6)", color: "#A0AEC0", cursor: "not-allowed" }
+              : { background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-3)", cursor: "not-allowed" }
             }>
             <Play size={14} fill="currentColor" />
             {mpError ? "Modèle indisponible" : !mpReady ? "Chargement…" : "Lancer l'analyse"}
@@ -596,8 +596,8 @@ export default function ExerciseAnalyzer() {
         {(reps > 0 || running) && (
           <motion.button whileTap={{ scale: 0.9 }} onClick={reset}
             className="w-12 h-12 rounded-2xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}>
-            <RotateCcw size={14} style={{ color: "#A78BFA" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+            <RotateCcw size={14} style={{ color: "var(--accent)" }} />
           </motion.button>
         )}
       </div>
@@ -615,7 +615,7 @@ export default function ExerciseAnalyzer() {
               initial={{ scale: 0.9, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }} transition={{ type: "spring", damping: 22, stiffness: 300 }}
               className="w-full max-w-sm rounded-[26px] p-6 text-center"
-              style={{ background: "linear-gradient(160deg,#fff,#f6f1ff)", boxShadow: "0 30px 70px -16px rgba(99,102,241,0.45)" }}
+              style={{ background: "rgb(var(--surface-rgb))", boxShadow: "0 30px 70px -16px rgba(99,102,241,0.45)" }}
             >
               <h3 className="text-xl font-black mb-1" style={{ color: "#2D2150" }}>Place ton téléphone 📱</h3>
               <p className="text-xs font-light mb-4" style={{ color: "#7C6BAA" }}>
@@ -626,7 +626,7 @@ export default function ExerciseAnalyzer() {
               <div className="flex justify-center mb-4">
                 <svg width="150" height="120" viewBox="0 0 150 120" fill="none">
                   {/* cadre téléphone */}
-                  <rect x="8" y="8" width="134" height="104" rx="12" fill="rgba(167,139,250,0.08)" stroke="#A78BFA" strokeWidth="2" />
+                  <rect x="8" y="8" width="134" height="104" rx="12" fill="rgba(var(--accent-rgb),0.08)" stroke="var(--accent)" strokeWidth="2" />
                   {/* silhouette entière */}
                   <g stroke="#6366F1" strokeWidth="3" strokeLinecap="round" fill="none">
                     <circle cx="75" cy="28" r="8" fill="#6366F1" />
@@ -637,7 +637,7 @@ export default function ExerciseAnalyzer() {
                     <line x1="75" y1="68" x2="87" y2="98" />
                   </g>
                   {/* flèches "corps entier visible" */}
-                  <g stroke="#A78BFA" strokeWidth="1.5">
+                  <g stroke="var(--accent)" strokeWidth="1.5">
                     <line x1="20" y1="18" x2="20" y2="102" strokeDasharray="3 3" />
                   </g>
                 </svg>
@@ -661,7 +661,7 @@ export default function ExerciseAnalyzer() {
               <div className="flex gap-2.5">
                 <button onClick={() => setShowPlacement(false)}
                   className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                  style={{ background: "rgba(240,235,255,0.7)", color: "#7C6BAA" }}>
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "#7C6BAA" }}>
                   Annuler
                 </button>
                 <motion.button whileTap={{ scale: 0.96 }}

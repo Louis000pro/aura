@@ -1,13 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X, CheckCircle, Clock, Zap, Trophy, SkipForward,
-  Pause, Play, HelpCircle, ArrowLeft, Share2, BookmarkCheck, ChevronDown,
-} from "lucide-react";
+import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, Check, Plus } from "lucide-react";
+import { AssistantSpark } from "@/components/AssistantMark";
+import ExerciseGuide from "@/components/ExerciseGuide";
+import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
+import { lockBodyModal } from "@/lib/bodyModal";
+import { validerMaillon, CLE_DEVOILE } from "@/lib/defi";
+import { calculerAura } from "@/lib/aura";
+import { noterRang } from "@/lib/celebrationRang";
 import { useAuth } from "@/context/AuthContext";
+import { useAssistant } from "@/context/AssistantContext";
+import PerfShareButton from "@/components/PerfShareButton";
+import PerfShareCard from "@/components/PerfShareCard";
+import type { PerfShareData } from "@/lib/perfShareExport";
+import { GUIDE_SECTIONS, sectionSessionId } from "@/lib/guideSections";
+import { WAVE_1_EXERCISES } from "@/lib/workoutWave1";
+import { WAVE_2_EXERCISES } from "@/lib/workoutWave2";
+import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
+import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
+import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
+import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -17,7 +33,7 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
   useEffect(() => {
     let cancelled = false;
     setState("loading"); setVideoId(null);
-    fetch(`/api/exercise-video?q=${encodeURIComponent(exerciseName)}`)
+    aiFetch(`/api/exercise-video?q=${encodeURIComponent(exerciseName)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
@@ -32,16 +48,16 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
 
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.12)" }}>
+      style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
       <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
         <span className="inline-flex items-center justify-center w-5 h-5 rounded-md" style={{ background: "#FF0000" }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
         </span>
-        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Référence humaine</p>
+        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Référence humaine</p>
       </div>
       {state === "loading" && (
-        <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.06)" }}>
-          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} />
+        <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.06)" }}>
+          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(var(--accent-rgb),0.25)", borderTopColor: "var(--accent)" }} />
         </div>
       )}
       {state === "ready" && videoId && (
@@ -59,7 +75,7 @@ function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
       {state === "none" && (
         <a href={ytSearch} target="_blank" rel="noopener noreferrer"
           className="aspect-video w-full flex flex-col items-center justify-center gap-2 text-center px-4"
-          style={{ background: "rgba(167,139,250,0.06)", color: "#A78BFA" }}>
+          style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)" }}>
           <span className="inline-flex items-center justify-center w-10 h-10 rounded-full" style={{ background: "#FF0000" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
           </span>
@@ -91,13 +107,37 @@ export interface WorkoutGuideModalProps {
   duration: number;
   difficulty: string;
   category?: string;
+  heroImage?: string;
   onClose: () => void;
   onComplete?: () => void;
   exerciseList?: Exercise[];
+  /** Présent = la séance n'existe nulle part (une impro) et peut être gardée.
+      La page décide, le tunnel ne fait qu'afficher la proposition. */
+  onGarder?: () => void;
 }
 
 type GuidePhase = "intro" | "exercising" | "resting" | "done";
 type HiitSub    = "work" | "rest";
+
+/* Déduit une durée en secondes d'un libellé de reps (« 45s », « 30 sec »,
+   « 2 min », « 3x45s » → 45). null si ce n'est PAS un exercice chronométré
+   (« 12 reps », « Max reps », « 12 par jambe »…). Sert à lancer un vrai chrono
+   pour les gainages/tenues venus d'une séance custom (qui n'ont pas de champ auto). */
+function secondesDeReps(reps: string): number | null {
+  const r = (reps || "").toLowerCase();
+  const min = r.match(/(\d+)\s*min/);
+  if (min) return (parseInt(min[1], 10) || 0) * 60 || null;
+  const sec = r.match(/(\d+)\s*(?:secondes?|sec|s)\b/);
+  if (sec) return parseInt(sec[1], 10) || null;
+  return null;
+}
+
+/* Vibration (best-effort) : ignorée si le navigateur/appareil ne la supporte pas. */
+function vibrer(pattern: number | number[]) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try { navigator.vibrate(pattern); } catch { /* ignore */ }
+  }
+}
 
 /* ─── Constants ──────────────────────────────────────────── */
 const HIIT_WORK = 20;
@@ -106,7 +146,33 @@ const CR        = 46;
 const CC        = 2 * Math.PI * CR;
 
 /* ─── Exercise data ──────────────────────────────────────── */
-const exerciseData: Record<string, Exercise[]> = {
+
+/* « Défi Animations » — les ateliers qui enchaînent les gestes animés,
+   un thème par séance (la liste unique vit dans src/lib/guideSections.ts).
+   sets:1 + repos court = on défile vite et on voit les animations d'une
+   traite. TEMPORAIRE : ces séances servent à valider chaque vague de
+   sprites dans le vrai tunnel ; on les retire à la mise à jour. */
+
+/* Exporté depuis le 2026-07-29 : « M'en inspirer » a besoin des mêmes
+   exercices que le tunnel. Une carte du catalogue ne porte pas toujours
+   son `exerciseList` (le tunnel les retrouve ici par id), donc dupliquer
+   cette table côté page rejouerait la divergence déjà vécue ailleurs. */
+export const exerciseData: Record<string, Exercise[]> = {
+  ...WAVE_1_EXERCISES,
+  ...WAVE_2_EXERCISES,
+  ...WAVE_3_EXERCISES,
+  ...WAVE_5_EXERCISES,
+  ...WAVE_6_EXERCISES,
+
+  ...Object.fromEntries(GUIDE_SECTIONS.map((sec) => [
+    sectionSessionId(sec),
+    sec.items.map((name) => ({
+      name, sets: 1, reps: "Observe le geste", rest: 8,
+      tip: "Reproduis le mouvement du personnage-guide.",
+      benefit: "", muscles: [],
+    })),
+  ])),
+
   "demo-avatars": [
     // ─── Bas du corps ────────────────────────────────────────
     { name: "Air Squat",         sets: 2, reps: "12 reps", rest: 30,
@@ -430,6 +496,90 @@ const exerciseData: Record<string, Exercise[]> = {
       benefit: "Permet un retour progressif à l'état de repos pour le système cardiovasculaire. Active la récupération parasympathique et prévient les étourdissements post-effort.",
       muscles: ["Récupération"] },
   ],
+
+  "salle-haut": [
+    { name: "Développé couché barre", sets: 4, reps: "8 reps", rest: 90,
+      tip: "Allongé, omoplates rétractées et serrées, pieds bien ancrés au sol. Descends la barre au niveau des tétons en 3 secondes, coudes à 45°, puis pousse en explosif sans décoller les fessiers.",
+      benefit: "L'exercice roi pour la masse et la force des pectoraux. Le format barre permet de charger lourd en sécurité et de progresser semaine après semaine sur un mouvement mesurable.",
+      muscles: ["Pectoraux", "Triceps"] },
+    { name: "Tirage vertical poulie", sets: 4, reps: "10 reps", rest: 90,
+      tip: "Prise large, buste légèrement incliné en arrière. Amène la barre vers le haut des pectoraux en tirant avec les coudes, pas avec les mains. Contrôle la remontée en 3 secondes.",
+      benefit: "Cible les grands dorsaux pour construire le dos en V. Alternative accessible à la traction qui permet de doser précisément la charge et de bâtir la force de tirage.",
+      muscles: ["Dos", "Biceps"] },
+    { name: "Développé militaire barre", sets: 3, reps: "10 reps", rest: 75,
+      tip: "Debout ou assis, gainage serré pour ne pas cambrer le bas du dos. Pousse la barre à la verticale jusqu'à extension complète, tête qui avance légèrement en fin de mouvement. Tempo 2-0-2.",
+      benefit: "Développe des épaules larges et puissantes et renforce la stabilité du tronc. Mouvement de force fonctionnelle pour tout ce qui se pousse au-dessus de la tête.",
+      muscles: ["Épaules", "Triceps"] },
+    { name: "Rowing machine assis", sets: 3, reps: "12 reps", rest: 75,
+      tip: "Dos droit, poitrine sortie. Tire la poignée vers le nombril en serrant les omoplates, marque une seconde de contraction en fin de course, puis laisse revenir sans t'affaisser.",
+      benefit: "Épaissit le milieu du dos (rhomboïdes, trapèzes) et équilibre le travail de poussée. Essentiel pour une posture solide et des épaules protégées sur le long terme.",
+      muscles: ["Dos", "Biceps"] },
+    { name: "Écarté à la poulie vis-à-vis", sets: 3, reps: "12 reps", rest: 60,
+      tip: "Léger buste en avant, coudes à peine fléchis et figés tout le mouvement. Rassemble les poignées devant toi en pensant à « serrer » les pectoraux, puis ouvre lentement en gardant la tension.",
+      benefit: "Isole le pectoral en étirement et en contraction, là où la barre s'arrête. Sculpte la poitrine et renforce la connexion muscle-esprit sur les pectoraux.",
+      muscles: ["Pectoraux"] },
+    { name: "Élévations latérales poulie", sets: 3, reps: "15 reps", rest: 60,
+      tip: "Poulie basse dans la main opposée, léger relâchement du coude. Monte le bras jusqu'à l'horizontale, pas plus haut, en menant avec le coude. Descends en 3 secondes.",
+      benefit: "Isole le deltoïde latéral pour élargir visuellement les épaules et parfaire la carrure. La poulie garde une tension constante que les haltères perdent en position basse.",
+      muscles: ["Épaules"] },
+  ],
+
+  "recup-active": [
+    { name: "Cohérence cardiaque", sets: 1, reps: "3 min", rest: 0, auto: 180,
+      tip: "Assis confortablement, inspire 5 secondes par le nez, expire 5 secondes par la bouche. Aucune tension : laisse le ventre se gonfler à l'inspiration, se vider à l'expiration.",
+      benefit: "Active le système nerveux parasympathique et fait redescendre le rythme cardiaque. Amorce la récupération, réduit le cortisol et prépare le corps au relâchement.",
+      muscles: ["Respiration"] },
+    { name: "Étirement chaîne postérieure", sets: 2, reps: "45 sec", rest: 15, auto: 45,
+      tip: "Assis jambes tendues, avance le buste vers les pieds en gardant le dos long, sans arrondir. Va jusqu'à une tension douce, jamais à la douleur, et respire dans l'étirement.",
+      benefit: "Détend les ischio-jambiers et le bas du dos souvent raccourcis par la position assise. Restaure l'amplitude des hanches et soulage les tensions lombaires.",
+      muscles: ["Ischio-jambiers", "Dos"] },
+    { name: "Ouverture des hanches (papillon)", sets: 2, reps: "45 sec", rest: 15, auto: 45,
+      tip: "Assis, plantes de pieds l'une contre l'autre. Laisse les genoux descendre vers le sol par leur propre poids, dos droit. Tu peux basculer doucement le bassin d'avant en arrière.",
+      benefit: "Relâche les adducteurs et mobilise les hanches en rotation externe. Compense les heures assises et prépare des jambes plus libres pour la prochaine séance.",
+      muscles: ["Hanches", "Adducteurs"] },
+    { name: "Torsion vertébrale allongée", sets: 2, reps: "30 sec par côté", rest: 10, auto: 30,
+      tip: "Sur le dos, ramène un genou et laisse-le tomber de l'autre côté, bras en croix, regard opposé. Garde les deux épaules au sol. Respiration lente et profonde.",
+      benefit: "Décompresse la colonne et étire les muscles paravertébraux et fessiers. Réduit les raideurs du dos et apaise le système nerveux en fin de journée.",
+      muscles: ["Colonne vertébrale", "Fessiers"] },
+    { name: "Étirement des pectoraux au mur", sets: 2, reps: "30 sec par côté", rest: 10, auto: 30,
+      tip: "Avant-bras contre un mur, coude à hauteur d'épaule. Pivote doucement le buste dans le sens opposé jusqu'à sentir l'ouverture de la poitrine. Ne force jamais sur l'épaule.",
+      benefit: "Ouvre les pectoraux et l'avant de l'épaule fermés par les écrans et le travail de poussée. Améliore la posture et libère la respiration thoracique.",
+      muscles: ["Pectoraux", "Épaules"] },
+    { name: "Étirement quadriceps debout", sets: 2, reps: "30 sec par jambe", rest: 10, auto: 30,
+      tip: "Debout, attrape un pied vers la fesse, genoux serrés l'un contre l'autre. Rentre légèrement le bassin pour accentuer. Appuie-toi à un mur pour l'équilibre.",
+      benefit: "Détend le droit fémoral et l'avant de la hanche raccourcis par la position assise. Soulage les genoux et rééquilibre la tension autour du bassin.",
+      muscles: ["Quadriceps"] },
+    { name: "Posture de l'enfant", sets: 1, reps: "90 sec", rest: 0, auto: 90,
+      tip: "Genoux écartés, front au sol, bras tendus loin devant. Laisse tout le poids du haut du corps se déposer. Respiration lente : allonge progressivement l'expiration.",
+      benefit: "La position de récupération par excellence. Décompresse les lombaires, étire le dos et bascule définitivement le corps en mode parasympathique pour clôturer la séance.",
+      muscles: ["Dos", "Hanches"] },
+  ],
+
+  "defi-gainage": [
+    { name: "Planche frontale", sets: 3, reps: "45 sec", rest: 30, auto: 45,
+      tip: "Avant-bras au sol sous les épaules, corps en ligne parfaite de la tête aux talons. Rentre le nombril, serre fessiers et cuisses. Ne laisse jamais les hanches s'affaisser ni monter.",
+      benefit: "Construit l'endurance du gainage profond (transverse). C'est la base qui protège le bas du dos et transfère la force entre le haut et le bas du corps.",
+      muscles: ["Core"] },
+    { name: "Planche latérale", sets: 3, reps: "30 sec par côté", rest: 20, auto: 30,
+      tip: "En appui sur un avant-bras, corps aligné, hanche haute. Empile les pieds ou décale-les pour plus de stabilité. Le bassin ne descend pas — c'est là que tout se joue.",
+      benefit: "Renforce les obliques et le carré des lombes, stabilisateurs latéraux souvent négligés. Améliore l'équilibre du tronc et prévient les déséquilibres droite/gauche.",
+      muscles: ["Obliques"] },
+    { name: "Hollow hold", sets: 3, reps: "30 sec", rest: 30, auto: 30,
+      tip: "Sur le dos, bas du dos plaqué au sol. Décolle épaules et jambes tendues, bras vers l'arrière. Si c'est trop dur, plie les genoux ou rapproche les bras du corps.",
+      benefit: "Le gainage anti-extension des gymnastes. Verrouille toute la sangle abdominale sous tension et crée un ventre plat et solide, base de tous les mouvements dynamiques.",
+      muscles: ["Abdominaux"] },
+    { name: "Relevés de jambes lents", sets: 3, reps: "12 reps", rest: 30,
+      tip: "Allongé, mains sous les fessiers. Monte les jambes tendues à la verticale, puis descends en 4 secondes sans que le bas du dos se creuse. Contrôle absolu, zéro élan.",
+      benefit: "Cible le bas des abdominaux et apprend à garder le bassin verrouillé. La descente lente maximise la tension et développe une vraie force de gainage.",
+      muscles: ["Abdominaux"] },
+    { name: "Planche — le record", sets: 1, reps: "Max", rest: 0,
+      tip: "Le défi final : tiens la planche parfaite le plus longtemps possible. Position irréprochable jusqu'à la dernière seconde. Note ton temps — c'est lui que tu battras la prochaine fois.",
+      benefit: "Un repère concret de ta progression. Mesurer ton gainage maximal te donne un objectif clair à dépasser et transforme chaque séance en défi personnel.",
+      muscles: ["Core", "Gainage"] },
+  ],
+
+  // Placée à la fin pour moderniser aussi la séance cardio-endurance historique.
+  ...WAVE_4_EXERCISES,
 };
 
 /* ─── Util ───────────────────────────────────────────────── */
@@ -445,12 +595,58 @@ export function resolveSessionId(title: string): string | null {
   const MAP: Record<string, string> = {
     "Force Haut du Corps":   "force-haut",
     "Full Body Débutant":    "fullbody-deb",
+    "HIIT 20/10":            "hiit",
     "HIIT Brûle-Graisses":   "hiit",
     "Jambes & Fessiers":     "jambes",
     "Mobilité Matinale":     "mobilite",
     "Dos & Biceps":          "dos-biceps",
     "Core & Gainage":        "core",
     "Endurance Cardio":      "cardio-endurance",
+    "Haut du corps — Salle": "salle-haut",
+    "Récupération active":   "recup-active",
+    "Défi Gainage":          "defi-gainage",
+    "Express 12":            "express-12",
+    "Reprendre en douceur":  "reprise-douce",
+    "Appartement silencieux":"appartement-silencieux",
+    "Jambes au poids du corps": "jambes-poids-corps",
+    "Haut du corps au sol":  "haut-corps-sol",
+    "Full Body Intermédiaire": "fullbody-inter",
+    "Puissance sans matériel": "puissance-sans-materiel",
+    "Découverte des machines": "salle-decouverte",
+    "Push — Pectoraux & épaules": "push-salle",
+    "Jambes — Dominante quadriceps": "jambes-quadriceps",
+    "Chaîne postérieure": "chaine-posterieure",
+    "Épaules & bras": "epaules-bras",
+    "Full Body Machines": "fullbody-machines",
+    "Posture après écran": "posture-ecran",
+    "Hanches libres": "hanches-libres",
+    "Épaules & haut du dos": "epaules-haut-dos-mobilite",
+    "Chevilles & squat": "chevilles-squat",
+    "Colonne mobile": "colonne-mobile",
+    "Mobilité complète": "mobilite-complete",
+    "Mobilité active": "mobilite-active",
+    "Cardio sans saut": "cardio-sans-saut",
+    "Tabata Express": "tabata-express",
+    "Cardio de salle": "cardio-salle",
+    "Pyramide cardio": "pyramide-cardio",
+    "Cardio & force — Haltères": "cardio-halteres",
+    "Retour au calme": "retour-au-calme",
+    "Pause détente": "pause-detente",
+    "Récupération jambes": "recup-jambes",
+    "Haut du corps relâché": "recup-haut-corps",
+    "Dos relâché": "dos-relache",
+    "Soir calme": "soir-calme",
+    "Lendemain de séance": "lendemain-seance",
+    "Récupération complète": "recup-complete",
+    "Les bases du mouvement": "bases-mouvement",
+    "Squat maîtrisé": "squat-maitrise",
+    "Pompes maîtrisées": "pompes-maitrise",
+    "Tractions — Construire le mouvement": "tractions-progression",
+    "Charnière de hanche": "charniere-hanche",
+    "Gainage — Progresser": "gainage-progression",
+    "Épaules — Mobilité & contrôle": "epaules-controle",
+    "Unilatéral — Maîtriser les appuis": "unilateral-maitrise",
+    "Tempo — Ralentir pour progresser": "tempo-controle",
   };
   if (MAP[title]) return MAP[title];
   // recherche partielle (ex: "Force Haut du Corps · 42 min" → "force-haut")
@@ -462,9 +658,21 @@ export function resolveSessionId(title: string): string | null {
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
-  sessionId, title, accent, duration, difficulty, category, onClose, onComplete, exerciseList,
+  sessionId, title, accent, duration, difficulty, category, heroImage, onClose, onComplete, exerciseList,
+  onGarder,
 }: WorkoutGuideModalProps) {
-  const exercises = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
+  // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une
+  // séance custom (gainage « 45s », tenue « 30 sec »…) qui n'en portent pas.
+  const exercises = useMemo<Exercise[]>(() => {
+    const base = (exerciseList && exerciseList.length > 0) ? exerciseList : (exerciseData[sessionId] ?? []);
+    return base.map((e) => {
+      if (e.auto || e.hiit) return e;
+      const sec = secondesDeReps(e.reps);
+      return sec ? { ...e, auto: sec } : e;
+    });
+  }, [exerciseList, sessionId]);
+
+  const { open: openAssistant } = useAssistant();
 
   const [phase,         setPhase]         = useState<GuidePhase>("intro");
   const [exerciseIdx,   setExerciseIdx]   = useState(0);
@@ -473,6 +681,7 @@ export default function WorkoutGuideModal({
   const [restTotal,     setRestTotal]     = useState(0);
   const [restMode,      setRestMode]      = useState<"set" | "exercise">("set");
   const [autoCountdown, setAutoCountdown] = useState(0);
+  const [prep,          setPrep]          = useState(0); // décompte 3-2-1 avant un effort chronométré
   const [hiitSub,       setHiitSub]       = useState<HiitSub>("work");
   const [doneMap,       setDoneMap]       = useState<Record<number, Record<number, boolean>>>({});
   const [startMs,       setStartMs]       = useState(0);
@@ -482,6 +691,7 @@ export default function WorkoutGuideModal({
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
   const [sessionSaved,  setSessionSaved]  = useState(false);
+  const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
 
   const { user } = useAuth();
 
@@ -489,10 +699,7 @@ export default function WorkoutGuideModal({
 
   /* ── Masque la barre de navigation du bas tant que la séance guidée est ouverte
         (sinon, sur mobile, elle se superpose au bas de la modale). ── */
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
+  useEffect(() => lockBodyModal(), []);
 
   /* ── Notify parent + auto-save session when workout is done ── */
   useEffect(() => {
@@ -511,8 +718,23 @@ export default function WorkoutGuideModal({
       elapsed_seconds:  elapsed,
       exercises:        exercises,
       started_at:       new Date().toISOString(),
-    }).then(({ error }) => {
-      if (!error) setSessionSaved(true);
+    }).select("id").single().then(({ data, error }) => {
+      if (error) return;
+      setSessionSaved(true);
+      // Le maillon du jour, si un relais est en cours. Volontairement
+      // silencieux : pas de défi, séance trop courte ou jour déjà
+      // franchi par l'équipier → il ne se passe rien, et on ne
+      // reproche rien à personne.
+      if (data?.id) {
+        void validerMaillon(user.id, String(data.id)).then((r) => {
+          if (r?.ok) sessionStorage.setItem(CLE_DEVOILE, "1");
+        });
+      }
+      // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine
+      // ouverture de l'accueil. Silencieux si le rang n'a pas bougé.
+      void calculerAura(supabase, user.id)
+        .then((etat) => noterRang(user.id, etat.rang))
+        .catch(() => {});
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -551,6 +773,22 @@ export default function WorkoutGuideModal({
   const isTimered = !!(cur?.auto || cur?.hiit);
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0);
 
+  /* ── Données du poster de perf « aura » (aperçu + export) ── */
+  const elapsedMinCard = Math.round(elapsed / 60) || 1;
+  const perfShareData: PerfShareData = {
+    brand: "✦ VAIIYA",
+    date: new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
+    category: title,
+    hero: { value: String(elapsedMinCard), unit: "min" },
+    subs: [
+      { v: String(exercises.length), l: "exos" },
+      { v: String(totalSets), l: "séries" },
+      { v: String(Math.round(elapsedMinCard * 6.5)), l: "kcal" },
+    ],
+    user: "",
+    bg: "/perf/aura.jpg",
+  };
+
   /* ── Elapsed clock ── */
   useEffect(() => {
     if (phase === "intro" || phase === "done" || startMs === 0 || paused) return;
@@ -567,8 +805,8 @@ export default function WorkoutGuideModal({
       setAutoCountdown(0);   setHiitSub("work");
       setPhase("exercising");
       const e = exercises[nextEx];
-      if (e?.auto)      setAutoCountdown(e.auto);
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else {
       setPhase("done");
     }
@@ -582,8 +820,8 @@ export default function WorkoutGuideModal({
     if (nextSet < (exercises[exerciseIdx]?.sets ?? 1)) {
       setSetIdx(nextSet); setPhase("exercising");
       const e = exercises[exerciseIdx];
-      if (e?.auto)      setAutoCountdown(e.auto);
-      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+      if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+      else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
     } else if (nextEx < exercises.length) {
       const restAfter = exercises[exerciseIdx]?.restAfter ?? 0;
       if (restAfter > 0) {
@@ -594,8 +832,8 @@ export default function WorkoutGuideModal({
       } else {
         setExerciseIdx(nextEx); setSetIdx(0); setPhase("exercising");
         const e = exercises[nextEx];
-        if (e?.auto)      setAutoCountdown(e.auto);
-        else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+        if (e?.auto)      { setAutoCountdown(e.auto); setPrep(3); }
+        else if (e?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
         else              setAutoCountdown(0);
       }
     } else {
@@ -630,6 +868,7 @@ export default function WorkoutGuideModal({
   useEffect(() => {
     if (phase !== "resting" || paused) return;
     if (restCountdown <= 0) {
+      vibrer([70, 50, 70]); // fin de récup
       if (restMode === "exercise") { setRestMode("set"); skipExercise(); }
       else advance();
       return;
@@ -639,206 +878,221 @@ export default function WorkoutGuideModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, restCountdown, paused, restMode]);
 
+  /* ── Décompte 3-2-1 avant chaque effort chronométré ── */
+  useEffect(() => {
+    if (phase !== "exercising" || paused || prep <= 0) return;
+    const t = setTimeout(() => setPrep(p => p - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, prep, paused]);
+
   /* ── Auto / HIIT countdown ── */
   useEffect(() => {
     if (phase !== "exercising" || paused) return;
+    if (prep > 0) return; // on attend la fin du 3-2-1
     if (!cur?.auto && !cur?.hiit) return;
     if (autoCountdown <= 0) {
+      vibrer(90); // fin d'effort chronométré (ou fin d'un segment HIIT)
       if (cur.hiit && hiitSub === "work") { setHiitSub("rest"); setAutoCountdown(HIIT_REST); return; }
       completeSet(); return;
     }
     const t = setTimeout(() => setAutoCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, autoCountdown, hiitSub, cur, paused]);
+  }, [phase, autoCountdown, hiitSub, cur, paused, prep]);
 
   /* ── Start ── */
   const startWorkout = () => {
     setStartMs(Date.now());
     setExerciseIdx(0); setSetIdx(0); setDoneMap({}); setPaused(false); setShowInfo(false);
     setPhase("exercising");
-    if (exercises[0]?.auto)      setAutoCountdown(exercises[0].auto);
-    else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); }
+    if (exercises[0]?.auto)      { setAutoCountdown(exercises[0].auto); setPrep(3); }
+    else if (exercises[0]?.hiit) { setHiitSub("work"); setAutoCountdown(HIIT_WORK); setPrep(3); }
   };
 
-  /* ── SVG helpers ── */
-  const progressPct = exercises.length
-    ? ((exerciseIdx + (setIdx + 1) / (cur?.sets || 1)) / exercises.length) * 100 : 0;
+  /* ── Timers ── */
   const autoTotal  = isHiit ? (hiitSub === "work" ? HIIT_WORK : HIIT_REST) : (cur?.auto ?? 0);
   const autoOffset = CC * (1 - (autoTotal > 0 ? autoCountdown / autoTotal : 0));
   const restOffset = CC * (1 - (restTotal > 0 ? restCountdown / restTotal : 1));
+  const canPause   = (phase === "exercising" && isTimered) || phase === "resting";
+  const add15      = () => { setRestTotal(t => t + 15); setRestCountdown(c => c + 15); };
 
-  const canPause = (phase === "exercising" && isTimered) || phase === "resting";
+  /* ── Le player est TOUJOURS sombre (le « tunnel »), quel que soit le thème ── */
+  const isTunnel = phase !== "intro";
+  const TUN = {
+    t1: "#F0ECFA", t2: "#A79FC0", t3: "#6E6690", lav: "#C9B8FF",
+    line: "rgba(255,255,255,0.08)",
+    violet: "#8B5CF6", orange: "#F5B120", ring2: "#FF7A1A", teal: "#2BD4A0",
+  };
+
+  /* ── Dérivés fiche & fin ── */
+  const kcalEst  = Math.round(duration * 6.5);
+  const kcalReal = Math.round((elapsed / 60) * 6.5);
+  const muscleSummary = Array.from(new Set(exercises.flatMap(e => e.muscles)))
+    .slice(0, 3).join(" · ").toUpperCase();
+  const repsMatch = cur?.reps.match(/^(\d+)\s*(.*)$/);
+  const repsHero  = repsMatch ? repsMatch[1] : (cur?.reps ?? "");
+  const repsSub   = repsMatch ? (repsMatch[2] || "répétitions") : "";
 
   /* ─────────────────────────────────────────────────────── */
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(15,10,30,0.55)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(8,5,16,0.62)", backdropFilter: "blur(12px)" }}
     >
       <motion.div
         initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
         transition={{ type: "spring", stiffness: 380, damping: 36 }}
         className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden"
         style={{
-          background: "rgba(255,255,255,0.98)",
+          background: isTunnel ? "#0B0714" : "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(24px)",
-          boxShadow: "0 -4px 60px rgba(167,139,250,0.12), 0 0 0 1px rgba(255,255,255,0.9)",
-          maxHeight: "92dvh",
+          boxShadow: isTunnel
+            ? "0 -4px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)"
+            : "0 -4px 60px rgba(var(--accent-rgb),0.12), 0 0 0 1px rgba(var(--surface-rgb),0.9)",
+          maxHeight: "94dvh",
         }}
       >
-        {/* ── Progress bar ── */}
-        {phase !== "intro" && phase !== "done" && (
-          <div className="h-1" style={{ background: "rgba(167,139,250,0.1)" }}>
-            <motion.div
-              className="h-full"
-              style={{ background: `linear-gradient(90deg, #A78BFA, ${accent})` }}
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.5 }}
-            />
+        {/* ══ Barre segmentée « stories » — teal = fait, violet = en cours ══ */}
+        {(phase === "exercising" || phase === "resting") && (
+          <div className="relative z-[3] px-4 pt-4 flex-shrink-0">
+            <div className="flex gap-[5px]">
+              {exercises.map((_, e) => {
+                const done   = e < exerciseIdx;
+                const curSeg = e === exerciseIdx;
+                const fill   = curSeg
+                  ? Math.min(100, ((setIdx + (phase === "resting" ? 1 : 0)) / (cur?.sets || 1)) * 100)
+                  : 0;
+                return (
+                  <span key={e} className="h-[3.5px] flex-1 rounded-full overflow-hidden"
+                    style={{ background: done ? TUN.teal : "rgba(255,255,255,0.14)" }}>
+                    {curSeg && (
+                      <motion.span className="block h-full rounded-full"
+                        style={{ background: "linear-gradient(90deg,#8B5CF6,#C13BC1)" }}
+                        animate={{ width: `${fill}%` }} transition={{ duration: 0.5 }} />
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-[11.5px] font-semibold tabular-nums px-2.5 py-1.5 rounded-full"
+                style={{ color: TUN.t2, background: "rgba(255,255,255,0.06)", border: `1px solid ${TUN.line}` }}>
+                {fmt(elapsed)}
+              </span>
+              <div className="flex items-center gap-2">
+                {/* Raccourci discret vers le coach IA — une question pendant l'effort */}
+                <button onClick={() => openAssistant()}
+                  className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                  style={{ background: "rgba(139,92,246,0.16)", border: "1px solid rgba(139,92,246,0.32)" }}
+                  aria-label="Poser une question au coach IA">
+                  <AssistantSpark px={15} />
+                </button>
+                {canPause && (
+                  <button onClick={togglePause}
+                    className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${TUN.line}`, color: TUN.t2 }}
+                    aria-label={paused ? "Reprendre" : "Pause"}>
+                    {paused ? <Play size={13} strokeWidth={2} /> : <Pause size={13} strokeWidth={2} />}
+                  </button>
+                )}
+                <button onClick={onClose}
+                  className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${TUN.line}`, color: TUN.t2 }}
+                  aria-label="Fermer">
+                  <X size={14} strokeWidth={2} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ── Header ── */}
-        <div
-          className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0"
-          style={{ borderBottom: (phase !== "intro" && phase !== "done") ? "1px solid rgba(167,139,250,0.08)" : "none" }}
-        >
-          <div>
-            {(phase === "exercising" || phase === "resting") && (
-              <p className="text-[9px] font-bold tracking-widest uppercase mb-0.5" style={{ color: accent }}>
-                Exercice {exerciseIdx + 1} / {exercises.length}
-              </p>
-            )}
-            <p className="text-sm font-medium" style={{ color: "#2D3748" }}>{title}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {phase !== "intro" && phase !== "done" && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                <Clock size={10} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                <span className="text-[11px] font-mono font-medium" style={{ color: "#A78BFA" }}>{fmt(elapsed)}</span>
-              </div>
-            )}
-            {canPause && (
-              <motion.button
-                whileTap={{ scale: 0.88 }}
-                onClick={togglePause}
-                className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-                style={{
-                  background: paused ? "rgba(167,139,250,0.12)" : "rgba(0,0,0,0.04)",
-                  border: paused ? "1px solid rgba(167,139,250,0.25)" : "1px solid rgba(0,0,0,0.06)",
-                }}
-                aria-label={paused ? "Reprendre" : "Pause"}
-              >
-                {paused
-                  ? <Play  size={13} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                  : <Pause size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-                }
-              </motion.button>
-            )}
-            <button
-              onClick={onClose}
-              className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)" }}
-            >
-              <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Scrollable content ── */}
-        <div className="flex-1 overflow-y-auto px-5 pb-2" style={{ scrollbarWidth: "none" }}>
+        {/* ══ Contenu ══ */}
+        <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           <AnimatePresence mode="wait">
 
-            {/* ── INTRO ── */}
+            {/* ─────────── 01 · LA FICHE — l'affiche (thème clair/sombre) ─────────── */}
             {phase === "intro" && (
               <motion.div key="intro"
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-                className="flex flex-col gap-4 py-4"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -12 }}
+                className="flex flex-col"
               >
-                {/* Session info card */}
-                <div className="rounded-3xl p-5"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(212,192,255,0.25) 0%, rgba(245,230,163,0.25) 100%)",
-                    border: "1px solid rgba(167,139,250,0.2)",
-                  }}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                      <Zap size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                    </div>
-                    <div>
-                      <p className="text-base font-medium" style={{ color: "#2D3748" }}>{title}</p>
-                      <p className="text-xs mt-0.5 font-light" style={{ color: "#A0AEC0" }}>{difficulty} · {duration} min</p>
-                    </div>
+                {/* Héros — la photo de la séance en plein cadre */}
+                <div className="relative flex-shrink-0" style={{ height: 232 }}>
+                  {heroImage ? (
+                    <img src={heroImage} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 28%" }} />
+                  ) : (
+                    <div className="w-full h-full" style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)" }} />
+                  )}
+                  <div className="absolute inset-0"
+                    style={{ background: "linear-gradient(to top, rgba(6,5,10,0.9) 6%, rgba(6,5,10,0.35) 42%, transparent 66%)" }} />
+                  <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-white px-2.5 py-1.5 rounded-full"
+                      style={{ background: "rgba(8,6,14,0.4)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                      ≈ {duration} min
+                    </span>
+                    <button onClick={onClose}
+                      className="ml-auto w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-white"
+                      style={{ background: "rgba(8,6,14,0.42)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.18)" }}
+                      aria-label="Fermer">
+                      <X size={15} strokeWidth={2} />
+                    </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: "Exercices",      value: String(exercises.length) },
-                      { label: "Séries totales", value: String(totalSets) },
-                      { label: "Durée est.",     value: `~${duration} min` },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="rounded-2xl p-3 text-center"
-                        style={{ background: "rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" }}>
-                        <p className="text-base font-light" style={{ color: "#2D3748" }}>{value}</p>
-                        <p className="text-[9px] font-semibold mt-1 tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</p>
-                      </div>
-                    ))}
+                  <div className="absolute left-[18px] right-[18px] bottom-4">
+                    <h2 className="font-black uppercase leading-[0.98] tracking-tight text-white"
+                      style={{ fontSize: 27, textShadow: "0 2px 14px rgba(0,0,0,0.45)" }}>{title}</h2>
+                    {muscleSummary && (
+                      <p className="text-[10px] font-extrabold tracking-[0.14em] mt-1.5" style={{ color: "#C9B8FF" }}>{muscleSummary}</p>
+                    )}
+                    <div className="flex gap-1.5 mt-3">
+                      <span className="text-[10.5px] font-bold text-white px-2.5 py-1.5 rounded-full"
+                        style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{exercises.length} exercices</span>
+                      <span className="text-[10.5px] font-bold text-white px-2.5 py-1.5 rounded-full"
+                        style={{ background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.16)" }}>{totalSets} séries</span>
+                      <span className="text-[10.5px] font-bold px-2.5 py-1.5 rounded-full"
+                        style={{ color: "#FFC96B", background: "rgba(255,255,255,0.13)", backdropFilter: "blur(4px)", border: "1px solid rgba(245,177,32,0.35)" }}>~{kcalEst} kcal</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Exercise list — chaque exo est dépliable (technique + démo vidéo) */}
-                <div>
-                  <div className="flex items-center justify-between mb-3 px-1">
-                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-                      Au programme
-                    </p>
-                    <p className="text-[10px] font-light" style={{ color: "#A78BFA" }}>
-                      Touche un exo pour la démo
-                    </p>
+                {/* Programme — une colonne calme, chaque exo déplie sa démo */}
+                <div className="px-4 pt-4 pb-3">
+                  <div className="flex items-baseline justify-between mb-1.5 px-1">
+                    <p className="text-[10px] font-extrabold tracking-[0.18em]" style={{ color: "var(--text-3)" }}>AU PROGRAMME</p>
+                    <p className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>Touche un exo pour la démo</p>
                   </div>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col">
                     {exercises.map((ex, i) => {
                       const open = introOpen === i;
+                      const setrep = `${ex.sets}×${ex.reps.replace(/\s*reps?/i, "").replace(/\s*sec/i, "s")}`;
                       return (
-                        <div key={i} className="rounded-2xl overflow-hidden"
-                          style={{ background: "rgba(255,255,255,0.6)", border: `1px solid ${open ? "rgba(167,139,250,0.25)" : "rgba(167,139,250,0.08)"}`, boxShadow: "0 1px 4px rgba(167,139,250,0.05)" }}>
+                        <div key={i}>
                           <button
                             onClick={() => setIntroOpen(open ? null : i)}
-                            className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer text-left"
+                            className="w-full flex items-center gap-3 py-2.5 cursor-pointer text-left"
+                            style={{ borderBottom: i < exercises.length - 1 ? "1px solid rgba(var(--accent-rgb),0.1)" : "none" }}
                             aria-expanded={open}
                           >
-                            <div className="w-7 h-7 rounded-xl flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}>
-                              {i + 1}
-                            </div>
-                            <p className="flex-1 text-sm font-light truncate" style={{ color: "#2D3748" }}>{ex.name}</p>
-                            <p className="text-[10px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>
-                              {ex.sets}×{ex.reps}
-                            </p>
+                            <span className="text-[15px] font-black w-4 text-center flex-shrink-0" style={{ color: "rgba(var(--accent-rgb),0.55)" }}>{i + 1}</span>
+                            <span className="flex-1 min-w-0">
+                              <b className="block text-[13.5px] font-bold tracking-tight truncate" style={{ color: "var(--text-1)" }}>{ex.name}</b>
+                              <span className="block text-[8.5px] font-extrabold tracking-[0.1em] truncate" style={{ color: "var(--text-3)" }}>{ex.muscles.join(" · ").toUpperCase()}</span>
+                            </span>
+                            <span className="text-[13px] font-extrabold tabular-nums flex-shrink-0" style={{ color: "var(--text-1)" }}>{setrep}</span>
                             <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex-shrink-0 flex">
-                              <ChevronDown size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                              <ChevronDown size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                             </motion.span>
                           </button>
                           <AnimatePresence initial={false}>
                             {open && (
                               <motion.div
                                 initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25 }}
-                                className="overflow-hidden"
+                                transition={{ duration: 0.25 }} className="overflow-hidden"
                               >
-                                <div className="px-4 pb-4 pt-1 flex flex-col gap-3">
-                                  {/* Technique */}
-                                  <div className="rounded-xl p-3"
-                                    style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.1)" }}>
-                                    <p className="text-[9px] font-bold tracking-widest uppercase mb-1.5" style={{ color: "#A78BFA" }}>
-                                      Comment faire
-                                    </p>
-                                    <p className="text-[13px] font-light leading-relaxed" style={{ color: "#4A5568" }}>{ex.tip}</p>
-                                  </div>
-                                  {/* Démo vidéo (chargée à l'ouverture seulement) */}
+                                <div className="pb-3 pt-1 flex flex-col gap-2.5">
+                                  {ex.tip && (
+                                    <p className="text-[12.5px] font-light leading-relaxed" style={{ color: "var(--text-body)" }}>{ex.tip}</p>
+                                  )}
                                   <ExerciseVideo exerciseName={ex.name} />
                                 </div>
                               </motion.div>
@@ -852,358 +1106,233 @@ export default function WorkoutGuideModal({
               </motion.div>
             )}
 
-            {/* ── EXERCISING ── */}
+            {/* ─────────── 02 · LE TUNNEL · L'EFFORT ─────────── */}
             {phase === "exercising" && cur && (
-              <AnimatePresence mode="wait">
-                {showInfo ? (
-                  /* ── Info panel ── */
-                  <motion.div key="info"
-                    initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 24 }}
-                    className="flex flex-col gap-4 py-4"
-                  >
-                    <button
-                      onClick={() => setShowInfo(false)}
-                      className="flex items-center gap-1.5 text-xs font-medium cursor-pointer w-fit"
-                      style={{ color: "#A78BFA" }}
-                    >
-                      <ArrowLeft size={13} strokeWidth={2} />
-                      Retour à l&apos;exercice
-                    </button>
-
-                    <div>
-                      <h2 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>{cur.name}</h2>
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {cur.muscles.map(m => (
-                          <span key={m} className="px-2.5 py-1 rounded-xl text-[10px] font-semibold"
-                            style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>{m}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Démonstration — vidéo YouTube de l'exercice */}
-                    <ExerciseVideo exerciseName={cur.name} />
-
-                    {/* Benefit */}
-                    <div className="rounded-2xl p-4"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(255,251,240,0.7) 100%)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: "#A78BFA" }}>
-                        Bénéfice pour le corps
-                      </p>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>
-                        {cur.benefit}
-                      </p>
-                    </div>
-
-                    {/* Technique */}
-                    <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.1)" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>A</div>
-                        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
-                          Technique
-                        </p>
-                      </div>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>{cur.tip}</p>
-                    </div>
-
-                    {/* Sets info */}
-                    <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(167,139,250,0.1)" }}>
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
-                        Détail de la séance
-                      </p>
-                      <div className="flex gap-6">
-                        {[
-                          { label: "Séries", value: String(cur.sets) },
-                          { label: "Reps",   value: cur.reps },
-                          { label: "Repos",  value: cur.rest > 0 ? `${cur.rest}s` : "—" },
-                        ].map(({ label, value }) => (
-                          <div key={label}>
-                            <p className="text-lg font-light" style={{ color: "#2D3748" }}>{value}</p>
-                            <p className="text-[9px] font-semibold mt-0.5 tracking-wider uppercase" style={{ color: "#A0AEC0" }}>{label}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : (
-                  /* ── Normal exercise view ── */
-                  <motion.div key={`ex-${exerciseIdx}`}
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    className="flex flex-col gap-4 py-4"
-                  >
-                    {/* Name + help */}
-                    <div>
-                      <div className="flex items-start gap-2">
-                        <h2 className="text-4xl font-extralight leading-tight tracking-tight flex-1" style={{ color: "#2D3748" }}>
-                          {cur.name}
-                        </h2>
-                        <motion.button
-                          whileTap={{ scale: 0.88 }}
-                          onClick={() => setShowInfo(true)}
-                          className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer mt-1"
-                          style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}
-                          aria-label="En savoir plus sur cet exercice"
-                        >
-                          <HelpCircle size={13} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
-                        </motion.button>
-                      </div>
-                      {/* Set progress dots */}
-                      <div className="flex items-center gap-2.5 mt-3">
-                        <div className="flex gap-1.5">
-                          {Array.from({ length: cur.sets }).map((_, i) => (
-                            <motion.div key={i} layout
-                              className="rounded-full"
-                              style={{
-                                width:  i === setIdx ? 20 : 8,
-                                height: 8,
-                                background: doneMap[exerciseIdx]?.[i]
-                                  ? `linear-gradient(90deg, ${accent}, #D4C0FF)`
-                                  : i === setIdx
-                                  ? accent
-                                  : "rgba(167,139,250,0.2)",
-                              }}
-                              transition={{ duration: 0.25 }}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs font-medium" style={{ color: "#A0AEC0" }}>
-                          Série {setIdx + 1}/{cur.sets} · {cur.reps}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Auto / HIIT timer */}
-                    {isTimered && (
-                      <div className="flex flex-col items-center gap-3">
-                        {isHiit && (
-                          <motion.div key={hiitSub}
-                            initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                            className="px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase"
-                            style={{
-                              background: hiitSub === "work" ? "rgba(239,68,68,0.08)" : "rgba(16,185,129,0.08)",
-                              color:      hiitSub === "work" ? "#EF4444"              : "#10B981",
-                              border: `1px solid ${hiitSub === "work" ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)"}`,
-                            }}
-                          >
-                            {hiitSub === "work" ? "⚡ Effort !" : "✓ Repos"}
-                          </motion.div>
-                        )}
-                        <motion.button
-                          onClick={togglePause}
-                          whileTap={{ scale: 0.94 }}
-                          className="relative w-32 h-32 cursor-pointer"
-                          aria-label={paused ? "Reprendre" : "Pause"}
-                        >
-                          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(167,139,250,0.12)" strokeWidth="5" />
-                            <motion.circle cx="50" cy="50" r={CR} fill="none"
-                              stroke={isHiit ? (hiitSub === "work" ? "#EF4444" : "#10B981") : accent}
-                              strokeWidth="5" strokeLinecap="round"
-                              strokeDasharray={CC}
-                              animate={{ strokeDashoffset: paused ? undefined : autoOffset }}
-                              style={{ strokeDashoffset: autoOffset }}
-                              transition={{ duration: 0.6 }}
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            {paused ? (
-                              <Play size={28} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                            ) : (
-                              <span className="text-4xl font-extralight tabular-nums" style={{ color: "#2D3748" }}>
-                                {autoCountdown}
-                              </span>
-                            )}
-                          </div>
-                        </motion.button>
-                      </div>
-                    )}
-
-                    {/* Pause banner */}
-                    <AnimatePresence>
-                      {paused && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                          className="flex items-center justify-center gap-2 rounded-2xl py-3"
-                          style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}
-                        >
-                          <Pause size={12} strokeWidth={2} style={{ color: "#A78BFA" }} />
-                          <span className="text-xs font-semibold" style={{ color: "#A78BFA" }}>En pause</span>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Démonstration — vidéo YouTube de l'exercice */}
-                    <ExerciseVideo exerciseName={cur.name} />
-
-                    {/* Muscles */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {cur.muscles.map(m => (
-                        <span key={m} className="px-2.5 py-1 rounded-xl text-[10px] font-semibold"
-                          style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.15)" }}>{m}</span>
-                      ))}
-                    </div>
-
-                    {/* Aura tip */}
-                    <div className="rounded-2xl p-4"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.7) 0%, rgba(255,251,240,0.7) 100%)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>A</div>
-                        <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
-                          Conseil Vaiiya
-                        </p>
-                      </div>
-                      <p className="text-sm font-light leading-relaxed" style={{ color: "#4A5568" }}>{cur.tip}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            )}
-
-            {/* ── RESTING ── */}
-            {phase === "resting" && (
-              <motion.div key="rest"
-                initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-5 py-8"
+              <motion.div key={`ex-${exerciseIdx}-${setIdx}`}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="relative flex flex-col px-5 pt-4 pb-4"
               >
-                {/* Label pill */}
-                <div className="px-4 py-1.5 rounded-full"
-                  style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                  <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>
-                    {paused ? "En pause" : restMode === "exercise" ? "Transition" : "Récupération"}
+                {/* Titre + démo dépliable */}
+                <div className="relative z-[2]">
+                  <p className="text-[10px] font-extrabold tracking-[0.24em]" style={{ color: TUN.lav }}>
+                    EXERCICE {exerciseIdx + 1} / {exercises.length}
                   </p>
+                  <h2 className="font-black uppercase tracking-tight leading-none mt-2" style={{ fontSize: 30, color: "#fff" }}>{cur.name}</h2>
+                  <button onClick={() => setShowInfo(v => !v)}
+                    className="inline-flex items-center gap-1.5 mt-3.5 px-3 py-2 rounded-full cursor-pointer"
+                    style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", backdropFilter: "blur(4px)", color: TUN.t1 }}
+                    aria-expanded={showInfo}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#C9B8FF"><path d="M8 5v14l11-7z" /></svg>
+                    <span className="text-[11.5px] font-bold">Démo · ton coach</span>
+                    <motion.span animate={{ rotate: showInfo ? 180 : 0 }} transition={{ duration: 0.2 }} className="flex">
+                      <ChevronDown size={12} strokeWidth={2.4} style={{ color: TUN.t3 }} />
+                    </motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {showInfo && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }} className="overflow-hidden">
+                        <div className="pt-3"><ExerciseVideo exerciseName={cur.name} /></div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {/* Circular countdown */}
-                <motion.button
-                  onClick={togglePause}
-                  whileTap={{ scale: 0.94 }}
-                  className="relative w-36 h-36 cursor-pointer"
-                  aria-label={paused ? "Reprendre" : "Pause"}
-                >
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(167,139,250,0.12)" strokeWidth="6" />
-                    <motion.circle cx="50" cy="50" r={CR} fill="none"
-                      stroke="#A78BFA" strokeWidth="6" strokeLinecap="round"
-                      strokeDasharray={CC}
-                      animate={{ strokeDashoffset: restOffset }}
-                      transition={{ duration: 0.6 }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    {paused
-                      ? <Play size={30} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                      : <>
-                          <span className="text-5xl font-extralight tabular-nums" style={{ color: "#2D3748" }}>
-                            {restCountdown}
-                          </span>
-                          <span className="text-[10px] font-medium mt-0.5" style={{ color: "#A0AEC0" }}>sec</span>
-                        </>
-                    }
-                  </div>
-                </motion.button>
+                {/* Personnage-guide : rejoue le geste en fondu si un sprite existe,
+                    sinon halo épuré. Brancher une vague = éditer src/lib/exerciseGuides.ts */}
+                <ExerciseGuide name={cur.name} />
 
-                {/* Next exercise preview */}
+                {/* Héros : le chrono (exos minutés) OU les reps */}
+                {isTimered ? (
+                  <div className="relative z-[2] flex flex-col items-center gap-3 mt-6">
+                    {isHiit && (
+                      <motion.span key={hiitSub} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                        className="px-5 py-1.5 rounded-full text-[11px] font-bold tracking-[0.2em] uppercase"
+                        style={{
+                          background: hiitSub === "work" ? "rgba(245,177,32,0.12)" : "rgba(43,212,160,0.12)",
+                          color:      hiitSub === "work" ? TUN.orange : TUN.teal,
+                          border: `1px solid ${hiitSub === "work" ? "rgba(245,177,32,0.3)" : "rgba(43,212,160,0.3)"}`,
+                        }}>
+                        {hiitSub === "work" ? "⚡ Effort" : "Repos"}
+                      </motion.span>
+                    )}
+                    <motion.button onClick={togglePause} whileTap={{ scale: 0.94 }} className="relative w-36 h-36 cursor-pointer" aria-label={paused ? "Reprendre" : "Pause"}>
+                      <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+                        <motion.circle cx="50" cy="50" r={CR} fill="none"
+                          stroke={isHiit ? (hiitSub === "work" ? TUN.orange : TUN.teal) : TUN.orange}
+                          strokeWidth="5" strokeLinecap="round" strokeDasharray={CC}
+                          style={{ strokeDashoffset: autoOffset }}
+                          animate={{ strokeDashoffset: paused ? undefined : autoOffset }} transition={{ duration: 0.6 }} />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        {paused
+                          ? <Play size={30} strokeWidth={1.5} style={{ color: TUN.lav }} />
+                          : prep > 0
+                            ? <motion.span key={prep} initial={{ scale: 1.6, opacity: 0.3 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.3 }} className="text-6xl font-black tabular-nums" style={{ color: TUN.orange }}>{prep}</motion.span>
+                            : <span className="text-5xl font-black tabular-nums" style={{ color: "#fff" }}>{autoCountdown}</span>}
+                      </div>
+                    </motion.button>
+                    <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
+                  </div>
+                ) : (
+                  <div className="relative z-[2] text-center mt-5">
+                    <p className="text-[11px] font-extrabold tracking-[0.2em]" style={{ color: TUN.t2 }}>SÉRIE <b style={{ color: "#fff" }}>{setIdx + 1}</b> / {cur.sets}</p>
+                    <p className="font-black tabular-nums leading-none mt-2" style={{ fontSize: 60, color: "#fff", letterSpacing: "-0.03em" }}>{repsHero}</p>
+                    {repsSub && <p className="text-[12px] font-medium mt-1" style={{ color: TUN.t3 }}>{repsSub}</p>}
+                    <div className="flex gap-2.5 justify-center mt-4">
+                      {Array.from({ length: cur.sets }).map((_, i) => {
+                        const isDone = doneMap[exerciseIdx]?.[i];
+                        const isCur  = i === setIdx;
+                        return (
+                          <span key={i} className="w-[22px] h-[22px] rounded-full inline-flex items-center justify-center"
+                            style={{
+                              background: isDone ? "rgba(43,212,160,0.16)" : "transparent",
+                              border: isDone ? `1.5px solid ${TUN.teal}` : isCur ? `2px solid ${TUN.violet}` : "1.5px solid rgba(255,255,255,0.16)",
+                              boxShadow: isCur ? "0 0 12px rgba(139,92,246,0.5)" : "none",
+                            }}>
+                            {isDone && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bandeau pause */}
+                <AnimatePresence>
+                  {paused && (
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                      className="relative z-[2] flex items-center justify-center gap-2 rounded-2xl py-2.5 mt-4"
+                      style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)" }}>
+                      <Pause size={12} strokeWidth={2} style={{ color: TUN.lav }} />
+                      <span className="text-xs font-semibold" style={{ color: TUN.lav }}>En pause</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Conseil du coach — porté par l'étincelle ✦.
+                    Les séances du planning arrivent avec tip: "" (cf. toExercise
+                    dans lib/planning.ts) : sans ce garde-fou, l'étincelle promet
+                    « Le geste : » puis ne dit rien. Mieux vaut pas de carte. */}
+                {cur.tip && (
+                  <div className="relative z-[2] flex gap-3 items-start rounded-2xl px-3.5 py-3.5 mt-5"
+                    style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
+                    <span className="flex-shrink-0 mt-0.5"><AssistantSpark px={17} /></span>
+                    <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ─────────── 03 · LE TUNNEL · LE REPOS (écran signature orange) ─────────── */}
+            {phase === "resting" && (
+              <motion.div key="rest"
+                initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                className="relative flex flex-col px-5 pt-2 pb-4"
+              >
+                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                  style={{ top: "6%", width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,122,26,0.2), transparent 65%)" }} />
+
+                <div className="relative z-[2] flex flex-col items-center mt-6">
+                  <motion.button onClick={togglePause} whileTap={{ scale: 0.96 }} className="relative cursor-pointer" style={{ width: 210, height: 210 }} aria-label={paused ? "Reprendre" : "Pause"}>
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r={CR} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="6" />
+                      <motion.circle cx="50" cy="50" r={CR} fill="none" stroke={TUN.ring2} strokeWidth="6" strokeLinecap="round"
+                        strokeDasharray={CC} style={{ strokeDashoffset: restOffset }} animate={{ strokeDashoffset: restOffset }} transition={{ duration: 0.6 }} />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+                      {paused
+                        ? <Play size={34} strokeWidth={1.5} style={{ color: TUN.orange }} />
+                        : <>
+                            <span className="text-[10px] font-extrabold tracking-[0.3em]" style={{ color: TUN.orange }}>REPOS</span>
+                            <span className="font-black tabular-nums leading-none" style={{ fontSize: 52, color: "#fff", letterSpacing: "-0.03em" }}>{fmt(restCountdown)}</span>
+                            <span className="text-[11px] font-medium tabular-nums" style={{ color: TUN.t3 }}>sur {fmt(restTotal)}</span>
+                          </>}
+                    </div>
+                  </motion.button>
+                  <div className="flex gap-2.5 mt-6">
+                    <button onClick={add15} className="text-[12.5px] font-bold px-5 py-2.5 rounded-full cursor-pointer"
+                      style={{ color: TUN.t1, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)" }}>+ 15 s</button>
+                    <button onClick={() => setRestCountdown(0)} className="text-[12.5px] font-bold px-5 py-2.5 rounded-full cursor-pointer"
+                      style={{ color: TUN.t1, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)" }}>Passer le repos</button>
+                  </div>
+                </div>
+
+                {/* Ensuite */}
                 {(() => {
-                  const isLastSet  = setIdx === (cur?.sets ?? 1) - 1;
-                  const nextLabel  = isLastSet && exercises[exerciseIdx + 1]
-                    ? exercises[exerciseIdx + 1].name
-                    : !isLastSet ? cur?.name : null;
-                  const nextSub    = isLastSet ? "Prochain exercice" : `Série ${setIdx + 2}/${cur?.sets}`;
-                  return nextLabel ? (
-                    <div className="w-full rounded-2xl p-3.5 flex items-center gap-3"
-                      style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.12)" }}>
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#A78BFA" }} />
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#A0AEC0" }}>{nextSub}</p>
-                        <p className="text-sm font-medium mt-0.5" style={{ color: "#2D3748" }}>{nextLabel}</p>
+                  const isLastSet = setIdx === (cur?.sets ?? 1) - 1;
+                  const nx  = isLastSet ? exercises[exerciseIdx + 1] : cur;
+                  if (!nx) return null;
+                  const sub = isLastSet
+                    ? `${nx.sets} × ${nx.reps} · ${nx.muscles.join(" · ")}`.toUpperCase()
+                    : `SÉRIE ${setIdx + 2} / ${cur?.sets}`;
+                  const num = isLastSet ? exerciseIdx + 2 : exerciseIdx + 1;
+                  return (
+                    <div className="relative z-[2] mt-7">
+                      <p className="text-[10px] font-extrabold tracking-[0.2em] mb-2" style={{ color: TUN.t3 }}>ENSUITE</p>
+                      <div className="flex items-center gap-3 rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                        <span className="w-11 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-[15px] font-black"
+                          style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.18)", color: TUN.lav }}>{num}</span>
+                        <div className="min-w-0">
+                          <b className="block text-sm font-extrabold tracking-tight truncate" style={{ color: "#fff" }}>{nx.name}</b>
+                          <span className="block text-[9.5px] font-extrabold tracking-[0.08em] truncate" style={{ color: TUN.lav }}>{sub}</span>
+                        </div>
                       </div>
                     </div>
-                  ) : null;
+                  );
                 })()}
 
-                {/* Skip buttons */}
-                <div className="flex flex-col items-center gap-2">
-                  <motion.button whileTap={{ scale: 0.95 }}
-                    onClick={() => setRestCountdown(0)}
-                    className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
-                    style={{ background: "rgba(0,0,0,0.04)", color: "#718096", border: "1px solid rgba(0,0,0,0.06)" }}
-                  >
-                    <SkipForward size={12} strokeWidth={2} />
-                    Passer le repos
-                  </motion.button>
-                  {exerciseIdx < exercises.length - 1 && (
-                    <motion.button whileTap={{ scale: 0.95 }}
-                      onClick={skipExercise}
-                      className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1"
-                      style={{ color: "#A0AEC0" }}
-                    >
-                      <SkipForward size={10} strokeWidth={2} />
-                      Passer l&apos;exercice
-                    </motion.button>
-                  )}
+                {/* Encouragement — étincelle ✦, une phrase */}
+                <div className="relative z-[2] flex gap-3 items-center rounded-2xl px-3.5 py-3 mt-4"
+                  style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
+                  <span className="flex-shrink-0"><AssistantSpark px={16} /></span>
+                  <p className="text-[12px]" style={{ color: TUN.t2 }}>Souffle — la prochaine série est la bonne.</p>
                 </div>
               </motion.div>
             )}
 
-            {/* ── DONE ── */}
+            {/* ─────────── 04 · L'APRÈS · LA RÉCOMPENSE (teal) ─────────── */}
             {phase === "done" && (
               <motion.div key="done"
-                initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center gap-6 py-8 text-center"
+                initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+                className="relative flex flex-col items-center px-5 pt-10 pb-4 text-center"
               >
-                {/* Trophy */}
                 <motion.div
-                  initial={{ scale: 0, rotate: -15 }} animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 260, delay: 0.1 }}
-                  className="w-24 h-24 rounded-3xl flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
-                    boxShadow: "0 16px 48px rgba(212,168,67,0.3), inset 0 1px 0 rgba(255,255,255,0.4)",
-                  }}
+                  initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 240, delay: 0.05 }}
+                  className="flex items-center justify-center"
+                  style={{ width: 92, height: 92, borderRadius: "50%", border: `3px solid ${TUN.teal}`, background: "rgba(43,212,160,0.1)", boxShadow: "0 0 44px rgba(43,212,160,0.35)" }}
                 >
-                  <Trophy size={40} strokeWidth={1.2} style={{ color: "#fff" }} />
+                  <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
                 </motion.div>
+                <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 24, color: "#fff" }}>Séance terminée</h2>
+                <p className="text-[12.5px] mt-1.5" style={{ color: TUN.t2 }}>{title} · rien lâché</p>
 
-                <div>
-                  <h2 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>
-                    Séance terminée !
-                  </h2>
-                  <p className="text-sm mt-2 font-light" style={{ color: "#A0AEC0" }}>
-                    Excellent travail — tu es plus fort qu&apos;hier 💪
-                  </p>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-2 w-full">
+                <div className="grid grid-cols-2 gap-2.5 w-full mt-6">
                   {[
-                    { label: "Durée",     value: fmt(elapsed) },
-                    { label: "Exercices", value: String(exercises.length) },
-                    { label: "Séries",    value: String(totalSets) },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="rounded-2xl p-4"
-                      style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.8) 0%, rgba(255,251,240,0.8) 100%)", border: "1px solid rgba(167,139,250,0.12)" }}>
-                      <p className="text-xl font-light" style={{ color: "#2D3748" }}>{value}</p>
-                      <p className="text-[9px] font-bold uppercase tracking-wider mt-1" style={{ color: "#A0AEC0" }}>{label}</p>
+                    { l: "DURÉE RÉELLE", v: fmt(elapsed),                c: "#fff",      s: "" },
+                    { l: "SÉRIES",       v: String(totalSets),           c: TUN.teal,    s: ` / ${totalSets}` },
+                    { l: "CALORIES",     v: `~${kcalReal || kcalEst}`,   c: TUN.orange,  s: " kcal" },
+                    { l: "EXERCICES",    v: String(exercises.length),    c: TUN.teal,    s: "" },
+                  ].map(st => (
+                    <div key={st.l} className="rounded-2xl px-3.5 py-3.5 text-left" style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${TUN.line}` }}>
+                      <p className="text-[9px] font-extrabold tracking-[0.18em]" style={{ color: TUN.t3 }}>{st.l}</p>
+                      <p className="font-black tabular-nums mt-1" style={{ fontSize: 21, color: st.c, letterSpacing: "-0.02em" }}>
+                        {st.v}<small className="text-[11px] font-bold" style={{ color: TUN.t3, letterSpacing: 0 }}>{st.s}</small>
+                      </p>
                     </div>
                   ))}
                 </div>
 
-                {/* Session saved */}
                 <AnimatePresence>
                   {sessionSaved && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl"
-                      style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}
-                    >
-                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: "#10B981" }} />
-                      <span className="text-[11px] font-medium" style={{ color: "#10B981" }}>
-                        Séance enregistrée dans ton profil
-                      </span>
+                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl mt-3"
+                      style={{ background: "rgba(43,212,160,0.09)", border: "1px solid rgba(43,212,160,0.22)" }}>
+                      <BookmarkCheck size={12} strokeWidth={2} style={{ color: TUN.teal }} />
+                      <span className="text-[11px] font-medium" style={{ color: TUN.teal }}>Enregistrée dans ton profil</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1213,9 +1342,10 @@ export default function WorkoutGuideModal({
           </AnimatePresence>
         </div>
 
-        {/* ── Bottom CTA ── */}
+        {/* ══ CTA bas (le repos s'enchaîne tout seul → pas de barre) ══ */}
+        {phase !== "resting" && (
         <div className="px-5 pb-6 pt-3 flex-shrink-0"
-          style={{ borderTop: "1px solid rgba(167,139,250,0.08)" }}>
+          style={{ borderTop: `1px solid ${isTunnel ? "rgba(255,255,255,0.08)" : "rgba(var(--accent-rgb),0.08)"}` }}>
           <AnimatePresence mode="wait">
 
             {phase === "intro" && (
@@ -1223,65 +1353,44 @@ export default function WorkoutGuideModal({
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={startWorkout}
-                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                style={{
-                  background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 20px rgba(167,139,250,0.25)",
-                  color: "#2D3748",
-                }}
+                className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[15px] cursor-pointer text-white"
+                style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
               >
-                <Zap size={16} strokeWidth={2} />
-                Commencer la séance
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M13 2L4.09 12.11a.6.6 0 0 0 .45 1h5.56l-1.1 8.89L17.91 11.9a.6.6 0 0 0-.45-1h-5.56z" /></svg>
+                C&apos;est parti
               </motion.button>
             )}
 
-            {phase === "exercising" && !showInfo && !isTimered && (
+            {phase === "exercising" && !isTimered && (
               <motion.div key="set-done" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center gap-2">
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={completeSet}
-                  className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                  style={{
-                    background: `linear-gradient(135deg, ${accent}dd 0%, ${accent}aa 100%)`,
-                    boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(255,255,255,0.3)`,
-                    color: "#fff",
-                  }}
+                className="flex flex-col items-center gap-1.5">
+                <motion.button whileTap={{ scale: 0.97 }} onClick={completeSet}
+                  className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-base cursor-pointer text-white"
+                  style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
-                  <CheckCircle size={16} strokeWidth={2} />
                   Série terminée ✓
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <motion.button whileTap={{ scale: 0.95 }} onClick={skipExercise}
-                    className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1.5"
-                    style={{ color: "#A0AEC0" }}
-                  >
-                    <SkipForward size={10} strokeWidth={2} />
+                  <button onClick={skipExercise} className="text-[12.5px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
                     Passer l&apos;exercice
-                  </motion.button>
+                  </button>
                 )}
               </motion.div>
             )}
 
-            {phase === "exercising" && !showInfo && isTimered && (
+            {phase === "exercising" && isTimered && (
               <motion.div key="skip-timed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center gap-2">
-                <motion.button whileTap={{ scale: 0.97 }}
-                  onClick={() => setAutoCountdown(0)}
-                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold cursor-pointer"
-                  style={{ background: "rgba(0,0,0,0.04)", color: "#718096", border: "1px solid rgba(0,0,0,0.06)" }}
+                className="flex flex-col items-center gap-1.5">
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => setAutoCountdown(0)}
+                  className="w-full py-[18px] rounded-[22px] flex items-center justify-center gap-2 font-extrabold text-base cursor-pointer text-white"
+                  style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)" }}
                 >
-                  <SkipForward size={13} strokeWidth={2} />
-                  {isHiit && hiitSub === "work" ? "Passer l'effort" : "Passer"}
+                  {isHiit && hiitSub === "work" ? "Passer l'effort" : "Valider ✓"}
                 </motion.button>
                 {exerciseIdx < exercises.length - 1 && (
-                  <motion.button whileTap={{ scale: 0.95 }} onClick={skipExercise}
-                    className="flex items-center gap-1 text-[11px] font-medium cursor-pointer px-3 py-1.5"
-                    style={{ color: "#A0AEC0" }}
-                  >
-                    <SkipForward size={10} strokeWidth={2} />
+                  <button onClick={skipExercise} className="text-[12.5px] font-semibold py-2 cursor-pointer" style={{ color: TUN.t3 }}>
                     Passer l&apos;exercice
-                  </motion.button>
+                  </button>
                 )}
               </motion.div>
             )}
@@ -1289,18 +1398,75 @@ export default function WorkoutGuideModal({
             {phase === "done" && (
               <motion.div key="done-actions" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-2.5">
-                {user && shareStatus !== "done" && (
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    onClick={shareAsPost}
-                    disabled={shareStatus === "saving"}
-                    className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
+
+                {/* ── Garder la séance ──
+                   Une impro disparaissait une fois terminée : du travail
+                   jeté, à l'instant précis où l'on vient de prouver que la
+                   séance marchait. La carte passe AVANT le partage, et
+                   « Non » ne fait aucun commentaire. */}
+                {onGarder && garde !== "refusee" && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    className="rounded-2xl p-3.5"
                     style={{
-                      background: `linear-gradient(135deg, ${accent}dd 0%, ${accent}aa 100%)`,
-                      color: "#fff",
-                      boxShadow: `0 6px 20px ${accent}44, inset 0 1px 0 rgba(255,255,255,0.3)`,
-                      opacity: shareStatus === "saving" ? 0.7 : 1,
-                    }}
+                      background: "linear-gradient(150deg, rgba(139,92,246,0.19), rgba(193,59,193,0.11))",
+                      border: "1px solid rgba(139,92,246,0.42)",
+                    }}>
+                    {garde === "gardee" ? (
+                      <div className="flex items-center justify-center gap-2 py-1">
+                        <Check size={14} strokeWidth={2.6} style={{ color: TUN.teal }} />
+                        <span className="text-[12.5px] font-semibold" style={{ color: TUN.teal }}>
+                          Ajoutée à tes séances
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-shrink-0">
+                            {exercises.slice(0, 3).map((e, i) => (
+                              <span key={`${e.name}-${i}`}
+                                className="rounded-xl flex items-center justify-center overflow-hidden"
+                                style={{
+                                  width: 36, height: 40, marginLeft: i === 0 ? 0 : -10,
+                                  background: "rgba(255,255,255,0.07)",
+                                  border: "1px solid rgba(255,255,255,0.14)",
+                                }}>
+                                <ExerciseThumb name={e.name} size={34} delay={i * 200} />
+                              </span>
+                            ))}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-bold text-white leading-tight">Tu la gardes ?</p>
+                            <p className="text-[10.5px] leading-snug mt-1" style={{ color: TUN.t2 }}>
+                              Elle rejoint tes séances, tu pourras la relancer ou la modifier.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <motion.button whileTap={{ scale: 0.97 }}
+                            onClick={() => { onGarder(); setGarde("gardee"); }}
+                            className="flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 font-bold text-[12.5px] cursor-pointer text-white"
+                            style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px -6px rgba(193,59,193,0.5)" }}>
+                            <Plus size={14} strokeWidth={2.6} /> Garder la séance
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.97 }}
+                            onClick={() => setGarde("refusee")}
+                            className="px-4 py-2.5 rounded-xl font-semibold text-[12.5px] cursor-pointer"
+                            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: TUN.t2 }}>
+                            Non
+                          </motion.button>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
+                <div className="flex justify-center mb-1">
+                  <PerfShareCard data={perfShareData} width="min(200px, 56%)" />
+                </div>
+                {user && shareStatus !== "done" && (
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={shareAsPost} disabled={shareStatus === "saving"}
+                    className="w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm cursor-pointer text-white"
+                    style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", boxShadow: "0 10px 30px -6px rgba(193,59,193,0.45)", opacity: shareStatus === "saving" ? 0.7 : 1 }}
                   >
                     {shareStatus === "saving"
                       ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} style={{ display: "inline-block" }}>⏳</motion.span> Publication…</>
@@ -1308,40 +1474,38 @@ export default function WorkoutGuideModal({
                     }
                   </motion.button>
                 )}
+                <PerfShareButton
+                  data={perfShareData}
+                  label="Partager ma carte"
+                  iconSize={15}
+                  ariaLabel="Partager la carte de perf"
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm cursor-pointer"
+                  style={{ background: "rgba(139,92,246,0.12)", color: TUN.lav, border: "1px solid rgba(139,92,246,0.4)" }}
+                />
                 {shareStatus === "done" && (
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                    className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
-                    style={{ background: "rgba(16,185,129,0.08)", color: "#10B981", border: "1px solid rgba(16,185,129,0.2)" }}
+                  <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-medium"
+                    style={{ background: "rgba(43,212,160,0.1)", color: TUN.teal, border: "1px solid rgba(43,212,160,0.25)" }}
                   >
                     ✓ Séance publiée — visible par tes amis
-                  </motion.div>
-                )}
-                {shareStatus === "error" && (
-                  <div className="text-center">
-                    <p className="text-xs mb-1" style={{ color: "#EF4444" }}>Erreur de publication.</p>
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setShareStatus("idle")}
-                      className="mt-2 px-4 py-1.5 rounded-lg text-xs cursor-pointer"
-                      style={{ background: "rgba(239,68,68,0.08)", color: "#EF4444" }}
-                    >
-                      Réessayer
-                    </motion.button>
                   </div>
                 )}
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={onClose}
-                  className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-semibold text-sm cursor-pointer"
-                  style={{ background: "rgba(0,0,0,0.04)", color: "#2D3748", border: "1px solid rgba(0,0,0,0.06)" }}
+                {shareStatus === "error" && (
+                  <button onClick={() => setShareStatus("idle")} className="text-xs cursor-pointer py-2" style={{ color: "#F87171" }}>
+                    Erreur — réessayer
+                  </button>
+                )}
+                <button onClick={onClose}
+                  className="w-full py-3.5 rounded-2xl flex items-center justify-center font-bold text-sm cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.06)", color: TUN.t1, border: "1px solid rgba(255,255,255,0.12)" }}
                 >
-                  Retour à la progression
-                </motion.button>
+                  Terminer
+                </button>
               </motion.div>
             )}
 
           </AnimatePresence>
         </div>
+        )}
       </motion.div>
     </motion.div>
   );

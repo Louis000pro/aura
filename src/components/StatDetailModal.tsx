@@ -49,7 +49,7 @@ export default function StatDetailModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-4 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.45)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.45)", backdropFilter: "blur(12px)" }}
       onClick={onClose}
     >
       <motion.div
@@ -59,33 +59,33 @@ export default function StatDetailModal({
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl"
         style={{
-          background: "rgba(255,255,255,0.93)",
+          background: "rgba(var(--surface-rgb),0.93)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 24px 64px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.95)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 24px 64px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
           maxHeight: "88vh",
           overflowY: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Header ── */}
-        <div className="px-6 pt-6 pb-5" style={{ borderBottom: "1px solid rgba(212,192,255,0.18)" }}>
+        <div className="px-6 pt-6 pb-5" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.18)" }}>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: "rgba(255,255,255,0.9)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.06)",
+                  background: "rgba(var(--surface-rgb),0.9)",
+                  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 2px 8px rgba(0,0,0,0.06)",
                 }}
               >
                 <Icon size={18} strokeWidth={1.5} style={{ color: iconColor }} />
               </div>
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                   Statistique
                 </p>
-                <p className="text-base font-medium" style={{ color: "#2D3748" }}>
+                <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>
                   {label}
                 </p>
               </div>
@@ -94,25 +94,25 @@ export default function StatDetailModal({
               whileTap={{ scale: 0.88 }}
               onClick={onClose}
               className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-              style={{ background: "rgba(240,235,255,0.8)" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}
             >
-              <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+              <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
             </motion.button>
           </div>
 
           {/* Big value + trend */}
           <div className="flex items-baseline gap-1.5 mb-3">
-            <span className="text-4xl font-extralight" style={{ color: "#2D3748" }}>
+            <span className="text-4xl font-extralight" style={{ color: "var(--text-1)" }}>
               {value}
             </span>
             {unit && (
-              <span className="text-sm font-medium" style={{ color: "#718096" }}>
+              <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>
                 {unit}
               </span>
             )}
             <span
               className="ml-auto flex items-center gap-1"
-              style={{ color: trendUp ? "#D4A843" : "#A78BFA" }}
+              style={{ color: trendUp ? "var(--gold)" : "var(--accent)" }}
             >
               {trendUp ? (
                 <TrendingUp size={14} strokeWidth={2} />
@@ -139,7 +139,7 @@ export default function StatDetailModal({
             </div>
             <span
               className="text-[11px] font-medium flex-shrink-0"
-              style={{ color: "#A0AEC0" }}
+              style={{ color: "var(--text-3)" }}
             >
               {target}
             </span>
@@ -147,10 +147,10 @@ export default function StatDetailModal({
         </div>
 
         {/* ── Weekly bar chart ── */}
-        <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(212,192,255,0.18)" }}>
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.18)" }}>
           <p
             className="text-[10px] font-semibold tracking-widest uppercase mb-3"
-            style={{ color: "#A0AEC0" }}
+            style={{ color: "var(--text-3)" }}
           >
             Cette semaine
           </p>
@@ -171,17 +171,17 @@ export default function StatDetailModal({
                         background: isToday
                           ? barGradient
                           : hasData
-                          ? "rgba(212,192,255,0.45)"
+                          ? "rgba(var(--violet-mid-rgb),0.45)"
                           : "rgba(0,0,0,0.05)",
                         boxShadow: isToday
-                          ? "0 2px 8px rgba(167,139,250,0.22)"
+                          ? "0 2px 8px rgba(var(--accent-rgb),0.22)"
                           : "none",
                       }}
                     />
                   </div>
                   <span
                     className="text-[9px] font-semibold"
-                    style={{ color: isToday ? iconColor : "#A0AEC0" }}
+                    style={{ color: isToday ? iconColor : "var(--text-3)" }}
                   >
                     {DAYS[i]}
                   </span>
@@ -193,10 +193,10 @@ export default function StatDetailModal({
 
         {/* ── Détail du jour ── */}
         {breakdown.length > 0 && (
-          <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(212,192,255,0.18)" }}>
+          <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.18)" }}>
             <p
               className="text-[10px] font-semibold tracking-widest uppercase mb-3"
-              style={{ color: "#A0AEC0" }}
+              style={{ color: "var(--text-3)" }}
             >
               Détail du jour
             </p>
@@ -208,12 +208,12 @@ export default function StatDetailModal({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.08 + i * 0.05 }}
                   className="flex items-center justify-between px-3 py-2 rounded-xl"
-                  style={{ background: "rgba(240,235,255,0.45)" }}
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.45)" }}
                 >
-                  <span className="text-xs font-light" style={{ color: "#4A5568" }}>
+                  <span className="text-xs font-light" style={{ color: "var(--text-body)" }}>
                     {item.title}
                   </span>
-                  <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>
+                  <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
                     {item.amount}
                   </span>
                 </motion.div>
@@ -223,17 +223,17 @@ export default function StatDetailModal({
         )}
 
         {/* ── À savoir ── */}
-        <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(212,192,255,0.18)" }}>
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid rgba(var(--violet-mid-rgb),0.18)" }}>
           <p
             className="text-[10px] font-semibold tracking-widest uppercase mb-2"
-            style={{ color: "#A0AEC0" }}
+            style={{ color: "var(--text-3)" }}
           >
             À savoir
           </p>
-          <p className="text-xs font-light leading-relaxed" style={{ color: "#4A5568" }}>
+          <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-body)" }}>
             {description}
           </p>
-          <p className="text-xs font-light leading-relaxed mt-2" style={{ color: "#4A5568" }}>
+          <p className="text-xs font-light leading-relaxed mt-2" style={{ color: "var(--text-body)" }}>
             {importance}
           </p>
         </div>
@@ -244,8 +244,8 @@ export default function StatDetailModal({
             className="rounded-2xl overflow-hidden"
             style={{
               background:
-                "linear-gradient(135deg, rgba(240,235,255,0.65) 0%, rgba(255,251,240,0.65) 100%)",
-              border: "1px solid rgba(255,255,255,0.75)",
+                "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.65) 0%, rgba(255,251,240,0.65) 100%)",
+              border: "1px solid rgba(var(--surface-rgb),0.75)",
             }}
           >
             {/* Tip text — animé au changement */}
@@ -259,7 +259,7 @@ export default function StatDetailModal({
                   exit={{ opacity: 0, x: -18 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
                   className="text-xs font-light leading-relaxed"
-                  style={{ color: "#4A5568" }}
+                  style={{ color: "var(--text-body)" }}
                 >
                   {tips[tipIndex]}
                 </motion.p>
@@ -272,9 +272,9 @@ export default function StatDetailModal({
                 whileTap={{ scale: 0.88 }}
                 onClick={nextTip}
                 className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-                style={{ background: "rgba(255,255,255,0.7)" }}
+                style={{ background: "rgba(var(--surface-rgb),0.7)" }}
               >
-                <ChevronRight size={13} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+                <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--text-3)" }} />
               </motion.button>
             </div>
           </div>

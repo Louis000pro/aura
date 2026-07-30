@@ -1,27 +1,41 @@
 import { NextRequest } from "next/server";
+import type OpenAI from "openai";
 import { llm, hasLLMKey, CHAT_MODEL } from "@/lib/llm";
 import { buildSiteKnowledgePrompt } from "@/lib/siteKnowledge";
 import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
+import { type ChatEvent } from "@/lib/assistantTools";
+import { deciderAction, cadreAction } from "@/lib/assistantRouter";
+import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+type ChatMessage = { role: "user" | "assistant"; content: string | ContentPart[] };
+
+/** Un contenu (string ou parties) est-il vide ? */
+function contentEmpty(content: string | ContentPart[]): boolean {
+  if (typeof content === "string") return !content.trim();
+  return content.length === 0;
+}
 
 /**
  * Nettoie l'historique pour Mistral (plus strict que Groq) : la conversation
  * doit commencer par un message `user`, alterner user/assistant, et n'avoir
  * aucun contenu vide. On ignore les messages vides, on retire les messages
- * `assistant` en tête, et on fusionne deux messages consécutifs de même rôle.
+ * `assistant` en tête, et on fusionne deux messages TEXTE consécutifs de même
+ * rôle. Un contenu multimodal (avec image) n'est jamais fusionné : on le garde tel quel.
  */
 function sanitizeHistory(msgs: ChatMessage[]): ChatMessage[] {
   const out: ChatMessage[] = [];
   for (const m of msgs) {
-    const content = (m?.content ?? "").trim();
-    if (!content) continue;
+    if (!m || contentEmpty(m.content)) continue;
     if (out.length === 0 && m.role !== "user") continue; // démarre sur un user
     const last = out[out.length - 1];
-    if (last && last.role === m.role) {
-      last.content += `\n${content}`; // rôles consécutifs → fusion
+    // Fusion uniquement si les DEUX contenus sont du texte simple.
+    if (last && last.role === m.role && typeof last.content === "string" && typeof m.content === "string") {
+      last.content += `\n${m.content.trim()}`;
     } else {
-      out.push({ role: m.role, content });
+      out.push({ role: m.role, content: typeof m.content === "string" ? m.content.trim() : m.content });
     }
   }
   return out;
@@ -45,6 +59,7 @@ interface LiveStats {
   calories?: number;
   calorieGoal?: number;
   proteins?: number;
+  proteinGoal?: number;
   steps?: number;
   sleepHours?: number;
   score?: number;
@@ -157,26 +172,28 @@ Tu réponds UNIQUEMENT avec ce message (adapté naturellement) :
 
 TON : positif, chaleureux, motivant, concret (propose des actions précises, jamais de réponse vague), célèbre les progrès. Termine TOUJOURS par UNE seule question courte et naturelle.
 
+MISE EN FORME (important, lisibilité humaine) : écris en texte simple et naturel, comme un message. N'utilise AUCUN markdown : jamais d'astérisques (* ou **), de dièses (#), d'accents circonflexes (^), de tildes (~) ni de backticks (\`). Pour une liste, va à la ligne et commence par un tiret « - ». Pour insister sur un mot, choisis-le bien, ne le décore pas de symboles. Des phrases claires valent mieux qu'une mise en page chargée.
+⚠️ N'écris JAMAIS de balise ni de code entre crochets (rien qui ressemble à [QUELQUECHOSE] ou [/QUELQUECHOSE]). Tu ne pilotes l'app par aucun mot-clé : tout ce qui doit s'afficher s'affiche tout seul. Une balise dans ta phrase, l'utilisateur la LIT à l'écran, et il voit du code au milieu d'une conversation.
+
+IMAGES : l'utilisateur peut t'envoyer une photo (un plat, une étiquette nutritionnelle, une machine de salle, une posture d'exercice, une blessure visible…). Regarde-la attentivement et réponds à partir de ce que tu vois, dans ton domaine (sport, nutrition, santé). Si l'image est floue ou hors sujet, dis-le gentiment et demande une précision.
+
 DONNÉES : tiens compte de la conversation ET du profil/stats/repas/séances ci-dessous ; ne redemande jamais une info déjà donnée. Pour "qu'est-ce que j'ai mangé / ma dernière séance", réponds à partir des données réelles (matin = petit-déj, midi = déjeuner, soir = dîner). N'INVENTE JAMAIS un repas ou une séance absent des données ; si rien n'est enregistré, dis-le et propose d'ajouter.
 
-REDIRECTION VERS LES PAGES (navigation) :
-Quand l'utilisateur veut OUVRIR une rubrique ou ALLER quelque part dans l'app (ex: "fais-moi mes repas", "montre mes plats", "ouvre mon programme", "je veux passer au plan supérieur / m'abonner / premium", "montre ma progression", "va sur la communauté", "ouvre le suivi nutrition"), tu réponds en 1 phrase enthousiaste PUIS tu termines EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
-[NAV]cible[/NAV]
-Où "cible" est EXACTEMENT l'une de ces valeurs :
-- repas        → ouvrir les repas/plats recommandés
-- seances      → ouvrir les séances recommandées / le programme
-- premium      → page d'abonnement (plan supérieur, premium, s'abonner)
-- progression  → page de progression / statistiques
-- nutrition    → suivi nutritionnel (journal, calendrier)
-- communaute   → fil communauté
-- decouverte   → page découverte
-- parametres   → réglages / profil
-Exemple : "montre ma progression" → "Allons voir tes progrès 💪\n[NAV]progression[/NAV]". N'utilise [NAV] QUE si l'utilisateur veut clairement aller quelque part.
+TU AGIS, TU NE FAIS PAS QUE PARLER :
+L'app sait faire des choses pour l'utilisateur : créer une séance, modifier son planning, noter un repas, écrire une recette, changer le thème, l'emmener sur une page, retenir son lieu d'entraînement. Tu n'as RIEN à déclencher toi-même : dès qu'il demande une de ces choses, une petite CARTE apparaît toute seule sous ta réponse, et c'est lui qui la valide d'un clic. Règles ABSOLUES :
+1. Ne dis JAMAIS que c'est "déjà fait" ou "enregistré" : rien n'est écrit tant qu'il n'a pas validé. Dis que tu prépares ça et qu'il valide juste en dessous.
+2. N'écris JAMAIS toi-même le contenu que la carte va afficher : ni la liste des exercices, ni les séries/répétitions, ni les calories ou les macros. La carte s'en charge, et l'écrire deux fois donnerait deux versions différentes.
+3. Reste COURT sur ces tours : une ou deux phrases, chaleureuses et personnelles, jamais deux fois les mêmes mots. Le reste est sous tes yeux, en dessous.
+4. Une simple QUESTION ("c'est quoi une bonne séance pecs ?", "combien de calories dans une banane ?", "je m'entraîne quel jour ?") ne prépare aucune carte : tu réponds pour de vrai, avec du contenu, sans annoncer quoi que ce soit à valider.
+5. Tu PEUX placer une séance existante de sa bibliothèque sur un jour, ne dis jamais que tu n'y as pas accès ; si elle est introuvable, il sera prévenu.
+⚠️ LE LIEU D'ENTRAÎNEMENT, tu n'as PAS à t'en occuper : si tu ne le connais pas encore (voir la section LIEU ci-dessous), n'en parle simplement pas. L'app sait ce qui lui manque, elle posera elle-même la question avec des réponses à toucher, puis reprendra la demande toute seule. Ne demande donc jamais le lieu en texte, et ne suppose aucun lieu dans ta phrase.
+⚠️ Quand il te manque une précision pour répondre, pose UNE seule question courte, sur un choix fermé, et jamais une information que tu as déjà sous les yeux (profil, stats, conversation, lieu ci-dessous) : une question inutile est plus agaçante qu'une supposition raisonnable.
 
-MODIFICATION DU PLANNING D'ENTRAÎNEMENT :
-Quand l'utilisateur veut changer son planning (ex: "remplace aujourd'hui par du dos", "mets du pecs jeudi", "repousse ma séance à demain", "vendredi je m'entraîne à la maison", "dans 2 jours = jambes", ou poser une séance qu'il a DÉJÀ créée : "mets ma séance Pompes perso mardi"), réponds en 1 phrase courte et enthousiaste disant que tu PRÉPARES la proposition à valider juste en dessous. N'annonce JAMAIS que c'est déjà fait, et n'écris AUCUN tag ni JSON : le changement est appliqué séparément via une petite carte de confirmation que l'utilisateur valide d'un clic. Tu PEUX placer une séance existante de sa bibliothèque sur un jour — ne dis jamais que tu n'y as pas accès ; la carte s'en charge (si la séance est introuvable, il sera prévenu).
-Exemple : "remplace aujourd'hui par du dos" → "Carrément, je te prépare une séance dos pour aujourd'hui — valide-la juste en dessous 💪".
-Exemple : "mets ma séance Pompes perso mardi" → "Parfait, je programme ta séance Pompes perso pour mardi — valide-la juste en dessous 💪".
+NUTRITION ↔ SÉANCES (la nutrition est un BONUS, JAMAIS une obligation) :
+- Tu proposes et adaptes les séances normalement, que l'utilisateur note ou non ses repas. Une séance ne dépend JAMAIS du fait d'avoir enregistré sa nutrition.
+- SI tu disposes de données nutrition récentes (repas/calories du jour ci-dessous), tu PEUX t'en servir comme un petit plus pour affiner la séance ou glisser une remarque utile (ex : "léger côté repas aujourd'hui, on part sur une séance plus courte"). Ça reste optionnel, léger, jamais le sujet principal.
+- S'il n'y a AUCUNE donnée nutrition (l'utilisateur ne note pas), tu n'en parles pas, tu ne réclames rien, tu ne culpabilises jamais, et tu ne dis JAMAIS que tu "ne peux pas" adapter : tu proposes la séance comme d'habitude, point. Ne réclame pas de logger ses repas pour avoir une séance.
+- Ne transforme jamais le suivi nutrition en passage obligé : c'est un confort pour ceux qui le veulent, pas une exigence pour s'entraîner.
 
 LIEU D'ENTRAÎNEMENT (TRÈS IMPORTANT) :
 ${lieu === "salle"
@@ -186,18 +203,17 @@ ${lieu === "salle"
       ? `Lieu : MAISON avec haltères → uniquement poids du corps + haltères (banc/chaise ok). Aucune machine ni poulie.`
       : equip === "poids"
       ? `Lieu : MAISON sans matériel → uniquement poids du corps (ni haltère, ni machine, ni élastique) ; joue sur variations/tempo/reps.`
-      : `Lieu : MAISON, matériel inconnu → avant de proposer des exercices, demande "Tu as des haltères, ou je te fais tout au poids du corps ? 💪" et attends la réponse.`)
-  : `Lieu d'entraînement inconnu → avant tout programme/séance/exercice, demande "Tu t'entraînes en salle (type Basic Fit) ou à la maison ? 💪" et attends la réponse (si maison, demande ensuite pour les haltères). Tu ne DÉDUIS JAMAIS le lieu (ni de ses anciennes séances, ni d'autre chose) et tu n'en SUPPOSES aucun : tu DOIS poser la question et attendre sa réponse avant de proposer une séance.`}
-Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym"), termine ta réponse EXACTEMENT par ce tag sur la dernière ligne (sans markdown) :
-[LIEU_UPDATE]maison[/LIEU_UPDATE]  (ou [LIEU_UPDATE]salle[/LIEU_UPDATE])
+      : `Lieu : MAISON, matériel inconnu → reste NEUTRE sur le matériel dans ta phrase : l'app demandera elle-même s'il a des haltères avant de générer quoi que ce soit.`)
+  : `Lieu d'entraînement inconnu → reste NEUTRE sur le lieu dans ta phrase (ne dis ni "en salle" ni "à la maison") : l'app posera elle-même la question avec des réponses à toucher, puis reprendra la demande. Tu ne DÉDUIS JAMAIS le lieu et tu n'en SUPPOSES aucun.`}
+Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym", "j'ai des haltères"), tu n'as rien à faire : l'app le retient toute seule. Accuse simplement réception en une phrase.
 
-${buildSiteKnowledgePrompt(currentPage ?? undefined)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${memoryEnabled ? `\n\nACTIONS (création de séance) — RÈGLE ABSOLUE : Quand l'utilisateur demande de CRÉER / GÉNÉRER / ENREGISTRER / AJOUTER une séance, tu n'écris JAMAIS toi-même la liste des exercices, séries ou répétitions, et tu ne prétends PAS l'avoir créée. Réponds UNIQUEMENT par une phrase courte et enthousiaste (ex: « Voici une proposition de séance, regarde juste en dessous 👇 »). Une carte de confirmation contenant la séance s'affiche AUTOMATIQUEMENT sous ton message, et c'est l'utilisateur qui valide la création en cliquant. Tu n'as rien d'autre à faire.` : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+${buildSiteKnowledgePrompt(currentPage ?? undefined, !memoryEnabled)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
 Statistiques du jour :
-- Calories : ${live.calories ?? "—"} kcal${live.calorieGoal ? ` / objectif ${live.calorieGoal} kcal` : ""}
-- Protéines : ${live.proteins ?? "—"} g
+- Calories : ${live.calories ?? "—"} kcal${live.calorieGoal ? ` / objectif ${live.calorieGoal} kcal (reste ${Math.max(live.calorieGoal - (live.calories ?? 0), 0)} kcal)` : ""}
+- Protéines : ${live.proteins ?? "—"} g${live.proteinGoal ? ` / objectif ${live.proteinGoal} g` : ""}
 - Pas : ${live.steps ? `${live.steps} / 10 000` : "—"}
 - Sommeil : ${live.sleepHours ? `${Math.floor(live.sleepHours)}h${String(Math.round((live.sleepHours % 1) * 60)).padStart(2, "0")}` : "—"}
 - Score du jour : ${live.score ?? "—"}/100
@@ -267,13 +283,30 @@ Profil de ${ctx.pseudo || pseudo || "l'utilisateur"} :
 ${statsBlock}${richBlock}`;
 }
 
+/* ── Deux formats de réponse, selon l'appelant ──
+   L'assistant global (memoryEnabled) reçoit du NDJSON : une ligne = un
+   événement, `t` pour un morceau de texte, `a` pour l'action décidée.
+   Les appelants historiques (page coach, chat de l'accueil) ne savent lire
+   que du texte brut : ils gardent exactement l'ancien format, et aucune
+   action ne leur est envoyée. */
+const ligne = (e: ChatEvent) => JSON.stringify(e) + "\n";
+
+function fluxTexte(texte: string, ndjson: boolean) {
+  return new Response(ndjson ? ligne({ t: texte }) : texte, {
+    status: 200,
+    headers: {
+      "Content-Type": ndjson ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache",
+    },
+  });
+}
+
 export async function POST(req: NextRequest) {
-  if (!hasLLMKey()) {
-    return new Response(
-      "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
-      { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-    );
-  }
+  // Garde-fou : connexion obligatoire + plafond d'usage. Cette route était
+  // ouverte à tout internet, donc n'importe qui pouvait faire tourner la
+  // facture Mistral sans même avoir de compte Vaiiya.
+  const garde = await garderIA(req, "chat");
+  if (!garde.ok) return garde.reponse;
 
   let messages: ChatMessage[] = [];
   let userContext: UserContext | null = null;
@@ -308,18 +341,58 @@ export async function POST(req: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const systemPrompt = buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled);
+  // ── Plafonds de taille ──
+  // Le compteur d'appels ne suffit pas : un seul message de 200 000 caractères
+  // coûte autant que cent messages normaux. On coupe le texte (l'utilisateur
+  // garde sa réponse) et on refuse une image trop lourde (on ne peut pas la
+  // couper). Le client compresse déjà ses images à 1024 px.
+  for (const m of messages) {
+    if (typeof m.content === "string") {
+      if (m.content.length > PLAFONDS.messageChars) m.content = m.content.slice(0, PLAFONDS.messageChars);
+    } else if (Array.isArray(m.content)) {
+      for (const part of m.content) {
+        if (part.type === "text" && part.text.length > PLAFONDS.messageChars) {
+          part.text = part.text.slice(0, PLAFONDS.messageChars);
+        }
+        if (part.type === "image_url" && part.image_url.url.length > PLAFONDS.imageOctets) {
+          return refusTaille("Cette image");
+        }
+      }
+    }
+  }
+  // On ne renvoie au modèle que la fin de la conversation : au-delà, le
+  // contexte coûte cher sans rien apporter à la réponse.
+  if (messages.length > PLAFONDS.historique) messages = messages.slice(-PLAFONDS.historique);
+
+  // Seul l'assistant global sait exécuter une action et lire le NDJSON.
+  const ndjson = memoryEnabled;
+
+  if (!hasLLMKey()) {
+    return fluxTexte(
+      "⚠️ Clé API Mistral manquante. Ajoute MISTRAL_API_KEY dans ton .env.local et sur Vercel (https://console.mistral.ai/api-keys)",
+      ndjson
+    );
+  }
+
+  const historique = sanitizeHistory(messages);
+
+  /* L'aiguilleur passe AVANT le coach (~550 ms) : sa décision devient le
+     contexte de la réponse. C'est ce qui rend le désaccord impossible — le
+     coach ne devine plus ce qui va s'afficher sous lui, on le lui dit. Voir
+     `assistantRouter` pour la mesure qui a imposé cette séparation. */
+  const action = ndjson ? await deciderAction(historique) : null;
+
+  const systemPrompt =
+    buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled) +
+    (ndjson ? cadreAction(action) : "");
 
   try {
-    // Gemini 2.0 Flash gère aussi bien la conversation que les grosses
-    // générations (programme, repas) → un seul modèle, pas de limite TPM
-    // basse à contourner.
     const stream = await llm.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        ...sanitizeHistory(messages),
-      ],
+        ...historique,
+      ] as OpenAI.Chat.ChatCompletionMessageParam[],
       stream: true,
       max_tokens: maxTokens,
       temperature: 0.4,
@@ -328,11 +401,45 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
+        let texteRecu = false;
+        let finish: string | null = null;
+
         try {
           for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content ?? "";
-            if (text) controller.enqueue(encoder.encode(text));
+            const choice = chunk.choices?.[0] as {
+              delta?: { content?: string | null };
+              message?: { content?: string | null };
+              finish_reason?: string | null;
+            } | undefined;
+            if (choice?.finish_reason) finish = choice.finish_reason;
+
+            // Le texte : `delta` en streaming, `message` si le fournisseur a
+            // répondu d'un bloc. Jamais les deux (sinon on doublerait).
+            const texte = choice?.delta
+              ? (choice.delta.content ?? "")
+              : (typeof choice?.message?.content === "string" ? choice.message.content : "");
+            if (texte) {
+              texteRecu = true;
+              controller.enqueue(encoder.encode(ndjson ? ligne({ t: texte }) : texte));
+            }
           }
+
+          // L'action est déjà décidée : elle ferme le flux. Le client ne
+          // l'exécute qu'une fois la lecture terminée, l'ordre n'a donc
+          // aucune importance.
+          if (action) controller.enqueue(encoder.encode(ligne({ a: action })));
+
+          // Un tour totalement vide ne doit JAMAIS passer inaperçu : sans ça,
+          // l'utilisateur envoie un message et il ne se passe rien du tout.
+          if (ndjson && !texteRecu && !action) {
+            console.error("[chat] tour vide", { finish });
+            controller.enqueue(encoder.encode(ligne({
+              e: `le modèle n'a rien renvoyé (fin: ${finish ?? "?"})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`,
+            })));
+          }
+        } catch (err) {
+          const m = (err as { message?: string })?.message ?? "flux interrompu";
+          if (ndjson) controller.enqueue(encoder.encode(ligne({ e: m.slice(0, 200) })));
         } finally {
           controller.close();
         }
@@ -341,7 +448,7 @@ export async function POST(req: NextRequest) {
 
     return new Response(readable, {
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Type": ndjson ? "application/x-ndjson; charset=utf-8" : "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         "X-Content-Type-Options": "nosniff",
       },
@@ -355,7 +462,7 @@ export async function POST(req: NextRequest) {
         ? `⏳ Limite/quota de l'IA atteint. Détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à diagnostiquer ✨)`
         : e?.status === 401 || e?.status === 403
         ? `🔑 Souci de clé API côté serveur. Détail : ${detail}`
-        : `Désolé, une erreur est survenue 😕 — détail technique : ${detail}\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
-    return new Response(msg, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+        : `Désolé, une erreur est survenue 😕 (détail technique : ${detail})\n(copie-moi ce message stp, ça m'aide à corriger ✨)`;
+    return fluxTexte(msg, ndjson);
   }
 }

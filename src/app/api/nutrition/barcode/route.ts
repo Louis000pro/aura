@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { garderIA } from "@/lib/aiLimits";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -19,12 +20,13 @@ interface OFFProduct {
   image_front_small_url?: string;
   image_url?: string;
   nutriments?: OFFNutriments;
+  nutriscore_grade?: string;
   serving_size?: string;
   quantity?: string;
 }
 
 const OFF_FIELDS =
-  "product_name,product_name_fr,brands,nutriments,serving_size,quantity,image_front_small_url,image_url";
+  "product_name,product_name_fr,brands,nutriments,nutriscore_grade,serving_size,quantity,image_front_small_url,image_url";
 
 async function fetchOFF(domain: string, code: string): Promise<OFFProduct | null> {
   try {
@@ -50,6 +52,11 @@ function hasRealNutrition(n: OFFNutriments): boolean {
 }
 
 export async function GET(req: Request) {
+  // OpenFoodFacts est gratuit, mais taper dessus en boucle depuis notre serveur
+  // nous ferait bloquer, et ça reste de la bande passante qu'on paye.
+  const garde = await garderIA(req, "lookup");
+  if (!garde.ok) return garde.reponse;
+
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code")?.trim();
 
@@ -77,6 +84,9 @@ export async function GET(req: Request) {
     const name  = product.product_name_fr || product.product_name || null;
     const brand = product.brands?.split(",")[0]?.trim() ?? null;
     const n     = product.nutriments ?? {};
+    // Nutri-Score : lettre A–E si fournie par Open Food Facts, sinon null.
+    const grade = product.nutriscore_grade?.trim().toUpperCase();
+    const nutriscore = grade && "ABCDE".includes(grade) ? grade : null;
 
     // 4️⃣ Produit trouvé mais SANS données nutritionnelles
     //    → retour "partiel" : le front peut pré-remplir le champ IA
@@ -98,6 +108,7 @@ export async function GET(req: Request) {
       name:         name ?? "Produit inconnu",
       brand,
       image:        product.image_front_small_url ?? product.image_url ?? null,
+      nutriscore,
       quantity:     product.quantity     ?? null,
       serving_size: product.serving_size ?? null,
       per100: {

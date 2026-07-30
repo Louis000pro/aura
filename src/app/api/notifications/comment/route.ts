@@ -62,14 +62,14 @@ export async function POST(req: NextRequest) {
       : null;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
-    const postUrl = post_id ? `${appUrl}/communaute` : appUrl;
+    const postUrl = post_id ? `${appUrl}/profil` : appUrl;
 
     // ── Push notification (fire-and-forget) ──────────────────────────────────
     void sendPushToUser({
       user_id: post_owner_id,
       title: "Vaiiya · Nouveau commentaire",
       body:  preview ? `${commenterName} : ${preview}` : `${commenterName} a commenté ton post`,
-      url:   post_id ? `/communaute` : "/",
+      url:   post_id ? `/profil` : "/",
     });
 
     // ── Envoi email (non-bloquant : si GMAIL non configuré, on sort) ─────────

@@ -81,7 +81,7 @@ export default function DailyDrawer({
             media_url: data.media_url as string,
             caption:   (data.caption as string) ?? "",
             views:     (data.views as number) ?? 0,
-            pseudo:    (author?.pseudo as string) ?? "aura",
+            pseudo:    (author?.pseudo as string) ?? "Vaiiya",
             avatar_url: author?.avatar_url ?? null,
             is_admin:  Boolean(author?.is_admin),
                 is_certified: Boolean((author as { is_certified?: boolean } | null)?.is_certified),
@@ -107,7 +107,7 @@ export default function DailyDrawer({
                 media_url: fb.media_url as string,
                 caption:   (fb.caption as string) ?? "",
                 views:     (fb.views as number) ?? 0,
-                pseudo:    (author?.pseudo as string) ?? "aura",
+                pseudo:    (author?.pseudo as string) ?? "Vaiiya",
                 avatar_url: author?.avatar_url ?? null,
                 is_admin:  Boolean(author?.is_admin),
                 is_certified: Boolean((author as { is_certified?: boolean } | null)?.is_certified),
@@ -256,7 +256,7 @@ export default function DailyDrawer({
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 md:left-[88px] z-[55]"
-            style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(10px)" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(10px)" }}
           />
 
           <motion.div
@@ -267,19 +267,19 @@ export default function DailyDrawer({
           >
             <div className="relative h-full m-2 rounded-3xl overflow-hidden flex flex-col"
               style={{
-                background: "rgba(255,255,255,0.95)",
+                background: "rgba(var(--surface-rgb),0.95)",
                 backdropFilter: "blur(16px)",
-                border: "1px solid rgba(255,255,255,0.95)",
-                boxShadow: "0 -20px 60px rgba(167,139,250,0.2)",
+                border: "1px solid rgba(var(--surface-rgb),0.95)",
+                boxShadow: "0 -20px 60px rgba(var(--accent-rgb),0.2)",
               }}>
 
               {/* Header */}
               <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
-                <h2 className="text-lg font-extralight" style={{ color: "#2D3748" }}>Du jour</h2>
+                <h2 className="text-lg font-extralight" style={{ color: "var(--text-1)" }}>Du jour</h2>
                 <button type="button" onClick={onClose}
                   className="w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(167,139,250,0.12)" }}>
-                  <X size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                  style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                  <X size={16} strokeWidth={2} style={{ color: "var(--accent)" }} />
                 </button>
               </div>
 
@@ -294,8 +294,8 @@ export default function DailyDrawer({
                       className="flex-1 py-2.5 rounded-2xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
                       style={
                         active
-                          ? { background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }
-                          : { background: "rgba(255,255,255,0.7)", color: "#A0AEC0", border: "1px solid rgba(212,192,255,0.25)" }
+                          ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }
+                          : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--violet-mid-rgb),0.25)" }
                       }>
                       <Icon size={13} strokeWidth={active ? 2 : 1.5} />
                       {t.label}
@@ -326,7 +326,7 @@ export default function DailyDrawer({
                       style={{
                         aspectRatio: "9 / 16",
                         background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
-                        boxShadow: "0 16px 56px rgba(45,42,78,0.4), 0 0 0 1px rgba(167,139,250,0.25)",
+                        boxShadow: "0 16px 56px rgba(45,42,78,0.4), 0 0 0 1px rgba(var(--accent-rgb),0.25)",
                       }}>
                       {/* La vraie vidéo */}
                       <video
@@ -345,7 +345,7 @@ export default function DailyDrawer({
                           <div
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full pointer-events-auto"
                             style={{
-                              background: "linear-gradient(135deg, rgba(167,139,250,0.95), rgba(124,92,250,0.95))",
+                              background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.95), rgba(124,92,250,0.95))",
                               backdropFilter: "blur(8px)",
                               boxShadow: "0 4px 12px rgba(124,92,250,0.4)",
                             }}>
@@ -376,7 +376,7 @@ export default function DailyDrawer({
                           style={{
                             background: "rgba(0,0,0,0.45)",
                             backdropFilter: "blur(8px)",
-                            border: "1px solid rgba(255,255,255,0.18)",
+                            border: "1px solid rgba(var(--surface-rgb),0.18)",
                           }}
                           aria-label={videoMuted ? "Activer le son" : "Couper le son"}
                         >
@@ -397,13 +397,13 @@ export default function DailyDrawer({
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"
-                            style={{ border: "2px solid rgba(255,255,255,0.85)" }}>
+                            style={{ border: "2px solid rgba(var(--surface-rgb),0.85)" }}>
                             {dailyVideo.avatar_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img loading="lazy" decoding="async" src={dailyVideo.avatar_url} alt={dailyVideo.pseudo} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-sm font-bold"
-                                style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)", color: "#2D3748" }}>
+                                style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
                                 {dailyVideo.pseudo[0]?.toUpperCase()}
                               </div>
                             )}
@@ -412,7 +412,7 @@ export default function DailyDrawer({
                             <div className="flex items-center gap-1">
                               <p className="text-sm font-bold truncate text-white">@{dailyVideo.pseudo}</p>
                               {(dailyVideo.is_certified || dailyVideo.is_admin) && (
-                                <BadgeCheck size={13} strokeWidth={2} className="flex-shrink-0" style={{ color: "#A78BFA", fill: "rgba(255,255,255,0.95)" }} />
+                                <BadgeCheck size={13} strokeWidth={2} className="flex-shrink-0" style={{ color: "var(--accent)", fill: "rgba(var(--surface-rgb),0.95)" }} />
                               )}
                             </div>
                             {dailyVideo.caption && (
@@ -422,20 +422,6 @@ export default function DailyDrawer({
                             )}
                           </div>
                         </Link>
-
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => router.push(`/communaute?video=${dailyVideo.id}`)}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full flex-shrink-0"
-                          style={{
-                            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                            boxShadow: "0 4px 14px rgba(167,139,250,0.4), inset 0 1px 0 rgba(255,255,255,0.6)",
-                          }}>
-                          <Play size={12} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 1 }} fill="#2D3748" />
-                          <span className="text-xs font-bold" style={{ color: "#2D3748" }}>Voir</span>
-                        </motion.button>
                       </div>
                     </div>
                   ) : (
@@ -443,18 +429,18 @@ export default function DailyDrawer({
                     <div className="relative rounded-3xl overflow-hidden h-full max-w-full flex items-center justify-center"
                       style={{
                         aspectRatio: "9 / 16",
-                        background: "linear-gradient(135deg, rgba(212,192,255,0.18), rgba(245,230,163,0.12))",
-                        border: "1px solid rgba(212,192,255,0.3)",
+                        background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.18), rgba(var(--cream-mid-rgb),0.12))",
+                        border: "1px solid rgba(var(--violet-mid-rgb),0.3)",
                       }}>
                       <div className="text-center px-6">
                         <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3"
-                          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
-                          <Play size={22} strokeWidth={1.5} style={{ color: "#2D3748" }} fill="#2D3748" />
+                          style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
+                          <Play size={22} strokeWidth={1.5} style={{ color: "var(--text-1)" }} fill="currentColor" />
                         </div>
-                        <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
+                        <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>
                           Vidéo du jour
                         </p>
-                        <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                        <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                           Aucune vidéo populaire récente
                         </p>
                       </div>
@@ -473,31 +459,31 @@ export default function DailyDrawer({
                         {/* Card séance hero */}
                         <div className="relative rounded-3xl p-5 flex-shrink-0"
                           style={{
-                            background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                            boxShadow: "0 12px 36px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.85)",
+                            background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
+                            boxShadow: "0 12px 36px rgba(var(--accent-rgb),0.25), inset 0 1px 0 rgba(var(--surface-rgb),0.85)",
                           }}>
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "rgba(45,55,72,0.6)" }}>
                                 Aujourd'hui
                               </p>
-                              <h3 className="text-2xl font-extralight mt-1 leading-tight" style={{ color: "#2D3748" }}>
+                              <h3 className="text-2xl font-extralight mt-1 leading-tight" style={{ color: "var(--text-1)" }}>
                                 {todayWorkout.title}
                               </h3>
                               <div className="flex items-center gap-3 mt-3">
                                 <div className="flex items-center gap-1">
-                                  <Clock size={12} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                                  <span className="text-xs font-medium" style={{ color: "#2D3748" }}>{todayWorkout.duration} min</span>
+                                  <Clock size={12} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
+                                  <span className="text-xs font-medium" style={{ color: "var(--text-1)" }}>{todayWorkout.duration} min</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <Flame size={12} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                                  <span className="text-xs font-medium" style={{ color: "#2D3748" }}>{todayWorkout.difficulty}</span>
+                                  <Flame size={12} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
+                                  <span className="text-xs font-medium" style={{ color: "var(--text-1)" }}>{todayWorkout.difficulty}</span>
                                 </div>
                               </div>
                             </div>
                             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                              style={{ background: "rgba(255,255,255,0.45)", backdropFilter: "blur(8px)" }}>
-                              <Dumbbell size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                              style={{ background: "rgba(var(--surface-rgb),0.45)", backdropFilter: "blur(8px)" }}>
+                              <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                             </div>
                           </div>
                         </div>
@@ -509,30 +495,30 @@ export default function DailyDrawer({
                           onClick={() => setShowGuide(true)}
                           className="w-full rounded-2xl p-4 flex items-center justify-between cursor-pointer flex-shrink-0"
                           style={{
-                            background: "rgba(255,255,255,0.98)",
-                            border: "1px solid rgba(212,192,255,0.5)",
-                            boxShadow: "0 8px 24px rgba(167,139,250,0.18), inset 0 1px 0 rgba(255,255,255,0.9)",
+                            background: "rgba(var(--surface-rgb),0.98)",
+                            border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
+                            boxShadow: "0 8px 24px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                           }}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                              style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}>
-                              <Play size={14} strokeWidth={2} style={{ color: "#2D3748", marginLeft: 2 }} fill="#2D3748" />
+                              style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}>
+                              <Play size={14} strokeWidth={2} style={{ color: "var(--text-1)", marginLeft: 2 }} fill="currentColor" />
                             </div>
                             <div className="text-left">
-                              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>Lancer la séance</p>
-                              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Lancer la séance</p>
+                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
                                 {todayWorkout.category}
                               </p>
                             </div>
                           </div>
-                          <ChevronRight size={16} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                          <ChevronRight size={16} strokeWidth={2} style={{ color: "var(--accent)" }} />
                         </motion.button>
 
                         <div>
-                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "#A0AEC0" }}>
+                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: "var(--text-3)" }}>
                             Pourquoi cette séance
                           </p>
-                          <p className="text-sm font-light leading-relaxed" style={{ color: "#2D3748" }}>
+                          <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-1)" }}>
                             Adaptée à ton programme hebdomadaire et au niveau d'effort de tes derniers jours. Reste à l'écoute de tes sensations.
                           </p>
                         </div>
@@ -540,20 +526,20 @@ export default function DailyDrawer({
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 px-4">
                         <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                          style={{ background: "linear-gradient(135deg, rgba(240,235,255,0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
-                          <Dumbbell size={22} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                          style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.95) 0%, rgba(255,251,240,0.95) 100%)" }}>
+                          <Dumbbell size={22} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
+                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>
                             Jour de repos
                           </p>
-                          <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                          <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                             Pas de séance prévue aujourd'hui. La récup, c'est de l'entraînement aussi ✦
                           </p>
                         </div>
                         <Link href="/progression"
                           className="mt-2 px-4 py-2 rounded-2xl text-xs font-semibold"
-                          style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", color: "#2D3748" }}>
+                          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff" }}>
                           Voir mon programme
                         </Link>
                       </div>
@@ -575,15 +561,15 @@ export default function DailyDrawer({
                           return (
                             <div className="relative rounded-3xl p-5 flex-shrink-0"
                               style={{
-                                background: "linear-gradient(135deg, #F5E6A3 0%, #D4A843 100%)",
-                                boxShadow: "0 12px 36px rgba(212,168,67,0.3), inset 0 1px 0 rgba(255,255,255,0.5)",
+                                background: "linear-gradient(135deg, #C4A8FF 0%, var(--accent) 100%)",
+                                boxShadow: "0 12px 36px rgba(var(--gold-rgb),0.3), inset 0 1px 0 rgba(var(--surface-rgb),0.5)",
                               }}>
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1">
                                   <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "rgba(45,55,72,0.6)" }}>
                                     {hero.label}
                                   </p>
-                                  <h3 className="text-4xl font-extralight mt-1 leading-none" style={{ color: "#2D3748" }}>
+                                  <h3 className="text-4xl font-extralight mt-1 leading-none" style={{ color: "var(--text-1)" }}>
                                     {hero.value}
                                   </h3>
                                   {hero.delta && (
@@ -598,8 +584,8 @@ export default function DailyDrawer({
                                   )}
                                 </div>
                                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                                  style={{ background: "rgba(255,255,255,0.45)", backdropFilter: "blur(8px)" }}>
-                                  <Trophy size={20} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+                                  style={{ background: "rgba(var(--surface-rgb),0.45)", backdropFilter: "blur(8px)" }}>
+                                  <Trophy size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
                                 </div>
                               </div>
                             </div>
@@ -612,21 +598,21 @@ export default function DailyDrawer({
                             {perfs.slice(1).map((p) => (
                               <div key={p.label}
                                 className="rounded-2xl p-3 flex items-center gap-3"
-                                style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(212,192,255,0.25)" }}>
+                                style={{ background: "rgba(var(--surface-rgb),0.85)", border: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+                                  <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                                     {p.label}
                                   </p>
                                   <div className="flex items-baseline gap-2 mt-0.5">
-                                    <p className="text-lg font-semibold" style={{ color: "#2D3748" }}>{p.value}</p>
+                                    <p className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>{p.value}</p>
                                     {p.delta && (
-                                      <p className="text-[10px] font-semibold" style={{ color: p.delta.startsWith("+") ? "#0F766E" : p.delta === "stable" ? "#A0AEC0" : "#9B2C2C" }}>
+                                      <p className="text-[10px] font-semibold" style={{ color: p.delta.startsWith("+") ? "#0F766E" : p.delta === "stable" ? "var(--text-3)" : "#9B2C2C" }}>
                                         {p.delta}
                                       </p>
                                     )}
                                   </div>
                                   {p.context && (
-                                    <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>{p.context}</p>
+                                    <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>{p.context}</p>
                                   )}
                                 </div>
                               </div>
@@ -637,14 +623,14 @@ export default function DailyDrawer({
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 px-4">
                         <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                          style={{ background: "linear-gradient(135deg, rgba(255,251,240,0.95) 0%, rgba(245,230,163,0.5) 100%)" }}>
-                          <Trophy size={22} strokeWidth={1.5} style={{ color: "#D4A843" }} />
+                          style={{ background: "linear-gradient(135deg, rgba(255,251,240,0.95) 0%, rgba(var(--cream-mid-rgb),0.5) 100%)" }}>
+                          <Trophy size={22} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "#A0AEC0" }}>
+                          <p className="text-[10px] font-semibold tracking-widest uppercase mb-1" style={{ color: "var(--text-3)" }}>
                             Aucune perf encore
                           </p>
-                          <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                          <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                             Bouge un peu et reviens — Vaiiya aime célébrer les progrès ✦
                           </p>
                         </div>
@@ -664,7 +650,7 @@ export default function DailyDrawer({
                     style={{
                       width: activeIdx === i ? 24 : 6,
                       height: 6,
-                      background: activeIdx === i ? "linear-gradient(90deg, #A78BFA, #D4A843)" : "rgba(167,139,250,0.25)",
+                      background: activeIdx === i ? "linear-gradient(90deg, var(--accent), var(--gold))" : "rgba(var(--accent-rgb),0.25)",
                     }}
                   />
                 ))}
@@ -677,7 +663,7 @@ export default function DailyDrawer({
             <WorkoutGuideModal
               sessionId={todayWorkout.id}
               title={todayWorkout.title}
-              accent="#A78BFA"
+              accent="var(--accent)"
               duration={todayWorkout.duration}
               difficulty={todayWorkout.difficulty}
               category={todayWorkout.category}

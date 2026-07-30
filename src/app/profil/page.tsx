@@ -5,21 +5,24 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CreditCard, Bell, Shield, Star, LogOut, X, Check, BellOff, Lock, Crown,
-  ExternalLink, Share2, Venus, Mars, Search, UserCheck, UserPlus, Camera, ChevronRight, Plus,
-  Target, Pencil, Dumbbell, Play, Clock, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Film, Heart,
-  MoreHorizontal, MessageCircle, Repeat2, Bookmark, Send, Trash2,
+  X, Check, Lock, Crown, Link2, Camera, ChevronRight,
+  Pencil, Dumbbell, Play, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Trash2,
 } from "lucide-react";
+import Badges from "@/components/Badges";
+import BadgesRelais from "@/components/defi/BadgesRelais";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
+import PerfShareButton from "@/components/PerfShareButton";
+import PerfShareCard from "@/components/PerfShareCard";
+import { perfDataToShare } from "@/lib/perfShareExport";
 import VideoPlayer from "@/components/VideoPlayer";
-import FollowListModal from "@/components/FollowListModal";
-
-/* ─────────────── Helpers ─────────────── */
-function formatViews(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".0", "")}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(".0", "")}K`;
-  return String(n);
-}
+import Image from "next/image";
+import GemmeRang from "@/components/GemmeRang";
+import RangsModal from "@/components/rang/RangsModal";
+import { AvatarRang, PseudoRang, TitreRang } from "@/components/rang/IdentiteRang";
+import { calculerAura, cosmetiquesDuRang, RANGS, type EtatAura } from "@/lib/aura";
+import { noterRang } from "@/lib/celebrationRang";
+import { SERIES, imageEtat, type SerieSlug } from "@/lib/defi";
+import { chargerBadges } from "@/lib/messagerie";
 
 /* ─────────────── Tab data types ─────────────── */
 type UserPost = {
@@ -34,138 +37,21 @@ type UserPost = {
   media_type?: string | null;
   views?: number;
   likes_count?: number;
-  post_likes: { user_id: string }[];
-  post_comments: { id: string }[];
-  post_reposts: { user_id: string }[];
 };
 
-/* ─────────────── CommentsSection ─────────────── */
-type ProfilComment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  author: { pseudo: string; avatar_url?: string | null } | null;
-};
-
-function postTimeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "À l'instant";
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}j`;
-}
-
-function CommentsSection({ postId, initialCount, onClose, onCommentAdded }: { postId: string; initialCount: number; onClose: () => void; onCommentAdded?: () => void }) {
-  const { user } = useAuth();
-  const [comments, setComments] = useState<ProfilComment[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [input, setInput]       = useState("");
-  const [sending, setSending]   = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("post_comments")
-      .select("id, content:text, created_at, user_id, author:profiles!user_id(pseudo, avatar_url)")
-      .eq("post_id", postId)
-      .order("created_at", { ascending: true })
-      .limit(50)
-      .then(({ data }) => {
-        setComments((data as unknown as ProfilComment[]) ?? []);
-        setLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 100);
-      });
-  }, [postId]);
-
-  const handleSend = async () => {
-    if (!input.trim() || !user || sending) return;
-    const content = input.trim();
-    setInput("");
-    setSending(true);
-    const tmpId = `tmp-${Date.now()}`;
-    const optimistic: ProfilComment = {
-      id: tmpId, content, created_at: new Date().toISOString(), user_id: user.id,
-      author: { pseudo: user.pseudo, avatar_url: user.avatar ?? null },
-    };
-    setComments((prev) => [...prev, optimistic]);
-    const supabase = createClient();
-    const { error } = await supabase.from("post_comments").insert({ post_id: postId, user_id: user.id, text: content });
-    setSending(false);
-    if (error) { setComments((prev) => prev.filter((c) => c.id !== tmpId)); setInput(content); }
-    else { onCommentAdded?.(); }
-  };
-
-  void onClose;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="overflow-hidden"
-    >
-      <div className="px-4 pb-4 pt-2 border-t" style={{ borderColor: "rgba(var(--tint-violet-rgb),0.8)" }}>
-        <div className="flex flex-col gap-2.5 mb-3 max-h-52 overflow-y-auto">
-          {loading ? (
-            <div className="flex justify-center py-3">
-              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }} animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-            </div>
-          ) : comments.length === 0 ? (
-            <p className="text-xs text-center py-2" style={{ color: "var(--text-3)" }}>Sois le premier à commenter</p>
-          ) : comments.map((c, i) => {
-            const pseudo = c.author?.pseudo ?? "inconnu";
-            const avatar = c.author?.avatar_url;
-            return (
-              <motion.div key={c.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i < 5 ? i * 0.04 : 0 }} className="flex items-start gap-2">
-                <Link href={`/profil/${encodeURIComponent(pseudo)}`} className="flex-shrink-0">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold overflow-hidden" style={{ background: avatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
-                    {avatar
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img loading="lazy" decoding="async" src={avatar} alt={pseudo} className="w-full h-full object-cover" />
-                      : pseudo[0]?.toUpperCase()}
-                  </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-1)" }}>
-                    <Link href={`/profil/${encodeURIComponent(pseudo)}`}><span className="font-semibold mr-1.5 hover:underline">{pseudo}</span></Link>
-                    <span className="font-light">{c.content}</span>
-                  </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{postTimeAgo(c.created_at)}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-2">
-          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-            placeholder={user ? "Ajouter un commentaire…" : "Connecte-toi pour commenter"} disabled={!user}
-            className="flex-1 text-xs outline-none px-3 py-2 rounded-xl"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-          <motion.button whileTap={{ scale: 0.9 }} onClick={handleSend} disabled={!input.trim() || !user || sending}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: input.trim() && user ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)", transition: "background 0.2s" }}>
-            <Send size={12} strokeWidth={2} style={{ color: input.trim() && user ? "var(--text-1)" : "var(--text-3)" }} />
-          </motion.button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 type WorkoutSessionItem = {
   id: string;
   title: string | null;
   started_at: string | null;
   duration_minutes: number;
   elapsed_seconds: number;
+  exercises?: unknown;
+  category?: string | null;
 };
 import NotificationBell from "@/components/NotificationBell";
-import StoryHighlightViewer, { type HighlightItem, type HighlightViewData } from "@/components/StoryHighlightViewer";
 import WorkoutGuideModal, { type Exercise, resolveSessionId } from "@/components/WorkoutGuideModal";
+import { heroImageForSeance } from "@/lib/workoutArt";
+import type { WorkoutCategory } from "@/lib/assistantActions";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
@@ -388,7 +274,7 @@ function EditProfileModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-0 md:px-4"
+      className="fixed inset-0 z-[90] flex items-end md:items-center justify-center px-0 md:px-4 overflow-y-auto"
       style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
@@ -402,12 +288,16 @@ function EditProfileModal({
           background: "rgba(var(--surface-rgb),0.98)",
           backdropFilter: "blur(12px)",
           boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.18)",
+          maxHeight: "100dvh",
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          paddingBottom: "calc(2rem + env(safe-area-inset-bottom))",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle (mobile) */}
         <div className="flex justify-center mb-4 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.22)" }} />
         </div>
 
         <div className="flex items-center justify-between mb-5">
@@ -559,8 +449,6 @@ function EditProfileModal({
   );
 }
 
-/* FollowListModal → extrait dans un composant partagé (utilisé aussi par le
-   profil public) : src/components/FollowListModal.tsx */
 
 /* ─────────────── Goals Edit Modal ─────────────── */
 const GOALS_LIST = [
@@ -661,7 +549,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(var(--text-1-rgb),0.22)" }} />
         </div>
 
         {/* Header */}
@@ -882,7 +770,6 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
 /* ─────────────── Privacy Modal ─────────────── */
 function PrivacyModal({ onClose }: { onClose: () => void }) {
   const [dataSharing, setDataSharing] = useState(false);
-  const [analytics, setAnalytics] = useState(true);
 
   return (
     <motion.div
@@ -899,7 +786,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
         exit={{ opacity: 0, y: 30, scale: 0.97 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
         className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -913,8 +800,10 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex flex-col gap-3">
           {[
+            // « Analytiques » a été retiré avec PostHog le 2026-07-29 : l'interrupteur
+            // ne pilotait rien (état local jamais enregistré) et promettait une
+            // collecte qui n'existe plus.
             { label: "Partage de données", desc: "Partager vos stats avec la communauté", state: dataSharing, toggle: () => setDataSharing(v => !v) },
-            { label: "Analytiques", desc: "Améliorer l'app avec vos données anonymisées", state: analytics, toggle: () => setAnalytics(v => !v) },
           ].map(({ label, desc, state, toggle }) => (
             <div key={label} className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: "rgba(var(--tint-violet-rgb),0.4)" }}>
               <div className="flex-1">
@@ -967,438 +856,32 @@ const PROF_DIFF_COLOR: Record<string, string> = {
 };
 
 const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: string }> = {
-  friends: { label: "Amis",   icon: Users,  color: "#60A5FA" },
-  public:  { label: "Public", icon: Globe,  color: "#34D399" },
+  friends: { label: "Amis",   icon: Users,  color: "#8B5CF6" },
+  public:  { label: "Public", icon: Globe,  color: "#2BD4A0" },
 };
-
-type Highlight = { id: string; name: string; cover_url: string; user_id?: string };
-
-/* ─────────────── Create Highlight Modal ─────────────── */
-function NewHighlightModal({ userId, onCreated, onClose }: {
-  userId: string;
-  onCreated: (h: Highlight) => void;
-  onClose: () => void;
-}) {
-  const [name, setName]         = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const coverRef = useRef<HTMLInputElement>(null);
-
-  const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const ext  = file.name.split(".").pop();
-      const path = `${userId}/highlight_${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "31536000" });
-      if (!error) {
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        setCoverUrl(data.publicUrl + "?t=" + Date.now());
-      }
-    } finally { setUploading(false); }
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) return;
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("highlights")
-        .insert({ user_id: userId, name: name.trim(), cover_url: coverUrl || null })
-        .select("id, name, cover_url, user_id")
-        .single();
-      if (!error && data) {
-        onCreated(data as Highlight);
-      }
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
-        className="w-full max-w-sm rounded-t-3xl md:rounded-3xl p-6 pb-8"
-        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.2)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-center mb-5 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.1)" }} />
-        </div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Nouvelle catégorie</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Cover */}
-        <div className="flex flex-col items-center mb-6">
-          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-            onClick={() => coverRef.current?.click()}
-            className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center cursor-pointer"
-            style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.4))" }}>
-            {coverUrl
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
-              : uploading
-              ? <div className="text-xs font-medium" style={{ color: "var(--accent)" }}>Upload…</div>
-              : <div className="flex flex-col items-center gap-1">
-                  <Camera size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                  <span className="text-[9px] font-semibold" style={{ color: "var(--accent)" }}>Cover</span>
-                </div>
-            }
-          </motion.div>
-          <input ref={coverRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleCover} />
-          <p className="text-[11px] mt-2 font-light" style={{ color: "var(--text-3)" }}>Photo de couverture (optionnel)</p>
-        </div>
-
-        {/* Name */}
-        <div className="mb-6">
-          <label className="text-[10px] font-bold tracking-widest uppercase mb-2 block" style={{ color: "var(--text-3)" }}>Nom</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-            placeholder="Ex : Sport, Voyage, Nutrition…" maxLength={24}
-            className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.2)", color: "var(--text-0)" }}
-          />
-        </div>
-
-        <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
-          onClick={handleSave}
-          disabled={!name.trim() || saving || uploading}
-          className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
-          style={{
-            background: name.trim() ? "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.5)",
-            color: name.trim() ? "#3D2F6B" : "var(--text-3)",
-            boxShadow: name.trim() ? "0 4px 18px rgba(var(--accent-rgb),0.3)" : "none",
-            opacity: saving || uploading ? 0.7 : 1,
-          }}>
-          {saving ? "Création…" : "Créer la catégorie"}
-        </motion.button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ─────────────── Edit Highlight Modal (médias, rename, delete) ─────────────── */
-function EditHighlightModal({ highlight, userId, onUpdated, onDeleted, onClose }: {
-  highlight: Highlight;
-  userId: string;
-  onUpdated: (h: Highlight) => void;
-  onDeleted: () => void;
-  onClose: () => void;
-}) {
-  const [name, setName]           = useState(highlight.name);
-  const [coverUrl, setCoverUrl]   = useState(highlight.cover_url ?? "");
-  const [items, setItems]         = useState<HighlightItem[]>([]);
-  const [loadingItems, setLoadingItems] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const [delConfirm, setDelConfirm] = useState(false);
-  const coverRef = useRef<HTMLInputElement>(null);
-  const mediaRef = useRef<HTMLInputElement>(null);
-
-  /* Load items */
-  useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("highlight_items")
-      .select("id, media_url, media_type, caption")
-      .eq("highlight_id", highlight.id)
-      .order("display_order", { ascending: true })
-      .then(({ data }) => {
-        setItems((data ?? []) as HighlightItem[]);
-        setLoadingItems(false);
-      });
-  }, [highlight.id]);
-
-  /* Cover upload */
-  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const ext  = file.name.split(".").pop();
-      const path = `${userId}/highlight_cover_${highlight.id}.${ext}`;
-      const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-      if (!error) {
-        const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        setCoverUrl(data.publicUrl + "?t=" + Date.now());
-      }
-    } finally { setUploading(false); }
-  };
-
-  /* Add media items */
-  const handleAddMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []).slice(0, 50 - items.length);
-    if (!files.length) return;
-    setUploading(true);
-    try {
-      const supabase = createClient();
-      const newItems: HighlightItem[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const ext  = file.name.split(".").pop();
-        const isVid = file.type.startsWith("video/");
-        const path = `${userId}/hi_${highlight.id}_${Date.now()}_${i}.${ext}`;
-        const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "31536000" });
-        if (error) continue;
-        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-        const order = items.length + newItems.length;
-        const { data: inserted } = await supabase
-          .from("highlight_items")
-          .insert({
-            highlight_id: highlight.id,
-            media_url: urlData.publicUrl + "?t=" + Date.now(),
-            media_type: isVid ? "video" : "image",
-            display_order: order,
-          })
-          .select("id, media_url, media_type, caption")
-          .single();
-        if (inserted) newItems.push(inserted as HighlightItem);
-      }
-      setItems((prev) => [...prev, ...newItems]);
-      // Update cover if first item and no cover
-      if (!coverUrl && newItems[0]) {
-        await supabase.from("highlights").update({ cover_url: newItems[0].media_url }).eq("id", highlight.id);
-        setCoverUrl(newItems[0].media_url);
-      }
-    } finally { setUploading(false); if (mediaRef.current) mediaRef.current.value = ""; }
-  };
-
-  /* Delete item */
-  const handleDeleteItem = async (itemId: string) => {
-    const supabase = createClient();
-    await supabase.from("highlight_items").delete().eq("id", itemId);
-    const remaining = items.filter((i) => i.id !== itemId);
-    setItems(remaining);
-    // Update cover if deleted item was cover
-    if (remaining.length > 0 && coverUrl.includes(itemId)) {
-      await supabase.from("highlights").update({ cover_url: remaining[0].media_url }).eq("id", highlight.id);
-      setCoverUrl(remaining[0].media_url);
-    }
-  };
-
-  /* Save info (name + cover) */
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const supabase = createClient();
-      await supabase.from("highlights").update({ name: name.trim(), cover_url: coverUrl || null }).eq("id", highlight.id);
-      onUpdated({ ...highlight, name: name.trim(), cover_url: coverUrl });
-    } finally { setSaving(false); }
-  };
-
-  /* Delete highlight */
-  const handleDelete = async () => {
-    const supabase = createClient();
-    await supabase.from("highlights").delete().eq("id", highlight.id);
-    onDeleted();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-        transition={{ type: "spring", bounce: 0.18, duration: 0.45 }}
-        className="w-full max-w-md rounded-t-3xl md:rounded-3xl flex flex-col"
-        style={{ background: "rgba(var(--surface-rgb),0.98)", boxShadow: "0 -12px 60px rgba(var(--accent-rgb),0.2)", maxHeight: "92dvh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0 md:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.1)" }} />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-3 pb-3 flex-shrink-0">
-          <h2 className="text-base font-black tracking-tight" style={{ color: "var(--text-0)" }}>Modifier la catégorie</h2>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-2" style={{ scrollbarWidth: "none" }}>
-
-          {/* Name + Cover row */}
-          <div className="flex items-center gap-4 mb-5">
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-              onClick={() => coverRef.current?.click()}
-              className="w-[60px] h-[60px] rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center cursor-pointer"
-              style={{ background: coverUrl ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.4))" }}>
-              {coverUrl
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img loading="lazy" decoding="async" src={coverUrl} alt="cover" className="w-full h-full object-cover" />
-                : <Camera size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />}
-            </motion.div>
-            <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
-            <div className="flex-1">
-              <label className="text-[9px] font-bold tracking-widest uppercase mb-1 block" style={{ color: "var(--text-3)" }}>Nom</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={24}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.2)", color: "var(--text-0)" }} />
-            </div>
-          </div>
-
-          {/* Media grid */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
-              Médias ({items.length}/50)
-            </span>
-            {items.length < 50 && (
-              <motion.button whileTap={{ scale: 0.93 }} onClick={() => mediaRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
-                style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.7),rgba(var(--cream-mid-rgb),0.7))", color: "#3D2F6B" }}>
-                <Plus size={11} strokeWidth={3} />
-                {uploading ? "Upload…" : "Ajouter"}
-              </motion.button>
-            )}
-          </div>
-          <input ref={mediaRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleAddMedia} />
-
-          {loadingItems ? (
-            <div className="flex justify-center py-8">
-              <motion.div className="w-6 h-6 rounded-full border-2"
-                style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
-                animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-            </div>
-          ) : items.length === 0 ? (
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => mediaRef.current?.click()}
-              className="w-full py-10 rounded-2xl flex flex-col items-center gap-3 cursor-pointer"
-              style={{ border: "2px dashed rgba(var(--accent-rgb),0.3)", background: "rgba(var(--tint-violet-rgb),0.2)" }}>
-              <Plus size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--accent)" }}>Ajouter des photos / vidéos</span>
-              <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Jusqu&apos;à 50 médias</span>
-            </motion.button>
-          ) : (
-            <div className="grid grid-cols-3 gap-1.5 mb-4">
-              {items.map((item) => (
-                <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden group">
-                  {item.media_type === "video"
-                    ? <video src={item.media_url} className="w-full h-full object-cover" muted playsInline />
-                    // eslint-disable-next-line @next/next/no-img-element
-                    : <img loading="lazy" decoding="async" src={item.media_url} alt="" className="w-full h-full object-cover" />}
-                  <motion.button
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center cursor-pointer"
-                    style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-                    whileTap={{ scale: 0.85 }}
-                  >
-                    <X size={9} strokeWidth={3} style={{ color: "white" }} />
-                  </motion.button>
-                  {item.media_type === "video" && (
-                    <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-bold" style={{ background: "rgba(0,0,0,0.55)", color: "white" }}>
-                      VID
-                    </div>
-                  )}
-                </div>
-              ))}
-              {items.length < 50 && (
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => mediaRef.current?.click()}
-                  className="aspect-square rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ border: "2px dashed rgba(var(--accent-rgb),0.35)", background: "rgba(var(--tint-violet-rgb),0.2)" }}>
-                  <Plus size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-                </motion.button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 pb-8 pt-3 flex-shrink-0 flex flex-col gap-2">
-          <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
-            onClick={handleSave}
-            disabled={!name.trim() || saving}
-            className="w-full py-3.5 rounded-2xl text-sm font-black tracking-tight cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)",
-              color: "#3D2F6B",
-              boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.3)",
-              opacity: saving ? 0.7 : 1,
-            }}>
-            {saving ? "Sauvegarde…" : "Sauvegarder"}
-          </motion.button>
-
-          {!delConfirm ? (
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => setDelConfirm(true)}
-              className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-              style={{ color: "#E53E3E", background: "rgba(229,62,62,0.06)", border: "1px solid rgba(229,62,62,0.15)" }}>
-              Supprimer la catégorie
-            </motion.button>
-          ) : (
-            <div className="flex gap-2">
-              <motion.button whileTap={{ scale: 0.97 }} onClick={() => setDelConfirm(false)}
-                className="flex-1 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.8)", color: "var(--text-2)" }}>
-                Annuler
-              </motion.button>
-              <motion.button whileTap={{ scale: 0.97 }} onClick={handleDelete}
-                className="flex-1 py-3 rounded-2xl text-sm font-bold cursor-pointer"
-                style={{ background: "#E53E3E", color: "white" }}>
-                Confirmer
-              </motion.button>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"performances" | "seances" | "reglages" | "enregistres">("performances");
+  const [activeTab, setActiveTab] = useState<"sillages" | "seances" | "amis">("sillages");
+  const [aura, setAura] = useState<EtatAura | null>(null);
+  const [amis, setAmis] = useState<{ id: string; pseudo: string; avatar_url?: string }[] | null>(null);
+  const [badgeSlugs, setBadgeSlugs] = useState<Set<string>>(new Set());
   const [showEdit, setShowEdit] = useState(false);
+  const [showRangs, setShowRangs] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showFollowList, setShowFollowList] = useState<"Abonnés" | "Abonnements" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [showNewHighlight, setShowNewHighlight] = useState(false);
-  const [editHighlight, setEditHighlight]   = useState<Highlight | null>(null);
-  const [viewingHighlight, setViewingHighlight] = useState<HighlightViewData | null>(null);
-  const [viewerLoading, setViewerLoading]   = useState(false);
-  const [highlights, setHighlights]         = useState<Highlight[]>([]);
-  const [activeStories, setActiveStories]   = useState<HighlightItem[]>([]);
-  const [hasActiveStory, setHasActiveStory] = useState(false);
   const [profilePseudo, setProfilePseudo] = useState(user?.pseudo ?? "");
   const [profileAvatar, setProfileAvatar] = useState(user?.avatar ?? "");
   const [profileFullName, setProfileFullName] = useState("");
   const [profileBio, setProfileBio] = useState("");
   const [profileGoals, setProfileGoals] = useState<string[]>([]);
   const [profileLevel, setProfileLevel] = useState<string>("");
-  const [followerCount, setFollowerCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
   const [sessionCount, setSessionCount] = useState<number | null>(null);
-  const [postCount, setPostCount] = useState<number>(0);
   const [showGoals, setShowGoals] = useState(false);
   const [userPosts, setUserPosts] = useState<UserPost[]>([]);
-  const [savedPosts, setSavedPosts] = useState<UserPost[]>([]);
-  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
-  const [repostedPostIds, setRepostedPostIds] = useState<Set<string>>(new Set());
-  const [openPostComments, setOpenPostComments] = useState<Set<string>>(new Set());
-  const [burstPostId, setBurstPostId] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<UserPost | null>(null);
   const [editingSelectedPost, setEditingSelectedPost] = useState(false);
 
@@ -1420,64 +903,6 @@ export default function ProfilPage() {
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
   const { settings, updateSettings } = useProfileSettings();
 
-  /* Fetch highlights + active stories from Supabase */
-  useEffect(() => {
-    if (!user?.id) return;
-    const supabase = createClient();
-
-    // Highlights
-    supabase
-      .from("highlights")
-      .select("id, name, cover_url, user_id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => { if (data) setHighlights(data as Highlight[]); });
-
-    // Toutes les stories actives (photo, vidéo, texte, repas, séance) — ring + viewer
-    void Promise.resolve(
-      supabase
-        .from("stories")
-        .select("id, media_url, media_type, caption, content_type, content_data")
-        .eq("user_id", user.id)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: true })
-    ).then(({ data }) => {
-      if (data) {
-        setActiveStories(data as HighlightItem[]);
-        setHasActiveStory(data.length > 0);
-      }
-    }).catch(() => {});
-  }, [user?.id]);
-
-  /* Open highlight viewer — loads items lazily */
-  const openHighlightViewer = async (h: Highlight) => {
-    setViewerLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("highlight_items")
-      .select("id, media_url, media_type, caption")
-      .eq("highlight_id", h.id)
-      .order("display_order", { ascending: true });
-    setViewingHighlight({ id: h.id, name: h.name, cover_url: h.cover_url, items: (data ?? []) as HighlightItem[] });
-    setViewerLoading(false);
-  };
-
-  /* Delete viewer item — update items list live */
-  const handleViewerDeleteItem = async (itemId: string) => {
-    if (!viewingHighlight) return;
-    const supabase = createClient();
-    // "__stories__" = story propre de l'utilisateur → supprimer dans la table stories
-    if (viewingHighlight.id === "__stories__") {
-      await supabase.from("stories").delete().eq("id", itemId);
-      // Refresh activeStories state too
-      setActiveStories((prev) => prev.filter((s) => s.id !== itemId));
-      if (activeStories.length <= 1) setHasActiveStory(false);
-    } else {
-      await supabase.from("highlight_items").delete().eq("id", itemId);
-    }
-    setViewingHighlight((prev) => prev ? { ...prev, items: prev.items.filter((i) => i.id !== itemId) } : null);
-  };
-
   /* Fetch profile + stats */
   useEffect(() => {
     if (!user?.id) return;
@@ -1498,150 +923,64 @@ export default function ProfilPage() {
       });
 
     Promise.all([
-      supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", user.id),
       supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", user.id),
       supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-      supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    ]).then(([f1, f2, f3, f4]) => {
-      setFollowerCount(f1.count ?? 0);
+    ]).then(([f2, f3]) => {
       setFollowingCount(f2.count ?? 0);
       setSessionCount(f3.count ?? 0);
-      setPostCount(f4.count ?? 0);
     });
+  }, [user?.id]);
 
-    // Temps réel — mise à jour du compteur publications
-    const supabaseRT = createClient();
-    const channel = supabaseRT
-      .channel("post-count")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "posts",
-        filter: `user_id=eq.${user.id}`,
-      }, async () => {
-        const { count } = await supabaseRT
-          .from("posts")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id);
-        setPostCount(count ?? 0);
+  /* Rang (aura), amis (les gens que je suis) + affiches gagnées */
+  useEffect(() => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    const uid = user.id;
+
+    void calculerAura(supabase, uid)
+      .then((etat) => {
+        setAura(etat);
+        noterRang(uid, etat.rang); // passage de rang : la célébration part du layout
       })
-      .subscribe();
+      .catch(() => {});
 
-    return () => { supabaseRT.removeChannel(channel).catch(() => {}); };
+    // Amis = les profils que je suis (following)
+    void (async () => {
+      const { data: rows } = await supabase.from("followers").select("following_id").eq("follower_id", uid);
+      const ids = (rows ?? []).map((r) => r.following_id as string);
+      if (ids.length === 0) { setAmis([]); return; }
+      const { data: profiles } = await supabase
+        .from("profiles").select("id, pseudo, avatar_url").in("id", ids);
+      setAmis((profiles ?? []) as { id: string; pseudo: string; avatar_url?: string }[]);
+    })().catch(() => setAmis([]));
+
+    // Affiches de relais débloquées (slugs serie-<x>)
+    void chargerBadges(uid).then((slugs) => setBadgeSlugs(new Set(slugs))).catch(() => {});
   }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
     const supabase = createClient();
 
-    // Publications : posts de l'utilisateur
+    // Affiches de perf : posts « séance » de l'utilisateur
     supabase
       .from("posts")
-      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, views, post_likes(user_id), post_comments(id), post_reposts(user_id)")
+      .select("id, type, caption, description, performance_data, created_at, user_id, media_url, media_type, views")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) { console.error("posts query error:", error.message); return; }
-        if (data) {
-          const posts = (data as unknown as UserPost[]).map((p) => ({
-            ...p,
-            post_likes: p.post_likes ?? [],
-            post_comments: p.post_comments ?? [],
-            post_reposts: p.post_reposts ?? [],
-            likes_count: p.post_likes?.length ?? 0,
-          }));
-          setUserPosts(posts);
-          // Initialiser les sets de likes/reposts
-          const liked = new Set<string>();
-          const reposted = new Set<string>();
-          posts.forEach((p) => {
-            if (p.post_likes.some((l) => l.user_id === user.id)) liked.add(p.id);
-            if (p.post_reposts.some((r) => r.user_id === user.id)) reposted.add(p.id);
-          });
-          setLikedPostIds(liked);
-          setRepostedPostIds(reposted);
-        }
+        if (data) setUserPosts(data as unknown as UserPost[]);
       });
 
-    // Vidéos enregistrées depuis post_saves (distinct des likes)
-    supabase
-      .from("post_saves")
-      .select("post_id, posts!post_id(id, type, caption, performance_data, created_at, user_id, media_url, media_type)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          const posts = data.map((d: { posts: UserPost }) => d.posts).filter(Boolean);
-          setSavedPosts(posts);
-        }
-      });
-
-    // Séances enregistrées : workout sessions
+    // Séances : workout sessions
     supabase
       .from("workout_sessions")
-      .select("id, title, started_at, duration_minutes, elapsed_seconds")
+      .select("id, title, started_at, duration_minutes, elapsed_seconds, exercises, category")
       .eq("user_id", user.id)
       .order("started_at", { ascending: false })
       .limit(50)
       .then(({ data }) => { if (data) setWorkoutSessions(data as WorkoutSessionItem[]); });
-
-    // ── Temps réel : likes / commentaires / reposts ──
-    const rt = createClient();
-
-    // Quelqu'un like un post de l'utilisateur
-    const likesChannel = rt.channel("profile-post-likes")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_likes" }, (payload) => {
-        const { post_id, user_id } = payload.new as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_likes: p.post_likes.some((l) => l.user_id === user_id) ? p.post_likes : [...p.post_likes, { user_id }],
-          likes_count: (p.likes_count ?? p.post_likes.length) + 1,
-        }));
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "post_likes" }, (payload) => {
-        const { post_id, user_id } = payload.old as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_likes: p.post_likes.filter((l) => l.user_id !== user_id),
-          likes_count: Math.max(0, (p.likes_count ?? p.post_likes.length) - 1),
-        }));
-      })
-      .subscribe();
-
-    // Quelqu'un commente un post de l'utilisateur
-    const commentsChannel = rt.channel("profile-post-comments")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_comments" }, (payload) => {
-        const { post_id, id } = payload.new as { post_id: string; id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_comments: p.post_comments.some((c) => c.id === id) ? p.post_comments : [...p.post_comments, { id }],
-        }));
-      })
-      .subscribe();
-
-    // Quelqu'un reposte un post de l'utilisateur
-    const repostsChannel = rt.channel("profile-post-reposts")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_reposts" }, (payload) => {
-        const { post_id, user_id } = payload.new as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_reposts: p.post_reposts.some((r) => r.user_id === user_id) ? p.post_reposts : [...p.post_reposts, { user_id }],
-        }));
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "post_reposts" }, (payload) => {
-        const { post_id, user_id } = payload.old as { post_id: string; user_id: string };
-        setUserPosts((prev) => prev.map((p) => p.id !== post_id ? p : {
-          ...p,
-          post_reposts: p.post_reposts.filter((r) => r.user_id !== user_id),
-        }));
-      })
-      .subscribe();
-
-    return () => {
-      rt.removeChannel(likesChannel).catch(() => {});
-      rt.removeChannel(commentsChannel).catch(() => {});
-      rt.removeChannel(repostsChannel).catch(() => {});
-    };
   }, [user?.id]);
 
   const showToast = (msg: string) => {
@@ -1649,58 +988,25 @@ export default function ProfilPage() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const togglePostLike = async (postId: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    const isLiked = likedPostIds.has(postId);
-    setLikedPostIds((prev) => { const n = new Set(prev); isLiked ? n.delete(postId) : n.add(postId); return n; });
-    setUserPosts((prev) => prev.map((p) => p.id !== postId ? p : {
-      ...p,
-      post_likes: isLiked ? p.post_likes.filter((l) => l.user_id !== user.id) : [...p.post_likes, { user_id: user.id }],
-      likes_count: isLiked ? (p.likes_count ?? 1) - 1 : (p.likes_count ?? 0) + 1,
-    }));
-    if (!isLiked) {
-      setBurstPostId(postId);
-      setTimeout(() => setBurstPostId(null), 700);
-      await supabase.from("post_likes").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      // ── Notification au propriétaire du post ──
-      const post = userPosts.find((p) => p.id === postId) ?? savedPosts.find((p) => p.id === postId);
-      if (post && post.user_id !== user.id) {
-        void fetch("/api/notifications/like", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ liker_id: user.id, post_owner_id: post.user_id, post_id: postId }),
-        }).catch(() => {});
-      }
-    } else {
-      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+  // Rejouer une séance de l'historique : on relance le tunnel avec ses exercices
+  // enregistrés ; à défaut, on tente de retrouver une séance « builtin » par son
+  // titre. Si rien n'est rejouable (vieille séance sans exercices), on prévient.
+  const refaireSeance = (session: WorkoutSessionItem) => {
+    const exList = Array.isArray(session.exercises) ? (session.exercises as Exercise[]) : [];
+    const builtinId = resolveSessionId(session.title ?? "");
+    if (exList.length === 0 && !builtinId) {
+      showToast("Séance trop ancienne pour être rejouée 🙏");
+      return;
     }
-  };
-
-  const togglePostRepost = async (postId: string) => {
-    if (!user) return;
-    const supabase = createClient();
-    const isReposted = repostedPostIds.has(postId);
-    setRepostedPostIds((prev) => { const n = new Set(prev); isReposted ? n.delete(postId) : n.add(postId); return n; });
-    setUserPosts((prev) => prev.map((p) => p.id !== postId ? p : {
-      ...p,
-      post_reposts: isReposted ? p.post_reposts.filter((r) => r.user_id !== user.id) : [...p.post_reposts, { user_id: user.id }],
-    }));
-    if (!isReposted) {
-      await supabase.from("post_reposts").upsert({ post_id: postId, user_id: user.id }, { onConflict: "post_id,user_id", ignoreDuplicates: true });
-      showToast("Post boosté ! 🔄");
-      // ── Notification au propriétaire du post ──
-      const post = userPosts.find((p) => p.id === postId) ?? savedPosts.find((p) => p.id === postId);
-      if (post && post.user_id !== user.id) {
-        void fetch("/api/notifications/repost", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reposter_id: user.id, post_owner_id: post.user_id, post_id: postId }),
-        }).catch(() => {});
-      }
-    } else {
-      await supabase.from("post_reposts").delete().eq("post_id", postId).eq("user_id", user.id);
-    }
+    setProfileWorkout({
+      sessionId: exList.length > 0 ? "profile-history" : builtinId!,
+      title: session.title ?? "Séance",
+      accent: "var(--accent)",
+      duration: session.elapsed_seconds ? Math.round(session.elapsed_seconds / 60) : (session.duration_minutes || 30),
+      difficulty: "Intermédiaire",
+      category: session.category ?? "force",
+      exerciseList: exList,
+    });
   };
 
   const handleLogout = () => {
@@ -1719,28 +1025,12 @@ export default function ProfilPage() {
     void refreshProfile();
   };
 
-  const handleHighlightCreated = (h: Highlight) => {
-    setHighlights((prev) => [...prev, h]);
-    setShowNewHighlight(false);
-    showToast("Catégorie créée ✓");
-    // Open edit immediately so user can add media
-    setEditHighlight(h);
-  };
-
-  const handleHighlightUpdated = (updated: Highlight) => {
-    setHighlights((prev) => prev.map((h) => h.id === updated.id ? updated : h));
-    setEditHighlight(null);
-    showToast("Catégorie modifiée ✓");
-  };
-
-  const handleHighlightDeleted = (id: string) => {
-    setHighlights((prev) => prev.filter((h) => h.id !== id));
-    setEditHighlight(null);
-    showToast("Catégorie supprimée");
-  };
-
   const displayPseudo = profilePseudo || user?.pseudo || "";
   const displayAvatar = profileAvatar || user?.avatar || "";
+  // Les décorations gagnées (gemme, cadre, anneau, titre, pseudo brillant) se
+  // déduisent du rang déjà calculé : rien à activer, rien à stocker.
+  const rangCourant = aura?.rang ?? RANGS[0];
+  const cosmetiques = cosmetiquesDuRang(aura?.rang.id ?? "");
 
   const refreshGoals = () => {
     const pseudo = displayPseudo;
@@ -1776,6 +1066,23 @@ export default function ProfilPage() {
       {/* ─── Notifs + Premium + Settings — top RIGHT ─── */}
       <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
         <NotificationBell side="top" />
+        {/* Entrée provisoire vers le relais, le temps que l'accueil-parcours
+            lui donne sa vraie place. */}
+        <Link href="/defi">
+          <motion.div
+            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
+            style={{
+              background: "rgba(var(--surface-rgb),0.88)",
+              backdropFilter: "blur(16px)",
+              border: "1px solid rgba(var(--violet-mid-rgb),0.45)",
+              boxShadow: "0 2px 14px rgba(var(--accent-rgb),0.15)",
+            }}
+            aria-label="Le relais"
+          >
+            <Link2 size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+          </motion.div>
+        </Link>
         <Link href="/premium">
           <motion.div
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
@@ -1815,37 +1122,28 @@ export default function ProfilPage() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="flex flex-col items-center text-center mb-6"
         >
-          {/* Avatar — container 120x120, crayon en badge bottom-right en dehors */}
-          <div className="relative mb-4" style={{ width: 120, height: 120 }}>
+          {/* Avatar — container 120x120, crayon en badge bottom-right en dehors.
+              AvatarRang pose par-dessus les décorations gagnées (cadre doré à l'Or,
+              anneau animé au Platine) : rien à activer, ça suit le rang. */}
+          <AvatarRang rang={rangCourant} cosmetiques={cosmetiques} size={120} className="mb-4">
             {/* Cercle avatar cliquable */}
             <motion.div
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
-              onClick={() => hasActiveStory
-                ? setViewingHighlight({ id: "__stories__", name: "Ma story", cover_url: activeStories[0]?.media_url ?? null, items: activeStories })
-                : setShowEdit(true)}
+              onClick={() => setShowEdit(true)}
               className="absolute inset-0 cursor-pointer rounded-full"
             >
-              {/* Ring rotatif story */}
-              {hasActiveStory && (
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: "conic-gradient(#C4A8FF, var(--accent), #7C5CFA, var(--cream-mid), var(--gold), #C4A8FF)" }}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                />
-              )}
               {/* Séparateur blanc */}
-              <div className="absolute rounded-full bg-white" style={{ inset: hasActiveStory ? 3 : 0 }} />
+              <div className="absolute rounded-full bg-white" style={{ inset: 0 }} />
               {/* Photo */}
               <div
                 className="absolute rounded-full overflow-hidden flex items-center justify-center text-4xl"
                 style={{
-                  inset: hasActiveStory ? 7 : 3,
+                  inset: 3,
                   background: displayAvatar ? "transparent" : "linear-gradient(135deg,rgba(var(--tint-violet-rgb),1),rgba(var(--tint-cream-rgb),1))",
                   color: "#7C5CFA",
                   fontWeight: 300,
-                  boxShadow: hasActiveStory ? "none" : "0 12px 40px rgba(var(--accent-rgb),0.35)",
+                  boxShadow: "0 12px 40px rgba(var(--accent-rgb),0.35)",
                 }}
               >
                 {displayAvatar
@@ -1872,15 +1170,20 @@ export default function ProfilPage() {
             >
               <Pencil size={13} strokeWidth={2.3} style={{ color: "#3D2F6B" }} />
             </motion.button>
-          </div>
+          </AvatarRang>
 
-          {/* Pseudo + badge vérifié */}
+          {/* Pseudo + badge vérifié (+ gemme de rang à l'Argent, brillance à l'Éternel) */}
           <div className="flex items-center gap-2">
             <h1
               className="text-[28px] font-black tracking-[-0.03em] leading-none"
               style={{ color: "var(--text-0)" }}
             >
-              {displayPseudo}
+              <PseudoRang
+                rang={rangCourant}
+                cosmetiques={cosmetiques}
+                pseudo={displayPseudo}
+                tailleGemme={22}
+              />
             </h1>
             {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
               <motion.div
@@ -1901,6 +1204,9 @@ export default function ProfilPage() {
               </motion.div>
             )}
           </div>
+
+          {/* Titre débloqué au Diamant */}
+          <TitreRang cosmetiques={cosmetiques} />
 
           {/* Goals / titre */}
           {profileGoals.length > 0 && (
@@ -1931,6 +1237,44 @@ export default function ProfilPage() {
           )}
         </motion.div>
 
+        {/* ─── Rang (l'aura) — la pièce maîtresse ─── */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.06 }}
+          whileTap={{ scale: 0.985 }}
+          onClick={() => setShowRangs(true)}
+          className="w-full flex items-center gap-4 mb-3 px-4 py-3.5 rounded-3xl overflow-hidden cursor-pointer text-left"
+          style={{
+            background: "rgba(var(--surface-rgb),0.8)",
+            border: "1px solid rgba(var(--accent-rgb),0.14)",
+            boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          {aura ? (
+            <>
+              <div className="flex-shrink-0"><GemmeRang rang={aura.rang} size={44} /></div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-bold tracking-[0.12em] uppercase" style={{ color: "var(--text-3)" }}>Ton rang</span>
+                <p className="text-[19px] font-black tracking-[-0.02em] leading-tight" style={{ color: "var(--text-0)" }}>{aura.rang.nom}</p>
+                <p className="text-[12.5px] font-semibold mt-0.5" style={{ color: "var(--text-soft)" }}>
+                  <span style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{aura.exp}</span> / {aura.seuilHaut} EXP
+                </p>
+                <div className="h-[7px] rounded-full mt-2 overflow-hidden" style={{ background: "rgba(var(--tint-violet-rgb),0.9)" }}>
+                  <div className="h-full rounded-full" style={{
+                    width: `${Math.min(100, Math.max(4, ((aura.exp - aura.seuilBas) / Math.max(1, aura.seuilHaut - aura.seuilBas)) * 100))}%`,
+                    background: "linear-gradient(90deg,#8B5CF6,#C13BC1)",
+                  }} />
+                </div>
+              </div>
+              <ChevronRight size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+            </>
+          ) : (
+            <div className="h-[60px] w-full rounded-2xl animate-pulse" style={{ background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+          )}
+        </motion.button>
+
         {/* Stats row */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -1939,16 +1283,16 @@ export default function ProfilPage() {
           className="flex items-stretch mb-3 rounded-3xl overflow-hidden"
           style={{
             background: "rgba(var(--surface-rgb),0.8)",
-            border: "1px solid rgba(var(--surface-rgb),0.9)",
+            border: "1px solid rgba(var(--accent-rgb),0.14)",
             boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
             backdropFilter: "blur(10px)",
           }}
         >
           {[
-            { label: "Publications", value: String(postCount), clickable: false },
-            { label: "Abonnés", value: followerCount !== null ? String(followerCount) : "0", clickable: true },
-            { label: "Abonnements", value: followingCount !== null ? String(followingCount) : "0", clickable: true },
-          ].map(({ label, value, clickable }, i) => (
+            { label: "Amis", value: followingCount !== null ? String(followingCount) : "0", clickable: true, tab: "amis" as const },
+            { label: "Séances", value: sessionCount !== null ? String(sessionCount) : "0", clickable: true, tab: "seances" as const },
+            { label: "Série", value: `🔥 ${aura?.detail.streak ?? 0}`, clickable: false, tab: null },
+          ].map(({ label, value, clickable, tab }, i) => (
             <div key={label} className="flex items-stretch flex-1">
               {i > 0 && (
                 <div className="w-px self-stretch my-3.5" style={{ background: "rgba(var(--violet-mid-rgb),0.3)" }} />
@@ -1956,99 +1300,18 @@ export default function ProfilPage() {
               <motion.button
                 whileHover={clickable ? { scale: 1.05 } : {}}
                 whileTap={clickable ? { scale: 0.94 } : {}}
-                onClick={() => { if (clickable) setShowFollowList(label as "Abonnés" | "Abonnements"); }}
+                onClick={() => { if (tab) setActiveTab(tab); }}
                 className="flex-1 flex flex-col items-center py-4"
                 style={{ cursor: clickable ? "pointer" : "default" }}
               >
                 <span className="text-[24px] font-black leading-none" style={{ color: "var(--text-0)", letterSpacing: "-0.03em" }}>
                   {value}
                 </span>
-                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "#B0BBCA" }}>
+                <span className="text-[10px] font-bold tracking-[0.12em] uppercase mt-1.5" style={{ color: clickable ? "var(--accent)" : "var(--text-3)" }}>
                   {label}
                 </span>
               </motion.button>
             </div>
-          ))}
-        </motion.div>
-
-        {/* ─── Stories à la une ─── */}
-        <motion.div
-          data-tour-anchor="profil-highlights"
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.17 }}
-          className="flex items-center gap-4 mb-5 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {/* Bouton Nouveau */}
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.93 }}
-            onClick={() => setShowNewHighlight(true)}
-            className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
-          >
-            <div
-              className="w-[68px] h-[68px] rounded-full flex items-center justify-center"
-              style={{
-                background: "rgba(var(--surface-rgb),0.9)",
-                border: "2px dashed rgba(var(--accent-rgb),0.45)",
-                boxShadow: "0 3px 14px rgba(var(--accent-rgb),0.1)",
-              }}
-            >
-              <Plus size={24} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
-            </div>
-            <span className="text-[10px] font-semibold" style={{ color: "var(--text-3)", letterSpacing: "0.02em" }}>Nouveau</span>
-          </motion.button>
-
-          {/* Highlights créés */}
-          {highlights.map((h, i) => (
-            <motion.div
-              key={h.id}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.06, type: "spring", bounce: 0.4 }}
-            >
-              {/* Circle — tap = open viewer */}
-              <div className="relative">
-                <motion.div
-                  whileHover={{ scale: 1.06 }}
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => openHighlightViewer(h)}
-                  className="cursor-pointer"
-                  style={{ width: 68, height: 68, borderRadius: "50%", background: "linear-gradient(135deg,#C4A8FF 0%,var(--cream-mid) 100%)", padding: "2.5px", boxShadow: "0 4px 18px rgba(var(--accent-rgb),0.25)" }}
-                >
-                  <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", padding: "2px" }}>
-                    <div
-                      style={{ width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: h.cover_url ? "transparent" : "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.5),rgba(var(--cream-mid-rgb),0.5))", color: "#5A4A8A", fontSize: 20, fontWeight: 700 }}
-                    >
-                      {h.cover_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img loading="lazy" decoding="async" src={h.cover_url} alt={h.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : h.name.charAt(0).toUpperCase()}
-                    </div>
-                  </div>
-                </motion.div>
-                {/* Loading spinner */}
-                {viewerLoading && (
-                  <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)" }}>
-                    <motion.div className="w-5 h-5 rounded-full border-2"
-                      style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
-                      animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-                  </div>
-                )}
-                {/* Pencil badge — tap = edit */}
-                <motion.button
-                  whileTap={{ scale: 0.85 }}
-                  onClick={(e) => { e.stopPropagation(); setEditHighlight(h); }}
-                  className="absolute -bottom-0.5 -right-0.5 w-[20px] h-[20px] rounded-full flex items-center justify-center cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#C4A8FF,var(--cream-mid))", border: "2.5px solid white", boxShadow: "0 1px 6px rgba(var(--accent-rgb),0.4)" }}
-                >
-                  <Pencil size={8} strokeWidth={3} style={{ color: "#3D2F6B" }} />
-                </motion.button>
-              </div>
-              <span className="text-[10px] font-semibold max-w-[68px] truncate text-center" style={{ color: "var(--text-2)", letterSpacing: "0.02em" }}>{h.name}</span>
-            </motion.div>
           ))}
         </motion.div>
 
@@ -2064,21 +1327,20 @@ export default function ProfilPage() {
           }}
         >
           {([
-            { id: "performances" as const, Icon: Camera,   label: "Posts" },
-            { id: "seances"      as const, Icon: Film,     label: "Vidéos" },
-            { id: "enregistres"  as const, Icon: Bookmark, label: "Enregistrés" },
-            { id: "reglages"     as const, Icon: Dumbbell, label: "Séances" },
+            { id: "sillages" as const, Icon: Sparkles, label: "Sillages" },
+            { id: "seances"  as const, Icon: Dumbbell, label: "Séances" },
+            { id: "amis"     as const, Icon: Users,    label: "Amis" },
           ]).map(({ id, Icon, label }) => (
             <motion.button
               key={id}
               onClick={() => setActiveTab(id)}
               className="flex-1 py-2 rounded-xl text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"
               animate={{
-                background: activeTab === id ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "transparent",
-                color: activeTab === id ? "#3D2F6B" : "var(--text-3)",
+                background: activeTab === id ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "transparent",
+                color: activeTab === id ? "#fff" : "var(--text-3)",
               }}
               style={{
-                boxShadow: activeTab === id ? "0 2px 10px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
+                boxShadow: activeTab === id ? "0 3px 14px rgba(193,59,193,0.35)" : "none",
                 letterSpacing: "0.02em",
               }}
             >
@@ -2091,281 +1353,98 @@ export default function ProfilPage() {
 
       {/* ─── Tab content ─── */}
       <AnimatePresence mode="wait">
-        {activeTab === "performances" && (
+        {/* ─── Sillages : les affiches ─── */}
+        {activeTab === "sillages" && (
           <motion.div
-            key="publications"
+            key="sillages"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="px-5 md:px-8 max-w-3xl mx-auto"
           >
-            {userPosts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
-                </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Partage ta première publication pour lancer ton feed 💜</p>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push("/communaute")}
-                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--accent) 100%)", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
-                >
-                  Publier maintenant
-                </motion.button>
-              </motion.div>
-            ) : (() => {
-                const allPosts = userPosts;
-                return allPosts.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                    style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
+            {/* Affiches du relais — gagnées en clair, verrouillées en cadenas */}
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+              Affiches du relais
+            </p>
+            <div className="grid grid-cols-2 gap-3 mb-8">
+              {(Object.keys(SERIES) as SerieSlug[]).map((slug) => {
+                const serie = SERIES[slug];
+                const gagnee = badgeSlugs.has(`serie-${slug}`);
+                return (
+                  <div
+                    key={slug}
+                    className="relative rounded-2xl overflow-hidden"
+                    style={{ aspectRatio: "9/16", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 10px 26px -12px rgba(0,0,0,0.5)" }}
                   >
-                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                      <Camera size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                    <Image
+                      src={imageEtat(slug, 4)}
+                      alt={serie.nom}
+                      fill
+                      sizes="(max-width:768px) 45vw, 200px"
+                      className="object-cover"
+                      style={{ filter: gagnee ? "none" : "grayscale(1) brightness(0.5)" }}
+                    />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,transparent 45%,rgba(0,0,0,0.72))" }} />
+                    {gagnee && <div className="absolute top-2.5 right-3 text-[13px] font-black" style={{ color: "rgba(255,255,255,0.9)" }}>✦</div>}
+                    <div className="absolute left-3 right-3 bottom-3" style={{ color: "#fff" }}>
+                      <p className="text-[14px] font-black leading-tight">{serie.nom}</p>
+                      <p className="text-[10.5px] font-semibold mt-0.5" style={{ opacity: 0.75 }}>
+                        {gagnee ? "Dévoilée · à deux" : serie.promesse}
+                      </p>
                     </div>
-                    <div className="text-center px-8">
-                      <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune publication</p>
-                      <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes publications apparaîtront ici dès que tu en partageras une.</p>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {allPosts.map((post, idx) => (
-                      <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, delay: idx * 0.06 }}
-                        className="rounded-3xl overflow-hidden cv-auto"
-                        style={{
-                          background: "rgba(var(--surface-rgb),0.85)",
-                          border: "1px solid rgba(var(--surface-rgb),0.9)",
-                          boxShadow: "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-                        }}
-                      >
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-4 pt-4 pb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm font-semibold flex-shrink-0"
-                              style={{ background: displayAvatar ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)" }}>
-                              {displayAvatar
-                                // eslint-disable-next-line @next/next/no-img-element
-                                ? <img loading="lazy" decoding="async" src={displayAvatar} alt="avatar" className="w-full h-full object-cover" />
-                                : displayPseudo.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>@{displayPseudo}</p>
-                                {(user?.is_certified || user?.is_admin || user?.email === "teyprox@gmail.com") && (
-                                  <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--accent),#7C5CFA)" }}>
-                                    <svg width="8" height="8" viewBox="0 0 13 13" fill="none"><path d="M2.5 6.5L5 9L10.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                                {(() => {
-                                  const diff = Date.now() - new Date(post.created_at).getTime();
-                                  const h = Math.floor(diff / 3600000);
-                                  const d = Math.floor(h / 24);
-                                  if (h < 1) return "À l'instant";
-                                  if (h < 24) return `${h}h`;
-                                  if (d < 7) return `${d}j`;
-                                  return new Date(post.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-                                })()}
-                              </p>
-                            </div>
-                          </div>
-                          {/* Bouton options */}
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => { setSelectedPost(post); setEditCaption(post.caption ?? ""); setEditBio(post.description ?? ""); setEditingSelectedPost(true); }}
-                            className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-                            style={{ background: "rgba(var(--accent-rgb),0.1)" }}
-                          >
-                            <MoreHorizontal size={16} strokeWidth={2} style={{ color: "#7C5CFA" }} />
-                          </motion.button>
-                        </div>
-
-                        {/* Titre / Caption */}
-                        {post.caption && (
-                          <p className="px-4 pb-2 text-sm font-semibold leading-snug" style={{ color: "var(--text-1)" }}>
-                            {post.caption}
-                          </p>
-                        )}
-
-                        {/* Media */}
-                        {post.media_url && (
-                          <div className="mx-4 mb-3 rounded-2xl overflow-hidden">
-                            {post.media_type === "video"
-                              ? <VideoPlayer src={post.media_url} maxHeight={380} controls />
-                              // eslint-disable-next-line @next/next/no-img-element
-                              : <img loading="lazy" decoding="async" src={post.media_url} alt="" className="w-full object-cover rounded-2xl" style={{ maxHeight: 380 }} />
-                            }
-                          </div>
-                        )}
-
-                        {/* PerformanceCard — cliquable pour ouvrir le détail */}
-                        {post.performance_data && (["workout", "meal", "day"] as const).includes(
-                          (post.performance_data as { type?: string }).type as "workout" | "meal" | "day"
-                        ) && (
-                          <motion.div
-                            className="px-4 mb-3 cursor-pointer"
-                            whileTap={{ scale: 0.985 }}
-                            onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
-                          >
-                            <PerformanceCard data={post.performance_data as PerformanceData} size="md" interactive />
-                          </motion.div>
-                        )}
-
-                        {/* Description */}
-                        {post.description && (
-                          <p className="px-4 pb-2 text-sm font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
-                            {post.description}
-                          </p>
-                        )}
-
-                        {/* Action bar */}
-                        {(() => {
-                          const liked = likedPostIds.has(post.id);
-                          const reposted = repostedPostIds.has(post.id);
-                          const commentsOpen = openPostComments.has(post.id);
-                          const likesCount = post.post_likes?.length ?? post.likes_count ?? 0;
-                          const commentsCount = post.post_comments?.length ?? 0;
-                          const repostsCount = post.post_reposts?.length ?? 0;
-                          return (
-                            <>
-                              <div className="flex items-center gap-4 px-4 pt-3">
-                                {/* Like */}
-                                <motion.button whileTap={{ scale: 0.7 }} onClick={() => togglePostLike(post.id)} className="relative flex items-center cursor-pointer">
-                                  {burstPostId === post.id && [0,1,2,3,4].map((i) => (
-                                    <motion.div key={`b-${post.id}-${i}`} className="absolute pointer-events-none"
-                                      style={{ width: 5, height: 5, borderRadius: "50%", background: i % 2 === 0 ? "#F43F5E" : "#FB7185" }}
-                                      initial={{ scale: 0, x: 0, y: 0, opacity: 1 }}
-                                      animate={{ scale: [0,1.2,0], x: [0,(i-2)*18], y: [0,-20-i*4], opacity: [1,1,0] }}
-                                      transition={{ duration: 0.55, delay: i*0.04 }} />
-                                  ))}
-                                  <motion.div animate={liked ? { scale: [1,1.5,0.9,1.15,1] } : { scale: 1 }} transition={{ duration: 0.5 }}>
-                                    <Heart size={20} strokeWidth={liked ? 0 : 1.5} fill={liked ? "#F43F5E" : "none"} style={{ color: liked ? "#F43F5E" : "var(--text-1)" }} />
-                                  </motion.div>
-                                </motion.button>
-
-                                {/* Commentaire */}
-                                <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85, rotate: -15 }}
-                                  onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}
-                                  className="flex items-center cursor-pointer">
-                                  <MessageCircle size={20} strokeWidth={1.5} fill={commentsOpen ? "rgba(var(--accent-rgb),0.2)" : "none"} style={{ color: commentsOpen ? "var(--accent)" : "var(--text-1)" }} />
-                                </motion.button>
-
-                                {/* Repost */}
-                                <motion.button whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}
-                                  onClick={() => togglePostRepost(post.id)} className="flex items-center cursor-pointer">
-                                  <motion.div animate={reposted ? { rotate: [0,360], scale: [1,1.3,1] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
-                                    <Repeat2 size={20} strokeWidth={1.5} style={{ color: reposted ? "#34D399" : "var(--text-1)" }} />
-                                  </motion.div>
-                                </motion.button>
-
-                                {/* Partager */}
-                                <motion.button whileHover={{ scale: 1.15, rotate: 15 }} whileTap={{ scale: 0.85 }} className="flex items-center cursor-pointer">
-                                  <Share2 size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-                                </motion.button>
-                              </div>
-
-                              {/* Stats */}
-                              <div className="px-4 pt-2 pb-1">
-                                {likesCount > 0 && (
-                                  <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                                    {likesCount} j&apos;aime{repostsCount > 0 ? ` · ${repostsCount} repartage${repostsCount > 1 ? "s" : ""}` : ""}
-                                  </p>
-                                )}
-                                <motion.p whileHover={{ color: "var(--text-1)" }}
-                                  className="text-[11px] mt-1 cursor-pointer mb-3" style={{ color: "var(--text-3)" }}
-                                  onClick={() => setOpenPostComments((p) => { const n = new Set(p); n.has(post.id) ? n.delete(post.id) : n.add(post.id); return n; })}>
-                                  {commentsOpen ? "Masquer les commentaires" : commentsCount > 0 ? `Voir les ${commentsCount} commentaires` : "Ajouter un commentaire"}
-                                </motion.p>
-                              </div>
-
-                              {/* Section commentaires */}
-                              <AnimatePresence>
-                                {commentsOpen && (
-                                  <CommentsSection
-                                    postId={post.id}
-                                    initialCount={commentsCount}
-                                    onClose={() => setOpenPostComments((p) => { const n = new Set(p); n.delete(post.id); return n; })}
-                                    onCommentAdded={() => setUserPosts((prev) => prev.map((pp) => pp.id !== post.id ? pp : { ...pp, post_comments: [...pp.post_comments, { id: `opt-${Date.now()}` }] }))}
-                                  />
-                                )}
-                              </AnimatePresence>
-                            </>
-                          );
-                        })()}
-                      </motion.div>
-                    ))}
+                    {!gagnee && (
+                      <div className="absolute inset-0 grid place-items-center" style={{ background: "rgba(10,6,18,0.42)" }}>
+                        <Lock size={22} strokeWidth={2} style={{ color: "rgba(255,255,255,0.55)" }} />
+                      </div>
+                    )}
                   </div>
                 );
-              })()}
-          </motion.div>
-        )}
+              })}
+            </div>
 
-        {activeTab === "seances" && (
-          <motion.div
-            key="videos"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-3xl mx-auto"
-          >
+            {/* Tes affiches de perf (posts séance) */}
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+              Tes affiches de perf
+            </p>
             {(() => {
-              const videoPosts = userPosts.filter(p => p.media_type === "video");
-              return videoPosts.length === 0 ? (
+              const posters = userPosts.filter((p) => p.type === "workout" && p.performance_data);
+              return posters.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                  className="flex flex-col items-center justify-center py-14 gap-4 rounded-3xl"
                   style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
                 >
-                  <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                    <Film size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4),rgba(var(--cream-mid-rgb),0.35))" }}>
+                    <Sparkles size={24} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                   </div>
                   <div className="text-center px-8">
-                    <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune vidéo</p>
-                    <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes publications vidéo apparaîtront ici automatiquement.</p>
+                    <p className="text-[15px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Pas encore d&apos;affiche</p>
+                    <p className="text-[12.5px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>Termine une séance pour créer ton premier sillage.</p>
                   </div>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => router.push("/progression")}
+                    className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                    style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}
+                  >
+                    Lancer une séance
+                  </motion.button>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-3 gap-1">
-                  {videoPosts.map((post) => (
+                <div className="grid grid-cols-2 gap-4">
+                  {posters.map((post, idx) => (
                     <motion.div
                       key={post.id}
-                      className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
-                      style={{ background: "#000" }}
-                      whileHover={{ scale: 0.97 }}
-                      onClick={() => setSelectedPost(post)}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.32, delay: idx * 0.05 }}
+                      className="cursor-pointer flex justify-center"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => { setSelectedPost(post); setEditingSelectedPost(false); }}
                     >
-                      <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
-                      {/* Play icon overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-                          <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full"
-                        style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <span className="text-[10px] font-semibold text-white">{formatViews(post.views ?? 0)}</span>
-                      </div>
+                      <PerfShareCard data={perfDataToShare(post.performance_data as PerformanceData, { user: displayPseudo })} width="100%" />
                     </motion.div>
                   ))}
                 </div>
@@ -2374,69 +1453,10 @@ export default function ProfilPage() {
           </motion.div>
         )}
 
-        {activeTab === "enregistres" && (
+        {/* ─── Séances : historique ─── */}
+        {activeTab === "seances" && (
           <motion.div
-            key="enregistres"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="px-5 md:px-8 max-w-3xl mx-auto"
-          >
-            {savedPosts.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
-                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
-              >
-                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Bookmark size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
-                </div>
-                <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun enregistrement</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Les vidéos que tu sauvegardes dans le feed apparaîtront ici.</p>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="grid grid-cols-3 gap-1">
-                {savedPosts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    className="aspect-square rounded-lg overflow-hidden relative cursor-pointer"
-                    style={{ background: "#000" }}
-                    whileHover={{ scale: 0.97 }}
-                    onClick={() => setSelectedPost(post)}
-                  >
-                    {post.media_type === "video"
-                      ? <video src={post.media_url ?? undefined} className="w-full h-full object-cover" muted playsInline />
-                      // eslint-disable-next-line @next/next/no-img-element
-                      : <img loading="lazy" decoding="async" src={post.media_url ?? undefined} alt="" className="w-full h-full object-cover" />
-                    }
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
-                        {post.media_type === "video"
-                          ? <svg width="12" height="14" viewBox="0 0 12 14" fill="white"><path d="M1 1l10 6L1 13V1z"/></svg>
-                          : <Bookmark size={12} fill="white" style={{ color: "white" }} />
-                        }
-                      </div>
-                    </div>
-                    {/* Badge bookmark */}
-                    <div className="absolute top-1.5 right-1.5">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.85)" }}>
-                        <Bookmark size={10} fill="white" style={{ color: "white" }} />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === "reglages" && (
-          <motion.div
-            key="seances-enr"
+            key="seances-list"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
@@ -2451,11 +1471,11 @@ export default function ProfilPage() {
                 style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
               >
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                  <Dumbbell size={28} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                  <Dumbbell size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </div>
                 <div className="text-center px-8">
-                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance enregistrée</p>
-                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes séances enregistrées apparaîtront ici une fois complétées.</p>
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucune séance</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Tes séances terminées apparaîtront ici, chacune vaut +30 EXP.</p>
                 </div>
               </motion.div>
             ) : (
@@ -2467,13 +1487,15 @@ export default function ProfilPage() {
                   return (
                     <motion.div
                       key={session.id}
-                      className="flex items-center gap-4 px-4 py-3.5 rounded-2xl"
+                      onClick={() => refaireSeance(session)}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer"
                       style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.2)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.06)" }}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
+                      whileTap={{ scale: 0.99 }}
                     >
                       <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
-                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "#5A4A8A" }} />
+                        <Dumbbell size={16} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold truncate" style={{ color: "var(--text-0)" }}>{session.title || "Séance"}</p>
@@ -2482,10 +1504,20 @@ export default function ProfilPage() {
                           {durationMin ? ` · ${durationMin} min` : ""}
                         </p>
                       </div>
-                      {/* Delete button */}
                       <motion.button
                         whileTap={{ scale: 0.85 }}
-                        onClick={async () => {
+                        onClick={(e) => { e.stopPropagation(); refaireSeance(session); }}
+                        className="h-8 px-3 rounded-xl flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer"
+                        style={{ background: "rgba(var(--accent-rgb),0.10)", border: "1px solid rgba(var(--accent-rgb),0.22)" }}
+                        title="Refaire cette séance"
+                      >
+                        <Play size={12} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+                        <span className="text-[11.5px] font-bold" style={{ color: "var(--accent)" }}>Refaire</span>
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.85 }}
+                        onClick={async (e) => {
+                          e.stopPropagation();
                           const supabase = createClient();
                           const { error } = await supabase.from("workout_sessions").delete().eq("id", session.id);
                           if (!error) setWorkoutSessions(prev => prev.filter(s => s.id !== session.id));
@@ -2503,7 +1535,74 @@ export default function ProfilPage() {
             )}
           </motion.div>
         )}
+
+        {/* ─── Amis ─── */}
+        {activeTab === "amis" && (
+          <motion.div
+            key="amis"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="px-5 md:px-8 max-w-3xl mx-auto"
+          >
+            {amis === null ? (
+              <div className="flex justify-center py-16">
+                <motion.div className="w-6 h-6 rounded-full border-2"
+                  style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
+                  animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
+              </div>
+            ) : amis.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 gap-5 rounded-3xl"
+                style={{ background: "linear-gradient(135deg,rgba(var(--surface-rgb),0.85) 0%,rgba(var(--tint-violet-rgb),0.5) 100%)", border: "1.5px dashed rgba(var(--accent-rgb),0.25)" }}
+              >
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.4) 0%,rgba(var(--cream-mid-rgb),0.35) 100%)", boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.15)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
+                  <Users size={28} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+                </div>
+                <div className="text-center px-8">
+                  <p className="text-[17px] font-black tracking-tight" style={{ color: "var(--text-1)" }}>Aucun ami pour l&apos;instant</p>
+                  <p className="text-[13px] font-light mt-2 leading-relaxed" style={{ color: "var(--text-3)" }}>Lance un relais à deux pour t&apos;entourer.</p>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push("/communaute")}
+                  className="px-6 py-2.5 rounded-2xl text-[13px] font-semibold cursor-pointer"
+                  style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "#fff", boxShadow: "0 6px 20px rgba(var(--accent-rgb),0.3)" }}>
+                  Ouvrir la communauté
+                </motion.button>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-4 gap-x-2 gap-y-5">
+                {amis.map((ami) => (
+                  <Link key={ami.id} href={`/profil/${ami.pseudo}`} className="flex flex-col items-center gap-2">
+                    <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold"
+                      style={{ background: ami.avatar_url ? "transparent" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))", color: "var(--text-1)", border: "2px solid rgba(var(--surface-rgb),1)", boxShadow: "0 3px 10px -3px rgba(var(--accent-rgb),0.5)" }}>
+                      {ami.avatar_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img loading="lazy" decoding="async" src={ami.avatar_url} alt={ami.pseudo} className="w-full h-full object-cover" />
+                        : ami.pseudo.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[10.5px] font-semibold max-w-[64px] truncate" style={{ color: "var(--text-2)" }}>{ami.pseudo}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
       </AnimatePresence>
+
+      {/* La galerie des rangs s'ouvre ICI (elle porte son propre portail) : la
+          carte « Ton rang » renvoyait vers l'accueil, on perdait l'utilisateur. */}
+      <RangsModal
+        open={showRangs}
+        onClose={() => setShowRangs(false)}
+        expActuel={aura?.exp ?? 0}
+        rangActuelId={rangCourant.id}
+        pseudo={displayPseudo}
+        avatarUrl={displayAvatar || null}
+        isAdmin={!!user?.is_admin}
+      />
 
       {/* ── Modals ── */}
       <AnimatePresence>
@@ -2526,38 +1625,6 @@ export default function ProfilPage() {
             onSave={() => { showToast("Objectifs mis à jour ✓"); refreshGoals(); }}
           />
         )}
-        {showNewHighlight && user && (
-          <NewHighlightModal
-            userId={user.id}
-            onCreated={handleHighlightCreated}
-            onClose={() => setShowNewHighlight(false)}
-          />
-        )}
-        {editHighlight && user && (
-          <EditHighlightModal
-            highlight={editHighlight}
-            userId={user.id}
-            onUpdated={handleHighlightUpdated}
-            onDeleted={() => handleHighlightDeleted(editHighlight.id)}
-            onClose={() => setEditHighlight(null)}
-          />
-        )}
-        {viewingHighlight && user && (
-          <StoryHighlightViewer
-            highlight={viewingHighlight}
-            isOwner={viewingHighlight.id === "__stories__" || (!!viewingHighlight.id && highlights.some((h) => h.id === viewingHighlight.id))}
-            onClose={() => setViewingHighlight(null)}
-            onDeleteItem={handleViewerDeleteItem}
-            onAddItems={() => {
-              setViewingHighlight(null);
-              const h = highlights.find((x) => x.id === viewingHighlight.id);
-              if (h) setEditHighlight(h);
-            }}
-          />
-        )}
-        {showFollowList && user && (
-          <FollowListModal type={showFollowList} ownerId={user.id} onClose={() => setShowFollowList(null)} />
-        )}
         {toast && <Toast message={toast} />}
         {/* WorkoutGuideModal lancé depuis un post du profil */}
         {profileWorkout && (
@@ -2568,6 +1635,7 @@ export default function ProfilPage() {
             duration={profileWorkout.duration}
             difficulty={profileWorkout.difficulty}
             category={profileWorkout.category}
+            heroImage={heroImageForSeance({ title: profileWorkout.title, category: profileWorkout.category as WorkoutCategory })}
             exerciseList={profileWorkout.exerciseList}
             onClose={() => setProfileWorkout(null)}
           />
@@ -2673,12 +1741,33 @@ export default function ProfilPage() {
                       }
                     </div>
                   )}
-                  {/* PerformanceCard — taille complète dans le modal */}
-                  {selectedPost.performance_data && (["workout", "meal", "day"] as const).includes(
-                    (selectedPost.performance_data as { type?: string }).type as "workout" | "meal" | "day"
-                  ) && (
+                  {/* Séance → poster « aura » ; repas/jour → carte classique */}
+                  {selectedPost.type === "workout" && selectedPost.performance_data ? (
+                    <div className="px-4 pb-3 flex justify-center">
+                      <PerfShareCard
+                        data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })}
+                        width="min(320px, 100%)"
+                      />
+                    </div>
+                  ) : selectedPost.performance_data && (["meal", "day"] as const).includes(
+                    (selectedPost.performance_data as { type?: string }).type as "meal" | "day"
+                  ) ? (
                     <div className="px-4 pb-3">
                       <PerformanceCard data={selectedPost.performance_data as PerformanceData} size="md" />
+                    </div>
+                  ) : null}
+
+                  {/* Télécharger la carte de perf (posts workout) */}
+                  {selectedPost.type === "workout" && selectedPost.performance_data && (
+                    <div className="px-4 pb-3">
+                      <PerfShareButton
+                        data={perfDataToShare(selectedPost.performance_data as PerformanceData, { user: displayPseudo })}
+                        label="Télécharger la carte"
+                        iconSize={16}
+                        ariaLabel="Télécharger la carte de perf"
+                        className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold cursor-pointer"
+                        style={{ background: "rgba(139,92,246,0.1)", color: "var(--accent)", border: "1px solid rgba(139,92,246,0.3)" }}
+                      />
                     </div>
                   )}
 
@@ -2735,12 +1824,7 @@ export default function ProfilPage() {
                       {selectedPost.description}
                     </p>
                   )}
-                  <div className="px-4 pb-5 flex items-center gap-2">
-                    <Heart size={16} strokeWidth={0} fill="#F43F5E" style={{ color: "#F43F5E" }} />
-                    <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                      {selectedPost.likes_count ?? 0}{" "}j&apos;aime
-                    </span>
-                  </div>
+                  <div className="pb-3" />
                 </>
               )}
 

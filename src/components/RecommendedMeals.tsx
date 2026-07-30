@@ -1,14 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Lock } from "lucide-react";
+import { RefreshCw, Lock, Plus, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { useNutritionGoals } from "@/hooks/useNutritionGoals";
+import { loadTasteProfileLocal, tasteSignature } from "@/lib/tasteProfile";
+import { macrosForDish, normalizeAccents } from "@/lib/macros";
+import { localDateStr } from "@/lib/dates";
 
 /* ─── Types ─── */
-type MealItem = { type: string; nom: string; calories: number };
+type PoolItem = { nom: string; calories: number; proteins?: number; carbs?: number; fats?: number; i?: boolean; prepMin?: number; difficulty?: string };
+type Pools = Record<string, PoolItem[]>;
+type MealItem = { type: string; nom: string; calories: number; proteins?: number; carbs?: number; fats?: number };
 type MealDay = { jour: string; repas: MealItem[] };
 type MealPlan = { semaine: MealDay[] };
 
@@ -32,7 +39,7 @@ function mealTypesForCount(n: number): string[] {
 }
 
 /* ─── Banque de repas connus de tous ─── */
-const POOLS: Record<string, { nom: string; calories: number; i?: boolean }[]> = {
+const POOLS: Pools = {
   "petit-dejeuner": [
     { nom: "Tartines beurre & confiture", calories: 350 },
     { nom: "Bol de céréales + lait", calories: 320 },
@@ -157,6 +164,49 @@ const POOLS: Record<string, { nom: string; calories: number; i?: boolean }[]> = 
   ],
 };
 
+/* ─── Filtre régime / allergies (heuristique basée sur le nom du plat) ─── */
+export type DietKey = "vegetarien" | "vegan" | "sans-gluten" | "sans-lactose";
+
+export const DIET_OPTIONS: { key: DietKey; label: string; emoji: string }[] = [
+  { key: "vegetarien",   label: "Végé",         emoji: "🌱" },
+  { key: "vegan",        label: "Vegan",        emoji: "🌿" },
+  { key: "sans-gluten",  label: "Sans gluten",  emoji: "🌾" },
+  { key: "sans-lactose", label: "Sans lactose", emoji: "🥛" },
+];
+
+const KW_MEAT =["poulet", "dinde", "escalope", "steak", "boeuf", "jambon", "bacon", "lardons", "saumon", "thon", "poisson", "pane", "bolognaise", "carbonara", "parmentier", "chili con carne", "tacos", "burger", "croque", "poke", "boulettes", "hache", "cantonais", "crevette", "viande"];
+const KW_ANIMAL = ["oeuf", "omelette", "fromage", "yaourt", "lait", "creme", "beurre", "skyr", "miel", "brioche", "croissant", "crepe", "pancake", "quiche", "gratin", "granola", "chocolat chaud", "madeleine", "pain perdu", "cookies", "muesli", "cesar", "flan"];
+const KW_GLUTEN = ["pates", "pate ", "pain", "tartine", "baguette", "croissant", "brioche", "crepe", "pancake", "biscuit", "cookies", "cereales", "muesli", "granola", "lasagnes", "burger", "sandwich", "wrap", "couscous", "boulgour", "gnocchis", "quiche", "tarte", "madeleine", "croque", "nouilles", "pain perdu", "toasts", "semoule"];
+const KW_LACTOSE = ["fromage", "yaourt", "lait", "creme", "beurre", "skyr", "gratin", "croque", "quiche", "brioche", "chocolat chaud", "glace", "carbonara", "lasagnes", "flan", "madeleine", "cookies", "pancake", "crepe", "granola", "muesli"];
+
+function classifyMeal(nom: string): { veg: boolean; vegan: boolean; gluten: boolean; lactose: boolean } {
+  const n = normalizeAccents(nom);
+  const has = (arr: string[]) => arr.some((k) => n.includes(k));
+  const veg = !has(KW_MEAT);
+  return { veg, vegan: veg && !has(KW_ANIMAL), gluten: has(KW_GLUTEN), lactose: has(KW_LACTOSE) };
+}
+
+function matchesDiet(nom: string, active: Set<DietKey>): boolean {
+  if (active.size === 0) return true;
+  const t = classifyMeal(nom);
+  if (active.has("vegetarien") && !t.veg) return false;
+  if (active.has("vegan") && !t.vegan) return false;
+  if (active.has("sans-gluten") && t.gluten) return false;
+  if (active.has("sans-lactose") && t.lactose) return false;
+  return true;
+}
+
+/* Filtre chaque pool selon le régime actif (garde le pool complet si le filtre le vide). */
+function filterPoolsByDiet(active: Set<DietKey>): Pools {
+  if (active.size === 0) return POOLS;
+  const out = {} as Pools;
+  for (const type of Object.keys(POOLS)) {
+    const filtered = POOLS[type].filter((m) => matchesDiet(m.nom, active));
+    out[type] = filtered.length >= 2 ? filtered : POOLS[type];
+  }
+  return out;
+}
+
 const DAY_LABELS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 /* ─── PRNG déterministe (seed → suite stable) ─── */
@@ -192,14 +242,14 @@ function weekNumber(): number {
 /* ─── Construit le plan local (instantané, sans IA, sans doublon dans la semaine) ───
    Équilibré : max 2 plats "plaisir" (i:true, ex. steak frites, burger) sur la semaine. */
 const INDULGENT_MAX = 2;
-function buildLocalPlan(userId: string, mealsCount: number, variant: number): MealPlan {
+function buildLocalPlan(userId: string, mealsCount: number, variant: number, pools: Pools, dietKey: string): MealPlan {
   const types = mealTypesForCount(mealsCount);
-  const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}`));
+  const rng = mulberry32(hashStr(`${userId}-w${weekNumber()}-${new Date().getFullYear()}-v${variant}-${dietKey}`));
 
-  const shuffled: Record<string, { nom: string; calories: number; i?: boolean }[]> = {};
+  const shuffled: Record<string, PoolItem[]> = {};
   const cursor: Record<string, number> = {};
   for (const t of types) {
-    if (!shuffled[t]) { shuffled[t] = shuffle(POOLS[t] ?? [], rng); cursor[t] = 0; }
+    if (!shuffled[t]) { shuffled[t] = shuffle(pools[t] ?? [], rng); cursor[t] = 0; }
   }
 
   let indulgentBudget = INDULGENT_MAX;
@@ -211,7 +261,7 @@ function buildLocalPlan(userId: string, mealsCount: number, variant: number): Me
       const pool = shuffled[t];
       if (!pool.length) { semaine[d].repas.push({ type: t, nom: "Repas équilibré", calories: 400 }); continue; }
 
-      let chosen: { nom: string; calories: number; i?: boolean } | null = null;
+      let chosen: PoolItem | null = null;
       // On avance dans la liste mélangée ; on saute les plats "plaisir" si le budget est épuisé
       for (let scanned = 0; scanned < pool.length; scanned++) {
         const item = pool[cursor[t] % pool.length];
@@ -222,14 +272,17 @@ function buildLocalPlan(userId: string, mealsCount: number, variant: number): Me
         break;
       }
       if (!chosen) { chosen = pool[cursor[t] % pool.length]; cursor[t]++; }
-      semaine[d].repas.push({ type: t, nom: chosen.nom, calories: chosen.calories });
+      semaine[d].repas.push({ type: t, nom: chosen.nom, calories: chosen.calories, proteins: chosen.proteins, carbs: chosen.carbs, fats: chosen.fats });
     }
   }
   return { semaine };
 }
 
 /* ─── Repas du jour sélectionné ─── */
-function DayMeals({ day }: { day: MealDay }) {
+function DayMeals({ day, dayIndex, canEat, addedKeys, onEat }: {
+  day: MealDay; dayIndex: number; canEat: boolean;
+  addedKeys: Set<string>; onEat: (m: MealItem) => void;
+}) {
   const total = (day.repas ?? []).reduce((s, m) => s + (m.calories || 0), 0);
   return (
     <motion.div key={day.jour}
@@ -237,21 +290,46 @@ function DayMeals({ day }: { day: MealDay }) {
       exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2, ease: "easeOut" }}
       className="flex flex-col gap-2">
       {total > 0 && (
-        <p className="text-[10px] font-semibold self-end" style={{ color: "#D4A843" }}>~{total} kcal / jour</p>
+        <p className="text-[10px] font-semibold self-end" style={{ color: "var(--gold)" }}>~{total} kcal / jour</p>
       )}
-      {(day.repas ?? []).map((m, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
-          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(212,192,255,0.25)" }}>
-          <span className="text-lg flex-shrink-0">{MEAL_EMOJI[m.type] ?? "🍽️"}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
-            <p className="text-[13px] font-medium leading-snug" style={{ color: "#2D3748" }}>{m.nom}</p>
+      {(day.repas ?? []).map((m, i) => {
+        const added = addedKeys.has(`${dayIndex}-${m.type}-${m.nom}`);
+        // Macros estimées (cohérentes avec les calories) — affichées avec « ≈ ».
+        const mac = m.calories > 0 ? macrosForDish(m.nom, m.calories, m.proteins, m.carbs, m.fats) : null;
+        return (
+          <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+            style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.25)" }}>
+            <span className="text-lg flex-shrink-0">{MEAL_EMOJI[m.type] ?? "🍽️"}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{MEAL_LABEL[m.type] ?? "Repas"}</p>
+              <p className="text-[13px] font-medium leading-snug" style={{ color: "var(--text-1)" }}>{m.nom}</p>
+              {mac && (
+                <p className="text-[9px] leading-tight mt-0.5" style={{ color: "var(--text-3)" }}>
+                  ≈ {mac.proteins}g protéines · {mac.carbs}g glucides · {mac.fats}g lipides
+                </p>
+              )}
+            </div>
+            {m.calories > 0 && (
+              <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--accent)" }}>{m.calories} kcal</span>
+            )}
+            {canEat && (
+              <motion.button
+                whileTap={{ scale: 0.85 }}
+                onClick={() => onEat(m)}
+                title="Ajouter à mon journal"
+                className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{
+                  background: added ? "rgba(43,212,160,0.18)" : "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                  boxShadow: added ? "none" : "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
+                }}>
+                {added
+                  ? <Check size={13} strokeWidth={2.5} style={{ color: "#2BD4A0" }} />
+                  : <Plus size={13} strokeWidth={2.5} style={{ color: "var(--text-1)" }} />}
+              </motion.button>
+            )}
           </div>
-          {m.calories > 0 && (
-            <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "#A78BFA" }}>{m.calories} kcal</span>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </motion.div>
   );
 }
@@ -261,6 +339,7 @@ export default function RecommendedMeals() {
   const { user } = useAuth();
   const router = useRouter();
   const isPremium = !!(user?.is_admin || user?.is_premium);
+  const supabase = useMemo(() => createClient(), []); // une seule instance réutilisée
   const [mealsCount, setMealsCount] = useState(4);
   const [variant, setVariant] = useState(0);
 
@@ -273,13 +352,12 @@ export default function RecommendedMeals() {
   /* Charge le nombre de repas/jour depuis le profil (sinon 4 par défaut) */
   useEffect(() => {
     if (!user) return;
-    const supabase = createClient();
     supabase.from("profiles").select("onboarding_meals_day").eq("id", user.id).maybeSingle()
       .then(({ data }) => {
         const n = data?.onboarding_meals_day;
         if (n && n >= 2) setMealsCount(Math.min(6, n));
       });
-  }, [user]);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Variant persistant (Régénérer) */
   useEffect(() => {
@@ -290,8 +368,139 @@ export default function RecommendedMeals() {
     } catch { /* ignore */ }
   }, [user]);
 
+  /* Régime / allergies (filtre des suggestions, persistant en local) */
+  const [diet, setDiet] = useState<Set<DietKey>>(new Set());
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const raw = localStorage.getItem(`vaiiya_diet_${user.id}`);
+      if (raw) setDiet(new Set(JSON.parse(raw) as DietKey[]));
+    } catch { /* ignore */ }
+  }, [user]);
+  const toggleDiet = (key: DietKey) => {
+    setDiet((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      if (user) { try { localStorage.setItem(`vaiiya_diet_${user.id}`, JSON.stringify([...next])); } catch { /* ignore */ } }
+      return next;
+    });
+  };
+  const dietKey = [...diet].sort().join(",");
+  const dietPools = useMemo(() => filterPoolsByDiet(diet), [dietKey]); // eslint-disable-line
+
+  /* Objectif du jour — depuis le profil central (base), partagé avec l'IA. */
+  const { goals } = useNutritionGoals();
+  const goalCals = goals.calories;
+
+  /* ── Banque de plats PERSONNALISÉE par l'IA (cache 1 semaine).
+     Si dispo, elle remplace le catalogue figé ; sinon on garde le secours. ─── */
+  const [aiPools, setAiPools] = useState<Pools | null>(null);
+  const [menuLoading, setMenuLoading] = useState(false);
+  // Re-générer le menu quand les goûts changent (popup ou Paramètres).
+  const [tasteVersion, setTasteVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setTasteVersion((v) => v + 1);
+    window.addEventListener("vaiiya:taste", bump);
+    return () => window.removeEventListener("vaiiya:taste", bump);
+  }, []);
+  useEffect(() => {
+    if (!user) { setAiPools(null); return; }
+    // Profil de goûts (popup ou Paramètres) — local, lecture immédiate.
+    const taste = loadTasteProfileLocal(user.id);
+    // La signature des goûts entre dans la clé → éditer ses goûts régénère le menu.
+    const cacheKey = `vaiiya_menu_pool_${user.id}_w${weekNumber()}_m${mealsCount}_${dietKey || "all"}_t${tasteSignature(taste)}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) { setAiPools(JSON.parse(cached) as Pools); return; }
+    } catch { /* ignore */ }
+    if (goalCals <= 0) return; // on attend de connaître l'objectif avant de générer
+
+    let cancelled = false;
+    setMenuLoading(true);
+    (async () => {
+      // Coups de cœur = plats les plus fréquents de l'historique réel.
+      let favorites: string[] = [];
+      try {
+        const { data } = await supabase
+          .from("nutrition_logs").select("food_name")
+          .eq("user_id", user.id).order("date", { ascending: false }).limit(150);
+        const counts = new Map<string, number>();
+        ((data ?? []) as { food_name?: string }[]).forEach((r) => {
+          const k = (r.food_name ?? "").trim();
+          if (k) counts.set(k, (counts.get(k) ?? 0) + 1);
+        });
+        favorites = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n]) => n);
+      } catch { /* ignore */ }
+
+      try {
+        const res = await aiFetch("/api/nutrition/menu", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mealTypes: mealTypesForCount(mealsCount), perType: 8,
+            calorieTarget: goalCals, diet: [...diet], taste, favorites,
+          }),
+        });
+        const json = await res.json();
+        if (cancelled || !res.ok || !json?.pools || typeof json.pools !== "object") return;
+        // Normalise (indulgent → i, nombres arrondis, plats vides filtrés).
+        const rawPools = json.pools as Record<string, unknown>;
+        const norm: Pools = {};
+        const num = (v: unknown) => (v == null || isNaN(Number(v)) ? undefined : Math.round(Number(v)));
+        for (const t of Object.keys(rawPools)) {
+          const arr = rawPools[t];
+          if (!Array.isArray(arr)) continue;
+          const items: PoolItem[] = [];
+          for (const raw of arr) {
+            const x = (raw ?? {}) as Record<string, unknown>;
+            const nom = typeof x.nom === "string" ? x.nom.trim() : "";
+            if (!nom) continue;
+            items.push({
+              nom, calories: num(x.calories) ?? 0,
+              proteins: num(x.proteins), carbs: num(x.carbs), fats: num(x.fats),
+              i: x.indulgent === true || x.i === true,
+              prepMin: num(x.prepMin),
+              difficulty: typeof x.difficulty === "string" ? x.difficulty : undefined,
+            });
+          }
+          if (items.length) norm[t] = items;
+        }
+        if (!Object.keys(norm).length) return;
+        setAiPools(norm);
+        try { localStorage.setItem(cacheKey, JSON.stringify(norm)); } catch { /* ignore */ }
+      } catch { /* secours = catalogue figé */ }
+      finally { if (!cancelled) setMenuLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [user, mealsCount, goalCals, dietKey, tasteVersion]); // eslint-disable-line
+
+  /* « Adapté à ta journée » : calories déjà consommées aujourd'hui */
+  const [consumedToday, setConsumedToday] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("nutrition_logs")
+      .select("calories")
+      .eq("user_id", user.id)
+      .eq("date", localDateStr())
+      .then(({ data }) => {
+        setConsumedToday(((data ?? []) as { calories: number }[]).reduce((s, r) => s + (r.calories || 0), 0));
+      });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  const remainingToday = Math.max(goalCals - consumedToday, 0);
+
+  /* Banque active : l'IA si dispo (par type, avec assez de plats), sinon le secours. */
+  const activePools: Pools = useMemo(() => {
+    if (!aiPools) return dietPools;
+    const merged: Pools = {};
+    for (const t of mealTypesForCount(mealsCount)) {
+      const ai = aiPools[t];
+      merged[t] = Array.isArray(ai) && ai.length >= 2 ? ai : (dietPools[t] ?? []);
+    }
+    return merged;
+  }, [aiPools, dietPools, mealsCount]);
+
   /* Plan construit instantanément (mémo simple) */
-  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant) : null;
+  const plan: MealPlan | null = user ? buildLocalPlan(user.id, mealsCount, variant, activePools, dietKey) : null;
 
   const regenerate = useCallback(() => {
     // Régénérer = réservé au Premium (le gratuit garde la sélection du jour)
@@ -308,6 +517,36 @@ export default function RecommendedMeals() {
   }, [selectedDay]);
 
   const currentDay = plan?.semaine?.[selectedDay];
+
+  /* ── « Manger ça » : logge le plat suggéré dans le journal du jour ── */
+  const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set());
+  const eatMeal = useCallback(async (m: MealItem) => {
+    if (!user) return;
+    const key = `${selectedDay}-${m.type}-${m.nom}`;
+    const cal = m.calories || 0;
+    // Le journal ne regroupe que 4 types → on rabat « collation » sur « goûter »
+    const mealType = m.type === "collation" ? "gouter" : m.type;
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    // Macros cohérentes : IA recalée sur les calories, sinon estimées depuis le nom.
+    const mac = macrosForDish(m.nom, cal, m.proteins, m.carbs, m.fats);
+    const { error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id,
+      date: localDateStr(),
+      meal_type: mealType,
+      food_name: m.nom,
+      calories: cal,
+      proteins: mac.proteins,
+      carbs: mac.carbs,
+      fats: mac.fats,
+      has_photo: false,
+      time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    });
+    if (!error) {
+      setAddedKeys((prev) => new Set(prev).add(key));
+      setTimeout(() => setAddedKeys((prev) => { const n = new Set(prev); n.delete(key); return n; }), 2200);
+    }
+  }, [user, selectedDay]);
 
   const getDayFromX = (clientX: number): number => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -328,6 +567,38 @@ export default function RecommendedMeals() {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Filtre régime / allergies */}
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+        {DIET_OPTIONS.map(({ key, label, emoji }) => {
+          const on = diet.has(key);
+          return (
+            <button key={key} onClick={() => toggleDiet(key)}
+              className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full cursor-pointer select-none"
+              style={{
+                background: on ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "rgba(var(--tint-violet-rgb),0.5)",
+                border: on ? "1px solid rgba(var(--accent-rgb),0.4)" : "1px solid rgba(var(--violet-mid-rgb),0.35)",
+                color: on ? "var(--text-1)" : "var(--text-3)",
+                fontSize: 10, fontWeight: 600, transition: "all 0.15s",
+              }}>
+              <span style={{ fontSize: 11 }}>{emoji}</span>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Adapté à ta journée — calories restantes aujourd'hui */}
+      {goalCals > 0 && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-2xl"
+          style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
+          <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>Aujourd&apos;hui</span>
+          <span className="text-[11px] font-semibold" style={{ color: remainingToday > 0 ? "var(--accent)" : "var(--gold)" }}>
+            {remainingToday > 0 ? `≈ ${remainingToday.toLocaleString("fr-FR")} kcal restantes` : "Objectif atteint 🎉"}
+            <span className="font-normal" style={{ color: "var(--text-3)" }}> / {goalCals.toLocaleString("fr-FR")}</span>
+          </span>
+        </div>
+      )}
+
       {/* Slider jour */}
       <div className="flex flex-col gap-2">
         <div className="flex overflow-x-auto gap-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
@@ -337,7 +608,7 @@ export default function RecommendedMeals() {
               onClick={() => setSelectedDay(i)}
               className="flex-shrink-0 cursor-pointer select-none"
               style={{
-                color: i === selectedDay ? "#2D3748" : "#A0AEC0",
+                color: i === selectedDay ? "var(--text-1)" : "var(--text-3)",
                 fontWeight: i === selectedDay ? 600 : 400,
                 fontSize: 12, transition: "color 0.15s, font-weight 0.15s",
                 background: "none", border: "none", padding: 0,
@@ -349,15 +620,20 @@ export default function RecommendedMeals() {
 
         <div ref={trackRef}
           className="relative rounded-full cursor-pointer select-none touch-none"
-          style={{ height: 5, background: "rgba(212,168,67,0.12)" }}
+          style={{ height: 5, background: "rgba(var(--gold-rgb),0.12)" }}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove}>
           <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
-            style={{ width: `${pct}%`, background: "linear-gradient(90deg, #D4A843, #A78BFA)", transition: "width 0.12s ease" }} />
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--violet-mid), var(--accent))", transition: "width 0.12s ease" }} />
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          {menuLoading ? (
+            <span className="flex items-center gap-1 text-[9px] font-medium" style={{ color: "var(--accent)" }}>
+              <RefreshCw size={9} strokeWidth={2.5} className="animate-spin" /> L&apos;IA prépare tes plats…
+            </span>
+          ) : <span />}
           <button onClick={regenerate}
-            className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "#A0AEC0" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
+            className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "var(--text-3)" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
             {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
             <span className="text-[9px] font-medium">{isPremium ? "Changer les repas" : "Changer les repas · Premium"}</span>
           </button>
@@ -367,7 +643,7 @@ export default function RecommendedMeals() {
       {/* Repas du jour */}
       <div className="min-h-[100px]">
         <AnimatePresence mode="wait">
-          {currentDay && <DayMeals key={`${selectedDay}-${variant}`} day={currentDay} />}
+          {currentDay && <DayMeals key={`${selectedDay}-${variant}`} day={currentDay} dayIndex={selectedDay} canEat={!!user} addedKeys={addedKeys} onEat={eatMeal} />}
         </AnimatePresence>
       </div>
     </div>

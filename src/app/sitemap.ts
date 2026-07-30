@@ -18,7 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/musculation-maison", priority: 0.8, changeFrequency: "monthly" },
     { path: "/nutrition-sportive", priority: 0.8, changeFrequency: "monthly" },
     { path: "/coach", priority: 0.6, changeFrequency: "monthly" },
-    { path: "/decouverte", priority: 0.6, changeFrequency: "weekly" },
     { path: "/mentions-legales", priority: 0.3, changeFrequency: "yearly" },
     { path: "/confidentialite", priority: 0.3, changeFrequency: "yearly" },
   ];

@@ -393,7 +393,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AdminUser | null>(null);
   const [manageUser, setManageUser] = useState<AdminUser | null>(null);
-  const [tab, setTab] = useState<"users" | "stats">("users");
+  const [tab, setTab] = useState<"users" | "stats" | "saison">("users");
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -416,16 +416,16 @@ export default function AdminPage() {
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
       // Fetch users défensif : tente avec is_certified/is_banned, sinon fallback
-      let usersRes = await supabase
+      const usersResWithFlags = await supabase
         .from("profiles")
         .select("id, pseudo, full_name, avatar_url, is_admin, is_certified, is_banned, created_at")
         .order("created_at", { ascending: false });
-      if (usersRes.error) {
-        usersRes = await supabase
+      const usersRes = usersResWithFlags.error
+        ? await supabase
           .from("profiles")
           .select("id, pseudo, full_name, avatar_url, is_admin, created_at")
-          .order("created_at", { ascending: false });
-      }
+          .order("created_at", { ascending: false })
+        : usersResWithFlags;
 
       const [followsRes, sessionsRes, notifsRes, postsRes, postAudienceRes] = await Promise.all([
         supabase.from("followers").select("follower_id", { count: "exact", head: true }),
@@ -610,7 +610,7 @@ export default function AdminPage() {
         className="flex gap-1 mb-5 p-1 rounded-2xl"
         style={{ background: "rgba(240,235,255,0.55)" }}
       >
-        {(["users", "stats"] as const).map((t) => (
+        {(["users", "stats", "saison"] as const).map((t) => (
           <motion.button
             key={t}
             onClick={() => setTab(t)}
@@ -621,7 +621,7 @@ export default function AdminPage() {
             }}
             style={{ boxShadow: tab === t ? "inset 0 1px 0 rgba(255,255,255,0.85)" : "none" }}
           >
-            {t === "users" ? `Utilisateurs (${users.length})` : "Statistiques"}
+            {t === "users" ? `Utilisateurs (${users.length})` : t === "stats" ? "Statistiques" : "Saison ✦"}
           </motion.button>
         ))}
       </div>

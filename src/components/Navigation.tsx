@@ -2,11 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Home, TrendingUp, Users, User, LogIn, LogOut,
-  Settings, Shield, ChevronRight, Crown,
+  Home, TrendingUp, Dumbbell, Utensils, User, LogIn, LogOut,
+  Settings, Shield, ChevronRight, Crown, MessageCircle, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import NotificationBell from "@/components/NotificationBell";
@@ -17,49 +18,83 @@ import { createClient } from "@/lib/supabase";
 type TabItem = {
   href: string;
   label: string;
-  icon: React.ElementType;
-  sub?: { href: string; label: string; icon?: React.ElementType }[];
+  icon: LucideIcon;
+  sub?: { href: string; label: string; icon?: LucideIcon }[];
 };
 
 const TABS: (TabItem & { tourAnchor?: string })[] = [
   { href: "/",            label: "Accueil",     icon: Home,        tourAnchor: "nav-accueil" },
-  { href: "/progression", label: "Progression", icon: TrendingUp,  tourAnchor: "nav-progression" },
-  { href: "/communaute",  label: "Communauté",  icon: Users,       tourAnchor: "nav-communaute" },
-  { href: "/profil",      label: "Profil",      icon: User,        tourAnchor: "nav-profil" },
+  { href: "/progression", label: "Entraînement", icon: Dumbbell,   tourAnchor: "nav-progression" },
+  { href: "/nutrition",   label: "Nutrition",   icon: Utensils,    tourAnchor: "nav-nutrition" },
+  // Le profil n'est plus un onglet : il s'ouvre depuis l'avatar en haut à
+  // gauche des conversations (décision du 2026-07-21, façon Snapchat).
+  { href: "/communaute",  label: "Communauté",  icon: MessageCircle, tourAnchor: "nav-communaute" },
 ];
+
+/* ── Contenu du menu « avatar » — partagé entre la sidebar desktop et le header
+      mobile (évite de dupliquer les liens). Inclut « Mon profil » car le profil
+      n'est plus un onglet de la barre du bas. ── */
+function UserMenuItems({
+  user, isAdmin, onClose, onLogout,
+}: {
+  user: { pseudo?: string; name?: string; email?: string };
+  isAdmin: boolean;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  const itemCls = "flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors";
+  return (
+    <>
+      <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
+        <p className="text-sm font-black tracking-tight" style={{ color: "var(--text-0)" }}>
+          {user.pseudo ?? user.name ?? "Utilisateur"}
+        </p>
+        <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
+      </div>
+      <Link href="/profil" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
+        <User size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
+        Mon profil
+      </Link>
+      <Link href="/premium" onClick={onClose} className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-purple-50 transition-colors" style={{ color: "#7C5CFA" }}>
+        <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
+        Vaiiya Premium ✦
+      </Link>
+      <Link href="/parametres" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
+        <Settings size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
+        Paramètres
+      </Link>
+      {isAdmin && (
+        <Link href="/admin" onClick={onClose} className={itemCls} style={{ color: "var(--text-1)" }}>
+          <Shield size={14} strokeWidth={2} style={{ color: "var(--gold)" }} />
+          Administration
+        </Link>
+      )}
+      <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
+      <button onClick={() => { onClose(); onLogout(); }}
+        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold w-full text-left hover:bg-red-50 transition-colors"
+        style={{ color: "#EF4444" }}>
+        <LogOut size={14} strokeWidth={2} />
+        Déconnexion
+      </button>
+    </>
+  );
+}
 
 export default function Navigation() {
   const pathname   = usePathname();
   const router     = useRouter();
   const { user, logout } = useAuth();
 
-  const [unreadDMs,   setUnreadDMs]   = useState(0);
   const [userMenu,    setUserMenu]    = useState(false);
   const [progMenu,    setProgMenu]    = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  /* ── DMs non lus ── */
-  useEffect(() => {
-    if (!user) { setUnreadDMs(0); return; }
-    const supabase = createClient();
-    const fetch = async () => {
-      const { count } = await supabase.from("direct_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("receiver_id", user.id).is("read_at", null);
-      setUnreadDMs(count ?? 0);
-    };
-    fetch();
-    const ch = supabase.channel("nav-dms")
-      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${user.id}` }, fetch)
-      .subscribe();
-    return () => { supabase.removeChannel(ch).catch(() => {}); };
-  }, [user]);
-
   /* ── Fermer le menu user si clic extérieur ── */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
-        setUserMenu(false);
+      const t = e.target as Node;
+      if (userMenuRef.current?.contains(t)) return;
+      setUserMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -67,17 +102,18 @@ export default function Navigation() {
 
   /* ── Préchargement des routes principales → navigation instantanée ── */
   useEffect(() => {
-    ["/", "/communaute", "/progression", "/nutrition", "/profil", "/decouverte"].forEach((r) => {
+    ["/", "/progression", "/nutrition", "/communaute"].forEach((r) => {
       try { router.prefetch(r); } catch { /* ignore */ }
     });
   }, [router]);
 
   if (pathname === "/auth") return null;
-  if (!user && pathname === "/") return null;
+  // Pages publiques : accueil vitrine et invitation à un relais.
+  if (!user && (pathname === "/" || pathname.startsWith("/rejoindre"))) return null;
 
   const handleLogout = () => { logout(); router.push("/"); };
 
-  const isProgActive = pathname === "/progression" || pathname === "/nutrition";
+  const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
   const isAdmin = user?.is_admin || user?.email === "teyprox@gmail.com";
 
@@ -85,29 +121,25 @@ export default function Navigation() {
   const NavIcon = ({
     href, label, icon: Icon, sub, mobile, tourAnchor,
   }: {
-    href: string; label: string; icon: React.ElementType;
-    sub?: { href: string; label: string; icon?: React.ElementType }[];
+    href: string; label: string; icon: LucideIcon;
+    sub?: { href: string; label: string; icon?: LucideIcon }[];
     mobile?: boolean;
     tourAnchor?: string;
   }) => {
     const isActive = sub ? isProgActive : pathname === href;
-    const badge    = href === "/communaute" && unreadDMs > 0 ? unreadDMs : null;
+    const badge    = null;
 
     if (mobile) {
       return (
         <Link href={href} className="flex-1" aria-label={label} data-tour-anchor={tourAnchor}>
           <motion.div
-            className="flex items-center justify-center py-3 px-1 rounded-xl cursor-pointer relative"
-            whileTap={{ scale: 0.85 }} transition={{ duration: 0.12 }}
+            className="flex flex-col items-center justify-center gap-1 py-1 px-1 cursor-pointer relative"
+            whileTap={{ scale: 0.88 }} transition={{ duration: 0.12 }}
           >
-            {isActive && (
-              <motion.div layoutId="mobile-pill" className="absolute inset-0 rounded-xl"
-                style={{ background: "rgba(var(--surface-rgb),0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 2px 10px rgba(0,0,0,0.10)" }}
-                transition={{ type: "spring", stiffness: 500, damping: 35 }} />
-            )}
-            <div className="relative z-10">
-              <Icon size={22} strokeWidth={isActive ? 2.4 : 2} style={{ color: isActive ? "var(--nav-fg-active)" : "var(--nav-fg-inactive)", filter: "drop-shadow(0 1px 2px rgba(var(--surface-rgb),0.55))", transition: "all 0.2s ease" }} />
-              {badge && !isActive && (
+            <div className="relative">
+              <Icon size={23} strokeWidth={isActive ? 2.5 : 2}
+                style={{ color: isActive ? "var(--gold)" : "var(--nav-fg-inactive)", transition: "color 0.2s ease" }} />
+              {badge && (
                 <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
                   className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold"
                   style={{ background: "var(--accent)", color: "#fff" }}>
@@ -115,6 +147,11 @@ export default function Navigation() {
                 </motion.span>
               )}
             </div>
+            {/* Libellé : uniquement l'onglet actif (option B). Hauteur réservée → icônes alignées. */}
+            <span className="text-[9px] font-bold leading-none truncate max-w-full"
+              style={{ height: 10, color: "var(--gold)", opacity: isActive ? 1 : 0, transition: "opacity 0.2s ease" }}>
+              {label}
+            </span>
           </motion.div>
         </Link>
       );
@@ -209,25 +246,84 @@ export default function Navigation() {
 
   return (
     <>
-      {/* ══ Mobile Bottom Bar — 5 emplacements : Accueil / Progression / Orbe IA / Communauté / Profil ══ */}
-      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform", transform: "translateZ(0)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="nav-glass lg-highlight relative mx-4 mb-1.5 rounded-2xl px-2 py-2">
-          <div className="flex items-center justify-around">
-            {/* 1. Accueil */}
-            <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
-            {/* 2. Progression */}
-            <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
+      {/* ══ Cloche mobile, flottante en haut à droite.
+            L'avatar qui l'accompagnait a été retiré : mon profil s'ouvre
+            depuis l'avatar en haut à gauche de Communauté, et deux
+            raccourcis vers le même écran n'en font pas un meilleur. Le
+            reste du menu (Premium, Paramètres, Admin, Déconnexion) vit
+            sur /profil et /parametres.
 
-            {/* 3. Orbe assistant (centre, mise en avant) */}
-            <div className="flex-1 flex items-center justify-center" data-tour-anchor="nav-assistant">
-              <NavOrb size={48} />
-            </div>
+            Les pages qui possèdent leur propre barre du haut portent la
+            cloche elles-mêmes : sinon celle-ci vient se poser dessus. ══ */}
+      {/* ══ Voile du haut (mobile) : donne un « toit » aux boutons flottants
+            (avatar + cloche) pour que le contenu scrolle proprement dessous au
+            lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
+            lourde. ══ */}
+      {user && pathname !== "/profil" && pathname !== "/communaute" && (
+        <div className="global-mobile-header md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
+          style={{
+            height: "calc(env(safe-area-inset-top) + 56px)",
+            background: "linear-gradient(to bottom, rgba(var(--surface-rgb),0.96) 0%, rgba(var(--surface-rgb),0.80) 42%, rgba(var(--surface-rgb),0) 100%)",
+          }} />
+      )}
 
-            {/* 4. Communauté */}
-            <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
-            {/* 5. Profil */}
-            <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
+      {user && pathname !== "/profil" && pathname !== "/communaute" && (
+        <div className="global-mobile-header md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          <NotificationBell side="top" />
+        </div>
+      )}
+
+      {/* ══ Avatar profil global (haut-gauche, mobile) — mon profil s'ouvre depuis
+            là sur les onglets principaux (façon Snapchat), plus seulement
+            Communauté (qui garde le sien dans sa propre barre). Limité aux onglets
+            pour ne pas se poser sur les titres à gauche des pages secondaires. ══ */}
+      {user && (pathname === "/" || pathname === "/progression" || pathname === "/nutrition") && (
+        <div className="global-mobile-header md:hidden fixed top-0 left-0 z-40 flex items-center px-3"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
+          <button onClick={() => router.push("/profil")} aria-label="Mon profil"
+            data-tour-anchor="nav-profil" className="relative shrink-0 active:opacity-80 transition-opacity">
+            {user.avatar ? (
+              <Image src={user.avatar} alt="" width={36} height={36}
+                className="h-9 w-9 rounded-full object-cover" unoptimized />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-bold text-white"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C13BC1)" }}>
+                {(user.pseudo ?? "?").charAt(0).toUpperCase()}
+              </div>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou) ══ */}
+      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform" }}>
+        <div
+          className="relative flex items-stretch justify-around px-1"
+          style={{
+            background: "rgb(var(--surface-rgb))",
+            borderTop: "1px solid rgba(var(--accent-rgb),0.14)",
+            boxShadow: "0 -6px 24px rgba(var(--accent-rgb),0.10)",
+            paddingTop: 9,
+            paddingBottom: "calc(9px + env(safe-area-inset-bottom))",
+          }}
+        >
+          {/* 1. Accueil */}
+          <NavIcon href={TABS[0].href} label={TABS[0].label} icon={TABS[0].icon} sub={TABS[0].sub} mobile tourAnchor={TABS[0].tourAnchor} />
+          {/* 2. Progression */}
+          <NavIcon href={TABS[1].href} label={TABS[1].label} icon={TABS[1].icon} sub={TABS[1].sub} mobile tourAnchor={TABS[1].tourAnchor} />
+
+          {/* 3. Assistant — glyphe SVG, colonne calquée sur celle des onglets
+                (glyphe + hauteur de libellé réservée) → centres alignés. */}
+          <div className="flex-1 flex flex-col items-center justify-center gap-1 px-1" data-tour-anchor="nav-assistant">
+            <NavOrb size={44} glyph={25} />
+            <span aria-hidden style={{ height: 10 }} />
           </div>
+
+          {/* 4. Nutrition */}
+          <NavIcon href={TABS[2].href} label={TABS[2].label} icon={TABS[2].icon} sub={TABS[2].sub} mobile tourAnchor={TABS[2].tourAnchor} />
+          {/* 5. Communauté */}
+          <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
         </div>
       </nav>
 
@@ -243,9 +339,11 @@ export default function Navigation() {
             <NavIcon key={href} href={href} label={label} icon={icon} sub={sub} tourAnchor={tourAnchor} />
           ))}
 
-          {/* Orbe assistant */}
+          {/* Assistant — glyphe SVG dans une case 40px comme les pastilles d'onglet */}
           <div className="flex justify-center mt-1" data-tour-anchor="nav-assistant">
-            <NavOrb size={44} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <NavOrb size={40} glyph={19} />
+            </div>
           </div>
 
           <div className="flex-1" />
@@ -255,7 +353,7 @@ export default function Navigation() {
 
           {/* Avatar utilisateur — ouvre le menu */}
           {user ? (
-            <div ref={userMenuRef} className="relative flex justify-center">
+            <div ref={userMenuRef} className="relative flex justify-center" data-tour-anchor="nav-profil">
               <AnimatePresence>
                 {userMenu && (
                   <motion.div
@@ -270,49 +368,7 @@ export default function Navigation() {
                       border: "1px solid rgba(196,168,255,0.2)",
                     }}
                   >
-                    {/* User info */}
-                    <div className="px-4 py-3 border-b" style={{ borderColor: "rgba(0,0,0,0.06)" }}>
-                      <p className="text-sm font-black tracking-tight" style={{ color: "var(--text-0)" }}>
-                        {user.pseudo ?? user.name ?? "Utilisateur"}
-                      </p>
-                      <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{user.email}</p>
-                    </div>
-
-                    {/* Vaiiya Premium */}
-                    <Link href="/premium" onClick={() => setUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-bold hover:bg-purple-50 transition-colors"
-                      style={{ color: "#7C5CFA" }}>
-                      <Crown size={14} strokeWidth={2.2} style={{ color: "#7C5CFA" }} />
-                      Vaiiya Premium ✦
-                    </Link>
-
-                    {/* Paramètres */}
-                    <Link href="/parametres" onClick={() => setUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors"
-                      style={{ color: "var(--text-1)" }}>
-                      <Settings size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
-                      Paramètres
-                    </Link>
-
-                    {/* Admin (teyprox@gmail.com ou is_admin) */}
-                    {isAdmin && (
-                      <Link href="/admin" onClick={() => setUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold hover:bg-purple-50 transition-colors"
-                        style={{ color: "var(--text-1)" }}>
-                        <Shield size={14} strokeWidth={2} style={{ color: "var(--gold)" }} />
-                        Administration
-                      </Link>
-                    )}
-
-                    <div style={{ height: 1, background: "rgba(0,0,0,0.06)" }} />
-
-                    {/* Déconnexion */}
-                    <button onClick={() => { setUserMenu(false); handleLogout(); }}
-                      className="flex items-center gap-3 px-4 py-3 text-sm font-semibold w-full text-left hover:bg-red-50 transition-colors"
-                      style={{ color: "#EF4444" }}>
-                      <LogOut size={14} strokeWidth={2} />
-                      Déconnexion
-                    </button>
+                    <UserMenuItems user={user} isAdmin={isAdmin} onClose={() => setUserMenu(false)} onLogout={handleLogout} />
                   </motion.div>
                 )}
               </AnimatePresence>

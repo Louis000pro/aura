@@ -1,0 +1,199 @@
+/* ════════════════════════════════════════════════════════════════════
+   Personnages-guides des exercices — le petit bonhomme mi-3D / cartoon qui
+   rejoue le geste dans le « tunnel » de séance (voir ExerciseGuide.tsx,
+   affiché par WorkoutGuideModal pendant l'effort).
+
+   PIPELINE DE PROD (ChatGPT → app) — 3 gestes, pas une heure de Python
+   1. Génère 1 image par exo contenant 2-3 poses du MÊME personnage côte à
+      côte (départ → milieu → fin du mouvement). Même génération = même
+      perso garanti. Fond uni (vert de préf.) ou transparent, et les poses
+      ne doivent pas se toucher — c'est le trou entre elles qui les sépare.
+   2. Dépose la planche dans  guides-src/<clé>.png  (dossier gitignoré).
+   3. `npm run guides` : détoure, découpe, met tout sur un canevas commun,
+      écrit public/entrainement/guides/<clé>-<genre>-<n>.webp et te dicte la règle
+      à coller ci-dessous. L'app enchaîne les frames en fondu = le geste.
+      (voir scripts/build-guides.mjs pour les options --loop / --tol)
+
+   Exo STATIQUE (planche, gainage) = 1 seule frame → { frames: 1 } (pas d'anim).
+   Tant qu'un exo n'a AUCUNE règle ici, le tunnel affiche un halo épuré
+   (jamais de photo hors-sujet — c'est le fallback validé).
+
+   ⚠️ LES RÈGLES S'ÉCRIVENT SANS ACCENT (/developpe.*couche/i) : resolveGuide
+   retire les accents du nom avant de tester. Une regex accentuée ne matche
+   plus rien — et l'échec est silencieux (l'exo retombe sur le halo).
+
+   ⚠️ L'ORDRE COMPTE : la 1re regex qui matche le nom de l'exo gagne. Mettre
+   les cas spécifiques AVANT les génériques (ex. /jump.?squat/ avant /squat/).
+   Un même sprite peut couvrir plusieurs variantes d'un exo (toutes les
+   déclinaisons de squat → le même « squat »).
+   ════════════════════════════════════════════════════════════════════ */
+
+/** Le personnage d'une frame : femme ou homme. */
+export type Genre = "f" | "h";
+
+/** `genres` = les versions QUI EXISTENT en fichiers, pas celles qu'on veut.
+    Aujourd'hui un seul genre par exo ; le jour où on offre le choix à
+    l'utilisateur, on ajoute la 2e planche + son genre ici, et c'est tout. */
+export type Guide = { key: string; frames: number; genres: Genre[] };
+
+/** Le genre à afficher : celui demandé s'il existe, sinon le seul qu'on a.
+    Tant que personne ne passe `want`, ça retourne l'unique version. */
+export function pickGenre(guide: Guide, want?: Genre): Genre {
+  return want && guide.genres.includes(want) ? want : guide.genres[0];
+}
+
+/** Le chemin d'une frame. Seul endroit qui connaît la forme du nom. */
+export function frameSrc(guide: Guide, genre: Genre, i: number): string {
+  return `/entrainement/guides/${guide.key}-${genre}-${i + 1}.webp`;
+}
+
+export const GUIDE_RULES: { re: RegExp; guide: Guide }[] = [
+  // ── Vague 5 (2026-07-18) — variantes salle & poids du corps ────────
+  // EN TÊTE : « goblet squat » avant /squat/, « mollets assis » avant
+  // /mollet/, « reverse crunch » avant /crunch/. Le soulevé de terre
+  // CLASSIQUE ne doit pas voler le ROUMAIN (qui a son propre sprite) :
+  // d'où le garde-fou en tête de regex, qui exclut les deux orthographes.
+  { re: /goblet.*squat/i,                     guide: { key: "gobletsquat",           frames: 2, genres: ["h"] } },
+  { re: /mollets?.*assis|seated.*calf/i,      guide: { key: "molletsassis",          frames: 2, genres: ["h"] } },
+  { re: /reverse.*crunch|crunch.*invers/i,    guide: { key: "reversecrunch",         frames: 2, genres: ["f"] } },
+  { re: /bicycle.*crunch|crunch.*velo|velo.*abdo/i, guide: { key: "bicyclecrunch",   frames: 2, genres: ["f"] } },
+  { re: /^(?!.*(roumain|romanian)).*(souleve.*terre|deadlift)/i, guide: { key: "souleveterreclassique", frames: 2, genres: ["h"] } },
+  { re: /dips?.*(barres?|paralleles)/i,       guide: { key: "dipsbarresparalleles",  frames: 2, genres: ["h"] } },
+  { re: /extension.*lombaire|hyperextension|banc.*lombaire/i, guide: { key: "extensionslombairesbanc", frames: 2, genres: ["h"] } },
+  { re: /arnold/i,                            guide: { key: "developpearnold",       frames: 3, genres: ["h"] } },
+  { re: /pullover/i,                          guide: { key: "pulloverhaltere",       frames: 2, genres: ["h"] } },
+  { re: /thruster/i,                          guide: { key: "thrusterhalteres",      frames: 3, genres: ["h"] } },
+  { re: /kickback|donkey.*kick.*poulie/i,     guide: { key: "kickbackfessierpoulie", frames: 2, genres: ["h"] } },
+  { re: /donkey.?kick/i,                      guide: { key: "donkeykick",            frames: 2, genres: ["f"] } },
+  { re: /bear.?crawl|marche.*ours/i,          guide: { key: "bearcrawl",             frames: 3, genres: ["f"] } },
+  { re: /step.?up|montee.*banc/i,             guide: { key: "stepupbanc",            frames: 2, genres: ["f"] } },
+  { re: /\bv.?ups?\b/i,                       guide: { key: "vups",                  frames: 2, genres: ["f"] } },
+  /* « Bicycle crunch » : ses deux poses se CHEVAUCHENT en x (deux corps
+     allongés en diagonale), aucune colonne vide ne les sépare. Découpée
+     par formes connexes — `--blobs=2`, cf. scripts/build-guides.mjs. */
+  // ── Vague 4 (2026-07-18) — mobilité, étirements & yoga ─────────────
+  // EN TÊTE : « étirement mollet au mur » DOIT passer avant /mollet/, qui
+  // pointe sur les montées de mollets debout — sinon on montre un exo de
+  // renfo pendant un étirement. Deux regex volontairement resserrées :
+  // /papillon/ seul volerait le pec deck (« papillon » en salle), et
+  // /cou/ seul matcherait « developpe COUche » une fois désaccentué.
+  { re: /etirement.*mollet|mollet.*mur/i,     guide: { key: "etirementmolletmur",    frames: 1, genres: ["h"] } },
+  { re: /etirement.*pectoraux|etirement.*pec\b/i, guide: { key: "etirementpectorauxmur", frames: 1, genres: ["h"] } },
+  { re: /etirement.*quadriceps|etirement.*quad\b/i, guide: { key: "etirementquadriceps", frames: 1, genres: ["h"] } },
+  { re: /etirement.*chaine|chaine.*posterieure|ischio.*etirement/i, guide: { key: "etirementchaineposterieure", frames: 1, genres: ["f"] } },
+  { re: /etirement.*cou\b|nuque/i,            guide: { key: "etirementcou",          frames: 1, genres: ["f"] } },
+  { re: /ouverture.*epaule/i,                 guide: { key: "ouvertureepaules",      frames: 1, genres: ["h"] } },
+  { re: /cat.?cow|chat.?vache|dos.*chat/i,    guide: { key: "catcow",                frames: 2, genres: ["f"] } },
+  { re: /downward.?dog|chien.*tete.*bas|cobra/i, guide: { key: "downwarddogcobra",   frames: 2, genres: ["f"] } },
+  { re: /thread.*needle|passage.*aiguille/i,  guide: { key: "threadtheneedle",       frames: 2, genres: ["f"] } },
+  { re: /world.*greatest|plus.?grand.*etirement/i, guide: { key: "worldsgreateststretch", frames: 2, genres: ["f"] } },
+  { re: /cercle.*hanche|hip.?circle/i,        guide: { key: "cercleshanches",        frames: 3, genres: ["f"] } },
+  { re: /papillon.*hanche|hanche.*papillon|butterfly.*(hip|stretch)/i, guide: { key: "papillonhanches", frames: 1, genres: ["f"] } },
+  { re: /pigeon/i,                            guide: { key: "pigeonyoga",            frames: 1, genres: ["f"] } },
+  { re: /posture.*enfant|child.?s?.?pose/i,   guide: { key: "postureenfant",         frames: 1, genres: ["f"] } },
+  { re: /torsion.*allong|torsion.*sol|torsion.*vertebrale/i, guide: { key: "torsionallongee", frames: 1, genres: ["f"] } },
+  { re: /coherence.*cardiaque|respiration|\bsouffle\b/i, guide: { key: "coherencecardiaque", frames: 1, genres: ["f"] } },
+  // ── Vague 3 (2026-07-18) — abdos, pliométrie & barre ───────────────
+  // EN TÊTE : plusieurs de ces exos sont des variantes d'un générique déjà
+  // couvert plus bas et DOIVENT gagner — « squat barre » et « overhead squat »
+  // avant /squat/, « pompes explosives » avant /pompe/, « développé couché
+  // haltères » avant le développé couché à la barre, « rowing buste penché
+  // haltères » avant le rowing unilatéral ET le rowing barre.
+  { re: /overhead.?squat|squat.*overhead/i,   guide: { key: "overheadsquat",  frames: 2, genres: ["h"] } },
+  { re: /squat.*barre|back.?squat|barbell.?squat/i, guide: { key: "squatbarre", frames: 2, genres: ["h"] } },
+  { re: /pompe.*explosi|clap.?push|explosive.?push/i, guide: { key: "pompesexplosives", frames: 3, genres: ["f"] } },
+  { re: /developpe.*couche.*halt|dumbbell.*bench/i, guide: { key: "developpecouchehalteres", frames: 2, genres: ["h"] } },
+  { re: /rowing.*buste|buste.*penche|bent.?over.?row/i, guide: { key: "rowingbustepenchehalteres", frames: 2, genres: ["h"] } },
+  { re: /box.?jump|saut.*box|saut.*caisse/i,  guide: { key: "boxjump",        frames: 3, genres: ["f"] } },
+  { re: /dead.?bug/i,                         guide: { key: "deadbug",        frames: 2, genres: ["f"] } },
+  { re: /hollow/i,                            guide: { key: "hollowhold",     frames: 1, genres: ["f"] } },
+  { re: /releve.*jambe|leg.?raise/i,          guide: { key: "relevesjambes",  frames: 2, genres: ["f"] } },
+  { re: /russian.?twist|twist.*russe/i,       guide: { key: "russiantwist",   frames: 3, genres: ["f"] } },
+  { re: /sit.?ups?/i,                         guide: { key: "situps",         frames: 2, genres: ["f"] } },
+  { re: /skater|patineur/i,                   guide: { key: "skaters",        frames: 3, genres: ["f"] } },
+  { re: /sprint/i,                            guide: { key: "sprintsurplace", frames: 2, genres: ["f"] } },
+  { re: /ecarte.*poulie|cable.?(cross|fly)/i, guide: { key: "ecartepoulie",   frames: 3, genres: ["h"] } },
+  { re: /elevation.*frontal|front.?raise/i,   guide: { key: "elevationsfrontales", frames: 2, genres: ["h"] } },
+  { re: /kettlebell/i,                        guide: { key: "kettlebellswing", frames: 2, genres: ["h"] } },
+  // ── Vague 2 (2026-07-17) — machines & variantes ────────────────────
+  // EN TÊTE volontairement : ces cas sont plus précis que les génériques de
+  // la Vague 1 et doivent gagner. « pompes diamant » avant /pompe/, « planche
+  // latérale » + « gainage dynamique » avant /planche|gainage/, « hip thrust
+  // machine » avant /hip thrust/. (Piège : /velo/ matcherait « déVELOppé »
+  // sans accents → on ancre \bvelo\b.)
+  { re: /abducteur/i,                     guide: { key: "abducteursmachine",       frames: 2, genres: ["f"] } },
+  { re: /developpe.*epaul.*machine/i,     guide: { key: "developpeepaulesmachine", frames: 2, genres: ["h"] } },
+  { re: /hip.?thrust.*machine/i,          guide: { key: "hipthrustmachine",        frames: 2, genres: ["h"] } },
+  { re: /dips?.*machine/i,                guide: { key: "dipsmachine",             frames: 2, genres: ["h"] } },
+  { re: /face.?pull/i,                    guide: { key: "facepullpoulie",          frames: 2, genres: ["h"] } },
+  { re: /curl.*marteau|hammer.?curl/i,    guide: { key: "curlmarteau",             frames: 2, genres: ["h"] } },
+  { re: /curl.*(barre|\bez\b)/i,          guide: { key: "curlbarreez",             frames: 2, genres: ["h"] } },
+  { re: /tirage.*menton|upright.?row/i,   guide: { key: "tiragementonhalteres",    frames: 2, genres: ["h"] } },
+  { re: /rowing.*invers|invers.*row/i,    guide: { key: "rowinginverse",           frames: 2, genres: ["f"] } },
+  { re: /rowing.*halt|one.?arm.?row|dumbbell.?row/i, guide: { key: "rowingunilateralhaltere", frames: 2, genres: ["h"] } },
+  { re: /pompe.*diamant|diamond.?push/i,  guide: { key: "pompesdiamant",           frames: 2, genres: ["f"] } },
+  { re: /pompe.*inclin|incline.?push.?up/i, guide: { key: "pompesinclinees",       frames: 2, genres: ["f"] } },
+  { re: /planche.*lateral|gainage.*lateral|side.?plank/i, guide: { key: "planchelaterale", frames: 1, genres: ["f"] } },
+  { re: /gainage.*dynamiq/i,              guide: { key: "gainagedynamique",        frames: 3, genres: ["f"] } },
+  { re: /rameur/i,                        guide: { key: "rameur",                  frames: 3, genres: ["h"] } },
+  { re: /tapis|treadmill|course.*pied/i,  guide: { key: "coursetapis",             frames: 3, genres: ["f"] } },
+  { re: /\bvelo\b|spinning|\bbike\b/i,    guide: { key: "veloappartement",         frames: 2, genres: ["f"] } },
+  // ── Vague 1 — décommenter chaque règle quand ses PNG sont en place ──
+  { re: /jump.?squat|squat.*saut/i,     guide: { key: "squatsaute", frames: 3, genres: ["f"] } },
+  { re: /pike.*(push|pompe)|pompe.*pike/i, guide: { key: "pikepushups", frames: 3, genres: ["f"] } },
+  { re: /bulgare|split.?squat/i,        guide: { key: "squatbulgare", frames: 2, genres: ["f"] } },
+  { re: /squat/i,                       guide: { key: "squat",     frames: 3, genres: ["f"] } },
+  { re: /pompe|push.?up/i,              guide: { key: "pompes",    frames: 3, genres: ["f"] } },
+  { re: /fente.*saut|saut.*fente|jump.?lunge/i, guide: { key: "fentessautees", frames: 3, genres: ["f"] } },
+  { re: /fente(?!.*saut)|lunge/i,       guide: { key: "fentes",    frames: 4, genres: ["f"] } },
+  { re: /traction|pull.?up|chin.?up/i,  guide: { key: "tractions", frames: 3, genres: ["h"] } },
+  { re: /militaire.*halt|developpe.*(epaul|militaire).*halt|dumbbell.*overhead/i, guide: { key: "militaire", frames: 3, genres: ["h"] } },
+  { re: /developpe.*couche(?!.*halt)|bench.?press/i, guide: { key: "developpecouche", frames: 3, genres: ["h"] } },
+  { re: /developpe.*inclin.*halt|incline.*bench/i, guide: { key: "developpeinclinehalteres", frames: 2, genres: ["h"] } },
+  { re: /pec.?deck/i,                    guide: { key: "pecdeck",   frames: 2, genres: ["h"] } },
+  { re: /extension.*triceps.*halt/i,     guide: { key: "extensiontricepshaltere", frames: 2, genres: ["h"] } },
+  { re: /extension.*triceps.*poulie/i,   guide: { key: "extensiontricepspoulie", frames: 2, genres: ["h"] } },
+  { re: /oiseau.*halt/i,                 guide: { key: "oiseauhalteres", frames: 2, genres: ["h"] } },
+  { re: /rowing.*(assis.*poulie|machine.*assis|assis.*machine)/i, guide: { key: "rowingassispoulie", frames: 2, genres: ["h"] } },
+  { re: /tirage.*poitrine/i,             guide: { key: "tiragepoitrine", frames: 2, genres: ["h"] } },
+  { re: /rowing.*barre|barbell.?row/i,   guide: { key: "rowing",    frames: 3, genres: ["h"] } },
+  { re: /bicep.?curl|curl.*halt|curl biceps?/i, guide: { key: "curl", frames: 3, genres: ["h"] } },
+  { re: /elevation.*lateral|lateral.?raise/i, guide: { key: "elevationslaterales", frames: 3, genres: ["h"] } },
+  { re: /souleve.*terre.*roumain|romanian.?deadlift|deadlift.*roumain/i, guide: { key: "souleveterre", frames: 3, genres: ["h"] } },
+  { re: /mollet|calf.?raise/i,           guide: { key: "mollets",   frames: 3, genres: ["h"] } },
+  { re: /presse.*cuisse|leg.?press/i,   guide: { key: "pressecuisses", frames: 2, genres: ["h"] } },
+  { re: /leg.?extension/i,              guide: { key: "legextension", frames: 2, genres: ["h"] } },
+  { re: /leg.?curl.*assis/i,            guide: { key: "legcurlassis", frames: 2, genres: ["h"] } },
+  { re: /leg.?curl.*allong/i,           guide: { key: "legcurlallonge", frames: 2, genres: ["h"] } },
+  { re: /hip.?thrust|pont.?fessier/i,   guide: { key: "hipthrust", frames: 3, genres: ["f"] } },
+  { re: /burpee/i,                      guide: { key: "burpees",   frames: 5, genres: ["f"] } },
+  { re: /mountain.?climber|climber/i,   guide: { key: "mountainclimbers", frames: 3, genres: ["f"] } },
+  { re: /jumping.?jack/i,               guide: { key: "jumpingjacks", frames: 3, genres: ["f"] } },
+  { re: /montee.*genou|high.?knee/i,    guide: { key: "monteesgenoux", frames: 2, genres: ["f"] } },
+  { re: /corde.*saut|saut.*corde|jump.?rope/i, guide: { key: "corde", frames: 3, genres: ["f"] } },
+  { re: /dips?.*(chaise|banc)/i,        guide: { key: "dips",      frames: 3, genres: ["f"] } },
+  { re: /bird.?dog/i,                   guide: { key: "birddog",   frames: 3, genres: ["f"] } },
+  /* Les exclusions ci-dessous valent tant que l'exo n'a pas SON sprite :
+     « Gainage dorsal » et « Fentes sautées » sont d'autres mouvements, et
+     leur servir le ventral / la fente classique serait montrer un geste
+     faux pendant l'effort. Le halo est plus honnête. Quand leur planche
+     existe, sa règle se met AU-DESSUS et l'exclusion devient un filet. */
+  { re: /planche|plank|gainage(?!.*dorsal)/i, guide: { key: "planche", frames: 1, genres: ["f"] } },
+  { re: /chaise.*mur|wall.?sit/i,       guide: { key: "chaisemur", frames: 1, genres: ["f"] } },
+  /* Les variantes machine, bicycle et circle sont d'autres gestes : sans
+     sprite dedie, elles gardent le halo plutot que le crunch au sol. */
+  { re: /^(?!.*(?:machine|bicycle|circle|velo|cercle)).*crunch/i, guide: { key: "crunch", frames: 3, genres: ["f"] } },
+  { re: /superman/i,                    guide: { key: "superman",   frames: 3, genres: ["f"] } },
+];
+
+/** Retourne le sprite du personnage-guide pour un exo, ou null (→ halo épuré). */
+export function resolveGuide(name: string): Guide | null {
+  /* Les accents tombent AVANT le test : « Développé couché » devient
+     « developpe couche ». Les règles s'écrivent donc sans accent, une
+     seule fois — sinon chacune doit épeler ses deux orthographes, et
+     c'est la variante accentuée qu'on oublie (elle ne rate jamais bruyam-
+     ment : l'exo retombe juste sur le halo, sans erreur). */
+  const hay = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  for (const r of GUIDE_RULES) if (r.re.test(hay)) return r.guide;
+  return null;
+}

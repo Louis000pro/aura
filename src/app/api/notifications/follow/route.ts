@@ -10,7 +10,7 @@ function cleanEnv(val: string | undefined): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { follower_id, followed_id } = await req.json();
+    const { follower_id, followed_id, kind } = await req.json();
     if (!follower_id || !followed_id) {
       return Response.json({ error: "Paramètres manquants" }, { status: 400 });
     }
@@ -28,6 +28,15 @@ export async function POST(req: NextRequest) {
     }
     if (caller.id !== follower_id) {
       return Response.json({ error: "Non autorisé" }, { status: 403 });
+    }
+    const { data: relation } = await supabase
+      .from("followers")
+      .select("follower_id")
+      .eq("follower_id", follower_id)
+      .eq("following_id", followed_id)
+      .maybeSingle();
+    if (!relation) {
+      return Response.json({ error: "Relation introuvable" }, { status: 403 });
     }
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -54,6 +63,12 @@ export async function POST(req: NextRequest) {
     const followerName = follower?.full_name || `@${follower?.pseudo}` || "Quelqu'un";
     const followerHandle = follower?.pseudo ? `@${follower.pseudo}` : "";
     const followedPseudo = followedProfile?.pseudo ?? "toi";
+    const demandeAmi = kind === "friend_request";
+    const texteRelation = demandeAmi ? "veut t'ajouter à ses amis sur Vaiiya." : "te suit maintenant sur Vaiiya !";
+    const titrePush = demandeAmi ? "Vaiiya · Demande d'ami" : "Vaiiya · Nouvel abonné";
+    const lienAction = demandeAmi
+      ? "/communaute?amis=demandes"
+      : `/profil/${encodeURIComponent(follower?.pseudo ?? "")}`;
 
     // ── Assurer les profils des 2 users avant la notif (FK constraint) ──────
     await Promise.all([ensureProfileForUser(follower_id), ensureProfileForUser(followed_id)]);
@@ -66,6 +81,7 @@ export async function POST(req: NextRequest) {
         from_pseudo: follower?.pseudo ?? null,
         from_avatar_url: follower?.avatar_url ?? null,
         type: "follow",
+        lien: demandeAmi ? lienAction : null,
       });
       if (insErr) console.error("[notify-follow] insert failed:", insErr);
     }
@@ -79,9 +95,9 @@ export async function POST(req: NextRequest) {
       // ── Push notification puis on sort proprement ──
       void sendPushToUser({
         user_id: followed_id,
-        title: "Vaiiya · Nouvel abonné",
-        body:  `${followerName} te suit maintenant !`,
-        url:   `/profil/${encodeURIComponent(follower?.pseudo ?? "")}`,
+        title: titrePush,
+        body:  `${followerName} ${demandeAmi ? "veut t'ajouter." : "te suit maintenant !"}`,
+        url:   lienAction,
       });
       return Response.json({ ok: true, notif: true, email: false });
     }
@@ -94,7 +110,9 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
       to: followedEmail,
-      subject: `${followerName} te suit maintenant sur Vaiiya`,
+      subject: demandeAmi
+        ? `${followerName} veut t'ajouter sur Vaiiya`
+        : `${followerName} te suit maintenant sur Vaiiya`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
@@ -116,19 +134,21 @@ export async function POST(req: NextRequest) {
       <p style="margin:0 0 6px;font-size:17px;font-weight:600;color:#2D3748">${followerName}</p>
       ${followerHandle ? `<p style="margin:0 0 16px;font-size:13px;color:#A78BFA">${followerHandle}</p>` : ""}
       <p style="margin:0;font-size:15px;font-weight:300;color:#4A5568;line-height:1.6">
-        te suit maintenant sur Vaiiya !
+        ${texteRelation}
       </p>
     </div>
 
     <p style="text-align:center;font-size:14px;color:#718096;margin:0 0 28px;line-height:1.6">
-      Va voir son profil, suis-le en retour et partage tes performances avec ta communauté.
+      ${demandeAmi
+        ? "Accepte la demande pour ouvrir votre discussion privée."
+        : "Va voir son profil et suis-le en retour si tu le souhaites."}
     </p>
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:28px">
-      <a href="${appUrl}/profil/${encodeURIComponent(follower?.pseudo ?? "")}"
+      <a href="${appUrl}${lienAction}"
          style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);color:#2D3748;text-decoration:none;border-radius:16px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(167,139,250,0.25)">
-        Voir le profil
+        ${demandeAmi ? "Voir la demande" : "Voir le profil"}
       </a>
     </div>
 
@@ -147,9 +167,9 @@ export async function POST(req: NextRequest) {
     // Push déjà envoyé plus haut si GMAIL non configuré, sinon on l'envoie ici
     void sendPushToUser({
       user_id: followed_id,
-      title: "Vaiiya · Nouvel abonné",
-      body:  `${followerName} te suit maintenant !`,
-      url:   `/profil/${encodeURIComponent(follower?.pseudo ?? "")}`,
+      title: titrePush,
+      body:  `${followerName} ${demandeAmi ? "veut t'ajouter." : "te suit maintenant !"}`,
+      url:   lienAction,
     });
 
     return Response.json({ ok: true, notif: true, email: true });

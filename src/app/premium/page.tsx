@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Sparkles, Crown, Star } from "lucide-react";
+import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { PLANS, formatPrice, type PlanId } from "@/lib/plans";
+import { PLANS, VENTE_OUVERTE, formatPrice, type PlanId } from "@/lib/plans";
 import PremiumCelebration from "@/components/PremiumCelebration";
+import styles from "./page.module.css";
 
 const ICONS: Record<PlanId, React.ReactNode> = {
   free: <Sparkles size={20} strokeWidth={1.8} />,
   premium: <Crown size={20} strokeWidth={1.8} />,
-  creator: <Star size={20} strokeWidth={1.8} />,
 };
 
 export default function PremiumPage() {
@@ -23,12 +24,18 @@ export default function PremiumPage() {
 }
 
 function PremiumInner() {
-  const { user } = useAuth();
+  const { user, session, refreshProfile } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const [loading, setLoading] = useState<PlanId | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [verifPaiement, setVerifPaiement] = useState(false);
+  const [portail, setPortail] = useState(false);
+  // Acceptation des conditions avant paiement. On vend un abonnement qui se
+  // reconduit tout seul : le contrat doit être accepté explicitement, pas
+  // supposé accepté parce qu'un lien traînait en bas de page.
+  const [cguOk, setCguOk] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activeIdx, setActiveIdx] = useState(1); // Premium centré par défaut
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -48,10 +55,51 @@ function PremiumInner() {
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
-    if (params?.get("success")) setCelebrate(true);
-    else if (params?.get("canceled")) setMsg("Paiement annulé — tu peux réessayer quand tu veux");
+    if (params?.get("canceled")) setMsg("Paiement annulé, tu peux réessayer quand tu veux");
     else if (params?.get("welcome")) setMsg("Bienvenue sur Vaiiya 👋 Commence gratuitement, ou débloque tout avec 3 jours d'essai offerts.");
   }, [params]);
+
+  /**
+   * Retour de paiement : on ne fête RIEN sur la foi du paramètre d'URL.
+   * On demande à Stripe l'état réel de l'abonnement (ce qui répare aussi le
+   * compte si le webhook s'est perdu), et seulement ensuite on célèbre.
+   * Sans ce filet, un paiement encaissé dont le webhook a échoué laissait un
+   * compte en Gratuit avec une célébration à l'écran.
+   */
+  const retourTraite = useRef(false);
+  useEffect(() => {
+    if (!params?.get("success") || !session?.access_token || retourTraite.current) return;
+    retourTraite.current = true;
+
+    (async () => {
+      setVerifPaiement(true);
+      try {
+        const res = await fetch("/api/stripe/reconcile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ session_id: params.get("session_id") || undefined }),
+        });
+        const data = await res.json();
+        if (data?.premium) {
+          await refreshProfile();
+          setCelebrate(true);
+        } else {
+          setMsg(
+            "Ton paiement est bien reçu, l'activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
+          );
+        }
+      } catch {
+        setMsg(
+          "Ton paiement est bien reçu, l'activation prend parfois une minute. Recharge la page, et écris-nous si rien ne change."
+        );
+      } finally {
+        setVerifPaiement(false);
+      }
+    })();
+  }, [params, session?.access_token, refreshProfile]);
 
   // À l'arrivée sur mobile : centrer parfaitement le carrousel sur la carte Premium.
   // Plusieurs passes pour gérer le layout/polices qui se stabilisent (PWA & web).
@@ -75,16 +123,28 @@ function PremiumInner() {
   const subscribe = async (plan: PlanId) => {
     if (plan === "free") return;
     if (!user) { router.push("/auth?mode=signup"); return; }
+    // Le compte est identifié par le token côté serveur : on n'envoie plus
+    // d'identifiant dans le corps de la requête.
+    if (!session?.access_token) { setMsg("Reconnecte-toi pour continuer"); return; }
+    // Le bouton reste cliquable exprès : un bouton éteint sans explication
+    // laisse croire à une panne. On dit ce qui manque.
+    if (!cguOk) { setMsg("Coche la case pour accepter les conditions"); return; }
     setLoading(plan);
     setMsg(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, email: user.email, plan }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (res.ok && data.url) { window.location.href = data.url; return; }
+      // 409 : un abonnement tourne déjà. Le serveur vient de remettre le profil
+      // d'aplomb, on rafraîchit pour que l'écran le montre.
+      if (res.status === 409) await refreshProfile();
       setMsg(data.message || "Les paiements seront bientôt activés");
     } catch {
       setMsg("Une erreur est survenue, réessaie");
@@ -93,20 +153,40 @@ function PremiumInner() {
     }
   };
 
-  const order: PlanId[] = ["free", "premium", "creator"];
+  /** Ouvre le portail Stripe : factures, carte, résiliation. */
+  const ouvrirPortail = async () => {
+    if (!session?.access_token) { setMsg("Reconnecte-toi pour continuer"); return; }
+    setPortail(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.url) { window.location.href = data.url; return; }
+      setMsg(data.message || "Impossible d'ouvrir la gestion de l'abonnement");
+    } catch {
+      setMsg("Une erreur est survenue, réessaie");
+    } finally {
+      setPortail(false);
+    }
+  };
+
+  const order: PlanId[] = ["free", "premium"];
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col"
-      style={{ background: "linear-gradient(180deg,#faf8ff 0%,#f4eeff 50%,#ece4ff 100%)", paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
+    <div className={`${styles.page} relative min-h-dvh overflow-x-hidden px-4 md:py-10 flex flex-col`}
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 14px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 14px)" }}>
 
       {/* Halos d'ambiance (statiques sur mobile pour la fluidité) */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-12%", left: "-8%", width: 460, height: 460, background: "rgba(212,192,255,0.40)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
+      <motion.div className={`${styles.violetHalo} absolute rounded-full pointer-events-none`}
+        style={{ top: "-12%", left: "-8%", width: 460, height: 460, filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.15, 1] }}
         transition={isMobile ? undefined : { duration: 10, repeat: Infinity, ease: "easeInOut" }} />
       {/* Touche dorée subtile en haut à droite (rappel de marque, sans couper le bas) */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "6%", right: "-12%", width: 340, height: 340, background: "rgba(245,230,163,0.28)", filter: isMobile ? "blur(60px)" : "blur(90px)" }}
+      <motion.div className={`${styles.goldHalo} absolute rounded-full pointer-events-none`}
+        style={{ top: "6%", right: "-12%", width: 340, height: 340, filter: isMobile ? "blur(60px)" : "blur(90px)" }}
         animate={isMobile ? undefined : { scale: [1, 1.1, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
 
@@ -114,20 +194,21 @@ function PremiumInner() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="text-center mb-4 md:mb-8 flex-shrink-0">
-          <span className="inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full"
-            style={{ color: "#7C5CFA", background: "rgba(167,139,250,0.12)" }}>VAIIYA PREMIUM ✦</span>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "#2D2150" }}>
-            Passe au niveau supérieur
+          <span className={`${styles.eyebrow} inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
+            VAIIYA PREMIUM ✦
+          </span>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "var(--text-0)" }}>
+            Passe au <span className={styles.titleAccent}>niveau supérieur</span>
           </h1>
-          <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "#7C6BAA" }}>
-            Coach IA <strong style={{ color: "#6D28D9" }}>sans limite</strong>, programmes exclusifs, zéro pub.
-            <br className="hidden md:block" /> <strong style={{ color: "#6D28D9" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+          <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
+            Coach IA <strong style={{ color: "var(--accent)" }}>sans limite</strong>, programmes exclusifs, zéro pub.
+            <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
           </p>
         </motion.div>
 
         {msg && (
           <div className="max-w-md mx-auto mb-8 px-4 py-3 rounded-2xl text-center text-sm font-medium"
-            style={{ background: "rgba(167,139,250,0.12)", color: "#6D28D9", border: "1px solid rgba(167,139,250,0.25)" }}>
+            style={{ background: "rgba(167,139,250,0.12)", color: "var(--accent)", border: "1px solid rgba(167,139,250,0.25)" }}>
             {msg}
           </div>
         )}
@@ -136,8 +217,13 @@ function PremiumInner() {
         <div
           ref={carouselRef}
           onScroll={onCarouselScroll}
-          className="flex md:grid md:grid-cols-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
-          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" as never }}
+          className="flex md:grid md:grid-cols-2 md:max-w-3xl md:mx-auto overflow-x-auto md:overflow-visible snap-x snap-mandatory gap-4 md:gap-5 -mx-4 px-4 md:mx-0 md:px-0 items-stretch"
+          style={{
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch" as never,
+            scrollSnapType: "x mandatory",
+            overscrollBehaviorX: "contain",
+          }}
         >
           {order.map((id) => {
             const p = PLANS[id];
@@ -146,33 +232,32 @@ function PremiumInner() {
               <motion.div key={id} data-tier={id}
                 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: order.indexOf(id) * 0.08 }}
-                className="relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0"
+                className={`${styles.cardFrame} relative rounded-[26px] p-[1.5px] snap-center shrink-0 w-[82vw] max-w-[340px] md:w-auto md:max-w-none min-h-0`}
                 style={{
-                  background: highlight
-                    ? "linear-gradient(150deg,#A78BFA 0%,#C4A8FF 35%,#F5E6A3 70%,#FFB088 100%)"
-                    : "rgba(220,215,235,0.7)",
-                  boxShadow: highlight ? "0 18px 50px -22px rgba(167,139,250,0.32)" : "0 10px 30px rgba(167,139,250,0.08)",
+                  scrollSnapAlign: "center",
+                  scrollSnapStop: "always",
                 }}>
-                <div className="relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden"
-                  style={{ background: "rgba(255,255,255,0.97)", backdropFilter: isMobile ? "none" : "blur(8px)" }}>
+                <div className={`${styles.cardSurface} relative rounded-[24px] p-4 md:p-6 h-full flex flex-col overflow-hidden`}
+                  style={{ backdropFilter: isMobile ? "none" : "blur(8px)" }}>
 
                   {highlight && (
-                    <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white"
-                      style={{ background: "linear-gradient(135deg,#A78BFA,#7C5CFA)" }}>POPULAIRE</div>
+                    <div className={`${styles.popularBadge} absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider text-white`}>
+                      POPULAIRE
+                    </div>
                   )}
 
                   {/* Nom de l'offre */}
                   <div className="flex items-center gap-2 mb-3" style={{ color: highlight ? "#7C5CFA" : "#A78BFA" }}>
                     {ICONS[id]}
-                    <span className="text-lg font-extrabold" style={{ color: "#2D2150" }}>{p.name}</span>
+                    <span className="text-lg font-extrabold" style={{ color: "var(--text-0)" }}>{p.name}</span>
                   </div>
 
                   {/* Prix */}
                   <div className="flex items-end gap-1.5 flex-wrap mb-2.5">
-                    <span className="text-3xl md:text-4xl font-black" style={{ color: "#2D2150" }}>
+                    <span className="text-3xl md:text-4xl font-black" style={{ color: "var(--text-0)" }}>
                       {p.priceCents === 0 ? "0 €" : formatPrice(p.priceCents)}
                     </span>
-                    {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "#9488B5" }}>/mois</span>}
+                    {p.priceCents > 0 && <span className="text-sm font-light mb-1.5" style={{ color: "var(--text-3)" }}>/mois</span>}
                     {p.priceCents > 0 && (
                       <span className="text-[11px] font-semibold mb-1.5 px-2 py-0.5 rounded-full"
                         style={{ background: "rgba(167,139,250,0.1)", color: "#7C5CFA" }}>
@@ -182,21 +267,61 @@ function PremiumInner() {
                   </div>
 
                   {/* Petite phrase entre le prix et le bouton (façon ChatGPT) */}
-                  <p className="text-sm font-light mb-4" style={{ color: "#7C6BAA", minHeight: 40 }}>{p.tagline}</p>
+                  <p className="text-sm font-light mb-4" style={{ color: "var(--text-soft)", minHeight: 40 }}>{p.tagline}</p>
 
-                  {/* CTA — juste sous le prix */}
+                  {/* CTA — juste sous le prix. L'offre en cours ne propose
+                      jamais de repayer : elle propose de gérer ou d'arrêter. */}
                   {id === "free" ? (
-                    <div className="text-center py-3 rounded-2xl text-sm font-semibold"
-                      style={{ background: "rgba(240,235,255,0.7)", color: "#9488B5" }}>Ton offre actuelle</div>
+                    !user?.is_premium && (
+                      <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                        Ton offre actuelle
+                      </div>
+                    )
+                  ) : user?.is_premium ? (
+                    <>
+                      <div className={`${styles.currentPlan} text-center py-3 rounded-2xl text-sm font-semibold`}>
+                        Ton abonnement est actif
+                      </div>
+                      <button onClick={ouvrirPortail} disabled={portail}
+                        className="mt-2 py-2 text-xs font-semibold underline underline-offset-4 cursor-pointer disabled:opacity-60"
+                        style={{ color: "var(--text-3)" }}>
+                        {portail ? "Ouverture…" : "Gérer ou résilier mon abonnement"}
+                      </button>
+                    </>
+                  ) : !VENTE_OUVERTE ? (
+                    /* La vente n'est pas ouverte : on le dit franchement au lieu
+                       d'afficher un bouton qui refuserait après le clic. */
+                    <div className="text-center py-3 px-3 rounded-2xl"
+                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.28)" }}>
+                      <p className="text-sm font-semibold" style={{ color: "#7C5CFA" }}>Bientôt disponible</p>
+                      <p className="text-[11px] font-light leading-snug mt-1" style={{ color: "var(--text-3)" }}>
+                        L&apos;abonnement n&apos;est pas encore ouvert. En attendant, tout ce qui est
+                        gratuit le reste, et rien ne t&apos;est facturé.
+                      </p>
+                    </div>
                   ) : (
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id}
-                      className="py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60"
-                      style={{
-                        background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "linear-gradient(135deg,#C4A8FF,#A78BFA)",
-                        boxShadow: "0 8px 24px rgba(167,139,250,0.35)",
-                      }}>
-                      {loading === id ? "Redirection…" : "Démarrer mes 3 jours gratuits"}
-                    </motion.button>
+                    <>
+                      <label className="flex items-start gap-2.5 mb-3 cursor-pointer text-left">
+                        <input
+                          type="checkbox"
+                          checked={cguOk}
+                          onChange={(e) => { setCguOk(e.target.checked); if (e.target.checked) setMsg(null); }}
+                          className="mt-0.5 flex-shrink-0 w-4 h-4 cursor-pointer"
+                          style={{ accentColor: "#7C5CFA" }}
+                        />
+                        <span className="text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
+                          J&apos;ai lu et j&apos;accepte les{" "}
+                          <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>
+                            conditions générales
+                          </Link>{" "}
+                          et je demande que l&apos;accès commence tout de suite.
+                        </span>
+                      </label>
+                      <motion.button whileTap={{ scale: 0.97 }} onClick={() => subscribe(id)} disabled={loading === id || verifPaiement}
+                        className={`${styles.cta} ${highlight ? styles.ctaPrimary : styles.ctaSecondary} py-2.5 md:py-3.5 rounded-2xl text-sm font-bold text-white cursor-pointer disabled:opacity-60`}>
+                        {loading === id ? "Redirection…" : verifPaiement ? "Vérification…" : "Démarrer mes 3 jours gratuits"}
+                      </motion.button>
+                    </>
                   )}
 
                   {/* Séparateur */}
@@ -205,7 +330,7 @@ function PremiumInner() {
                   {/* Avantages — listés en bas, tous visibles */}
                   <ul className="flex flex-col gap-2.5">
                     {p.features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "#4A4060" }}>
+                      <li key={i} className="flex items-start gap-2 text-sm" style={{ color: "var(--text-body)" }}>
                         <span className="mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center"
                           style={{ background: highlight ? "linear-gradient(135deg,#A78BFA,#7C5CFA)" : "rgba(167,139,250,0.18)" }}>
                           <Check size={11} strokeWidth={3} style={{ color: highlight ? "#fff" : "#A78BFA" }} />
@@ -232,12 +357,26 @@ function PremiumInner() {
               className="rounded-full transition-all cursor-pointer"
               style={{ width: activeIdx === i ? 20 : 7, height: 7, background: activeIdx === i ? "linear-gradient(90deg,#A78BFA,#D4A843)" : "rgba(167,139,250,0.3)" }} />
           ))}
-          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "#9488B5" }}>3 offres · glisse pour comparer</span>
+          <span className="ml-1.5 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>2 offres · glisse pour comparer</span>
         </div>
 
-        <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "#9488B5" }}>
-          <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
-        </p>
+        {/* Information précontractuelle : la reconduction et le contrat doivent
+            se lire AVANT de payer, pas après. */}
+        {VENTE_OUVERTE ? (
+          <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
+            <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
+            <br />
+            Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
+            {" "}
+            <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
+          </p>
+        ) : (
+          <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
+            Aucun paiement n&apos;est possible aujourd&apos;hui, et aucun moyen de paiement ne t&apos;est demandé.
+            {" "}
+            <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
+          </p>
+        )}
       </div>
 
       {/* ── Célébration au retour de paiement ── */}

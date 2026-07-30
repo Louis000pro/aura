@@ -22,10 +22,46 @@ export type Announcement = {
   title: string;
   intro?: string;
   items: AnnouncementItem[];
+  /** Bouton en bas de la carte : ouvre le récap complet en grand. */
+  recapComplet?: boolean;
 };
 
 /* Les plus récentes EN PREMIER. */
 export const ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: "2026-07-30-grande-maj",
+    date: "2026-07-30",
+    title: "Ce qui change aujourd'hui",
+    intro: "L'essentiel en cinq lignes.",
+    recapComplet: true,
+    items: [
+      {
+        emoji: "🏋️",
+        title: "L'entraînement",
+        text: "102 mouvements animés, 53 séances, et tu peux composer les tiennes.",
+      },
+      {
+        emoji: "🥗",
+        title: "La nutrition, repensée en entier",
+        text: "« On mange où ? », 78 recettes, ton assiette en photo, la carte du resto.",
+      },
+      {
+        emoji: "✨",
+        title: "L'étincelle",
+        text: "Elle prépare tes séances, note tes repas, et répond en un seul tour.",
+      },
+      {
+        emoji: "💎",
+        title: "Ton rang",
+        text: "De l'EXP à chaque séance, six rangs, et des missions du jour.",
+      },
+      {
+        emoji: "💬",
+        title: "Tes conversations",
+        text: "Messagerie, amis, et le défi à deux avec son affiche à dévoiler.",
+      },
+    ],
+  },
   {
     id: "2026-06-21-maj-ia-planning",
     date: "2026-06-21",

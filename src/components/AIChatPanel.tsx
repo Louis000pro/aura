@@ -53,19 +53,19 @@ function ChatUI({
       {/* Solid background (only for inline) */}
       {!isFullscreen && (
         <div className="absolute inset-0 rounded-3xl pointer-events-none"
-          style={{ background: "rgba(255,255,255,1)", border: "1.5px solid rgba(212,192,255,0.55)", boxShadow: "0 12px 48px rgba(167,139,250,0.2), 0 2px 8px rgba(167,139,250,0.12), inset 0 1px 0 rgba(255,255,255,1)" }} />
+          style={{ background: "rgba(var(--surface-rgb),1)", border: "1.5px solid rgba(var(--violet-mid-rgb),0.55)", boxShadow: "0 12px 48px rgba(var(--accent-rgb),0.2), 0 2px 8px rgba(var(--accent-rgb),0.12), inset 0 1px 0 rgba(var(--surface-rgb),1)" }} />
       )}
 
       {/* Header */}
       <div className="relative px-5 pt-5 pb-3 flex items-center gap-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.45)" }}>
+        style={{ borderBottom: "1px solid rgba(var(--surface-rgb),0.45)" }}>
         <div className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 8px rgba(167,139,250,0.2)" }}>
-          <Sparkles size={15} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+          style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 2px 8px rgba(var(--accent-rgb),0.2)" }}>
+          <Sparkles size={15} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold leading-tight" style={{ color: "#2D3748" }}>Vaiiya</p>
-          <p className="text-[10px] font-medium" style={{ color: "#D4A843" }}>● En ligne</p>
+          <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>Vaiiya</p>
+          <p className="text-[10px] font-medium" style={{ color: "var(--gold)" }}>● En ligne</p>
         </div>
         {/* Fullscreen toggle — uniquement si un handler est fourni (évite le doublon avec le X) */}
         {onToggleFullscreen && (
@@ -74,12 +74,12 @@ function ChatUI({
             whileTap={{ scale: 0.9 }}
             onClick={onToggleFullscreen}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(240,235,255,0.7)", border: "1px solid rgba(212,192,255,0.3)" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
             aria-label={isFullscreen ? "Réduire" : "Agrandir"}
           >
             {isFullscreen
-              ? <Minimize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
-              : <Maximize2 size={14} strokeWidth={1.8} style={{ color: "#A78BFA" }} />
+              ? <Minimize2 size={14} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+              : <Maximize2 size={14} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
             }
           </motion.button>
         )}
@@ -102,18 +102,18 @@ function ChatUI({
                   maxWidth: isFullscreen ? "70%" : "85%",
                   ...(msg.from === "me"
                     ? {
-                        background: "linear-gradient(135deg, rgba(212,192,255,0.95) 0%, rgba(245,230,163,0.95) 100%)",
-                        color: "#2D3748",
+                        background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.95) 0%, rgba(var(--cream-mid-rgb),0.95) 100%)",
+                        color: "var(--text-1)",
                         borderBottomRightRadius: 6,
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), 0 2px 8px rgba(167,139,250,0.12)",
+                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7), 0 2px 8px rgba(var(--accent-rgb),0.12)",
                       }
                     : {
-                        background: "rgba(255,255,255,0.65)",
+                        background: "rgba(var(--surface-rgb),0.65)",
                         backdropFilter: "blur(8px)",
-                        border: "1px solid rgba(255,255,255,0.75)",
-                        color: "#2D3748",
+                        border: "1px solid rgba(var(--surface-rgb),0.75)",
+                        color: "var(--text-1)",
                         borderBottomLeftRadius: 6,
-                        boxShadow: "0 2px 8px rgba(167,139,250,0.06)",
+                        boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)",
                       })
                 }}
               >
@@ -124,9 +124,9 @@ function ChatUI({
           {aiTyping && (
             <motion.div key="typing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-start">
               <div className="px-4 py-3 rounded-2xl flex items-center gap-1"
-                style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(255,255,255,0.75)", borderBottomLeftRadius: 6 }}>
+                style={{ background: "rgba(var(--surface-rgb),0.65)", border: "1px solid rgba(var(--surface-rgb),0.75)", borderBottomLeftRadius: 6 }}>
                 {[0, 1, 2].map((i) => (
-                  <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "#A0AEC0" }}
+                  <motion.span key={i} className="block w-1.5 h-1.5 rounded-full" style={{ background: "var(--text-3)" }}
                     animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
                     transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }} />
                 ))}
@@ -137,32 +137,32 @@ function ChatUI({
       </div>
 
       {/* Suggestions + Input */}
-      <div className="relative px-4 pb-4 pt-2 flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.45)" }}>
+      <div className="relative px-4 pb-4 pt-2 flex-shrink-0" style={{ borderTop: "1px solid rgba(var(--surface-rgb),0.45)" }}>
         <div className="flex gap-1.5 mb-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
           {suggestions.map((s) => (
             <button key={s} onClick={() => handleSend(s)}
               className="text-[11px] font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all hover:scale-105 flex-shrink-0"
-              style={{ background: "rgba(240,235,255,0.7)", color: "#A78BFA", border: "1px solid rgba(255,255,255,0.6)" }}>
+              style={{ background: "rgba(var(--tint-violet-rgb),0.7)", color: "var(--accent)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}>
               {s}
             </button>
           ))}
         </div>
         <form onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
           className="flex items-center gap-2 px-3 py-2 rounded-2xl"
-          style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }}>
+          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Demandez à Vaiiya…"
-            className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[#A0AEC0]"
-            style={{ color: "#2D3748" }}
+            className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-[var(--text-3)]"
+            style={{ color: "var(--text-1)" }}
           />
           <motion.button whileTap={{ scale: 0.9 }} type="submit"
             className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)" }}
+            style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }}
             aria-label="Envoyer">
-            <Send size={12} strokeWidth={2} style={{ color: "#2D3748" }} />
+            <Send size={12} strokeWidth={2} style={{ color: "var(--text-1)" }} />
           </motion.button>
         </form>
       </div>
@@ -207,13 +207,13 @@ export default function AIChatPanel({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[9999] flex flex-col"
-              style={{ background: "rgba(240,235,255,0.6)", backdropFilter: "blur(12px)" }}
+              style={{ background: "rgba(var(--tint-violet-rgb),0.6)", backdropFilter: "blur(12px)" }}
             >
               {/* Blobs décoratifs */}
               <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
-                style={{ background: "radial-gradient(circle, rgba(212,192,255,0.4) 0%, transparent 70%)", filter: "blur(60px)" }} />
+                style={{ background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.4) 0%, transparent 70%)", filter: "blur(60px)" }} />
               <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full pointer-events-none"
-                style={{ background: "radial-gradient(circle, rgba(245,230,163,0.35) 0%, transparent 70%)", filter: "blur(60px)" }} />
+                style={{ background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.35) 0%, transparent 70%)", filter: "blur(60px)" }} />
 
               <motion.div
                 initial={{ scale: 0.96, y: 20 }}
@@ -224,11 +224,11 @@ export default function AIChatPanel({
                 style={{
                   maxWidth: 760,
                   margin: "16px auto",
-                  background: "rgba(255,255,255,0.88)",
+                  background: "rgba(var(--surface-rgb),0.88)",
                   backdropFilter: "blur(12px)",
                   borderRadius: 28,
-                  border: "1px solid rgba(255,255,255,0.9)",
-                  boxShadow: "0 24px 80px rgba(167,139,250,0.2), inset 0 1px 0 rgba(255,255,255,0.95)",
+                  border: "1px solid rgba(var(--surface-rgb),0.9)",
+                  boxShadow: "0 24px 80px rgba(var(--accent-rgb),0.2), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
                 }}
               >
                 <ChatUI

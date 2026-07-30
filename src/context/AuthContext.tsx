@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase";
+import { fetchAuth } from "@/lib/fetchAuth";
 import type { Session, User as SBUser } from "@supabase/supabase-js";
 
 export type User = {
@@ -99,11 +100,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           // Profil manquant OU pseudo vide (compte Google) → création / réparation
           if (data) setUser(mapUser(sbUser, data)); // affichage immédiat avec ce qu'on a
-          void fetch("/api/me/ensure-profile", {
+          // `fetchAuth` pose le jeton : la route identifie le compte par là,
+          // elle n'accepte plus d'identifiant venu du client.
+          void fetchAuth("/api/me/ensure-profile", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              user_id: sbUser.id,
               email: sbUser.email,
               pseudo: (sbUser.user_metadata?.pseudo as string | undefined) ?? null,
               full_name: (sbUser.user_metadata?.full_name as string | undefined) ?? (sbUser.user_metadata?.name as string | undefined) ?? null,

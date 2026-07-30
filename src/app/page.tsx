@@ -1,27 +1,35 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { BarChart3, Flame, Zap, Utensils, Sparkles, X, Check, Moon, ArrowRight, Dumbbell, Footprints, Play, ChevronUp, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence, useAnimation, useReducedMotion } from "framer-motion";
+import { Sparkles, X, Check, ArrowRight, Play, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import HomeOrb from "@/components/HomeOrb";
 import StatsDrawer from "@/components/StatsDrawer";
 import DailyDrawer from "@/components/DailyDrawer";
-import NotificationBell from "@/components/NotificationBell";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
 import StatDetailModal from "@/components/StatDetailModal";
-import LandingStory, { DISCOVER_ANCHOR } from "@/components/Landing/LandingStory";
+import LandingStory from "@/components/Landing/LandingStory";
+import LandingHero from "@/components/Landing/LandingHero";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
+import AccueilSignature from "@/components/AccueilSignature";
+import RangsModal from "@/components/rang/RangsModal";
+import { calculerAura, etatDepuisExp, histoireSerie, EXP_CONNEXION, type EtatAura } from "@/lib/aura";
+import { noterRang } from "@/lib/celebrationRang";
+import { persistLieu, hasSeance, dayTitle, dayLabel, type PlanningDay } from "@/lib/planning";
+import { SERIES, type Defi, type SerieSlug } from "@/lib/defi";
+import { observeParisDay, parisDateStr, shiftDateStr } from "@/lib/dates";
+import { marquerPresence } from "@/lib/presence";
 
 /* ─── Compute & save Aura score dynamically ─── */
 async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof createClient>) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = parisDateStr();
 
   const [{ data: sessions }, { data: nutrition }, { data: weight }] = await Promise.all([
     supabase.from("workout_sessions")
@@ -65,7 +73,7 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   const burned = todaySessions.reduce((sum: number, s: { calories_burned?: number }) => sum + (s.calories_burned || 0), 0);
 
   // ── Série de connexion : +1 par jour consécutif où l'on ouvre le site, reset si un jour est sauté ──
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yesterday = shiftDateStr(today, -1);
   const { data: streakRows } = await supabase.from("daily_stats")
     .select("date, streak").eq("user_id", userId).in("date", [yesterday, today]);
   const todayRow = streakRows?.find((r: { date: string; streak: number }) => r.date === today);
@@ -88,154 +96,6 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   }, { onConflict: "user_id,date" });
 
   return { score, calories, burned, steps: 0, sleepHours: 0, streak };
-}
-
-/* ─── Score Ring ─── */
-function ScoreRing({ score, size = 88 }: { score: number; size?: number }) {
-  const strokeW = 4;
-  const radius = (size - strokeW * 2) / 2;
-  const circumference = 2 * Math.PI * radius;
-  return (
-    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
-        <defs>
-          <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="var(--accent)" />
-            <stop offset="100%" stopColor="var(--gold)" />
-          </linearGradient>
-        </defs>
-        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(var(--surface-rgb),0.35)" strokeWidth={strokeW} />
-        <motion.circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="url(#scoreGrad)" strokeWidth={strokeW} strokeLinecap="round"
-          strokeDasharray={circumference} initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: circumference * (1 - score / 100) }}
-          transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }} />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="text-2xl font-light leading-none" style={{ color: "var(--text-1)" }}>{score}</motion.span>
-        <span className="text-[9px] font-semibold tracking-wider uppercase mt-0.5" style={{ color: "var(--text-3)" }}>/100</span>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Welcome Overlay ─── */
-function WelcomeBanner({ pseudo, isNew, onDismiss }: { pseudo: string; isNew: boolean; onDismiss: () => void }) {
-  const [progress, setProgress] = useState(100);
-  const duration = useRef(3500);
-
-  const hour = new Date().getHours();
-  const timeGreeting = hour < 5 ? "Bonne nuit" : hour < 12 ? "Bon matin" : hour < 18 ? "Bonjour" : "Bonsoir";
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setProgress(0), 100);
-    const t2 = setTimeout(onDismiss, duration.current);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [onDismiss]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 1.04 }}
-      transition={{ duration: 0.35 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden"
-      style={{ background: "var(--page-bg)" }}
-      onClick={onDismiss}
-    >
-      {/* Halos de fond */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-20%", left: "-15%", width: 640, height: 640, background: "radial-gradient(circle, rgba(var(--violet-mid-rgb),0.55) 0%, transparent 65%)", filter: "blur(60px)" }}
-        animate={{ scale: [1,1.12,1], x: [-8,18,-8] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-20%", right: "-15%", width: 560, height: 560, background: "radial-gradient(circle, rgba(var(--cream-mid-rgb),0.5) 0%, transparent 65%)", filter: "blur(60px)" }}
-        animate={{ scale: [1,1.18,1], x: [8,-18,8] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 0.6 }} />
-
-      {/* Carte principale */}
-      <motion.div
-        initial={{ scale: 0.88, opacity: 0, y: 32 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.94, opacity: 0, y: -16 }}
-        transition={{ type: "spring", damping: 22, stiffness: 260, delay: 0.05 }}
-        className="relative z-10 flex flex-col items-center text-center mx-5 rounded-[2.5rem] overflow-hidden"
-        style={{
-          background: "rgba(var(--surface-rgb),0.78)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(var(--surface-rgb),0.92)",
-          boxShadow: "0 40px 100px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(var(--gold-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),1)",
-          maxWidth: 360,
-          width: "100%",
-          paddingTop: 40,
-          paddingBottom: 0,
-          paddingLeft: 32,
-          paddingRight: 32,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Particules internes */}
-        {Array.from({ length: 6 }).map((_, i) => (
-          <motion.div key={i} className="absolute rounded-full pointer-events-none"
-            style={{ width: 5 + (i % 3) * 3, height: 5 + (i % 3) * 3, background: i % 2 === 0 ? "rgba(var(--accent-rgb),0.75)" : "rgba(var(--gold-rgb),0.65)", left: `${8 + i * 16}%`, top: `${8 + (i % 3) * 20}%`, willChange: "transform, opacity" }}
-            animate={{ y: [0, -70, 0], opacity: [0, 1, 0], scale: [0, 1.2, 0] }}
-            transition={{ duration: 2.2, delay: 0.4 + i * 0.22, repeat: Infinity, repeatDelay: 2 }} />
-        ))}
-
-        {/* Badge salutation */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full mb-7"
-          style={{ background: "linear-gradient(135deg, rgba(var(--accent-rgb),0.12), rgba(var(--gold-rgb),0.10))", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-            {isNew ? "Nouvelle aventure" : timeGreeting}
-          </span>
-          <span className="text-sm" style={{ color: "var(--gold)" }}>✦</span>
-        </motion.div>
-
-        {/* Avatar */}
-        <div className="relative mb-6">
-          {/* Halo pulsant derrière l'avatar */}
-          <motion.div className="absolute rounded-full pointer-events-none"
-            style={{ inset: -16, background: "radial-gradient(circle, rgba(var(--accent-rgb),0.22) 0%, transparent 70%)" }}
-            animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.15, 0.6] }}
-            transition={{ duration: 2.4, repeat: Infinity }} />
-          <motion.div
-            initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", bounce: 0.52, delay: 0.14 }}
-            className="w-24 h-24 rounded-[1.8rem] flex items-center justify-center text-4xl font-bold"
-            style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "0 14px 48px rgba(var(--accent-rgb),0.38), 0 4px 16px rgba(var(--gold-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.85)" }}
-          >
-            {(pseudo || "?")[0]?.toUpperCase()}
-          </motion.div>
-          {[0,1,2,3].map((i) => (
-            <motion.div key={i} className="absolute pointer-events-none"
-              style={{ left: `${[2,82,42,-14][i]}%`, top: `${[-10,-6,96,42][i]}%` }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [0,1.4,0], opacity: [0,1,0], y: i % 2 === 0 ? [-3,-18,-3] : [3,18,3] }}
-              transition={{ duration: 1.6, delay: 0.28 + i * 0.22, repeat: Infinity, repeatDelay: 1.4 }}>
-              <Sparkles size={12} style={{ color: i % 2 === 0 ? "var(--accent)" : "var(--gold)" }} />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Texte */}
-        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.27 }}
-          className="text-3xl font-extralight mb-1" style={{ color: "var(--text-1)" }}>
-          {isNew ? "Bienvenue !" : "Bon retour !"}
-        </motion.p>
-        <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}
-          className="text-xl font-light mb-3" style={{ background: "linear-gradient(135deg, var(--accent), var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-          @{pseudo || "toi"}
-        </motion.p>
-        <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.44 }}
-          className="text-sm font-light leading-relaxed mb-8" style={{ color: "var(--text-2)" }}>
-          {isNew ? "Votre parcours commence maintenant ✦" : "Prêt à repousser vos limites ? 💪"}
-        </motion.p>
-
-        {/* Barre de progression en bas de la carte */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52 }}
-          className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
-          <div className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, var(--accent), var(--gold))", width: `${progress}%`, transition: progress === 0 ? `width ${duration.current}ms linear` : "none" }} />
-        </motion.div>
-      </motion.div>
-    </motion.div>
-  );
 }
 
 /* ─── Home Toast ─── */
@@ -316,230 +176,16 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
   );
 }
 
-/* ─── Objectif Modal ─── */
-type GoalType = "workouts" | "calories" | "steps" | "sleep";
-const goalTypesList: { id: GoalType; label: string; desc: string; unit: string; defaultVal: string; icon: React.ElementType; color: string }[] = [
-  { id: "workouts", label: "Séances",  desc: "/ semaine", unit: "séances/sem", defaultVal: "4",     icon: Flame,     color: "var(--accent)" },
-  { id: "calories", label: "Calories", desc: "/ jour",    unit: "kcal/jour",   defaultVal: "2000",  icon: Zap,       color: "var(--accent)" },
-  { id: "steps",    label: "Pas",      desc: "/ jour",    unit: "pas/jour",    defaultVal: "10000", icon: BarChart3, color: "var(--gold)" },
-  { id: "sleep",    label: "Sommeil",  desc: "/ nuit",    unit: "h/nuit",      defaultVal: "8",     icon: Moon,      color: "var(--gold)" },
-];
-function ObjectifModal({ onClose, onSave }: { onClose: () => void; onSave: (label: string) => void }) {
-  const [type, setType] = useState<GoalType>("workouts");
-  const [value, setValue] = useState("4");
-  const selected = goalTypesList.find((g) => g.id === type)!;
-  const handleTypeChange = (id: GoalType) => { setType(id); setValue(goalTypesList.find((g) => g.id === id)!.defaultVal); };
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(var(--tint-cream-rgb),0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
-      <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
-        transition={{ type: "spring", damping: 28, stiffness: 280 }}
-        className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--gold-rgb),0.12),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Performance</p><h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Définir un objectif</h2></div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-cream-rgb),0.8)" }}><X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} /></motion.button>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mb-5">
-          {goalTypesList.map(({ id, label, desc, icon: Icon, color }) => (
-            <motion.button key={id} whileTap={{ scale: 0.95 }} onClick={() => handleTypeChange(id)}
-              className="flex items-center gap-2.5 px-3 py-3 rounded-2xl cursor-pointer text-left transition-all duration-150"
-              style={type === id ? { background: "linear-gradient(135deg,rgba(var(--tint-violet-rgb),0.95) 0%,rgba(var(--tint-cream-rgb),0.95) 100%)", border: "1px solid rgba(var(--surface-rgb),0.8)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" } : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid transparent" }}>
-              <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: type === id ? "rgba(var(--surface-rgb),0.8)" : "rgba(var(--surface-rgb),0.5)" }}>
-                <Icon size={13} strokeWidth={1.5} style={{ color: type === id ? color : "var(--text-3)" }} />
-              </div>
-              <div><p className="text-xs font-semibold" style={{ color: type === id ? "var(--text-1)" : "var(--text-3)" }}>{label}</p><p className="text-[9px]" style={{ color: "var(--text-3)" }}>{desc}</p></div>
-            </motion.button>
-          ))}
-        </div>
-        <div className="mb-5">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Cible</label>
-          <div className="relative">
-            <input type="number" value={value} onChange={(e) => setValue(e.target.value)} className="w-full px-4 py-3 pr-28 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-cream-rgb),0.35)", border: "1px solid rgba(var(--cream-mid-rgb),0.55)", color: "var(--text-1)" }} />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>{selected.unit}</span>
-          </div>
-        </div>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => onSave(`${value} ${selected.unit}`)}
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-          style={{ background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9),0 4px 16px rgba(var(--accent-rgb),0.2)" }}>
-          Définir l'objectif
-        </motion.button>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ─── Quick Action Card ─── */
-function QuickActionCard({ icon: Icon, label, color, bg, index, onClick }: { icon: React.ElementType; label: string; color: string; bg: string; index: number; onClick?: () => void }) {
-  const [tapped, setTapped] = useState(false);
-  return (
-    <motion.button type="button" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 + index * 0.05, type: "spring", bounce: 0.35 }}
-      whileHover={{ y: -3, scale: 1.03, transition: { duration: 0.15 } }}
-      whileTap={{ scale: 0.93, transition: { duration: 0.08 } }}
-      onClick={() => { setTapped(true); setTimeout(() => setTapped(false), 500); onClick?.(); }}
-      className={`${bg} lg-highlight relative flex-1 rounded-2xl py-4 flex flex-col items-center gap-2 cursor-pointer overflow-hidden`}>
-      <AnimatePresence>
-        {tapped && (<motion.div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: "rgba(var(--surface-rgb),0.4)" }} initial={{ opacity: 1 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} />)}
-      </AnimatePresence>
-      <Icon size={17} strokeWidth={1.5} style={{ color }} />
-      <span className="text-[10px] font-semibold tracking-wide" style={{ color: "var(--text-1)" }}>{label}</span>
-    </motion.button>
-  );
-}
-const quickActionsConfig = [
-  { icon: Flame,    label: "Séance",   color: "var(--accent)", bg: "lg-rose" },
-  { icon: Utensils, label: "Repas",    color: "var(--gold)", bg: "lg-turquoise" },
-  { icon: Zap,      label: "Objectif", color: "var(--accent)", bg: "lg-bicolor" },
-];
 
 /* ─────────────────────────────────────────────────
-   LANDING PAGE — Spectaculaire
+   LANDING PAGE — visiteur non connecté
+   Hero + présentation vivent dans src/components/Landing/ pour garder
+   ce fichier (partagé entre agents) le plus petit possible.
 ───────────────────────────────────────────────── */
-type Particle = { id: number; x: number; y: number; size: number; delay: number; duration: number; opacity: number };
-
-const heroLines = ["Devenez", "inarrêtable."];
-
 function LandingPage() {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setParticles(Array.from({ length: 18 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: i < 8 ? 2 + Math.random() * 2 : i < 14 ? 4 + Math.random() * 4 : 8 + Math.random() * 10,
-      delay: Math.random() * 4,
-      duration: 8 + Math.random() * 6,
-      opacity: i < 8 ? 0.7 : i < 14 ? 0.45 : 0.2,
-    })));
-  }, []);
-
   return (
     <div className="relative w-full" style={{ overflowX: "clip", background: "var(--page-bg)" }}>
-
-      {/* ════════ HERO — premier écran ════════ */}
-      <section className="relative w-full min-h-[100svh] flex flex-col overflow-hidden">
-
-      {/* ── Grands blobs ambiants ── */}
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top: "-20%", left: "-12%", width: 800, height: 800, background: "rgba(196,170,255,0.32)", filter: "blur(100px)", willChange: "transform" }}
-        animate={{ scale: [1,1.12,1], y: [-15,20,-15] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom: "-20%", right: "-12%", width: 750, height: 750, background: "rgba(245,220,130,0.3)", filter: "blur(100px)", willChange: "transform" }}
-        animate={{ scale: [1,1.1,1], y: [20,-25,20] }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }} />
-
-      {/* ── Particules ── */}
-      {mounted && particles.map(({ id, x, y, size, delay, duration, opacity }) => (
-        <motion.div key={id} className="absolute rounded-full pointer-events-none"
-          style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, willChange: "transform, opacity", background: id % 3 === 0 ? `rgba(var(--accent-rgb),${opacity})` : id % 3 === 1 ? `rgba(var(--gold-rgb),${opacity})` : `rgba(var(--violet-mid-rgb),${opacity * 0.8})` }}
-          animate={{ y: ["-16px","16px","-16px"], opacity: [opacity * 0.2, opacity, opacity * 0.2] }}
-          transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }} />
-      ))}
-
-      {/* ── Anneau décoratif ── */}
-      <div className="absolute pointer-events-none rounded-full"
-        style={{ width: 600, height: 600, border: "1px solid rgba(var(--accent-rgb),0.07)", top: "50%", left: "50%", marginTop: -300, marginLeft: -300 }} />
-
-      {/* ── Nav bar ── */}
-      <motion.nav
-        initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-        className="relative z-20 flex items-center justify-between gap-2 px-4 md:px-10 py-4"
-      >
-        <span className="text-xl md:text-2xl font-extralight tracking-[0.12em] flex-shrink-0" style={{ color: "var(--text-1)" }}>
-          Vaiiya
-        </span>
-        <div className="flex items-stretch gap-2">
-          <Link href="/auth?mode=login" className="flex">
-            <motion.div whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
-              className="flex items-center justify-center h-full px-3 py-2 rounded-xl text-xs font-medium cursor-pointer whitespace-nowrap"
-              style={{ background: "rgba(var(--surface-rgb),0.65)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.85)", color: "var(--text-body)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
-              Se connecter
-            </motion.div>
-          </Link>
-          <Link href="/auth?mode=signup" className="flex">
-            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.96 }}
-              className="relative flex items-center justify-center h-full px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer overflow-hidden text-center leading-tight max-w-[120px]"
-              style={{ background: "linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%)", color: "#fff", boxShadow: "0 6px 24px rgba(var(--accent-rgb),0.45), inset 0 1px 0 rgba(var(--surface-rgb),0.25)" }}>
-              <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background: "linear-gradient(105deg,transparent 35%,rgba(var(--surface-rgb),0.3) 50%,transparent 65%)" }}
-                animate={{ x: ["-120%","120%"] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }} />
-              <span className="relative z-10 inline-flex items-center gap-1">
-                Commencer gratuitement
-                <ArrowRight size={12} strokeWidth={2.5} className="flex-shrink-0" />
-              </span>
-            </motion.div>
-          </Link>
-        </div>
-      </motion.nav>
-
-      {/* ── Hero principal ── */}
-      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 text-center" style={{ paddingTop: "2vh", paddingBottom: "4vh" }}>
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 md:mb-10"
-          style={{ background: "rgba(var(--surface-rgb),0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.25)", boxShadow: "0 4px 20px rgba(var(--accent-rgb),0.12)" }}
-        >
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent)" }} animate={{ opacity: [1,0.3,1], scale: [1,1.4,1] }} transition={{ duration: 1.6, repeat: Infinity }} />
-          <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#5A6177" }}>IA · Musculation · Nutrition</span>
-          <motion.div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold)" }} animate={{ opacity: [0.3,1,0.3], scale: [1.4,1,1.4] }} transition={{ duration: 1.6, repeat: Infinity }} />
-        </motion.div>
-
-        {/* Titre — ligne par ligne */}
-        <div className="mb-6 md:mb-8">
-          {heroLines.map((line, li) => (
-            <div key={li} className="overflow-hidden">
-              <motion.div
-                initial={{ y: "110%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.9, delay: 0.3 + li * 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="text-[clamp(3.2rem,10vw,7rem)] font-extralight leading-[0.95] tracking-tight"
-                style={li === 1 ? { backgroundImage: "linear-gradient(135deg,var(--accent) 0%,#C4902A 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent" } : { color: "var(--text-0)" }}
-              >
-                {line}
-              </motion.div>
-            </div>
-          ))}
-        </div>
-
-        {/* Sous-titre */}
-        <motion.p
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.6 }}
-          className="text-base md:text-lg font-light max-w-md leading-relaxed mb-10 md:mb-12"
-          style={{ color: "var(--text-2)" }}
-        >
-          Ton coach IA vocal, ton suivi musculaire, ta nutrition —<br />
-          <span style={{ color: "var(--accent)", fontWeight: 500 }}>tout au même endroit.</span>
-        </motion.p>
-
-        {/* ── Indice de scroll — invite claire à dérouler la page ── */}
-        <motion.button type="button" aria-label="Découvrir Vaiiya"
-          onClick={() => document.getElementById(DISCOVER_ANCHOR)?.scrollIntoView({ behavior: "smooth" })}
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.7 }}
-          whileHover={{ y: -2 }}
-          className="absolute left-1/2 -translate-x-1/2 bottom-10 flex flex-col items-center cursor-pointer"
-        >
-          <motion.div
-            className="flex items-center justify-center rounded-full"
-            style={{ width: 44, height: 44, background: "rgba(var(--surface-rgb),0.72)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--accent-rgb),0.3)", boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.28)" }}
-            animate={{ y: [0, 9, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <ChevronDown size={23} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
-          </motion.div>
-        </motion.button>
-      </div>
-      </section>
-
-      {/* ════════ STORY — présentation scrollable ════════ */}
+      <LandingHero />
       <LandingStory />
     </div>
   );
@@ -550,7 +196,436 @@ function LandingPage() {
 // (aligné sur plans.ts free.limits.chatPerDay = 5 et l'affichage page /premium)
 const DAILY_AI_LIMIT = 5;
 // Cache module : les stats de l'accueil s'affichent instantanément au retour
-let __statsCache = { score: 0, calories: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
+let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, streak: 0, sessionsWeek: 0, loaded: false };
+
+/* ════════════════════════════════════════════════════════════════════
+   La série, racontée comme une histoire — avec une animation SCOPÉE au
+   rectangle (jamais plein écran) : la flamme pulse, le compteur s'égrène
+   « jour 1 → jour 2 → … » jusqu'au jour courant, puis le gain d'EXP du
+   jour (+5, connexion) pop. Rejouée à chaque arrivée sur l'accueil.
+   ════════════════════════════════════════════════════════════════════ */
+function SerieCard({ streak }: { streak: number }) {
+  const reduce = useReducedMotion();
+  const h = histoireSerie(streak);
+  const hasStreak = streak > 0;
+
+  const [dayShown, setDayShown] = useState(streak);
+  const [showExp, setShowExp] = useState(false);
+  // Change à chaque (re)lecture de la série → retriggere l'embrasement + le glint.
+  const [playKey, setPlayKey] = useState(0);
+
+  useEffect(() => {
+    setPlayKey((k) => k + 1);
+    if (reduce || !hasStreak) { setDayShown(streak); setShowExp(hasStreak); return; }
+    setDayShown(1);
+    setShowExp(false);
+    // Compteur « Jour 1 → Jour N » : ~230 ms par palier, borné à ~1,4 s.
+    const step = streak > 1 ? Math.min(230, 1400 / (streak - 1)) : 0;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let d = 2; d <= streak; d++) timers.push(setTimeout(() => setDayShown(d), 300 + step * (d - 1)));
+    timers.push(setTimeout(() => setShowExp(true), 300 + step * (streak - 1) + 200));
+    return () => timers.forEach(clearTimeout);
+  }, [streak, hasStreak, reduce]);
+
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, scale: 0.97, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="relative overflow-hidden rounded-2xl px-4 py-3 flex items-center gap-3"
+      style={{ background: "linear-gradient(135deg,rgba(245,177,32,0.16),rgba(232,98,12,0.12))", border: "1px solid rgba(232,98,12,0.20)" }}
+    >
+      {/* Glint doré qui balaie la carte une fois à l'arrivée */}
+      {!reduce && (
+        <motion.div
+          key={`glint-${playKey}`}
+          initial={{ x: "-120%" }}
+          animate={{ x: "220%" }}
+          transition={{ duration: 0.9, ease: "easeInOut", delay: 0.15 }}
+          className="absolute inset-y-0 w-1/3 pointer-events-none"
+          style={{ background: "linear-gradient(105deg,transparent,rgba(255,255,255,0.45),transparent)", filter: "blur(2px)" }}
+        />
+      )}
+
+      {/* Flamme qui s'embrase à l'arrivée puis flare en boucle */}
+      <motion.span
+        key={`flame-${playKey}`}
+        className="text-[26px] leading-none flex-shrink-0 relative z-10"
+        style={{ transformOrigin: "center bottom" }}
+        initial={reduce ? false : { scale: 0.4, rotate: -12 }}
+        animate={reduce ? {} : { scale: [0.4, 1.45, 0.92, 1.14, 1], rotate: [-12, 6, -4, 2, 0] }}
+        transition={{ duration: 1.05, ease: "easeOut", times: [0, 0.35, 0.6, 0.82, 1] }}
+      >
+        🔥
+      </motion.span>
+
+      <div className="min-w-0 flex-1 relative z-10">
+        <p className="text-[14px] font-bold leading-tight" style={{ color: "var(--text-0)" }}>{h.titre}</p>
+        <p className="text-[11.5px] font-medium mt-0.5" style={{ color: "#b06a1e" }}>{h.sous}</p>
+      </div>
+
+      {hasStreak && (
+        <div className="flex flex-col items-end gap-1 flex-shrink-0 relative z-10">
+          <motion.div
+            className="flex items-baseline gap-1 px-2.5 py-1 rounded-full"
+            style={{ background: "linear-gradient(135deg,#F5B120,#E8620C)", boxShadow: "0 3px 12px rgba(232,98,12,0.45)" }}
+            animate={reduce ? {} : { scale: [1, 1.14, 1], boxShadow: ["0 3px 12px rgba(232,98,12,0.45)", "0 4px 18px rgba(232,98,12,0.65)", "0 3px 12px rgba(232,98,12,0.45)"] }}
+            transition={{ duration: 0.5, ease: "easeOut", repeat: Infinity, repeatDelay: 2.8 }}
+          >
+            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "rgba(255,255,255,0.85)" }}>Jour</span>
+            <motion.span
+              key={`${playKey}-${dayShown}`}
+              initial={reduce ? false : { scale: 0.3, opacity: 0, y: 6 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 520, damping: 20 }}
+              className="text-[16px] font-extrabold leading-none tabular-nums"
+              style={{ color: "#fff" }}
+            >
+              {dayShown}
+            </motion.span>
+          </motion.div>
+          <AnimatePresence>
+            {showExp && (
+              <motion.span
+                key="exp"
+                initial={reduce ? false : { opacity: 0, y: -6, scale: 0.6 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 380, damping: 18 }}
+                className="text-[11px] font-extrabold whitespace-nowrap"
+                style={{ color: "#c05a12" }}
+              >
+                +{EXP_CONNEXION} EXP aujourd&apos;hui
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/**
+ * La liste défilante de TOUTES les missions (bottom-sheet, comme RangsModal).
+ * Montre chaque mission, ce qu'elle rapporte en EXP, et une coche si elle est
+ * déjà faite aujourd'hui. En bas : les « bonnes habitudes » (sans EXP).
+ */
+function MissionsModal({
+  open,
+  onClose,
+  seanceOk,
+  repasOk,
+  isPremium,
+  onNavigate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  seanceOk: boolean;
+  repasOk: boolean;
+  isPremium: boolean;
+  onNavigate: (path: string) => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!mounted) return null;
+
+  // Missions qui rapportent de l'EXP (le barème rendu lisible).
+  const missionsExp: { emoji: string; bg: string; titre: string; sous: string; exp: string; done?: boolean; path?: string }[] = [
+    { emoji: "🏋️", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Terminer une séance", sous: "La plus grosse montée d'EXP", exp: "+30", done: seanceOk, path: "/progression" },
+    { emoji: "🔥", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Enchaîner les séances", sous: "Bonus « série » après chaque séance", exp: "+5" },
+    { emoji: "👋", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Connexion du jour", sous: "Rien qu'en revenant aujourd'hui", exp: "+5", done: true },
+    { emoji: "🍽️", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Logger un repas", sous: "Estime les calories, ça s'enregistre", exp: "+5", done: repasOk, path: "/nutrition" },
+  ];
+  // Bonnes habitudes : pas d'EXP, mais elles font avancer.
+  const habitudes: { emoji: string; bg: string; titre: string; sous: string; path: string }[] = [
+    { emoji: "⚖️", bg: "rgba(43,212,160,0.14)", titre: "Note ton poids", sous: "Suis ta progression corps", path: "/profil" },
+    { emoji: "🤝", bg: "rgba(139,92,246,0.14)", titre: "Lance un défi à deux", sous: "Tiens la série avec un pote", path: "/communaute" },
+  ];
+  // Missions supplémentaires — débloquées en Premium (illimitées).
+  const missionsPremium: { emoji: string; bg: string; titre: string; sous: string; exp: string; path?: string }[] = [
+    { emoji: "⚡", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Double séance", sous: "Deux séances dans la même journée", exp: "+60", path: "/progression" },
+    { emoji: "🌅", bg: "linear-gradient(135deg,#FF8FC7,#F45BA0)", titre: "Lève-tôt", sous: "Une séance avant 9h du matin", exp: "+40", path: "/progression" },
+    { emoji: "🏆", bg: "linear-gradient(135deg,#8B5CF6,#C13BC1)", titre: "Semaine intense", sous: "5 séances dans la semaine", exp: "+50", path: "/progression" },
+    { emoji: "📸", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Journée nutrition complète", sous: "Tous tes repas du jour loggés", exp: "+15", path: "/nutrition" },
+    { emoji: "🔥", bg: "linear-gradient(135deg,#F5B120,#E8620C)", titre: "Semaine parfaite", sous: "7 jours de connexion d'affilée", exp: "+35" },
+  ];
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={onClose}
+          style={{ background: "rgba(10,6,20,0.55)", backdropFilter: "blur(4px)" }}
+        >
+          <motion.div
+            className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--page-bg)", boxShadow: "0 -8px 40px rgba(0,0,0,0.3)" }}
+          >
+            <div className="mx-auto sm:hidden h-1.5 w-10 rounded-full mb-3" style={{ background: "rgba(var(--accent-rgb),0.25)" }} />
+            <div className="flex items-center justify-between mb-1 mt-1">
+              <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Toutes les missions</h2>
+              <button
+                type="button" onClick={onClose} aria-label="Fermer"
+                className="grid place-items-center h-8 w-8 rounded-full outline-none active:opacity-80"
+                style={{ background: "rgba(var(--accent-rgb),0.08)", color: "var(--text-soft)" }}
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+            <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>Chaque action fait monter ton EXP.</p>
+
+            {/* Missions à EXP */}
+            <div className="flex flex-col gap-2.5">
+              {missionsExp.map((m) => (
+                <div
+                  key={m.titre}
+                  {...(m.path ? { role: "button" as const, tabIndex: 0, onClick: () => onNavigate(m.path!) } : {})}
+                  className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+                  style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.08)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.08)", opacity: m.done ? 0.72 : 1, cursor: m.path ? "pointer" : "default" }}
+                >
+                  <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: m.bg }}>{m.emoji}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>{m.titre}</span>
+                    <span className="block text-[11.5px]" style={{ color: m.done ? "#2B9E7A" : "var(--text-3)" }}>{m.done ? "Déjà fait aujourd'hui" : m.sous}</span>
+                  </span>
+                  {m.done
+                    ? <CocheMission />
+                    : <span className="rounded-full px-2.5 py-1 text-[12px] font-extrabold flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--accent)" }}>{m.exp} EXP</span>}
+                </div>
+              ))}
+            </div>
+
+            {/* Bonnes habitudes (sans EXP) */}
+            <p className="text-[11px] font-bold tracking-[0.06em] uppercase mt-5 mb-2" style={{ color: "var(--text-3)" }}>Bonnes habitudes</p>
+            <div className="flex flex-col gap-2">
+              {habitudes.map((m) => (
+                <button
+                  key={m.titre}
+                  type="button"
+                  onClick={() => onNavigate(m.path)}
+                  className="w-full text-left rounded-xl px-3 py-2.5 flex items-center gap-2.5 outline-none active:opacity-90 transition-opacity"
+                  style={{ background: "rgba(var(--accent-rgb),0.04)", border: "1px dashed rgba(var(--accent-rgb),0.16)" }}
+                >
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[15px] flex-shrink-0" style={{ background: m.bg }}>{m.emoji}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-semibold" style={{ color: "var(--text-0)" }}>{m.titre}</span>
+                    <span className="block text-[11px]" style={{ color: "var(--text-3)" }}>{m.sous}</span>
+                  </span>
+                  <ArrowRight size={16} strokeWidth={2.4} style={{ color: "var(--text-3)" }} />
+                </button>
+              ))}
+            </div>
+
+            {isPremium ? (
+              /* Abonné Premium : ses missions supplémentaires, en illimité */
+              <>
+                <p className="text-[11px] font-bold tracking-[0.06em] uppercase mt-5 mb-2" style={{ color: "var(--accent)" }}>
+                  Missions Premium ✦
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {missionsPremium.map((m) => (
+                    <div
+                      key={m.titre}
+                      {...(m.path ? { role: "button" as const, tabIndex: 0, onClick: () => onNavigate(m.path!) } : {})}
+                      className="w-full text-left rounded-2xl px-3.5 py-3 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+                      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.18)", boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.10)", cursor: m.path ? "pointer" : "default" }}
+                    >
+                      <span className="w-10 h-10 rounded-xl flex items-center justify-center text-[19px] flex-shrink-0" style={{ background: m.bg }}>{m.emoji}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[14px] font-semibold" style={{ color: "var(--text-0)" }}>{m.titre}</span>
+                        <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>{m.sous}</span>
+                      </span>
+                      <span className="rounded-full px-2.5 py-1 text-[12px] font-extrabold flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.10)", color: "var(--accent)" }}>{m.exp} EXP</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* Gratuit : teaser Premium — plus de missions + le reste de l'offre */
+              <button
+                type="button"
+                onClick={() => onNavigate("/premium")}
+                className="w-full text-left rounded-2xl px-4 py-3.5 mt-5 flex items-center gap-3 outline-none active:opacity-95 transition-opacity"
+                style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 20px rgba(193,59,193,0.30)" }}
+              >
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.18)" }}>
+                  <Sparkles size={20} strokeWidth={2.4} color="#fff" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[14px] font-extrabold" style={{ color: "#fff" }}>Débloque les missions supplémentaires</span>
+                  <span className="block text-[11.5px]" style={{ color: "rgba(255,255,255,0.85)" }}>En illimité avec le Premium — et pas que : assistant &amp; nutrition illimités</span>
+                </span>
+                <ArrowRight size={18} strokeWidth={2.6} color="#fff" className="flex-shrink-0" />
+              </button>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
+  );
+}
+
+/** Pastille « mission accomplie » : un rond teal avec une coche (réussite = teal). */
+function CocheMission() {
+  return (
+    <span
+      className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+      style={{ background: "linear-gradient(135deg,#2BD4A0,#12b98a)", boxShadow: "0 2px 8px rgba(43,212,160,0.35)" }}
+      aria-label="Mission accomplie"
+    >
+      <Check size={16} strokeWidth={3} color="#fff" />
+    </span>
+  );
+}
+
+/* ═══════════ Accueil « Ta journée, en un écran » — briques ═══════════ */
+const TUILE_STYLE = {
+  background: "rgb(var(--surface-rgb))",
+  border: "1px solid rgba(var(--accent-rgb),0.08)",
+  boxShadow: "0 3px 10px rgba(var(--accent-rgb),0.06)",
+};
+
+/** Phrase d'accueil (bloc 1). CÉLÈBRE ce qui est DÉJÀ fait — elle ne répète
+ *  jamais la séance du jour (le héros s'en charge), pour éviter le doublon. */
+function phraseDuJour(seanceOk: boolean, repasOk: boolean, hour: number): string {
+  if (seanceOk && repasOk) return "Séance faite, repas noté — journée solide 💪";
+  if (seanceOk) return "Séance bouclée aujourd'hui — bien joué 💪";
+  if (repasOk) return "Déjà un repas noté — continue comme ça ✦";
+  // Rien de fait encore : un mot chaleureux selon l'heure, jamais culpabilisant.
+  if (hour < 12) return "Nouvelle journée — on avance ✦";
+  if (hour < 18) return "L'après-midi est à toi ✦";
+  return "Il reste du temps pour bouger ✦";
+}
+
+/** Le mot du coach (dernier bloc). Ne parle JAMAIS de la séance du jour (le héros
+ *  s'en charge) : il apporte sa valeur propre = l'assistant à qui parler. */
+function motDuCoach(streak: number): { titre: string; texte: string } {
+  if (new Date().getDay() === 0) {
+    return { titre: "Ton bilan de la semaine", texte: "Ouvre l'assistant : je te fais le point sur tes séances et ta nutrition des 7 derniers jours." };
+  }
+  if (streak >= 3) {
+    return { titre: `${streak} jours d'affilée, continue`, texte: "Ta régularité paie. Dis-moi comment tu te sens, j'ajuste la suite." };
+  }
+  return { titre: "Je suis là quand tu veux", texte: "Une question nutrition, une séance à créer, un programme à revoir ? Parle-moi." };
+}
+
+/** Bloc 2 — le nœud du jour : la séance planifiée, en grand. */
+function NoeudDuJour({ seance, loaded, onGo }: { seance: PlanningDay | null; loaded: boolean; onGo: () => void }) {
+  const reduce = useReducedMotion();
+  if (!loaded) {
+    return <div className="rounded-3xl h-[150px] animate-pulse" style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.06)" }} />;
+  }
+  // Jour de repos → carte violette avec une LUEUR qui tourne autour (conic-gradient
+  // animé, clippé au bord par le contour intérieur). Zéro culpabilisation.
+  if (seance && seance.type.toLowerCase() === "repos") {
+    return (
+      <div className="relative rounded-3xl">
+        <div className="relative w-full flex items-start gap-3 rounded-3xl p-4" style={{ background: "linear-gradient(180deg, rgba(139,92,246,0.10), rgba(193,59,193,0.06)), rgb(var(--surface-rgb))", border: "1px solid rgba(139,92,246,0.16)" }}>
+          <span className="w-9 h-9 rounded-xl grid place-items-center flex-shrink-0 text-[17px]" style={{ background: "linear-gradient(150deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 16px -6px rgba(139,92,246,0.75)" }}>🌙</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "#8B5CF6" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</p>
+            <p className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>Jour de repos</p>
+            <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "var(--text-soft)" }}>Ton corps encaisse le travail. Reviens demain, plus fort.</p>
+          </div>
+        </div>
+        {/* Une lueur qui court le long du contour EXACT du rectangle (tracé rect
+            SVG, segment qui se déplace via pathOffset). prefers-reduced-motion → rien. */}
+        {!reduce && (
+          <svg className="absolute inset-0 h-full w-full pointer-events-none" aria-hidden style={{ overflow: "visible" }}>
+            <defs>
+              <linearGradient id="reposGlow" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#8B5CF6" />
+                <stop offset="1" stopColor="#C13BC1" />
+              </linearGradient>
+            </defs>
+            <motion.rect
+              x="0" y="0" width="100%" height="100%" rx="24"
+              fill="none" stroke="url(#reposGlow)" strokeWidth="2" strokeLinecap="round" strokeOpacity={0.8}
+              pathLength={100}
+              strokeDasharray="46 54"
+              initial={{ strokeDashoffset: 0 }}
+              animate={{ strokeDashoffset: -100 }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }}
+              style={{ filter: "drop-shadow(0 0 2.5px rgba(139,92,246,0.5))" }}
+            />
+          </svg>
+        )}
+      </div>
+    );
+  }
+  // Rien de planifié → invitation
+  if (!seance || !hasSeance(seance)) {
+    return (
+      <button type="button" onClick={onGo} className="w-full text-left rounded-3xl px-5 py-6 flex items-center gap-4 outline-none active:opacity-95" style={{ background: "rgb(var(--surface-rgb))", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}>
+        <span className="text-[28px]">✦</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "var(--text-3)" }}>Aujourd&apos;hui</p>
+          <h2 className="text-[18px] font-extrabold" style={{ color: "var(--text-0)" }}>Rien de prévu</h2>
+          <p className="text-[12.5px]" style={{ color: "var(--text-soft)" }}>Choisis ta séance du jour — l&apos;assistant peut t&apos;en proposer une.</p>
+        </div>
+        <ChevronRight size={20} style={{ color: "var(--text-3)" }} />
+      </button>
+    );
+  }
+  // Séance planifiée → héros
+  const fait = seance.status === "done";
+  const nbEx = seance.exerciseList.length;
+  const lieu = seance.location === "salle" ? "En salle" : seance.location === "halteres" ? "Haltères" : seance.location === "poids" ? "Poids du corps" : "";
+  return (
+    <div className="rounded-3xl overflow-hidden relative flex flex-col justify-end min-h-[210px]" style={{ boxShadow: "0 10px 30px -16px rgba(139,92,246,0.5)", background: "linear-gradient(180deg, rgba(10,6,20,0) 30%, rgba(10,6,20,0.82) 100%), radial-gradient(120% 90% at 80% 0%, #7C4DD6, transparent 55%), linear-gradient(150deg, #4B2E86 0%, #7A2E9E 48%, #C13BC1 120%)" }}>
+      <div className="absolute top-3.5 left-3.5 text-[10.5px] font-extrabold tracking-wide uppercase px-2.5 py-1 rounded-full" style={{ color: "#fff", background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.22)" }}>Aujourd&apos;hui · {dayLabel(seance.date)}</div>
+      <div className="p-4">
+        <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: "rgba(255,255,255,0.72)" }}>{seance.type}</p>
+        <h2 className="text-[23px] font-extrabold leading-tight mt-0.5" style={{ color: "#fff" }}>{dayTitle(seance)}</h2>
+        <p className="text-[12.5px] mb-3" style={{ color: "rgba(255,255,255,0.82)" }}>{nbEx} exercice{nbEx > 1 ? "s" : ""}{lieu ? " · " + lieu : ""}</p>
+        {fait ? (
+          <div className="flex items-center gap-2 rounded-2xl px-4 py-3 justify-center" style={{ background: "rgba(43,212,160,0.92)", color: "#06231A" }}>
+            <Check size={17} strokeWidth={3} /> <span className="text-[14px] font-extrabold">Séance faite aujourd&apos;hui</span>
+          </div>
+        ) : (
+          <button type="button" onClick={onGo} className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 outline-none active:opacity-95" style={{ background: "linear-gradient(100deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 10px 24px -10px rgba(193,59,193,0.7)" }}>
+            <Play size={16} fill="#fff" /> <span className="text-[15px] font-extrabold">Lancer la séance</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Bloc 4 — le relais en cours (n'apparaît que s'il existe). La vignette est un
+ *  emblème ✦ bleu-violet (réflexion de l'✦) plutôt qu'une mini-affiche sombre :
+ *  l'affiche complète se regarde en grand sur /defi. */
+function BlocRelais({ defi, moi, onGo }: { defi: Defi; moi: string; onGo: () => void }) {
+  const joursFaits = defi.actions.length;
+  const equipier = defi.membres.find((m) => m.userId !== moi) ?? null;
+  const reste = defi.objectif - joursFaits;
+  const reussi = defi.statut === "reussi";
+  const serieNom = SERIES[defi.serie as SerieSlug]?.nom ?? "Relais";
+  return (
+    <button type="button" onClick={onGo} className="w-full flex items-center gap-3.5 rounded-3xl p-3 text-left outline-none active:opacity-95" style={TUILE_STYLE}>
+      <div className="w-[52px] h-[66px] rounded-xl flex-shrink-0 grid place-items-center text-[24px]" style={{ background: "linear-gradient(150deg,#5B7CFA,#8B5CF6)", color: "#fff", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.28), 0 8px 18px -8px rgba(123,92,246,0.7)" }}>✦</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10.5px] font-bold tracking-wide uppercase truncate" style={{ color: "#7B5CF6" }}>{serieNom}{equipier ? " · avec " + equipier.pseudo : ""}</p>
+        <h3 className="text-[15px] font-extrabold mt-0.5" style={{ color: "var(--text-0)" }}>{reussi ? "Affiche débloquée ✦" : reste <= 1 ? "Plus qu'un maillon" : `Encore ${reste} maillons`}</h3>
+        <p className="text-[12px]" style={{ color: "var(--text-soft)" }}>{reussi ? "Vous l'avez fait à deux." : "L'affiche se dévoile à chaque séance."}</p>
+      </div>
+      <ChevronRight size={20} style={{ color: "var(--text-3)" }} className="flex-shrink-0" />
+    </button>
+  );
+}
 
 function Dashboard() {
   const now = new Date();
@@ -578,11 +653,10 @@ function Dashboard() {
   }, [showChat]);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
-  const [dailyVideoUrl, setDailyVideoUrl] = useState<string | null>(null);
-  void mobilePanel; void setMobilePanel; void logout; void router; // legacy refs, unused dans la nouvelle layout
+  void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
-  const [showObjectif, setShowObjectif] = useState(false);
+  const [parisDay, setParisDay] = useState(() => parisDateStr());
   const [toast, setToast] = useState<string|null>(null);
   const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
@@ -598,22 +672,71 @@ function Dashboard() {
       return next;
     });
   };
+
+  // Une app laissée ouverte traverse réellement minuit : toutes les requêtes
+  // quotidiennes repartent alors sur le nouveau jour Europe/Paris.
+  useEffect(() => observeParisDay(setParisDay), []);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Animation quand le score augmente (+N qui s'envole + pop)
-  const [scoreBump, setScoreBump] = useState<number | null>(null);
-  const prevScoreRef = useRef<number | null>(null);
+  // ── L'aura (rang personnel) : EXP dérivée des vraies données de l'utilisateur ──
+  // `statsTick` est incrémenté quand l'effet des stats a fini d'écrire daily_stats
+  // (connexion du jour). On recalcule l'aura APRÈS, sinon la connexion du jour ne
+  // serait pas comptée (0 EXP, Jour 0) à cause de la race entre les deux effets.
+  const [statsTick, setStatsTick] = useState(0);
+  const [aura, setAura] = useState<EtatAura>(() => etatDepuisExp(0));
+  const [auraLoaded, setAuraLoaded] = useState(false);
+  const didInitAuraRef = useRef(false);
   useEffect(() => {
-    if (!liveStats.loaded) return;
-    const prev = prevScoreRef.current;
-    prevScoreRef.current = liveStats.score;
-    if (prev !== null && liveStats.score > prev) {
-      setScoreBump(liveStats.score - prev);
-      const t = setTimeout(() => setScoreBump(null), 2200);
+    if (!user) return;
+    const supabase = createClient();
+    const cacheKey = `vaiiya_aura_exp_${user.id}`;
+    const firstRun = !didInitAuraRef.current;
+    didInitAuraRef.current = true;
+
+    // Affichage OPTIMISTE : au tout premier chargement, on montre tde suite le
+    // dernier rang connu (cache localStorage) au lieu d'un « — » le temps que
+    // les 5 requêtes de calculerAura reviennent. Le vrai calcul rafraîchit juste après.
+    if (firstRun) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached != null) {
+          const exp = parseInt(cached, 10) || 0;
+          prevExpRef.current = exp;           // pas de faux « +EXP » quand le frais arrive
+          setAura(etatDepuisExp(exp));
+          setAuraLoaded(true);
+        }
+      } catch { /* ignore */ }
+    }
+
+    calculerAura(supabase, user.id)
+      .then((etat) => {
+        if (firstRun) prevExpRef.current = etat.exp; // le premier chargement ne s'anime jamais
+        setAura(etat);
+        setAuraLoaded(true);
+        try { localStorage.setItem(cacheKey, String(etat.exp)); } catch { /* ignore */ }
+        // Passage de rang : on note le rang FRAIS (jamais celui du cache d'affichage).
+        noterRang(user.id, etat.rang);
+      })
+      .catch(() => setAuraLoaded(true));
+  }, [user, mealsRefreshKey, statsTick, parisDay]);
+
+  // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
+  // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
+  const [expGain, setExpGain] = useState<number | null>(null);
+  const [showRangs, setShowRangs] = useState(false);
+  const prevExpRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!auraLoaded) return;
+    const prev = prevExpRef.current;
+    prevExpRef.current = aura.exp;
+    if (prev !== null && aura.exp > prev) {
+      setExpGain(aura.exp - prev);
+      const t = setTimeout(() => setExpGain(null), 2000);
       return () => clearTimeout(t);
     }
-  }, [liveStats.score, liveStats.loaded]);
+  }, [aura.exp, auraLoaded]);
+
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
   useEffect(() => {
@@ -631,44 +754,56 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
-    const today = new Date().toISOString().slice(0, 10);
-    supabase
-      .from("daily_stats")
-      .select("score, calories, steps, sleep_hours, streak")
-      .eq("user_id", user.id)
-      .eq("date", today)
-      .maybeSingle()
-      .then(async ({ data, error }) => {
+    const today = parisDay;
+    (async () => {
+      try {
+        // La connexion du jour ne dépend PAS de ce calcul : elle part du
+        // layout, depuis n'importe quelle page. On l'attend d'abord ici pour
+        // que la ligne du jour existe et que l'aura recalculée juste après
+        // la voie déjà créditée.
+        await marquerPresence(supabase, user.id);
+
+        const { data, error } = await supabase
+          .from("daily_stats")
+          .select("score, calories, burned, steps, sleep_hours, streak")
+          .eq("user_id", user.id)
+          .eq("date", today)
+          .maybeSingle();
         if (!error && data && data.score > 0) {
           // Données existantes avec un score valide — on les utilise directement
           setLiveStats(prev => ({
             ...prev,
             score:      data.score       ?? 0,
             calories:   data.calories    ?? 0,
+            burned:     data.burned      ?? 0,
             steps:      data.steps       ?? 0,
             sleepHours: data.sleep_hours ?? 0,
             streak:     data.streak      ?? 0,
             loaded:     true,
           }));
         } else {
-          // Score absent ou nul — calcul dynamique
-          try {
-            const computed = await computeAndSaveScore(user.id, supabase);
-            setLiveStats(prev => ({
-              ...prev,
-              score:      computed.score,
-              calories:   computed.calories,
-              steps:      computed.steps,
-              sleepHours: computed.sleepHours,
-              streak:     computed.streak,
-              loaded:     true,
-            }));
-          } catch {
-            setLiveStats(prev => ({ ...prev, loaded: true }));
-          }
+          // Score absent ou nul — calcul dynamique (crée aussi la ligne du jour)
+          const computed = await computeAndSaveScore(user.id, supabase);
+          setLiveStats(prev => ({
+            ...prev,
+            score:      computed.score,
+            calories:   computed.calories,
+            burned:     computed.burned,
+            steps:      computed.steps,
+            sleepHours: computed.sleepHours,
+            streak:     computed.streak,
+            loaded:     true,
+          }));
         }
-      });
-  }, [user]);
+      } catch {
+        setLiveStats(prev => ({ ...prev, loaded: true }));
+      } finally {
+        // daily_stats du jour est désormais garantie écrite → on recalcule l'aura
+        // (la connexion du jour +5 est enfin comptée, et la série passe à Jour 1).
+        setStatsTick((t) => t + 1);
+      }
+    })();
+  }, [user, parisDay]);
 
   // Fetch le nombre de séances de la semaine (lundi → maintenant)
   useEffect(() => {
@@ -685,29 +820,6 @@ function Dashboard() {
       .gte("started_at", monday.toISOString())
       .then(({ count }) => setLiveStats(prev => ({ ...prev, sessionsWeek: count ?? 0 })));
   }, [user]);
-
-  // Fetch la vidéo du jour : 24h → 7j → la plus vue de tous les temps (garantit un aperçu)
-  useEffect(() => {
-    const supabase = createClient();
-    const pickVideo = async () => {
-      const tryWindow = async (sinceIso: string | null) => {
-        let q = supabase.from("posts").select("media_url, views, created_at")
-          .eq("media_type", "video")
-          .not("media_url", "is", null);
-        if (sinceIso) q = q.gte("created_at", sinceIso);
-        const { data } = await q
-          .order("views", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false })
-          .limit(1).maybeSingle();
-        return (data?.media_url as string | undefined) ?? null;
-      };
-      const day  = new Date(Date.now() - 86400000).toISOString();
-      const week = new Date(Date.now() - 7 * 86400000).toISOString();
-      const url = (await tryWindow(day)) ?? (await tryWindow(week)) ?? (await tryWindow(null));
-      if (url) setDailyVideoUrl(url);
-    };
-    void pickVideo();
-  }, []);
 
   // Onboarding : clé STABLE par ID de compte + flag "vu" → ne s'affiche QU'UNE fois.
   // Une fois le compte créé / l'onboarding fermé, il ne réapparaît plus jamais
@@ -849,7 +961,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await aiFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -869,6 +981,16 @@ function Dashboard() {
           lieu_equip: user ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,
         }),
       });
+
+      // Quota atteint ou session expirée : message clair plutôt qu'une erreur
+      // générique (le serveur sait si c'est la limite du gratuit ou le plafond
+      // d'usage raisonnable).
+      const refus = await messageDeRefus(response);
+      if (refus) {
+        setAiTyping(false);
+        setChatMessages((prev) => [...prev, { id: Date.now() + 1, from: "ai" as const, text: refus, time }]);
+        return;
+      }
 
       if (!response.ok || !response.body) throw new Error("API error");
 
@@ -911,8 +1033,8 @@ function Dashboard() {
       // Détecte le lieu d'entraînement indiqué par l'utilisateur (salle / maison)
       const lieuMatch = fullText.match(/\[LIEU_UPDATE\]\s*(salle|maison)\s*\[\/LIEU_UPDATE\]/i);
       if (lieuMatch && user) {
-        const lieu = lieuMatch[1].toLowerCase();
-        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, lieu); } catch { /* ignore */ }
+        const lieu = lieuMatch[1].toLowerCase() as "salle" | "maison";
+        void persistLieu(user.id, { location: lieu }); // localStorage + base (cross-device)
         window.dispatchEvent(new CustomEvent("lieu-updated"));
         showToast(lieu === "maison" ? "🏠 Séances adaptées à la maison" : "🏋️ Séances adaptées à la salle");
         // Nettoie le tag du message affiché
@@ -948,10 +1070,6 @@ function Dashboard() {
             case "premium":        router.push("/premium"); break;
             case "progression":    router.push("/progression"); break;
             case "nutrition":      router.push("/nutrition"); break;
-            case "communaute":
-            case "communauté":     router.push("/communaute"); break;
-            case "decouverte":
-            case "découverte":     router.push("/decouverte"); break;
             case "parametres":
             case "paramètres":     router.push("/parametres"); break;
             default: break;
@@ -978,301 +1096,42 @@ function Dashboard() {
     }
   }, [user, userContext, liveStats]);
 
-  const handleVoiceTranscript = useCallback((text: string) => {
-    sendMessage(text);
-    setShowChat(true);
-  }, [sendMessage]);
-
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
-  const quickActionHandlers = [
-    () => { setShowChat(true); sendMessage("Génère-moi une séance d'entraînement pour aujourd'hui selon mon profil et mes objectifs"); },
-    () => { setShowChat(true); sendMessage("Propose-moi un repas équilibré pour ce soir selon mon régime et mes objectifs caloriques"); },
-    () => { setShowChat(true); sendMessage("Aide-moi à définir un nouvel objectif fitness motivant et réaliste pour les 4 prochaines semaines"); },
-  ];
-  void quickActionHandlers;
-
   return (
-    <div className="fixed inset-0 md:left-[88px] flex flex-col overflow-y-hidden overscroll-none" style={{ background: "var(--page-bg)", height: "100dvh" }}>
-
-      {/* ────────────────── TOP : 4 cadrans + croissant ────────────────── */}
-      <button
-        type="button"
-        onClick={() => setShowStatsDrawer(true)}
-        data-tour-anchor="stats"
-        className="relative w-full flex-shrink-0 outline-none active:opacity-95 transition-opacity"
-        style={{ height: "31%" }}
+    <div
+      className="fixed inset-0 md:left-[88px] overflow-y-auto overscroll-none"
+      style={{ background: "var(--page-bg)", height: "100dvh", WebkitOverflowScrolling: "touch" }}
+    >
+      <div
+        className="mx-auto w-full max-w-2xl px-4 flex flex-col gap-4"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 62px)",
+          paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
+        }}
       >
-        {/* Header en haut : greeting + avatar (remonté un peu pour dégager le label) */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5" style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}>
-          <div className="text-left">
-            <p className="text-[11px] font-bold tracking-[0.22em] uppercase" style={{ color: "var(--text-soft)" }}>{greeting}</p>
-            <h1 className="text-xl font-light mt-0.5" style={{ color: "var(--text-0)" }}>
-              {user?.pseudo ?? user?.name ?? ""}
-            </h1>
-          </div>
-          <div onClick={(e) => e.stopPropagation()}>
-            <NotificationBell side="bottom" />
-          </div>
-        </div>
+        <AccueilSignature
+          greeting={greeting}
+          pseudo={user?.pseudo ?? user?.name ?? ""}
+          aura={aura}
+          auraLoaded={auraLoaded}
+          expGain={expGain}
+          isPremium={!!user?.is_premium}
+          isAdmin={!!user?.is_admin}
+          onNavigate={(path) => router.push(path)}
+          onOpenRangs={() => setShowRangs(true)}
+        />
 
-        {/* Bloc bas : label au-dessus + 3 cadrans, ancré en bas (assez d'air, rien de coupé) */}
-        <div className="absolute bottom-7 left-0 right-0 px-5 flex flex-col items-center gap-2.5">
-          {/* Label compact (une seule ligne) : indique clairement le tap */}
-          <motion.div className="flex items-center gap-1.5 px-3.5 py-1 rounded-full whitespace-nowrap"
-            style={{ background: "rgba(var(--surface-rgb),0.9)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", boxShadow: "0 2px 10px rgba(var(--accent-rgb),0.18)" }}
-            animate={{ y: [0, 1.5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-            <Dumbbell size={11} strokeWidth={2} style={{ color: "var(--accent)" }} />
-            <span className="text-[11px] font-bold tracking-wide" style={{ color: "var(--text-soft)" }}>Séances &amp; repas recommandés</span>
-            <ChevronDown size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
-          </motion.div>
-
-          {/* 3 mini-cadrans : Score · Série · Séances */}
-          <div className="w-full grid grid-cols-3 gap-2">
-          {[
-            { label: "Score",   icon: Sparkles, value: liveStats.loaded && liveStats.score > 0 ? `${liveStats.score}` : "—", unit: liveStats.score > 0 ? "/100" : "" },
-            { label: "Série",   icon: Flame,    value: liveStats.loaded && liveStats.streak > 0 ? `${liveStats.streak}` : "—", unit: liveStats.streak > 0 ? (liveStats.streak > 1 ? "jours" : "jour") : "" },
-            { label: "Séances", icon: Dumbbell, value: liveStats.loaded ? `${liveStats.sessionsWeek}` : "—", unit: "/ sem" },
-          ].map((s, i) => {
-            const Icon = s.icon;
-            const isHero = i === 1; // Série mis en avant avec la DA du site
-            const isScore = i === 0;
-            const bumping = isScore && scoreBump != null;
-            return (
-              <motion.div key={s.label}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0, scale: bumping ? [isHero ? 1.07 : 1, 1.22, isHero ? 1.07 : 1] : (isHero ? 1.07 : 1) }}
-                transition={bumping ? { duration: 0.6, ease: "easeOut" } : { delay: 0.15 + i * 0.05, type: "spring", bounce: 0.35 }}
-                className="rounded-2xl px-2 py-2 flex flex-col items-center gap-1 relative"
-                style={isHero
-                  ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", border: "1px solid rgba(var(--surface-rgb),0.95)", boxShadow: "0 10px 28px rgba(var(--accent-rgb),0.4), inset 0 1px 0 rgba(var(--surface-rgb),0.95)", zIndex: 2 }
-                  : { background: bumping ? "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.85) 0%, rgba(var(--cream-mid-rgb),0.7) 100%)" : "rgba(var(--surface-rgb),0.7)", backdropFilter: "blur(10px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: bumping ? "0 0 22px rgba(var(--accent-rgb),0.6), 0 6px 18px rgba(var(--gold-rgb),0.35)" : "0 4px 16px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)", zIndex: bumping ? 3 : 1, transition: "box-shadow 0.4s, background 0.4s" }}>
-
-                {/* +N qui s'envole quand le score monte */}
-                <AnimatePresence>
-                  {bumping && (
-                    <motion.div
-                      key="bump"
-                      initial={{ opacity: 0, y: 4, scale: 0.6 }}
-                      animate={{ opacity: 1, y: -26, scale: 1 }}
-                      exit={{ opacity: 0, y: -40 }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                      className="absolute left-1/2 -translate-x-1/2 -top-1 pointer-events-none px-2 py-0.5 rounded-full text-[11px] font-extrabold"
-                      style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", color: "#fff", boxShadow: "0 4px 12px rgba(var(--accent-rgb),0.5)", whiteSpace: "nowrap" }}
-                    >
-                      +{scoreBump}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{ background: isHero ? "rgba(var(--surface-rgb),0.6)" : "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.95) 0%, rgba(var(--tint-cream-rgb),0.95) 100%)" }}>
-                  {isHero ? (
-                    <motion.div
-                      style={{ display: "flex" }}
-                      animate={{
-                        scale: [1, 1.15, 1],
-                        filter: [
-                          "drop-shadow(0 0 2px rgba(240,180,41,0.7))",
-                          "drop-shadow(0 0 7px rgba(240,180,41,1)) drop-shadow(0 0 13px rgba(232,140,20,0.75))",
-                          "drop-shadow(0 0 2px rgba(240,180,41,0.7))",
-                        ],
-                      }}
-                      transition={{ duration: 1.7, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <Icon size={15} strokeWidth={2} style={{ color: "#E8A11E" }} fill="#F0B429" />
-                    </motion.div>
-                  ) : (
-                    <Icon size={13} strokeWidth={1.5}
-                      style={{ color: bumping ? "var(--gold)" : "var(--accent)", filter: bumping ? "drop-shadow(0 0 6px rgba(var(--gold-rgb),0.9))" : "none", transition: "color 0.3s" }}
-                      fill="none" />
-                  )}
-                </div>
-                <p className="text-[10px] font-bold tracking-widest uppercase leading-none" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.label}</p>
-                <div className="flex items-baseline gap-0.5">
-                  <span className={`${isHero ? "text-lg font-extrabold" : "text-base font-semibold"} leading-none`} style={{ color: "var(--text-1)" }}>{s.value}</span>
-                  {s.unit && <span className="text-[10px] font-medium" style={{ color: isHero ? "var(--text-1)" : "var(--text-3)" }}>{s.unit}</span>}
-                </div>
-              </motion.div>
-            );
-          })}
-          </div>
-        </div>
-
-        {/* Croissant SVG (courbe douce qui s'incurve vers le bas) — étendu jusqu'à la sidebar sur desktop */}
-        <svg className="absolute -bottom-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "20px" }}>
-          <defs>
-            <linearGradient id="topCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(var(--violet-mid-rgb),0.5)" />
-              <stop offset="100%" stopColor="rgba(var(--cream-mid-rgb),0.0)" />
-            </linearGradient>
-          </defs>
-          <path d="M 0 0 Q 50 10 100 0 L 100 6 L 0 6 Z" fill="url(#topCrescentGrad)" />
-        </svg>
-
-      </button>
-
-      {/* ────────────────── CENTRE : HomeOrb ─────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center px-6 relative pb-[240px] md:pb-[34dvh]">
-        <div data-tour-anchor="orb" style={{ display: "inline-block", lineHeight: 0 }}>
-          <HomeOrb
-            onTap={() => setShowChat(true)}
-            onTranscript={handleVoiceTranscript}
-            size={isMobile ? 138 : 176}
-          />
-        </div>
+        <RangsModal
+          open={showRangs}
+          onClose={() => setShowRangs(false)}
+          expActuel={auraLoaded ? aura.exp : 0}
+          rangActuelId={aura.rang.id}
+          pseudo={user?.pseudo ?? user?.name ?? ""}
+          avatarUrl={user?.avatar}
+          isAdmin={!!user?.is_admin}
+        />
       </div>
-
-      {/* ────────────────── BOTTOM : VOTD carte large + croissant — AU-DESSUS de la nav ─ */}
-      <button
-        type="button"
-        onClick={() => setShowDailyDrawer(true)}
-        className="absolute left-0 right-0 outline-none active:opacity-95 transition-opacity md:bottom-2 h-[146px] md:h-[32dvh]"
-        style={{ bottom: "calc(70px + env(safe-area-inset-bottom))" }}
-        aria-label="Ouvrir Du Jour"
-      >
-        {/* Croissant SVG (courbe douce qui s'incurve vers le haut) — étendu jusqu'à la sidebar sur desktop */}
-        <svg className="absolute -top-px left-0 w-full md:-left-[88px] md:w-[calc(100%+88px)] pointer-events-none" viewBox="0 0 100 6" preserveAspectRatio="none" style={{ height: "22px" }}>
-          <defs>
-            <linearGradient id="bottomCrescentGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(var(--cream-mid-rgb),0.0)" />
-              <stop offset="100%" stopColor="rgba(var(--violet-mid-rgb),0.5)" />
-            </linearGradient>
-          </defs>
-          <path d="M 0 6 Q 50 -4 100 6 L 100 0 L 0 0 Z" fill="url(#bottomCrescentGrad)" />
-        </svg>
-
-        {/* Hint chevron */}
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none">
-          <ChevronUp size={14} strokeWidth={1.5} style={{ color: "rgba(var(--accent-rgb),0.55)" }} />
-        </div>
-
-        {/* VOTD carte horizontale large — vidéo à gauche + texte à droite (centrée verticalement dans la demi-lune) */}
-        <div className="absolute inset-x-4 top-[9dvh] bottom-0 flex items-center justify-center">
-          <motion.div initial={{ opacity: 0, scale: 0.92, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.4, type: "spring", bounce: 0.3 }}
-            data-tour-anchor="votd"
-            className="relative w-full pointer-events-none"
-            style={{ maxWidth: 600 }}>
-
-            {/* ✦ Barre LED le long du contour — masque "border-only", aucun débordement */}
-            <div
-              className="absolute inset-0 pointer-events-none overflow-hidden"
-              style={{
-                zIndex: 5,
-                borderRadius: 28,
-                padding: 2, // épaisseur de la barre lumineuse
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                maskComposite: "exclude",
-              } as React.CSSProperties}
-            >
-              {/* Contour de marque FIXE (dégradé doux, couvre tout le rectangle) */}
-              <div
-                className="absolute inset-0"
-                style={{ background: "linear-gradient(120deg, var(--accent) 0%, #C4A8FF 30%, var(--cream-mid) 65%, #FFB088 100%)", opacity: 0.55 }}
-              />
-              {/* UN seul reflet lumineux qui glisse autour, doucement */}
-              <motion.div
-                className="absolute"
-                style={{
-                  top: "-50%", left: "-50%", width: "200%", height: "200%",
-                  background: "conic-gradient(from 0deg, transparent 0deg, transparent 300deg, rgba(var(--surface-rgb),0.85) 340deg, rgba(var(--violet-mid-rgb),0.5) 352deg, transparent 360deg)",
-                }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: "linear" }}
-              />
-            </div>
-
-            {/* La carte (au-dessus de l'anneau) */}
-            <div
-            className="relative flex items-stretch gap-4 p-2.5 rounded-[28px] w-full overflow-hidden"
-            style={{
-              background: "rgba(var(--surface-rgb),0.96)",
-              backdropFilter: "blur(14px)",
-              boxShadow: "0 12px 36px rgba(var(--accent-rgb),0.22), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
-            }}>
-
-            {/* Reflet brillant qui balaie la carte (shimmer) */}
-            <motion.div
-              className="absolute top-0 bottom-0 pointer-events-none"
-              style={{
-                width: "45%",
-                background: "linear-gradient(105deg, transparent 0%, rgba(var(--surface-rgb),0.55) 50%, transparent 100%)",
-                filter: "blur(2px)",
-              }}
-              animate={{ left: ["-50%", "140%"] }}
-              transition={{ duration: 2.6, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
-            />
-            {/* Vidéo verticale à gauche — plus grande */}
-            <div className="relative overflow-hidden rounded-2xl flex-shrink-0"
-              style={{
-                width: isMobile ? 62 : 118, height: isMobile ? 98 : 182,
-                background: "linear-gradient(135deg, #1A1A2E 0%, #2D2A4E 100%)",
-                boxShadow: "inset 0 0 0 1px rgba(var(--surface-rgb),0.18)",
-              }}>
-              {dailyVideoUrl ? (
-                <video
-                  src={dailyVideoUrl}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  muted
-                  loop
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.18)", backdropFilter: "blur(4px)" }}>
-                    <Play size={24} strokeWidth={2} style={{ color: "#FFFFFF", marginLeft: 3 }} fill="#FFFFFF" />
-                  </div>
-                </div>
-              )}
-              {/* Indicateur LIVE en haut */}
-              {dailyVideoUrl && (
-                <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#FC8181", boxShadow: "0 0 5px rgba(252,129,129,0.9)" }} />
-                  <span className="text-[8px] font-bold tracking-widest text-white">LIVE</span>
-                </div>
-              )}
-              {/* Petit bouton play overlay quand vidéo */}
-              {dailyVideoUrl && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.32)", backdropFilter: "blur(2px)" }}>
-                    <Play size={18} strokeWidth={2} style={{ color: "#fff", marginLeft: 2 }} fill="#fff" />
-                  </div>
-                </div>
-              )}
-              {/* Gradient noir bas pour lisibilité éventuelle */}
-              <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
-                style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.45))" }} />
-            </div>
-
-            {/* Texte à droite */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center py-1 pr-2">
-              <p className="text-[10px] font-bold tracking-widest uppercase leading-none mb-1" style={{ color: "var(--accent)" }}>
-                Du jour
-              </p>
-              <p className="text-xl font-light leading-tight" style={{ color: "var(--text-0)" }}>
-                Vidéo · Séance · Perf
-              </p>
-              <p className="text-[11px] font-light mt-1.5 leading-snug" style={{ color: "var(--text-soft)" }}>
-                Tap pour explorer ton contenu
-              </p>
-              <div className="flex items-center gap-2 mt-2.5">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                  style={{ background: "linear-gradient(135deg, var(--violet-mid), var(--cream-mid))", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.25)" }}>
-                  <Play size={11} strokeWidth={2.5} style={{ color: "var(--text-1)", marginLeft: 0.5 }} fill="var(--text-1)" />
-                  <span className="text-[12px] font-bold" style={{ color: "var(--text-1)" }}>Voir</span>
-                </div>
-                <ChevronUp size={13} strokeWidth={2} style={{ color: "rgba(var(--accent-rgb),0.7)" }} />
-              </div>
-            </div>
-            </div>{/* fin carte intérieure */}
-          </motion.div>
-        </div>
-      </button>
 
       {/* ────────────────── DRAWER STATS (top → down) — carousel 3 zones ── */}
       <StatsDrawer
@@ -1340,11 +1199,10 @@ function Dashboard() {
             showToast(`${meal.name} enregistré ✓`);
             // Recalcule le score → il monte en direct (déclenche l'animation)
             computeAndSaveScore(user.id, supabase)
-              .then((c) => setLiveStats(prev => ({ ...prev, score: c.score, calories: c.calories, loaded: true })))
+              .then((c) => setLiveStats(prev => ({ ...prev, score: c.score, calories: c.calories, burned: c.burned, loaded: true })))
               .catch(() => {});
           }
         }} />}
-        {showObjectif && <ObjectifModal key="objectif" onClose={() => setShowObjectif(false)} onSave={(l) => { setShowObjectif(false); showToast(`Objectif : ${l} ✓`); }} />}
         {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}
         {showOnboarding && user && (

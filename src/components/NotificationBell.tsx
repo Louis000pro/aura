@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
-type NotifType = "follow" | "like" | "comment" | "repost";
+type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais" | "message";
 
 type Notif = {
   id: string;
@@ -19,6 +19,7 @@ type Notif = {
   from_avatar_url?: string;
   from_user_id?: string;
   post_id?: string | null;
+  lien?: string | null;
   read: boolean;
   created_at: string;
 };
@@ -28,6 +29,9 @@ function notifLabel(n: Notif): string {
     case "like":    return `a aimé ta publication`;
     case "comment": return `a commenté ton post`;
     case "repost":  return `a reposté ta publication`;
+    case "mention": return `t'a mentionné dans un commentaire`;
+    case "relais":  return `a franchi son maillon`;
+    case "message": return `t'a envoyé un message`;
     default:        return `te suit maintenant`;
   }
 }
@@ -35,9 +39,12 @@ function notifLabel(n: Notif): string {
 function NotifIcon({ type }: { type: NotifType }) {
   const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
     like:    { icon: <Heart size={9} fill="currentColor" />,    bg: "#FEE2E2", color: "#EF4444" },
-    comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#3B82F6" },
-    repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#10B981" },
-    follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(212,192,255,0.6)", color: "#A78BFA" },
+    comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#8B5CF6" },
+    repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#2BD4A0" },
+    follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
+    mention: { icon: <MessageCircle size={9} />,                bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
+    relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
+    message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
   const c = cfg[type];
   return (
@@ -217,23 +224,23 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             maxHeight: panelPos.maxH,
             overflow: "hidden",
             zIndex: 99999,
-            background: "rgba(255,255,255,0.98)",
+            background: "rgba(var(--surface-rgb),0.98)",
             backdropFilter: "blur(16px)",
-            border: "1px solid rgba(212,192,255,0.4)",
-            boxShadow: "0 20px 64px rgba(167,139,250,0.22), 0 4px 12px rgba(0,0,0,0.06)",
+            border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
+            boxShadow: "0 20px 64px rgba(var(--accent-rgb),0.22), 0 4px 12px rgba(0,0,0,0.06)",
             borderRadius: 24,
           }}
         >
           {/* Header */}
           <div
             className="px-4 pt-4 pb-2.5 flex items-center justify-between"
-            style={{ borderBottom: "1px solid rgba(167,139,250,0.1)" }}
+            style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}
           >
-            <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "#2D3748" }}>
+            <span className="text-sm font-semibold flex items-center gap-1.5" style={{ color: "var(--text-1)" }}>
               🔔 Notifications
             </span>
             {unreadNotifs > 0 && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(212,192,255,0.3)", color: "#A78BFA" }}>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(var(--violet-mid-rgb),0.3)", color: "var(--accent)" }}>
                 {unreadNotifs} nouvelle{unreadNotifs > 1 ? "s" : ""}
               </span>
             )}
@@ -253,22 +260,22 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
             {notifs.length === 0 ? (
               <div className="flex flex-col items-center py-10 gap-2">
                 <span className="text-3xl">🔔</span>
-                <p className="text-sm font-light" style={{ color: "#A0AEC0" }}>
+                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
                   Aucune notification
                 </p>
               </div>
             ) : (
               notifs.map((n, i) => (
-                <Link key={n.id} href={n.post_id ? `/communaute` : `/profil/${encodeURIComponent(n.from_pseudo)}`} onClick={() => setOpen(false)}>
+                <Link key={n.id} href={n.lien ?? (n.post_id ? `/profil` : `/profil/${encodeURIComponent(n.from_pseudo)}`)} onClick={() => setOpen(false)}>
                   <motion.div
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    whileHover={{ backgroundColor: "rgba(240,235,255,0.5)" }}
+                    whileHover={{ backgroundColor: "rgba(var(--tint-violet-rgb),0.5)" }}
                     className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
                     style={{
-                      background: n.read ? "transparent" : "rgba(240,235,255,0.28)",
-                      borderBottom: i < notifs.length - 1 ? "1px solid rgba(167,139,250,0.06)" : "none",
+                      background: n.read ? "transparent" : "rgba(var(--tint-violet-rgb),0.28)",
+                      borderBottom: i < notifs.length - 1 ? "1px solid rgba(var(--accent-rgb),0.06)" : "none",
                     }}
                   >
                     {/* Avatar + badge type */}
@@ -276,8 +283,8 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
                       <div
                         className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold overflow-hidden"
                         style={{
-                          background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)",
-                          color: "#2D3748",
+                          background: n.from_avatar_url ? "transparent" : "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)",
+                          color: "var(--text-1)",
                         }}
                       >
                         {n.from_avatar_url
@@ -290,18 +297,18 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
 
                     {/* Text */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] leading-snug break-words" style={{ color: "#2D3748" }}>
+                      <p className="text-[13px] leading-snug break-words" style={{ color: "var(--text-1)" }}>
                         <span className="font-semibold">@{n.from_pseudo}</span>
-                        {" "}<span style={{ color: "#4A5568" }}>{notifLabel(n)}</span>
+                        {" "}<span style={{ color: "var(--text-body)" }}>{notifLabel(n)}</span>
                       </p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>
+                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>
                         {formatRelative(n.created_at)}
                       </p>
                     </div>
 
                     {/* Unread dot */}
                     {!n.read && (
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#A78BFA" }} />
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
                     )}
                   </motion.div>
                 </Link>
@@ -321,7 +328,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
         whileTap={{ scale: 0.88 }}
         onClick={handleOpen}
         className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer mx-auto relative"
-        style={open ? { background: "rgba(240,235,255,0.8)" } : {}}
+        style={open ? { background: "rgba(var(--tint-violet-rgb),0.8)" } : {}}
         aria-label="Notifications"
         title="Notifications"
       >
@@ -332,7 +339,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               key="ann-glow"
               aria-hidden
               className="absolute inset-0 rounded-2xl pointer-events-none"
-              style={{ background: "radial-gradient(circle, rgba(167,139,250,0.5) 0%, transparent 70%)" }}
+              style={{ background: "radial-gradient(circle, rgba(var(--accent-rgb),0.5) 0%, transparent 70%)" }}
               initial={{ opacity: 0 }}
               animate={{ scale: [1, 1.4, 1], opacity: [0.55, 0, 0.55] }}
               exit={{ opacity: 0 }}
@@ -348,7 +355,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
           animate={announceGlow ? { rotate: [0, -14, 12, -9, 7, -4, 0] } : { rotate: 0 }}
           transition={announceGlow ? { duration: 1.2, repeat: Infinity, repeatDelay: 1.8, ease: "easeInOut" } : { duration: 0.2 }}
         >
-          <Bell size={18} strokeWidth={1.5} style={{ color: open || announceGlow ? "#A78BFA" : "#A0AEC0" }} />
+          <Bell size={18} strokeWidth={1.5} style={{ color: open || announceGlow ? "var(--accent)" : "var(--text-3)" }} />
         </motion.span>
 
         {/* Étincelle qui scintille à côté de la cloche */}
@@ -377,7 +384,7 @@ export default function NotificationBell({ side = "right" }: { side?: "right" | 
               exit={{ scale: 0 }}
               transition={{ type: "spring", bounce: 0.6 }}
               className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[8px] font-bold"
-              style={{ background: "#A78BFA", color: "#fff" }}
+              style={{ background: "var(--accent)", color: "#fff" }}
             >
               {badgeCount > 9 ? "9+" : badgeCount}
             </motion.span>

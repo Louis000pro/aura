@@ -3,13 +3,28 @@
  * Reçoit les événements Stripe et met à jour le statut d'abonnement dans `profiles`.
  * Vérifie la signature avec STRIPE_WEBHOOK_SECRET.
  *
- * Colonnes attendues sur `profiles` :
+ * ⚠️ RÈGLE À NE PAS DÉFAIRE : si on n'arrive pas à écrire en base, ou si on
+ * n'arrive pas à savoir de quel compte il s'agit, cette route répond en ERREUR.
+ * Avant, elle répondait 200 quoi qu'il arrive : Stripe considérait l'événement
+ * traité, ne le rejouait jamais, et un client pouvait avoir payé sans que son
+ * compte bouge, sans que personne soit prévenu. En répondant en erreur, Stripe
+ * rejoue l'événement pendant 3 jours et alerte par e-mail après plusieurs
+ * échecs. C'est notre seul filet d'alarme, il ne coûte rien.
+ *
+ * Colonnes attendues sur `profiles` (vérifiées présentes le 2026-07-29) :
  *   subscription_tier text, is_premium bool, subscription_status text,
  *   stripe_customer_id text, current_period_end timestamptz
  */
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase-admin";
+import {
+  appliquerAbonnement,
+  synchroniserSouscription,
+  trouverUtilisateur,
+  finDePeriode,
+  planDeLaSouscription,
+} from "@/lib/stripeSync";
 
 const SECRET = process.env.STRIPE_SECRET_KEY ?? "";
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
@@ -34,62 +49,66 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdminClient();
 
-  const setTier = async (
-    userId: string,
-    tier: "premium" | "creator" | "free",
-    status: string,
-    customerId?: string | null,
-    periodEnd?: number | null
-  ) => {
-    const patch: Record<string, unknown> = {
-      subscription_tier: tier,
-      is_premium: tier !== "free",
-      subscription_status: status,
-    };
-    if (customerId) patch.stripe_customer_id = customerId;
-    if (periodEnd) patch.current_period_end = new Date(periodEnd * 1000).toISOString();
-    const { error } = await admin.from("profiles").update(patch).eq("id", userId);
-    if (error) console.error("[stripe/webhook] update profile:", error.message);
-  };
-
   try {
     switch (event.type) {
       case "checkout.session.completed": {
         const s = event.data.object as Stripe.Checkout.Session;
-        const userId = s.metadata?.user_id;
-        const plan = (s.metadata?.plan as "premium" | "creator") || "premium";
-        if (userId) await setTier(userId, plan, "active", s.customer as string);
-        break;
-      }
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        const sub = event.data.object as Stripe.Subscription;
-        const userId = sub.metadata?.user_id;
-        const plan = (sub.metadata?.plan as "premium" | "creator") || "premium";
-        if (userId) {
-          // statuts considérés "actifs" : active, trialing, past_due (grâce)
-          const active = ["active", "trialing", "past_due"].includes(sub.status);
-          await setTier(
-            userId,
-            active ? plan : "free",
-            sub.status,
-            sub.customer as string,
-            (sub as unknown as { current_period_end?: number }).current_period_end ?? null
-          );
+        const customerId = typeof s.customer === "string" ? s.customer : s.customer?.id ?? null;
+
+        // Une session peut se terminer sans paiement (essai gratuit mis à part,
+        // un virement en attente reste `unpaid`) : on ne donne l'accès que si
+        // Stripe considère la session réglée ou l'abonnement lancé.
+        if (s.status !== "complete") break;
+
+        const userId = await trouverUtilisateur(admin, {
+          userId: s.metadata?.user_id ?? null,
+          customerId,
+        });
+        if (!userId) {
+          throw new Error(`session ${s.id} non rattachée à un compte`);
+        }
+
+        // La souscription porte le statut qui fait foi (trialing, active…).
+        const subId = typeof s.subscription === "string" ? s.subscription : s.subscription?.id;
+        if (subId) {
+          const sub = await stripe.subscriptions.retrieve(subId);
+          await appliquerAbonnement(admin, userId, {
+            tier: planDeLaSouscription(),
+            status: sub.status,
+            customerId,
+            periodEnd: finDePeriode(sub),
+          });
+        } else {
+          await appliquerAbonnement(admin, userId, {
+            tier: planDeLaSouscription(),
+            status: "active",
+            customerId,
+          });
         }
         break;
       }
+
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
-        const userId = sub.metadata?.user_id;
-        if (userId) await setTier(userId, "free", "canceled", sub.customer as string);
+        const resultat = await synchroniserSouscription(admin, sub);
+        if (!resultat) {
+          throw new Error(`souscription ${sub.id} non rattachée à un compte`);
+        }
         break;
       }
+
       default:
         break;
     }
   } catch (err) {
-    console.error("[stripe/webhook] handler:", err);
+    // Erreur volontairement remontée à Stripe : il rejouera l'événement.
+    console.error("[stripe/webhook]", event.type, err);
+    return NextResponse.json(
+      { error: "traitement_impossible", event: event.type },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ received: true });

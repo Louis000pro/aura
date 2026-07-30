@@ -126,7 +126,8 @@ export default function OnboardingWrapper() {
               if (!wasAlreadyCompleted && user?.id) {
                 const alreadyDone = await hasTourBeenCompleted(user.id);
                 if (!alreadyDone) {
-                  // Petit délai pour laisser la home se monter (les data-tour-anchor doivent exister)
+                  // Court silence après la célébration, pour ne pas empiler
+                  // deux plein-écrans d'un coup.
                   setTimeout(() => startTour({ showPlansAfter: true }), 500);
                   return;
                 }
@@ -150,16 +151,16 @@ export default function OnboardingWrapper() {
             <div
               className="relative rounded-2xl px-4 py-3 shadow-xl"
               style={{
-                background: "rgba(255,255,255,0.97)",
-                border: "1.5px solid rgba(212,192,255,0.7)",
-                boxShadow: "0 8px 32px rgba(167,139,250,0.22), 0 2px 8px rgba(0,0,0,0.08)",
+                background: "rgba(var(--surface-rgb),0.97)",
+                border: "1.5px solid rgba(var(--violet-mid-rgb),0.7)",
+                boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.22), 0 2px 8px rgba(0,0,0,0.08)",
               }}
             >
               {/* Fermer */}
               <button
                 onClick={() => { setShowBubble(false); setBubbleDismissed(true); }}
                 className="absolute top-2 right-2 w-4 h-4 flex items-center justify-center rounded-full cursor-pointer"
-                style={{ background: "rgba(160,174,192,0.15)", color: "#A0AEC0" }}
+                style={{ background: "rgba(var(--text-3-rgb),0.15)", color: "var(--text-3)" }}
               >
                 <X size={9} strokeWidth={2.5} />
               </button>
@@ -167,12 +168,12 @@ export default function OnboardingWrapper() {
               {/* Contenu */}
               <div className="flex items-start gap-2 pr-3">
                 <span className="text-xl leading-none mt-0.5 select-none">🤖</span>
-                <p className="text-[12px] leading-snug" style={{ color: "#4A5568" }}>
+                <p className="text-[12px] leading-snug" style={{ color: "var(--text-body)" }}>
                   N&apos;oublie pas de remplir tes{" "}
                   <button
                     onClick={() => { setShowBubble(false); setShowModal(true); }}
                     className="font-bold cursor-pointer underline underline-offset-2"
-                    style={{ color: "#3B82F6" }}
+                    style={{ color: "#8B5CF6" }}
                   >
                     objectifs
                   </button>
@@ -187,8 +188,8 @@ export default function OnboardingWrapper() {
                   width: 0, height: 0,
                   borderLeft: "7px solid transparent",
                   borderRight: "7px solid transparent",
-                  borderTop: "8px solid rgba(255,255,255,0.97)",
-                  filter: "drop-shadow(0 2px 2px rgba(167,139,250,0.15))",
+                  borderTop: "8px solid rgba(var(--surface-rgb),0.97)",
+                  filter: "drop-shadow(0 2px 2px rgba(var(--accent-rgb),0.15))",
                 }}
               />
             </div>

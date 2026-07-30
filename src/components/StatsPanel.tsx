@@ -14,7 +14,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, x: 16 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
 
 export default function StatsPanel() {
@@ -28,10 +28,10 @@ export default function StatsPanel() {
         <div className="px-5 pt-5 pb-4 flex-shrink-0 border-b border-white/40">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                 Aujourd&apos;hui
               </p>
-              <p className="text-base font-light mt-0.5" style={{ color: "#2D3748" }}>
+              <p className="text-base font-light mt-0.5" style={{ color: "var(--text-1)" }}>
                 Votre journée
               </p>
             </div>
@@ -39,12 +39,12 @@ export default function StatsPanel() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
               style={{
                 background:
-                  "linear-gradient(135deg, rgba(240,235,255,0.9) 0%, rgba(255,251,240,0.9) 100%)",
-                border: "1px solid rgba(255,255,255,0.8)",
+                  "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.9) 0%, rgba(255,251,240,0.9) 100%)",
+                border: "1px solid rgba(var(--surface-rgb),0.8)",
               }}
             >
-              <TrendingUp size={11} strokeWidth={2} style={{ color: "#D4A843" }} />
-              <span className="text-[11px] font-semibold" style={{ color: "#2D3748" }}>
+              <TrendingUp size={11} strokeWidth={2} style={{ color: "var(--gold)" }} />
+              <span className="text-[11px] font-semibold" style={{ color: "var(--text-1)" }}>
                 {goodStats}/{stats.length}
               </span>
             </div>
@@ -74,34 +74,34 @@ export default function StatsPanel() {
                   <div
                     className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{
-                      background: "rgba(255,255,255,0.6)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                      background: "rgba(var(--surface-rgb),0.6)",
+                      boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                     }}
                   >
                     <Icon size={14} strokeWidth={1.5} style={{ color: iconColor }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-medium" style={{ color: "#718096" }}>
+                    <p className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>
                       {label}
                     </p>
                     <div className="flex items-baseline gap-0.5">
-                      <span className="text-lg font-semibold leading-tight" style={{ color: "#2D3748" }}>
+                      <span className="text-lg font-semibold leading-tight" style={{ color: "var(--text-1)" }}>
                         {value}
                       </span>
                       {unit && (
-                        <span className="text-[10px] font-medium" style={{ color: "#718096" }}>
+                        <span className="text-[10px] font-medium" style={{ color: "var(--text-2)" }}>
                           {unit}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>
+                    <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>
                       {target}
                     </span>
                     <div
                       className="flex items-center gap-0.5"
-                      style={{ color: trendUp ? "#D4A843" : "#A78BFA" }}
+                      style={{ color: trendUp ? "var(--gold)" : "var(--accent)" }}
                     >
                       {trendUp ? (
                         <TrendingUp size={9} strokeWidth={2} />
@@ -114,7 +114,7 @@ export default function StatsPanel() {
                 </div>
                 <div
                   className="mt-2.5 h-1 rounded-full overflow-hidden"
-                  style={{ background: "rgba(255,255,255,0.5)" }}
+                  style={{ background: "rgba(var(--surface-rgb),0.5)" }}
                 >
                   <motion.div
                     initial={{ width: 0 }}

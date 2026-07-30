@@ -9,7 +9,12 @@ import OnboardingWrapper from "@/components/OnboardingWrapper";
 import GuidedTour from "@/components/GuidedTour/GuidedTour";
 import PWARegister from "@/components/PWARegister";
 import SplashIntro from "@/components/SplashIntro";
+import PremiumBanner from "@/components/PremiumBanner";
+import PresenceDuJour from "@/components/PresenceDuJour";
+import CelebrationRang from "@/components/rang/CelebrationRang";
+import PopupNouveautes from "@/components/maj/PopupNouveautes";
 import { AssistantProvider } from "@/context/AssistantContext";
+import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -23,10 +28,10 @@ const geist = Geist({
 export const metadata: Metadata = {
   metadataBase: new URL("https://vaiiya.fr"),
   title: {
-    default: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    default: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Coach IA, musculation, nutrition et communauté — tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
+  description: "Coach IA, musculation, nutrition et communauté, tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
   applicationName: "Vaiiya",
   keywords: [
     "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
@@ -54,14 +59,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icons/icon-48.png", type: "image/png", sizes: "48x48" },
-      { url: "/icons/icon-96.png", type: "image/png", sizes: "96x96" },
-      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
-      { url: "/icons/icon-512.png", type: "image/png", sizes: "512x512" },
+      { url: "/icons/icon-48.png?v=6", type: "image/png", sizes: "48x48" },
+      { url: "/icons/icon-96.png?v=6", type: "image/png", sizes: "96x96" },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/icons/apple-touch-icon.png?v=4",
+    shortcut: "/icons/icon-48.png?v=6",
+    apple: "/icons/apple-touch-icon.png?v=5",
   },
   manifest: "/manifest.json",
   appleWebApp: {
@@ -72,7 +74,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Vaiiya",
-    title: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     description: "Rejoins Vaiiya : ton coach fitness & nutrition piloté par l'IA. Partage tes performances, suis ta progression, et progresse avec ta communauté.",
     locale: "fr_FR",
     images: [
@@ -80,13 +82,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Vaiiya — Coach IA · Musculation · Nutrition",
+        alt: "Vaiiya · Coach IA · Musculation · Nutrition",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vaiiya ✦ — Coach IA · Musculation · Nutrition",
+    title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     description: "Ton coach fitness & nutrition piloté par l'IA. Rejoins la communauté Vaiiya.",
     images: ["/og-image.png"],
   },
@@ -97,7 +99,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#A78BFA",
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({
@@ -111,14 +113,14 @@ export default function RootLayout({
         <meta name="google" content="notranslate" />
 
         {/* Écrans de démarrage iOS (PWA standalone) — logo Vaiiya au lieu d'un écran blanc */}
-        <link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2)" href="/splash/splash-750x1334.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2)" href="/splash/splash-828x1792.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1125x2436.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1242x2688.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1170x2532.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1284x2778.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1179x2556.png" />
-        <link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1290x2796.png" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2)" href="/splash/splash-750x1334.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2)" href="/splash/splash-828x1792.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1125x2436.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1242x2688.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1170x2532.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1284x2778.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1179x2556.png?v=5" />
+        <link rel="apple-touch-startup-image" media="screen and (device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3)" href="/splash/splash-1290x2796.png?v=5" />
         {/* Thème AVANT le paint → aucun flash. Préf. aura-theme : system|light|dark.
             Défaut = CLAIR (absence de préférence). Seul "system" explicite suit le téléphone. */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var p;try{p=localStorage.getItem('aura-theme');}catch(e){}var dark=p==='dark'||(p==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var el=document.documentElement;if(dark){el.setAttribute('data-theme','dark');}else{el.removeAttribute('data-theme');}}catch(e){}})();` }} />
@@ -149,7 +151,7 @@ export default function RootLayout({
                     height: 512,
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
-                  description: "Coach IA, musculation et nutrition — accompagnement de santé premium piloté par l'IA.",
+                  description: "Coach IA, musculation et nutrition : accompagnement de santé premium piloté par l'IA.",
                 },
                 {
                   "@type": "WebSite",
@@ -171,7 +173,7 @@ export default function RootLayout({
                     "@type": "Offer",
                     price: "0",
                     priceCurrency: "EUR",
-                    description: "Inscription gratuite — abonnements Premium et Créateur disponibles.",
+                    description: "Inscription gratuite, abonnement Premium disponible.",
                   },
                 },
               ],
@@ -184,15 +186,25 @@ export default function RootLayout({
         <div aria-hidden style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top)", zIndex: 1, pointerEvents: "none", background: "linear-gradient(to bottom, rgba(45,33,80,0.18), transparent)" }} />
         <SplashIntro />
         <AuthProvider>
+          <PresenceDuJour />
+          {/* Le rang peut monter n'importe où : la célébration vit au-dessus de tout. */}
+          <CelebrationRang />
           <AssistantProvider>
-            <GuidedTourProvider>
-              <Navigation />
-              <MainWrapper>{children}</MainWrapper>
-              <OnboardingWrapper />
-              <GuidedTour />
-              <PWARegister />
-              <AssistantSheet />
-            </GuidedTourProvider>
+            <WorkoutLaunchProvider>
+              <GuidedTourProvider>
+                <Navigation />
+                <MainWrapper>{children}</MainWrapper>
+                <OnboardingWrapper />
+                <GuidedTour />
+                {/* Le récap de mise à jour : une fois par compte, puis dans
+                    Paramètres. Il vit DANS le fournisseur de la visite guidée
+                    pour ne jamais s'ouvrir par dessus elle. */}
+                <PopupNouveautes />
+                <PWARegister />
+                <AssistantSheet />
+                <PremiumBanner />
+              </GuidedTourProvider>
+            </WorkoutLaunchProvider>
           </AssistantProvider>
         </AuthProvider>
         <Analytics />

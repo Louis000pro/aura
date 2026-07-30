@@ -1,47 +1,67 @@
-﻿"use client";
+"use client";
 
-import { Suspense, useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+/* ════════════════════════════════════════════════════════════════════
+   /progression — l'onglet ENTRAÎNEMENT (direction finale validée).
+
+   Philosophie : l'app RÉPOND quand elle sait, elle ne QUESTIONNE que
+   quand elle ne sait pas.
+   ① Héros « Aujourd'hui »   — la séance du jour, un seul geste.
+   ② « Pas ce qui était prévu ? » — J'improvise (IA) / Je choisis
+      (catalogue Vaiiya + bibliothèque perso FUSIONNÉS, badge Perso).
+   ③ « Ma semaine »          — 7 pastilles + « Organiser » (planning
+      complet — WeeklyProgramme — dans une sheet).
+   Tout le reste vit derrière un tap. L'historique a quitté la page.
+   ════════════════════════════════════════════════════════════════════ */
+
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { aiFetch } from "@/lib/aiFetch";
+import { motion, AnimatePresence, useDragControls } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
-  Camera, Video, CheckCircle, Clock, ChevronRight, ChevronLeft, Upload,
-  Share2, Dumbbell, Apple, Sun, Play, Flame, Wind, Sparkles, Layers, Check,
-  X, CameraOff, Square, RefreshCw, Plus, Trash2, Pencil,
-  Globe, Lock, Users, TrendingUp, Zap,
+  Clock, ChevronRight, ChevronLeft, Dumbbell, Play, Flame, Wind, Sparkles, Layers,
+  Check, X, Plus, Trash2, Pencil, Globe, Lock, Users,
+  Moon, Zap, Home, Sun, CalendarDays, MoreHorizontal, GripVertical, BookOpen,
 } from "lucide-react";
-import SharePerformanceModal from "@/components/SharePerformanceModal";
-import NutritionTab from "@/components/NutritionTab";
 import WeeklyProgramme from "@/components/WeeklyProgramme";
-import ExerciseAnalyzer from "@/components/ExerciseAnalyzer";
-import Badges from "@/components/Badges";
-import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
-import type { PerformanceData, PerformanceType } from "@/components/PerformanceCard";
-import BodyAvatar from "@/components/BodyAvatar";
-import { useProfileSettings } from "@/hooks/useProfileSettings";
+import WorkoutGuideModal, { exerciseData, type Exercise } from "@/components/WorkoutGuideModal";
+import ExerciseGuide from "@/components/ExerciseGuide";
+import CreateSessionModal, { type SessionDraft } from "@/components/seance/CreateSessionModal";
+import MouvementsRow from "@/components/seance/MouvementsRow";
+import ExerciseLibrarySheet from "@/components/seance/ExerciseLibrarySheet";
+import ExerciseThumb from "@/components/seance/ExerciseThumb";
+import AdviceReaderSheet from "@/components/AdviceReaderSheet";
+import {
+  titreDepuisExercices, categorieDepuisExercices, libelleReps,
+  type LibExercise,
+} from "@/lib/exerciseLibrary";
 import { useAuth } from "@/context/AuthContext";
+import { useAssistant } from "@/context/AssistantContext";
 import { createClient } from "@/lib/supabase";
+import { lockBodyModal } from "@/lib/bodyModal";
+import { PLANS } from "@/lib/plans";
+import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
+import { FAMILY, resolveArt, type Family, type Art } from "@/lib/workoutArt";
+import {
+  ADVICE_ARTICLES,
+  ADVICE_THEMES,
+  getAdviceArticle,
+  type AdviceArticle,
+  type AdviceTheme,
+} from "@/lib/adviceArticles";
+import {
+  ensureWeek, setDayStatus, saveDay, hasSeance, readLieu, loadLieu, readVariant, ctxFromLieu,
+  weekDates, weekDatesForOffset, todayYmd, todayWeekIndex, weekOffsetOf, dayTitle, normalizeExercises,
+  dayLabelLong, PLANNING_TYPE_BY_CATEGORY,
+  type PlanningDay, type GenInput, type Ctx,
+} from "@/lib/planning";
 
-/* ─── DB types ───────────────────────────────────────────── */
-type DbWorkoutSession = {
-  id: string; user_id: string; title: string; category: string;
-  duration_minutes: number; calories_burned: number; started_at: string;
-};
-
-/* ─── Timeline data ─────────────────────────────────────── */
-type TimelineEvent = {
-  id?: string;
-  date: string; time: string; type: PerformanceType;
-  title: string; desc: string; cardClass: string; dot: string;
-  performance: PerformanceData;
-};
-
-
-const eventIcons: Record<PerformanceType, typeof Dumbbell> = {
-  workout: Dumbbell, meal: Apple, day: Sun,
-};
-
-/* ─── Workout sessions data ─────────────────────────────── */
+/* ─── Workout sessions data (catalogue Vaiiya) ─────────────── */
 type WorkoutCategory = "force" | "cardio" | "mobilite" | "fullbody";
+type CatalogCollection =
+  | "express" | "masse" | "perte" | "renfo" | "cardiohiit"
+  | "abdos" | "jambes" | "haut" | "fullbody" | "salle"
+  | "sansmateriel" | "debuter" | "mobilite" | "recup"
+  | "defis" | "conseils";
 
 type WorkoutSession = {
   id: string;
@@ -53,2421 +73,3136 @@ type WorkoutSession = {
   exercises: number;
   muscles: string[];
   accent: string;
-  icon: typeof Dumbbell;
+  icon: typeof Dumbbell | string;   // composant (catalogue) ou nom stocké en base (perso)
   exerciseList?: Exercise[];
   visibility?: "private" | "friends" | "public";
+  access?: "free" | "premium";
+  collections?: CatalogCollection[];
+  previewExercises?: string[];
+  contentType?: "article";
 };
 
 const workoutSessions: WorkoutSession[] = [
-  {
-    id: "demo-avatars", category: "fullbody",
-    title: "Démo Avatars 3D ✦", subtitle: "17 animations 3D — match exact",
-    duration: 30, difficulty: "Débutant", exercises: 17,
-    muscles: ["Corps entier"],
-    accent: "var(--accent)", icon: Sparkles,
-  },
   {
     id: "force-haut", category: "force",
     title: "Force Haut du Corps", subtitle: "Pectoraux · Dos · Épaules",
     duration: 45, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Pectoraux", "Dos", "Épaules"],
-    accent: "var(--accent)", icon: Dumbbell,
+    accent: "#8B5CF6", icon: Dumbbell, access: "free",
+    collections: ["salle", "masse", "renfo", "haut"],
+  },
+  {
+    id: "salle-decouverte", category: "fullbody",
+    title: "Découverte des machines", subtitle: "Premiers réglages · Corps complet",
+    duration: 40, difficulty: "Débutant", exercises: 6,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "free",
+    collections: ["salle", "masse", "renfo", "fullbody", "debuter"],
   },
   {
     id: "fullbody-deb", category: "fullbody",
     title: "Full Body Débutant", subtitle: "Corps complet · Sans matériel",
     duration: 35, difficulty: "Débutant", exercises: 7,
     muscles: ["Corps entier"],
-    accent: "var(--gold)", icon: Layers,
+    accent: "#8B5CF6", icon: Layers, access: "free",
+    collections: ["sansmateriel", "debuter", "fullbody", "renfo"],
+  },
+  {
+    id: "express-12", category: "fullbody",
+    title: "Express 12", subtitle: "Corps complet · Peu de temps, une vraie séance",
+    duration: 12, difficulty: "Débutant", exercises: 5,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Zap, access: "free",
+    collections: ["sansmateriel", "express", "debuter", "fullbody"],
+  },
+  {
+    id: "reprise-douce", category: "fullbody",
+    title: "Reprendre en douceur", subtitle: "Sans saut · À ton rythme · Corps complet",
+    duration: 22, difficulty: "Débutant", exercises: 7,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["sansmateriel", "debuter", "fullbody"],
+  },
+  {
+    id: "appartement-silencieux", category: "fullbody",
+    title: "Appartement silencieux", subtitle: "Zéro saut · Zéro impact · Sans matériel",
+    duration: 20, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Corps entier", "Core"],
+    accent: "#8B5CF6", icon: Home, access: "premium",
+    collections: ["sansmateriel", "express", "renfo", "fullbody"],
+    previewExercises: ["Chaise au mur", "Pike push-ups", "Fentes"],
+  },
+  {
+    id: "jambes-poids-corps", category: "force",
+    title: "Jambes au poids du corps", subtitle: "Cuisses · Fessiers · Mollets",
+    duration: 30, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Quadriceps", "Fessiers", "Mollets"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["sansmateriel", "jambes", "renfo"],
+    previewExercises: ["Squat", "Fentes", "Pont fessier"],
+  },
+  {
+    id: "haut-corps-sol", category: "force",
+    title: "Haut du corps au sol", subtitle: "Poussée · Épaules · Posture",
+    duration: 25, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Épaules", "Dos"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["sansmateriel", "haut", "renfo"],
+    previewExercises: ["Pompes", "Pike push-ups", "Pompes diamant"],
+  },
+  {
+    id: "fullbody-inter", category: "fullbody",
+    title: "Full Body Intermédiaire", subtitle: "Volume · Cardio · Corps complet",
+    duration: 32, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "premium",
+    collections: ["sansmateriel", "fullbody", "renfo", "cardiohiit", "perte"],
+    previewExercises: ["Squats sautés", "Pompes", "Fentes"],
+  },
+  {
+    id: "puissance-sans-materiel", category: "cardio",
+    title: "Puissance sans matériel", subtitle: "Explosivité · Vitesse · Cardio",
+    duration: 22, difficulty: "Avancé", exercises: 5,
+    muscles: ["Corps entier", "Cardio"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["sansmateriel", "fullbody", "cardiohiit", "perte", "defis"],
+    previewExercises: ["Sprint sur place", "Fentes sautées", "Pompes explosives"],
+  },
+  {
+    id: "cardio-sans-saut", category: "cardio",
+    title: "Cardio sans saut", subtitle: "Appuis contrôlés · Souffle · Zéro impact",
+    duration: 18, difficulty: "Débutant", exercises: 6,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["cardiohiit", "perte", "debuter", "sansmateriel", "express"],
   },
   {
     id: "hiit", category: "cardio",
-    title: "HIIT Brûle-Graisses", subtitle: "Cardio intensif · 20 / 10 sec",
-    duration: 25, difficulty: "Avancé", exercises: 8,
+    title: "HIIT 20/10", subtitle: "8 mouvements · 20 sec effort · 10 sec repos",
+    duration: 25, difficulty: "Intermédiaire", exercises: 8,
     muscles: ["Cardio", "Corps entier"],
-    accent: "#FBBF24", icon: Flame,
+    accent: "#8B5CF6", icon: Flame, access: "free",
+    collections: ["cardiohiit", "perte", "sansmateriel"],
+  },
+  {
+    id: "tabata-express", category: "cardio",
+    title: "Tabata Express", subtitle: "Intervalles courts · Intensité nette · Corps entier",
+    duration: 18, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["cardiohiit", "perte", "sansmateriel", "express"],
+    previewExercises: ["Jumping jacks", "Mountain climbers", "Squats sautés"],
+  },
+  {
+    id: "cardio-salle", category: "cardio",
+    title: "Cardio de salle", subtitle: "Rameur · Tapis · Vélo · Kettlebell",
+    duration: 35, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Flame, access: "premium",
+    collections: ["cardiohiit", "perte", "salle", "fullbody"],
+    previewExercises: ["Rameur", "Tapis de course", "Vélo"],
+  },
+  {
+    id: "pyramide-cardio", category: "cardio",
+    title: "Pyramide cardio", subtitle: "20 → 50 → 20 sec · Intensité progressive",
+    duration: 22, difficulty: "Intermédiaire", exercises: 8,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["cardiohiit", "perte", "sansmateriel", "defis"],
+    previewExercises: ["Jumping jacks", "Mountain climbers", "Montées de genoux"],
+  },
+  {
+    id: "cardio-halteres", category: "cardio",
+    title: "Cardio & force — Haltères", subtitle: "Circuit complet · Charges · Repos courts",
+    duration: 32, difficulty: "Avancé", exercises: 6,
+    muscles: ["Cardio", "Corps entier"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["cardiohiit", "perte", "salle", "renfo", "fullbody"],
+    previewExercises: ["Thruster haltères", "Kettlebell swing", "Goblet squat"],
   },
   {
     id: "jambes", category: "force",
     title: "Jambes & Fessiers", subtitle: "Squats · Fentes · Hip Thrust",
     duration: 50, difficulty: "Intermédiaire", exercises: 5,
     muscles: ["Quadriceps", "Fessiers"],
-    accent: "var(--accent)", icon: Dumbbell,
+    accent: "#8B5CF6", icon: Dumbbell, access: "free",
+    collections: ["salle", "masse", "renfo", "jambes"],
   },
   {
     id: "mobilite", category: "mobilite",
     title: "Mobilité Matinale", subtitle: "Yoga flow · Étirements actifs",
     duration: 20, difficulty: "Débutant", exercises: 10,
     muscles: ["Mobilité", "Souplesse"],
-    accent: "#34D399", icon: Wind,
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["mobilite", "express", "debuter"],
+  },
+  {
+    id: "posture-ecran", category: "mobilite",
+    title: "Posture après écran", subtitle: "Nuque · Épaules · Haut du dos",
+    duration: 15, difficulty: "Débutant", exercises: 6,
+    muscles: ["Nuque", "Épaules", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["mobilite", "express", "debuter"],
+  },
+  {
+    id: "hanches-libres", category: "mobilite",
+    title: "Hanches libres", subtitle: "Rotation · Ouverture · Chaîne postérieure",
+    duration: 20, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Hanches", "Fessiers", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cercles de hanches", "World's greatest stretch", "Pigeon"],
+  },
+  {
+    id: "epaules-haut-dos-mobilite", category: "mobilite",
+    title: "Épaules & haut du dos", subtitle: "Rotation · Ouverture · Posture",
+    duration: 18, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Épaules", "Pectoraux", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cat-cow", "Thread the needle", "Downward dog / cobra"],
+  },
+  {
+    id: "chevilles-squat", category: "mobilite",
+    title: "Chevilles & squat", subtitle: "Appuis · Hanches · Amplitude",
+    duration: 15, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Chevilles", "Hanches", "Jambes"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Étirement mollet au mur", "Cercles de hanches", "World's greatest stretch"],
+  },
+  {
+    id: "colonne-mobile", category: "mobilite",
+    title: "Colonne mobile", subtitle: "Flexion · Rotation · Respiration",
+    duration: 18, difficulty: "Débutant", exercises: 6,
+    muscles: ["Colonne vertébrale", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cat-cow", "Thread the needle", "Downward dog / cobra"],
+  },
+  {
+    id: "mobilite-complete", category: "mobilite",
+    title: "Mobilité complète", subtitle: "Tout le corps · Routine profonde",
+    duration: 30, difficulty: "Intermédiaire", exercises: 10,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["mobilite"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
+  },
+  {
+    id: "mobilite-active", category: "mobilite",
+    title: "Mobilité active", subtitle: "Avant séance · Fluide · Corps entier",
+    duration: 20, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Zap, access: "premium",
+    collections: ["mobilite", "express"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
   },
   {
     id: "dos-biceps", category: "force",
     title: "Dos & Biceps", subtitle: "Tractions · Rowing · Curls",
     duration: 40, difficulty: "Intermédiaire", exercises: 6,
     muscles: ["Dos", "Biceps"],
-    accent: "#60A5FA", icon: Dumbbell,
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Tractions supination", "Rowing barre buste penché", "Curl marteau"],
   },
   {
     id: "core", category: "fullbody",
     title: "Core & Gainage", subtitle: "Planche · Crunchs · Relevés",
     duration: 30, difficulty: "Intermédiaire", exercises: 8,
     muscles: ["Abdominaux", "Lombaires"],
-    accent: "#FB923C", icon: Sparkles,
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["sansmateriel", "abdos", "renfo"],
+    previewExercises: ["Planche frontale", "Crunch", "Russian Twist"],
   },
   {
     id: "cardio-endurance", category: "cardio",
-    title: "Endurance Cardio", subtitle: "Fractionné modéré · Zone 2",
+    title: "Endurance Cardio", subtitle: "Rameur · Tapis · Vélo · Allure régulière",
     duration: 40, difficulty: "Débutant", exercises: 4,
     muscles: ["Cardio"],
-    accent: "#38BDF8", icon: Wind,
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["cardiohiit", "perte", "debuter", "salle"],
+  },
+  {
+    id: "salle-haut", category: "force",
+    title: "Haut du corps — Salle", subtitle: "Barre · Machines · Poulie",
+    duration: 50, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Dos", "Épaules"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Développé couché barre", "Rowing machine assis", "Écarté à la poulie vis-à-vis"],
+  },
+  {
+    id: "push-salle", category: "force",
+    title: "Push — Pectoraux & épaules", subtitle: "Barre · Haltères · Poulie",
+    duration: 45, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Pectoraux", "Épaules", "Triceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Développé couché", "Développé incliné haltères", "Développé militaire haltères"],
+  },
+  {
+    id: "jambes-quadriceps", category: "force",
+    title: "Jambes — Dominante quadriceps", subtitle: "Charges · Unilatéral · Machines",
+    duration: 45, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Quadriceps", "Fessiers", "Mollets"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["salle", "masse", "renfo", "jambes"],
+    previewExercises: ["Squat barre", "Presse à cuisses", "Squat bulgare"],
+  },
+  {
+    id: "chaine-posterieure", category: "force",
+    title: "Chaîne postérieure", subtitle: "Ischios · Fessiers · Lombaires",
+    duration: 45, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Ischio-jambiers", "Fessiers", "Dos"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["salle", "masse", "renfo", "jambes"],
+    previewExercises: ["Soulevé de terre roumain", "Hip thrust machine", "Leg curl allongé"],
+  },
+  {
+    id: "epaules-bras", category: "force",
+    title: "Épaules & bras", subtitle: "Deltoïdes · Biceps · Triceps",
+    duration: 40, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Épaules", "Biceps", "Triceps"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "premium",
+    collections: ["salle", "masse", "renfo", "haut"],
+    previewExercises: ["Développé Arnold", "Élévations latérales", "Oiseau haltères"],
+  },
+  {
+    id: "fullbody-machines", category: "fullbody",
+    title: "Full Body Machines", subtitle: "Corps complet · Trajectoires guidées",
+    duration: 45, difficulty: "Intermédiaire", exercises: 8,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "premium",
+    collections: ["salle", "masse", "renfo", "fullbody"],
+    previewExercises: ["Presse à cuisses", "Développé épaules machine", "Tirage poitrine"],
+  },
+  {
+    id: "recup-active", category: "mobilite",
+    title: "Récupération active", subtitle: "Respiration · Étirements doux · Détente",
+    duration: 25, difficulty: "Débutant", exercises: 7,
+    muscles: ["Souplesse", "Respiration"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["mobilite", "recup", "debuter"],
+  },
+  {
+    id: "retour-au-calme", category: "mobilite",
+    title: "Retour au calme", subtitle: "Après l'effort · Souffle · Étirements simples",
+    duration: 12, difficulty: "Débutant", exercises: 5,
+    muscles: ["Corps entier", "Respiration"],
+    accent: "#8B5CF6", icon: Wind, access: "free",
+    collections: ["recup", "mobilite", "express", "debuter"],
+  },
+  {
+    id: "pause-detente", category: "mobilite",
+    title: "Pause détente", subtitle: "Nuque · Épaules · Dos · 12 minutes",
+    duration: 12, difficulty: "Débutant", exercises: 5,
+    muscles: ["Nuque", "Épaules", "Dos"],
+    accent: "#8B5CF6", icon: Moon, access: "free",
+    collections: ["recup", "mobilite", "express", "debuter"],
+  },
+  {
+    id: "recup-jambes", category: "mobilite",
+    title: "Récupération jambes", subtitle: "Cuisses · Mollets · Hanches · Fessiers",
+    duration: 22, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Jambes", "Hanches", "Fessiers"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["recup", "mobilite", "jambes"],
+    previewExercises: ["Cercles de hanches", "Étirement quadriceps", "Étirement chaîne postérieure"],
+  },
+  {
+    id: "recup-haut-corps", category: "mobilite",
+    title: "Haut du corps relâché", subtitle: "Nuque · Épaules · Pectoraux · Dos",
+    duration: 20, difficulty: "Intermédiaire", exercises: 7,
+    muscles: ["Épaules", "Pectoraux", "Dos"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["recup", "mobilite", "haut"],
+    previewExercises: ["Étirement du cou", "Cat-cow", "Thread the needle"],
+  },
+  {
+    id: "dos-relache", category: "mobilite",
+    title: "Dos relâché", subtitle: "Colonne · Rotations · Chaîne postérieure",
+    duration: 18, difficulty: "Débutant", exercises: 6,
+    muscles: ["Dos", "Hanches", "Ischio-jambiers"],
+    accent: "#8B5CF6", icon: Wind, access: "premium",
+    collections: ["recup", "mobilite", "express"],
+    previewExercises: ["Cat-cow", "Thread the needle", "Downward dog / cobra"],
+  },
+  {
+    id: "soir-calme", category: "mobilite",
+    title: "Soir calme", subtitle: "Mouvements lents · Sol · Respiration",
+    duration: 18, difficulty: "Débutant", exercises: 6,
+    muscles: ["Corps entier", "Respiration"],
+    accent: "#8B5CF6", icon: Moon, access: "premium",
+    collections: ["recup", "mobilite", "express"],
+    previewExercises: ["Étirement du cou", "Papillon hanches", "Pigeon"],
+  },
+  {
+    id: "lendemain-seance", category: "mobilite",
+    title: "Lendemain de séance", subtitle: "Mobilité active · Tout le corps · Sans forcer",
+    duration: 20, difficulty: "Débutant", exercises: 7,
+    muscles: ["Corps entier", "Mobilité"],
+    accent: "#8B5CF6", icon: Sun, access: "premium",
+    collections: ["recup", "mobilite", "debuter"],
+    previewExercises: ["Cercles de hanches", "Cat-cow", "World's greatest stretch"],
+  },
+  {
+    id: "recup-complete", category: "mobilite",
+    title: "Récupération complète", subtitle: "30 minutes · Tout le corps · Routine profonde",
+    duration: 30, difficulty: "Intermédiaire", exercises: 10,
+    muscles: ["Corps entier", "Mobilité", "Respiration"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["recup", "mobilite"],
+    previewExercises: ["Cohérence cardiaque", "Cat-cow", "Cercles de hanches"],
+  },
+  ...ADVICE_ARTICLES.map((article): WorkoutSession => ({
+    id: article.id,
+    category: "fullbody",
+    title: article.title,
+    subtitle: article.subtitle,
+    duration: article.readingMinutes,
+    difficulty: "Débutant",
+    exercises: article.sections.length,
+    muscles: [article.theme],
+    accent: "#8B5CF6",
+    icon: BookOpen,
+    access: article.access,
+    collections: ["conseils"],
+    contentType: "article",
+  })),
+  {
+    id: "bases-mouvement", category: "fullbody",
+    title: "Les bases du mouvement", subtitle: "6 gestes · 6 repères · Pour bien commencer",
+    duration: 20, difficulty: "Débutant", exercises: 6,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Layers, access: "free",
+    collections: ["debuter", "fullbody", "renfo"],
+  },
+  {
+    id: "squat-maitrise", category: "force",
+    title: "Squat maîtrisé", subtitle: "Chevilles · Appuis · Descente · Progression",
+    duration: 22, difficulty: "Débutant", exercises: 5,
+    muscles: ["Quadriceps", "Fessiers", "Chevilles"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "free",
+    collections: ["debuter", "jambes", "renfo"],
+  },
+  {
+    id: "pompes-maitrise", category: "force",
+    title: "Pompes maîtrisées", subtitle: "Du support au sol · Placement · Variantes",
+    duration: 20, difficulty: "Débutant", exercises: 5,
+    muscles: ["Pectoraux", "Triceps", "Épaules"],
+    accent: "#8B5CF6", icon: Dumbbell, access: "free",
+    collections: ["debuter", "haut", "renfo", "sansmateriel"],
+  },
+  {
+    id: "tractions-progression", category: "force",
+    title: "Tractions — Construire le mouvement", subtitle: "Omoplates · Tirages · Premières répétitions",
+    duration: 30, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Dos", "Biceps", "Épaules"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["haut", "renfo", "salle"],
+    previewExercises: ["Ouverture des épaules", "Face pull poulie", "Rowing inversé"],
+  },
+  {
+    id: "charniere-hanche", category: "force",
+    title: "Charnière de hanche", subtitle: "Placement · Fessiers · Soulevé de terre",
+    duration: 30, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Fessiers", "Ischio-jambiers", "Dos"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["jambes", "renfo", "salle"],
+    previewExercises: ["Cat-cow", "Pont fessier", "Soulevé de terre roumain"],
+  },
+  {
+    id: "gainage-progression", category: "fullbody",
+    title: "Gainage — Progresser", subtitle: "Stabilité · Leviers · Mouvement contrôlé",
+    duration: 25, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Core", "Abdominaux", "Dos"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["abdos", "renfo", "sansmateriel"],
+    previewExercises: ["Dead bug", "Bird dog", "Planche frontale"],
+  },
+  {
+    id: "epaules-controle", category: "force",
+    title: "Épaules — Mobilité & contrôle", subtitle: "Bouger · Stabiliser · Puis charger",
+    duration: 28, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Épaules", "Haut du dos", "Triceps"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["haut", "renfo", "salle", "mobilite"],
+    previewExercises: ["Ouverture des épaules", "Étirement pectoraux au mur", "Pike push-ups"],
+  },
+  {
+    id: "unilateral-maitrise", category: "force",
+    title: "Unilatéral — Maîtriser les appuis", subtitle: "Droite · Gauche · Équilibre · Contrôle",
+    duration: 28, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Jambes", "Fessiers", "Core"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["jambes", "renfo", "sansmateriel"],
+    previewExercises: ["Bird dog", "Step up banc", "Fentes"],
+  },
+  {
+    id: "tempo-controle", category: "fullbody",
+    title: "Tempo — Ralentir pour progresser", subtitle: "Descente · Pause · Contrôle · Tout le corps",
+    duration: 32, difficulty: "Intermédiaire", exercises: 6,
+    muscles: ["Corps entier"],
+    accent: "#8B5CF6", icon: Sparkles, access: "premium",
+    collections: ["renfo", "salle", "fullbody"],
+    previewExercises: ["Squat", "Pompes", "Fentes"],
+  },
+  {
+    id: "defi-gainage", category: "fullbody",
+    title: "Défi Gainage", subtitle: "Un chrono, un record à battre",
+    duration: 15, difficulty: "Intermédiaire", exercises: 5,
+    muscles: ["Core", "Abdominaux", "Gainage"],
+    accent: "#8B5CF6", icon: Flame,
   },
 ];
 
-const categoryFilters: { key: "tous" | WorkoutCategory; label: string }[] = [
-  { key: "tous",     label: "Tous" },
-  { key: "force",    label: "Force" },
-  { key: "cardio",   label: "Cardio" },
-  { key: "mobilite", label: "Mobilité" },
-  { key: "fullbody", label: "Full Body" },
-];
+const VIS_CONFIG = {
+  private: { label: "Privée", icon: Lock,  color: "var(--text-3)" },
+  friends: { label: "Amis",   icon: Users, color: "#8B5CF6" },
+  public:  { label: "Public", icon: Globe, color: "#2BD4A0" },
+} as const;
+type Visibility = keyof typeof VIS_CONFIG;
+const VIS_ORDER: Visibility[] = ["private", "friends", "public"];
 
-const difficultyColor: Record<string, string> = {
-  "Débutant":      "#34D399",
-  "Intermédiaire": "#FBBF24",
-  "Avancé":        "var(--accent)",
+/* ─── Libellés FR des objectifs onboarding (même map que WeeklyProgramme) ── */
+const goalLabels: Record<string, string> = {
+  masse: "prise de masse",
+  prise_de_masse: "prise de masse",
+  poids: "perte de poids",
+  perte_de_poids: "perte de poids",
+  force: "force",
+  endurance: "endurance",
+  sante: "santé générale",
+  sante_generale: "santé générale",
+  souplesse: "souplesse",
 };
 
-/* ─── Icon resolver (Supabase stores icon name as string) ── */
-const ICON_MAP: Record<string, typeof Dumbbell> = {
-  Dumbbell, Flame, Wind, Layers, Sparkles,
-};
-function resolveIcon(icon: unknown): typeof Dumbbell {
-  if (typeof icon === "string") return ICON_MAP[icon] ?? Dumbbell;
-  if (typeof icon === "function") return icon as typeof Dumbbell;
-  return Dumbbell;
-}
+/* ════════════════════════════════════════════════════════════════════
+   Banque photo (public/entrainement) — dans le CATALOGUE, les photos
+   sont NATURELLES : aucun filtre, aucune teinte. La cohérence vient du
+   cadrage portrait, du scrim bas et de la typo blanche — pas d'une
+   couleur plaquée. Les familles restent en coulisse : elles servent
+   uniquement à choisir LA BONNE PHOTO d'une séance (resolveArt). Le
+   blend couleur ne s'applique plus qu'aux widgets d'ambiance
+   (repos / done / setup / improvise).
+   ════════════════════════════════════════════════════════════════════ */
+// Banque photo (familles, règles image, resolveArt) → SOURCE UNIQUE dans
+// src/lib/workoutArt.ts, partagée avec le lanceur global. Types/valeurs
+// importés en tête de fichier (Family, FAMILY, Art, resolveArt).
 
-/* ─── Chart helpers ─────────────────────────────────────── */
-type WeightEntry = { date: string; weight: number; id?: string };
-type CalorieDay  = { date: string; total: number; label: string };
-
-function toDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-
-const CHART_CARD = {
-  background: "rgba(var(--surface-rgb),0.78)",
-  backdropFilter: "blur(10px)",
-  border: "1px solid rgba(var(--surface-rgb),0.9)",
-  boxShadow: "0 4px 32px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.95)",
+/** Ambiances des états fixes (widgets) — couleur appliquée in-app, comme la banque. */
+const WIDGET: Record<"repos" | "done" | "setup" | "improvise", {
+  img: string; pos: string;
+}> = {
+  repos:     { img: "repos",     pos: "68% center" },
+  done:      { img: "done",      pos: "center 40%" },
+  setup:     { img: "setup",     pos: "center 45%" },
+  improvise: { img: "improvise", pos: "center 40%" },
 };
 
-/* ─── PRChart ────────────────────────────────────────────── */
-function PRChart({
-  prs,
-  onAdd,
-  onDelete,
-}: {
-  prs: Array<{ id: string; exercise: string; value: number; unit: string; date: string }>;
-  onAdd: (exercise: string, value: number, unit: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+/** Photo naturelle — la banque parle d'elle-même. Juste l'image, cadrée,
+    sur fond sombre le temps du chargement. Le scrim vit chez l'appelant. */
+function Photo({ img, pos = "center 25%", className, style, children }: {
+  img: string; pos?: string;
+  className?: string; style?: React.CSSProperties; children?: React.ReactNode;
 }) {
-  const exercises = [...new Set(prs.map(p => p.exercise))].sort();
-  const [selected, setSelected] = useState(exercises[0] ?? "");
-  const [adding, setAdding] = useState(false);
-  const [newEx, setNewEx] = useState("");
-  const [newVal, setNewVal] = useState("");
-  const [newUnit, setNewUnit] = useState("kg");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!selected && exercises.length > 0) setSelected(exercises[0]);
-  }, [exercises, selected]);
-
-  const pts = prs
-    .filter(p => p.exercise === selected)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-20);
-
-  const W = 320, H = 110, PX = 36, PY = 14;
-  const vals = pts.map(p => p.value);
-  const minV = vals.length > 0 ? Math.min(...vals) - Math.max(1, (Math.max(...vals) - Math.min(...vals)) * 0.1) : 0;
-  const maxV = vals.length > 0 ? Math.max(...vals) + Math.max(1, (Math.max(...vals) - Math.min(...vals)) * 0.1) : 10;
-  const ty = (v: number) => PY + ((maxV - v) / (maxV - minV || 1)) * (H - 2 * PY);
-  const tx = (i: number) => pts.length < 2 ? W / 2 : PX + (i / (pts.length - 1)) * (W - 2 * PX);
-
-  let linePath = "", areaPath = "";
-  if (pts.length >= 2) {
-    const sp = pts.map((p, i) => ({ x: tx(i), y: ty(p.value) }));
-    linePath = `M ${sp[0].x} ${sp[0].y}`;
-    areaPath = `M ${sp[0].x} ${H} L ${sp[0].x} ${sp[0].y}`;
-    for (let i = 1; i < sp.length; i++) {
-      const cx = (sp[i-1].x + sp[i].x) / 2;
-      linePath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
-      areaPath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
-    }
-    areaPath += ` L ${sp.at(-1)!.x} ${H} Z`;
-  } else if (pts.length === 1) {
-    const x = W/2, y = ty(pts[0].value);
-    linePath = `M ${x-1} ${y} L ${x+1} ${y}`;
-  }
-
-  const best = pts.length > 0 ? pts.reduce((a, b) => a.value >= b.value ? a : b) : null;
-  const unit = prs.find(p => p.exercise === selected)?.unit ?? "kg";
-  const delta = pts.length >= 2 ? pts.at(-1)!.value - pts[0].value : null;
-  const commonExercisesPR = ["Développé couché", "Squat", "Soulevé de terre", "Développé militaire", "Rowing barre", "Tractions", "Dips", "Curl biceps", "Extension triceps", "Leg press"];
-
-  const handleAdd = async () => {
-    const ex = newEx.trim() || selected;
-    const v = parseFloat(newVal.replace(",", "."));
-    if (!ex || isNaN(v) || v <= 0) return;
-    setSaving(true);
-    await onAdd(ex, v, newUnit);
-    setSaving(false);
-    setAdding(false);
-    setNewEx(""); setNewVal("");
-    if (!selected) setSelected(ex);
-  };
-
   return (
-    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
-      {/* Header */}
-      <div className="px-5 pt-5 pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>RECORDS PERSO</p>
-            <div className="flex items-end gap-1.5">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>
-                {best ? best.value : "—"}
-              </span>
-              {best && <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>}
-              {delta !== null && (
-                <span className="text-xs font-semibold mb-1 ml-1 px-1.5 py-0.5 rounded-lg"
-                  style={{
-                    background: delta >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
-                    color: delta >= 0 ? "#059669" : "#DC2626",
-                  }}>
-                  {delta >= 0 ? "+" : ""}{delta.toFixed(1)}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 mt-1">
-            {exercises.length > 0 && (
-              <select
-                value={selected}
-                onChange={e => setSelected(e.target.value)}
-                className="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold outline-none cursor-pointer max-w-[120px]"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)", color: "var(--text-1)" }}
-              >
-                {exercises.map(ex => <option key={ex} value={ex}>{ex}</option>)}
-              </select>
-            )}
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
-              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-              style={{ background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.25)" }}>
-              <span className="text-sm font-bold leading-none" style={{ color: "#34D399" }}>+</span>
-            </motion.button>
-          </div>
-        </div>
-      </div>
-
-      {/* Add form */}
-      <AnimatePresence>
-        {adding && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} className="px-5 pb-3 overflow-hidden">
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <input type="text" placeholder="Exercice (ex: Squat)" value={newEx}
-                  onChange={e => setNewEx(e.target.value)} list="pr-exercise-list"
-                  className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-                <datalist id="pr-exercise-list">
-                  {commonExercisesPR.map(e => <option key={e} value={e} />)}
-                </datalist>
-              </div>
-              <div className="flex gap-2">
-                <input type="number" step="0.5" placeholder="Valeur" value={newVal}
-                  onChange={e => setNewVal(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAdd()}
-                  className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-                <select value={newUnit} onChange={e => setNewUnit(e.target.value)}
-                  className="px-2.5 py-2 rounded-xl text-xs outline-none cursor-pointer"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}>
-                  <option value="kg">kg</option>
-                  <option value="reps">reps</option>
-                  <option value="km">km</option>
-                  <option value="s">sec</option>
-                </select>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd} disabled={saving}
-                  className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
-                  style={{ background: "linear-gradient(135deg,#6EE7B7,#34D399)", color: "white" }}>
-                  {saving ? "…" : "OK"}
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chart */}
-      {pts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 gap-3 px-4">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(52,211,153,0.08)" }}>
-            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "#34D399" }} />
-          </div>
-          <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>
-            {exercises.length === 0
-              ? "Aucun record encore.\nClique sur + pour ajouter ton premier PR !"
-              : "Clique sur + pour ajouter\nun record pour cet exercice."}
-          </p>
-        </div>
-      ) : (
-        <div className="px-2 pb-2">
-          <svg width="100%" viewBox={`0 0 ${W} ${H + 16}`} style={{ overflow: "visible" }}>
-            <defs>
-              <linearGradient id="prAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#34D399" stopOpacity="0.28" />
-                <stop offset="60%" stopColor="#34D399" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#34D399" stopOpacity="0" />
-              </linearGradient>
-              <filter id="prGlow">
-                <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-            {[0.2, 0.5, 0.8].map((p, i) => {
-              const y = PY + p * (H - 2 * PY);
-              const v = minV + (1 - p) * (maxV - minV);
-              return (
-                <g key={i}>
-                  <line x1={PX} y1={y} x2={W - PX/2} y2={y} stroke="rgba(52,211,153,0.08)" strokeWidth="1" strokeDasharray="3,5" />
-                  <text x={PX - 6} y={y + 3.5} textAnchor="end" fontSize="8" fill="rgba(var(--text-3-rgb),0.9)" fontWeight="500">{v.toFixed(0)}</text>
-                </g>
-              );
-            })}
-            {areaPath && <path d={areaPath} fill="url(#prAreaGrad)" />}
-            {linePath && pts.length >= 2 && (
-              <path d={linePath} fill="none" stroke="#34D399" strokeWidth="2.8"
-                strokeLinecap="round" strokeLinejoin="round" filter="url(#prGlow)" />
-            )}
-            {pts.map((p, i) => {
-              const isLast = i === pts.length - 1;
-              const cx = tx(i), cy = ty(p.value);
-              return isLast ? (
-                <g key={i}>
-                  <circle cx={cx} cy={cy} r={11} fill="#34D399" fillOpacity="0.1" />
-                  <circle cx={cx} cy={cy} r={6} fill="#34D399"
-                    style={{ filter: "drop-shadow(0 0 6px rgba(52,211,153,0.7))" }} />
-                  <circle cx={cx} cy={cy} r={2.5} fill="white" />
-                </g>
-              ) : (
-                <circle key={i} cx={cx} cy={cy} r={3} fill="white" stroke="#34D399" strokeWidth="1.8" />
-              );
-            })}
-            {pts.length >= 2 && [0, pts.length - 1].map(i => {
-              const d = new Date(pts[i].date + "T00:00:00");
-              const lbl = `${d.getDate()}/${d.getMonth() + 1}`;
-              return (
-                <text key={i} x={i === 0 ? PX : W - PX/2} y={H + 13} textAnchor={i === 0 ? "start" : "end"}
-                  fontSize="8" fill="rgba(var(--text-3-rgb),0.9)" fontWeight="500">{lbl}</text>
-              );
-            })}
-          </svg>
-        </div>
-      )}
-
-      {/* Last 3 entries */}
-      {pts.length > 0 && (
-        <div className="px-4 pb-4">
-          <div style={{ height: 1, background: "rgba(52,211,153,0.08)", marginBottom: 10 }} />
-          <div className="flex flex-col gap-1">
-            {[...pts].reverse().slice(0, 3).map(entry => {
-              const d = new Date(entry.date + "T00:00:00");
-              const label = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-              return (
-                <div key={entry.id} className="flex items-center gap-2 px-2 py-1 rounded-xl"
-                  style={{ background: "transparent" }}>
-                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "var(--text-3)" }}>{label}</span>
-                  <span className="flex-1 text-xs font-semibold" style={{ color: "var(--text-1)" }}>{entry.value} {unit}</span>
-                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => onDelete(entry.id)}
-                    className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
-                    style={{ background: "rgba(252,129,129,0.1)" }}>
-                    <Trash2 size={10} strokeWidth={2} style={{ color: "#FC8181" }} />
-                  </motion.button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+    <div className={className} style={{ position: "relative", overflow: "hidden", background: "#101018", ...style }}>
+      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(/entrainement/${img}.webp)`, backgroundSize: "cover", backgroundPosition: pos }} />
+      {children}
     </div>
   );
 }
 
-/* ─── VolumeChart ────────────────────────────────────────── */
-function VolumeChart({ data }: { data: Array<{ label: string; cals: number; sessions: number }> }) {
-  const maxCals = Math.max(...data.map(d => d.cals), 1);
-  const W = 320, H = 100, PX = 10, PY = 10;
-  const slotW = (W - 2 * PX) / Math.max(data.length, 1);
-  const barW = Math.max(6, slotW * 0.55);
-  const totalSessions = data.reduce((s, d) => s + d.sessions, 0);
-  const totalCals = data.reduce((s, d) => s + d.cals, 0);
-  const currentWeekSessions = data.at(-1)?.sessions ?? 0;
+/** Lieu lisible d'une séance du planning. */
+function lieuLabel(loc: Ctx | null): string {
+  if (loc === "salle") return "À la salle";
+  if (loc === "halteres") return "Maison · haltères";
+  if (loc === "poids") return "Maison · poids du corps";
+  return "";
+}
+
+const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
+const DAY_FULL = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+/* ════════════════════════════════════════════════════════════════════
+   Sheet — enveloppe commune des bottom sheets (Organiser / Choisir /
+   Improviser). Masque la nav du bas tant qu'elle est ouverte.
+   ════════════════════════════════════════════════════════════════════ */
+function Sheet({ onClose, children, maxHeight = "88vh", height }: {
+  onClose: () => void;
+  children: React.ReactNode;
+  maxHeight?: string;
+  height?: string;              // imposée → sheet « plein écran » (catalogue)
+}) {
+  useEffect(() => lockBodyModal(), []);
 
   return (
-    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
-      <div className="px-5 pt-5 pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>VOLUME · 8 SEMAINES</p>
-            <div className="flex items-end gap-2">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>{totalSessions}</span>
-              <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>séance{totalSessions > 1 ? "s" : ""}</span>
-            </div>
-          </div>
-          <div className="text-right mt-1">
-            {totalCals > 0 && (
-              <p className="text-xs font-semibold" style={{ color: "var(--gold)" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
-            )}
-            <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
-              Cette sem. : {currentWeekSessions} séance{currentWeekSessions > 1 ? "s" : ""}
-            </p>
-          </div>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(12,8,22,0.5)", backdropFilter: "blur(3px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 64, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 380, damping: 34 }}
+        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.14)",
+          boxShadow: "0 -14px 44px rgba(0,0,0,0.35)",
+          maxHeight,
+          height,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Grabber */}
+        <div className="flex justify-center pt-2.5 pb-1 md:hidden flex-shrink-0">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
         </div>
-      </div>
-
-      {data.every(d => d.cals === 0) ? (
-        <div className="flex flex-col items-center justify-center py-10 px-4 gap-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
-            <Zap size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-          </div>
-          <p className="text-xs text-center font-light" style={{ color: "var(--text-3)" }}>Lance des séances pour voir<br/>ton volume d&apos;entraînement !</p>
-        </div>
-      ) : (
-        <div className="px-3 pb-4">
-          <svg width="100%" viewBox={`0 0 ${W} ${H + 22}`} style={{ overflow: "visible" }}>
-            <defs>
-              {data.map((_, i) => (
-                <linearGradient key={i} id={`barGrad${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={i === data.length - 1 ? "var(--accent)" : "#C4B5FD"} stopOpacity="1" />
-                  <stop offset="100%" stopColor={i === data.length - 1 ? "#818CF8" : "var(--accent)"} stopOpacity={i === data.length - 1 ? "0.9" : "0.5"} />
-                </linearGradient>
-              ))}
-            </defs>
-            {/* Grid lines */}
-            {[0.33, 0.66, 1].map((p, i) => (
-              <line key={i} x1={PX} y1={H - PY - p * (H - 2*PY)} x2={W - PX} y2={H - PY - p * (H - 2*PY)}
-                stroke="rgba(var(--accent-rgb),0.06)" strokeWidth="1" strokeDasharray="3,5" />
-            ))}
-            {data.map((d, i) => {
-              const barH = d.cals > 0 ? Math.max(5, (d.cals / maxCals) * (H - PY * 2)) : 0;
-              const x = PX + i * slotW + (slotW - barW) / 2;
-              const y = H - PY - barH;
-              const isLast = i === data.length - 1;
-              return (
-                <g key={i}>
-                  {/* Background track */}
-                  <rect x={x} y={PY} width={barW} height={H - 2*PY} rx="4" fill="rgba(var(--accent-rgb),0.05)" />
-                  {/* Actual bar */}
-                  {d.cals > 0 && (
-                    <rect x={x} y={y} width={barW} height={barH} rx="4"
-                      fill={`url(#barGrad${i})`}
-                      style={isLast ? { filter: "drop-shadow(0 3px 8px rgba(var(--accent-rgb),0.45))" } : {}} />
-                  )}
-                  {/* Session count dot */}
-                  {d.sessions > 0 && (
-                    <g>
-                      <circle cx={x + barW/2} cy={y - 6} r={5} fill={isLast ? "var(--accent)" : "#C4B5FD"} fillOpacity={isLast ? 1 : 0.7} />
-                      <text x={x + barW/2} y={y - 2.5} textAnchor="middle" fontSize="5.5" fill="white" fontWeight="700">{d.sessions}</text>
-                    </g>
-                  )}
-                  <text x={x + barW/2} y={H + 14} textAnchor="middle"
-                    fontSize="7.5" fill={isLast ? "var(--accent)" : "rgba(var(--text-3-rgb),0.8)"} fontWeight={isLast ? "700" : "500"}>
-                    {d.label.split(" ")[0]}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
-      )}
-    </div>
+        {children}
+      </motion.div>
+    </motion.div>
   );
 }
 
-/* ─── WeightChart ────────────────────────────────────────── */
-function WeightChart({
-  data, range, onRangeChange, onAdd, onDelete, onUpdate, goalType,
+/* ════════════════════════════════════════════════════════════════════
+   ① Héros « Aujourd'hui » — un seul emplacement, quatre vérités.
+   ════════════════════════════════════════════════════════════════════ */
+type HeroState = "loading" | "setup" | "seance" | "repos" | "done";
+
+function TodayHero({
+  state, day, nextLabel, doneStats, onStart, onImprovise, onOrganise, onShift, onReplace,
 }: {
-  data: WeightEntry[];
-  range: "week" | "month";
-  onRangeChange: (r: "week" | "month") => void;
-  onAdd: (kg: number) => void;
-  onDelete: (date: string) => void;
-  onUpdate: (date: string, kg: number) => void;
-  goalType?: "masse" | "poids" | null;
+  state: HeroState;
+  day: PlanningDay | null;
+  nextLabel: string | null;                       // « Jambes · demain » (état repos)
+  doneStats: { minutes: number; kcal: number } | null;
+  onStart: () => void;
+  onImprovise: () => void;
+  onOrganise: () => void;
+  onShift: () => void;
+  onReplace: () => void;
 }) {
-  const [inputVal, setInputVal]   = useState("");
-  const [adding, setAdding]       = useState(false);
-  const [editingDate, setEditingDate] = useState<string | null>(null);
-  const [editVal, setEditVal]     = useState("");
-
-  const pts     = range === "week" ? data.slice(-7) : data.slice(-30);
-  const current = pts.at(-1)?.weight ?? null;
-  const lineColor = goalType === "masse" ? "#34D399" : "var(--accent)";
-  const gradColor = goalType === "masse" ? "#34D399" : "var(--accent)";
-
-  const W = 320, H = 110, PX = 32, PY = 14;
-  const ws   = pts.map(p => p.weight);
-  const minW = ws.length > 0 ? Math.min(...ws) - 2 : 60;
-  const maxW = ws.length > 0 ? Math.max(...ws) + 2 : 90;
-
-  // Espacement proportionnel au temps réel
-  const timestamps = pts.map(p => new Date(p.date + "T00:00:00").getTime());
-  const minT = timestamps[0] ?? 0;
-  const maxT = timestamps[timestamps.length - 1] ?? 1;
-  const tx = (i: number) => {
-    if (pts.length < 2) return W / 2;
-    const range = maxT - minT || 1;
-    return PX + ((timestamps[i] - minT) / range) * (W - 2 * PX);
-  };
-  const ty   = (w: number) => PY + ((maxW - w) / (maxW - minW)) * (H - 2*PY);
-
-  let linePath = "", areaPath = "";
-  if (pts.length >= 2) {
-    const sp = pts.map((p, i) => ({ x: tx(i), y: ty(p.weight) }));
-    linePath = `M ${sp[0].x} ${sp[0].y}`;
-    areaPath = `M ${sp[0].x} ${H} L ${sp[0].x} ${sp[0].y}`;
-    for (let i = 1; i < sp.length; i++) {
-      const cx = (sp[i-1].x + sp[i].x) / 2;
-      linePath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
-      areaPath += ` C ${cx} ${sp[i-1].y}, ${cx} ${sp[i].y}, ${sp[i].x} ${sp[i].y}`;
-    }
-    areaPath += ` L ${sp.at(-1)!.x} ${H} Z`;
+  /* Skeleton — même silhouette que la carte, aucune culpabilité d'attente */
+  if (state === "loading") {
+    return (
+      <div className="rounded-3xl overflow-hidden relative" style={{ height: 340, background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+        <motion.div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(100deg, transparent 30%, rgba(var(--accent-rgb),0.08) 50%, transparent 70%)" }}
+          animate={{ x: ["-100%", "100%"] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+    );
   }
 
-  const handleAdd = () => {
-    const kg = parseFloat(inputVal.replace(",", "."));
-    if (isNaN(kg) || kg < 20 || kg > 300) return;
-    onAdd(kg); setInputVal(""); setAdding(false);
-  };
-
-  const goalLabel = goalType === "masse" ? "Prise de masse" : goalType === "poids" ? "Perte de poids" : null;
+  const viz =
+    state === "setup" ? WIDGET.setup
+    : state === "done" ? WIDGET.done
+    : state === "repos" ? WIDGET.repos
+    : { img: resolveArt({ title: day ? `${day.title} ${day.type}` : "" }).img, pos: "center 24%" };
 
   return (
-    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
-      {/* Header band */}
-      <div className="px-5 pt-5 pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--text-3)" }}>POIDS</p>
-              {goalLabel && (
-                <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)" }}>
-                  {goalLabel}
-                </span>
-              )}
-            </div>
-            <button onClick={() => setAdding(true)} className="flex items-end gap-2 cursor-pointer"
-              style={{ background: "none", border: "none", padding: 0 }} aria-label="Ajouter mon poids">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: current !== null ? "var(--text-0)" : "var(--accent)" }}>
-                {current !== null ? current.toFixed(1) : "+"}
-              </span>
-              <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>
-                {current !== null ? "kg" : "kg ?"}
-              </span>
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5 mt-1">
-            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
-              {(["week", "month"] as const).map(r => (
-                <button key={r} onClick={() => onRangeChange(r)}
-                  className="px-2.5 py-1 text-[10px] font-semibold cursor-pointer"
-                  style={{
-                    background: range === r ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" : "transparent",
-                    color: range === r ? "var(--text-1)" : "var(--text-3)",
-                  }}>
-                  {r === "week" ? "7j" : "30j"}
-                </button>
-              ))}
-            </div>
-            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setAdding(a => !a)}
-              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
-              <span className="text-sm font-bold leading-none" style={{ color: "var(--accent)" }}>+</span>
-            </motion.button>
-          </div>
-        </div>
-      </div>
+    <motion.div
+      initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+      className="rounded-3xl overflow-hidden relative"
+      style={{ minHeight: state === "seance" ? 360 : 300, boxShadow: "0 14px 40px rgba(var(--accent-rgb),0.22)" }}
+    >
+      <Photo img={viz.img} pos={viz.pos} style={{ position: "absolute", inset: 0 }} />
 
-      {/* Input */}
-      <AnimatePresence>
-        {adding && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }} className="px-5 pb-3 overflow-hidden">
-            <div className="flex gap-2">
-              <input type="number" step="0.1" placeholder="Ex : 72.5 kg"
-                value={inputVal} onChange={e => setInputVal(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus
-                className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }} />
-              <motion.button whileTap={{ scale: 0.95 }} onClick={handleAdd}
-                className="px-4 py-2 rounded-xl text-xs font-bold cursor-pointer"
-                style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))", color: "white" }}>
-                OK
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Chart */}
-      {pts.length === 0 ? (
-        <button onClick={() => setAdding(true)}
-          className="w-full flex flex-col items-center justify-center py-9 gap-3 cursor-pointer"
-          style={{ background: "none", border: "none" }}>
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
-            <TrendingUp size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-          </div>
-          <p className="text-xs text-center font-light" style={{ color: "var(--text-2)" }}>
-            Aucun poids enregistré pour le moment
-          </p>
-          <span className="px-4 py-2 rounded-xl text-xs font-bold"
-            style={{ background: "linear-gradient(135deg,#C4A8FF,var(--accent))", color: "#fff", boxShadow: "0 4px 14px rgba(var(--accent-rgb),0.3)" }}>
-            + Ajouter mon poids
+      {/* Chips du haut */}
+      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
+        <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
+          style={{ background: "rgba(10,8,18,0.42)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(6px)" }}>
+          {state === "setup" ? "Première fois ici" : "Aujourd'hui"}
+        </span>
+        {state === "seance" && (
+          <span className="px-3 py-1.5 rounded-full text-[10px] font-extrabold tracking-[0.09em] uppercase"
+            style={{ background: "rgba(139,92,246,0.32)", color: "#E9DFFF", border: "1px solid rgba(196,168,255,0.45)", backdropFilter: "blur(6px)" }}>
+            ✦ Planifié
           </span>
-        </button>
-      ) : (
-        <div className="px-2 pb-2">
-          <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
-            <defs>
-              <linearGradient id="wAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor={gradColor} stopOpacity="0.2" />
-                <stop offset="80%"  stopColor={gradColor} stopOpacity="0.04" />
-                <stop offset="100%" stopColor={gradColor} stopOpacity="0" />
-              </linearGradient>
-              <filter id="wGlow">
-                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
+        )}
+        {state === "done" && (
+          <span className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg,#4FE8B8,#1FBF8C)", boxShadow: "0 8px 22px rgba(43,212,160,0.45)" }}>
+            <Check size={18} strokeWidth={3.2} style={{ color: "#06281E" }} />
+          </span>
+        )}
+        {state === "repos" && <Moon size={22} strokeWidth={1.6} style={{ color: "#9FD8C6", opacity: 0.85 }} />}
+        {state === "setup" && <Sparkles size={22} strokeWidth={1.6} style={{ color: "#E4D6FF" }} />}
+      </div>
 
-            {[0.25, 0.5, 0.75].map((p, i) => {
-              const y = PY + p * (H - 2 * PY);
-              const w = minW + (1 - p) * (maxW - minW);
-              return (
-                <g key={i}>
-                  <line x1={PX} y1={y} x2={W - PX/2} y2={y}
-                    stroke="rgba(var(--accent-rgb),0.07)" strokeWidth="1" strokeDasharray="3,4" />
-                  <text x={PX - 4} y={y + 3.5} textAnchor="end"
-                    fontSize="7.5" fill="rgba(var(--text-3-rgb),0.8)" fontWeight="500">
-                    {w.toFixed(0)}
-                  </text>
-                </g>
-              );
-            })}
+      {/* Légende sur l'image (style validé nutrition) */}
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4 pt-16"
+        style={{ background: "linear-gradient(to top, rgba(8,6,14,0.92) 30%, rgba(8,6,14,0.5) 70%, transparent)" }}>
 
-            {areaPath && <path d={areaPath} fill="url(#wAreaGrad)" />}
-            {linePath && (
-              <path d={linePath} fill="none" stroke={lineColor}
-                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                filter="url(#wGlow)" />
-            )}
-
-            {pts.map((p, i) => {
-              const isLast = i === pts.length - 1;
-              const cx = tx(i), cy = ty(p.weight);
-              return isLast ? (
-                <g key={i}>
-                  <circle cx={cx} cy={cy} r={9} fill={lineColor} fillOpacity="0.12" />
-                  <circle cx={cx} cy={cy} r={5} fill={lineColor}
-                    style={{ filter: `drop-shadow(0 0 4px ${lineColor})` }} />
-                  <circle cx={cx} cy={cy} r={2} fill="white" />
-                </g>
-              ) : (
-                <circle key={i} cx={cx} cy={cy}
-                  r={2.5} fill="white" stroke={lineColor} strokeWidth="1.5" />
-              );
-            })}
-
-            {/* Labels date : premier + dernier uniquement, bien ancrés */}
-            {pts.length >= 1 && (() => {
-              const indices = pts.length === 1 ? [0] : [0, pts.length - 1];
-              return indices.map(i => {
-                const d = new Date(pts[i].date + "T00:00:00");
-                const lbl = `${d.getDate()}/${d.getMonth() + 1}`;
-                const anchor = i === 0 ? "start" : "end";
-                const x = i === 0 ? PX : W - PX / 2;
-                return (
-                  <text key={i} x={x} y={H + 13} textAnchor={anchor}
-                    fontSize="8" fill="rgba(var(--text-3-rgb),0.9)" fontWeight="500">
-                    {lbl}
-                  </text>
-                );
-              });
-            })()}
-          </svg>
-        </div>
-      )}
-
-      {/* ── Liste des entrées avec édition / suppression ── */}
-      {pts.length > 0 && (
-        <div className="px-4 pb-4">
-          <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.07)", marginBottom: 10 }} />
-          <div className="flex flex-col gap-1 max-h-36 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-            {[...pts].reverse().map(entry => {
-              const d = new Date(entry.date + "T00:00:00");
-              const label = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-              const isEditing = editingDate === entry.date;
-              return (
-                <motion.div
-                  key={entry.date}
-                  layout
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-                  style={{ background: isEditing ? "rgba(var(--accent-rgb),0.08)" : "transparent" }}
-                >
-                  <span className="text-[11px] font-light flex-shrink-0 w-16" style={{ color: "var(--text-3)" }}>{label}</span>
-                  {isEditing ? (
-                    <>
-                      <input
-                        type="number" step="0.1" autoFocus
-                        value={editVal}
-                        onChange={e => setEditVal(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === "Enter") {
-                            const kg = parseFloat(editVal.replace(",", "."));
-                            if (!isNaN(kg) && kg >= 20 && kg <= 300) { onUpdate(entry.date, kg); setEditingDate(null); }
-                          }
-                          if (e.key === "Escape") setEditingDate(null);
-                        }}
-                        className="flex-1 px-2 py-0.5 rounded-lg text-xs outline-none"
-                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
-                      />
-                      <motion.button whileTap={{ scale: 0.9 }}
-                        onClick={() => {
-                          const kg = parseFloat(editVal.replace(",", "."));
-                          if (!isNaN(kg) && kg >= 20 && kg <= 300) { onUpdate(entry.date, kg); setEditingDate(null); }
-                        }}
-                        className="px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer"
-                        style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--accent))", color: "white" }}>
-                        OK
-                      </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setEditingDate(null)}
-                        className="cursor-pointer" style={{ color: "var(--text-3)" }}>
-                        <X size={12} />
-                      </motion.button>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex-1 text-xs font-semibold" style={{ color: "var(--text-1)" }}>{entry.weight.toFixed(1)} kg</span>
-                      <motion.button whileTap={{ scale: 0.9 }}
-                        onClick={() => { setEditingDate(entry.date); setEditVal(String(entry.weight)); }}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
-                        style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
-                        <Pencil size={10} strokeWidth={2} style={{ color: "var(--accent)" }} />
-                      </motion.button>
-                      <motion.button whileTap={{ scale: 0.9 }}
-                        onClick={() => onDelete(entry.date)}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer"
-                        style={{ background: "rgba(252,129,129,0.1)" }}>
-                        <Trash2 size={10} strokeWidth={2} style={{ color: "#FC8181" }} />
-                      </motion.button>
-                    </>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ─── WorkoutWeekCard ────────────────────────────────────── */
-function WorkoutWeekCard({ sessions }: { sessions: TimelineEvent[] }) {
-  const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - 6);
-
-  const weekSessions = sessions.filter(s => {
-    if (s.type !== "workout") return false;
-    const d = new Date(s.performance.date ?? "");
-    return d >= startOfWeek;
-  });
-
-  // Calcul stats depuis performance_data
-  const totalDuration = weekSessions.reduce((sum, s) => {
-    const dur = s.performance.metrics?.find(m => m.label === "Durée");
-    return sum + (dur ? parseInt(dur.value) || 0 : 0);
-  }, 0);
-  const totalCals = weekSessions.reduce((sum, s) => {
-    const cal = s.performance.metrics?.find(m => m.label === "Calories");
-    return sum + (cal ? parseInt(cal.value) || 0 : 0);
-  }, 0);
-
-  // Jours de la semaine avec dot si séance
-  const days = ["L", "M", "M", "J", "V", "S", "D"];
-  const dayDots = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (6 - i));
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-    const hasSession = weekSessions.some(s => (s.performance.date ?? "").startsWith(dateStr) || s.date === dateStr);
-    const isToday = i === 6;
-    return { label: days[d.getDay() === 0 ? 6 : d.getDay() - 1], hasSession, isToday };
-  });
-
-  return (
-    <div className="rounded-3xl overflow-hidden" style={CHART_CARD}>
-      <div className="px-5 pt-5 pb-3">
-        <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-3" style={{ color: "var(--text-3)" }}>SÉANCES · 7 JOURS</p>
-
-        {weekSessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 gap-2">
-            <Dumbbell size={24} strokeWidth={1.4} style={{ color: "var(--violet-mid)" }} />
-            <p className="text-xs font-light text-center" style={{ color: "var(--text-3)" }}>Aucune séance cette semaine<br/>Lance-toi !</p>
-          </div>
-        ) : (
+        {state === "seance" && day && (
           <>
-            {/* Gros chiffre */}
-            <div className="flex items-end gap-2 mb-4">
-              <span className="text-[2.2rem] font-extralight leading-none" style={{ color: "var(--text-0)" }}>{weekSessions.length}</span>
-              <span className="text-base font-light mb-0.5" style={{ color: "var(--text-3)" }}>séance{weekSessions.length > 1 ? "s" : ""}</span>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#C9B8FF" }}>
+              {day.type}{lieuLabel(day.location) ? ` · ${lieuLabel(day.location)}` : ""}
+            </p>
+            <h2 className="text-[27px] leading-tight font-extralight text-white">{dayTitle(day)}</h2>
+            <div className="flex items-center gap-2 mt-2 mb-3.5 text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.82)" }}>
+              <Clock size={12} strokeWidth={2} />
+              <span>{day.type === "HIIT" ? 30 : 45} min</span>
+              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
+              <span>{day.exerciseList.length} exercices</span>
+              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.4)" }} />
+              <Zap size={12} strokeWidth={2} style={{ color: "#EF9F27" }} fill="#EF9F27" />
+              <span>{day.difficulty}</span>
             </div>
-
-            {/* Stats row */}
-            <div className="flex items-center gap-4 mb-5">
-              <div>
-                <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>Durée totale</p>
-                <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
-                  {totalDuration >= 60 ? `${Math.floor(totalDuration/60)}h${totalDuration%60 > 0 ? String(totalDuration%60).padStart(2,"0") : ""}` : `${totalDuration} min`}
-                </p>
-              </div>
-              {totalCals > 0 && (
-                <>
-                  <div style={{ width: 1, height: 28, background: "rgba(var(--accent-rgb),0.15)" }} />
-                  <div>
-                    <p className="text-[9px] uppercase font-semibold tracking-wide mb-0.5" style={{ color: "var(--text-3)" }}>Calories</p>
-                    <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{totalCals.toLocaleString("fr-FR")} kcal</p>
-                  </div>
-                </>
-              )}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onStart}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}
+            >
+              <Play size={14} strokeWidth={2.5} fill="#fff" /> C&apos;est parti
+            </motion.button>
+            <div className="flex justify-center gap-5 mt-2.5">
+              <button onClick={onShift} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none"
+                style={{ color: "rgba(255,255,255,0.6)" }}>
+                Décaler
+              </button>
+              <button onClick={onReplace} className="text-[11.5px] font-semibold cursor-pointer bg-transparent border-none flex items-center gap-1"
+                style={{ color: "rgba(255,255,255,0.6)" }}>
+                <span style={{ color: "#C9B8FF" }}>✦</span> Remplacer
+              </button>
             </div>
           </>
         )}
 
-        {/* Dots jours */}
-        <div style={{ height: 1, background: "rgba(var(--accent-rgb),0.07)", marginBottom: 16 }} />
-        <div className="flex justify-between">
-          {dayDots.map((d, i) => (
-            <div key={i} className="flex flex-col items-center gap-1.5">
-              <motion.div
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="w-7 h-7 rounded-full flex items-center justify-center"
-                style={{
-                  background: d.hasSession
-                    ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)"
-                    : d.isToday
-                    ? "rgba(var(--accent-rgb),0.12)"
-                    : "rgba(0,0,0,0.04)",
-                  border: d.isToday && !d.hasSession ? "1.5px solid rgba(var(--accent-rgb),0.35)" : "none",
-                  boxShadow: d.hasSession ? "0 2px 8px rgba(var(--accent-rgb),0.35)" : "none",
-                }}
-              >
-                {d.hasSession && <Dumbbell size={11} strokeWidth={2} style={{ color: "white" }} />}
-              </motion.div>
-              <span className="text-[9px] font-medium" style={{ color: d.isToday ? "var(--accent)" : "var(--text-3)" }}>{d.label}</span>
-            </div>
+        {state === "repos" && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#9FD8C6" }}>
+              Aujourd&apos;hui
+            </p>
+            <h2 className="text-[27px] leading-tight font-extralight text-white">Repos.</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+              Ton corps construit pendant que tu récupères.
+              {nextLabel && <> Prochaine : <b className="font-bold text-white">{nextLabel}</b>.</>}
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onImprovise}
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
+            >
+              ✦ J&apos;ai quand même envie de bouger
+            </motion.button>
+          </>
+        )}
+
+        {state === "done" && day && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#7FE8C8" }}>
+              Aujourd&apos;hui · fait
+            </p>
+            <h2 className="text-[27px] leading-tight font-extralight text-white">C&apos;est fait.</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5" style={{ color: "rgba(255,255,255,0.72)" }}>
+              {dayTitle(day)}
+              {doneStats && doneStats.minutes > 0 && <> · {doneStats.minutes} min</>}
+              {doneStats && doneStats.kcal > 0 && <> · <b className="font-bold" style={{ color: "#EF9F27" }}>{doneStats.kcal} kcal</b></>}
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onStart}
+              className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[13.5px] font-bold text-white"
+              style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.28)", backdropFilter: "blur(4px)" }}
+            >
+              <Play size={12} strokeWidth={2.5} fill="#fff" /> Refaire la séance
+            </motion.button>
+          </>
+        )}
+
+        {state === "setup" && (
+          <>
+            <p className="text-[10px] font-extrabold tracking-[0.22em] uppercase mb-1" style={{ color: "#C9B8FF" }}>
+              On fait connaissance
+            </p>
+            {/* La question n'apparaît QUE quand l'app ne sait pas — même logique que Nutrition */}
+            <h2 className="text-[26px] leading-tight font-extralight text-white">On s&apos;entraîne comment&nbsp;?</h2>
+            <p className="text-[12.5px] font-light mt-1.5 mb-3.5 leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
+              Quelques questions, et l&apos;IA construit ta semaine idéale.
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onOrganise}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[15px] font-extrabold text-white"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.45), inset 0 1px 0 rgba(255,255,255,0.25)" }}
+            >
+              ✦ Créer mon planning
+            </motion.button>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ② Cartes de bifurcation — J'improvise / Je choisis
+   ════════════════════════════════════════════════════════════════════ */
+/** « Je choisis » : éventail de 3 cartes-séances déployées sur un fond en
+    profondeur → « plusieurs séances, choisis la tienne ». Cartes distinctes
+    (liseré clair + ombre = carte, pas écran), rotation en éventail, dégagées
+    du texte. Ancrage horizontal au centre (dx en px) → forme identique quelle
+    que soit la largeur de la carte. */
+/** Écartement horizontal responsive : serré sur mobile (plancher 30px), il
+    s'élargit avec la largeur de la carte (13cqw) jusqu'à 72px → l'éventail
+    occupe plus de place là où il y a de la largeur (nécessite container-type
+    sur le parent). */
+const CHOISIS_DX = "clamp(30px, 13cqw, 72px)";
+/** L'éventail grandit avec la HAUTEUR de la carte (cqh) : plus haute sur desktop
+    (148 → 188) → cartes de l'éventail plus grandes. La formule `top` verrouille
+    le bas de la carte pivotée à une ligne constante (100cqh − 64px), donc l'écart
+    au texte reste ~constant à toute hauteur (`sway` compense le débord de la
+    rotation). Nécessite `container-type: size` sur le parent. */
+type FanCard = { img: string; pos: string; wv: string; hv: string; dir: -1 | 0 | 1; rot: number; z: number; sway: number };
+const CHOISIS_FAN: FanCard[] = [
+  { img: "legs-squat",    pos: "center 32%", wv: "clamp(66px,44cqh,100px)", hv: "clamp(70px,47cqh,104px)", dir: -1, rot: -11, z: 1, sway: 0.095 },
+  { img: "pull-traction", pos: "center 26%", wv: "clamp(66px,44cqh,100px)", hv: "clamp(70px,47cqh,104px)", dir:  1, rot:  11, z: 2, sway: 0.095 },
+  { img: "push-couche",   pos: "center 30%", wv: "clamp(75px,51cqh,112px)", hv: "clamp(80px,54cqh,120px)", dir:  0, rot:   0, z: 3, sway: 0    },
+];
+
+function ForkCard({ kind, count, onClick }: {
+  kind: "improvise" | "choisis";
+  count?: number;
+  onClick: () => void;
+}) {
+  const isIA = kind === "improvise";
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="rounded-[20px] overflow-hidden relative cursor-pointer text-left border-none p-0 h-[148px] md:h-[188px]"
+      style={{ boxShadow: "0 8px 26px rgba(var(--accent-rgb),0.14)" }}
+    >
+      {isIA ? (
+        <>
+          <Photo img={WIDGET.improvise.img} pos={WIDGET.improvise.pos}
+            style={{ position: "absolute", inset: 0 }} />
+          <Sparkles size={24} strokeWidth={1.5} className="absolute top-3 right-3" style={{ color: "#E4D6FF", opacity: 0.9 }} />
+          <Sparkles size={11} strokeWidth={1.5} className="absolute top-10 right-11" style={{ color: "#C9B8FF", opacity: 0.5 }} />
+        </>
+      ) : (
+        <div aria-hidden className="absolute inset-0" style={{ isolation: "isolate", containerType: "size" }}>
+          {/* fond en profondeur — la bibliothèque derrière l'éventail */}
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "url(/entrainement/pull-rowing.webp)", backgroundSize: "cover", backgroundPosition: "center", filter: "blur(4px) brightness(0.42)", transform: "scale(1.12)" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,6,14,0.5), rgba(8,6,14,0.72))" }} />
+          {/* halo — centré sur la carte du milieu, suit sa hauteur */}
+          <div style={{ position: "absolute", left: "50%", top: "calc(100cqh - 64px - (clamp(80px,54cqh,120px) / 2))", width: 96, height: 96, transform: "translate(-50%,-50%)", background: "radial-gradient(circle, rgba(155,130,255,0.35), transparent 68%)", filter: "blur(6px)" }} />
+          {/* l'éventail de séances — grandit avec la hauteur de la carte */}
+          {CHOISIS_FAN.map((c) => (
+            <div key={c.img} style={{
+              position: "absolute", left: "50%",
+              top: c.sway
+                ? `calc(100cqh - 64px - ${c.hv} - (${c.wv} * ${c.sway}))`
+                : `calc(100cqh - 64px - ${c.hv})`,
+              width: c.wv, height: c.hv, zIndex: c.z,
+              transform: `translateX(calc(-50% + (${c.dir} * ${CHOISIS_DX}))) rotate(${c.rot}deg)`,
+              transformOrigin: "center",
+              borderRadius: 9,
+              backgroundImage: `url(/entrainement/${c.img}.webp)`, backgroundSize: "cover", backgroundPosition: c.pos,
+              boxShadow: "0 7px 15px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(255,255,255,0.55)",
+            }} />
           ))}
         </div>
+      )}
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-2.5 pt-8"
+        style={{ background: "linear-gradient(to top, rgba(8,6,14,0.9) 25%, transparent)" }}>
+        <p className="text-[8.5px] font-extrabold tracking-[0.18em] uppercase mb-0.5" style={{ color: "#C9B8FF" }}>
+          {isIA ? "L'IA s'adapte" : "Mes séances"}
+        </p>
+        <p className="text-[16.5px] font-semibold text-white leading-tight">{isIA ? "J'improvise" : "Je choisis"}</p>
+        <p className="text-[10.5px] font-normal mt-0.5 leading-snug" style={{ color: "rgba(255,255,255,0.68)" }}>
+          {isIA ? "Ton temps, ton matériel — elle crée" : `${count ?? 0} séances, choisis la tienne`}
+        </p>
       </div>
+    </motion.button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ③ Ma semaine — 7 pastilles + « Organiser ». Une phrase qui raconte,
+   pas un tableau.
+   ════════════════════════════════════════════════════════════════════ */
+function WeekStrip({ week, todayIdx, onOrganise }: {
+  week: PlanningDay[] | null;
+  todayIdx: number;
+  onOrganise: () => void;
+}) {
+  const doneCount = week?.filter((d) => d.status === "done").length ?? 0;
+  const todayDay = week?.[todayIdx] ?? null;
+
+  let story: React.ReactNode = null;
+  if (week) {
+    if (todayDay?.status === "done") {
+      story = <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — dont celle d&apos;aujourd&apos;hui. 💪</>;
+    } else if (hasSeance(todayDay)) {
+      story = doneCount > 0
+        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — la {doneCount + 1}<sup>e</sup> t&apos;attend aujourd&apos;hui.</>
+        : <>Ta semaine commence — <b style={{ color: "var(--text-1)", fontWeight: 700 }}>première séance aujourd&apos;hui</b>.</>;
+    } else {
+      story = doneCount > 0
+        ? <><b style={{ color: "#8B5CF6", fontWeight: 800 }}>{doneCount} séance{doneCount > 1 ? "s" : ""} faite{doneCount > 1 ? "s" : ""}</b> — repos aujourd&apos;hui.</>
+        : <>Repos aujourd&apos;hui — ta semaine se construit.</>;
+    }
+  }
+
+  return (
+    <div className="rounded-[20px] px-4 pt-3.5 pb-3.5"
+      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(var(--accent-rgb),0.14)", boxShadow: "0 6px 22px rgba(var(--accent-rgb),0.08)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={onOrganise} className="flex items-center gap-1 bg-transparent border-none p-0 cursor-pointer">
+          <span className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</span>
+          <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
+        </button>
+        <button onClick={onOrganise}
+          className="flex items-center gap-1 text-[11.5px] font-bold cursor-pointer bg-transparent border-none p-0"
+          style={{ color: "var(--accent)" }}>
+          <CalendarDays size={12} strokeWidth={2.2} />
+          Organiser
+        </button>
+      </div>
+
+      <div className="flex gap-1.5">
+        {DAY_LETTERS.map((letter, i) => {
+          const d = week?.[i] ?? null;
+          const isToday = i === todayIdx;
+          const isDone = d?.status === "done";
+          const isSeance = hasSeance(d);
+          const isPast = i < todayIdx;
+          const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
+
+          return (
+            <button key={i} onClick={onOrganise}
+              aria-label={`${DAY_FULL[i]} — ${isSeance ? dayTitle(d!) : "repos"}`}
+              className="relative flex-1 rounded-[12px] overflow-hidden cursor-pointer border-none p-0 block"
+              style={{
+                height: 60, background: "#0f0d17",
+                outline: isToday ? "2px solid #8B5CF6" : undefined,
+                outlineOffset: isToday ? 2 : undefined,
+                boxShadow: isToday ? "0 5px 16px rgba(139,92,246,0.4)" : undefined,
+                opacity: isPast && !isDone && isSeance ? 0.5 : 1,
+              }}>
+              {isSeance && art ? (
+                <>
+                  <Photo img={art.img} pos="center 22%" style={{ position: "absolute", inset: 0 }} />
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(5,4,9,0.8) 0%, rgba(5,4,9,0.12) 52%, transparent)" }} />
+                  {isDone && (
+                    <span className="absolute top-1 right-1 rounded-full flex items-center justify-center"
+                      style={{ width: 14, height: 14, background: "#8B5CF6", boxShadow: "0 2px 6px rgba(0,0,0,0.4)" }}>
+                      <Check size={9} strokeWidth={3.4} style={{ color: "#fff" }} />
+                    </span>
+                  )}
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(var(--accent-rgb),0.22)", borderRadius: 12 }}>
+                  <Moon size={13} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+                </div>
+              )}
+              <span className="absolute inset-x-0 bottom-[3px] text-center text-[8.5px] font-extrabold tracking-wide"
+                style={{
+                  color: isSeance ? "rgba(255,255,255,0.92)" : "var(--text-3)",
+                  textShadow: isSeance ? "0 1px 4px rgba(0,0,0,0.7)" : "none",
+                }}>
+                {letter}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {story && (
+        <p className="text-[11px] font-medium mt-3" style={{ color: "var(--text-3)" }}>{story}</p>
+      )}
     </div>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   ④ Ton élan — la preuve qu'on avance. Série de semaines actives +
+   totaux de la semaine + 7 derniers jours. Teal = progrès. Aucune
+   culpabilité : un jour vide est un trait discret, jamais un reproche.
+   ════════════════════════════════════════════════════════════════════ */
+type ElanData = {
+  bars: { label: string; min: number; done: boolean; today: boolean }[];
+  sessions: number; minutes: number; kcal: number; streak: number; hasHistory: boolean;
+  prevMinutes: number;   // total de la semaine dernière (pour la comparaison)
+  record: number;        // plus longue séance sur la fenêtre (8 sem.)
+};
 
-/* ─── CameraCapture Modal ───────────────────────────────── */
-type CaptureMode = "photo" | "video";
-type CapturePhase = "loading" | "preview" | "recording" | "captured" | "error";
+const fmtDur = (m: number) =>
+  m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`;
 
-function CameraCapture({
-  mode, label, onCapture, onClose,
-}: {
-  mode: CaptureMode;
-  label: string;
-  onCapture: (blob: Blob, objectUrl: string) => void;
-  onClose: () => void;
-}) {
-  const videoRef    = useRef<HTMLVideoElement>(null);
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const streamRef   = useRef<MediaStream | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef   = useRef<Blob[]>([]);
-  const capturedBlobRef = useRef<Blob | null>(null);
-  const capturedUrlRef  = useRef<string | null>(null);
-  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+function ElanStrip({ data, onOpen }: { data: ElanData | null; onOpen: () => void }) {
+  if (!data) return null; // le temps du chargement : rien, pas de flash
+  const { bars, sessions, minutes, kcal, streak, hasHistory } = data;
+  const maxMin = Math.max(1, ...bars.map((b) => b.min));
+  const barH = (min: number) => (min <= 0 ? 4 : Math.round(6 + (min / maxMin) * 30));
 
-  const [phase, setPhase]               = useState<CapturePhase>("loading");
-  const [capturedUrl, setCapturedUrl]   = useState<string | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
+  return (
+    <motion.button
+      whileTap={{ scale: 0.98 }} onClick={onOpen}
+      className="w-full text-left cursor-pointer block rounded-[20px] px-4 pt-3.5 pb-3.5"
+      style={{ background: "rgb(var(--surface-rgb))", border: "1px solid rgba(43,212,160,0.20)", boxShadow: "0 6px 22px rgba(43,212,160,0.08)" }}>
+      <div className="flex items-center justify-between mb-3.5">
+        <p className="text-[13.5px] font-bold flex items-center gap-0.5" style={{ color: "var(--text-1)" }}>
+          Ton élan
+          <ChevronRight size={13} strokeWidth={2.6} style={{ color: "var(--text-3)" }} />
+        </p>
+        {streak > 0 && (
+          <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-extrabold"
+            style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
+            <Flame size={12} strokeWidth={2.4} fill="#EF9F27" />
+            {streak} sem.
+          </span>
+        )}
+      </div>
 
-  /* Start camera on mount */
-  useEffect(() => {
-    let cancelled = false;
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: mode === "video",
-        });
-        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        setPhase("preview");
-      } catch {
-        if (!cancelled) setPhase("error");
+      {hasHistory ? (
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex items-end gap-[7px]">
+            {bars.map((b, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <span className="w-[9px] rounded-full" style={{
+                  height: barH(b.min),
+                  background: b.today ? "#8B5CF6" : b.done ? "rgba(139,92,246,0.55)" : "rgba(255,255,255,0.10)",
+                }} />
+                <span className="text-[8.5px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-right">
+            <p className="text-[9.5px] font-bold tracking-[0.14em] uppercase mb-1" style={{ color: "var(--text-3)" }}>Cette semaine</p>
+            <p className="leading-none">
+              <span className="text-[22px] font-extrabold" style={{ color: "#8B5CF6" }}>{sessions}</span>
+              <span className="text-[12px] font-semibold ml-1" style={{ color: "var(--text-2)" }}>séance{sessions > 1 ? "s" : ""}</span>
+            </p>
+            <p className="text-[11px] font-semibold mt-1.5 flex items-center justify-end gap-1.5" style={{ color: "var(--text-3)" }}>
+              <Clock size={11} strokeWidth={2.4} />{fmtDur(minutes)}
+              <span className="w-[3px] h-[3px] rounded-full" style={{ background: "var(--text-3)" }} />
+              <Zap size={11} strokeWidth={2.4} style={{ color: "#EF9F27" }} fill="#EF9F27" />
+              <span style={{ color: "#EF9F27" }}>{kcal.toLocaleString("fr-FR")} kcal</span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3.5 pb-0.5">
+          <div className="flex items-end gap-[7px]">
+            {bars.map((b, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <span className="w-[9px] rounded-full" style={{ height: 8 + (i % 3) * 6, background: "rgba(255,255,255,0.08)" }} />
+                <span className="text-[8.5px] font-bold" style={{ color: "var(--text-3)" }}>{b.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11.5px] font-medium leading-snug" style={{ color: "var(--text-3)" }}>
+            Ton élan démarre à la première séance. 💪
+          </p>
+        </div>
+      )}
+    </motion.button>
+  );
+}
+
+/** Sheet « Ton élan » — le détail au tap : graphique agrandi à gauche,
+    chiffres à droite, comparaison vs semaine dernière. Unité discrète
+    (« en minutes ») pour ne pas lasser les habitués. Zéro culpabilité :
+    une semaine plus légère devient un objectif, pas un reproche. */
+function ElanSheet({ data, onClose }: { data: ElanData; onClose: () => void }) {
+  const { bars, sessions, minutes, kcal, streak, prevMinutes, record } = data;
+  const maxMin = Math.max(1, ...bars.map((b) => b.min));
+  const barH = (min: number) => (min <= 0 ? 6 : Math.round(10 + (min / maxMin) * 100));
+  const avg = sessions > 0 ? Math.round(minutes / sessions) : 0;
+  const delta = minutes - prevMinutes;
+
+  return (
+    <Sheet onClose={onClose} maxHeight="72vh">
+      <div className="px-5 pt-2 pb-6 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <p className="text-[17px] font-bold" style={{ color: "var(--text-1)" }}>Ton élan</p>
+          {streak > 0 && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-extrabold"
+              style={{ background: "rgba(239,159,39,0.14)", color: "#EF9F27" }}>
+              <Flame size={13} strokeWidth={2.4} fill="#EF9F27" />
+              {streak} sem.
+            </span>
+          )}
+        </div>
+        <p className="text-[11px] font-medium mt-0.5 mb-5" style={{ color: "var(--text-3)" }}>
+          7 derniers jours · en minutes
+        </p>
+
+        <div className="flex items-end gap-5">
+          {/* Graphique agrandi */}
+          <div className="flex-1 flex items-end justify-between" style={{ height: 150 }}>
+            {bars.map((b, i) => (
+              <div key={i} className="flex flex-col items-center justify-end gap-1.5 h-full">
+                {b.min > 0 && b.min === maxMin && (
+                  <span className="text-[9.5px] font-extrabold" style={{ color: "#8B5CF6" }}>{b.min} min</span>
+                )}
+                <span className="w-[12px] rounded-full" style={{
+                  height: barH(b.min),
+                  background: b.today && b.min > 0 ? "#8B5CF6"
+                    : b.done ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.09)",
+                  boxShadow: b.today && b.min > 0 ? "0 0 14px rgba(139,92,246,0.4)" : undefined,
+                }} />
+                <span className="text-[9px] font-bold" style={{ color: b.today ? "#8B5CF6" : "var(--text-3)" }}>{b.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Détails */}
+          <div style={{ width: 128 }}>
+            {([
+              ["Séances", sessions > 0 ? String(sessions) : "—", "#8B5CF6"],
+              ["Temps", minutes > 0 ? fmtDur(minutes) : "—", "var(--text-1)"],
+              ["Calories", kcal > 0 ? kcal.toLocaleString("fr-FR") : "—", "#EF9F27"],
+              ["Moyenne", avg > 0 ? `${avg} min` : "—", "var(--text-1)"],
+              ["Record", record > 0 ? `${record} min` : "—", "var(--text-1)"],
+            ] as const).map(([k, v, c], i, arr) => (
+              <div key={k} className="flex items-baseline justify-between py-[7px]"
+                style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+                <span className="text-[10.5px] font-semibold" style={{ color: "var(--text-3)" }}>{k}</span>
+                <span className="text-[13px] font-extrabold" style={{ color: c }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comparaison vs semaine dernière — jamais un reproche */}
+        {prevMinutes > 0 && delta > 0 && (
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-bold"
+            style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)", color: "#8B5CF6" }}>
+            ▲ +{delta} min vs la semaine dernière — ça monte.
+          </div>
+        )}
+        {prevMinutes > 0 && delta <= 0 && (
+          <div className="flex items-center gap-2 mt-4 px-3 py-2.5 rounded-[13px] text-[11.5px] font-semibold"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "var(--text-2)" }}>
+            Encore {Math.abs(delta) + 1} min pour égaler la semaine dernière.
+          </div>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « Je choisis » — catalogue Vaiiya + bibliothèque perso FUSIONNÉS.
+   Un seul jeu de filtres, badge « Perso » doré, actions perso sous la tuile.
+   ════════════════════════════════════════════════════════════════════ */
+type MergedSession = WorkoutSession & { perso: boolean };
+
+/* Une carte du catalogue ne porte pas toujours sa liste : le tunnel la
+   retrouve par id. Tout ce qui montre ou recopie les exercices d'une
+   séance passe par ici, sinon les deux résolutions divergent. */
+function exosDeLaSeance(s: MergedSession): Exercise[] {
+  return s.exerciseList?.length ? s.exerciseList : (exerciseData[s.id] ?? []);
+}
+
+/* Difficulté → nombre de pastilles allumées. L'orange (énergie, système D)
+   dit l'intensité ; on garde le teal pour le corps, la lavande pour l'identité. */
+const DIFF_LEVEL: Record<WorkoutSession["difficulty"], number> = {
+  "Débutant": 1, "Intermédiaire": 2, "Avancé": 3,
+};
+
+/* Dé-doublonnage des photos DANS une rangée. resolveArt est déterministe :
+   deux séances qui matchent la même règle (ou tombent sur le même hash)
+   reçoivent la MÊME photo. Ici on parcourt la rangée dans l'ordre et, dès
+   qu'une image est déjà prise, on tourne vers une autre variante libre de la
+   même famille — la 1re carte garde sa photo « juste », les suivantes varient.
+   Une rangée ne répète donc plus une photo tant qu'il reste des variantes. */
+function dedupeRowArt(list: MergedSession[]): Map<string, string> {
+  const used = new Set<string>();
+  const out = new Map<string, string>();
+  for (const s of list) {
+    const advice = getAdviceArticle(s.id);
+    if (advice) {
+      used.add(advice.image);
+      out.set(s.id, advice.image);
+      continue;
+    }
+    const art = resolveArt({ title: s.title, category: s.category, muscles: s.muscles });
+    let img = art.img;
+    if (used.has(img)) {
+      const variants = FAMILY[art.fam].variants;
+      const start = variants.indexOf(img);
+      for (let k = 1; k <= variants.length; k++) {
+        const cand = variants[(start + k) % variants.length];
+        if (!used.has(cand)) { img = cand; break; }
       }
     }
-    startCamera();
-    return () => {
-      cancelled = true;
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (capturedUrlRef.current) URL.revokeObjectURL(capturedUrlRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    used.add(img);
+    out.set(s.id, img);
+  }
+  return out;
+}
 
-  const takePhoto = () => {
-    const video  = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d")?.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      capturedBlobRef.current = blob;
-      const url = URL.createObjectURL(blob);
-      capturedUrlRef.current = url;
-      setCapturedUrl(url);
-      setPhase("captured");
-      /* Freeze live feed */
-      streamRef.current?.getVideoTracks().forEach(t => { t.enabled = false; });
-    }, "image/jpeg", 0.92);
-  };
+function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, imgOverride }: {
+  session: MergedSession;
+  onStart: (s: MergedSession) => void;
+  onManage: (s: MergedSession) => void;
+  onPremium: (s: MergedSession) => void;
+  canAccessPremium: boolean;
+  imgOverride?: string;
+}) {
+  const advice = getAdviceArticle(session.id);
+  const tileArt = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const img = imgOverride ?? advice?.image ?? tileArt.img;
+  const level = DIFF_LEVEL[session.difficulty];
+  const isPremium = session.access === "premium";
+  const premiumLocked = isPremium && !canAccessPremium;
+  // Le différenciateur : les muscles. À défaut (séance sans muscles listés),
+  // la famille de mouvement (« Poussée », « Tirage »…) fait un repli parlant.
+  const muscles = session.muscles.filter(Boolean).slice(0, 3).join(" · ") || tileArt.label;
 
-  const startRecording = () => {
-    if (!streamRef.current) return;
-    chunksRef.current = [];
-    const recorder = new MediaRecorder(streamRef.current);
-    recorderRef.current = recorder;
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      capturedBlobRef.current = blob;
-      const url = URL.createObjectURL(blob);
-      capturedUrlRef.current = url;
-      setCapturedUrl(url);
-      setPhase("captured");
-    };
-    recorder.start();
-    setPhase("recording");
-    setRecordingTime(0);
-    timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000);
-  };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`relative ${isPremium ? "rounded-[20px] overflow-hidden p-px" : ""}`}
+      style={isPremium ? {
+        background: "linear-gradient(145deg,var(--accent),var(--gold))",
+        boxShadow: "0 12px 30px rgba(var(--accent-rgb),0.22)",
+      } : undefined}
+    >
+      {isPremium && (
+        <div className="h-7 px-2.5 flex items-center justify-between text-white"
+          style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
+          <span className="text-[9px] font-black uppercase tracking-[0.15em]">Premium</span>
+          {premiumLocked
+            ? <Lock size={11} strokeWidth={2.4} aria-label="Verrouillée" />
+            : <Sparkles size={11} strokeWidth={2.4} aria-label="Incluse dans ton offre" />}
+        </div>
+      )}
+      {/* La tuile = un seul geste : lancer. Photo NATURELLE plein cadre.
+          Quatre repères à leur place : difficulté (pastilles orange, coin
+          haut-gauche) · durée (badge, coin haut-droite) · nom · muscles
+          (lavande maison). Les coins portent la méta, le bas l'identité. */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => premiumLocked ? onPremium(session) : onStart(session)}
+        className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "rounded-[17px]" : "rounded-[18px]"}`}
+        style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
+        aria-label={premiumLocked
+          ? `${session.title} — réservé à Premium`
+          : advice ? `Lire : ${session.title}` : `Lancer : ${session.title}`}
+      >
+        <Photo img={img} pos={advice?.imagePosition ?? "center 20%"} style={{ position: "absolute", inset: 0 }} />
 
-  const stopRecording = () => {
-    recorderRef.current?.stop();
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-  };
+        {/* Difficulté — pastilles (orange = énergie/intensité, système D).
+            forcedColorAdjust:none → l'orange survit au mode « couleurs forcées »
+            (hérité par les 3 points). */}
+        {advice ? (
+          <span className="absolute top-2 left-2 flex items-center gap-1 px-[7px] py-[4px] rounded-full"
+            style={{ background: "rgba(8,6,14,0.38)", backdropFilter: "blur(5px)", border: "1px solid rgba(255,255,255,0.24)" }}>
+            <BookOpen size={9} strokeWidth={2.4} className="flex-shrink-0 text-white" aria-hidden />
+            <span className="text-[7.5px] leading-none font-black uppercase tracking-[0.06em] text-white">
+              {session.duration} min · lire
+            </span>
+          </span>
+        ) : (
+          <span className="absolute top-2 left-2 flex items-center gap-[3px] px-[7px] py-[4px] rounded-full"
+            style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.22)", forcedColorAdjust: "none" }}
+            aria-label={`Difficulté : ${session.difficulty}`}>
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="w-1 h-1 rounded-full"
+                style={{ background: i < level ? "#EF9F27" : "rgba(255,255,255,0.3)" }} />
+            ))}
+          </span>
+        )}
 
-  const retake = () => {
-    if (capturedUrlRef.current) { URL.revokeObjectURL(capturedUrlRef.current); capturedUrlRef.current = null; }
-    capturedBlobRef.current = null;
-    setCapturedUrl(null);
-    streamRef.current?.getVideoTracks().forEach(t => { t.enabled = true; });
-    setPhase("preview");
-  };
+        {/* Durée — badge discret */}
+        {!advice && (
+          <span className="absolute top-2 right-2 px-2 py-[3px] rounded-full text-[8px] font-extrabold tracking-[0.05em] text-white"
+            style={{ background: "rgba(8,6,14,0.3)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.34)" }}>
+            {session.duration} MIN
+          </span>
+        )}
 
-  const useCapture = () => {
-    if (!capturedBlobRef.current || !capturedUrlRef.current) return;
-    onCapture(capturedBlobRef.current, capturedUrlRef.current);
-  };
+        {/* Scrim bas : nom (blanc) + muscles (lavande = notre identité).
+            forcedColorAdjust:none → en mode « couleurs forcées », on garde
+            NOTRE dégradé, le nom blanc et la lavande des muscles (hérité par
+            les deux <p>), au lieu d'un repeint système illisible. */}
+        <div className="absolute inset-x-0 bottom-0 pl-2.5 pb-3 pt-12 flex flex-col items-start text-left"
+          style={{
+            paddingRight: session.perso ? 34 : 10,
+            background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
+            forcedColorAdjust: "none",
+          }}>
+          <p className="text-[12.5px] font-black uppercase text-white leading-[1.12] tracking-tight"
+            style={{
+              display: "-webkit-box", WebkitLineClamp: advice ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+              textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+            }}>
+            {session.title}
+          </p>
+          <p className="text-[10.5px] font-semibold mt-1 leading-snug"
+            style={{
+              color: "#C9B8FF",
+              display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden",
+              textShadow: "0 1px 6px rgba(0,0,0,0.45)",
+            }}>
+            {advice?.theme ?? muscles}
+          </p>
+          {!session.perso && !isPremium && (
+            <span className="mt-1.5 text-[8.5px] font-bold uppercase tracking-[0.12em]"
+              style={{ color: "rgba(255,255,255,0.68)", textShadow: "0 1px 6px rgba(0,0,0,0.55)" }}>
+              Incluse
+            </span>
+          )}
+        </div>
+      </motion.button>
 
-  const fmt = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+      {/* Gérer — un ⋯ discret en bas-droite, hors du chemin du nom.
+          Sur TOUTES les cartes depuis le 2026-07-29 : sur une séance
+          Vaiiya, il ouvre « M'en inspirer », le chemin le moins
+          intimidant vers une séance à soi (pas de page blanche). */}
+      {!advice && !premiumLocked && (
+        <motion.button whileTap={{ scale: 0.85 }} onClick={() => onManage(session)}
+          className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+          style={{ background: "rgba(8,6,14,0.5)", backdropFilter: "blur(6px)", border: "1px solid rgba(255,255,255,0.13)" }}
+          aria-label={session.perso ? `Gérer : ${session.title}` : `Options : ${session.title}`}>
+          <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
+        </motion.button>
+      )}
+    </motion.div>
+  );
+}
+
+/* Aperçu avant achat : on montre la valeur exacte de la séance avant de
+   parler prix. La photo reste naturelle et trois gestes animés rendent le
+   contenu concret ; le CTA Premium n'arrive qu'après cette preuve. */
+function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
+  session: MergedSession;
+  premiumCount: number;
+  onClose: () => void;
+  onUpgrade: () => void;
+}) {
+  const advice = getAdviceArticle(session.id);
+  const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const preview = (session.previewExercises
+    ?? session.exerciseList?.slice(0, 3).map((exercise) => exercise.name)
+    ?? []).slice(0, 3);
+  const others = Math.max(0, premiumCount - 1);
+  const promise = advice?.subtitle ?? session.subtitle ?? session.muscles.join(" · ");
+  const premiumSubject = advice ? "Ce cours" : "Cette séance";
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(8px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-[145] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(8,5,16,0.64)", backdropFilter: "blur(5px)" }}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
     >
       <motion.div
-        initial={{ y: 48, opacity: 0 }}
+        initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 48, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 36 }}
-        className="relative w-full max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
-        style={{ background: "#1a1625", maxHeight: "92vh" }}
-        onClick={(e) => e.stopPropagation()}
+        exit={{ y: 44, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 390, damping: 34 }}
+        className="w-full max-w-lg rounded-t-[28px] md:rounded-[28px] overflow-hidden"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.2)",
+          boxShadow: "0 -18px 54px rgba(0,0,0,0.46)",
+          maxHeight: "92dvh",
+          overflowY: "auto",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        onClick={(event) => event.stopPropagation()}
       >
-        {/* Close */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(var(--surface-rgb),0.12)" }}
-        >
-          <X size={16} strokeWidth={2} style={{ color: "#fff" }} />
-        </button>
-
-        {/* Title */}
-        <div className="px-5 pt-5 pb-3">
-          <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-            {mode === "photo" ? "Scan Nutrition" : "Analyse Posture"}
-          </p>
-          <h3 className="text-base font-light mt-0.5" style={{ color: "#fff" }}>{label}</h3>
+        <div className="h-8 px-4 flex items-center justify-center gap-1.5 text-white"
+          style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
+          <Sparkles size={12} strokeWidth={2.3} aria-hidden />
+          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]">
+            {advice ? "Aperçu du cours Premium" : "Aperçu Premium"}
+          </span>
         </div>
 
-        {/* Viewfinder */}
-        <div
-          className="relative mx-4 rounded-2xl overflow-hidden"
-          style={{ aspectRatio: "4/3", background: "#0d0d1a" }}
-        >
-          {/* Live feed */}
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-            style={{ display: phase === "captured" ? "none" : "block" }}
-          />
-          {/* Captured photo preview */}
-          {phase === "captured" && capturedUrl && mode === "photo" && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img loading="lazy" decoding="async" src={capturedUrl} alt="Capture" className="w-full h-full object-cover" />
-          )}
-          {/* Captured video preview */}
-          {phase === "captured" && capturedUrl && mode === "video" && (
-            <video src={capturedUrl} controls className="w-full h-full object-cover" />
-          )}
-          {/* Loading spinner */}
-          {phase === "loading" && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                className="w-8 h-8 rounded-full border-2"
-                style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              />
-            </div>
-          )}
-          {/* Error */}
-          {phase === "error" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <CameraOff size={32} strokeWidth={1.5} style={{ color: "var(--text-2)" }} />
-              <p className="text-xs text-center px-6" style={{ color: "var(--text-2)" }}>
-                Accès à la caméra refusé.<br/>Vérifiez les permissions du navigateur.
+        <div className="relative" style={{ aspectRatio: "16 / 9" }}>
+          <Photo img={advice?.image ?? art.img} pos={advice?.imagePosition ?? "center 24%"} style={{ position: "absolute", inset: 0 }} />
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-4 pt-16"
+            style={{ background: "linear-gradient(to top,rgba(6,5,10,0.94),rgba(6,5,10,0.38),transparent)" }}>
+            <p className="text-[20px] font-black uppercase leading-[1.05] text-white"
+              style={{ textShadow: "0 2px 12px rgba(0,0,0,0.58)" }}>
+              {session.title}
+            </p>
+            <p className="text-[11px] font-semibold mt-1.5 text-white/75">{promise}</p>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-white"
+            style={{ background: "rgba(8,6,14,0.46)", border: "1px solid rgba(255,255,255,0.25)", backdropFilter: "blur(6px)" }}
+            aria-label="Fermer l’aperçu"
+          >
+            <X size={14} strokeWidth={2.2} />
+          </motion.button>
+        </div>
+
+        <div className="px-5 pt-4 pb-5">
+          <div className="flex items-center gap-2 text-[10px] font-bold" style={{ color: "var(--text-2)" }}>
+            <span>{session.duration} min{advice ? " de lecture" : ""}</span>
+            <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
+            {advice ? (
+              <span className="truncate">{advice.theme}</span>
+            ) : (
+              <>
+                <span>{session.difficulty}</span>
+                <span aria-hidden style={{ color: "var(--text-3)" }}>·</span>
+                <span className="truncate">{session.muscles.slice(0, 2).join(" · ")}</span>
+              </>
+            )}
+          </div>
+
+          {advice ? (
+            <div className="mt-4">
+              <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
+                Dans ce mini-cours
               </p>
+              <p className="text-[12.5px] font-semibold leading-relaxed mt-2" style={{ color: "var(--text-2)" }}>
+                {advice.intro}
+              </p>
+              <div className="mt-3 space-y-2">
+                {advice.sections.slice(0, 3).map((section, index) => (
+                  <div key={section.title} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.11)" }}>
+                    <span className="text-[9px] font-black" style={{ color: "var(--accent)" }}>0{index + 1}</span>
+                    <span className="text-[11px] font-bold" style={{ color: "var(--text-1)" }}>{section.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : preview.length > 0 && (
+            <div className="mt-4">
+              <p className="text-[9.5px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-3)" }}>
+                Les premiers mouvements
+              </p>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {preview.map((name) => (
+                  <div key={name} className="rounded-2xl px-1.5 pt-1.5 pb-2 overflow-hidden text-center"
+                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px solid rgba(var(--accent-rgb),0.11)" }}>
+                    <ExerciseGuide name={name} compact loading="lazy" />
+                    <p className="text-[9px] font-bold leading-tight line-clamp-2 min-h-[22px]" style={{ color: "var(--text-2)" }}>
+                      {name}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-          {/* Recording badge */}
-          {phase === "recording" && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(0,0,0,0.55)" }}>
-              <motion.div
-                className="w-2 h-2 rounded-full"
-                style={{ background: "#ef4444" }}
-                animate={{ opacity: [1, 0.2] }}
-                transition={{ duration: 0.8, repeat: Infinity }}
-              />
-              <span className="text-xs font-mono font-medium" style={{ color: "#fff" }}>{fmt(recordingTime)}</span>
-            </div>
-          )}
-          {/* Subtle grid overlay for photo mode */}
-          {(phase === "preview") && mode === "photo" && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage: "linear-gradient(rgba(var(--accent-rgb),0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--accent-rgb),0.12) 1px, transparent 1px)",
-                backgroundSize: "33.33% 33.33%",
-              }}
-            />
-          )}
-        </div>
-        <canvas ref={canvasRef} className="hidden" />
 
-        {/* Controls */}
-        <div className="px-5 py-5 flex items-center justify-center gap-3">
-          {phase === "preview" && mode === "photo" && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={takePhoto}
-              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
-                boxShadow: "0 0 0 4px rgba(var(--accent-rgb),0.22), 0 6px 20px rgba(var(--accent-rgb),0.35)",
-              }}
-              aria-label="Prendre une photo"
-            >
-              <Camera size={22} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-            </motion.button>
-          )}
+          <div className="mt-4 rounded-2xl px-4 py-3.5"
+            style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+            <p className="text-[13px] font-bold leading-snug" style={{ color: "var(--text-1)" }}>
+              {others > 0
+                ? `${premiumSubject} et ${others} autre${others > 1 ? "s" : ""} sont inclus${advice ? "" : "es"} avec Premium.`
+                : `${premiumSubject} est inclus${advice ? "" : "e"} avec Premium.`}
+            </p>
+            <p className="text-[10.5px] mt-1 leading-relaxed" style={{ color: "var(--text-3)" }}>
+              Débloque toute la collection, pas seulement {advice ? "cette lecture" : "cette séance"}.
+            </p>
+          </div>
 
-          {phase === "preview" && mode === "video" && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={startRecording}
-              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, #FBBF24dd, #F59E0Bdd)",
-                boxShadow: "0 0 0 4px rgba(251,191,36,0.22), 0 6px 20px rgba(251,191,36,0.30)",
-              }}
-              aria-label="Démarrer l'enregistrement"
-            >
-              <Video size={22} strokeWidth={1.5} style={{ color: "#fff" }} />
-            </motion.button>
-          )}
-
-          {phase === "recording" && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={stopRecording}
-              className="w-16 h-16 rounded-full flex items-center justify-center cursor-pointer"
-              style={{
-                background: "rgba(239,68,68,0.9)",
-                boxShadow: "0 0 0 4px rgba(239,68,68,0.22), 0 6px 20px rgba(239,68,68,0.35)",
-              }}
-              aria-label="Arrêter l'enregistrement"
-            >
-              <Square size={20} strokeWidth={2} fill="white" style={{ color: "#fff" }} />
-            </motion.button>
-          )}
-
-          {phase === "captured" && (
-            <>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={retake}
-                className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "rgba(var(--surface-rgb),0.07)", border: "1px solid rgba(var(--surface-rgb),0.11)" }}
-              >
-                <RefreshCw size={13} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-                <span className="text-sm font-medium" style={{ color: "var(--text-3)" }}>Reprendre</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={useCapture}
-                className="flex-1 py-3 rounded-2xl flex items-center justify-center gap-1.5 cursor-pointer"
-                style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)" }}
-              >
-                <CheckCircle size={13} strokeWidth={2} style={{ color: "var(--text-1)" }} />
-                <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Utiliser</span>
-              </motion.button>
-            </>
-          )}
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onUpgrade}
+            className="w-full h-12 mt-4 rounded-2xl text-[13px] font-black text-white"
+            style={{
+              background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+              boxShadow: "0 8px 22px rgba(139,92,246,0.32)",
+            }}
+          >
+            Débloquer {advice ? "tous les cours" : "toutes les séances"}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onClose}
+            className="w-full h-10 mt-1 text-[11.5px] font-semibold"
+            style={{ color: "var(--text-3)" }}
+          >
+            Pas maintenant
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>
   );
 }
 
-/* ─── UploadZone ────────────────────────────────────────── */
-type UploadState = "idle" | "uploading" | "done";
-
-function UploadZone({
-  icon: Icon, label, sublabel, accept, cardClass, captureMode, captureLabel,
-}: {
-  icon: typeof Camera; label: string; sublabel: string;
-  accept: string; cardClass: string;
-  captureMode: CaptureMode; captureLabel: string;
+/* Menu « Gérer » d'une séance perso — remplace la barre de réglages sous
+   les tuiles : la grille reste pure, les réglages ont leur propre écran. */
+/* Une ligne du menu — même gabarit pour toutes, l'icône porte le sens. */
+function LigneMenu({ icon: Icon, label, sub, onClick }: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; style?: React.CSSProperties }>;
+  label: string;
+  sub?: string;
+  onClick: () => void;
 }) {
-  const [uploadState, setUploadState] = useState<UploadState>("idle");
-  const [showCamera, setShowCamera]   = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  return (
+    <motion.button whileTap={{ scale: 0.98 }} onClick={onClick}
+      className="w-full flex items-center gap-3 px-5 py-3.5 cursor-pointer text-left border-none bg-transparent">
+      <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+        <Icon size={14} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>{label}</span>
+        {sub && (
+          <span className="block text-[10.5px] font-light mt-0.5 leading-snug" style={{ color: "var(--text-3)" }}>{sub}</span>
+        )}
+      </span>
+      <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+    </motion.button>
+  );
+}
 
-  const triggerUpload = () => {
-    setUploadState("uploading");
-    setTimeout(() => setUploadState("done"),  1800);
-    setTimeout(() => setUploadState("idle"),  4000);
-  };
+function ManageSheet({ session, week, onClose, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+  session: MergedSession;
+  week: PlanningDay[] | null;
+  onClose: () => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: Visibility) => void;
+  onInspirer: (s: MergedSession) => void;
+  onPlanifier: (s: MergedSession, date: string) => void;
+}) {
+  const art = resolveArt({ title: session.title, category: session.category, muscles: session.muscles });
+  const [vis, setVis] = useState<Visibility>((session.visibility ?? "private") as Visibility);
+  /* Les deux détours restent DANS la feuille : empiler une modale sur une
+     modale sur téléphone, on ne sait plus d'où on vient ni où on ferme. */
+  const [vue, setVue] = useState<"menu" | "jours" | "exos">("menu");
+  const exos = exosDeLaSeance(session);
+  const dates = weekDates();
+  const todayIdx = todayWeekIndex();
 
-  const handleCapture = () => {
-    setShowCamera(false);
-    triggerUpload();
-  };
+  const retour = (
+    <div className="flex items-center gap-2 px-5 pt-1 pb-2">
+      <motion.button whileTap={{ scale: 0.92 }} onClick={() => setVue("menu")}
+        className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer border-none flex-shrink-0"
+        style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour">
+        <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+      </motion.button>
+      <p className="text-[13.5px] font-bold" style={{ color: "var(--text-1)" }}>
+        {vue === "jours" ? "Quel jour ?" : `Les exercices · ${exos.length}`}
+      </p>
+    </div>
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[130] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(12,8,22,0.55)", backdropFilter: "blur(3px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.14)",
+          boxShadow: "0 -14px 44px rgba(0,0,0,0.4)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center pt-2.5 pb-1 md:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-3)", opacity: 0.4 }} />
+        </div>
+
+        {/* La séance dont on parle — sa vignette, son nom */}
+        <div className="flex items-center gap-3 px-5 pt-2 pb-4">
+          <Photo img={art.img} pos="center 20%"
+            className="rounded-xl flex-shrink-0" style={{ width: 46, height: 61 }} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text-1)" }}>{session.title}</p>
+            <p className="text-[10.5px] font-medium mt-1" style={{ color: "var(--text-3)" }}>
+              {session.perso ? "Séance perso" : "Séance Vaiiya"} · {session.duration} min
+            </p>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
+        </div>
+
+        <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+
+        {/* ── Le détour « quel jour ? » ── on écrit sur la semaine réelle,
+           donc on montre ce qui est déjà posé : remplacer, ça se voit. */}
+        {vue === "jours" ? (
+          <>
+            {retour}
+            <div className="px-5 pb-4">
+              {DAY_FULL.map((nom, i) => {
+                const date = dates[i];
+                const jour = week?.[i] ?? null;
+                const passe = i < todayIdx;
+                const prise = hasSeance(jour);
+                const faite = jour?.status === "done";
+                const bloque = passe || faite;
+                return (
+                  <motion.button key={date} whileTap={bloque ? undefined : { scale: 0.98 }}
+                    onClick={() => { if (!bloque) { onPlanifier(session, date); onClose(); } }}
+                    disabled={bloque}
+                    className="w-full flex items-center gap-3 py-2.5 text-left border-none bg-transparent"
+                    style={{ opacity: bloque ? 0.38 : 1, cursor: bloque ? "default" : "pointer" }}>
+                    <span className="w-[42px] text-[11px] font-extrabold uppercase flex-shrink-0"
+                      style={{ color: i === todayIdx ? "var(--accent)" : "var(--text-2)" }}>
+                      {nom.slice(0, 3)}
+                    </span>
+                    <span className="flex-1 min-w-0 text-[12.5px] font-semibold truncate"
+                      style={{ color: prise ? "var(--text-2)" : "var(--text-3)" }}>
+                      {faite ? "Séance faite ✓" : prise ? dayTitle(jour!) : "Repos"}
+                    </span>
+                    {!bloque && (
+                      <span className="text-[10px] font-bold flex-shrink-0"
+                        style={{ color: prise ? "#EF9F27" : "var(--accent)" }}>
+                        {prise ? "Remplacer" : i === todayIdx ? "Aujourd’hui" : "Choisir"}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </>
+        ) : vue === "exos" ? (
+          <>
+            {retour}
+            <div className="px-5 pb-4 overflow-y-auto" style={{ maxHeight: "58vh", scrollbarWidth: "none" }}>
+              {exos.map((e, i) => (
+                <div key={`${e.name}-${i}`} className="flex items-center gap-3 py-1.5">
+                  <span className="rounded-xl flex-shrink-0 flex items-center justify-center"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.55)", width: 52, height: 52 }}>
+                    <ExerciseThumb name={e.name} size={48} delay={i * 130} />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[12.5px] font-semibold truncate" style={{ color: "var(--text-1)" }}>{e.name}</span>
+                    <span className="block text-[10.5px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>
+                      {e.sets} × {e.reps}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : !session.perso ? (
+          /* ── Séance Vaiiya : on ne la modifie pas, on s'en sert ──
+             La copie n'est écrite nulle part tant que la création
+             n'est pas validée. */
+          <>
+            <LigneMenu icon={Layers} label="M’en inspirer"
+              sub="Ses exercices dans une séance à toi, à modifier comme tu veux"
+              onClick={() => { onInspirer(session); onClose(); }} />
+            <LigneMenu icon={CalendarDays} label="Ajouter à ma semaine"
+              sub="Elle se pose sur le jour que tu choisis"
+              onClick={() => setVue("jours")} />
+            {exos.length > 0 && (
+              <LigneMenu icon={Dumbbell} label="Voir les exercices"
+                sub={`Les ${exos.length} mouvements, avant de te lancer`}
+                onClick={() => setVue("exos")} />
+            )}
+            <div style={{ height: 6 }} />
+          </>
+        ) : (
+        <>
+        {/* Poser sa propre séance sur un jour : même geste que le catalogue */}
+        <LigneMenu icon={CalendarDays} label="Ajouter à ma semaine"
+          sub="Elle se pose sur le jour que tu choisis"
+          onClick={() => setVue("jours")} />
+
+        <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+
+        {/* Modifier */}
+        <motion.button whileTap={{ scale: 0.98 }} onClick={() => onEdit(session)}
+          className="w-full flex items-center gap-3 px-5 py-3.5 cursor-pointer text-left border-none bg-transparent">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+            <Pencil size={14} strokeWidth={1.9} style={{ color: "var(--accent)" }} />
+          </span>
+          <span className="flex-1 text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Modifier la séance</span>
+          <ChevronRight size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+        </motion.button>
+
+        <div aria-hidden className="h-px mx-5" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+
+        {/* Visibilité — les 3 choix visibles d'un coup, plus de cycle mystère */}
+        <div className="px-5 pt-3.5 pb-1">
+          <p className="text-[9.5px] font-extrabold tracking-[0.14em] uppercase mb-2" style={{ color: "var(--text-3)" }}>
+            Qui peut la voir ?
+          </p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {VIS_ORDER.map((k) => {
+              const cfg = VIS_CONFIG[k];
+              const CfgIcon = cfg.icon;
+              const active = vis === k;
+              return (
+                <motion.button key={k} whileTap={{ scale: 0.95 }}
+                  onClick={() => { setVis(k); onVisibilityChange(session.id, k); }}
+                  className="h-[52px] rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer"
+                  style={active
+                    ? { background: "rgba(var(--accent-rgb),0.1)", border: "1.5px solid rgba(var(--accent-rgb),0.55)" }
+                    : { background: "rgba(var(--tint-violet-rgb),0.4)", border: "1.5px solid transparent" }}
+                  aria-pressed={active}>
+                  <CfgIcon size={14} strokeWidth={2} style={{ color: active ? "var(--accent)" : "var(--text-3)" }} />
+                  <span className="text-[9.5px] font-bold" style={{ color: active ? "var(--accent)" : "var(--text-3)" }}>{cfg.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Supprimer — à l'écart, en rouge, aucune ambiguïté */}
+        <motion.button whileTap={{ scale: 0.98 }} onClick={() => onDelete(session.id)}
+          className="w-full flex items-center gap-3 px-5 py-3.5 mt-2 mb-1 cursor-pointer text-left border-none bg-transparent">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(252,129,129,0.1)" }}>
+            <Trash2 size={14} strokeWidth={1.9} style={{ color: "#FC8181" }} />
+          </span>
+          <span className="text-[13px] font-semibold" style={{ color: "#FC8181" }}>Supprimer la séance</span>
+        </motion.button>
+        </>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   « Mon espace » — le bandeau qui ouvre le catalogue.
+
+   Le haut de l'écran doit dire qu'il y a DEUX univers : ce que Vaiiya
+   propose (les collections photo, en dessous) et ce qui est à toi. D'où
+   un bloc qui ne ressemble à aucune tuile de collection : pas de photo,
+   la couleur de marque, un personnage animé. Il ne montre AUCUNE séance
+   — les tiennes sont derrière « Les voir », comme une collection.
+   ════════════════════════════════════════════════════════════════════ */
+function MonEspaceBloc({ count, max, onComposer, onVoir }: {
+  count: number;
+  max: number;            // Infinity = illimité
+  onComposer: () => void;
+  onVoir: () => void;
+}) {
+  const plein = count >= max;
+  /* Au-dessus du plafond (ancien abonné, plafond baissé) on ne montre pas
+     un « 5 sur 3 » absurde : ses séances sont à lui, elles restent. */
+  const compteur = max === Infinity || count > max
+    ? `${count} séance${count > 1 ? "s" : ""} à toi`
+    : `${count} sur ${max} gardées`;
+
+  return (
+    <section className="mb-7">
+      <div className="relative rounded-[22px] overflow-hidden"
+        style={{
+          background: "linear-gradient(118deg, rgba(var(--accent-rgb),0.16), rgba(var(--accent-rgb),0.05) 62%, rgba(var(--accent-rgb),0.11))",
+          border: "1px solid rgba(var(--accent-rgb),0.2)",
+        }}>
+        {/* Le halo + le personnage : la signature Vaiiya, jamais une photo */}
+        <div aria-hidden className="absolute pointer-events-none"
+          style={{
+            right: -34, top: "50%", transform: "translateY(-50%)",
+            width: 210, height: 210, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(var(--accent-rgb),0.22), transparent 68%)",
+          }} />
+        <div aria-hidden className="absolute right-2 sm:right-5 bottom-0 pointer-events-none opacity-90">
+          <ExerciseThumb name="Squat" size={112} />
+        </div>
+
+        <div className="relative px-4 py-4 sm:px-5 sm:py-5" style={{ paddingRight: 124 }}>
+          <p className="text-[9px] font-extrabold tracking-[0.18em] uppercase" style={{ color: "var(--accent)" }}>
+            Ton espace
+          </p>
+          <h3 className="text-[19px] sm:text-[21px] font-semibold leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+            Mes séances
+          </h3>
+          <p className="text-[11px] font-light mt-1 leading-snug" style={{ color: "var(--text-3)" }}>
+            {count === 0
+              ? "Composée par toi, dans 102 exercices animés."
+              : <>
+                  <span className="font-bold" style={{ color: plein ? "var(--gold)" : "var(--text-2)" }}>{compteur}</span>
+                  {" · 102 exercices animés"}
+                </>}
+          </p>
+
+          <div className="flex items-center gap-2 mt-3.5">
+            <motion.button whileTap={{ scale: 0.96 }} onClick={onComposer}
+              className="h-9 px-3.5 rounded-full flex items-center gap-1.5 cursor-pointer border-none text-white flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 16px rgba(139,92,246,0.32)" }}>
+              <Plus size={14} strokeWidth={2.6} />
+              <span className="text-[12px] font-bold">Composer</span>
+            </motion.button>
+            {count > 0 && (
+              <motion.button whileTap={{ scale: 0.96 }} onClick={onVoir}
+                className="h-9 px-3 rounded-full flex items-center gap-0.5 cursor-pointer bg-transparent flex-shrink-0"
+                style={{ border: "1px solid rgba(var(--accent-rgb),0.28)", color: "var(--accent)" }}>
+                <span className="text-[12px] font-bold">Les voir</span>
+                <ChevronRight size={13} strokeWidth={2.6} />
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* Le mur, quand les places gratuites sont prises. Il se voit AVANT
+   d'avoir composé quoi que ce soit, et il nomme la sortie gratuite. */
+function PleinSheet({ max, onVoir, onPremium, onClose }: {
+  max: number;
+  onVoir: () => void;
+  onPremium: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[150] flex items-end md:items-center justify-center md:px-4"
+      style={{ background: "rgba(8,5,16,0.6)", backdropFilter: "blur(4px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ y: 56, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 34 }}
+        className="w-full max-w-md rounded-t-[26px] md:rounded-[26px] overflow-hidden"
+        style={{
+          background: "rgb(var(--surface-rgb))",
+          border: "1px solid rgba(var(--accent-rgb),0.18)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 pt-6 pb-5">
+          <span className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{ background: "rgba(var(--gold-rgb),0.14)" }}>
+            <Layers size={18} strokeWidth={1.9} style={{ color: "var(--gold)" }} />
+          </span>
+          <p className="text-[17px] font-semibold mt-3" style={{ color: "var(--text-1)" }}>
+            Tes places sont prises
+          </p>
+          <p className="text-[12px] font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
+            En gratuit tu gardes {max} séances à toi. Supprime celle que tu ne fais plus,
+            elle libère la place tout de suite. Avec Premium, tu en gardes autant que tu veux.
+          </p>
+
+          <motion.button whileTap={{ scale: 0.97 }} onClick={onPremium}
+            className="w-full h-12 mt-5 rounded-2xl text-[13px] font-black text-white cursor-pointer border-none"
+            style={{ background: "linear-gradient(120deg,var(--accent),var(--gold))", boxShadow: "0 8px 22px rgba(139,92,246,0.3)" }}>
+            Passer Premium
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.97 }} onClick={onVoir}
+            className="w-full h-11 mt-1 text-[12px] font-semibold cursor-pointer bg-transparent border-none"
+            style={{ color: "var(--text-2)" }}>
+            Voir mes séances pour en libérer une
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* Largeur d'une carte du carrousel — 2,2 cartes visibles sur téléphone (peek). */
+const ROW_CARD_W = 150;
+
+/* Une rangée = un slide horizontal. Sur téléphone : swipe natif. Sur PC :
+   deux flèches discrètes dans l'en-tête (pas de barre de scroll moche). */
+function SessionRow({ label, count, children }: {
+  label: string; count: number; children: React.ReactNode;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const nudge = (dir: 1 | -1) =>
+    scroller.current?.scrollBy({ left: dir * (ROW_CARD_W + 12) * 2, behavior: "smooth" });
+
+  return (
+    <section className="mb-6">
+      <div className="flex items-center gap-2 mb-2.5 px-0.5">
+        <span className="text-[10px] font-extrabold tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>{label}</span>
+        <span className="text-[9.5px] font-bold" style={{ color: "var(--text-3)" }}>{count}</span>
+        <span aria-hidden className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+        {/* Flèches — desktop uniquement, discrètes */}
+        <div className="hidden md:flex items-center gap-1">
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(-1)}
+            className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }} aria-label="Précédent">
+            <ChevronLeft size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(1)}
+            className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border-none p-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }} aria-label="Suivant">
+            <ChevronRight size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+        </div>
+      </div>
+      {/* -mx-5 px-5 : les cartes filent jusqu'au bord tout en restant alignées */}
+      <div ref={scroller} className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5"
+        style={{ scrollbarWidth: "none", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function PremiumSessionRow({ count, children, title = "Continue avec Premium", description = "Des séances plus ciblées pour aller plus loin, à ton rythme." }: {
+  count: number;
+  children: React.ReactNode;
+  title?: string;
+  description?: string;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const nudge = (dir: 1 | -1) =>
+    scroller.current?.scrollBy({ left: dir * (ROW_CARD_W + 12) * 2, behavior: "smooth" });
+
+  return (
+    <section className="mb-7 rounded-[24px] overflow-hidden"
+      style={{
+        background: "linear-gradient(145deg,rgba(var(--accent-rgb),0.13),rgba(245,177,32,0.08),rgb(var(--surface-rgb)))",
+        border: "1px solid rgba(var(--accent-rgb),0.2)",
+        boxShadow: "0 14px 34px rgba(var(--accent-rgb),0.1)",
+      }}>
+      <div className="px-4 pt-4 pb-3 flex items-start gap-3">
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+          style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 16px rgba(var(--accent-rgb),0.25)" }}>
+          <Sparkles size={15} strokeWidth={2.2} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-[15px] font-black leading-tight"
+              style={{
+                background: "linear-gradient(110deg,var(--accent),var(--gold))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}>
+              {title}
+            </p>
+            <span className="text-[9.5px] font-black" style={{ color: "var(--text-3)" }}>{count}</span>
+          </div>
+          <p className="text-[10.5px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
+            {description}
+          </p>
+        </div>
+        <div className="hidden md:flex items-center gap-1">
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(-1)}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(var(--surface-rgb),0.68)" }} aria-label="Précédent">
+            <ChevronLeft size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(1)}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(var(--surface-rgb),0.68)" }} aria-label="Suivant">
+            <ChevronRight size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
+          </motion.button>
+        </div>
+      </div>
+      <div ref={scroller} className="flex gap-3 overflow-x-auto px-4 pb-4"
+        style={{ scrollbarWidth: "none", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   L'ENTONNOIR — grandes collections d'intention (réf. validée : ShapeYou).
+   Volontairement chevauchantes : une séance vit dans PLUSIEURS collections
+   (multi-appartenance par prédicat). Une collection vide reste une porte
+   ouverte : on la montre « Bientôt », on ne la cache pas — la banque se
+   remplira. Les photos sont naturelles, les titres blancs font le reste.
+   ════════════════════════════════════════════════════════════════════ */
+type CatDef = {
+  id: string;
+  name: string;
+  tag: string;                                   // la promesse, en une ligne
+  img: string;
+  pos?: string;
+  match: (s: MergedSession, hay: string) => boolean;
+};
+
+const hayOf = (s: MergedSession) =>
+  `${s.title} ${s.subtitle ?? ""} ${(s.muscles ?? []).join(" ")}`.toLowerCase();
+
+/** Les séances Vaiiya récentes déclarent leurs collections explicitement.
+    Les créations perso et l'ancien catalogue gardent le prédicat historique
+    en repli jusqu'à leur migration, sans perdre leur multi-appartenance. */
+const matchCollection = (
+  id: CatalogCollection,
+  fallback: (s: MergedSession, hay: string) => boolean,
+) => (s: MergedSession, hay: string) =>
+  s.collections ? s.collections.includes(id) : fallback(s, hay);
+
+const CATALOG: CatDef[] = [
+  { id: "tiennes", name: "Les tiennes", tag: "Tes créations — elles vivent aussi dans les autres collections.",
+    img: "cat-tiennes", match: (s) => s.perso },
+  { id: "express", name: "Séances express", tag: "Peu de temps, mais une vraie séance.",
+    img: "cat-express", match: matchCollection("express", (s) => s.duration <= 20) },
+  { id: "masse", name: "Prise de masse", tag: "Construire du muscle, brique par brique.",
+    img: "cat-masse", match: matchCollection("masse", (s, hay) => /masse|hypertroph|volume/.test(hay) || (s.category === "force" && s.duration >= 40)) },
+  { id: "perte", name: "Perte de poids", tag: "Brûler, sans se cramer.",
+    img: "cat-perte", match: matchCollection("perte", (s, hay) => /perte|brûle|brule|minceur|sèche|seche|calorie/.test(hay) || s.category === "cardio") },
+  { id: "renfo", name: "Renfo musculaire", tag: "Plus fort, partout, pour de vrai.",
+    img: "cat-renfo", match: matchCollection("renfo", (s, hay) => s.category === "force" || /renfo|force|muscu/.test(hay)) },
+  { id: "cardiohiit", name: "Cardio & HIIT", tag: "Le souffle court, le cœur solide.",
+    img: "cat-cardiohiit", match: matchCollection("cardiohiit", (s, hay) => s.category === "cardio" || /cardio|hiit|fractionn|endurance|sprint|course|vélo|velo/.test(hay)) },
+  { id: "abdos", name: "Abdos & gainage", tag: "Le centre qui tient tout le reste.",
+    img: "cat-abdos", match: matchCollection("abdos", (_s, hay) => /abdo|gainage|core|planche|oblique|sangle|ventre/.test(hay)) },
+  { id: "jambes", name: "Jambes & fessiers", tag: "La base — on ne triche pas avec les jambes.",
+    img: "cat-jambes", match: matchCollection("jambes", (_s, hay) => /jambe|fessier|squat|cuisse|mollet|ischio|glute|\bleg|bas du corps|fente/.test(hay)) },
+  { id: "haut", name: "Haut du corps", tag: "Dos, pecs, épaules, bras — l'armure.",
+    img: "cat-haut", match: matchCollection("haut", (_s, hay) => /pec|\bdos\b|épaule|epaule|bras|biceps|triceps|haut du corps|push|pull|tirage|traction|rowing|upper|poussé/.test(hay)) },
+  { id: "fullbody", name: "Full body", tag: "Tout le corps, une seule séance.",
+    img: "cat-fullbody", match: matchCollection("fullbody", (s, hay) => s.category === "fullbody" || /full|complet|corps entier|total/.test(hay)) },
+  { id: "salle", name: "À la salle", tag: "Machines, barres, charges — ton terrain.",
+    img: "cat-salle", match: matchCollection("salle", (_s, hay) => /salle|machine|barre|rack|poulie|banc/.test(hay)) },
+  { id: "sansmateriel", name: "Sans matériel", tag: "Ton corps suffit — partout, tout le temps.",
+    img: "cat-sansmateriel", match: matchCollection("sansmateriel", (_s, hay) => /sans mat|poids du corps|maison|nomade/.test(hay)) },
+  { id: "debuter", name: "Débuter & reprendre", tag: "Le premier pas compte double.",
+    img: "cat-debuter", match: matchCollection("debuter", (s, hay) => s.difficulty === "Débutant" || /débutant|debutant|starter|reprise|découverte|decouverte|doux/.test(hay)) },
+  { id: "mobilite", name: "Mobilité & posture", tag: "Bouger mieux avant de bouger plus.",
+    img: "cat-mobilite", match: matchCollection("mobilite", (s, hay) => s.category === "mobilite" || /mobilit|étirement|etirement|souplesse|posture|stretch/.test(hay)) },
+  { id: "recup", name: "Récupération", tag: "Le muscle se construit au repos.",
+    img: "cat-recup", match: matchCollection("recup", (_s, hay) => /récup|recup|détente|detente|relax|respiration|repos/.test(hay)) },
+  { id: "defis", name: "Défis", tag: "Un max, un chrono, un record à battre.",
+    img: "cat-defis", match: matchCollection("defis", (_s, hay) => /défi|defi|challenge|\bmax\b|record/.test(hay)) },
+  { id: "conseils", name: "Conseils & progresser", tag: "Des conseils francs et utiles, à lire partout.",
+    img: "cat-conseils", match: matchCollection("conseils", () => false) },
+];
+
+/** Tuile de collection — photo naturelle, titre blanc centré, compte.
+    Une collection vide dit « Bientôt » : la porte reste ouverte. */
+function CatTile({ cat, count, freeCount, premiumCount, onOpen }: {
+  cat: CatDef;
+  count: number;
+  freeCount: number;
+  premiumCount: number;
+  onOpen: () => void;
+}) {
+  const sub = count > 0
+    ? premiumCount > 0
+      ? `${freeCount} incluse${freeCount > 1 ? "s" : ""} · ${premiumCount} Premium`
+      : `${count} séance${count > 1 ? "s" : ""}`
+    : cat.id === "tiennes" ? "À toi de jouer" : "Bientôt";
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }} onClick={onOpen}
+      className="relative w-full rounded-[18px] overflow-hidden cursor-pointer border-none p-0 block"
+      style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.22)" }}
+      aria-label={`${cat.name} — ${sub}`}
+    >
+      <Photo img={cat.img} pos={cat.pos} style={{ position: "absolute", inset: 0 }} />
+      <div className="absolute inset-x-0 bottom-0 px-2.5 pb-3.5 pt-14 flex flex-col items-center text-center"
+        style={{ background: "linear-gradient(to top, rgba(6,5,10,0.88) 20%, rgba(6,5,10,0.35) 62%, transparent)" }}>
+        <p className="text-[14.5px] font-black uppercase text-white leading-[1.08] tracking-tight"
+          style={{ textWrap: "balance", textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
+          {cat.name}
+        </p>
+        <p className="text-[8.5px] font-bold mt-1" style={{ color: "rgba(255,255,255,0.68)" }}>{sub}</p>
+      </div>
+    </motion.button>
+  );
+}
+
+function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, catInitial, onClose, onStart, onUpgrade, onCreate, onEdit, onDelete, onVisibilityChange, onInspirer, onPlanifier }: {
+  sessions: MergedSession[];
+  week: PlanningDay[] | null;
+  loading: boolean;
+  canAccessPremium: boolean;
+  maxSeances: number;
+  catInitial: string | null;
+  onClose: () => void;
+  onStart: (s: MergedSession) => void;
+  onUpgrade: () => void;
+  onCreate: () => void;
+  onEdit: (s: WorkoutSession) => void;
+  onDelete: (id: string) => void;
+  onVisibilityChange: (id: string, vis: Visibility) => void;
+  onInspirer: (s: MergedSession) => void;
+  onPlanifier: (s: MergedSession, date: string) => void;
+}) {
+  /* Le catalogue peut s'ouvrir directement sur une collection (« libérer
+     une place » mène droit aux tiennes). Lu au montage seulement : la clé
+     de l'appelant remonte la feuille quand la cible change. */
+  const [catId, setCatId] = useState<string | null>(catInitial ?? null);
+  const [manage, setManage] = useState<MergedSession | null>(null);
+  const [premiumPreview, setPremiumPreview] = useState<MergedSession | null>(null);
+  const [adviceTheme, setAdviceTheme] = useState<AdviceTheme | "Tous">("Tous");
+
+  const cat = catId ? CATALOG.find((c) => c.id === catId) ?? null : null;
+
+  /* Multi-appartenance : chaque collection filtre la banque par prédicat. */
+  const matchedAll = cat ? sessions.filter((s) => cat.match(s, hayOf(s))) : [];
+  const matched = cat?.id === "conseils" && adviceTheme !== "Tous"
+    ? matchedAll.filter((session) => getAdviceArticle(session.id)?.theme === adviceTheme)
+    : matchedAll;
+  const vaiiya = matched.filter((s) => !s.perso);
+  const vaiiyaFree = vaiiya.filter((s) => s.access !== "premium");
+  const vaiiyaPremium = vaiiya.filter((s) => s.access === "premium");
+  const perso = matched.filter((s) => s.perso);
+  const totalPremiumCount = matchedAll.filter((s) => !s.perso && s.access === "premium").length;
+
+  /* Épinglées en haut du catalogue : ta bibliothèque n'est pas une
+     catégorie éditoriale de plus, elle ne se range pas entre « Cardio »
+     et « Mobilité » (décision de Louis, 2026-07-29). */
+  const mesSeances = sessions.filter((s) => s.perso);
+
+  /* Photo par séance, dé-doublonnée PAR RANGÉE (Vaiiya et « les tiennes »
+     indépendamment) : deux cartes d'une même rangée ne tombent plus sur la
+     même image. Fusionné en une map id → image (les id sont uniques). */
+  const artById = new Map<string, string>();
+  dedupeRowArt(vaiiyaFree).forEach((img, id) => artById.set(id, img));
+  dedupeRowArt(vaiiyaPremium).forEach((img, id) => artById.set(id, img));
+  dedupeRowArt(perso).forEach((img, id) => artById.set(id, img));
+
+  const rowTile = (s: MergedSession, index = 0, premium = false) => (
+    <div key={s.id} className="flex-shrink-0"
+      style={{ width: premium && index === 0 ? 174 : ROW_CARD_W, scrollSnapAlign: "start" }}>
+      <SessionTile
+        session={s}
+        onStart={onStart}
+        onManage={setManage}
+        onPremium={setPremiumPreview}
+        canAccessPremium={canAccessPremium}
+        imgOverride={artById.get(s.id)}
+      />
+    </div>
+  );
+
+  const createCard = (
+    <motion.button
+      whileTap={{ scale: 0.96 }} onClick={onCreate}
+      className="w-full rounded-[18px] flex flex-col items-center justify-center gap-2 cursor-pointer px-3"
+      style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.25)", border: "2px dashed rgba(var(--accent-rgb),0.32)" }}
+    >
+      <span className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+        <Plus size={17} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+      </span>
+      <span className="text-[11.5px] font-bold text-center" style={{ color: "var(--text-2)" }}>Composer ma séance</span>
+      <span className="text-[9px] font-medium text-center leading-snug" style={{ color: "var(--text-3)" }}>
+        102 exercices animés
+      </span>
+    </motion.button>
+  );
 
   return (
     <>
-      <motion.div
-        className={`${cardClass} lg-highlight relative flex-1 rounded-3xl p-5 flex flex-col items-center gap-3 overflow-hidden`}
-        style={{ minHeight: 160 }}
-        whileHover={{ y: -2 }}
-      >
-        <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={triggerUpload} />
-        <AnimatePresence mode="wait">
-          {uploadState === "idle" && (
-            <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 w-full">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "rgba(var(--surface-rgb),0.7)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}>
-                <Icon size={20} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{label}</p>
-                <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>{sublabel}</p>
-              </div>
-              {/* Two action buttons */}
-              <div className="flex gap-2 w-full mt-1">
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => inputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
-                  style={{ background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}
-                >
-                  <Upload size={10} /><span>Importer</span>
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => setShowCamera(true)}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl text-[10px] font-semibold tracking-wider uppercase cursor-pointer"
-                  style={{ background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.28)" }}
-                >
-                  <Icon size={10} /><span>Capturer</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-          {uploadState === "uploading" && (
-            <motion.div key="uploading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 justify-center h-full">
-              <motion.div className="w-10 h-10 rounded-full border-[2px]" style={{ borderColor: "rgba(var(--text-1-rgb),0.15)", borderTopColor: "var(--text-1)" }} animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-              <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Analyse IA en cours…</p>
-            </motion.div>
-          )}
-          {uploadState === "done" && (
-            <motion.div key="done" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2 justify-center h-full">
-              <CheckCircle size={28} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
-              <p className="text-xs font-medium" style={{ color: "var(--text-1)" }}>Analyse terminée !</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* Camera modal — rendered in portal-like position */}
-      <AnimatePresence>
-        {showCamera && (
-          <CameraCapture
-            mode={captureMode}
-            label={captureLabel}
-            onCapture={handleCapture}
-            onClose={() => setShowCamera(false)}
-          />
+    <Sheet onClose={onClose} height="94dvh" maxHeight="94dvh">
+      {/* Header — niveau 1 : l'invitation. Niveau 2 : retour + nom + promesse. */}
+      <div className="px-5 pt-2 pb-3 flex-shrink-0 flex items-center gap-3">
+        {cat ? (
+          <>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setCatId(null); setAdviceTheme("Tous"); }}
+              className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+              style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Retour aux collections">
+              <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--text-2)" }} />
+            </motion.button>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-[17px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{cat.name}</h2>
+              <p className="text-[10.5px] font-light mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{cat.tag}</p>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1">
+            <h2 className="text-[23px] font-light leading-tight" style={{ color: "var(--text-1)" }}>
+              Entraînements
+            </h2>
+            <p className="text-[11.5px] font-light mt-1" style={{ color: "var(--text-3)" }}>
+              Un but, une envie. <span className="font-semibold" style={{ color: "var(--text-2)" }}>{sessions.length} contenus t&apos;attendent</span>
+            </p>
+          </div>
         )}
-      </AnimatePresence>
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+          style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+          <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+        </motion.button>
+      </div>
+
+      {/* Le corps — remonté par clé : l'entrée glisse dans le sens du voyage */}
+      <motion.div
+        key={cat ? cat.id : "collections"}
+        initial={{ opacity: 0, x: cat ? 26 : -26 }} animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        className="overflow-y-auto px-5 flex-1"
+        style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+      >
+        {cat?.id === "conseils" && (
+          <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-4"
+            style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+            {(["Tous", ...ADVICE_THEMES] as const).map((theme) => {
+              const active = adviceTheme === theme;
+              return (
+                <motion.button
+                  key={theme}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setAdviceTheme(theme)}
+                  className="h-8 px-3 rounded-full flex-shrink-0 text-[10px] font-extrabold whitespace-nowrap"
+                  style={active
+                    ? { color: "white", background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 5px 14px rgba(139,92,246,0.22)" }
+                    : { color: "var(--text-2)", background: "rgba(var(--tint-violet-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}
+                  aria-pressed={active}
+                >
+                  {theme}
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
+        {!cat ? (
+          /* ── Niveau 1 : la grille des collections ── */
+          loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-[18px] animate-pulse"
+                  style={{ aspectRatio: "3 / 4", background: "rgba(var(--tint-violet-rgb),0.5)" }} />
+              ))}
+            </div>
+          ) : (
+            <>
+            {/* ── Deux univers : le tien d'abord, les collections ensuite ── */}
+            <MonEspaceBloc
+              count={mesSeances.length}
+              max={maxSeances}
+              onComposer={onCreate}
+              onVoir={() => setCatId("tiennes")}
+            />
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {CATALOG.filter((c) => c.id !== "tiennes").map((c) => {
+                const catSessions = sessions.filter((s) => c.match(s, hayOf(s)));
+                const official = catSessions.filter((s) => !s.perso);
+                const premiumCount = official.filter((s) => s.access === "premium").length;
+                const freeCount = official.length - premiumCount;
+                const count = premiumCount > 0 ? official.length : catSessions.length;
+                return (
+                  <CatTile
+                    key={c.id}
+                    cat={c}
+                    count={count}
+                    freeCount={freeCount}
+                    premiumCount={premiumCount}
+                    onOpen={() => { setCatId(c.id); setAdviceTheme("Tous"); }}
+                  />
+                );
+              })}
+            </div>
+            </>
+          )
+        ) : cat.id === "tiennes" ? (
+          /* ── Niveau 2, « Les tiennes » : ta bibliothèque + créer ── */
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {perso.map((s) => (
+              <SessionTile
+                key={s.id}
+                session={s}
+                onStart={onStart}
+                onManage={setManage}
+                onPremium={setPremiumPreview}
+                canAccessPremium={canAccessPremium}
+                imgOverride={artById.get(s.id)}
+              />
+            ))}
+            {createCard}
+          </div>
+        ) : matched.length === 0 ? (
+          /* ── Niveau 2, collection vide : la porte reste ouverte ── */
+          <div className="flex flex-col items-center text-center pt-12 px-6">
+            <span className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+              style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+              <Sparkles size={18} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+            </span>
+            <p className="text-[14.5px] font-semibold" style={{ color: "var(--text-1)" }}>Cette collection arrive</p>
+            <p className="text-[11.5px] font-light mt-1.5 leading-relaxed max-w-[260px]" style={{ color: "var(--text-3)" }}>
+              On la remplit séance après séance. En attendant, crée la tienne — si elle colle, elle apparaîtra ici.
+            </p>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={onCreate}
+              className="mt-5 px-5 h-10 rounded-full text-[12px] font-bold text-white cursor-pointer border-none"
+              style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.35)" }}>
+              Créer la mienne
+            </motion.button>
+          </div>
+        ) : (
+          /* ── Niveau 2 : le seuil Gratuit → Premium est volontairement
+             visible. On montre la base incluse, puis l'univers payant. ── */
+          <>
+            {vaiiyaFree.length > 0 && (
+              <SessionRow label={cat.id === "conseils" ? "À lire gratuitement" : "Pour commencer"} count={vaiiyaFree.length}>
+                {vaiiyaFree.map((session, index) => rowTile(session, index))}
+              </SessionRow>
+            )}
+            {vaiiyaPremium.length > 0 && (
+              <PremiumSessionRow
+                count={vaiiyaPremium.length}
+                title={cat.id === "conseils" ? "Approfondis avec Premium" : undefined}
+                description={cat.id === "conseils"
+                  ? "Des sujets plus pointus pour comprendre tes plateaux, ta récupération et ta programmation."
+                  : undefined}
+              >
+                {vaiiyaPremium.map((session, index) => rowTile(session, index, true))}
+              </PremiumSessionRow>
+            )}
+            {perso.length > 0 && (
+              <SessionRow label="Les tiennes" count={perso.length}>
+                {perso.map((session, index) => rowTile(session, index))}
+              </SessionRow>
+            )}
+          </>
+        )}
+      </motion.div>
+    </Sheet>
+
+    {/* Menu d'une carte : réglages si elle est à toi, « m'en inspirer » sinon */}
+    <AnimatePresence>
+      {manage && (
+        <ManageSheet
+          session={manage}
+          week={week}
+          onClose={() => setManage(null)}
+          onEdit={(s) => { setManage(null); onEdit(s); }}
+          onDelete={(id) => { setManage(null); onDelete(id); }}
+          onVisibilityChange={onVisibilityChange}
+          onInspirer={(s) => { setManage(null); onInspirer(s); }}
+          onPlanifier={(s, date) => { setManage(null); onPlanifier(s, date); }}
+        />
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {premiumPreview && (
+        <PremiumPreviewSheet
+          session={premiumPreview}
+          premiumCount={totalPremiumCount}
+          onClose={() => setPremiumPreview(null)}
+          onUpgrade={() => { setPremiumPreview(null); onUpgrade(); }}
+        />
+      )}
+    </AnimatePresence>
     </>
   );
 }
 
-/* ─── WorkoutCard ───────────────────────────────────────── */
-function WorkoutCard({
-  session, gender, isActive, isDone, onStart,
-}: {
-  session: WorkoutSession;
-  gender: "homme" | "femme";
-  isActive: boolean;
-  isDone?: boolean;
-  onStart?: (s: WorkoutSession) => void;
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « J'improvise » — 2 réponses (temps + lieu), l'IA crée.
+   ════════════════════════════════════════════════════════════════════ */
+const IMPRO_TIMES = [15, 30, 45, 60] as const;
+type ImproPlace = "salle" | "maison" | "dehors";
+
+function ImproviseSheet({ defaultPlace, defaultHalteres, difficulty, onClose, onLaunch }: {
+  defaultPlace: ImproPlace;
+  defaultHalteres: boolean;
+  difficulty: string;
+  onClose: () => void;
+  onLaunch: (t: { id: string; title: string; duration: number; difficulty: string; category: string; exerciseList: Exercise[] }) => void;
 }) {
-  const Icon = session.icon;
+  const [time, setTime] = useState<number>(30);
+  const [place, setPlace] = useState<ImproPlace>(defaultPlace);
+  const [halteres, setHalteres] = useState(defaultHalteres);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generate = async () => {
+    setLoading(true);
+    setError(null);
+    // Même vocabulaire de lieu que le reste de l'app → la route applique
+    // ses contraintes strictes de matériel.
+    const lieuTxt =
+      place === "salle" ? "en salle de sport"
+      : place === "dehors" ? "en extérieur (parc), sans matériel, au poids du corps"
+      : halteres ? "à la maison avec haltères"
+      : "à la maison au poids du corps, sans matériel";
+    try {
+      const res = await aiFetch("/api/workout/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: `Séance improvisée de ${time} min ${lieuTxt}. Équilibrée et efficace, pour une envie spontanée de bouger.`,
+          category: "fullbody",
+          difficulty,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? "Erreur serveur");
+      const exerciseList = normalizeExercises(data.exercises);
+      if (exerciseList.length === 0) throw new Error("Séance vide");
+      onLaunch({
+        id: `improv-${Date.now()}`,
+        title: typeof data.title === "string" && data.title.trim() ? data.title.trim() : "Séance improvisée",
+        duration: time,
+        difficulty,
+        category: "Full Body",
+        exerciseList,
+      });
+    } catch {
+      setError("L'IA n'a pas répondu — réessaie.");
+      setLoading(false);
+    }
+  };
+
+  const placeMeta: { key: ImproPlace; label: string; icon: typeof Dumbbell }[] = [
+    { key: "salle",  label: "Salle",  icon: Dumbbell },
+    { key: "maison", label: "Maison", icon: Home },
+    { key: "dehors", label: "Dehors", icon: Sun },
+  ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: isDone ? 0.48 : 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      whileHover={{ y: isDone ? 0 : -3, transition: { duration: 0.2 } }}
-      layout
-      className="flex-shrink-0 rounded-3xl overflow-hidden flex flex-col relative"
-      style={{
-        width: isDone ? 190 : 230,
-        background: isDone
-          ? "rgba(var(--surface-rgb),0.45)"
-          : "rgba(var(--surface-rgb),0.75)",
-        backdropFilter: "blur(10px)",
-        border: isDone
-          ? "1px solid rgba(var(--surface-rgb),0.55)"
-          : "1px solid rgba(var(--surface-rgb),0.88)",
-        boxShadow: isDone
-          ? "0 4px 16px rgba(0,0,0,0.04)"
-          : "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 8px 32px rgba(0,0,0,0.06)",
-        filter: isDone ? "grayscale(0.35)" : "none",
-        transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
-      }}
-    >
-      {/* Done ribbon */}
-      {isDone && (
-        <div
-          className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full"
-          style={{ background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.35)" }}
-        >
-          <CheckCircle size={9} strokeWidth={2.5} style={{ color: "#34D399" }} />
-          <span className="text-[9px] font-bold tracking-wider uppercase" style={{ color: "#34D399" }}>Faite</span>
+    <Sheet onClose={onClose} maxHeight="80vh">
+      <div className="px-5 pt-2 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[19px] font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
+            <span style={{ color: "var(--accent)" }}>✦</span> J&apos;improvise
+          </h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
         </div>
-      )}
-      {/* Header */}
-      <div className="px-4 pt-4 pb-2" style={{ background: `${session.accent}14` }}>
-        <div className="flex items-center gap-2 mb-1.5">
-          <div
-            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `${session.accent}28`, border: `1px solid ${session.accent}45` }}
-          >
-            <Icon size={13} strokeWidth={1.5} style={{ color: session.accent }} />
-          </div>
-          <span
-            className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-            style={{ background: `${difficultyColor[session.difficulty]}18`, color: difficultyColor[session.difficulty] }}
-          >
-            {session.difficulty}
-          </span>
-        </div>
-        <p className="text-sm font-semibold leading-tight" style={{ color: "var(--text-1)" }}>{session.title}</p>
-        <p className="text-[11px] font-light mt-0.5" style={{ color: "var(--text-2)" }}>{session.subtitle}</p>
+        <p className="text-[11.5px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
+          Dis-moi ta réalité, je m&apos;occupe du reste.
+        </p>
       </div>
 
-      {/* Body avatar — full width, centered */}
-      <div
-        className="flex items-center justify-center py-3"
-        style={{ background: `${session.accent}08`, borderTop: `1px solid ${session.accent}18`, borderBottom: `1px solid ${session.accent}18` }}
-      >
-        <BodyAvatar
-          gender={gender}
-          muscles={session.muscles}
-          accent={session.accent}
-          width={160}
-        />
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 py-3 flex flex-col gap-2.5">
-        {/* Stats */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <Clock size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-            <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
-          </div>
-          <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
-          <div className="flex items-center gap-1">
-            <Dumbbell size={11} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-            <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
-          </div>
+      <div className="px-5 overflow-y-auto" style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}>
+        {/* Temps */}
+        <p className="text-[9.5px] font-extrabold tracking-[0.2em] uppercase mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+          Tu as combien de temps ?
+        </p>
+        <div className="flex gap-2">
+          {IMPRO_TIMES.map((t) => (
+            <motion.button key={t} whileTap={{ scale: 0.94 }} onClick={() => setTime(t)}
+              className="flex-1 py-2.5 rounded-[13px] cursor-pointer text-center"
+              style={time === t
+                ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 16px rgba(139,92,246,0.35)", border: "1px solid transparent" }
+                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+              <span className="text-[13px] font-extrabold block leading-none" style={{ color: time === t ? "#fff" : "var(--text-3)" }}>
+                {t === 60 ? "60+" : t}
+              </span>
+              <span className="text-[8.5px] font-semibold" style={{ color: time === t ? "rgba(255,255,255,0.75)" : "var(--text-3)", opacity: 0.85 }}>min</span>
+            </motion.button>
+          ))}
         </div>
+
+        {/* Lieu */}
+        <p className="text-[9.5px] font-extrabold tracking-[0.2em] uppercase mt-4 mb-2" style={{ color: "var(--text-3)" }}>
+          Tu es où ?
+        </p>
+        <div className="flex gap-2">
+          {placeMeta.map(({ key, label, icon: PIcon }) => (
+            <motion.button key={key} whileTap={{ scale: 0.94 }} onClick={() => setPlace(key)}
+              className="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-[15px] cursor-pointer"
+              style={place === key
+                ? { background: "rgba(var(--accent-rgb),0.13)", border: "1.5px solid var(--accent)", boxShadow: "0 0 0 3px rgba(var(--accent-rgb),0.14)" }
+                : { background: "rgba(var(--tint-violet-rgb),0.45)", border: "1.5px solid rgba(var(--accent-rgb),0.14)" }}>
+              <PIcon size={17} strokeWidth={1.8} style={{ color: place === key ? "var(--accent)" : "var(--text-3)" }} />
+              <span className="text-[11px] font-bold" style={{ color: place === key ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Matériel — seulement pertinent à la maison */}
+        <AnimatePresence initial={false}>
+          {place === "maison" && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22 }} style={{ overflow: "hidden" }}>
+              <button onClick={() => setHalteres((v) => !v)}
+                className="inline-flex items-center gap-2 mt-3 px-3 py-2 rounded-full cursor-pointer"
+                style={halteres
+                  ? { background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.4)" }
+                  : { background: "rgba(43,212,160,0.1)", border: "1px solid rgba(43,212,160,0.4)" }}>
+                <span className="text-[11px] font-bold" style={{ color: halteres ? "#8B5CF6" : "#12A87E" }}>
+                  {halteres ? "J'ai des haltères" : "Sans matériel — poids du corps"}
+                </span>
+                <span className="relative block w-[26px] h-[15px] rounded-full" style={{ background: halteres ? "#8B5CF6" : "#2BD4A0" }}>
+                  <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full bg-white transition-all duration-150"
+                    style={{ left: halteres ? 13 : 2 }} />
+                </span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {error && (
+          <p className="text-[11px] font-medium mt-3" style={{ color: "#FC8181" }}>{error}</p>
+        )}
 
         {/* CTA */}
         <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => onStart?.(session)}
-          className="w-full py-2 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-          style={
-            isActive
-              ? { background: `${session.accent}22`, border: `1px solid ${session.accent}40` }
-              : isDone
-              ? { background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(0,0,0,0.07)" }
-              : { background: `linear-gradient(135deg, ${session.accent}dd, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
-          }
+          whileTap={{ scale: loading ? 1 : 0.97 }}
+          onClick={generate}
+          disabled={loading}
+          className="w-full mt-4 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer text-[14.5px] font-extrabold text-white"
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 26px rgba(139,92,246,0.4)", opacity: loading ? 0.85 : 1 }}
         >
-          <AnimatePresence mode="wait">
-            {isActive ? (
-              <motion.span key="on" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <CheckCircle size={12} strokeWidth={2} style={{ color: session.accent }} />
-                <span className="text-[11px] font-semibold" style={{ color: session.accent }}>En cours !</span>
-              </motion.span>
-            ) : isDone ? (
-              <motion.span key="redo" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <RefreshCw size={10} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Refaire</span>
-              </motion.span>
-            ) : (
-              <motion.span key="off" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5">
-                <Play size={11} strokeWidth={2.5} style={{ color: "#fff" }} />
-                <span className="text-[11px] font-semibold" style={{ color: "#fff" }}>Commencer</span>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── LibraryCard ───────────────────────────────────────── */
-const VIS_CONFIG = {
-  private: { label: "Privée",  desc: "Visible par toi uniquement",    icon: Lock,  color: "var(--text-3)", bg: "rgba(var(--text-3-rgb),0.08)", border: "rgba(var(--text-3-rgb),0.2)" },
-  friends: { label: "Amis",    desc: "Visible par tes abonnés",       icon: Users, color: "#60A5FA", bg: "rgba(96,165,250,0.10)",  border: "rgba(96,165,250,0.25)" },
-  public:  { label: "Public",  desc: "Trouvable par tout le monde",   icon: Globe, color: "#34D399", bg: "rgba(52,211,153,0.10)",  border: "rgba(52,211,153,0.25)" },
-} as const;
-
-function LibraryCard({
-  session, isActive, onStart, onEdit, onDelete, onVisibilityChange,
-}: {
-  session: WorkoutSession;
-  isActive: boolean;
-  onStart: (s: WorkoutSession) => void;
-  onEdit: (s: WorkoutSession) => void;
-  onDelete: (id: string) => void;
-  onVisibilityChange: (id: string, vis: "private" | "friends" | "public") => void;
-}) {
-  const [visOpen, setVisOpen] = useState(false);
-  const Icon = resolveIcon(session.icon);
-  const visKey = (session.visibility ?? "private") as keyof typeof VIS_CONFIG;
-  const vis = VIS_CONFIG[visKey];
-  const VisIcon = vis.icon;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      layout
-      className="rounded-3xl overflow-hidden flex flex-col"
-      style={{
-        background: "rgba(var(--surface-rgb),0.82)",
-        border: "1px solid rgba(var(--surface-rgb),0.92)",
-        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.95), 0 4px 24px rgba(0,0,0,0.05)",
-      }}
-    >
-      {/* Colored header */}
-      <div className="px-4 pt-4 pb-3" style={{ background: `${session.accent}10`, borderBottom: `1px solid ${session.accent}18` }}>
-        <div className="flex items-start justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${session.accent}24`, border: `1px solid ${session.accent}44` }}
-            >
-              <Icon size={14} strokeWidth={1.5} style={{ color: session.accent }} />
-            </div>
-            <span
-              className="text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full"
-              style={{ background: `${difficultyColor[session.difficulty]}18`, color: difficultyColor[session.difficulty] }}
-            >
-              {session.difficulty}
-            </span>
-          </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <motion.button
-              whileTap={{ scale: 0.88 }}
-              onClick={() => onEdit(session)}
-              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(var(--accent-rgb),0.12)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}
-              aria-label="Modifier"
-            >
-              <Pencil size={11} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.88 }}
-              onClick={() => onDelete(session.id)}
-              className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-              style={{ background: "rgba(252,129,129,0.1)", border: "1px solid rgba(252,129,129,0.2)" }}
-              aria-label="Supprimer"
-            >
-              <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-            </motion.button>
-          </div>
-        </div>
-        <h3 className="text-sm font-semibold leading-tight mb-2" style={{ color: "var(--text-1)" }}>{session.title}</h3>
-        {/* Muscle tags */}
-        <div className="flex flex-wrap gap-1">
-          {session.muscles.slice(0, 3).map(m => (
-            <span
-              key={m}
-              className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: `${session.accent}16`, color: session.accent }}
-            >
-              {m}
-            </span>
-          ))}
-          {session.muscles.length > 3 && (
-            <span
-              className="text-[9px] px-2 py-0.5 rounded-full font-medium"
-              style={{ background: "rgba(var(--text-3-rgb),0.12)", color: "var(--text-3)" }}
-            >
-              +{session.muscles.length - 3}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div className="flex items-center gap-3 px-4 py-2.5 flex-1" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.5)" }}>
-        <div className="flex items-center gap-1.5">
-          <Clock size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-          <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.duration} min</span>
-        </div>
-        <div className="w-px h-3" style={{ background: "rgba(0,0,0,0.08)" }} />
-        <div className="flex items-center gap-1.5">
-          <Dumbbell size={10} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
-          <span className="text-[11px] font-medium" style={{ color: "var(--text-body)" }}>{session.exercises} exos</span>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="px-4 pt-3 pb-2">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={() => onStart(session)}
-          className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
-          style={
-            isActive
-              ? { background: `${session.accent}22`, border: `1px solid ${session.accent}44` }
-              : { background: `linear-gradient(135deg, ${session.accent}ee, ${session.accent}aa)`, boxShadow: `0 4px 14px ${session.accent}44` }
-          }
-        >
-          {isActive ? (
+          {loading ? (
             <>
-              <CheckCircle size={13} strokeWidth={2} style={{ color: session.accent }} />
-              <span className="text-xs font-semibold" style={{ color: session.accent }}>En cours !</span>
+              <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} className="flex">
+                <Sparkles size={15} strokeWidth={2} />
+              </motion.span>
+              L&apos;IA compose ta séance…
             </>
           ) : (
-            <>
-              <Play size={12} strokeWidth={2.5} style={{ color: "#fff" }} />
-              <span className="text-xs font-semibold" style={{ color: "#fff" }}>Commencer</span>
-            </>
+            <>✦ Prépare ma séance</>
           )}
         </motion.button>
       </div>
-
-      {/* Visibility picker */}
-      <div className="px-4 pb-3 relative">
-        <motion.button
-          whileTap={{ scale: 0.94 }}
-          onClick={() => setVisOpen(v => !v)}
-          className="flex items-center gap-1.5 w-full px-3 py-1.5 rounded-xl text-[10px] font-semibold cursor-pointer"
-          style={{ background: vis.bg, color: vis.color, border: `1px solid ${vis.border}` }}
-        >
-          <VisIcon size={10} strokeWidth={2} />
-          <span>{vis.label}</span>
-          <motion.span
-            className="ml-auto opacity-50 text-[9px]"
-            animate={{ rotate: visOpen ? 180 : 0 }}
-            transition={{ duration: 0.15 }}
-          >▾</motion.span>
-        </motion.button>
-
-        <AnimatePresence>
-          {visOpen && (
-            <>
-              {/* Backdrop */}
-              <div className="fixed inset-0 z-40" onClick={() => setVisOpen(false)} />
-              <motion.div
-                initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full mb-1 left-0 right-0 rounded-2xl overflow-hidden z-50"
-                style={{
-                  background: "rgba(var(--surface-rgb),0.97)",
-                  backdropFilter: "blur(10px)",
-                  border: "1px solid rgba(var(--tint-violet-rgb),0.9)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-                }}
-                onClick={e => e.stopPropagation()}
-              >
-                {(["private", "friends", "public"] as const).map(key => {
-                  const cfg = VIS_CONFIG[key];
-                  const CfgIcon = cfg.icon;
-                  const isCurrent = visKey === key;
-                  return (
-                    <motion.button
-                      key={key}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => { onVisibilityChange(session.id, key); setVisOpen(false); }}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-left cursor-pointer"
-                      style={isCurrent ? { background: `${cfg.color}12` } : { background: "transparent" }}
-                    >
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${cfg.color}18` }}
-                      >
-                        <CfgIcon size={12} strokeWidth={2} style={{ color: cfg.color }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold" style={{ color: isCurrent ? cfg.color : "var(--text-1)" }}>{cfg.label}</p>
-                        <p className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{cfg.desc}</p>
-                      </div>
-                      {isCurrent && <Check size={11} strokeWidth={2.5} style={{ color: cfg.color }} />}
-                    </motion.button>
-                  );
-                })}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+    </Sheet>
   );
 }
 
-/* ─── Animation variants ────────────────────────────────── */
-const containerVariants: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « Ma semaine » — l'agenda vivant (phase 2). La semaine entière,
+   jour par jour, en photos : verdict d'équilibre + charge prévue en tête,
+   navigation entre semaines, actions par jour déléguées à l'IA (décaler /
+   remplacer / repos) — cohérent avec le héros. Le drag direct viendra en
+   phase 3.
+   ════════════════════════════════════════════════════════════════════ */
+const DAY_ABBR = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
+const MAX_WEEK_AHEAD = 6;
+/** Regroupe les 6 familles en 4 grands rôles lisibles pour le verdict. */
+const BALANCE_BUCKET: Record<Family, string> = {
+  push: "haut", pull: "haut", legs: "jambes", core: "gainage", cardio: "cardio", full: "full body",
 };
-const itemVariants: Variants = {
-  hidden: { opacity: 0, x: -16 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.45, ease: "easeOut" } },
-};
+const fmtDay = (ymd: string) =>
+  new Date(ymd + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
-/* ─── Helpers ──────────────────────────────────────────── */
-function dbSessionToEvent(s: DbWorkoutSession): TimelineEvent {
-  const d = new Date(s.started_at);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const isYesterday = new Date(now.getTime() - 86400000).toDateString() === d.toDateString();
-  const date = isToday ? "Aujourd'hui" : isYesterday ? "Hier" : d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-  const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-  return {
-    id: s.id,
-    date, time, type: "workout", title: s.title,
-    desc: `${s.duration_minutes} min${s.calories_burned ? ` · ${s.calories_burned} kcal` : ""}`,
-    cardClass: "lg-turquoise", dot: "var(--gold)",
-    performance: {
-      type: "workout", title: s.title, date: `${date} · ${time}`,
-      metrics: [
-        { label: "Durée", value: String(s.duration_minutes), unit: "min" },
-        ...(s.calories_burned ? [{ label: "Calories", value: String(s.calories_burned), unit: "kcal" }] : []),
-      ],
-    },
+function SemaineSheet({ week, todayIdx, fetchWeekAt, onClose, onStartDay, onAsk, onAddSession, onMove }: {
+  week: PlanningDay[] | null;
+  todayIdx: number;
+  fetchWeekAt: (offset: number) => Promise<PlanningDay[] | null>;
+  onClose: () => void;
+  onStartDay: (day: PlanningDay) => void;
+  onAsk: (prompt: string) => void;
+  onAddSession: () => void;
+  onMove: (a: PlanningDay, b: PlanningDay, msg: string) => Promise<void>;
+}) {
+  const [offset, setOffset] = useState(0);
+  const [days, setDays] = useState<PlanningDay[] | null>(week);
+  const [loading, setLoading] = useState(false);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  /* ── Drag & drop : déplacer une séance d'un jour à l'autre ── */
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const canDrop = (from: number, to: number) => {
+    const t = days?.[to];
+    return to !== from && !!t && t.status !== "done" && t.date >= todayYmd();
   };
+  const hoverFromY = (y: number): number | null => {
+    for (let i = 0; i < 7; i++) {
+      const r = rowRefs.current[i]?.getBoundingClientRect();
+      if (r && y >= r.top && y <= r.bottom) return i;
+    }
+    return null;
+  };
+  const handleDragStart = (i: number) => { setOpenIdx(null); setDragIdx(i); };
+  const handleDragMove = (i: number, y: number) => {
+    const h = hoverFromY(y);
+    setHoverIdx(h !== null && canDrop(i, h) ? h : null);
+  };
+  const handleDragEnd = (i: number) => {
+    const to = hoverIdx;
+    setDragIdx(null); setHoverIdx(null);
+    if (to === null || !canDrop(i, to) || !days) return;
+    const a = days[i], b = days[to];
+    // Échange des contenus (les dates restent aux jours) ; tout redevient « prévu ».
+    const swap = (x: PlanningDay, y2: PlanningDay): PlanningDay => ({
+      ...x, type: y2.type, title: y2.title, difficulty: y2.difficulty,
+      location: y2.location, exerciseList: y2.exerciseList, sessionId: y2.sessionId,
+      status: "planned",
+    });
+    const newA = swap(a, b), newB = swap(b, a);
+    setDays(days.map((d, k) => (k === i ? newA : k === to ? newB : d)));
+    const msg = hasSeance(newA) ? "Séances échangées ✓" : `${dayTitle(newB)} → ${DAY_FULL[to]} ✓`;
+    void onMove(newA, newB, msg);
+  };
+
+  /* offset 0 = la semaine du héros (déjà chargée) ; sinon on va la chercher. */
+  useEffect(() => {
+    let alive = true;
+    if (offset === 0) { setDays(week); return; }
+    setLoading(true);
+    fetchWeekAt(offset).then((d) => { if (alive) { setDays(d); setLoading(false); } });
+    return () => { alive = false; };
+  }, [offset, week, fetchWeekAt]);
+
+  const go = (delta: number) => {
+    const next = Math.max(0, Math.min(MAX_WEEK_AHEAD, offset + delta));
+    if (next === offset) return;
+    setOpenIdx(null);
+    setOffset(next);
+  };
+
+  const wd = weekDatesForOffset(offset);
+  const rangeLabel = `${fmtDay(wd[0])} – ${fmtDay(wd[6])}`;
+  const weekTag = offset === 0 ? "Cette semaine" : offset === 1 ? "Semaine prochaine" : `Dans ${offset} sem.`;
+
+  /* ── Verdict d'équilibre + charge (lus depuis les familles en coulisse) ── */
+  const seances = (days ?? []).filter(hasSeance);
+  const totalMin = seances.reduce((s, d) => s + (d.type === "HIIT" ? 30 : 45), 0);
+  const buckets = new Map<string, number>();
+  for (const d of seances) {
+    const b = BALANCE_BUCKET[resolveArt({ title: `${d.title} ${d.type}` }).fam];
+    buckets.set(b, (buckets.get(b) ?? 0) + 1);
+  }
+  const verdict = seances.length === 0 ? null : buckets.size >= 3 ? "Équilibrée ✦" : "Ciblée";
+
+  return (
+    <Sheet onClose={onClose} height="90vh">
+      {/* En-tête + navigation semaine */}
+      <div className="px-5 pt-1 pb-3 flex items-center justify-between flex-shrink-0">
+        <div>
+          <p className="text-[17px] font-bold" style={{ color: "var(--text-1)" }}>Ma semaine</p>
+          <p className="text-[11px] font-medium mt-0.5" style={{ color: "var(--text-3)" }}>{rangeLabel}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => go(-1)} disabled={offset <= 0} aria-label="Semaine précédente"
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(var(--accent-rgb),0.1)", opacity: offset <= 0 ? 0.3 : 1, cursor: offset <= 0 ? "default" : "pointer" }}>
+            <ChevronLeft size={15} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
+          </button>
+          <span className="text-[10.5px] font-bold w-[92px] text-center" style={{ color: "var(--text-2)" }}>{weekTag}</span>
+          <button onClick={() => go(1)} disabled={offset >= MAX_WEEK_AHEAD} aria-label="Semaine suivante"
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "rgba(var(--accent-rgb),0.1)", opacity: offset >= MAX_WEEK_AHEAD ? 0.3 : 1, cursor: offset >= MAX_WEEK_AHEAD ? "default" : "pointer" }}>
+            <ChevronRight size={15} strokeWidth={2.4} style={{ color: "var(--accent)" }} />
+          </button>
+        </div>
+      </div>
+
+      {/* Verdict d'équilibre + charge */}
+      {verdict && (
+        <div className="px-5 pb-3 flex items-center gap-1.5 flex-wrap flex-shrink-0">
+          <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full"
+            style={{ background: "rgba(43,212,160,0.12)", color: "#2BD4A0" }}>{verdict}</span>
+          {[...buckets.entries()].sort((a, b) => b[1] - a[1]).map(([b, n]) => (
+            <span key={b} className="text-[10px] font-bold px-2 py-1 rounded-full"
+              style={{ background: "rgba(255,255,255,0.055)", color: "var(--text-2)" }}>{n}× {b}</span>
+          ))}
+          <span className="text-[10px] font-bold px-2 py-1 rounded-full"
+            style={{ background: "rgba(239,159,39,0.12)", color: "#EF9F27" }}>{fmtDur(totalMin)} prévues</span>
+        </div>
+      )}
+
+      {/* Liste des 7 jours */}
+      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none" }}>
+        {days?.some((d) => hasSeance(d) && d.status !== "done") && (
+          <p className="text-[9.5px] font-semibold pb-1" style={{ color: "var(--text-3)", opacity: 0.8 }}>
+            Maintiens <GripVertical size={9} strokeWidth={2.4} style={{ display: "inline", verticalAlign: "-1px" }} /> pour déplacer une séance.
+          </p>
+        )}
+        {DAY_ABBR.map((abbr, i) => (
+          <DayRow
+            key={`${offset}-${i}`}
+            day={days?.[i] ?? null}
+            idx={i}
+            abbr={abbr}
+            isToday={offset === 0 && i === todayIdx}
+            open={openIdx === i}
+            dropHover={hoverIdx === i && dragIdx !== null}
+            dimmed={dragIdx !== null && dragIdx !== i && hoverIdx !== i}
+            registerRef={(el) => { rowRefs.current[i] = el; }}
+            onToggle={() => setOpenIdx(openIdx === i ? null : i)}
+            onStartDay={onStartDay}
+            onAsk={onAsk}
+            onDragStart={() => handleDragStart(i)}
+            onDragMove={(y) => handleDragMove(i, y)}
+            onDragEnd={() => handleDragEnd(i)}
+          />
+        ))}
+        {loading && <p className="text-[11px] font-medium text-center py-4" style={{ color: "var(--text-3)" }}>Chargement…</p>}
+        <div style={{ height: 8 }} />
+      </div>
+
+      {/* Footer — IA + ajout */}
+      <div className="px-5 pt-3 flex gap-2 flex-shrink-0"
+        style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={() => onAsk("Refais toute ma semaine d'entraînement")}
+          className="flex-1 py-3 rounded-2xl text-[13px] font-extrabold text-white cursor-pointer flex items-center justify-center gap-1.5"
+          style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 22px rgba(139,92,246,0.4)" }}>
+          <Sparkles size={13} strokeWidth={2} /> Refais ma semaine
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.96 }} onClick={onAddSession}
+          className="px-4 rounded-2xl text-[12.5px] font-bold cursor-pointer flex items-center gap-1"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "var(--text-2)" }}>
+          <Plus size={14} strokeWidth={2.4} /> Séance
+        </motion.button>
+      </div>
+    </Sheet>
+  );
 }
 
-/* ─── Custom session type & creation modal ────────────────── */
+/** Y du pointeur, quel que soit le type d'événement (souris / touch). */
+const clientYOf = (e: unknown, fallback: number): number => {
+  const ev = e as { clientY?: number; touches?: Array<{ clientY: number }> };
+  return ev.clientY ?? ev.touches?.[0]?.clientY ?? fallback;
+};
 
+/** Un jour de l'agenda — carte draggable (poignée dédiée, pour laisser le
+    scroll tranquille) + actions dépliées au tap. */
+function DayRow({ day, idx, abbr, isToday, open, dropHover, dimmed, registerRef, onToggle, onStartDay, onAsk, onDragStart, onDragMove, onDragEnd }: {
+  day: PlanningDay | null;
+  idx: number;
+  abbr: string;
+  isToday: boolean;
+  open: boolean;
+  dropHover: boolean;
+  dimmed: boolean;
+  registerRef: (el: HTMLDivElement | null) => void;
+  onToggle: () => void;
+  onStartDay: (d: PlanningDay) => void;
+  onAsk: (p: string) => void;
+  onDragStart: () => void;
+  onDragMove: (clientY: number) => void;
+  onDragEnd: () => void;
+}) {
+  const controls = useDragControls();
+  const d = day;
+  const isDone = d?.status === "done";
+  const isSeance = hasSeance(d);
+  const draggable = isSeance && !isDone;
+  const art = isSeance ? resolveArt({ title: `${d!.title} ${d!.type}` }) : null;
+  const num = d ? new Date(d.date + "T00:00:00").getDate() : "";
+
+  return (
+    <div ref={registerRef} className="py-1" style={{ opacity: dimmed ? 0.45 : 1, transition: "opacity 0.15s" }}>
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 flex-shrink-0 text-center">
+          <span className="block text-[9px] font-extrabold tracking-wide" style={{ color: isToday ? "#A78BFA" : "var(--text-3)" }}>{abbr}</span>
+          <span className="block text-[15px] font-light" style={{ color: isToday ? "#A78BFA" : "var(--text-2)" }}>{num}</span>
+        </div>
+        <motion.div
+          drag={draggable ? "y" : false}
+          dragControls={controls}
+          dragListener={false}
+          dragSnapToOrigin
+          dragMomentum={false}
+          dragElastic={0.1}
+          onDragStart={onDragStart}
+          onDrag={(e, info) => onDragMove(clientYOf(e, info.point.y))}
+          onDragEnd={onDragEnd}
+          whileDrag={{ scale: 1.04, rotate: -1.5, zIndex: 40, boxShadow: "0 14px 34px rgba(0,0,0,0.55)" }}
+          className="flex-1 flex items-center gap-2 rounded-2xl px-2.5 py-2 min-w-0 relative"
+          style={{
+            background: dropHover ? "rgba(139,92,246,0.13)"
+              : isToday ? "rgba(139,92,246,0.1)"
+              : isSeance ? "rgba(255,255,255,0.04)" : "transparent",
+            border: dropHover ? "1.5px dashed rgba(139,92,246,0.75)"
+              : isToday ? "1px solid rgba(139,92,246,0.55)"
+              : isSeance ? "1px solid rgba(255,255,255,0.06)" : "1px dashed rgba(var(--accent-rgb),0.18)",
+            opacity: isDone ? 0.72 : 1,
+          }}
+        >
+          <button onClick={onToggle}
+            className="flex items-center gap-2.5 flex-1 min-w-0 text-left bg-transparent border-none p-0 cursor-pointer">
+            {isSeance && art ? (
+              <Photo img={art.img} pos="center 22%" className="rounded-xl flex-shrink-0" style={{ width: 38, height: 38 }} />
+            ) : (
+              <span className="rounded-xl flex-shrink-0 flex items-center justify-center" style={{ width: 38, height: 38, background: "rgba(255,255,255,0.03)" }}>
+                <Moon size={14} strokeWidth={1.8} style={{ color: "var(--text-3)", opacity: 0.7 }} />
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-bold truncate" style={{ color: "var(--text-1)" }}>{isSeance ? dayTitle(d!) : "Repos"}</p>
+              <p className="text-[10px] font-semibold mt-0.5 truncate" style={{ color: dropHover ? "#C9B8FF" : "var(--text-3)" }}>
+                {dropHover ? "Dépose la séance ici ✦"
+                  : isSeance ? `${d!.type === "HIIT" ? 30 : 45} min${lieuLabel(d!.location) ? ` · ${lieuLabel(d!.location)}` : ""}`
+                  : "Ton corps construit"}
+              </p>
+            </div>
+            {isDone ? (
+              <span className="flex-shrink-0 rounded-full flex items-center justify-center" style={{ width: 18, height: 18, background: "rgba(43,212,160,0.16)", border: "1px solid rgba(43,212,160,0.5)" }}>
+                <Check size={10} strokeWidth={3.2} style={{ color: "#2BD4A0" }} />
+              </span>
+            ) : isToday ? (
+              <span className="flex-shrink-0 text-[9px] font-extrabold tracking-wide" style={{ backgroundImage: "linear-gradient(135deg,var(--accent),var(--gold))", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>AUJOURD&apos;HUI</span>
+            ) : (
+              <ChevronRight size={14} strokeWidth={2.4} className="flex-shrink-0"
+                style={{ color: "var(--text-3)", transform: open ? "rotate(90deg)" : "none", transition: "transform 0.18s" }} />
+            )}
+          </button>
+          {draggable && (
+            <div
+              onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
+              className="flex-shrink-0 flex items-center justify-center cursor-grab"
+              style={{ touchAction: "none", width: 24, height: 34 }}
+              aria-label="Déplacer la séance"
+            >
+              <GripVertical size={15} strokeWidth={2.2} style={{ color: "var(--text-3)", opacity: 0.8 }} />
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Actions du jour — dépliées au tap */}
+      <AnimatePresence initial={false}>
+        {open && d && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }} className="overflow-hidden">
+            <div className="flex gap-1.5 flex-wrap pl-[42px] pt-2 pb-1">
+              {isSeance && (
+                <ActChip onClick={() => onStartDay(d)} primary>
+                  <Play size={11} strokeWidth={2.5} fill="#fff" style={{ color: "#fff" }} /> Commencer
+                </ActChip>
+              )}
+              {isSeance && <ActChip onClick={() => onAsk(`Remplace ma séance de ${DAY_FULL[idx]} par autre chose`)}><span style={{ color: "#C9B8FF" }}>✦</span> Remplacer</ActChip>}
+              {isSeance && <ActChip onClick={() => onAsk(`Décale ma séance de ${DAY_FULL[idx]} à un autre jour`)}>Décaler</ActChip>}
+              {isSeance
+                ? <ActChip onClick={() => onAsk(`Mets repos le ${DAY_FULL[idx]}`)}>☾ Repos</ActChip>
+                : <ActChip onClick={() => onAsk(`Ajoute une séance le ${DAY_FULL[idx]}`)}><span style={{ color: "#C9B8FF" }}>✦</span> Ajouter une séance</ActChip>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** Petit bouton d'action d'un jour de l'agenda. */
+function ActChip({ children, onClick, primary }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) {
+  return (
+    <motion.button whileTap={{ scale: 0.94 }} onClick={onClick}
+      className="flex items-center gap-1 text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer border-none"
+      style={primary
+        ? { background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 4px 12px rgba(139,92,246,0.35)" }
+        : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-2)" }}>
+      {children}
+    </motion.button>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Sheet « Organiser » — le planning complet (WeeklyProgramme) : semaines,
+   jours, tutos, régénération, lieu. Réservé au chemin setup (le héros
+   « Créer mon planning » quand l'app ne sait pas encore).
+   ════════════════════════════════════════════════════════════════════ */
+function OrganiserSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <Sheet onClose={onClose} maxHeight="92vh">
+      <div className="px-5 pt-2 pb-3 flex items-center justify-between flex-shrink-0">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: "var(--text-3)" }}>
+            Piloté par l&apos;IA ✦
+          </p>
+          <h2 className="text-[19px] font-light mt-0.5" style={{ color: "var(--text-1)" }}>Organiser ma semaine</h2>
+        </div>
+        <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+          className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+          style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Fermer">
+          <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+        </motion.button>
+      </div>
+      <div className="overflow-y-auto px-5 flex-1" style={{ scrollbarWidth: "none", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+        <WeeklyProgramme />
+        <p className="text-[11px] font-light mt-4 leading-snug" style={{ color: "var(--text-3)" }}>
+          Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
+        </p>
+      </div>
+    </Sheet>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Création / édition de séance perso : la modale vit maintenant dans
+   src/components/seance/CreateSessionModal.tsx (parcours en 3 temps +
+   bibliothèque d'exercices animés). La page garde ce qui la regarde :
+   l'identifiant, l'accent, l'icône et l'enregistrement en base.
+   ════════════════════════════════════════════════════════════════════ */
+
+// Système D — les séances sont toutes le même type d'objet → toutes VIOLET (action).
+// La couleur ne code que les métriques (série/calories/poids) et l'état « fait » (teal).
 const ACCENT_BY_CATEGORY: Record<WorkoutCategory, string> = {
-  force: "var(--accent)", cardio: "#FBBF24", mobilite: "#34D399", fullbody: "#FB923C",
+  force: "#8B5CF6", cardio: "#8B5CF6", mobilite: "#8B5CF6", fullbody: "#8B5CF6",
 };
 const ICON_BY_CATEGORY: Record<WorkoutCategory, typeof Dumbbell> = {
   force: Dumbbell, cardio: Flame, mobilite: Wind, fullbody: Layers,
 };
-
-const ALL_MUSCLES = [
-  "Pectoraux", "Dos", "Épaules", "Biceps", "Triceps",
-  "Abdominaux", "Obliques", "Core", "Lombaires",
-  "Quadriceps", "Fessiers", "Mollets", "Hanches", "Cardio",
-];
-
-type ExerciseForm = {
-  name: string;
-  sets: number;
-  reps: number;
-  rest: number;
-  restAfter: number;
-  tip?: string;
-  benefit?: string;
-  exMuscles?: string[];
+const SOUS_TITRE_CATEGORIE: Record<WorkoutCategory, string> = {
+  force: "Force", cardio: "Cardio", mobilite: "Mobilité", fullbody: "Full body",
 };
-const DEFAULT_EX: ExerciseForm = { name: "", sets: 3, reps: 10, rest: 60, restAfter: 90 };
 
-/** Durée calculée = temps actif + repos inter-séries + transitions, arrondie à 5 min */
-function calcDuration(forms: ExerciseForm[]): number {
-  const SEC_PER_REP = 3;
-  let total = 0;
-  forms.forEach((ex, i) => {
-    total += ex.sets * ex.reps * SEC_PER_REP;      // temps actif
-    total += (ex.sets - 1) * ex.rest;              // repos inter-séries
-    if (i < forms.length - 1) total += ex.restAfter; // transition entre exercices
-  });
-  return Math.max(5, Math.round((total / 60) / 5) * 5);
+/* Une séance lancée porte une catégorie libre (« Full Body » de l'impro,
+   « HIIT » du planning). Pour la ranger dans la bibliothèque perso, il
+   faut la ramener aux quatre types de l'app. */
+function normaliserCategorie(c?: string): WorkoutCategory {
+  const t = (c ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/cardio|hiit|course|velo/.test(t)) return "cardio";
+  if (/mobil|etirement|yoga|souplesse|recup/.test(t)) return "mobilite";
+  if (/full/.test(t)) return "fullbody";
+  return "force";
 }
+/** Hors composant : l'horloge n'a rien à faire dans un rendu React. */
+const nouvelIdSeance = () => `custom-${Date.now()}`;
 
-function CreateSessionModal({ onClose, onCreate, editSession }: {
-  onClose: () => void;
-  onCreate: (s: WorkoutSession) => void;
-  editSession?: WorkoutSession | null;
-}) {
-  const isEdit = !!editSession;
 
-  const [title, setTitle]       = useState(editSession?.title ?? "");
-  const [category, setCategory] = useState<WorkoutCategory>(editSession?.category ?? "force");
-  const [difficulty, setDifficulty] = useState<WorkoutSession["difficulty"]>(editSession?.difficulty ?? "Intermédiaire");
-  // Custom muscles = muscles from editSession that are not in the predefined list
-  const [customMuscles, setCustomMuscles] = useState<string[]>(
-    editSession?.muscles?.filter(m => !ALL_MUSCLES.includes(m)) ?? []
-  );
-  const [selectedMuscles, setSelectedMuscles] = useState<string[]>(editSession?.muscles ?? []);
-  const [newMuscleInput, setNewMuscleInput] = useState("");
-  const [exForms, setExForms] = useState<ExerciseForm[]>(
-    editSession?.exerciseList?.map(e => ({ name: e.name, sets: e.sets, reps: parseInt(String(e.reps)) || 10, rest: e.rest, restAfter: e.restAfter ?? 90 }))
-    ?? [{ ...DEFAULT_EX }]
-  );
+/* ════════════════════════════════════════════════════════════════════
+   Page — Entraînement. La page vit au PRÉSENT : plus de sous-onglets,
+   plus d'historique ici.
+   ════════════════════════════════════════════════════════════════════ */
 
-  // IA
-  const [aiDescription, setAiDescription] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
+/** Séance prête à être lancée dans le lecteur guidé, quelle que soit sa source. */
+type LaunchTarget = {
+  id: string;
+  title: string;
+  duration: number;
+  difficulty: string;
+  category?: string;
+  exerciseList?: Exercise[];
+  planningDate?: string;   // présent = séance du planning → marquer « done » à la fin
+};
 
-  // Durée calculée automatiquement depuis les exercices
-  const duration = calcDuration(exForms);
-
-  // Tant que la modale est ouverte, on masque la barre de navigation du bas :
-  // sur mobile elle se superposait au pied de la modale (compositing du translateZ
-  // de la nav), rendant le bouton « Créer la séance » inaccessible.
-  useEffect(() => {
-    document.body.classList.add("modal-open");
-    return () => document.body.classList.remove("modal-open");
-  }, []);
-
-  const handleAiGenerate = async () => {
-    if (!aiDescription.trim()) return;
-    setAiLoading(true);
-    setAiError("");
-    try {
-      const res = await fetch("/api/workout/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: aiDescription, category, difficulty, muscles: selectedMuscles }),
-      });
-      if (!res.ok) throw new Error("Erreur serveur");
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      if (data.title) setTitle(data.title);
-      if (Array.isArray(data.exercises) && data.exercises.length > 0) {
-        setExForms(data.exercises.map((e: { name: string; sets?: number; reps?: number; rest?: number; restAfter?: number; tip?: string; benefit?: string; muscles?: string[] }) => ({
-          name: e.name ?? "",
-          sets: Number(e.sets) || 3,
-          reps: Number(e.reps) || 10,
-          rest: Number(e.rest) || 60,
-          restAfter: Number(e.restAfter) || 90,
-          tip: e.tip,
-          benefit: e.benefit,
-          exMuscles: Array.isArray(e.muscles) ? e.muscles : undefined,
-        })));
-      }
-      if (Array.isArray(data.muscles) && data.muscles.length > 0) {
-        setSelectedMuscles(data.muscles);
-      }
-    } catch {
-      setAiError("Génération impossible, réessaie.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const toggleMuscle = (m: string) =>
-    setSelectedMuscles(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
-
-  const addCustomMuscle = () => {
-    const trimmed = newMuscleInput.trim();
-    if (!trimmed) return;
-    const allKnown = [...ALL_MUSCLES, ...customMuscles];
-    if (allKnown.some(m => m.toLowerCase() === trimmed.toLowerCase())) return;
-    setCustomMuscles(p => [...p, trimmed]);
-    setSelectedMuscles(p => [...p, trimmed]);
-    setNewMuscleInput("");
-  };
-
-  const removeCustomMuscle = (m: string) => {
-    setCustomMuscles(p => p.filter(x => x !== m));
-    setSelectedMuscles(p => p.filter(x => x !== m));
-  };
-
-  const addEx = () => setExForms(p => [...p, { ...DEFAULT_EX }]);
-  const removeEx = (i: number) => setExForms(p => p.filter((_, idx) => idx !== i));
-  const updateEx = <K extends keyof ExerciseForm>(i: number, key: K, val: ExerciseForm[K]) =>
-    setExForms(p => p.map((e, idx) => idx === i ? { ...e, [key]: val } : e));
-
-  const handleCreate = () => {
-    if (!title.trim()) return;
-    const validExs = exForms.filter(e => e.name.trim());
-    const exerciseList: Exercise[] = validExs.map(e => ({
-      name: e.name.trim(),
-      sets: e.sets,
-      reps: String(e.reps),
-      rest: e.rest,
-      restAfter: e.restAfter,
-      tip: e.tip ?? "Concentre-toi sur la forme et la respiration.",
-      benefit: e.benefit ?? "Renforce et améliore les performances.",
-      muscles: e.exMuscles ?? (selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"]),
-    }));
-    onCreate({
-      id: editSession?.id ?? `custom-${Date.now()}`,
-      title: title.trim(),
-      subtitle: `${category.charAt(0).toUpperCase() + category.slice(1)} · Ma séance`,
-      category,
-      duration,
-      difficulty,
-      exercises: validExs.length || 1,
-      muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
-      accent: ACCENT_BY_CATEGORY[category],
-      icon: ICON_BY_CATEGORY[category],
-      exerciseList: exerciseList.length > 0 ? exerciseList : [{
-        name: "Exercice libre",
-        sets: 3, reps: "10", rest: 60,
-        tip: "Concentre-toi sur la forme.",
-        benefit: "Renforce et améliore les performances.",
-        muscles: selectedMuscles.length > 0 ? selectedMuscles : ["Corps entier"],
-      }],
-    });
-    onClose();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-0"
-      style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <motion.div
-        initial={{ y: 60, opacity: 0, scale: 0.97 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 40, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 380, damping: 34 }}
-        className="w-full max-w-lg rounded-t-3xl md:rounded-3xl overflow-hidden flex flex-col"
-        style={{
-          background: "rgba(var(--surface-rgb),0.96)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(var(--surface-rgb),0.9)",
-          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.18), inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
-          maxHeight: "92vh",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(var(--tint-violet-rgb),0.8)" }}>
-          <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
-              {isEdit ? "Modifier la séance" : "Nouvelle séance"}
-            </p>
-            <h2 className="text-lg font-light mt-0.5" style={{ color: "var(--text-1)" }}>
-              {isEdit ? "Éditer ma séance" : "Créer ma séance"}
-            </h2>
-          </div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
-            <X size={15} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-          </motion.button>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-6" style={{ scrollbarWidth: "none" }}>
-
-          {/* ── 0. Assistant IA ── */}
-          <div className="rounded-2xl p-4 flex flex-col gap-3"
-            style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.18) 0%, rgba(var(--cream-mid-rgb),0.12) 100%)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Assistant IA ✦</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)" }}>Optionnel</span>
-            </div>
-            <textarea
-              value={aiDescription}
-              onChange={e => setAiDescription(e.target.value)}
-              placeholder="Décris ta séance idéale… ex : séance push pour prise de masse, 45 min, avec développé couché et épaules"
-              rows={3}
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none resize-none"
-              style={{ background: "rgba(var(--surface-rgb),0.75)", border: "1px solid rgba(var(--violet-mid-rgb),0.45)", color: "var(--text-1)", lineHeight: 1.5 }}
-            />
-            {aiError && (
-              <p className="text-[11px]" style={{ color: "#FC8181" }}>{aiError}</p>
-            )}
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={handleAiGenerate}
-              disabled={!aiDescription.trim() || aiLoading}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold cursor-pointer flex items-center justify-center gap-2"
-              style={aiDescription.trim() && !aiLoading
-                ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                : { background: "rgba(var(--tint-violet-rgb),0.5)", color: "var(--text-3)" }
-              }
-            >
-              {aiLoading ? (
-                <>
-                  <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  Génération en cours…
-                </>
-              ) : (
-                <>✦ Générer la séance avec l'IA</>
-              )}
-            </motion.button>
-          </div>
-
-          {/* ── 1. Infos générales ── */}
-          <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Informations</p>
-
-            {/* Nom */}
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="Nom de la séance (ex : Push Day, Cardio matin…)"
-              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
-              style={{ background: "rgba(var(--tint-violet-rgb),0.45)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
-              autoFocus={!isEdit}
-            />
-
-            {/* Catégorie */}
-            <div className="grid grid-cols-4 gap-2">
-              {(["force", "cardio", "mobilite", "fullbody"] as WorkoutCategory[]).map(cat => (
-                <motion.button key={cat} whileTap={{ scale: 0.93 }} onClick={() => setCategory(cat)}
-                  className="py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                  style={category === cat
-                    ? { background: `${ACCENT_BY_CATEGORY[cat]}22`, color: ACCENT_BY_CATEGORY[cat], border: `1px solid ${ACCENT_BY_CATEGORY[cat]}55` }
-                    : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
-                  }>
-                  {cat === "mobilite" ? "Mobilité" : cat === "fullbody" ? "Full" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Durée calculée + Difficulté */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "var(--text-3)" }}>Durée calculée</label>
-                <div className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl"
-                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.3)" }}>
-                  <Clock size={13} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                  <span className="text-sm font-bold" style={{ color: "var(--accent)" }}>{duration} min</span>
-                </div>
-                <p className="text-[9px] mt-1 text-center" style={{ color: "var(--text-3)" }}>Mise à jour auto</p>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold tracking-widest uppercase block mb-2" style={{ color: "var(--text-3)" }}>Niveau</label>
-                <div className="flex flex-col gap-1">
-                  {(["Débutant", "Intermédiaire", "Avancé"] as const).map(d => (
-                    <motion.button key={d} whileTap={{ scale: 0.95 }} onClick={() => setDifficulty(d)}
-                      className="text-[10px] font-semibold px-3 py-1.5 rounded-xl cursor-pointer text-left"
-                      style={difficulty === d
-                        ? { background: `${difficultyColor[d]}22`, color: difficultyColor[d], border: `1px solid ${difficultyColor[d]}44` }
-                        : { background: "rgba(var(--surface-rgb),0.6)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.9)" }
-                      }>
-                      {d}
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 2. Groupes musculaires ── */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-                Muscles ciblés
-              </p>
-              {selectedMuscles.length > 0 && (
-                <button onClick={() => setSelectedMuscles([])} className="text-[10px] cursor-pointer" style={{ color: "var(--text-3)" }}>
-                  Tout décocher
-                </button>
-              )}
-            </div>
-
-            {/* Predefined muscles */}
-            <div className="flex flex-wrap gap-2">
-              {ALL_MUSCLES.map(m => {
-                const selected = selectedMuscles.includes(m);
-                return (
-                  <motion.button
-                    key={m}
-                    whileTap={{ scale: 0.92 }}
-                    onClick={() => toggleMuscle(m)}
-                    className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                    style={selected
-                      ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55` }
-                      : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)" }
-                    }
-                  >
-                    {selected ? "✓ " : ""}{m}
-                  </motion.button>
-                );
-              })}
-
-              {/* Custom muscles — with × to remove */}
-              {customMuscles.map(m => {
-                const selected = selectedMuscles.includes(m);
-                return (
-                  <div key={m} className="flex items-center gap-0.5">
-                    <motion.button
-                      whileTap={{ scale: 0.92 }}
-                      onClick={() => toggleMuscle(m)}
-                      className="pl-3 pr-1.5 py-1.5 rounded-l-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                      style={selected
-                        ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderRight: "none" }
-                        : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)", borderRight: "none" }
-                      }
-                    >
-                      {selected ? "✓ " : ""}{m}
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => removeCustomMuscle(m)}
-                      className="pr-2 py-1.5 rounded-r-full text-[10px] flex items-center cursor-pointer transition-all duration-150"
-                      style={selected
-                        ? { background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category], border: `1px solid ${ACCENT_BY_CATEGORY[category]}55`, borderLeft: "none" }
-                        : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)", border: "1px solid rgba(var(--tint-violet-rgb),0.8)", borderLeft: "none" }
-                      }
-                    >
-                      <X size={9} strokeWidth={2.5} />
-                    </motion.button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Add custom muscle */}
-            <div className="flex gap-2 mt-3">
-              <input
-                type="text"
-                value={newMuscleInput}
-                onChange={e => setNewMuscleInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomMuscle(); } }}
-                placeholder="Ajouter un muscle personnalisé…"
-                className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
-                style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)", color: "var(--text-1)" }}
-              />
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={addCustomMuscle}
-                disabled={!newMuscleInput.trim()}
-                className="px-3 py-2 rounded-xl flex items-center justify-center cursor-pointer"
-                style={newMuscleInput.trim()
-                  ? { background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.35)" }
-                  : { background: "rgba(var(--tint-violet-rgb),0.4)", color: "#C4B5FD", border: "1px solid rgba(var(--violet-mid-rgb),0.2)" }
-                }
-              >
-                <Plus size={13} strokeWidth={2.5} />
-              </motion.button>
-            </div>
-          </div>
-
-          {/* ── 3. Exercices ── */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--accent)" }}>
-                Exercices ({exForms.length})
-              </p>
-              <motion.button whileTap={{ scale: 0.9 }} onClick={addEx}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl cursor-pointer text-[10px] font-semibold"
-                style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
-                <Plus size={10} strokeWidth={2.5} /> Ajouter
-              </motion.button>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {exForms.flatMap((ex, i) => {
-                const card = (
-                  <motion.div
-                    key={`ex-${i}`}
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-2xl p-4"
-                    style={{ background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}
-                  >
-                    {/* Name row */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[11px] font-bold w-6 text-center flex-shrink-0 rounded-lg py-0.5"
-                        style={{ background: `${ACCENT_BY_CATEGORY[category]}22`, color: ACCENT_BY_CATEGORY[category] }}>
-                        {i + 1}
-                      </span>
-                      <input
-                        type="text"
-                        value={ex.name}
-                        onChange={e => updateEx(i, "name", e.target.value)}
-                        placeholder={`Exercice ${i + 1} (ex : Squat, Pompes…)`}
-                        className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
-                        style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)", color: "var(--text-1)" }}
-                      />
-                      {exForms.length > 1 && (
-                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => removeEx(i)}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer flex-shrink-0"
-                          style={{ background: "rgba(252,129,129,0.12)" }}>
-                          <Trash2 size={11} strokeWidth={1.8} style={{ color: "#FC8181" }} />
-                        </motion.button>
-                      )}
-                    </div>
-
-                    {/* Controls — 3 cols */}
-                    <div className="grid grid-cols-3 gap-2">
-                      {/* Séries */}
-                      <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Séries</p>
-                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.max(1, ex.sets - 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>−</motion.button>
-                          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{ex.sets}</span>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "sets", Math.min(10, ex.sets + 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>+</motion.button>
-                        </div>
-                      </div>
-
-                      {/* Reps */}
-                      <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Répétitions</p>
-                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.max(1, ex.reps - 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>−</motion.button>
-                          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{ex.reps}</span>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "reps", Math.min(100, ex.reps + 1))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>+</motion.button>
-                        </div>
-                      </div>
-
-                      {/* Repos entre séries */}
-                      <div>
-                        <p className="text-[9px] font-semibold tracking-widest uppercase mb-1.5 text-center" style={{ color: "var(--text-3)" }}>Repos (s)</p>
-                        <div className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-xl"
-                          style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.max(0, ex.rest - 15))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>−</motion.button>
-                          <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>{ex.rest}s</span>
-                          <motion.button whileTap={{ scale: 0.85 }} onClick={() => updateEx(i, "rest", Math.min(300, ex.rest + 15))}
-                            className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                            style={{ color: "var(--accent)" }}>+</motion.button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-
-                /* Séparateur de récupération — uniquement entre deux exercices */
-                const separator = (i < exForms.length - 1) ? (
-                  <div key={`sep-${i}`}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl"
-                    style={{ background: "rgba(var(--accent-rgb),0.07)", border: "1px dashed rgba(var(--accent-rgb),0.28)" }}
-                  >
-                    <Clock size={11} strokeWidth={1.8} style={{ color: "var(--accent)", flexShrink: 0 }} />
-                    <span className="text-[10px] font-medium flex-1" style={{ color: "var(--accent)" }}>
-                      Récupération entre exercices
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <motion.button whileTap={{ scale: 0.85 }}
-                        onClick={() => updateEx(i, "restAfter", Math.max(0, ex.restAfter - 15))}
-                        className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                        style={{ color: "var(--accent)" }}>−</motion.button>
-                      <span className="text-xs font-semibold w-8 text-center tabular-nums" style={{ color: "var(--text-1)" }}>
-                        {ex.restAfter}s
-                      </span>
-                      <motion.button whileTap={{ scale: 0.85 }}
-                        onClick={() => updateEx(i, "restAfter", Math.min(300, ex.restAfter + 15))}
-                        className="w-5 h-5 rounded flex items-center justify-center cursor-pointer text-xs font-bold"
-                        style={{ color: "var(--accent)" }}>+</motion.button>
-                    </div>
-                  </div>
-                ) : null;
-
-                return separator ? [card, separator] : [card];
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 pt-4" style={{ borderTop: "1px solid rgba(var(--tint-violet-rgb),0.8)", paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleCreate}
-            disabled={!title.trim()}
-            className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
-            style={{
-              background: title.trim()
-                ? "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)"
-                : "rgba(var(--tint-violet-rgb),0.5)",
-              color: title.trim() ? "var(--text-1)" : "var(--text-3)",
-              boxShadow: title.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" : "none",
-            }}
-          >
-            {isEdit ? "Enregistrer les modifications" : "Créer la séance"}
-          </motion.button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/* ─── Page ──────────────────────────────────────────────── */
-type ProgressionTab = "progression" | "mes-seances" | "nutrition" | "analyse" | "badges";
-const VALID_TABS: ProgressionTab[] = ["progression", "mes-seances", "nutrition", "analyse", "badges"];
-
-/**
- * Wrapper avec Suspense — useSearchParams() exige un boundary Suspense
- * en Next 14+, sinon le build statique échoue.
- */
 export default function ProgressionPage() {
-  return (
-    <Suspense fallback={null}>
-      <ProgressionPageContent />
-    </Suspense>
-  );
-}
+  const { user } = useAuth();
+  const { open: openAssistant } = useAssistant();
+  const router = useRouter();
+  const canAccessPremium = Boolean(user?.is_premium || user?.is_admin);
 
-function ProgressionPageContent() {
-  // Lecture du sous-onglet via query param (?tab=mes-seances) — utilisé par la visite guidée
-  const searchParams = useSearchParams();
-  const initialTab = (() => {
-    const t = searchParams.get("tab");
-    return (t && (VALID_TABS as string[]).includes(t)) ? (t as ProgressionTab) : "progression";
-  })();
-  const [activeTab, setActiveTab]           = useState<ProgressionTab>(initialTab);
-  // Si l'URL change après le mount (navigation pendant la visite guidée), suivre le param
-  useEffect(() => {
-    const t = searchParams.get("tab");
-    if (t && (VALID_TABS as string[]).includes(t) && t !== activeTab) {
-      setActiveTab(t as ProgressionTab);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-  const [shareData, setShareData]           = useState<PerformanceData | null>(null);
-  const [activeWorkout, setActiveWorkout]   = useState<WorkoutSession | null>(null);
-  const [completedWorkouts, setCompletedWorkouts] = useState<Set<string>>(new Set());
-  const [categoryFilter, setCategoryFilter] = useState<"tous" | WorkoutCategory>("tous");
-  const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
-  const [loadingCustom, setLoadingCustom]   = useState(false);
+  /* ── Planning de la semaine (source de vérité du héros + du bandeau) ── */
+  const [week, setWeek] = useState<PlanningDay[] | null>(null);
+  const [heroReady, setHeroReady] = useState(false);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [profileLevel, setProfileLevel] = useState<string | null>(null);
+
+  /* ── UI ── */
+  const [sheet, setSheet] = useState<null | "choisir" | "improviser" | "organiser" | "elan" | "semaine">(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editSession, setEditSession] = useState<WorkoutSession | null>(null);
+  /* Séance pré-remplie : arrive de la bibliothèque (mouvements cochés) ou
+     d'une séance Vaiiya dont on s'inspire. Rien n'est enregistré tant que
+     la création n'est pas validée (choix de Louis, 2026-07-29). */
+  const [draftSeed, setDraftSeed] = useState<SessionDraft | null>(null);
+  /* Change à chaque ouverture : la modale ne lit `initial` qu'au montage,
+     et une réouverture rapide peut réutiliser l'instance qui sort encore
+     de l'écran. Sans ce compteur, la 2ᵉ sélection serait ignorée. */
+  const [numeroCreation, setNumeroCreation] = useState(0);
+  /* La vitrine des mouvements : ouverte à vide, ou sur une fiche précise. */
+  const [mouvements, setMouvements] = useState<{ fiche: LibExercise | null } | null>(null);
+  /* Les places gratuites sont prises : on l'explique, on ne bloque pas sec. */
+  const [plein, setPlein] = useState(false);
+  /* Collection sur laquelle ouvrir le catalogue (null = la grille). */
+  const [choisirCible, setChoisirCible] = useState<string | null>(null);
+  const [activeWorkout, setActiveWorkout] = useState<LaunchTarget | null>(null);
+  const [activeArticle, setActiveArticle] = useState<AdviceArticle | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [realTimeline, setRealTimeline] = useState<TimelineEvent[]>([]);
-  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-  const [eventExercises, setEventExercises] = useState<Record<string, Array<{ name: string; sets?: number; reps?: number; weight?: number }>>>({});
-  const [libraryFilter, setLibraryFilter] = useState<"tous" | WorkoutCategory>("tous");
-  const { settings } = useProfileSettings();
-  const { user } = useAuth();
-
-  // Lire l'objectif fitness depuis l'onboarding (localStorage)
-  const [fitnessGoal, setFitnessGoal] = useState<"masse" | "poids" | null>(null);
-  useEffect(() => {
-    try {
-      const pseudo = user?.pseudo;
-      if (!pseudo) return;
-      const raw = localStorage.getItem(`aura_onboarding_${pseudo}`);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { goals?: string[] };
-      const goals = parsed.goals ?? [];
-      if (goals.includes("masse") && !goals.includes("poids")) setFitnessGoal("masse");
-      else if (goals.includes("poids") && !goals.includes("masse")) setFitnessGoal("poids");
-      else setFitnessGoal(null);
-    } catch { /* ignore */ }
-  }, [user?.pseudo]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") =>
-    scrollRef.current?.scrollBy({ left: dir === "right" ? 250 : -250, behavior: "smooth" });
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
-  const handleVisibilityChange = useCallback(async (sessionId: string, vis: "private" | "friends" | "public") => {
-    if (user) {
-      const supabase = createClient();
-      await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+  /* ── Bibliothèque perso ── */
+  const [customSessions, setCustomSessions] = useState<WorkoutSession[]>([]);
+  const [loadingCustom, setLoadingCustom] = useState(false);
+
+  /* On limite le STOCK de séances gardées, jamais le fait de créer ni de
+     s'entraîner. Supprimer en libère une, et ce qui est déjà gardé n'est
+     jamais verrouillé : un abonnement qui s'arrête ne reprend rien. */
+  const maxSeances = canAccessPremium ? Infinity : PLANS.free.limits.sessionsMax;
+  const peutGarderUneSeance = customSessions.length < maxSeances;
+
+  /* ── Stats du jour (état « fait » du héros) ── */
+  const [doneStats, setDoneStats] = useState<{ minutes: number; kcal: number } | null>(null);
+  const [elan, setElan] = useState<ElanData | null>(null);
+
+  const today = todayYmd();
+  const todayIdx = todayWeekIndex();
+
+  /* ── Charge la semaine — même recette que WeeklyProgramme (idempotent) ── */
+  const loadWeek = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
+      || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
+    const { location, equip } = await loadLieu(user.id);
+    setProfileLevel(prof?.onboarding_level ?? null);
+
+    if (!hasOnboarding) {
+      // Vraiment rien à générer (onboarding pas fait) → héros de mise en route.
+      setNeedsSetup(true);
+      setWeek(null);
+      setHeroReady(true);
+      return;
     }
-    setCustomSessions(prev => prev.map(s => s.id === sessionId ? { ...s, visibility: vis } : s));
-    const labels = { private: "Séance privée ✓", friends: "Visible par tes amis ✓", public: "Séance publiée 🌐" };
-    showToast(labels[vis]);
-  }, [user]); // eslint-disable-line
+    // Lieu OPTIONNEL : tant que la synchro cross-device n'a pas eu lieu, le
+    // localStorage de cet appareil peut être vide. On ne bloque JAMAIS sur
+    // « 7 repos » pour ça — on retombe sur le poids du corps (ctxFromLieu(null,
+    // null) === "poids") et l'utilisateur affine son lieu via « Organiser ».
 
-  // Charts state
-  const [weights, setWeights]         = useState<WeightEntry[]>([]);
-  const [weightRange, setWeightRange] = useState<"week" | "month">("week");
-  const [calorieWeek, setCalorieWeek] = useState<CalorieDay[]>([]);
-
-  // ── Mensurations state ──────────────────────────────────────
-  type Measurement = { id: string; date: string; chest_cm?: number | null; waist_cm?: number | null; hips_cm?: number | null; arms_cm?: number | null; thighs_cm?: number | null; neck_cm?: number | null; body_fat?: number | null };
-  const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [newMeas, setNewMeas] = useState({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" });
-  const [savingMeas, setSavingMeas] = useState(false);
-
-  // ── Personal Records state ──────────────────────────────────
-  type PR = { id: string; exercise: string; value: number; unit: string; reps?: number | null; date: string; note?: string | null };
-  const [prs, setPrs] = useState<PR[]>([]);
-  const [newPR, setNewPR] = useState({ exercise: "", value: "", unit: "kg", reps: "", note: "" });
-  const [savingPR, setSavingPR] = useState(false);
-  const [prFilter, setPrFilter] = useState("");
-
-  // ── Session history ──────────────────────────────────────
-  type HistorySession = {
-    id: string; title: string; category: string;
-    duration_minutes: number; calories_burned: number; elapsed_seconds: number;
-    started_at: string;
-    exercises: Array<{ name: string; sets?: number; reps?: number; weight?: number }>;
-  };
-  const [historySessions, setHistorySessions] = useState<HistorySession[]>([]);
-  const [historyLoading,  setHistoryLoading]  = useState(false);
-  const [historyPage,     setHistoryPage]     = useState(0);
-  const [historyHasMore,  setHistoryHasMore]  = useState(true);
-  const [historyExpanded, setHistoryExpanded] = useState<string | null>(null);
-
-  // ── Weekly volume (for chart) ────────────────────────────
-  type WeekVolume = { label: string; cals: number; sessions: number };
-  const [weeklyVolume, setWeeklyVolume] = useState<WeekVolume[]>([]);
-
-  const commonExercises = ["Développé couché", "Squat", "Soulevé de terre", "Développé militaire", "Rowing barre", "Tractions", "Dips", "Curl biceps", "Extension triceps", "Leg press"];
-
-  const fetchMeasurements = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data } = await supabase.from("body_measurements").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(20);
-    if (data) setMeasurements(data as Measurement[]);
-  }, [user]);
-
-  const fetchPRs = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const { data } = await supabase.from("personal_records").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(100);
-    if (data) setPrs(data as PR[]);
-  }, [user]);
-
-  useEffect(() => { fetchPRs(); }, [fetchPRs]);
-
-  const saveMeasurement = async () => {
-    if (!user) return;
-    setSavingMeas(true);
-    const supabase = createClient();
-    const today = toDateStr(new Date());
-    const payload = {
-      user_id: user.id, date: today,
-      chest_cm:  newMeas.chest   ? parseFloat(newMeas.chest)   : null,
-      waist_cm:  newMeas.waist   ? parseFloat(newMeas.waist)   : null,
-      hips_cm:   newMeas.hips    ? parseFloat(newMeas.hips)    : null,
-      arms_cm:   newMeas.arms    ? parseFloat(newMeas.arms)    : null,
-      thighs_cm: newMeas.thighs  ? parseFloat(newMeas.thighs)  : null,
-      neck_cm:   newMeas.neck    ? parseFloat(newMeas.neck)    : null,
-      body_fat:  newMeas.body_fat ? parseFloat(newMeas.body_fat) : null,
+    const gen: GenInput = {
+      ctx: ctxFromLieu(location, equip),
+      sessions: prof!.onboarding_sessions_week ?? 3,
+      goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
+      level: prof!.onboarding_level,
+      variant: readVariant(user.id),
+      seed: user.id,
     };
-    const { error } = await supabase.from("body_measurements").upsert(payload, { onConflict: "user_id,date" });
-    setSavingMeas(false);
-    if (!error) { showToast("Mensurations enregistrées ✓"); setNewMeas({ chest: "", waist: "", hips: "", arms: "", thighs: "", neck: "", body_fat: "" }); fetchMeasurements(); }
-    else { console.error("save measurements:", error); showToast("Enregistrement impossible, réessaie"); }
-  };
-
-  const savePR = async () => {
-    if (!user || !newPR.exercise || !newPR.value) return;
-    setSavingPR(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("personal_records").insert({
-      user_id: user.id, exercise: newPR.exercise, value: parseFloat(newPR.value),
-      unit: newPR.unit, reps: newPR.reps ? parseInt(newPR.reps) : null,
-      note: newPR.note || null, date: toDateStr(new Date()),
-    });
-    setSavingPR(false);
-    if (!error) { showToast("Record enregistré 🏆"); setNewPR({ exercise: "", value: "", unit: "kg", reps: "", note: "" }); fetchPRs(); }
-    else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
-  };
-
-  const fetchHistory = useCallback(async (page = 0, append = false) => {
-    if (!user) return;
-    setHistoryLoading(true);
-    const supabase = createClient();
-    const PAGE = 20;
-    const { data, error } = await supabase
-      .from("workout_sessions")
-      .select("id, title, category, duration_minutes, calories_burned, elapsed_seconds, started_at, exercises")
-      .eq("user_id", user.id)
-      .order("started_at", { ascending: false })
-      .range(page * PAGE, page * PAGE + PAGE - 1);
-    setHistoryLoading(false);
-    if (error || !data) return;
-    const mapped = data.map((r: Record<string, unknown>) => ({
-      id: r.id as string,
-      title: r.title as string,
-      category: r.category as string,
-      duration_minutes: (r.duration_minutes as number) ?? 0,
-      calories_burned: (r.calories_burned as number) ?? 0,
-      elapsed_seconds: (r.elapsed_seconds as number) ?? 0,
-      started_at: r.started_at as string,
-      exercises: (r.exercises as Array<{ name: string; sets?: number; reps?: number; weight?: number }>) ?? [],
-    }));
-    setHistorySessions(prev => append ? [...prev, ...mapped] : mapped);
-    setHistoryHasMore(data.length === PAGE);
-    setHistoryPage(page);
-  }, [user]);
-
-  const fetchWeeklyVolume = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const eightWeeksAgo = new Date();
-    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 55);
-    const { data } = await supabase
-      .from("workout_sessions")
-      .select("started_at, calories_burned")
-      .eq("user_id", user.id)
-      .gte("started_at", eightWeeksAgo.toISOString())
-      .order("started_at", { ascending: true });
-    if (!data) return;
-    // Group by week (Mon-Sun)
-    const weekMap = new Map<string, { cals: number; sessions: number }>();
-    data.forEach((r: { started_at: string; calories_burned: number }) => {
-      const d = new Date(r.started_at);
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d);
-      monday.setDate(diff);
-      const key = monday.toISOString().slice(0, 10);
-      const cur = weekMap.get(key) ?? { cals: 0, sessions: 0 };
-      weekMap.set(key, { cals: cur.cals + (r.calories_burned ?? 0), sessions: cur.sessions + 1 });
-    });
-    const now = new Date();
-    const result: WeekVolume[] = [];
-    for (let i = 7; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i * 7);
-      const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d);
-      monday.setDate(diff);
-      const key = monday.toISOString().slice(0, 10);
-      const month = monday.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-      const w = weekMap.get(key) ?? { cals: 0, sessions: 0 };
-      result.push({ label: month, ...w });
+    try {
+      const days = await ensureWeek(user.id, gen, weekDates());
+      setWeek(days);
+      setNeedsSetup(false);
+    } catch (e) {
+      console.error("Planning load error", e);
     }
-    setWeeklyVolume(result);
+    setHeroReady(true);
   }, [user]);
 
-  const fetchSessions = useCallback(async () => {
-    if (!user) return;
+  useEffect(() => { void loadWeek(); }, [loadWeek]);
+
+  /* ── Charge une autre semaine (navigation de l'agenda) sans toucher au héros ── */
+  const fetchWeekAt = useCallback(async (offset: number): Promise<PlanningDay[] | null> => {
+    if (!user) return null;
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("workout_sessions")
-      .select("id, user_id, title, category, duration_minutes, calories_burned, started_at, exercises, elapsed_seconds")
-      .eq("user_id", user.id)
-      .order("started_at", { ascending: false })
-      .limit(15);
-    if (!error && data && data.length > 0) {
-      setRealTimeline(data.map(dbSessionToEvent));
-      const exMap: Record<string, Array<{ name: string; sets?: number; reps?: number; weight?: number }>> = {};
-      data.forEach((r: Record<string, unknown>) => {
-        exMap[r.id as string] = (r.exercises as Array<{ name: string; sets?: number; reps?: number; weight?: number }>) ?? [];
-      });
-      setEventExercises(exMap);
-    }
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("onboarding_level, onboarding_sessions_week, onboarding_goals")
+      .eq("id", user.id)
+      .maybeSingle();
+    const hasOnboarding = !!(prof && (prof.onboarding_level || prof.onboarding_sessions_week
+      || (Array.isArray(prof.onboarding_goals) && prof.onboarding_goals.length > 0)));
+    const { location, equip } = await loadLieu(user.id);
+    if (!hasOnboarding) return null;
+    // Lieu optionnel (voir loadWeek) : défaut poids du corps si non réglé.
+    const gen: GenInput = {
+      ctx: ctxFromLieu(location, equip),
+      sessions: prof!.onboarding_sessions_week ?? 3,
+      goals: ((prof!.onboarding_goals as string[] | null) ?? []).map((g) => goalLabels[g] ?? g),
+      level: prof!.onboarding_level,
+      variant: readVariant(user.id),
+      seed: user.id,
+    };
+    try { return await ensureWeek(user.id, gen, weekDatesForOffset(offset)); }
+    catch (e) { console.error("Week fetch error", e); return null; }
   }, [user]);
 
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
-  useEffect(() => { fetchHistory(0); }, [fetchHistory]);
-  useEffect(() => { fetchWeeklyVolume(); }, [fetchWeeklyVolume]);
+  /* Recharge si le planning ou le lieu changent ailleurs (orbe, Organiser…) */
+  useEffect(() => {
+    const handler = () => { void loadWeek(); };
+    window.addEventListener("programme-updated", handler);
+    window.addEventListener("lieu-updated", handler);
+    return () => {
+      window.removeEventListener("programme-updated", handler);
+      window.removeEventListener("lieu-updated", handler);
+    };
+  }, [loadWeek]);
 
-  // ── Charger les séances personnalisées depuis Supabase ──
+  /* ── État du héros ── */
+  const todayDay = week?.[todayIdx] ?? null;
+  const heroState: HeroState = !heroReady ? "loading"
+    : needsSetup ? "setup"
+    : todayDay?.status === "done" ? "done"
+    : hasSeance(todayDay) ? "seance"
+    : "repos";
+
+  /* Prochaine séance de la semaine (état repos) — « Jambes · demain » */
+  const nextLabel = useMemo(() => {
+    if (!week) return null;
+    for (let i = todayIdx + 1; i < 7; i++) {
+      if (hasSeance(week[i]) && week[i].status !== "done") {
+        const when = i === todayIdx + 1 ? "demain" : DAY_FULL[i];
+        return `${dayTitle(week[i])} · ${when}`;
+      }
+    }
+    return null;
+  }, [week, todayIdx]);
+
+  /* Durée / kcal de la séance faite aujourd'hui (une seule petite requête) */
+  useEffect(() => {
+    if (heroState !== "done" || !user) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const startOfDay = new Date(today + "T00:00:00").toISOString();
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("duration_minutes, elapsed_seconds, calories_burned")
+        .eq("user_id", user.id)
+        .gte("started_at", startOfDay)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled && data) {
+        setDoneStats({
+          minutes: data.elapsed_seconds ? Math.max(1, Math.round(data.elapsed_seconds / 60)) : (data.duration_minutes ?? 0),
+          kcal: data.calories_burned ?? 0,
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [heroState, user, today]);
+
+  /* ── Ton élan : agrégat des séances faites sur 8 semaines glissantes ── */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const since = new Date(today + "T00:00:00");
+      since.setDate(since.getDate() - 55);
+      const { data } = await supabase
+        .from("workout_sessions")
+        .select("started_at, elapsed_seconds, duration_minutes, calories_burned")
+        .eq("user_id", user.id)
+        .gte("started_at", since.toISOString())
+        .order("started_at", { ascending: true });
+      if (cancelled) return;
+
+      const ymdLocal = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+      const dayMin = new Map<string, number>();
+      const dayCount = new Map<string, number>();
+      const activeWeeks = new Set<number>();
+      let sessions = 0, minutes = 0, kcal = 0, prevMinutes = 0, record = 0;
+
+      for (const r of data ?? []) {
+        const started = r.started_at as string | null;
+        if (!started) continue;
+        const key = ymdLocal(new Date(started));
+        const min = r.elapsed_seconds
+          ? Math.max(1, Math.round((r.elapsed_seconds as number) / 60))
+          : ((r.duration_minutes as number) ?? 0);
+        dayMin.set(key, (dayMin.get(key) ?? 0) + min);
+        dayCount.set(key, (dayCount.get(key) ?? 0) + 1);
+        if (min > record) record = min;
+        const off = weekOffsetOf(key);
+        activeWeeks.add(off);
+        if (off === 0) { sessions += 1; minutes += min; kcal += (r.calories_burned as number) ?? 0; }
+        if (off === -1) prevMinutes += min;
+      }
+
+      // Série : semaines consécutives actives (la semaine en cours pas encore lancée ne casse rien)
+      let streak = 0;
+      let o = activeWeeks.has(0) ? 0 : -1;
+      while (activeWeeks.has(o)) { streak += 1; o -= 1; }
+
+      const DL = ["L", "M", "M", "J", "V", "S", "D"];
+      const bars: ElanData["bars"] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today + "T00:00:00");
+        d.setDate(d.getDate() - i);
+        const key = ymdLocal(d);
+        const wd = d.getDay(); const idx = wd === 0 ? 6 : wd - 1;
+        bars.push({ label: DL[idx], min: dayMin.get(key) ?? 0, done: (dayCount.get(key) ?? 0) > 0, today: key === today });
+      }
+
+      setElan({ bars, sessions, minutes, kcal, streak, hasHistory: (data?.length ?? 0) > 0, prevMinutes, record });
+    })();
+    return () => { cancelled = true; };
+  }, [user, today]);
+
+  /* ── Bibliothèque perso (Supabase) ── */
   const fetchCustomSessions = useCallback(async () => {
     if (!user) return;
     setLoadingCustom(true);
@@ -2489,951 +3224,516 @@ function ProgressionPageContent() {
       difficulty: r.difficulty as WorkoutSession["difficulty"],
       exercises: r.exercises as number,
       muscles: (r.muscles as string[]) ?? [],
-      // Répare les séances stockées avec accent "var(--accent)" (CSS invalide en
-      // concaténation → bouton « Commencer » invisible) : on retombe sur le hex.
-      accent: ((r.accent as string) ?? "").startsWith("#") ? (r.accent as string) : "#A78BFA",
+      // Système D : toutes les séances = violet (action).
+      accent: "#8B5CF6",
       icon: r.icon as string,
       exerciseList: (r.exercise_list as Exercise[]) ?? [],
-      visibility: (r.visibility as "private" | "friends" | "public") ?? "private",
+      visibility: (r.visibility as Visibility) ?? "private",
     })));
   }, [user]);
 
-  useEffect(() => { fetchCustomSessions(); }, [fetchCustomSessions]);
+  useEffect(() => { void fetchCustomSessions(); }, [fetchCustomSessions]);
 
-  const fetchProgressData = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-    const thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate() - 29);
-    const sevenAgo  = new Date(); sevenAgo.setDate(sevenAgo.getDate() - 6);
-    const [{ data: wData }, { data: cData }] = await Promise.all([
-      supabase.from("weight_logs").select("date, weight_kg")
-        .eq("user_id", user.id).gte("date", toDateStr(thirtyAgo))
-        .order("date", { ascending: true }),
-      supabase.from("nutrition_logs").select("date, calories")
-        .eq("user_id", user.id).gte("date", toDateStr(sevenAgo)),
-    ]);
-    if (wData) setWeights(wData.map((r: { date: string; weight_kg: number }) => ({ date: r.date, weight: r.weight_kg })));
-    const dayNames = ["D", "L", "M", "M", "J", "V", "S"];
-    const calMap: Record<string, number> = {};
-    (cData ?? []).forEach((r: { date: string; calories: number }) => {
-      calMap[r.date] = (calMap[r.date] ?? 0) + r.calories;
+  /* Catalogue + perso fusionnés — les tiennes d'abord, c'est TA bibliothèque */
+  const allSessions = useMemo<MergedSession[]>(() => [
+    ...customSessions.map((s) => ({ ...s, perso: true })),
+    ...workoutSessions.map((s) => ({ ...s, perso: false })),
+  ], [customSessions]);
+
+  /* ── Lancements ── */
+  const startDay = (d: PlanningDay) => {
+    if (!hasSeance(d)) return;
+    setActiveWorkout({
+      id: `planning-${d.date}`,
+      title: dayTitle(d),
+      duration: d.type === "HIIT" ? 30 : 45,
+      difficulty: d.difficulty,
+      category: d.type,
+      exerciseList: d.exerciseList,
+      planningDate: d.date,
     });
-    setCalorieWeek(Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (6 - i));
-      const ds = toDateStr(d);
-      return { date: ds, total: calMap[ds] ?? 0, label: dayNames[d.getDay()] };
-    }));
-  }, [user]); // eslint-disable-line
-
-  useEffect(() => { fetchProgressData(); }, [fetchProgressData]);
-
-  const addWeight = async (kg: number) => {
-    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-    const supabase = createClient();
-    const today = toDateStr(new Date());
-    const { error } = await supabase.from("weight_logs").upsert(
-      { user_id: user.id, date: today, weight_kg: kg },
-      { onConflict: "user_id,date" }
-    );
-    if (!error) {
-      setWeights(prev => {
-        const filtered = prev.filter(w => w.date !== today);
-        return [...filtered, { date: today, weight: kg }].sort((a, b) => a.date.localeCompare(b.date));
-      });
-      showToast(`Poids enregistré : ${kg} kg ✓`);
-    }
   };
+  const startToday = () => { if (todayDay) startDay(todayDay); };
 
-  const deleteWeight = async (date: string) => {
+  /* Drag & drop de l'agenda : persiste les deux jours échangés, puis
+     resynchronise le héros (l'agenda a déjà fait sa mise à jour optimiste). */
+  const moveDays = async (a: PlanningDay, b: PlanningDay, msg: string) => {
     if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("weight_logs")
-      .delete().eq("user_id", user.id).eq("date", date);
-    if (!error) {
-      setWeights(prev => prev.filter(w => w.date !== date));
-      showToast("Entrée supprimée");
+    await Promise.all([saveDay(user.id, a), saveDay(user.id, b)]);
+    showToast(msg);
+    void loadWeek();
+  };
+
+  const startSession = (s: MergedSession) => {
+    if (s.access === "premium" && !canAccessPremium) {
+      setSheet(null);
+      router.push("/premium");
+      return;
     }
-  };
-
-  const updateWeight = async (date: string, kg: number) => {
-    if (!user) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("weight_logs")
-      .update({ weight_kg: kg })
-      .eq("user_id", user.id).eq("date", date);
-    if (!error) {
-      setWeights(prev => prev.map(w => w.date === date ? { ...w, weight: kg } : w));
-      showToast(`Poids mis à jour : ${kg} kg ✓`);
+    const article = getAdviceArticle(s.id);
+    if (article) {
+      setActiveArticle(article);
+      return;
     }
-  };
-
-  const handleStartWorkout = (session: WorkoutSession) => {
-    /* Open the guided workout modal — DB save happens on completion inside WorkoutGuideModal */
-    setActiveWorkout(session);
-    showToast(`${session.title} démarrée ✓`);
-  };
-
-  const displayTimeline = realTimeline;
-
-  const filteredSessions = workoutSessions
-    .filter((s) => categoryFilter === "tous" || s.category === categoryFilter)
-    .sort((a, b) => {
-      const aD = completedWorkouts.has(a.id) ? 1 : 0;
-      const bD = completedWorkouts.has(b.id) ? 1 : 0;
-      return aD - bD;
+    setSheet(null);
+    setActiveWorkout({
+      id: s.id,
+      title: s.title,
+      duration: s.duration,
+      difficulty: s.difficulty,
+      category: s.category,
+      exerciseList: s.exerciseList,
     });
+    showToast(`${s.title} démarrée ✓`);
+  };
 
-  const groups = displayTimeline.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
-    (acc[event.date] = acc[event.date] || []).push(event);
-    return acc;
-  }, {});
+  const handleWorkoutComplete = (target: LaunchTarget) => {
+    if (target.planningDate && user) {
+      void setDayStatus(user.id, target.planningDate, "done");
+      setWeek((prev) => prev?.map((d) => d.date === target.planningDate ? { ...d, status: "done" as const } : d) ?? prev);
+    }
+  };
+
+  /* ── Actions bibliothèque perso ── */
+  const handleVisibilityChange = useCallback(async (sessionId: string, vis: Visibility) => {
+    if (user) {
+      const supabase = createClient();
+      await supabase.from("custom_sessions").update({ visibility: vis }).eq("id", sessionId);
+    }
+    setCustomSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, visibility: vis } : s));
+    const labels = { private: "Séance privée ✓", friends: "Visible par tes amis ✓", public: "Séance publiée 🌐" };
+    showToast(labels[vis]);
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    if (user) {
+      const supabase = createClient();
+      await supabase.from("custom_sessions").delete().eq("id", id);
+    }
+    setCustomSessions((p) => p.filter((cs) => cs.id !== id));
+    showToast("Séance supprimée");
+  };
+
+  /* ── Les trois portes vers la création ──────────────────────────────
+     Elles mènent toutes au même parcours, jamais à une page blanche :
+     depuis la bibliothèque (mouvements cochés), depuis une séance Vaiiya
+     dont on s'inspire, ou depuis la fin d'une impro qu'on veut garder. */
+
+  const ouvrirCreation = (seed: SessionDraft | null) => {
+    /* Le mur avant l'effort : on ne laisse jamais quelqu'un composer huit
+       exercices pour lui dire ensuite que sa place est prise. */
+    if (!peutGarderUneSeance) { setPlein(true); return; }
+    setEditSession(null);
+    setDraftSeed(seed);
+    setNumeroCreation((n) => n + 1);
+    setShowCreateModal(true);
+  };
+
+  /* La bibliothèque rend ses propres exos ; la création relit les reps
+     (« 45s », « 12 par jambe »), d'où le passage par leur libellé. */
+  const depuisMouvements = (exos: LibExercise[]) => {
+    if (exos.length === 0) return;
+    setMouvements(null);
+    setSheet(null);
+    ouvrirCreation({
+      title: titreDepuisExercices(exos),
+      category: categorieDepuisExercices(exos),
+      difficulty: levelToDifficulty(profileLevel),
+      duration: 0,               // recalculée par la modale
+      muscles: [],               // déduits des exercices
+      exerciseList: exos.map((e) => ({
+        name: e.name,
+        sets: e.sets,
+        reps: libelleReps(e.mode, e.reps, e.seconds, e.unite),
+        rest: e.rest,
+        restAfter: 90,
+        auto: e.mode === "temps" ? e.seconds : undefined,
+        tip: e.tip,
+        benefit: e.benefit,
+        muscles: e.muscles,
+      })),
+    });
+  };
+
+  /* « M'en inspirer » : on part d'une séance qui existe, la page blanche
+     est la première friction de toute création. Rien n'est écrit tant que
+     la création n'est pas validée. */
+  const inspirerDe = (s: MergedSession) => {
+    /* Une carte du catalogue ne porte pas forcément sa liste : le tunnel
+       la retrouve par id. On fait pareil, sinon on ouvrirait une création
+       vide en ayant promis « ses exercices ». */
+    const exos = exosDeLaSeance(s);
+    setSheet(null);
+    ouvrirCreation({
+      title: `${s.title} (ma version)`,
+      category: s.category,
+      difficulty: s.difficulty,
+      duration: s.duration,
+      muscles: s.muscles,
+      exerciseList: exos,
+    });
+    if (exos.length === 0) showToast("Séance sans liste détaillée, à toi de la composer");
+  };
+
+  /* « Ajouter à ma semaine » : on COPIE la séance sur le jour choisi et on
+     garde le renvoi vers son modèle (sessionId), comme le fait l'assistant.
+     Le jour cible est réécrit : c'est le sens de « Remplacer » à l'écran. */
+  const planifierSeance = async (s: MergedSession, date: string) => {
+    if (!user) return;
+    const saved = readLieu(user.id);
+    const jour: PlanningDay = {
+      date,
+      type: PLANNING_TYPE_BY_CATEGORY[s.category] ?? "Force",
+      title: s.title,
+      difficulty: normalizeDifficulty(s.difficulty),
+      location: ctxFromLieu(saved.location, saved.equip),
+      exerciseList: exosDeLaSeance(s),
+      sessionId: s.id,
+      status: "planned",
+    };
+    try {
+      await saveDay(user.id, jour);
+      setWeek((prev) => prev?.map((d) => (d.date === date ? jour : d)) ?? prev);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("programme-updated", { detail: { date } }));
+      }
+      showToast(`${s.title} · ${dayLabelLong(date)} ✓`);
+    } catch {
+      showToast("Impossible de l’ajouter à ta semaine");
+    }
+  };
+
+  /* Fin d'une impro : elle n'existe nulle part, on propose de la garder. */
+  const garderImpro = (t: LaunchTarget) => {
+    const exos = t.exerciseList ?? [];
+    handleCreateOrEdit({
+      id: nouvelIdSeance(),
+      title: t.title,
+      subtitle: `${SOUS_TITRE_CATEGORIE[normaliserCategorie(t.category)]} · Ma séance`,
+      category: normaliserCategorie(t.category),
+      duration: t.duration,
+      difficulty: normalizeDifficulty(t.difficulty),
+      exercises: exos.length || 1,
+      muscles: [...new Set(exos.flatMap((e) => e.muscles ?? []))],
+      accent: ACCENT_BY_CATEGORY[normaliserCategorie(t.category)],
+      icon: ICON_BY_CATEGORY[normaliserCategorie(t.category)],
+      exerciseList: exos,
+    });
+    showToast("Séance ajoutée à tes séances ✓");
+  };
+
+  /* La modale ne connaît que le contenu de la séance ; l'identité (id,
+     accent, icône, sous-titre) reste ici, avec l'enregistrement. */
+  const handleDraft = (draft: SessionDraft) => {
+    handleCreateOrEdit({
+      id: editSession?.id ?? nouvelIdSeance(),
+      title: draft.title,
+      subtitle: `${SOUS_TITRE_CATEGORIE[draft.category]} · Ma séance`,
+      category: draft.category,
+      duration: draft.duration,
+      difficulty: draft.difficulty,
+      exercises: draft.exerciseList.length || 1,
+      muscles: draft.muscles,
+      accent: ACCENT_BY_CATEGORY[draft.category],
+      icon: ICON_BY_CATEGORY[draft.category],
+      exerciseList: draft.exerciseList,
+      visibility: editSession?.visibility,
+      collections: editSession?.collections,
+    });
+  };
+
+  const handleCreateOrEdit = async (s: WorkoutSession) => {
+    const supabase = createClient();
+    const existingSession = customSessions.find((cs) => cs.id === s.id);
+    /* Dernier filet : modifier reste toujours possible, seul l'ajout compte. */
+    if (!existingSession && !peutGarderUneSeance) { setPlein(true); return; }
+    const row = {
+      id: s.id,
+      user_id: user?.id,
+      title: s.title,
+      subtitle: s.subtitle,
+      category: s.category,
+      duration: s.duration,
+      difficulty: s.difficulty,
+      exercises: s.exercises,
+      muscles: s.muscles,
+      accent: s.accent,
+      icon: s.icon,
+      exercise_list: s.exerciseList ?? [],
+      visibility: existingSession?.visibility ?? "private",
+      updated_at: new Date().toISOString(),
+    };
+    if (editSession) {
+      if (user) {
+        const { error } = await supabase.from("custom_sessions").update(row).eq("id", s.id);
+        if (error) { console.error(error); showToast("Erreur lors de la modification"); return; }
+      }
+      setCustomSessions((p) => p.map((cs) => cs.id === s.id ? s : cs));
+      showToast(`"${s.title}" modifiée ✓`);
+    } else {
+      if (user) {
+        const { error } = await supabase.from("custom_sessions").insert(row);
+        if (error) { console.error(error); showToast("Erreur lors de la création"); return; }
+      }
+      setCustomSessions((p) => [s, ...p]);
+      showToast(`"${s.title}" créée ✓`);
+    }
+    setEditSession(null);
+  };
+
+  /* ── Bifurcation : le libellé vit avec la réalité du jour ── */
+  const askLabel =
+    heroState === "done" ? "Encore de l'énergie ?"
+    : heroState === "repos" ? "Envie de bouger quand même ?"
+    : heroState === "setup" ? "Ou directement :"
+    : "Pas ce qui était prévu ?";
+
+  /* Défauts « J'improvise » depuis le lieu connu */
+  const lieu = user ? readLieu(user.id) : { location: null, equip: null };
+  const improDefaultPlace: ImproPlace = lieu.location === "salle" ? "salle" : "maison";
+  const improDefaultHalteres = lieu.equip === "halteres";
+
+  /* En-tête : la date du jour — cette page vit au présent */
+  const dateLabel = useMemo(() => {
+    const s = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col px-4 pt-10 pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10 relative overflow-x-hidden">
-      {/* ── Contenu ── */}
-      <div className="relative flex flex-col flex-1">
+    <div className="min-h-screen flex flex-col px-5 pt-[calc(env(safe-area-inset-top)+72px)] pb-36 md:pl-28 md:pr-8 md:pt-12 md:pb-16 relative overflow-x-hidden">
+      <div className="w-full max-w-xl flex flex-col">
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mb-6"
-      >
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
-          Votre Journey
-        </p>
-        <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>Ma Progression</h1>
-      </motion.div>
-
-      {/* ── Tab switcher ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.05 }}
-        className="flex gap-2 mb-8 overflow-x-auto whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0"
-        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
-      >
-        {([
-          { key: "progression",    label: "Progression" },
-          { key: "mes-seances",    label: "Mes Séances" },
-          { key: "nutrition",      label: "Nutrition" },
-          { key: "analyse",        label: "Analyse" },
-          { key: "badges",         label: "Badges" },
-        ] as const).map(({ key, label }) => (
-          <motion.button
-            key={key}
-            data-tour-anchor={`prog-tab-${key}`}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setActiveTab(key)}
-            className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex-shrink-0"
-            style={activeTab === key
-              ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 2px 12px rgba(var(--accent-rgb),0.2)" }
-              : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.7)" }
-            }
-          >
-            {label}
-          </motion.button>
-        ))}
-      </motion.div>
-
-      <AnimatePresence mode="wait">
-
-      {/* ══════════ TAB PROGRESSION ══════════ */}
-      {activeTab === "progression" && (
+        {/* ── En-tête : date + titre ── */}
         <motion.div
-          key="progression-tab"
-          data-tour-anchor="prog-content-progression"
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col gap-0"
+          initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          className="mb-5"
         >
-
-      {/* ── Graphiques ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.05 }}
-        className="mb-8 max-w-5xl"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-              Analyse
-            </p>
-            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Statistiques</h2>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <WeightChart
-            data={weights}
-            range={weightRange}
-            onRangeChange={setWeightRange}
-            onAdd={addWeight}
-            onDelete={deleteWeight}
-            onUpdate={updateWeight}
-            goalType={fitnessGoal}
-          />
-          <WorkoutWeekCard sessions={displayTimeline} />
-          <PRChart
-            prs={prs}
-            onAdd={async (exercise, value, unit) => {
-              if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-              const supabase = createClient();
-              const { error } = await supabase.from("personal_records").insert({
-                user_id: user.id, exercise, value, unit, date: toDateStr(new Date()),
-              });
-              if (!error) { showToast("Record enregistré !"); fetchPRs(); }
-              else { console.error("save PR:", error); showToast("Enregistrement impossible, réessaie"); }
-            }}
-            onDelete={async (id) => {
-              if (!user) return;
-              const supabase = createClient();
-              const { error } = await supabase.from("personal_records").delete().eq("id", id).eq("user_id", user.id);
-              if (!error) { showToast("Record supprimé"); fetchPRs(); }
-            }}
-          />
-          <VolumeChart data={weeklyVolume} />
-        </div>
-      </motion.div>
-
-
-      {/* ── Timeline ── */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="flex flex-col gap-6"
-      >
-        <motion.div variants={itemVariants}>
           <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "var(--text-3)" }}>
-            Historique
+            {dateLabel}
           </p>
-          <h2 className="text-lg font-light mb-4" style={{ color: "var(--text-1)" }}>Activité récente</h2>
+          <h1 className="text-2xl font-extralight tracking-tight" style={{ color: "var(--text-1)" }}>
+            <em className="not-italic font-light" style={{
+              background: "linear-gradient(135deg,var(--accent),var(--gold))",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              fontStyle: "italic",
+              display: "inline-block", paddingRight: "0.14em",  // même traitement que « nutrition »
+            }}>Entraînement</em>
+          </h1>
         </motion.div>
 
-        {displayTimeline.length === 0 && (
-          <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl"
-              style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.3),rgba(var(--cream-mid-rgb),0.3))" }}>
-              🏋️
-            </div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Aucune activité encore</p>
-            <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Lance ta première séance pour<br/>commencer ton historique !</p>
-          </motion.div>
+        {/* ── ① Héros « Aujourd'hui » ── */}
+        <section data-tour-anchor="prog-hero">
+          <TodayHero
+            state={heroState}
+            day={todayDay}
+            nextLabel={nextLabel}
+            doneStats={doneStats}
+            onStart={startToday}
+            onImprovise={() => setSheet("improviser")}
+            onOrganise={() => setSheet("organiser")}
+            onShift={() => openAssistant("Décale ma séance d'aujourd'hui à un autre jour")}
+            onReplace={() => openAssistant("Remplace ma séance d'aujourd'hui par autre chose")}
+          />
+        </section>
+
+        {/* ── ② Bifurcation ── */}
+        <motion.p
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.15 }}
+          className="text-[16px] font-light mt-6 mb-3" style={{ color: "var(--text-1)" }}
+        >
+          {askLabel}
+        </motion.p>
+        <motion.div
+          data-tour-anchor="prog-forks"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+          className="grid grid-cols-2 gap-3"
+        >
+          <ForkCard kind="improvise" onClick={() => setSheet("improviser")} />
+          <ForkCard kind="choisis" count={allSessions.length} onClick={() => setSheet("choisir")} />
+        </motion.div>
+
+        {/* ── ③ Les mouvements ──
+           La vitrine passe APRÈS la bifurcation : on répond d'abord à
+           « je fais quoi maintenant », on donne envie ensuite. */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.22 }}
+          className="mt-6"
+        >
+          <MouvementsRow onOuvrir={(exo) => setMouvements({ fiche: exo ?? null })} />
+        </motion.div>
+
+        {/* ── ④ Ma semaine ── */}
+        <motion.div
+          data-tour-anchor="prog-semaine"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
+          className="mt-4"
+        >
+          <WeekStrip week={week} todayIdx={todayIdx} onOrganise={() => setSheet("semaine")} />
+        </motion.div>
+
+        {/* ── ⑤ Ton élan ── */}
+        <motion.div
+          data-tour-anchor="prog-elan"
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
+          className="mt-3"
+        >
+          <ElanStrip data={elan} onOpen={() => setSheet("elan")} />
+        </motion.div>
+      </div>
+
+      {/* ══ Sheets ══ */}
+      <AnimatePresence>
+        {sheet === "semaine" && (
+          <SemaineSheet
+            week={week}
+            todayIdx={todayIdx}
+            fetchWeekAt={fetchWeekAt}
+            onClose={() => { setSheet(null); void loadWeek(); }}
+            onStartDay={(d) => { setSheet(null); startDay(d); }}
+            onAsk={(p) => { setSheet(null); openAssistant(p); }}
+            onAddSession={() => setSheet("choisir")}
+            onMove={moveDays}
+          />
         )}
-
-        {Object.entries(groups).map(([date, events]) => (
-          <div key={date}>
-            <motion.p
-              variants={itemVariants}
-              className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-3"
-              style={{ color: "var(--text-3)" }}
-            >
-              {date}
-            </motion.p>
-            <div className="relative flex flex-col gap-3">
-              <div
-                className="absolute left-[19px] top-6 bottom-0 w-px"
-                style={{ background: "linear-gradient(to bottom, rgba(var(--violet-mid-rgb),0.6), rgba(var(--cream-mid-rgb),0.6), transparent)" }}
-              />
-              {events.map((event, i) => {
-                const EvIcon = eventIcons[event.type];
-                return (
-                  <motion.div key={i} variants={itemVariants} className="flex items-start gap-4 group">
-                    <div className="relative flex-shrink-0 mt-1">
-                      <div className={`${event.cardClass} lg-highlight relative w-10 h-10 rounded-2xl flex items-center justify-center`}>
-                        <EvIcon size={14} strokeWidth={1.5} style={{ color: event.dot }} />
-                      </div>
-                    </div>
-                    <div className="lg-surface lg-highlight relative flex-1 rounded-2xl overflow-hidden">
-                      {/* Header row */}
-                      <div className="flex items-center justify-between gap-2 p-4 pb-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{event.title}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Clock size={9} style={{ color: "var(--text-3)" }} />
-                            <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{event.time}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <motion.button
-                            whileTap={{ scale: 0.92 }}
-                            onClick={() => setShareData(event.performance)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer"
-                            style={{
-                              background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
-                              boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8), 0 2px 8px rgba(var(--accent-rgb),0.15)",
-                            }}
-                          >
-                            <Share2 size={10} strokeWidth={2} style={{ color: "var(--text-1)" }} />
-                            <span className="text-[10px] font-semibold" style={{ color: "var(--text-1)" }}>Partager</span>
-                          </motion.button>
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setExpandedEvent(expandedEvent === (event.id ?? event.title + event.date) ? null : (event.id ?? event.title + event.date))}
-                            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer"
-                            style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
-                          >
-                            <motion.div animate={{ rotate: expandedEvent === (event.id ?? event.title + event.date) ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                              <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--accent)" }} />
-                            </motion.div>
-                          </motion.button>
-                        </div>
-                      </div>
-                      {/* Desc */}
-                      <p className="text-xs px-4 pb-3 font-light" style={{ color: "var(--text-2)" }}>{event.desc}</p>
-                      {/* Expandable exercises */}
-                      <AnimatePresence initial={false}>
-                        {expandedEvent === (event.id ?? event.title + event.date) && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.22 }}
-                            style={{ overflow: "hidden", borderTop: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}
-                          >
-                            <div className="px-4 py-3 flex flex-col gap-1.5">
-                              {(() => {
-                                const exs = event.id ? (eventExercises[event.id] ?? []) : [];
-                                if (exs.length === 0) {
-                                  return <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Aucun exercice enregistré pour cette séance.</p>;
-                                }
-                                return exs.map((ex, j) => (
-                                  <div key={j} className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: event.dot }} />
-                                    <p className="text-xs font-medium flex-1" style={{ color: "var(--text-1)" }}>{ex.name}</p>
-                                    {(ex.sets || ex.reps || ex.weight) && (
-                                      <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
-                                        {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
-                                      </p>
-                                    )}
-                                  </div>
-                                ));
-                              })()}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </motion.div>
-
-        </motion.div>
-      )}
-
-      {/* ══════════ TAB MES SÉANCES ══════════ */}
-      {activeTab === "mes-seances" && (
-        <motion.div
-          key="mes-seances-tab"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col gap-0"
-        >
-
-          {/* ── Mon planning de la semaine (source de vérité, piloté par l'IA) ── */}
-          <motion.section
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mb-8 max-w-2xl rounded-3xl p-5"
-            style={{ background: "rgba(var(--surface-rgb),0.55)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-                  Cette semaine
-                </p>
-                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Mon planning</h2>
-              </div>
-              <span
-                className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-                style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
-              >
-                Piloté par l&apos;IA ✦
-              </span>
-            </div>
-            <WeeklyProgramme />
-            <p className="text-[11px] font-light mt-3 leading-snug" style={{ color: "var(--text-3)" }}>
-              C&apos;est ce que tu suis cette semaine. Demande à l&apos;orbe ✦ de remplacer, décaler ou changer le lieu d&apos;un jour.
-            </p>
-          </motion.section>
-
-          {/* Section header */}
-          <motion.div
-            data-tour-anchor="prog-seances-catalogue"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="flex items-center justify-between mb-6 max-w-5xl"
-          >
-            <div>
-              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-                Catalogue
-              </p>
-              <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Séances Vaiiya</h2>
-            </div>
-            <span
-              className="text-[9px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-              style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
-            >
-              {workoutSessions.length} séances
-            </span>
-          </motion.div>
-
-          {/* Category filter + arrow buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-            className="flex items-center gap-2 mb-4 max-w-5xl"
-          >
-            <div className="flex gap-2 flex-1 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-              {categoryFilters.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setCategoryFilter(key)}
-                  className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                  style={
-                    categoryFilter === key
-                      ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                      : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
-                  }
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="hidden md:flex gap-1 flex-shrink-0">
-              {([{ dir: "left" as const, Icon: ChevronLeft }, { dir: "right" as const, Icon: ChevronRight }]).map(({ dir, Icon }) => (
-                <motion.button
-                  key={dir}
-                  whileTap={{ scale: 0.88 }}
-                  onClick={() => scroll(dir)}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                  style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.8)" }}
-                >
-                  <Icon size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Cards carousel */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="relative -mx-6 mb-10"
-          >
-            <div className="absolute left-0 top-0 bottom-4 w-8 z-10 pointer-events-none"
-              style={{ background: "linear-gradient(to right, rgba(248,247,252,0.9) 0%, transparent 100%)" }} />
-            <div className="absolute right-0 top-0 bottom-4 w-14 z-10 pointer-events-none flex items-center justify-end pr-3"
-              style={{ background: "linear-gradient(to left, rgba(248,247,252,0.95) 0%, transparent 100%)" }}>
-              <motion.button
-                animate={{ x: [0, 5, 0] }}
-                transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                onClick={() => scroll("right")}
-                whileTap={{ scale: 0.85 }}
-                className="cursor-pointer"
-                style={{ pointerEvents: "all", background: "none", border: "none", padding: 4 }}
-                aria-label="Défiler à droite"
-              >
-                <ChevronRight size={16} strokeWidth={2.5} style={{ color: "#C8B8D8" }} />
-              </motion.button>
-            </div>
-
-            <div
-              ref={scrollRef}
-              className="flex gap-3 overflow-x-auto pb-4 px-6"
-              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredSessions.map((session) => (
-                  <WorkoutCard
-                    key={session.id}
-                    session={session}
-                    gender={settings.gender}
-                    isActive={activeWorkout?.id === session.id}
-                    isDone={completedWorkouts.has(session.id)}
-                    onStart={handleStartWorkout}
-                  />
-                ))}
-              </AnimatePresence>
-              {/* "Créer" placeholder card */}
-              <motion.div
-                data-tour-anchor="prog-seances-create"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ y: -3, scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setShowCreateModal(true)}
-                className="flex-shrink-0 rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer"
-                style={{
-                  width: 180,
-                  minHeight: 280,
-                  background: "rgba(var(--surface-rgb),0.5)",
-                  backdropFilter: "blur(10px)",
-                  border: "2px dashed rgba(var(--accent-rgb),0.35)",
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}
-                >
-                  <Plus size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
-                </div>
-                <div className="text-center px-4">
-                  <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Créer</p>
-                  <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>Ma propre séance</p>
-                </div>
-              </motion.div>
-              <div className="flex-shrink-0 w-6" />
-            </div>
-          </motion.div>
-
-          {/* ── Ma Bibliothèque ── */}
-          {(() => {
-            const filteredCustom = customSessions.filter(
-              s => libraryFilter === "tous" || s.category === libraryFilter
-            );
-            const totalMin = customSessions.reduce((acc, s) => acc + s.duration, 0);
-
-            return (
-              <motion.div
-                data-tour-anchor="prog-seances-library"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.15 }}
-                className="max-w-5xl mb-8"
-              >
-                {/* Section header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
-                      Mes créations
-                    </p>
-                    <h2 className="text-lg font-light flex items-center gap-2" style={{ color: "var(--text-1)" }}>
-                      Ma Bibliothèque
-                      {customSessions.length > 0 && (
-                        <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: "rgba(var(--accent-rgb),0.12)", color: "var(--accent)" }}
-                        >
-                          {customSessions.length}
-                        </span>
-                      )}
-                    </h2>
-                  </div>
-                  <motion.button
-                    whileTap={{ scale: 0.93 }}
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }}
-                  >
-                    <Plus size={13} strokeWidth={2} />
-                    Créer
-                  </motion.button>
-                </div>
-
-                {/* Summary banner */}
-                {customSessions.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-4"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.16) 0%, rgba(var(--cream-mid-rgb),0.13) 100%)",
-                      border: "1px solid rgba(var(--accent-rgb),0.16)",
-                    }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.45) 0%, rgba(var(--cream-mid-rgb),0.4) 100%)" }}
-                    >
-                      <Sparkles size={15} strokeWidth={1.4} style={{ color: "var(--accent)" }} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
-                        {customSessions.length} séance{customSessions.length > 1 ? "s" : ""} personnalisée{customSessions.length > 1 ? "s" : ""}
-                      </p>
-                      <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
-                        {totalMin} min de contenu créé sur mesure
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Category filter chips */}
-                {customSessions.length > 0 && (
-                  <div className="flex gap-2 mb-5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-                    {categoryFilters.map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => setLibraryFilter(key)}
-                        className="flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all duration-150"
-                        style={libraryFilter === key
-                          ? { background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)" }
-                          : { background: "rgba(var(--surface-rgb),0.55)", color: "var(--text-3)", border: "1px solid rgba(var(--surface-rgb),0.6)" }
-                        }
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Grid content */}
-                {loadingCustom ? (
-                  <div className="flex items-center gap-2 py-4">
-                    <motion.div
-                      className="w-4 h-4 rounded-full border-2"
-                      style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
-                    />
-                    <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement de ta bibliothèque…</span>
-                  </div>
-                ) : filteredCustom.length > 0 ? (
-                  <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                  >
-                    <AnimatePresence mode="popLayout">
-                      {filteredCustom.map(s => (
-                        <LibraryCard
-                          key={s.id}
-                          session={s}
-                          isActive={activeWorkout?.id === s.id}
-                          onStart={handleStartWorkout}
-                          onEdit={(session) => { setEditSession(session); setShowCreateModal(true); }}
-                          onDelete={async (id) => {
-                            if (user) {
-                              const supabase = createClient();
-                              await supabase.from("custom_sessions").delete().eq("id", id);
-                            }
-                            setCustomSessions(p => p.filter(cs => cs.id !== id));
-                          }}
-                          onVisibilityChange={handleVisibilityChange}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </motion.div>
-                ) : customSessions.length === 0 ? (
-                  /* Empty state */
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center justify-center py-14 gap-5 rounded-3xl"
-                    style={{ background: "rgba(var(--surface-rgb),0.55)", border: "1px dashed rgba(var(--accent-rgb),0.3)" }}
-                  >
-                    <div
-                      className="w-16 h-16 rounded-3xl flex items-center justify-center"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(var(--violet-mid-rgb),0.35) 0%, rgba(var(--cream-mid-rgb),0.3) 100%)",
-                        border: "1px solid rgba(var(--accent-rgb),0.15)",
-                      }}
-                    >
-                      <Sparkles size={24} strokeWidth={1.3} style={{ color: "var(--accent)" }} />
-                    </div>
-                    <div className="text-center px-6">
-                      <p className="text-base font-light" style={{ color: "var(--text-1)" }}>Ta bibliothèque est vide</p>
-                      <p className="text-xs font-light mt-1.5 leading-relaxed" style={{ color: "var(--text-3)" }}>
-                        Crée ta première séance sur mesure et retrouve-la ici à tout moment.
-                      </p>
-                    </div>
-                    <motion.button
-                      whileTap={{ scale: 0.96 }}
-                      onClick={() => setShowCreateModal(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
-                      style={{
-                        background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--cream-mid) 100%)",
-                        color: "var(--text-1)",
-                        boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
-                      }}
-                    >
-                      <Plus size={14} strokeWidth={2} />
-                      Créer ma première séance
-                    </motion.button>
-                  </motion.div>
-                ) : (
-                  /* No sessions match filter */
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                    style={{ background: "rgba(var(--surface-rgb),0.4)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}
-                  >
-                    <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
-                      Aucune séance dans cette catégorie
-                    </p>
-                    <button
-                      onClick={() => setLibraryFilter("tous")}
-                      className="text-xs font-medium cursor-pointer mt-1"
-                      style={{ color: "var(--accent)" }}
-                    >
-                      Voir toutes les séances
-                    </button>
-                  </motion.div>
-                )}
-              </motion.div>
-            );
-          })()}
-
-          {/* ── Historique des séances ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="max-w-5xl mt-2"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-0.5" style={{ color: "var(--text-3)" }}>Toutes les séances</p>
-                <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Historique</h2>
-              </div>
-            </div>
-
-            {historySessions.length === 0 && !historyLoading && (
-              <div className="flex flex-col items-center py-10 gap-2 rounded-2xl"
-                style={{ background: "rgba(var(--surface-rgb),0.4)", border: "1px solid rgba(var(--surface-rgb),0.6)" }}>
-                <Dumbbell size={24} strokeWidth={1.4} style={{ color: "var(--violet-mid)" }} />
-                <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>Aucune séance enregistrée encore.</p>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-              {historySessions.map((s, i) => {
-                const isExpanded = historyExpanded === s.id;
-                const date = new Date(s.started_at);
-                const dateLabel = date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-                const timeLabel = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-                const dur = s.elapsed_seconds > 0
-                  ? `${Math.floor(s.elapsed_seconds / 60)} min`
-                  : s.duration_minutes > 0 ? `${s.duration_minutes} min` : null;
-                const catColors: Record<string, string> = {
-                  force: "var(--accent)", cardio: "#34D399", mobilite: "#FBBF24", yoga: "#F9A8D4", hiit: "#F87171", sport: "#60A5FA",
-                };
-                const catColor = catColors[s.category] ?? "var(--text-3)";
-
-                return (
-                  <motion.div
-                    key={s.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="rounded-2xl overflow-hidden cursor-pointer"
-                    style={{ background: "rgba(var(--surface-rgb),0.85)", border: "1px solid rgba(var(--violet-mid-rgb),0.18)", boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)" }}
-                    onClick={() => setHistoryExpanded(isExpanded ? null : s.id)}
-                  >
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${catColor}18` }}>
-                        <Dumbbell size={13} strokeWidth={1.8} style={{ color: catColor }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{s.title}</p>
-                        <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{dateLabel} · {timeLabel}</p>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {dur && <span className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>{dur}</span>}
-                        {s.calories_burned > 0 && (
-                          <span className="text-[11px] font-medium" style={{ color: "var(--gold)" }}>{s.calories_burned} kcal</span>
-                        )}
-                        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                          <ChevronRight size={13} strokeWidth={2} style={{ color: "var(--text-3)", transform: "rotate(90deg)" }} />
-                        </motion.div>
-                      </div>
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.22 }}
-                          style={{ overflow: "hidden", borderTop: "1px solid rgba(var(--violet-mid-rgb),0.15)" }}
-                        >
-                          <div className="px-4 py-3 flex flex-col gap-1.5">
-                            {s.exercises.length === 0 ? (
-                              <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Aucun détail d&apos;exercice enregistré.</p>
-                            ) : (
-                              s.exercises.map((ex, j) => (
-                                <div key={j} className="flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: catColor }} />
-                                  <p className="text-xs font-medium flex-1" style={{ color: "var(--text-1)" }}>{ex.name}</p>
-                                  {(ex.sets || ex.reps || ex.weight) && (
-                                    <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>
-                                      {[ex.sets && `${ex.sets} séries`, ex.reps && `${ex.reps} reps`, ex.weight && `${ex.weight} kg`].filter(Boolean).join(" · ")}
-                                    </p>
-                                  )}
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {historyLoading && (
-              <div className="flex items-center justify-center gap-2 py-4">
-                <motion.div className="w-4 h-4 rounded-full border-2"
-                  style={{ borderColor: "rgba(var(--accent-rgb),0.3)", borderTopColor: "var(--accent)" }}
-                  animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
-                <span className="text-xs font-light" style={{ color: "var(--text-3)" }}>Chargement…</span>
-              </div>
-            )}
-
-            {historyHasMore && !historyLoading && historySessions.length > 0 && (
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => fetchHistory(historyPage + 1, true)}
-                className="w-full mt-3 py-2.5 rounded-2xl text-sm font-semibold cursor-pointer"
-                style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--accent)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}
-              >
-                Voir plus
-              </motion.button>
-            )}
-          </motion.div>
-
-        </motion.div>
-      )}
-
-      {/* ══════════ TAB NUTRITION ══════════ */}
-      {activeTab === "nutrition" && (
-        <motion.div
-          key="nutrition-tab"
-          data-tour-anchor="prog-content-nutrition"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-        >
-          <NutritionTab showBackButton={false} />
-        </motion.div>
-      )}
-
-
-      {/* ══════════ TAB ANALYSE ══════════ */}
-      {activeTab === "analyse" && (
-        <motion.div
-          key="analyse-tab"
-          data-tour-anchor="prog-content-analyse"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-        >
-          <ExerciseAnalyzer />
-        </motion.div>
-      )}
-
-      {/* ══════════ TAB BADGES ══════════ */}
-      {activeTab === "badges" && (
-        <motion.div
-          key="badges-tab"
-          data-tour-anchor="prog-content-badges"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 16 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Badges />
-        </motion.div>
-      )}
-
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "organiser" && (
+          <OrganiserSheet onClose={() => { setSheet(null); void loadWeek(); }} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "elan" && elan && (
+          <ElanSheet data={elan} onClose={() => setSheet(null)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "choisir" && (
+          <ChooseSheet
+            key={choisirCible ?? "collections"}
+            sessions={allSessions}
+            week={week}
+            loading={loadingCustom}
+            canAccessPremium={canAccessPremium}
+            maxSeances={maxSeances}
+            catInitial={choisirCible}
+            onClose={() => { setSheet(null); setChoisirCible(null); }}
+            onStart={startSession}
+            onUpgrade={() => { setSheet(null); router.push("/premium"); }}
+            onCreate={() => ouvrirCreation(null)}
+            onEdit={(s) => { setDraftSeed(null); setEditSession(s); setShowCreateModal(true); }}
+            onDelete={handleDelete}
+            onVisibilityChange={handleVisibilityChange}
+            onInspirer={inspirerDe}
+            onPlanifier={(s, date) => { void planifierSeance(s, date); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {plein && (
+          <PleinSheet
+            max={maxSeances}
+            onClose={() => setPlein(false)}
+            onVoir={() => { setPlein(false); setChoisirCible("tiennes"); setSheet("choisir"); }}
+            onPremium={() => { setPlein(false); router.push("/premium"); }}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet === "improviser" && (
+          <ImproviseSheet
+            defaultPlace={improDefaultPlace}
+            defaultHalteres={improDefaultHalteres}
+            difficulty={levelToDifficulty(profileLevel)}
+            onClose={() => setSheet(null)}
+            onLaunch={(t) => { setSheet(null); setActiveWorkout(t); showToast(`${t.title} prête ✦`); }}
+          />
+        )}
       </AnimatePresence>
 
-      <SharePerformanceModal
-        open={shareData !== null}
-        onClose={() => setShareData(null)}
-        data={shareData ?? displayTimeline[0]?.performance ?? { type: "workout", title: "", date: "", metrics: [] }}
-      />
+      {/* ══ La vitrine des mouvements ══ */}
+      <AnimatePresence>
+        {mouvements && (
+          <ExerciseLibrarySheet
+            mode="exploration"
+            dejaChoisis={[]}
+            ficheInitiale={mouvements.fiche}
+            onClose={() => setMouvements(null)}
+            onAjouter={depuisMouvements}
+            onAjouterLibre={(nom) => {
+              /* Exo maison : il part sans animation, l'écran l'a dit. */
+              setMouvements(null);
+              ouvrirCreation({
+                title: "",
+                category: "force",
+                difficulty: levelToDifficulty(profileLevel),
+                duration: 0,
+                muscles: [],
+                exerciseList: [{
+                  name: nom, sets: 3, reps: "12 reps", rest: 60, restAfter: 90,
+                  tip: "", benefit: "", muscles: [],
+                }],
+              });
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* ── Guided workout modal ── */}
+      {/* ══ Lecteur guidé ══ */}
       <AnimatePresence>
         {activeWorkout && (
           <WorkoutGuideModal
             sessionId={activeWorkout.id}
             title={activeWorkout.title}
-            accent={activeWorkout.accent}
+            accent="var(--accent)"
             duration={activeWorkout.duration}
             difficulty={activeWorkout.difficulty}
             category={activeWorkout.category}
+            heroImage={`/entrainement/${resolveArt({ title: activeWorkout.title, category: activeWorkout.category as WorkoutCategory | undefined }).img}.webp`}
             exerciseList={activeWorkout.exerciseList}
             onClose={() => setActiveWorkout(null)}
-            onComplete={() => {
-              setCompletedWorkouts((prev) => new Set([...prev, activeWorkout.id]));
-              /* WorkoutGuideModal saves to DB on completion — refresh list after a short delay */
-              setTimeout(fetchSessions, 1200);
-            }}
+            onComplete={() => handleWorkoutComplete(activeWorkout)}
+            /* Seule une impro n'existe nulle part : c'est elle qu'on
+               perdrait. Une séance du catalogue ou du planning est déjà
+               quelque part, on ne propose rien. Places prises : on ne
+               propose rien non plus, plutôt qu'un mur en fin de séance. */
+            onGarder={user && peutGarderUneSeance && activeWorkout.id.startsWith("improv-") && activeWorkout.exerciseList?.length
+              ? () => garderImpro(activeWorkout)
+              : undefined}
           />
         )}
       </AnimatePresence>
 
-      {/* ── Create session modal ── */}
+      {/* ══ Lecteur des mini-cours ══ */}
+      <AnimatePresence>
+        {activeArticle && (
+          <AdviceReaderSheet
+            article={activeArticle}
+            onClose={() => setActiveArticle(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ══ Création / édition de séance perso ══ */}
       <AnimatePresence>
         {showCreateModal && (
           <CreateSessionModal
-            key={editSession?.id ?? "new"}
-            onClose={() => { setShowCreateModal(false); setEditSession(null); }}
-            editSession={editSession}
-            onCreate={async (s) => {
-              const supabase = createClient();
-              const existingSession = customSessions.find(cs => cs.id === s.id);
-              const row = {
-                id: s.id,
-                user_id: user?.id,
-                title: s.title,
-                subtitle: s.subtitle,
-                category: s.category,
-                duration: s.duration,
-                difficulty: s.difficulty,
-                exercises: s.exercises,
-                muscles: s.muscles,
-                accent: s.accent,
-                icon: s.icon,
-                exercise_list: s.exerciseList ?? [],
-                visibility: existingSession?.visibility ?? "private",
-                updated_at: new Date().toISOString(),
-              };
-              if (editSession) {
-                if (user) {
-                  const { error } = await supabase.from("custom_sessions").update(row).eq("id", s.id);
-                  if (error) { console.error(error); showToast("Erreur lors de la modification"); return; }
-                }
-                setCustomSessions(p => p.map(cs => cs.id === s.id ? s : cs));
-                showToast(`"${s.title}" modifiée ✓`);
-              } else {
-                if (user) {
-                  const { error } = await supabase.from("custom_sessions").insert(row);
-                  if (error) { console.error(error); showToast("Erreur lors de la création"); return; }
-                }
-                setCustomSessions(p => [s, ...p]);
-                showToast(`"${s.title}" créée ✓`);
-              }
-              setEditSession(null);
-            }}
+            key={editSession?.id ?? `new-${numeroCreation}`}
+            isEdit={!!editSession}
+            initial={editSession ? {
+              title: editSession.title,
+              category: editSession.category,
+              difficulty: editSession.difficulty,
+              duration: editSession.duration,
+              muscles: editSession.muscles,
+              exerciseList: editSession.exerciseList ?? [],
+            } : draftSeed}
+            onClose={() => { setShowCreateModal(false); setEditSession(null); setDraftSeed(null); }}
+            onSubmit={handleDraft}
           />
         )}
       </AnimatePresence>
 
+      {/* ══ Toast ══ */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -3446,7 +3746,6 @@ function ProgressionPageContent() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }

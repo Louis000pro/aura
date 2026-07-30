@@ -1,10 +1,17 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, CalendarDays, BookOpen } from "lucide-react";
+import { Plus, X, Check, Camera, Upload, Loader2, Edit2, Barcode, Minus, ChevronLeft, ChevronRight, ChevronDown, CalendarDays, BookOpen, Heart, Sparkles, SwitchCamera, Star, Target, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase";
+import { useNutritionGoals } from "@/hooks/useNutritionGoals";
+import WeighInPrompt from "@/components/WeighInPrompt";
+import TastePrefsPrompt from "@/components/TastePrefsPrompt";
+import RecipesByTheme from "@/components/RecipesByTheme";
+import MealSituationHero from "@/components/MealSituationHero";
+import MacroTiles from "@/components/MacroTiles";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 type MealType = "petit-dejeuner" | "dejeuner" | "gouter" | "diner";
@@ -42,6 +49,8 @@ type DaySummary = {
   water_ml: number;
 };
 
+type RecentMeal = { name: string; calories: number; proteins: number; carbs: number; fats: number; count?: number };
+
 /* ─── Constants ─────────────────────────────────────────────────────── */
 const MEAL_META: Record<MealType, { label: string; icon: string }> = {
   "petit-dejeuner": { label: "Petit-déjeuner", icon: "🌅" },
@@ -52,46 +61,7 @@ const MEAL_META: Record<MealType, { label: string; icon: string }> = {
 
 const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-/* ─── calculateGoals ────────────────────────────────────────────────── */
-function calculateGoals(profile: { age?: string; weight?: string; height?: string; gender?: string; goals?: string[]; level?: string; sessionsPerWeek?: string } | null) {
-  const weight = parseFloat(profile?.weight ?? "0") || 75;
-  const height = parseFloat(profile?.height ?? "0") || 175;
-  const age    = parseFloat(profile?.age    ?? "0") || 25;
-  const isFemale = (profile?.gender ?? "homme") === "femme";
-  const goals  = profile?.goals ?? [];
-  const level  = profile?.level ?? "Intermédiaire";
-
-  // Harris-Benedict BMR
-  const bmr = isFemale
-    ? 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
-    : 88.362  + (13.397 * weight) + (4.799 * height) - (5.677 * age);
-
-  // Activity multiplier basé sur le niveau + séances/semaine
-  const sessionsPerWeek = parseInt(profile?.sessionsPerWeek ?? "3") || 3;
-  let actMult = 1.375;
-  if (level === "Débutant" || sessionsPerWeek <= 2) actMult = 1.2;
-  else if (level === "Avancé" || sessionsPerWeek >= 5) actMult = 1.725;
-  else if (sessionsPerWeek >= 4) actMult = 1.55;
-
-  let tdee = Math.round(bmr * actMult);
-
-  // Ajustement selon objectif
-  const wantMasse = goals.includes("prise_de_masse");
-  const wantPoids = goals.includes("perte_de_poids");
-  if (wantMasse && !wantPoids) tdee += 300;
-  else if (wantPoids && !wantMasse) tdee = Math.max(1200, tdee - 500);
-
-  // Macros : protéines 1.8g/kg pour fitness, 1.2g sinon
-  const wantsMuscle = wantMasse || goals.includes("force") || goals.includes("endurance");
-  const proteinPerKg = wantsMuscle ? 1.8 : 1.2;
-  const proteins = Math.round(weight * proteinPerKg);
-  const fats     = Math.round((tdee * 0.28) / 9);
-  const carbs    = Math.round((tdee - proteins * 4 - fats * 9) / 4);
-  // estimated burn (rough: 5-8 kcal/min de séance, ~3 séances/sem ramenées au jour)
-  const burned   = Math.round((sessionsPerWeek * 350) / 7);
-
-  return { calories: tdee, proteins, carbs: Math.max(50, carbs), fats, burned };
-}
+/* calculateGoals → extrait dans src/lib/nutritionGoals.ts (partagé avec les plats suggérés) */
 
 /* ─── Helpers ───────────────────────────────────────────────────────── */
 function getMondayWeek(ref: Date): Date[] {
@@ -128,28 +98,29 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
       <svg width="216" height="216" viewBox="0 0 216 216" style={{ transform: "rotate(-90deg)" }}>
         <defs>
           <linearGradient id="caloGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stopColor="#A78BFA" />
-            <stop offset="55%"  stopColor="#C49BE8" />
-            <stop offset="100%" stopColor="#D4A843" />
+            <stop offset="0%"   stopColor="#FFD34E" />
+            <stop offset="52%"  stopColor="#FF9A3D" />
+            <stop offset="100%" stopColor="#FF7A1A" />
           </linearGradient>
         </defs>
-        <circle cx="108" cy="108" r={R} fill="none" stroke="rgba(167,139,250,0.10)" strokeWidth={SW} />
+        <circle cx="108" cy="108" r={R} fill="none" stroke="rgba(var(--accent-rgb),0.16)" strokeWidth={SW} />
         <motion.circle cx="108" cy="108" r={R} fill="none"
           stroke="url(#caloGrad)" strokeWidth={SW} strokeLinecap="round"
+          style={{ filter: "drop-shadow(0 0 7px rgba(255,140,30,0.5))" }}
           strokeDasharray={C}
           initial={{ strokeDashoffset: C }}
           animate={{ strokeDashoffset: C * (1 - pct) }}
           transition={{ duration: 1.4, ease: "easeOut", delay: 0.2 }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>CONSOMMÉ</p>
+        <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>CONSOMMÉ</p>
         <motion.p
           initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="text-[2.5rem] font-light leading-none" style={{ color: "#2D3748" }}>
+          className="text-[2.5rem] font-light leading-none" style={{ color: "var(--text-1)" }}>
           {consumed.toLocaleString("fr-FR")}
         </motion.p>
-        <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>
+        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>
           kcal sur {goal.toLocaleString("fr-FR")}
         </p>
       </div>
@@ -158,21 +129,24 @@ function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
 }
 
 /* ─── MacroBar ──────────────────────────────────────────────────────── */
-function MacroBar({ label, consumed, goal, color }: { label: string; consumed: number; goal: number; color: string }) {
+function MacroBar({ label, hint, consumed, goal, color }: { label: string; hint?: string; consumed: number; goal: number; color: string }) {
   const pct = Math.min(Math.round((consumed / goal) * 100), 100);
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-          <span className="text-sm font-medium" style={{ color: "#4A5568" }}>{label}</span>
-          <span className="text-xs" style={{ color: "#A0AEC0" }}>{pct}%</span>
+          <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>{label}</span>
+          <span className="text-xs" style={{ color: "var(--text-3)" }}>{pct}%</span>
         </div>
-        <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>
-          {consumed}g <span className="font-normal text-xs" style={{ color: "#A0AEC0" }}>/ {goal}g</span>
+        <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+          {consumed}g <span className="font-normal text-xs" style={{ color: "var(--text-3)" }}>/ {goal}g</span>
         </span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.06)" }}>
+      {hint && (
+        <p className="text-[11px] leading-snug mb-2 ml-4" style={{ color: "var(--text-3)" }}>{hint}</p>
+      )}
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(var(--accent-rgb),0.14)" }}>
         <motion.div className="h-full rounded-full" style={{ background: color }}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
@@ -182,197 +156,31 @@ function MacroBar({ label, consumed, goal, color }: { label: string; consumed: n
   );
 }
 
-/* ─── HydrationWidget — icônes SVG ─────────────────────────────────── */
-const PetitVerreIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    {/* Verre court, large — forme trapèze */}
-    <path d="M2.5 4h10L11 12.5H4L2.5 4Z" />
-    {/* Niveau d'eau ~60% */}
-    <path d="M4.6 9.5h5.8" />
-  </svg>
-);
-
-const GrandVerreIcon = () => (
-  <svg width="15" height="17" viewBox="0 0 15 17" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    {/* Verre haut, effilé */}
-    <path d="M2.5 2h10L10.5 15H4.5L2.5 2Z" />
-    {/* Niveau d'eau ~60% */}
-    <path d="M4.4 10.5h6.2" />
-  </svg>
-);
-
-const BouteilleIcon = () => (
-  <svg width="13" height="18" viewBox="0 0 13 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    {/* Bouchon */}
-    <rect x="4.2" y="1" width="4.6" height="1.8" rx="0.6" />
-    {/* Col + épaules + corps */}
-    <path d="M4.2 2.8V5L2.5 6.8V15.2a1 1 0 001 1h6a1 1 0 001-1V6.8L8.8 5V2.8" />
-    {/* Niveau d'eau ~55% */}
-    <path d="M2.5 11.5h8" />
-  </svg>
-);
-
-/* ─── HydrationWidget ───────────────────────────────────────────────── */
-function HydrationWidget({ waterMl, goalMl = 2000, onAdd, onRemove }: {
-  waterMl: number; goalMl?: number;
-  onAdd: (ml: number) => void;
-  onRemove: (ml: number) => void;
-}) {
-  const pct = Math.min(Math.round((waterMl / goalMl) * 100), 100);
-  const holdRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const barRef   = useRef<HTMLDivElement>(null);
-  // Ref pour avoir la valeur courante dans les handlers sans re-registrer les events
-  const mlRef    = useRef(waterMl);
-  useEffect(() => { mlRef.current = waterMl; }, [waterMl]);
-
-  const applyFromX = (clientX: number) => {
-    if (!barRef.current) return;
-    const { left, width } = barRef.current.getBoundingClientRect();
-    const ratio  = Math.max(0, Math.min(1, (clientX - left) / width));
-    const target = Math.round((ratio * goalMl) / 10) * 10;
-    const delta  = target - mlRef.current;
-    if (delta > 0) onAdd(delta);
-    else if (delta < 0) onRemove(-delta);
-  };
-
-  const presets = [
-    { ml: 150, label: "150 ml", Icon: PetitVerreIcon },
-    { ml: 250, label: "250 ml", Icon: GrandVerreIcon },
-    { ml: 500, label: "500 ml", Icon: BouteilleIcon },
-  ] as const;
-
-  const startHold = (action: () => void) => {
-    action();
-    holdRef.current = setInterval(action, 110);
-  };
-
-  const stopHold = () => {
-    if (holdRef.current) { clearInterval(holdRef.current); holdRef.current = null; }
-  };
-
-  return (
-    <div className="flex flex-col gap-3">
-      {/* Header + stepper */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Droplets size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-          <span className="text-sm font-medium" style={{ color: "#4A5568" }}>Hydratation</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <motion.button
-            whileTap={{ scale: 0.86 }}
-            disabled={waterMl === 0}
-            onMouseDown={() => waterMl > 0 && startHold(() => onRemove(10))}
-            onMouseUp={stopHold}
-            onMouseLeave={stopHold}
-            onTouchStart={() => waterMl > 0 && startHold(() => onRemove(10))}
-            onTouchEnd={stopHold}
-            onTouchCancel={stopHold}
-            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{
-              background: "rgba(167,139,250,0.10)",
-              border: "1px solid rgba(167,139,250,0.20)",
-              opacity: waterMl === 0 ? 0.35 : 1,
-            }}
-          >
-            <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>−</span>
-          </motion.button>
-
-          <span className="text-sm font-semibold tabular-nums text-center" style={{ color: "#2D3748", minWidth: 110 }}>
-            {waterMl.toLocaleString("fr-FR")}{" "}
-            <span className="text-xs font-normal" style={{ color: "#A0AEC0" }}>
-              / {goalMl.toLocaleString("fr-FR")} ml
-            </span>
-          </span>
-
-          <motion.button
-            whileTap={{ scale: 0.86 }}
-            onMouseDown={() => startHold(() => onAdd(10))}
-            onMouseUp={stopHold}
-            onMouseLeave={stopHold}
-            onTouchStart={() => startHold(() => onAdd(10))}
-            onTouchEnd={stopHold}
-            onTouchCancel={stopHold}
-            className="w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-            style={{ background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.20)" }}
-          >
-            <span className="text-sm font-bold leading-none" style={{ color: "#A78BFA" }}>+</span>
-          </motion.button>
-        </div>
-      </div>
-
-      {/* Barre interactive — clic ou glissement */}
-      <div
-        ref={barRef}
-        className="relative select-none cursor-ew-resize"
-        style={{ paddingBlock: 8 }}
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          applyFromX(e.clientX);
-        }}
-        onPointerMove={(e) => { if (e.buttons) applyFromX(e.clientX); }}
-      >
-        {/* Track */}
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(167,139,250,0.10)" }}>
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg,#A78BFA 0%,#7B5CC4 100%)" }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-          />
-        </div>
-        {/* Thumb */}
-        {pct > 0 && (
-          <motion.div
-            className="absolute top-1/2 w-3.5 h-3.5 rounded-full pointer-events-none"
-            style={{
-              background: "linear-gradient(135deg,#A78BFA,#7B5CC4)",
-              boxShadow: "0 0 0 3px rgba(167,139,250,0.25), 0 1px 4px rgba(80,40,150,0.2)",
-              translateY: "-50%",
-            }}
-            animate={{ left: `calc(${pct}% - 7px)` }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-          />
-        )}
-      </div>
-
-      {/* Raccourcis rapides */}
-      <div className="grid grid-cols-3 gap-2">
-        {presets.map(({ ml, label, Icon }) => (
-          <motion.button
-            key={ml}
-            whileTap={{ scale: 0.91 }}
-            whileHover={{ scale: 1.04 }}
-            onClick={() => onAdd(ml)}
-            className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl cursor-pointer"
-            style={{
-              background: "rgba(167,139,250,0.07)",
-              border: "1px solid rgba(167,139,250,0.15)",
-              color: "#A78BFA",
-            }}
-          >
-            <Icon />
-            <span className="text-[10px] font-medium" style={{ color: "#718096" }}>{label}</span>
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* ─── PhotoAnalysisModal ─────────────────────────────────────────────── */
 type PhotoPhase = "select" | "analyzing" | "result" | "edit";
 
-function PhotoAnalysisModal({ onClose, onAdd }: {
+function PhotoAnalysisModal({ onClose, onAdd, onBack }: {
   onClose: () => void;
   onAdd: (meal: Omit<MealEntry, "id">) => void;
+  onBack?: () => void;   // présent quand on arrive depuis la carte → revenir au classement (misclic)
 }) {
   const [phase, setPhase] = useState<PhotoPhase>("select");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [editData, setEditData] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const camRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);          // fallback caméra native (si getUserMedia refusé)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [camReady, setCamReady] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+
+  // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
 
   const analyze = async (file: File) => {
     const reader = new FileReader();
@@ -384,25 +192,19 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
       const base64 = dataUrl.split(",")[1];
       try {
-        // Jeton d'auth (l'endpoint vision est protégé + limité par jour pour les gratuits)
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch("/api/nutrition/analyze", {
+        // aiFetch pose le jeton de session : l'endpoint vision est protégé et
+        // plafonné (voir lib/aiLimits.ts).
+        const res = await aiFetch("/api/nutrition/analyze", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: base64, mimeType: file.type }),
         });
-        if (res.status === 429) {
-          const err = await res.json().catch(() => ({}));
-          setError(`Tu as atteint ta limite gratuite de ${err.dailyLimit ?? 3} analyses photo/jour 📸 Passe en Premium pour des analyses illimitées.`);
-          setPhase("select");
-          return;
-        }
-        if (res.status === 401) {
-          setError("Connecte-toi pour analyser tes repas.");
+        // Le serveur sait si la limite touchée est celle du gratuit ou le
+        // plafond d'usage raisonnable : on affiche SON message, on ne réécrit
+        // pas ici une phrase qui pourrait mentir à un abonné.
+        const refus = await messageDeRefus(res);
+        if (refus) {
+          setError(refus);
           setPhase("select");
           return;
         }
@@ -441,11 +243,57 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
   const reset = () => { setPhase("select"); setPhotoUrl(null); setEditData(null); setError(null); };
 
+  // ── Caméra live in-app (getUserMedia) — viseur + obturateur, comme le scanner code-barres.
+  const stopCam = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  };
+  const startCam = async (mode: "environment" | "user"): Promise<boolean> => {
+    if (!navigator.mediaDevices?.getUserMedia) { setCamReady(false); return false; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}); }
+      setCamReady(true);
+      return true;
+    } catch {
+      setCamReady(false);
+      return false;
+    }
+  };
+  const flipCam = async () => {
+    const next = facingMode === "environment" ? "user" : "environment";
+    stopCam();
+    if (await startCam(next)) setFacingMode(next);
+    else await startCam(facingMode); // pas de 2ᵉ caméra → on revient
+  };
+  const capturePhoto = () => {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(v, 0, 0);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      stopCam();
+      analyze(new File([blob], `repas-${Date.now()}.jpg`, { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  };
+
+  // Démarre la caméra sur l'écran de capture, la coupe ailleurs / à la fermeture.
+  useEffect(() => {
+    if (phase === "select") startCam(facingMode);
+    else stopCam();
+    return () => stopCam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   const CARD_STYLE = {
-    background: "rgba(255,255,255,0.96)",
-    backdropFilter: "blur(12px)",
-    border: "1px solid rgba(255,255,255,0.9)",
-    boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.14)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -454,7 +302,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(16px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(16px)" }}
       onClick={onClose}>
 
       <motion.div
@@ -468,105 +316,154 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
-          <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>IA Nutrition</p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
-              {phase === "analyzing" ? "Analyse en cours…"
-                : phase === "result"   ? "Repas identifié ✓"
-                : phase === "edit"     ? "Modifier"
-                : "Analyser un repas"}
-            </h2>
+          <div className="flex items-center gap-2.5 min-w-0">
+            {onBack && (
+              <motion.button whileTap={{ scale: 0.9 }} onClick={onBack}
+                className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+                style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }} aria-label="Revenir au classement de la carte">
+                <ChevronLeft size={16} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
+              </motion.button>
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>{onBack ? "Retour à la carte" : "IA Nutrition"}</p>
+              <h2 className="text-lg font-semibold truncate" style={{ color: "var(--text-1)" }}>
+                {phase === "analyzing" ? "Je regarde…"
+                  : phase === "result"   ? "Repas identifié"
+                  : phase === "edit"     ? "Ajuster"
+                  : "Snap ton assiette"}
+              </h2>
+            </div>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
         <div className="px-5 pb-6">
           <AnimatePresence mode="wait">
 
-            {/* SELECT */}
+            {/* SELECT — viseur immersif (tap = caméra) */}
             {phase === "select" && (
               <motion.div key="select"
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                 {error && (
                   <div className="mb-3 px-3 py-2.5 rounded-2xl text-xs font-medium"
-                    style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E", border: "1px solid rgba(252,129,129,0.2)" }}>
+                    style={{ background: "rgba(242,109,109,0.12)", color: "#F2685F", border: "1px solid rgba(242,109,109,0.28)" }}>
                     ⚠️ {error}
                   </div>
                 )}
 
-                {/* Camera capture */}
+                {/* inputs cachés : caméra native (fallback) + galerie */}
                 <input ref={camRef} type="file" accept="image/*" capture="environment"
                   className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
-                {/* Gallery */}
                 <input ref={fileRef} type="file" accept="image/*"
                   className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
 
-                <div className="flex flex-col gap-3">
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => camRef.current?.click()}
-                    className="w-full py-5 rounded-2xl flex flex-col items-center gap-2 cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 20px rgba(167,139,250,0.25)",
-                    }}>
-                    <Camera size={26} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-                    <span className="font-semibold text-sm" style={{ color: "#2D3748" }}>Prendre une photo</span>
-                    <span className="text-[10px] font-light" style={{ color: "#718096" }}>
-                      Pointe l&apos;appareil vers ton repas
-                    </span>
-                  </motion.button>
+                {/* Viseur — caméra LIVE dans l'app */}
+                <div className="relative w-full rounded-2xl overflow-hidden"
+                  style={{ height: 320, background: "linear-gradient(160deg,#2A2140,#140E22)" }}>
+                  <video ref={videoRef} autoPlay playsInline muted
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: camReady ? 1 : 0, transition: "opacity .3s" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  {/* repères d'angle */}
+                  {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
+                    ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
+                    ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
+                    ["bottom-3 right-3", "border-b-2 border-r-2 rounded-br-xl"],
+                  ].map(([pos, cls], i) => (
+                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls} pointer-events-none`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
+                  ))}
 
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => fileRef.current?.click()}
-                    className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
-                    style={{
-                      background: "rgba(240,235,255,0.6)",
-                      border: "1px solid rgba(212,192,255,0.5)",
-                    }}>
-                    <Upload size={15} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-                    <span className="font-medium text-sm" style={{ color: "#4A5568" }}>Choisir dans la galerie</span>
-                  </motion.button>
+                  {camReady ? (
+                    <>
+                      <div className="absolute top-1/2 left-1/2 rounded-full pointer-events-none" style={{ width: 150, height: 150, transform: "translate(-50%,-50%)", border: "1.5px dashed rgba(255,255,255,0.4)" }} />
+                      <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
+                        style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                        Cadre ton assiette
+                      </div>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => camRef.current?.click()}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
+                        <Camera size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
+                      </div>
+                      <div className="text-center px-6">
+                        <p className="text-sm font-semibold" style={{ color: "#fff" }}>Prendre une photo</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>Autorise la caméra, ou touche pour l&apos;appareil photo</p>
+                      </div>
+                    </button>
+                  )}
                 </div>
 
-                <p className="text-[11px] text-center mt-4 font-light" style={{ color: "#A0AEC0" }}>
-                  L&apos;IA détecte les aliments et estime les calories & macros automatiquement
+                {camReady ? (
+                  /* Barre d'obturateur : galerie · déclencheur · flip */
+                  <div className="flex items-center justify-between mt-4 px-6">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileRef.current?.click()}
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <ImageIcon size={19} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.92 }} onClick={capturePhoto}
+                      className="rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                      style={{ width: 68, height: 68, border: "3px solid rgba(var(--accent-rgb),0.35)" }}>
+                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.5)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={flipCam}
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <SwitchCamera size={19} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    </motion.button>
+                  </div>
+                ) : (
+                  /* Fallback : galerie */
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileRef.current?.click()}
+                    className="w-full mt-3 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                    <Upload size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
+                  </motion.button>
+                )}
+
+                <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
+                  L&apos;IA détecte les aliments et estime calories &amp; macros automatiquement
                 </p>
               </motion.div>
             )}
 
-            {/* ANALYZING */}
+            {/* ANALYZING — l'IA regarde (balayage lumineux) */}
             {phase === "analyzing" && (
               <motion.div key="analyzing"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col items-center gap-4">
+                className="flex flex-col gap-4">
                 {photoUrl && (
-                  <div className="w-full h-44 rounded-2xl overflow-hidden relative">
+                  <div className="w-full rounded-2xl overflow-hidden relative" style={{ height: 300 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img loading="lazy" decoding="async" src={photoUrl} alt="repas" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-                      style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(6px)" }}>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                        <Loader2 size={36} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.05),rgba(8,4,14,0.5))" }} />
+                    {/* balayage */}
+                    <motion.div className="absolute left-0 right-0"
+                      style={{ height: 56, background: "linear-gradient(180deg,transparent,rgba(139,92,246,0.55) 60%,transparent)", boxShadow: "0 2px 12px rgba(255,217,138,0.55)" }}
+                      animate={{ top: ["4%", "82%", "4%"] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
+                    <div className="absolute left-0 right-0 flex items-center justify-center gap-2" style={{ bottom: 16 }}>
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
+                        <Sparkles size={16} style={{ color: "#FFD98A" }} />
                       </motion.div>
-                      <motion.p
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.6, repeat: Infinity }}
-                        className="text-xs font-medium" style={{ color: "#4A5568" }}>
-                        Identification des aliments…
-                      </motion.p>
+                      <motion.span animate={{ opacity: [0.6, 1, 0.6] }} transition={{ duration: 1.6, repeat: Infinity }}
+                        className="text-xs font-semibold" style={{ color: "#fff" }}>
+                        J&apos;identifie les aliments…
+                      </motion.span>
                     </div>
                   </div>
                 )}
-                <div className="flex gap-4 w-full">
-                  {["Calories", "Protéines", "Glucides"].map(l => (
-                    <div key={l} className="flex-1 h-8 rounded-xl animate-pulse"
-                      style={{ background: "rgba(167,139,250,0.08)" }} />
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="rounded-2xl animate-pulse" style={{ height: 52, background: "rgba(var(--tint-violet-rgb),0.6)" }} />
                   ))}
                 </div>
               </motion.div>
@@ -585,71 +482,54 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                   </div>
                 )}
 
-                {/* Food card */}
-                <div className="rounded-2xl p-4"
-                  style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-base leading-tight" style={{ color: "#2D3748" }}>
-                        {editData.foodName}
+                {/* Titre + kcal */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-semibold tracking-widest uppercase flex items-center gap-1" style={{ color: "var(--text-3)" }}>
+                      <Check size={11} strokeWidth={3} style={{ color: "#2BD4A0" }} /> Repas identifié
+                    </p>
+                    <p className="font-semibold text-base leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+                      {editData.foodName}
+                    </p>
+                    {editData.description && (
+                      <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>
+                        {editData.description}
                       </p>
-                      {editData.description && (
-                        <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>
-                          {editData.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{editData.calories}</p>
-                      <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: "Protéines", val: editData.proteins, color: "#A78BFA" },
-                      { label: "Glucides",  val: editData.carbs,    color: "#7B5CC4" },
-                      { label: "Lipides",   val: editData.fats,     color: "#D4A843" },
-                    ].map(({ label, val, color }) => (
-                      <div key={label} className="text-center rounded-xl py-2.5"
-                        style={{ background: "rgba(255,255,255,0.75)" }}>
-                        <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-1.5">
-                      <span style={{ fontSize: 14 }}>{MEAL_META[editData.mealType]?.icon}</span>
-                      <span className="text-xs font-medium" style={{ color: "#718096" }}>
-                        {MEAL_META[editData.mealType]?.label}
-                      </span>
-                    </div>
-                    <motion.button whileTap={{ scale: 0.9 }}
-                      onClick={() => setPhase("edit")}
-                      className="flex items-center gap-1 text-xs cursor-pointer"
-                      style={{ color: "#A78BFA" }}>
-                      <Edit2 size={10} strokeWidth={2} /> Modifier
-                    </motion.button>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[28px] font-light leading-none" style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{editData.calories}</p>
+                    <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                {/* Macros — composant partagé Système D */}
+                <MacroTiles proteins={editData.proteins} carbs={editData.carbs} fats={editData.fats} />
+
+                {/* Type de repas + ajuster */}
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)" }}>
+                    <span style={{ fontSize: 13 }}>{MEAL_META[editData.mealType]?.icon}</span>
+                    {MEAL_META[editData.mealType]?.label}
+                  </span>
+                  <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPhase("edit")}
+                    className="flex items-center gap-1 text-xs font-medium cursor-pointer" style={{ color: "var(--accent)" }}>
+                    <Edit2 size={11} strokeWidth={2} /> estimation · ajuster
+                  </motion.button>
+                </div>
+
+                <div className="flex gap-2 mt-0.5">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                     Reprendre
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
-                    className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      color: "#2D3748",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                    }}>
-                    Ajouter à mes repas ✓
+                    className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                   </motion.button>
                 </div>
               </motion.div>
@@ -670,7 +550,7 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                 ].map(({ key, label, type }) => (
                   <div key={key}>
                     <label className="text-[10px] font-semibold tracking-widest uppercase mb-1 block"
-                      style={{ color: "#A0AEC0" }}>{label}</label>
+                      style={{ color: "var(--text-3)" }}>{label}</label>
                     <input
                       type={type}
                       value={editData[key as keyof AnalysisResult] as string | number}
@@ -679,14 +559,14 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                         [key]: type === "number" ? (parseInt(e.target.value) || 0) : e.target.value,
                       } : prev)}
                       className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-                      style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                     />
                   </div>
                 ))}
 
                 <div>
                   <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                    style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                    style={{ color: "var(--text-3)" }}>TYPE DE REPAS</label>
                   <div className="grid grid-cols-2 gap-2">
                     {(Object.keys(MEAL_META) as MealType[]).map(mt => (
                       <motion.button key={mt} whileTap={{ scale: 0.95 }}
@@ -694,12 +574,12 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
                         className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                         style={{
                           background: editData.mealType === mt
-                            ? "linear-gradient(135deg,rgba(167,139,250,0.2),rgba(212,168,67,0.12))"
-                            : "rgba(240,235,255,0.4)",
+                            ? "linear-gradient(135deg,rgba(var(--accent-rgb),0.2),rgba(var(--gold-rgb),0.12))"
+                            : "rgba(var(--tint-violet-rgb),0.4)",
                           border: editData.mealType === mt
-                            ? "1px solid rgba(167,139,250,0.4)"
-                            : "1px solid rgba(212,192,255,0.3)",
-                          color: editData.mealType === mt ? "#2D3748" : "#718096",
+                            ? "1px solid rgba(var(--accent-rgb),0.4)"
+                            : "1px solid rgba(var(--violet-mid-rgb),0.3)",
+                          color: editData.mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
                         <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
                         <span>{MEAL_META[mt].label}</span>
@@ -710,11 +590,11 @@ function PhotoAnalysisModal({ onClose, onAdd }: {
 
                 <motion.button whileTap={{ scale: 0.97 }}
                   onClick={() => setPhase("result")}
-                  className="w-full py-3 rounded-2xl text-sm font-semibold cursor-pointer mt-1"
+                  className="w-full py-3 rounded-2xl text-sm font-bold cursor-pointer mt-1"
                   style={{
-                    background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                    color: "#2D3748",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                    background: "linear-gradient(135deg,#8B5CF6,#C13BC1)",
+                    color: "#fff",
+                    boxShadow: "0 6px 18px rgba(139,92,246,0.4)",
                   }}>
                   Valider les modifications
                 </motion.button>
@@ -734,9 +614,15 @@ interface BarcodeProduct {
   name: string;
   brand: string | null;
   image: string | null;
+  nutriscore: string | null;
   quantity: string | null;
   per100: { calories: number; proteins: number; carbs: number; fats: number; fiber: number };
 }
+
+/* Couleurs officielles du Nutri-Score (fixes, non liées au thème). */
+const NUTRISCORE_COLOR: Record<string, string> = {
+  A: "#038141", B: "#85BB2F", C: "#FECB02", D: "#EE8100", E: "#E63E11",
+};
 
 interface BarcodeEstimated {
   foodName: string;
@@ -767,6 +653,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   const html5QrRef = useRef<any>(null);
   const didStop = useRef(false);
 
+  // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
   const stopScanner = async () => {
     if (html5QrRef.current && !didStop.current) {
       didStop.current = true;
@@ -779,7 +671,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     setPhase("loading");
     setError(null);
     try {
-      const res = await fetch(`/api/nutrition/barcode?code=${encodeURIComponent(code)}`);
+      const res = await aiFetch(`/api/nutrition/barcode?code=${encodeURIComponent(code)}`);
       const data = await res.json();
       if (res.status === 404) {
         // Produit totalement inconnu
@@ -812,7 +704,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     setEstimating(true);
     setError(null);
     try {
-      const res = await fetch("/api/nutrition/estimate", {
+      const res = await aiFetch("/api/nutrition/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: fallbackName.trim() }),
@@ -858,7 +750,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
       html5QrRef.current = scanner;
       scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 260, height: 130 }, aspectRatio: 1.7 },
+        // Pas de `qrbox` : la lib ne dessine pas son propre cadre → on garde
+        // seulement notre viseur (repères + balayage), cohérent avec la Photo IA.
+        { fps: 10, aspectRatio: 1 },
         (decodedText: string) => { lookupBarcode(decodedText); },
         () => { /* scan attempt, ignore errors */ }
       ).catch((err: unknown) => {
@@ -907,10 +801,9 @@ function BarcodeScannerModal({ onClose, onAdd }: {
   };
 
   const CARD_STYLE = {
-    background: "rgba(255,255,255,0.96)",
-    backdropFilter: "blur(12px)",
-    border: "1px solid rgba(255,255,255,0.9)",
-    boxShadow: "0 24px 64px rgba(167,139,250,0.18)",
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.14)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
     maxHeight: "90dvh",
     overflowY: "auto" as const,
   };
@@ -923,7 +816,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.5)", backdropFilter: "blur(16px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(16px)" }}
       onClick={onClose}>
 
       <motion.div
@@ -938,21 +831,21 @@ function BarcodeScannerModal({ onClose, onAdd }: {
         {/* Header */}
         <div className="flex items-center justify-between p-5 pb-4">
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
               Scanner
             </p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>
-              {phase === "scan"     ? "Scanner un code-barres"
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
+              {phase === "scan"     ? "Scanner un produit"
                : phase === "loading" ? "Recherche du produit…"
                : phase === "fallback"
-                 ? (estimated ? "Estimation IA ✓" : "Non référencé — estimer")
-               : "Produit identifié ✓"}
+                 ? (estimated ? "Produit estimé" : "Décris le produit")
+               : "Produit identifié"}
             </h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -967,41 +860,37 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                 {error && (
                   <div className="px-3 py-2.5 rounded-2xl text-xs font-medium"
-                    style={{ background: "rgba(252,129,129,0.1)", color: "#E53E3E", border: "1px solid rgba(252,129,129,0.2)" }}>
+                    style={{ background: "rgba(242,109,109,0.12)", color: "#F2685F", border: "1px solid rgba(242,109,109,0.28)" }}>
                     ⚠️ {error}
                   </div>
                 )}
 
-                {/* Camera viewport */}
+                {/* Viseur caméra LIVE — plein cadre, cohérent avec la Photo IA */}
                 <div className="relative rounded-2xl overflow-hidden"
-                  style={{ background: "#1A202C", minHeight: 200 }}>
-                  <div id="aura-barcode-reader" ref={scannerRef} style={{ width: "100%" }} />
-                  {/* Viewfinder overlay */}
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="relative" style={{ width: 260, height: 100 }}>
-                      {/* Corner brackets */}
-                      {[["top-0 left-0","border-t-2 border-l-2 rounded-tl-lg"],
-                        ["top-0 right-0","border-t-2 border-r-2 rounded-tr-lg"],
-                        ["bottom-0 left-0","border-b-2 border-l-2 rounded-bl-lg"],
-                        ["bottom-0 right-0","border-b-2 border-r-2 rounded-br-lg"]
-                      ].map(([pos, cls], i) => (
-                        <div key={i} className={`absolute w-6 h-6 ${pos} ${cls}`}
-                          style={{ borderColor: "#A78BFA" }} />
-                      ))}
-                      {/* Animated scan line */}
-                      <motion.div
-                        className="absolute left-1 right-1 h-px"
-                        style={{ background: "linear-gradient(90deg,transparent,#A78BFA,transparent)" }}
-                        animate={{ top: ["10%", "90%", "10%"] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                    </div>
+                  style={{ background: "linear-gradient(160deg,#2A2140,#140E22)", height: 320 }}>
+                  {/* html5-qrcode injecte sa <video> ici → forcée en object-fit cover (globals.css) */}
+                  <div id="aura-barcode-reader" ref={scannerRef} className="absolute inset-0" style={{ width: "100%", height: "100%" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  {/* repères d'angle (mêmes que la Photo IA) */}
+                  {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
+                    ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
+                    ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
+                    ["bottom-3 right-3", "border-b-2 border-r-2 rounded-br-xl"],
+                  ].map(([pos, cls], i) => (
+                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls} pointer-events-none`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
+                  ))}
+                  {/* Balayage lumineux violet↗or (signature Vaiiya) */}
+                  <motion.div
+                    className="absolute left-6 right-6 pointer-events-none"
+                    style={{ height: 2, background: "linear-gradient(90deg,transparent,#FFD98A,var(--accent),transparent)", boxShadow: "0 0 10px rgba(255,217,138,0.6)" }}
+                    animate={{ top: ["12%", "88%", "12%"] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none"
+                    style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                    Centre le code-barres
                   </div>
                 </div>
-
-                <p className="text-xs text-center font-light" style={{ color: "#A0AEC0" }}>
-                  Centre le code-barres entre les repères — détection automatique
-                </p>
               </motion.div>
             )}
 
@@ -1013,10 +902,10 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
-                  <Loader2 size={36} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                  <Loader2 size={36} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                 </motion.div>
                 <motion.p animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.6, repeat: Infinity }}
-                  className="text-xs font-medium" style={{ color: "#4A5568" }}>
+                  className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
                   Recherche dans Open Food Facts…
                 </motion.p>
               </motion.div>
@@ -1028,15 +917,15 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex flex-col gap-3">
 
-                {/* Bandeau d'info */}
+                {/* Bandeau d'info — ton positif, tokenisé (clair + sombre) */}
                 {!estimated && (
                   <div className="flex items-start gap-2.5 px-3 py-3 rounded-2xl"
-                    style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
-                    <span className="text-sm mt-0.5">⚠️</span>
-                    <p className="text-xs font-light leading-relaxed" style={{ color: "#92400E" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.35)" }}>
+                    <Sparkles size={15} strokeWidth={2} style={{ color: "var(--accent)", marginTop: 1, flexShrink: 0 }} />
+                    <p className="text-xs font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
                       {fallbackName
-                        ? "Produit trouvé, mais sans données nutritionnelles. L'IA peut les estimer."
-                        : "Ce code-barres n'est pas dans notre base. Décris le produit pour que l'IA estime les macros."}
+                        ? "Trouvé, mais sans données nutritionnelles — décris-le, je m'occupe des chiffres."
+                        : "Pas encore dans la base — décris-le, je m'occupe des chiffres."}
                     </p>
                   </div>
                 )}
@@ -1046,7 +935,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <>
                     <div>
                       <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                        style={{ color: "#A0AEC0" }}>NOM DU PRODUIT</label>
+                        style={{ color: "var(--text-3)" }}>NOM DU PRODUIT</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -1056,7 +945,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           placeholder="Ex : Yaourt grec Fage 0%, 150g…"
                           autoFocus
                           className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                          style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                          style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                         />
                         <motion.button
                           whileTap={{ scale: 0.93 }}
@@ -1065,10 +954,10 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                           className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                           style={{
                             background: fallbackName.trim() && !estimating
-                              ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
-                              : "rgba(220,220,220,0.4)",
-                            color: fallbackName.trim() && !estimating ? "#2D3748" : "#A0AEC0",
-                            boxShadow: fallbackName.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                              ? "linear-gradient(135deg,#8B5CF6,#C13BC1)"
+                              : "rgba(var(--tint-violet-rgb),0.6)",
+                            color: fallbackName.trim() && !estimating ? "#fff" : "var(--text-3)",
+                            boxShadow: fallbackName.trim() && !estimating ? "0 4px 14px rgba(139,92,246,0.35)" : "none",
                             minWidth: 80, justifyContent: "center",
                           }}>
                           {estimating
@@ -1078,7 +967,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                             : <>✨ Estimer</>}
                         </motion.button>
                       </div>
-                      <p className="text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+                      <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
                         Précise la marque et la quantité pour une meilleure estimation
                       </p>
                     </div>
@@ -1093,12 +982,12 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                     <div className="flex gap-2 mt-1">
                       <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
                         className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.6)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.25)" }}>
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--accent)", border: "1px solid rgba(var(--accent-rgb),0.25)" }}>
                         ↩ Rescanner
                       </motion.button>
                       <motion.button whileTap={{ scale: 0.95 }} onClick={onClose}
                         className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.4)", color: "#718096", border: "1px solid rgba(212,192,255,0.3)" }}>
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.4)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                         Annuler
                       </motion.button>
                     </div>
@@ -1110,52 +999,36 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                     className="flex flex-col gap-3">
 
-                    {/* Macros estimées */}
-                    <div className="rounded-2xl p-4"
-                      style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                              style={{ background: "rgba(167,139,250,0.12)", color: "#A78BFA" }}>✨ IA</span>
-                          </div>
-                          <p className="font-semibold text-sm leading-tight" style={{ color: "#2D3748" }}>
-                            {estimated.foodName}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-2xl font-light" style={{ color: "#A78BFA" }}>{estimated.calories}</p>
-                          <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
-                        </div>
+                    {/* Estimation IA — mini fiche */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-semibold tracking-widest uppercase flex items-center gap-1" style={{ color: "var(--accent)" }}>
+                          <Sparkles size={11} strokeWidth={2} /> Estimé par l&apos;IA
+                        </p>
+                        <p className="font-semibold text-sm leading-tight mt-1" style={{ color: "var(--text-1)" }}>
+                          {estimated.foodName}
+                        </p>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { label: "Protéines", val: estimated.proteins, color: "#A78BFA" },
-                          { label: "Glucides",  val: estimated.carbs,    color: "#7B5CC4" },
-                          { label: "Lipides",   val: estimated.fats,     color: "#D4A843" },
-                        ].map(({ label, val, color }) => (
-                          <div key={label} className="text-center rounded-xl py-2.5"
-                            style={{ background: "rgba(255,255,255,0.75)" }}>
-                            <p className="text-sm font-semibold" style={{ color }}>{val}g</p>
-                            <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
-                          </div>
-                        ))}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[26px] font-light leading-none" style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{estimated.calories}</p>
+                        <p className="text-[10px] mt-1" style={{ color: "var(--text-3)" }}>kcal</p>
                       </div>
                     </div>
+                    <MacroTiles proteins={estimated.proteins} carbs={estimated.carbs} fats={estimated.fats} />
 
                     {/* Type de repas */}
                     <div>
                       <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                        style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                        style={{ color: "var(--text-3)" }}>TYPE DE REPAS</label>
                       <div className="grid grid-cols-2 gap-1.5">
                         {(Object.keys(MEAL_META) as MealType[]).map(mt => (
                           <motion.button key={mt} whileTap={{ scale: 0.95 }}
                             onClick={() => setEstimateMealType(mt)}
                             className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                             style={{
-                              background: estimateMealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
-                              border: estimateMealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
-                              color: estimateMealType === mt ? "#2D3748" : "#718096",
+                              background: estimateMealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
+                              border: estimateMealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
+                              color: estimateMealType === mt ? "var(--text-1)" : "var(--text-2)",
                             }}>
                             <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
                             <span>{MEAL_META[mt].label}</span>
@@ -1168,18 +1041,14 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       <motion.button whileTap={{ scale: 0.95 }}
                         onClick={() => { setEstimated(null); setError(null); }}
                         className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                        style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                         Modifier
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                         onClick={handleConfirmEstimate}
-                        className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                        style={{
-                          background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                          color: "#2D3748",
-                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                        }}>
-                        Ajouter à mes repas ✓
+                        className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                        <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                       </motion.button>
                     </div>
                   </motion.div>
@@ -1195,7 +1064,7 @@ function BarcodeScannerModal({ onClose, onAdd }: {
 
                 {/* Product card */}
                 <div className="flex items-center gap-3 p-3 rounded-2xl"
-                  style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(212,192,255,0.3)" }}>
+                  style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--violet-mid-rgb),0.3)" }}>
                   {product.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img loading="lazy" decoding="async" src={product.image} alt={product.name}
@@ -1203,82 +1072,85 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                       style={{ background: "#fff" }} />
                   ) : (
                     <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.1)" }}>
-                      <Barcode size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.1)" }}>
+                      <Barcode size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-tight" style={{ color: "#2D3748" }}>
+                    <p className="font-semibold text-sm leading-tight" style={{ color: "var(--text-1)" }}>
                       {product.name}
                     </p>
                     {product.brand && (
-                      <p className="text-xs mt-0.5 font-light" style={{ color: "#718096" }}>{product.brand}</p>
+                      <p className="text-xs mt-0.5 font-light" style={{ color: "var(--text-2)" }}>{product.brand}</p>
                     )}
                     {product.quantity && (
-                      <p className="text-[10px] mt-0.5" style={{ color: "#A0AEC0" }}>{product.quantity}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>{product.quantity}</p>
                     )}
                   </div>
+                  {/* Nutri-Score (si connu) */}
+                  {product.nutriscore && (
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <span className="text-[7px] font-bold tracking-widest" style={{ color: "var(--text-3)" }}>NUTRI</span>
+                      <span className="w-8 h-8 rounded-lg flex items-center justify-center text-base font-black"
+                        style={{ background: NUTRISCORE_COLOR[product.nutriscore], color: "#fff" }}>
+                        {product.nutriscore}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Quantity stepper */}
                 <div>
                   <label className="text-[10px] font-semibold tracking-widest uppercase mb-2 block"
-                    style={{ color: "#A0AEC0" }}>QUANTITÉ</label>
+                    style={{ color: "var(--text-3)" }}>QUANTITÉ</label>
                   <div className="flex items-center gap-2">
                     <motion.button whileTap={{ scale: 0.86 }}
                       onClick={() => adjustGrams(-10)}
                       className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <Minus size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+                      <Minus size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                     </motion.button>
                     <div className="flex-1 flex items-center gap-1">
                       <input
                         type="number" value={grams} min="1" max="2000"
                         onChange={e => setGrams(e.target.value)}
                         className="flex-1 text-center py-2 rounded-xl text-sm font-semibold outline-none"
-                        style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                        style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
                       />
-                      <span className="text-sm font-light" style={{ color: "#A0AEC0" }}>g</span>
+                      <span className="text-sm font-light" style={{ color: "var(--text-3)" }}>g</span>
                     </div>
                     <motion.button whileTap={{ scale: 0.86 }}
                       onClick={() => adjustGrams(10)}
                       className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
-                      style={{ background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                      <Plus size={14} strokeWidth={2} style={{ color: "#A78BFA" }} />
+                      style={{ background: "rgba(var(--accent-rgb),0.1)", border: "1px solid rgba(var(--accent-rgb),0.2)" }}>
+                      <Plus size={14} strokeWidth={2} style={{ color: "var(--accent)" }} />
                     </motion.button>
                   </div>
                 </div>
 
-                {/* Computed macros */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { label: "Calories", val: `${computedMacros.calories}`, unit: "kcal", color: "#A78BFA" },
-                    { label: "Protéines", val: `${computedMacros.proteins}`, unit: "g", color: "#A78BFA" },
-                    { label: "Glucides", val: `${computedMacros.carbs}`, unit: "g", color: "#7B5CC4" },
-                    { label: "Lipides", val: `${computedMacros.fats}`, unit: "g", color: "#D4A843" },
-                  ].map(({ label, val, unit, color }) => (
-                    <div key={label} className="text-center rounded-xl py-2.5"
-                      style={{ background: "rgba(255,255,255,0.75)", border: "1px solid rgba(212,192,255,0.15)" }}>
-                      <p className="text-sm font-semibold" style={{ color }}>{val}</p>
-                      <p className="text-[9px] mt-0.5" style={{ color: "#A0AEC0" }}>{unit}</p>
-                      <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "#CBD5E0" }}>{label}</p>
-                    </div>
-                  ))}
+                {/* Macros calculées pour la quantité */}
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Pour {grams} g</span>
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-2xl font-light" style={{ color: "var(--accent)", fontVariantNumeric: "tabular-nums" }}>{computedMacros.calories}</span>
+                    <span className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</span>
+                  </span>
                 </div>
+                <MacroTiles proteins={computedMacros.proteins} carbs={computedMacros.carbs} fats={computedMacros.fats} />
 
                 {/* Meal type */}
                 <div>
                   <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block"
-                    style={{ color: "#A0AEC0" }}>TYPE DE REPAS</label>
+                    style={{ color: "var(--text-3)" }}>TYPE DE REPAS</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {(Object.keys(MEAL_META) as MealType[]).map(mt => (
                       <motion.button key={mt} whileTap={{ scale: 0.95 }}
                         onClick={() => setMealType(mt)}
                         className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                         style={{
-                          background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
-                          border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
-                          color: mealType === mt ? "#2D3748" : "#718096",
+                          background: mealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
+                          border: mealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
+                          color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                         }}>
                         <span style={{ fontSize: 12 }}>{MEAL_META[mt].icon}</span>
                         <span>{MEAL_META[mt].label}</span>
@@ -1291,20 +1163,391 @@ function BarcodeScannerModal({ onClose, onAdd }: {
                 <div className="flex gap-2">
                   <motion.button whileTap={{ scale: 0.95 }} onClick={restart}
                     className="flex-1 py-3 rounded-2xl text-sm font-medium cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)", color: "#718096", border: "1px solid rgba(212,192,255,0.4)" }}>
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", color: "var(--text-2)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)" }}>
                     Rescanner
                   </motion.button>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={handleConfirm}
-                    className="flex-[2] py-3 rounded-2xl text-sm font-semibold cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                      color: "#2D3748",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                    }}>
-                    Ajouter à mes repas ✓
+                    className="flex-[2] py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    <Plus size={16} strokeWidth={2.5} /> Ajouter à ma journée
                   </motion.button>
                 </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── MenuScanModal ──────────────────────────────────────────────────────
+   « La carte » du resto en photo → l'IA lit et CLASSE les plats selon
+   l'objectif du moment. Aucune macro inventée ici (on n'a pas vu l'assiette) :
+   juste un verdict + une raison relative. Le vrai décompte se fait ensuite
+   avec la Photo IA de l'assiette (onPickDish → ouvre PhotoAnalysisModal).
+   Voir [[nutrition-onmangeou-redesign]].
+   ─────────────────────────────────────────────────────────────────────── */
+type MenuVerdict = "recommande" | "correct" | "eviter";
+type MenuDish = { name: string; verdict: MenuVerdict; reason: string; best: boolean };
+type MenuScanResult = { place: string | null; dishes: MenuDish[]; goalKnown: boolean };
+type MenuPhase = "select" | "analyzing" | "result";
+
+const MENU_VERDICT_META: Record<MenuVerdict, { label: string; color: string; tint: string; stripe: string }> = {
+  recommande: { label: "Recommandé", color: "#0E8A68", tint: "rgba(31,192,152,0.14)",  stripe: "#1FC098" },
+  correct:    { label: "Correct",    color: "#B5730A", tint: "rgba(239,159,39,0.15)",  stripe: "#EF9F27" },
+  eviter:     { label: "À éviter",   color: "#C0525C", tint: "rgba(224,106,115,0.14)", stripe: "#E06A73" },
+};
+
+function MenuScanModal({ objectiveLine, objectiveChip, goalKnown, initialResult, onClose, onResult, onPickDish }: {
+  objectiveLine: string;
+  objectiveChip: string;
+  goalKnown: boolean;
+  initialResult?: MenuScanResult | null;   // rouvre directement sur le classement (retour depuis la photo)
+  onClose: () => void;
+  onResult?: (r: MenuScanResult) => void;  // remonte le scan au parent pour pouvoir y revenir
+  onPickDish: (dishName: string) => void;
+}) {
+  const [phase, setPhase] = useState<MenuPhase>(initialResult ? "result" : "select");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [result, setResult] = useState<MenuScanResult | null>(initialResult ?? null);
+  const [error, setError] = useState<string | null>(null);
+  const [focusedIdx, setFocusedIdx] = useState<number | null>(null);  // plat « déplié » dans la liste (évite la sélection au 1er tap)
+  const fileRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [camReady, setCamReady] = useState(false);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
+  const analyze = async (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result as string;
+      setPhotoUrl(dataUrl);
+      setPhase("analyzing");
+      setError(null);
+      const base64 = dataUrl.split(",")[1];
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await aiFetch("/api/nutrition/carte", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ image: base64, mimeType: file.type, objective: objectiveLine, goalKnown }),
+        });
+        if (res.status === 401) { setError("Connecte-toi pour lire une carte."); setPhase("select"); return; }
+        if (res.status === 422) { setError("Je n'ai pas réussi à lire les plats — rapproche-toi et recadre la carte."); setPhase("select"); return; }
+        if (!res.ok) throw new Error();
+        const data: MenuScanResult = await res.json();
+        if (!data?.dishes?.length) { setError("Aucun plat lisible — réessaie."); setPhase("select"); return; }
+        setResult(data);
+        onResult?.(data);          // le parent garde le classement en cache → retour depuis la photo sans re-scan
+        setPhase("result");
+      } catch {
+        setError("Lecture impossible, réessaie.");
+        setPhase("select");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ── Caméra live in-app (identique à la Photo IA) ──
+  const stopCam = () => { streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null; };
+  const startCam = async (mode: "environment" | "user"): Promise<boolean> => {
+    if (!navigator.mediaDevices?.getUserMedia) { setCamReady(false); return false; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}); }
+      setCamReady(true); return true;
+    } catch { setCamReady(false); return false; }
+  };
+  const flipCam = async () => {
+    const next = facingMode === "environment" ? "user" : "environment";
+    stopCam();
+    if (await startCam(next)) setFacingMode(next); else await startCam(facingMode);
+  };
+  const capturePhoto = () => {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    ctx.drawImage(v, 0, 0);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      stopCam();
+      analyze(new File([blob], `carte-${Date.now()}.jpg`, { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  };
+  useEffect(() => {
+    if (phase === "select") startCam(facingMode); else stopCam();
+    return () => stopCam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  const CARD_STYLE = {
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.14)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+    maxHeight: "90dvh",
+    overflowY: "auto" as const,
+  };
+
+  const best = result?.dishes.find(d => d.best) ?? result?.dishes[0] ?? null;
+  const others = result ? result.dishes.filter(d => d !== best) : [];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+      style={{ background: "rgba(var(--tint-violet-rgb),0.5)", backdropFilter: "blur(16px)" }}
+      onClick={onClose}>
+
+      <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30 }}
+        transition={{ type: "spring", damping: 26, stiffness: 280 }}
+        className="w-full max-w-sm rounded-3xl overflow-x-hidden"
+        style={CARD_STYLE}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 pb-4">
+          <div>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Carte du resto</p>
+            <h2 className="text-lg font-semibold" style={{ color: "var(--text-1)" }}>
+              {phase === "analyzing" ? "Je lis la carte…" : phase === "result" ? "Trié pour toi" : "Photographie la carte"}
+            </h2>
+          </div>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
+            className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
+        </div>
+
+        <div className="px-5 pb-6">
+          <AnimatePresence mode="wait">
+
+            {/* SELECT — viseur immersif */}
+            {phase === "select" && (
+              <motion.div key="select" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                {error && (
+                  <div className="mb-3 px-3 py-2.5 rounded-2xl text-xs font-medium"
+                    style={{ background: "rgba(242,109,109,0.12)", color: "#F2685F", border: "1px solid rgba(242,109,109,0.28)" }}>
+                    ⚠️ {error}
+                  </div>
+                )}
+                <input ref={camRef} type="file" accept="image/*" capture="environment"
+                  className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
+                <input ref={fileRef} type="file" accept="image/*"
+                  className="hidden" onChange={e => e.target.files?.[0] && analyze(e.target.files[0])} />
+
+                <div className="relative w-full rounded-2xl overflow-hidden"
+                  style={{ height: 320, background: "linear-gradient(160deg,#2A2140,#140E22)" }}>
+                  <video ref={videoRef} autoPlay playsInline muted
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: camReady ? 1 : 0, transition: "opacity .3s" }} />
+                  <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.12),rgba(8,4,14,0.32))" }} />
+                  {[["top-3 left-3", "border-t-2 border-l-2 rounded-tl-xl"],
+                    ["top-3 right-3", "border-t-2 border-r-2 rounded-tr-xl"],
+                    ["bottom-3 left-3", "border-b-2 border-l-2 rounded-bl-xl"],
+                    ["bottom-3 right-3", "border-b-2 border-r-2 rounded-br-xl"],
+                  ].map(([pos, cls], i) => (
+                    <div key={i} className={`absolute w-7 h-7 ${pos} ${cls} pointer-events-none`} style={{ borderColor: "rgba(255,255,255,0.85)" }} />
+                  ))}
+
+                  {camReady ? (
+                    <>
+                      <div className="absolute pointer-events-none" style={{ left: "13%", right: "13%", top: "17%", bottom: "17%", border: "1.5px dashed rgba(255,255,255,0.4)", borderRadius: 10 }} />
+                      <div className="absolute left-1/2 bottom-3 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold px-3 py-1.5 rounded-full pointer-events-none inline-flex items-center gap-1.5"
+                        style={{ background: "rgba(10,6,16,0.45)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                        <Sparkles size={12} style={{ color: "#D79BFF" }} /> Cadre la carte entière
+                      </div>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => camRef.current?.click()}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                        style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 8px 24px rgba(139,92,246,0.5)" }}>
+                        <BookOpen size={26} strokeWidth={1.8} style={{ color: "#fff" }} />
+                      </div>
+                      <div className="text-center px-6">
+                        <p className="text-sm font-semibold" style={{ color: "#fff" }}>Photographier la carte</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.72)" }}>Autorise la caméra, ou touche pour l&apos;appareil photo</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+
+                {camReady ? (
+                  <div className="flex items-center justify-between mt-4 px-6">
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileRef.current?.click()}
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <ImageIcon size={19} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.92 }} onClick={capturePhoto}
+                      className="rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                      style={{ width: 68, height: 68, border: "3px solid rgba(var(--accent-rgb),0.35)" }}>
+                      <span className="rounded-full" style={{ width: 52, height: 52, background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(139,92,246,0.5)" }} />
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={flipCam}
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center cursor-pointer"
+                      style={{ background: "rgba(var(--tint-violet-rgb),0.7)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                      <SwitchCamera size={19} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    </motion.button>
+                  </div>
+                ) : (
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => fileRef.current?.click()}
+                    className="w-full mt-3 py-3.5 rounded-2xl flex items-center justify-center gap-2.5 cursor-pointer"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)" }}>
+                    <Upload size={15} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+                    <span className="font-medium text-sm" style={{ color: "var(--text-2)" }}>Choisir dans la galerie</span>
+                  </motion.button>
+                )}
+
+                <p className="text-[11px] text-center mt-4 font-light" style={{ color: "var(--text-3)" }}>
+                  L&apos;IA lit les plats et te dit lesquels collent à ton objectif — sans chiffres inventés.
+                </p>
+              </motion.div>
+            )}
+
+            {/* ANALYZING */}
+            {phase === "analyzing" && (
+              <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="flex flex-col gap-4">
+                {photoUrl && (
+                  <div className="w-full rounded-2xl overflow-hidden relative" style={{ height: 300 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img loading="lazy" decoding="async" src={photoUrl} alt="carte" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(8,4,14,0.05),rgba(8,4,14,0.5))" }} />
+                    <motion.div className="absolute left-0 right-0"
+                      style={{ height: 56, background: "linear-gradient(180deg,transparent,rgba(139,92,246,0.55) 60%,transparent)", boxShadow: "0 2px 12px rgba(193,59,193,0.55)" }}
+                      animate={{ top: ["4%", "82%", "4%"] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} />
+                    <div className="absolute left-0 right-0 flex items-center justify-center gap-2" style={{ bottom: 16 }}>
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}>
+                        <Sparkles size={16} style={{ color: "#D79BFF" }} />
+                      </motion.div>
+                      <motion.span animate={{ opacity: [0.6, 1, 0.6] }} transition={{ duration: 1.6, repeat: Infinity }}
+                        className="text-xs font-semibold" style={{ color: "#fff" }}>
+                        Je lis les plats…
+                      </motion.span>
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="rounded-2xl animate-pulse" style={{ height: 44, background: "rgba(var(--tint-violet-rgb),0.6)" }} />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* RESULT — le classement */}
+            {phase === "result" && best && result && (
+              <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="flex flex-col gap-3">
+
+                {/* Contexte : objectif + resto */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--violet-mid-rgb),0.4)", color: "var(--text-2)" }}>
+                    <Target size={12} strokeWidth={2} style={{ color: "var(--accent)" }} /> {objectiveChip}
+                  </span>
+                  {result.place && <span className="text-[11px]" style={{ color: "var(--text-3)" }}>· {result.place}</span>}
+                </div>
+                <p className="flex items-start gap-1.5 text-[11px] leading-snug -mt-1" style={{ color: "var(--text-3)" }}>
+                  <Sparkles size={12} style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1 }} />
+                  Estimations d&apos;après la carte — le vrai compte se fera à l&apos;assiette.
+                </p>
+
+                {/* Hero — le meilleur choix */}
+                <div className="relative rounded-2xl p-4 overflow-hidden"
+                  style={{ background: "linear-gradient(160deg,rgba(31,192,152,0.12),rgba(var(--tint-violet-rgb),0.15))", border: "1px solid rgba(31,192,152,0.34)" }}>
+                  <span aria-hidden className="absolute top-0 left-0 right-0" style={{ height: 3, background: "linear-gradient(90deg,#1FC098,#39E0B5)" }} />
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full"
+                    style={{ color: "#0E8A68", background: "rgba(31,192,152,0.14)", border: "1px solid rgba(31,192,152,0.3)" }}>
+                    <Star size={11} strokeWidth={2.5} fill="#1FC098" style={{ color: "#1FC098" }} /> Le meilleur choix
+                  </span>
+                  <p className="font-semibold text-lg leading-tight mt-2.5" style={{ color: "var(--text-1)" }}>{best.name}</p>
+                  {best.reason && <p className="text-xs mt-1 leading-snug" style={{ color: "var(--text-2)" }}>{best.reason}</p>}
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPickDish(best.name)}
+                    className="w-full mt-3.5 py-3 rounded-2xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.4)" }}>
+                    <Camera size={16} strokeWidth={2} /> Je pars là-dessus
+                  </motion.button>
+                </div>
+
+                {/* Les autres plats — 1er tap = on DÉPLIE le plat sur place (pas de sélection accidentelle),
+                    2e tap sur « Je pars là-dessus » = vraie sélection. Voir [[nutrition-onmangeou-redesign]]. */}
+                {others.length > 0 && (
+                  <>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase mt-0.5" style={{ color: "var(--text-3)" }}>
+                      Les autres plats <span className="font-normal tracking-normal normal-case">· touche pour choisir</span>
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {others.map((d, i) => {
+                        const vm = MENU_VERDICT_META[d.verdict];
+                        const open = focusedIdx === i;
+                        return (
+                          <motion.div key={`${d.name}-${i}`} layout
+                            className="rounded-2xl overflow-hidden"
+                            style={{
+                              background: open
+                                ? `linear-gradient(160deg, ${vm.tint}, rgba(var(--tint-violet-rgb),0.15))`
+                                : "rgba(var(--tint-violet-rgb),0.4)",
+                              border: open ? `1px solid ${vm.stripe}59` : "1px solid rgba(var(--violet-mid-rgb),0.28)",
+                            }}>
+                            <motion.button whileTap={{ scale: 0.98 }} onClick={() => setFocusedIdx(open ? null : i)}
+                              className="w-full flex items-center gap-3 p-3 cursor-pointer text-left">
+                              <span className="self-stretch rounded-full flex-shrink-0" style={{ width: 4, background: vm.stripe }} />
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-semibold leading-tight ${open ? "text-base" : "text-sm"}`} style={{ color: "var(--text-1)" }}>{d.name}</p>
+                                {d.reason && <p className="text-[11px] mt-0.5 leading-snug" style={{ color: open ? "var(--text-2)" : "var(--text-3)" }}>{d.reason}</p>}
+                              </div>
+                              <span className="text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0"
+                                style={{ color: vm.color, background: vm.tint }}>{vm.label}</span>
+                            </motion.button>
+                            <AnimatePresence initial={false}>
+                              {open && (
+                                <motion.div key="cta"
+                                  initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }} className="overflow-hidden">
+                                  <div className="px-3 pb-3">
+                                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => onPickDish(d.name)}
+                                      className="w-full py-2.5 rounded-xl text-sm font-bold cursor-pointer flex items-center justify-center gap-2"
+                                      style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", color: "#fff", boxShadow: "0 6px 18px rgba(139,92,246,0.35)" }}>
+                                      <Camera size={15} strokeWidth={2} /> Je pars là-dessus
+                                    </motion.button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                <p className="text-[11px] text-center mt-1 font-light" style={{ color: "var(--text-3)" }}>
+                  Tu choisis → tu photographies l&apos;assiette quand elle arrive pour le vrai décompte.
+                </p>
               </motion.div>
             )}
 
@@ -1330,13 +1573,19 @@ function ManualModal({ onClose, onAdd }: {
   const [estimated, setEstimated] = useState(false);
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
+  // Masque la barre de nav du bas tant que la modale est ouverte (sinon elle recouvre les boutons sur mobile).
+  useEffect(() => {
+    document.body.classList.add("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, []);
+
   const estimate = async () => {
     if (!name.trim()) return;
     setEstimating(true);
     setEstimateError(null);
     setEstimated(false);
     try {
-      const res = await fetch("/api/nutrition/estimate", {
+      const res = await aiFetch("/api/nutrition/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: name.trim() }),
@@ -1376,7 +1625,7 @@ function ManualModal({ onClose, onAdd }: {
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(240,235,255,0.45)", backdropFilter: "blur(12px)" }}
+      style={{ background: "rgba(var(--tint-violet-rgb),0.45)", backdropFilter: "blur(12px)" }}
       onClick={onClose}>
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.96 }}
@@ -1385,10 +1634,10 @@ function ManualModal({ onClose, onAdd }: {
         transition={{ type: "spring", damping: 26, stiffness: 280 }}
         className="w-full max-w-sm rounded-3xl p-5 overflow-x-hidden"
         style={{
-          background: "rgba(255,255,255,0.96)",
+          background: "rgba(var(--surface-rgb),0.96)",
           backdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.9)",
-          boxShadow: "0 20px 60px rgba(167,139,250,0.15)",
+          border: "1px solid rgba(var(--surface-rgb),0.9)",
+          boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15)",
           maxHeight: "90dvh",
           overflowY: "auto",
         }}
@@ -1396,13 +1645,13 @@ function ManualModal({ onClose, onAdd }: {
 
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>IA Nutrition</p>
-            <h2 className="text-lg font-light" style={{ color: "#2D3748" }}>Décrire un repas</h2>
+            <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>IA Nutrition</p>
+            <h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Décrire un repas</h2>
           </div>
           <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-            style={{ background: "rgba(240,235,255,0.8)" }}>
-            <X size={14} strokeWidth={2} style={{ color: "#A0AEC0" }} />
+            style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
           </motion.button>
         </div>
 
@@ -1410,7 +1659,7 @@ function ManualModal({ onClose, onAdd }: {
 
           {/* Champ description + bouton estimer */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Ce que tu as mangé
             </label>
             <div className="flex gap-2">
@@ -1421,7 +1670,7 @@ function ManualModal({ onClose, onAdd }: {
                 placeholder="Ex : 5 madeleines et un bol de lait…"
                 autoFocus
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: "rgba(240,235,255,0.5)", border: "1px solid rgba(212,192,255,0.5)", color: "#2D3748" }}
+                style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", color: "var(--text-1)" }}
               />
               <motion.button
                 whileTap={{ scale: 0.93 }}
@@ -1430,10 +1679,10 @@ function ManualModal({ onClose, onAdd }: {
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex-shrink-0"
                 style={{
                   background: name.trim() && !estimating
-                    ? "linear-gradient(135deg,#D4C0FF,#F5E6A3)"
+                    ? "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))"
                     : "rgba(220,220,220,0.4)",
-                  color: name.trim() && !estimating ? "#2D3748" : "#A0AEC0",
-                  boxShadow: name.trim() ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+                  color: name.trim() && !estimating ? "var(--text-1)" : "var(--text-3)",
+                  boxShadow: name.trim() ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
                   minWidth: 80,
                   justifyContent: "center",
                 }}>
@@ -1446,7 +1695,7 @@ function ManualModal({ onClose, onAdd }: {
                 )}
               </motion.button>
             </div>
-            <p className="text-[10px] mt-1.5 font-light" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] mt-1.5 font-light" style={{ color: "var(--text-3)" }}>
               L&apos;IA calcule automatiquement les calories & macros — ou appuie sur Entrée
             </p>
           </div>
@@ -1464,9 +1713,9 @@ function ManualModal({ onClose, onAdd }: {
               <motion.div
                 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                <Check size={12} strokeWidth={2.5} style={{ color: "#A78BFA" }} />
-                <span className="text-xs font-medium" style={{ color: "#A78BFA" }}>
+                style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.15)" }}>
+                <Check size={12} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                <span className="text-xs font-medium" style={{ color: "var(--accent)" }}>
                   Estimation IA — vérifie et modifie si besoin
                 </span>
               </motion.div>
@@ -1483,15 +1732,15 @@ function ManualModal({ onClose, onAdd }: {
             ].map(({ label, val, set, ph }) => (
               <div key={label}>
                 <label className="text-[10px] font-semibold tracking-widest uppercase mb-1 block"
-                  style={{ color: "#A0AEC0" }}>{label}</label>
+                  style={{ color: "var(--text-3)" }}>{label}</label>
                 <motion.input
                   type="number" value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                  animate={estimated && val ? { borderColor: "rgba(167,139,250,0.5)" } : {}}
+                  animate={estimated && val ? { borderColor: "rgba(var(--accent-rgb),0.5)" } : {}}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                   style={{
-                    background: estimated && val ? "rgba(240,235,255,0.6)" : "rgba(240,235,255,0.5)",
-                    border: "1px solid rgba(212,192,255,0.5)",
-                    color: "#2D3748",
+                    background: estimated && val ? "rgba(var(--tint-violet-rgb),0.6)" : "rgba(var(--tint-violet-rgb),0.5)",
+                    border: "1px solid rgba(var(--violet-mid-rgb),0.5)",
+                    color: "var(--text-1)",
                   }}
                 />
               </div>
@@ -1500,7 +1749,7 @@ function ManualModal({ onClose, onAdd }: {
 
           {/* Type de repas */}
           <div>
-            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "#A0AEC0" }}>
+            <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>
               Type de repas
             </label>
             <div className="grid grid-cols-2 gap-1.5">
@@ -1509,9 +1758,9 @@ function ManualModal({ onClose, onAdd }: {
                   onClick={() => setMealType(mt)}
                   className="py-2 rounded-xl text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5"
                   style={{
-                    background: mealType === mt ? "rgba(167,139,250,0.15)" : "rgba(240,235,255,0.5)",
-                    border: mealType === mt ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(212,192,255,0.3)",
-                    color: mealType === mt ? "#2D3748" : "#718096",
+                    background: mealType === mt ? "rgba(var(--accent-rgb),0.15)" : "rgba(var(--tint-violet-rgb),0.5)",
+                    border: mealType === mt ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--violet-mid-rgb),0.3)",
+                    color: mealType === mt ? "var(--text-1)" : "var(--text-2)",
                   }}>
                   <span style={{ fontSize: 13 }}>{MEAL_META[mt].icon}</span>
                   <span>{MEAL_META[mt].label}</span>
@@ -1525,9 +1774,9 @@ function ManualModal({ onClose, onAdd }: {
           onClick={submit} disabled={!valid}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer"
           style={{
-            background: valid ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(220,220,220,0.45)",
-            color: valid ? "#2D3748" : "#A0AEC0",
-            boxShadow: valid ? "inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
+            background: valid ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.45)",
+            color: valid ? "var(--text-1)" : "var(--text-3)",
+            boxShadow: valid ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none",
           }}>
           Enregistrer
         </motion.button>
@@ -1557,11 +1806,11 @@ const WEEK_SHORT = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 
 function calBg(pct: number): React.CSSProperties {
   if (pct <= 0)   return {};
-  if (pct < 0.25) return { background: "rgba(212,192,255,0.28)" };
-  if (pct < 0.50) return { background: "rgba(167,139,250,0.38)" };
-  if (pct < 0.75) return { background: "rgba(167,139,250,0.58)" };
-  if (pct < 0.90) return { background: "rgba(167,139,250,0.76)" };
-  return { background: "linear-gradient(135deg,rgba(167,139,250,0.9) 0%,rgba(212,168,67,0.75) 100%)" };
+  if (pct < 0.25) return { background: "rgba(var(--violet-mid-rgb),0.28)" };
+  if (pct < 0.50) return { background: "rgba(var(--accent-rgb),0.38)" };
+  if (pct < 0.75) return { background: "rgba(var(--accent-rgb),0.58)" };
+  if (pct < 0.90) return { background: "rgba(var(--accent-rgb),0.76)" };
+  return { background: "linear-gradient(135deg,rgba(var(--accent-rgb),0.9) 0%,rgba(var(--gold-rgb),0.75) 100%)" };
 }
 
 function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void }) {
@@ -1573,15 +1822,8 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   const [loading, setLoading]   = useState(true);
   const [regDate, setRegDate]   = useState<Date | null>(null);
 
-  /* Onboarding profile + calculated goals */
-  const [onboardingProfile, setOnboardingProfile] = useState<Parameters<typeof calculateGoals>[0]>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`aura_onboarding_${user?.pseudo}`);
-      if (raw) setOnboardingProfile(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, [user?.pseudo]);
-  const goals = useMemo(() => calculateGoals(onboardingProfile), [onboardingProfile]);
+  /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
+  const { goals } = useNutritionGoals();
 
   /* Registration date */
   useEffect(() => {
@@ -1596,15 +1838,13 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
     });
   }, [user]);
 
-  /* Load all nutrition + hydration data */
+  /* Load all nutrition data */
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     const supabase = createClient();
-    Promise.all([
-      supabase.from("nutrition_logs").select("date,calories,proteins,carbs,fats").eq("user_id", user.id),
-      supabase.from("hydration_logs").select("date,water_ml").eq("user_id", user.id),
-    ]).then(([{ data: nutr }, { data: hydr }]) => {
+    supabase.from("nutrition_logs").select("date,calories,proteins,carbs,fats").eq("user_id", user.id)
+      .then(({ data: nutr }) => {
       const map = new Map<string, DaySummary>();
       const blank = (): DaySummary => ({ date:"", total_calories:0, total_proteins:0, total_carbs:0, total_fats:0, meal_count:0, water_ml:0 });
 
@@ -1617,11 +1857,6 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           total_fats:     e.total_fats     + (r.fats     ?? 0),
           meal_count:     e.meal_count + 1,
         });
-      });
-
-      (hydr ?? []).forEach((r: { date:string; water_ml:number }) => {
-        const e = map.get(r.date) ?? { ...blank(), date: r.date };
-        map.set(r.date, { ...e, water_ml: r.water_ml });
       });
 
       setAllData(map);
@@ -1656,16 +1891,14 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
   }, [calMonth, regDate, today]);
 
   /* Monthly stats — mémorisé */
-  const { trackedThisMonth, daysInMonth, avgCal, avgWater } = useMemo(() => {
+  const { trackedThisMonth, daysInMonth, avgCal } = useMemo(() => {
     const mk = `${calMonth.getFullYear()}-${String(calMonth.getMonth()+1).padStart(2,"0")}`;
     const monthEntries = [...allData.entries()].filter(([k]) => k.startsWith(mk)).map(([,v]) => v);
     const tracked = monthEntries.filter(d => d.meal_count > 0);
-    const waterArr = monthEntries.filter(d => d.water_ml > 0);
     return {
       trackedThisMonth: tracked.length,
       daysInMonth: new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 0).getDate(),
       avgCal: tracked.length > 0 ? Math.round(tracked.reduce((s,d) => s + d.total_calories,0) / tracked.length) : 0,
-      avgWater: waterArr.length > 0 ? Math.round(waterArr.reduce((s,d) => s + d.water_ml,0) / waterArr.length) : 0,
     };
   }, [allData, calMonth]);
 
@@ -1707,18 +1940,18 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           onClick={() => canPrev && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1))}
           disabled={!canPrev}
           className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
-          style={{ background: canPrev ? "rgba(240,235,255,0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
-            border: "1px solid rgba(212,192,255,0.3)", boxShadow: canPrev ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}
+          style={{ background: canPrev ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canPrev ? 1 : 0.3,
+            border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canPrev ? "0 2px 8px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
         >
-          <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+          <ChevronLeft size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
         </motion.button>
 
         <div className="text-center">
-          <p className="text-base font-semibold" style={{ color: "#2D3748" }}>
+          <p className="text-base font-semibold" style={{ color: "var(--text-1)" }}>
             {MONTHS_FR[calMonth.getMonth()]} {calMonth.getFullYear()}
           </p>
           {regDate && (
-            <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>
+            <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>
               Suivi depuis le {regDate.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}
             </p>
           )}
@@ -1730,7 +1963,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
               whileTap={{ scale: 0.9 }}
               onClick={() => setCalMonth(new Date(today.getFullYear(), today.getMonth(), 1))}
               className="text-[10px] font-semibold px-2.5 py-1.5 rounded-xl cursor-pointer"
-              style={{ background: "rgba(167,139,250,0.15)", color: "#A78BFA" }}
+              style={{ background: "rgba(var(--accent-rgb),0.15)", color: "var(--accent)" }}
             >
               Auj.
             </motion.button>
@@ -1740,10 +1973,10 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             onClick={() => canNext && setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1))}
             disabled={!canNext}
             className="w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer"
-            style={{ background: canNext ? "rgba(240,235,255,0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
-              border: "1px solid rgba(212,192,255,0.3)", boxShadow: canNext ? "0 2px 8px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.9)" : "none" }}
+            style={{ background: canNext ? "rgba(var(--tint-violet-rgb),0.85)" : "transparent", opacity: canNext ? 1 : 0.3,
+              border: "1px solid rgba(var(--violet-mid-rgb),0.3)", boxShadow: canNext ? "0 2px 8px rgba(var(--accent-rgb),0.08), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" : "none" }}
           >
-            <ChevronRight size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
+            <ChevronRight size={16} strokeWidth={1.5} style={{ color: "var(--text-1)" }} />
           </motion.button>
         </div>
       </div>
@@ -1751,7 +1984,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
       {loading ? (
         <div className="flex justify-center py-16">
           <motion.div className="w-5 h-5 rounded-full border-2"
-            style={{ borderColor: "rgba(167,139,250,0.2)", borderTopColor: "#A78BFA" }}
+            style={{ borderColor: "rgba(var(--accent-rgb),0.2)", borderTopColor: "var(--accent)" }}
             animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
         </div>
       ) : (
@@ -1760,7 +1993,7 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           <div className="grid grid-cols-7 mb-1.5">
             {WEEK_SHORT.map((d) => (
               <div key={d} className="flex justify-center py-1">
-                <span className="text-[10px] font-semibold tracking-wide" style={{ color: "#A0AEC0" }}>{d}</span>
+                <span className="text-[10px] font-semibold tracking-wide" style={{ color: "var(--text-3)" }}>{d}</span>
               </div>
             ))}
           </div>
@@ -1794,22 +2027,22 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                         cursor: isClickable ? "pointer" : "default",
                         opacity: !inMonth || isBeforeReg ? 0.2 : isFuture ? 0.4 : 1,
                         border: isToday
-                          ? "2px solid rgba(167,139,250,0.8)"
-                          : hasData ? "1px solid rgba(167,139,250,0.15)" : "1px solid rgba(212,192,255,0.12)",
+                          ? "2px solid rgba(var(--accent-rgb),0.8)"
+                          : hasData ? "1px solid rgba(var(--accent-rgb),0.15)" : "1px solid rgba(var(--violet-mid-rgb),0.12)",
                         ...calBg(pct),
-                        ...(isToday && !hasData ? { background: "rgba(240,235,255,0.5)" } : {}),
+                        ...(isToday && !hasData ? { background: "rgba(var(--tint-violet-rgb),0.5)" } : {}),
                       }}
                     >
                       {/* Date number */}
                       <span className="text-[11px] font-bold leading-none"
-                        style={{ color: highContrast ? "#fff" : isToday ? "#7C3AED" : "#2D3748" }}>
+                        style={{ color: highContrast ? "#fff" : isToday ? "#7C3AED" : "var(--text-1)" }}>
                         {day.getDate()}
                       </span>
 
                       {/* Calories */}
                       {hasData && (
                         <span className="text-[9px] font-semibold leading-none mt-0.5"
-                          style={{ color: highContrast ? "rgba(255,255,255,0.9)" : "#6B5FC0" }}>
+                          style={{ color: highContrast ? "rgba(var(--surface-rgb),0.9)" : "#6B5FC0" }}>
                           {s.total_calories >= 1000
                             ? `${(s.total_calories/1000).toFixed(1)}k`
                             : `${s.total_calories}`}
@@ -1820,24 +2053,18 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
                       {hasData && (
                         <div className="w-full px-1 mt-auto pt-0.5">
                           <div className="h-0.5 rounded-full overflow-hidden"
-                            style={{ background: highContrast ? "rgba(255,255,255,0.2)" : "rgba(167,139,250,0.15)" }}>
+                            style={{ background: highContrast ? "rgba(var(--surface-rgb),0.2)" : "rgba(var(--accent-rgb),0.15)" }}>
                             <div className="h-full rounded-full"
                               style={{ width: `${Math.min(pct*100,100)}%`,
-                                background: highContrast ? "rgba(255,255,255,0.7)" : "rgba(167,139,250,0.8)" }} />
+                                background: highContrast ? "rgba(var(--surface-rgb),0.7)" : "rgba(var(--accent-rgb),0.8)" }} />
                           </div>
                         </div>
-                      )}
-
-                      {/* Water dot */}
-                      {!!s && s.water_ml >= 500 && (
-                        <div className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full"
-                          style={{ background: highContrast ? "rgba(255,255,255,0.8)" : "#38BDF8" }} />
                       )}
 
                       {/* Today ring */}
                       {isToday && (
                         <div className="absolute inset-0 rounded-[10px] pointer-events-none"
-                          style={{ boxShadow: "inset 0 0 0 2px rgba(167,139,250,0.8)" }} />
+                          style={{ boxShadow: "inset 0 0 0 2px rgba(var(--accent-rgb),0.8)" }} />
                       )}
                     </motion.button>
                   );
@@ -1849,41 +2076,36 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
           {/* Legend */}
           <div className="flex items-center gap-3 mt-3 flex-wrap">
             {[
-              { c: "rgba(212,192,255,0.4)",  l: "< 25 %"  },
-              { c: "rgba(167,139,250,0.45)", l: "25–50 %"  },
-              { c: "rgba(167,139,250,0.68)", l: "50–75 %"  },
-              { c: "linear-gradient(90deg,rgba(167,139,250,0.9),rgba(212,168,67,0.85))", l: "≥ 90 %" },
+              { c: "rgba(var(--violet-mid-rgb),0.4)",  l: "< 25 %"  },
+              { c: "rgba(var(--accent-rgb),0.45)", l: "25–50 %"  },
+              { c: "rgba(var(--accent-rgb),0.68)", l: "50–75 %"  },
+              { c: "linear-gradient(90deg,rgba(var(--accent-rgb),0.9),rgba(var(--gold-rgb),0.85))", l: "≥ 90 %" },
             ].map(({ c, l }) => (
               <div key={l} className="flex items-center gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ background: c }} />
-                <span className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>{l}</span>
+                <span className="text-[9px] font-light" style={{ color: "var(--text-3)" }}>{l}</span>
               </div>
             ))}
-            <div className="flex items-center gap-1 ml-auto">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#38BDF8" }} />
-              <span className="text-[9px] font-light" style={{ color: "#A0AEC0" }}>eau ≥ 500 ml</span>
-            </div>
           </div>
 
           {/* Monthly stats tiles */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <div className="grid grid-cols-3 gap-3 mt-4">
             {[
-              { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "#2D3748" },
-              { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "#A78BFA" },
-              { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "#D4A843" },
-              { icon: "💧", label: "Moy. hydratation", val: avgWater > 0 ? `${(avgWater/1000).toFixed(1)}` : "—", unit: avgWater > 0 ? "L/j" : "", color: "#38BDF8" },
+              { icon: "📅", label: "Jours trackés",  val: `${trackedThisMonth}`,   unit: `/ ${daysInMonth}`, color: "var(--text-1)" },
+              { icon: "🔥", label: "Moy. calories",  val: avgCal > 0 ? avgCal.toLocaleString("fr-FR") : "—", unit: avgCal > 0 ? "kcal/j" : "", color: "var(--accent)" },
+              { icon: "⚡", label: "Streak actuel",  val: streak > 0 ? `${streak}` : "—", unit: streak > 0 ? "jours" : "", color: "var(--gold)" },
             ].map(({ icon, label, val, unit, color }) => (
               <motion.div key={label}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-1.5 p-3.5 rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.9)",
-                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+                style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.9)",
+                  backdropFilter: "blur(16px)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.06), inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
                 <span className="text-base">{icon}</span>
                 <div>
                   <span className="text-lg font-light leading-none" style={{ color }}>{val}</span>
-                  {unit && <span className="text-[10px] font-light ml-1" style={{ color: "#A0AEC0" }}>{unit}</span>}
+                  {unit && <span className="text-[10px] font-light ml-1" style={{ color: "var(--text-3)" }}>{unit}</span>}
                 </div>
-                <p className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>{label}</p>
+                <p className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>{label}</p>
               </motion.div>
             ))}
           </div>
@@ -1893,24 +2115,24 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
             <motion.div
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="mt-4 p-4 rounded-2xl"
-              style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.22) 0%,rgba(245,230,163,0.16) 100%)",
-                border: "1px solid rgba(167,139,250,0.14)", backdropFilter: "blur(12px)" }}>
-              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "#A0AEC0" }}>
+              style={{ background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.22) 0%,rgba(var(--cream-mid-rgb),0.16) 100%)",
+                border: "1px solid rgba(var(--accent-rgb),0.14)", backdropFilter: "blur(12px)" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--text-3)" }}>
                 Depuis l'inscription
               </p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[
-                  { val: allTracked.length, unit: "jours", label: "trackés",   color: "#2D3748" },
-                  { val: bestStreak,        unit: "jours", label: "meil. série",color: "#A78BFA" },
+                  { val: allTracked.length, unit: "jours", label: "trackés",   color: "var(--text-1)" },
+                  { val: bestStreak,        unit: "jours", label: "meil. série",color: "var(--accent)" },
                   { val: globalAvgCal > 0 ? globalAvgCal.toLocaleString("fr-FR") : "—",
-                    unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "#D4A843" },
+                    unit: globalAvgCal > 0 ? "kcal" : "", label: "moy./jour",   color: "var(--gold)" },
                 ].map(({ val, unit, label, color }) => (
                   <div key={label}>
                     <p className="text-xl font-extralight leading-tight" style={{ color }}>
                       {val}
-                      <span className="text-xs font-light ml-0.5" style={{ color: "#A0AEC0" }}>{unit}</span>
+                      <span className="text-xs font-light ml-0.5" style={{ color: "var(--text-3)" }}>{unit}</span>
                     </p>
-                    <p className="text-[10px] font-light mt-0.5" style={{ color: "#A0AEC0" }}>{label}</p>
+                    <p className="text-[10px] font-light mt-0.5" style={{ color: "var(--text-3)" }}>{label}</p>
                   </div>
                 ))}
               </div>
@@ -1923,33 +2145,26 @@ function NutritionCalendar({ onDayClick }: { onDayClick: (date: Date) => void })
 }
 
 /* ─── Page principale ────────────────────────────────────────────────── */
-export default function NutritionTab({ showBackButton = true }: { showBackButton?: boolean }) {
+export default function NutritionTab({ showBackButton = false, fullPage = true }: { showBackButton?: boolean; fullPage?: boolean }) {
   const { user } = useAuth();
   const supabase = createClient();
   const today = new Date();
   const [calView, setCalView] = useState<"journal" | "calendrier">("journal");
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekDays, setWeekDays] = useState<Date[]>([]);
-  const [waterMl, setWaterMl] = useState(0);
   const [showPhoto, setShowPhoto] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [showBarcode, setShowBarcode] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);   // « La carte » du resto en photo → classement
+  const [menuResult, setMenuResult] = useState<MenuScanResult | null>(null);  // classement gardé en cache → retour photo→carte sans re-scan
+  const [photoFromMenu, setPhotoFromMenu] = useState(false);                  // la photo a été ouverte depuis la carte (affiche le retour)
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const waterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const waterInitialized = useRef(false);
+  const [journalOpen, setJournalOpen] = useState(false); // journal relégué en pied, déplié à la demande
 
-  /* Onboarding profile + calculated goals */
-  const [onboardingProfile, setOnboardingProfile] = useState<Parameters<typeof calculateGoals>[0]>(null);
-  useEffect(() => {
-    if (!user?.pseudo) return;
-    try {
-      const raw = localStorage.getItem(`aura_onboarding_${user.pseudo}`);
-      if (raw) setOnboardingProfile(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, [user?.pseudo]);
-  const goals = useMemo(() => calculateGoals(onboardingProfile), [onboardingProfile]);
+  /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
+  const { goals } = useNutritionGoals();
 
   /* Derived stats */
   const totalCals  = meals.reduce((s, m) => s + m.calories, 0);
@@ -1958,44 +2173,116 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   const totalFats  = meals.reduce((s, m) => s + m.fats, 0);
   const remaining  = Math.max(goals.calories - totalCals, 0);
 
+  /* ── Coups de cœur : tes plats les plus souvent enregistrés (ajout en 1 tap).
+     Classés par FRÉQUENCE (et non plus par simple récence) ; la récence
+     départage. Macros = celles de la dernière fois que tu l'as mangé. ─── */
+  const [recentMeals, setRecentMeals] = useState<RecentMeal[]>([]);
+  const loadRecents = useCallback(async () => {
+    if (!user) { setRecentMeals([]); return; }
+    const { data } = await supabase
+      .from("nutrition_logs")
+      .select("food_name, calories, proteins, carbs, fats")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .order("time", { ascending: false })
+      .limit(200);
+    if (!data) return;
+    // Regroupe par nom : compte la fréquence, garde les macros de l'occurrence la
+    // plus récente (les lignes arrivent déjà du plus récent au plus ancien).
+    const byName = new Map<string, RecentMeal & { rank: number }>();
+    (data as { food_name: string; calories: number; proteins: number; carbs: number; fats: number }[]).forEach((r, i) => {
+      const key = (r.food_name ?? "").trim().toLowerCase();
+      if (!key) return;
+      const existing = byName.get(key);
+      if (existing) { existing.count = (existing.count ?? 1) + 1; }
+      else { byName.set(key, { name: r.food_name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats, count: 1, rank: i }); }
+    });
+    const ranked = [...byName.values()]
+      .sort((a, b) => ((b.count ?? 1) - (a.count ?? 1)) || (a.rank - b.rank))
+      .slice(0, 8)
+      .map(({ name, calories, proteins, carbs, fats, count }) => ({ name, calories, proteins, carbs, fats, count }));
+    setRecentMeals(ranked);
+  }, [user]); // eslint-disable-line
+  useEffect(() => { loadRecents(); }, [loadRecents]);
+
+  /* ── Plats épinglés (favoris manuels) — localStorage : passent devant, jamais évincés ── */
+  const [pinned, setPinned] = useState<RecentMeal[]>([]);
+  const [pinHintSeen, setPinHintSeen] = useState(true); // true par défaut → pas de flash avant lecture
+  useEffect(() => {
+    if (!user) { setPinned([]); return; }
+    try { const raw = localStorage.getItem(`vaiiya_pinned_meals_${user.id}`); setPinned(raw ? JSON.parse(raw) : []); } catch { setPinned([]); }
+    try { setPinHintSeen(!!localStorage.getItem(`vaiiya_pin_hint_seen_${user.id}`)); } catch { /* ignore */ }
+  }, [user]);
+
+  const normName = (s: string) => s.trim().toLowerCase();
+  const isPinned = (name: string) => pinned.some((p) => normName(p.name) === normName(name));
+  const togglePin = (r: RecentMeal) => {
+    if (!user) return;
+    const exists = isPinned(r.name);
+    const next = exists
+      ? pinned.filter((p) => normName(p.name) !== normName(r.name))
+      : [...pinned, { name: r.name, calories: r.calories, proteins: r.proteins, carbs: r.carbs, fats: r.fats }];
+    setPinned(next);
+    try { localStorage.setItem(`vaiiya_pinned_meals_${user.id}`, JSON.stringify(next)); } catch { /* ignore */ }
+    if (!pinHintSeen) { setPinHintSeen(true); try { localStorage.setItem(`vaiiya_pin_hint_seen_${user.id}`, "1"); } catch { /* ignore */ } }
+    showToast(exists ? `${r.name} retiré des favoris` : `${r.name} épinglé ✓`);
+  };
+
+  // Affichage : épinglés d'abord (jamais coupés), puis le reste par fréquence.
+  // Plafonné pour rester une vraie shortlist (tout visible, sans défilement).
+  const displayRecents = useMemo(() => {
+    const keys = new Set(pinned.map((p) => normName(p.name)));
+    const rest = recentMeals.filter((r) => !keys.has(normName(r.name)));
+    return [...pinned, ...rest].slice(0, Math.max(8, pinned.length));
+  }, [pinned, recentMeals]);
+
+  // Appui long = épingler/désépingler ; tap simple = ajouter (sans déclencher les deux).
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const startPress = (r: RecentMeal) => {
+    longPressFired.current = false;
+    pressTimer.current = setTimeout(() => { longPressFired.current = true; togglePin(r); }, 480);
+  };
+  const cancelPress = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
+  const onChipTap = (r: RecentMeal) => {
+    if (longPressFired.current) { longPressFired.current = false; return; } // l'appui long a déjà agi
+    void quickAddRecent(r);
+  };
+
   useEffect(() => { setWeekDays(getMondayWeek(today)); }, []); // eslint-disable-line
 
   /* ── Chargement Supabase ─── */
   const loadData = useCallback(async (date: Date) => {
     if (!user) return;
     setIsLoading(true);
-    waterInitialized.current = false;
     const dateStr = toDateStr(date);
-    const [{ data: md }, { data: hd }] = await Promise.all([
-      supabase.from("nutrition_logs").select("*").eq("user_id", user.id).eq("date", dateStr).order("time", { ascending: true }),
-      supabase.from("hydration_logs").select("water_ml").eq("user_id", user.id).eq("date", dateStr).maybeSingle(),
-    ]);
+    const { data: md } = await supabase
+      .from("nutrition_logs").select("*")
+      .eq("user_id", user.id).eq("date", dateStr).order("time", { ascending: true });
     setMeals(md ? md.map(rowToMeal) : []);
-    setWaterMl(hd?.water_ml ?? 0);
-    waterInitialized.current = true;
     setIsLoading(false);
   }, [user]); // eslint-disable-line
 
   useEffect(() => { loadData(selectedDate); }, [selectedDate, user]); // eslint-disable-line
 
-  /* ── Sauvegarde hydratation debounce 800ms ─── */
-  useEffect(() => {
-    if (!user || !waterInitialized.current) return;
-    if (waterTimer.current) clearTimeout(waterTimer.current);
-    waterTimer.current = setTimeout(async () => {
-      await supabase.from("hydration_logs").upsert(
-        { user_id: user.id, date: toDateStr(selectedDate), water_ml: waterMl },
-        { onConflict: "user_id,date" }
-      );
-    }, 800);
-    return () => { if (waterTimer.current) clearTimeout(waterTimer.current); };
-  }, [waterMl]); // eslint-disable-line
-
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2800); };
+
+  // Anti-triche : on interdit de logger un repas sur une date future (sinon on
+  // pourrait gonfler son EXP avec de faux repas datés dans l'avenir).
+  const estDateFuture = (d: Date) => {
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    const dd = new Date(d); dd.setHours(0, 0, 0, 0);
+    return dd.getTime() > t.getTime();
+  };
+  const bloquerSiFutur = () => {
+    if (estDateFuture(selectedDate)) { showToast("Impossible de logger un repas dans le futur 🙂"); return true; }
+    return false;
+  };
 
   /* ── Ajout repas photo IA ─── */
   const handleAddPhoto = async (meal: Omit<MealEntry, "id">) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
       food_name: meal.name, description: meal.description ?? null,
@@ -2005,11 +2292,13 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté — ${meal.calories} kcal ✓`); }
     else showToast("Erreur lors de l'ajout");
     setShowPhoto(false);
+    setPhotoFromMenu(false);
   };
 
   /* ── Ajout repas code-barres ─── */
   const handleAddBarcode = async (meal: Omit<MealEntry, "id">) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
       food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
@@ -2023,6 +2312,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
   /* ── Ajout repas manuel ─── */
   const handleAddManual = async (meal: Omit<MealEntry, "id">) => {
     if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
     const { data, error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id, date: toDateStr(selectedDate), meal_type: meal.mealType,
       food_name: meal.name, calories: meal.calories, proteins: meal.proteins,
@@ -2031,6 +2321,32 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
     if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${meal.name} ajouté ✓`); }
     else showToast("Erreur lors de l'ajout");
     setShowManual(false);
+  };
+
+  /* ── Ajout rapide depuis les repas récents (1 tap) ─── */
+  const quickAddRecent = async (r: RecentMeal) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: getMealTypeFromTime(),
+      food_name: r.name, calories: r.calories, proteins: r.proteins,
+      carbs: r.carbs, fats: r.fats, has_photo: false, time: nowHHMM(),
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${r.name} ajouté ✓`); void loadRecents(); }
+    else showToast("Erreur lors de l'ajout");
+  };
+
+  /* ── Ajout d'une recette (IA) au journal du jour — même flux que ci-dessus ─── */
+  const addRecipeMeal = async (m: { name: string; calories: number; proteins: number; carbs: number; fats: number }) => {
+    if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
+    if (bloquerSiFutur()) return;
+    const { data, error } = await supabase.from("nutrition_logs").insert({
+      user_id: user.id, date: toDateStr(selectedDate), meal_type: getMealTypeFromTime(),
+      food_name: m.name, calories: m.calories, proteins: m.proteins,
+      carbs: m.carbs, fats: m.fats, has_photo: false, time: nowHHMM(),
+    }).select().single();
+    if (!error && data) { setMeals(prev => [...prev, rowToMeal(data)]); showToast(`${m.name} ajouté ✓`); void loadRecents(); }
+    else showToast("Erreur lors de l'ajout");
   };
 
   /* ── Suppression repas ─── */
@@ -2046,85 +2362,72 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
     .filter(g => g.meals.length > 0);
 
   const CARD = {
-    background: "rgba(255,255,255,0.78)",
-    backdropFilter: "blur(10px)",
-    border: "1px solid rgba(255,255,255,0.9)",
-    boxShadow: "0 4px 32px rgba(167,139,250,0.08), inset 0 1px 0 rgba(255,255,255,0.95)",
+    background: "rgb(var(--surface-rgb))",
+    border: "1px solid rgba(var(--accent-rgb),0.12)",
+    boxShadow: "0 6px 26px rgba(var(--accent-rgb),0.16)",
   };
 
   return (
-    <div className={showBackButton ? "min-h-screen px-4 pt-10 pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10" : "w-full px-0 pt-4 pb-12"}>
+    <div className={fullPage ? "min-h-screen px-4 pt-[calc(env(safe-area-inset-top)+72px)] pb-36 md:pl-24 md:pr-8 md:pt-10 md:pb-10" : "w-full px-0 pt-4 pb-12"}>
+      <WeighInPrompt />
+      <TastePrefsPrompt />
 
-      {/* ── Header ────────────────────────────────────────────── */}
+      {/* ── Titre « Suivi nutrition » (le seul titre qui fait sens, en tête) ── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6 max-w-5xl">
+        className="flex items-center justify-between mb-5 max-w-5xl">
         <div>
           {/* Bouton retour vers Progression */}
           {showBackButton && (
             <button
               onClick={() => window.history.back()}
               className="flex items-center gap-1.5 mb-3 text-xs font-semibold"
-              style={{ color: "#A78BFA" }}
+              style={{ color: "var(--accent)" }}
             >
               <ChevronLeft size={14} strokeWidth={2.5} />
               Progression
             </button>
           )}
-          <p className="text-xs font-semibold tracking-widest uppercase mb-0.5" style={{ color: "#A0AEC0" }}>
+          <p className="text-xs font-semibold tracking-widest uppercase mb-0.5" style={{ color: "var(--text-3)" }}>
             {today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
           </p>
-          <h1 className="text-3xl font-extralight" style={{ color: "#2D3748" }}>
+          <h1 className="text-3xl font-extralight" style={{ color: "var(--text-1)" }}>
             Suivi{" "}
             <em className="not-italic font-light" style={{
-              background: "linear-gradient(135deg,#A78BFA,#D4A843)",
+              background: "linear-gradient(135deg,var(--accent),var(--gold))",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               fontStyle: "italic",
+              display: "inline-block", paddingRight: "0.14em",  // évite que l'italique coupe le « n » final
             }}>
               nutrition
             </em>
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <motion.div
-            initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full"
-            style={{ background: "rgba(212,168,67,0.12)", border: "1px solid rgba(212,168,67,0.25)" }}>
-            <span style={{ color: "#D4A843", fontSize: 11 }}>★</span>
-            <span className="text-xs font-semibold" style={{ color: "#D4A843" }}>14 j</span>
-          </motion.div>
-          {/* Barcode CTA */}
-          <motion.button
-            whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
-            onClick={() => setShowBarcode(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
-            style={{
-              background: "rgba(240,235,255,0.85)",
-              border: "1px solid rgba(167,139,250,0.3)",
-              boxShadow: "0 2px 10px rgba(167,139,250,0.15)",
-            }}>
-            <Barcode size={16} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#A78BFA" }}>
-              Code-barres
-            </span>
-          </motion.button>
-          {/* Photo CTA */}
-          <motion.button
-            data-tour-anchor="nutrition-photo-cta"
-            whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.93 }}
-            onClick={() => setShowPhoto(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-              boxShadow: "0 4px 16px rgba(167,139,250,0.3), inset 0 1px 0 rgba(255,255,255,0.9)",
-            }}>
-            <Camera size={16} strokeWidth={1.5} style={{ color: "#2D3748" }} />
-            <span className="text-xs font-semibold hidden sm:block" style={{ color: "#2D3748" }}>
-              Photo IA
-            </span>
-          </motion.button>
-        </div>
+        {/* Plus de trio série / code-barres / photo ici : la série n'était
+            qu'un chiffre en dur, et les deux actions vivent maintenant dans
+            « On mange où ? » — un seul endroit pour ajouter un repas. */}
       </motion.div>
+
+      {/* ── On mange où ? — le nouveau #1 (dominant) ─────────── */}
+      {calView === "journal" && (
+        <div className="mb-6">
+          <MealSituationHero
+            name={user?.name}
+            userId={user?.id}
+            goals={goals}
+            consumed={{ calories: totalCals, proteins: totalProt, carbs: totalCarbs, fats: totalFats }}
+            eatenToday={meals.map((m) => m.name)}
+            onPhoto={() => setShowPhoto(true)}
+            onBarcode={() => setShowBarcode(true)}
+            onManual={() => setShowManual(true)}
+            onMenuScan={() => { setMenuResult(null); setPhotoFromMenu(false); setShowMenu(true); }}
+            onSkip={() => showToast("Noté — on ne t'embête pas 👌")}
+            classics={displayRecents}
+            onQuickAdd={(r) => { void quickAddRecent(r); }}
+            onLogIdea={(m) => { void addRecipeMeal(m); }}
+          />
+        </div>
+      )}
 
       {/* ── Tab toggle: Journal / Calendrier ─────────────────── */}
       <motion.div
@@ -2142,10 +2445,10 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
               onClick={() => setCalView(v)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-semibold cursor-pointer transition-all duration-200"
               style={{
-                background: active ? "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)" : "rgba(240,235,255,0.6)",
-                color: active ? "#2D3748" : "#A0AEC0",
-                boxShadow: active ? "0 4px 12px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.9)" : "none",
-                border: active ? "none" : "1px solid rgba(212,192,255,0.3)",
+                background: active ? "linear-gradient(135deg,#8B5CF6,#C13BC1)" : "rgba(var(--accent-rgb),0.10)",
+                color: active ? "#fff" : "var(--text-3)",
+                boxShadow: active ? "0 4px 14px rgba(147,60,200,0.4)" : "none",
+                border: active ? "none" : "1px solid rgba(var(--accent-rgb),0.2)",
               }}
             >
               <Icon size={13} strokeWidth={1.8} />
@@ -2183,18 +2486,18 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
               onClick={() => setSelectedDate(day)}
               className="flex flex-col items-center gap-1 w-10 py-2 rounded-2xl cursor-pointer"
               style={{
-                background: isSel ? "linear-gradient(135deg,#A78BFA 0%,#9270E0 100%)" : "transparent",
-                boxShadow: isSel ? "0 4px 14px rgba(167,139,250,0.38)" : "none",
+                background: isSel ? "linear-gradient(135deg,var(--accent) 0%,#9270E0 100%)" : "transparent",
+                boxShadow: isSel ? "0 4px 14px rgba(var(--accent-rgb),0.38)" : "none",
               }}>
               <span className="text-[9px] font-semibold"
-                style={{ color: isSel ? "rgba(255,255,255,0.65)" : "#A0AEC0" }}>
+                style={{ color: isSel ? "rgba(var(--surface-rgb),0.65)" : "var(--text-3)" }}>
                 {DAY_LABELS[i]}
               </span>
-              <span className="text-sm font-semibold" style={{ color: isSel ? "#fff" : "#2D3748" }}>
+              <span className="text-sm font-semibold" style={{ color: isSel ? "#fff" : "var(--text-1)" }}>
                 {day.getDate()}
               </span>
               <div className="w-1 h-1 rounded-full" style={{
-                background: isSel ? "rgba(255,255,255,0.55)" : (isPast || isToday) ? "#A78BFA" : "transparent",
+                background: isSel ? "rgba(var(--surface-rgb),0.55)" : (isPast || isToday) ? "var(--accent)" : "transparent",
               }} />
             </motion.button>
           );
@@ -2203,7 +2506,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
 
       {/* ── Statut ──────────────────────────────────────────────── */}
       {calView === "journal" && isLoading && (
-        <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "#A0AEC0" }}>
+        <div className="flex items-center gap-2 mb-4 max-w-5xl" style={{ color: "var(--text-3)" }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
             <Loader2 size={14} strokeWidth={1.5} />
           </motion.div>
@@ -2212,16 +2515,44 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
       )}
       {calView === "journal" && !user && !isLoading && (
         <div className="max-w-5xl mb-4 px-4 py-3 rounded-2xl flex items-center gap-3"
-          style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.2)" }}>
+          style={{ background: "rgba(var(--gold-rgb),0.08)", border: "1px solid rgba(var(--gold-rgb),0.2)" }}>
           <span style={{ fontSize: 16 }}>🔒</span>
-          <p className="text-xs font-medium" style={{ color: "#D4A843" }}>
+          <p className="text-xs font-medium" style={{ color: "var(--gold)" }}>
             Connecte-toi pour synchroniser tes repas sur tous tes appareils
           </p>
         </div>
       )}
 
-      {/* ── 2-column grid ──────────────────────────────────────── */}
+      {/* ── Journal du jour — relégué en pied, dépliable ────────── */}
       {calView === "journal" && (
+        <button
+          onClick={() => setJournalOpen((o) => !o)}
+          className="w-full max-w-5xl flex items-center justify-between px-5 py-4 rounded-3xl mb-4 cursor-pointer"
+          style={CARD}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+              <BookOpen size={16} strokeWidth={1.8} style={{ color: "var(--accent)" }} />
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                Journal du jour
+              </p>
+              <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
+                {totalCals.toLocaleString("fr-FR")}
+                <span className="font-normal" style={{ color: "var(--text-3)" }}> / {goals.calories.toLocaleString("fr-FR")} kcal</span>
+              </p>
+            </div>
+          </div>
+          <motion.div animate={{ rotate: journalOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={18} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.div>
+        </button>
+      )}
+
+      {/* ── 2-column grid (détail du journal, déplié) ───────────── */}
+      {calView === "journal" && journalOpen && (
       <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-5 max-w-5xl">
 
         {/* LEFT — Ring + Macros */}
@@ -2235,46 +2566,47 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
               <CalorieRing consumed={totalCals} goal={goals.calories} />
               <div className="w-full grid grid-cols-3 gap-2 text-center">
                 {[
-                  { label: "RESTANT", val: remaining, color: "#A78BFA" },
-                  { label: "BRÛLÉ",   val: goals.burned, color: "#D4A843" },
-                  { label: "OBJECTIF",val: goals.calories, color: "#2D3748" },
+                  { label: "RESTANT", val: remaining, color: "#2BD4A0" },
+                  { label: "BRÛLÉ",   val: goals.burned, color: "#FF7A1A" },
+                  { label: "OBJECTIF",val: goals.calories, color: "#B79CFF" },
                 ].map(({ label, val, color }) => (
                   <div key={label}>
                     <p className="text-[10px] font-semibold tracking-widest uppercase mb-0.5"
-                      style={{ color: "#A0AEC0" }}>{label}</p>
+                      style={{ color: "var(--text-3)" }}>{label}</p>
                     <p className="text-lg font-light leading-tight" style={{ color }}>
                       {val.toLocaleString("fr-FR")}
                     </p>
-                    <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                   </div>
                 ))}
               </div>
+              <p className="text-[11px] text-center leading-snug px-2" style={{ color: "var(--text-3)" }}>
+                Restant = ce qu&apos;il te reste à manger · Brûlé = dépensé en bougeant
+              </p>
             </div>
           </motion.div>
 
-          {/* Macros + hydration */}
+          {/* Macros */}
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             className="rounded-3xl p-5" style={CARD}>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
-                MACROS DU JOUR
-              </p>
-              <button className="text-xs font-semibold cursor-pointer" style={{ color: "#A78BFA" }}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                  MACROS DU JOUR
+                </p>
+                <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
+                  Les 3 familles d&apos;aliments qui composent ton assiette
+                </p>
+              </div>
+              <button className="text-xs font-semibold cursor-pointer flex-shrink-0" style={{ color: "var(--accent)" }}>
                 Ajuster
               </button>
             </div>
             <div className="flex flex-col gap-4">
-              <MacroBar label="Protéines" consumed={totalProt}  goal={goals.proteins} color="#A78BFA" />
-              <MacroBar label="Glucides"  consumed={totalCarbs} goal={goals.carbs}    color="#7B5CC4" />
-              <MacroBar label="Lipides"   consumed={totalFats}  goal={goals.fats}     color="#D4A843" />
-              <div style={{ height: 1, background: "rgba(167,139,250,0.08)" }} />
-              <HydrationWidget
-                waterMl={waterMl}
-                goalMl={2000}
-                onAdd={(ml) => setWaterMl(w => Math.min(w + ml, 5000))}
-                onRemove={(ml) => setWaterMl(w => Math.max(w - ml, 0))}
-              />
+              <MacroBar label="Protéines" hint="Pour construire tes muscles"     consumed={totalProt}  goal={goals.proteins} color="#B79CFF" />
+              <MacroBar label="Glucides"  hint="Ton énergie pour la journée"      consumed={totalCarbs} goal={goals.carbs}    color="#FF9A3D" />
+              <MacroBar label="Lipides"   hint="Les graisses utiles à ton corps"  consumed={totalFats}  goal={goals.fats}     color="#2BD4A0" />
             </div>
           </motion.div>
         </div>
@@ -2287,10 +2619,10 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>
+              <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
                 REPAS DU JOUR
               </p>
-              <p className="text-sm font-light mt-0.5" style={{ color: "#718096" }}>
+              <p className="text-sm font-light mt-0.5" style={{ color: "var(--text-2)" }}>
                 {totalCals} kcal consommés
               </p>
             </div>
@@ -2300,9 +2632,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                 onClick={() => setShowBarcode(true)}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
-                  background: "rgba(240,235,255,0.7)",
-                  color: "#A78BFA",
-                  border: "1px solid rgba(167,139,250,0.25)",
+                  background: "rgba(var(--tint-violet-rgb),0.7)",
+                  color: "var(--accent)",
+                  border: "1px solid rgba(var(--accent-rgb),0.25)",
                 }}>
                 <Barcode size={12} strokeWidth={2} />
                 Scanner
@@ -2312,9 +2644,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                 onClick={() => setShowPhoto(true)}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                  color: "#2D3748",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                  background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                  color: "var(--text-1)",
+                  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}>
                 <Camera size={12} strokeWidth={2} />
                 Photo IA
@@ -2324,9 +2656,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                 onClick={() => setShowManual(true)}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer"
                 style={{
-                  background: "rgba(240,235,255,0.7)",
-                  color: "#718096",
-                  border: "1px solid rgba(212,192,255,0.4)",
+                  background: "rgba(var(--tint-violet-rgb),0.7)",
+                  color: "var(--text-2)",
+                  border: "1px solid rgba(var(--violet-mid-rgb),0.4)",
                 }}>
                 <Plus size={12} strokeWidth={2.5} />
                 Manuel
@@ -2334,18 +2666,72 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
             </div>
           </div>
 
+          {/* Ajout rapide — coups de cœur (fréquence) + épinglés (appui long) en 1 tap */}
+          {displayRecents.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Heart size={11} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>
+                  Tes coups de cœur
+                </p>
+                {!pinHintSeen && (
+                  <span className="text-[9px] font-normal tracking-normal" style={{ color: "#C4B5FD", textTransform: "none" }}>
+                    · appui long pour épingler
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {displayRecents.map((r, i) => {
+                  const pin = isPinned(r.name);
+                  return (
+                    <motion.button key={i} whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.03 }}
+                      onPointerDown={() => startPress(r)} onPointerUp={cancelPress}
+                      onPointerLeave={cancelPress} onPointerMove={cancelPress}
+                      onContextMenu={(e) => e.preventDefault()}
+                      onClick={() => onChipTap(r)}
+                      className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer"
+                      style={{
+                        background: pin ? "rgba(244,194,231,0.30)" : "rgba(var(--tint-violet-rgb),0.6)",
+                        border: pin ? "1px solid rgba(236,153,201,0.55)" : "1px solid rgba(var(--violet-mid-rgb),0.4)",
+                        WebkitTouchCallout: "none",
+                      }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "rgba(var(--accent-rgb),0.15)" }}>
+                        <Plus size={11} strokeWidth={2.5} style={{ color: "var(--accent)" }} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-medium leading-tight flex items-center gap-1" style={{ color: "var(--text-1)", whiteSpace: "nowrap" }}>
+                          {pin && <Heart size={9} strokeWidth={2.5} style={{ color: "#8B5CF6", fill: "#8B5CF6" }} />}
+                          {r.name}
+                        </p>
+                        <p className="text-[9px] leading-tight" style={{ color: "var(--text-3)" }}>
+                          {r.calories} kcal{(r.count ?? 0) >= 2 ? ` · ${r.count}×` : ""}
+                        </p>
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Recettes par thème — générées par l'IA, ajoutables au journal du jour */}
+          <div id="nutrition-idees">
+            <RecipesByTheme onAdd={addRecipeMeal} />
+          </div>
+
           {/* Empty state */}
           {meals.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 gap-4">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: "rgba(167,139,250,0.08)" }}>
+                style={{ background: "rgba(var(--accent-rgb),0.08)" }}>
                 <Camera size={24} strokeWidth={1.5} style={{ color: "#C4B5FD" }} />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium" style={{ color: "#2D3748" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
                   Aucun repas enregistré
                 </p>
-                <p className="text-xs mt-1 font-light max-w-xs" style={{ color: "#A0AEC0" }}>
+                <p className="text-xs mt-1 font-light max-w-xs" style={{ color: "var(--text-3)" }}>
                   Prends une photo — l&apos;IA identifie les aliments et remplit tout automatiquement
                 </p>
               </div>
@@ -2353,9 +2739,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                 onClick={() => setShowPhoto(true)}
                 className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold cursor-pointer"
                 style={{
-                  background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)",
-                  color: "#2D3748",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                  background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))",
+                  color: "var(--text-1)",
+                  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
                 }}>
                 <Camera size={16} strokeWidth={1.5} />
                 Analyser mon premier repas
@@ -2371,9 +2757,9 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                     {/* Group header */}
                     <div className="flex items-center gap-2 mb-3">
                       <span style={{ fontSize: 15 }}>{group.icon}</span>
-                      <p className="text-sm font-semibold" style={{ color: "#4A5568" }}>{group.label}</p>
-                      <div className="flex-1 h-px" style={{ background: "rgba(167,139,250,0.1)" }} />
-                      <p className="text-xs font-medium" style={{ color: "#A0AEC0" }}>
+                      <p className="text-sm font-semibold" style={{ color: "var(--text-2)" }}>{group.label}</p>
+                      <div className="flex-1 h-px" style={{ background: "rgba(var(--accent-rgb),0.1)" }} />
+                      <p className="text-xs font-medium" style={{ color: "var(--text-3)" }}>
                         {group.meals.reduce((s, m) => s + m.calories, 0)} kcal
                       </p>
                     </div>
@@ -2388,29 +2774,29 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                           className="flex items-center gap-3 p-3 rounded-2xl group"
                           style={{
                             background: "rgba(250,249,255,0.7)",
-                            border: "1px solid rgba(167,139,250,0.06)",
+                            border: "1px solid rgba(var(--accent-rgb),0.06)",
                           }}>
 
                           {/* Icon */}
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: meal.hasPhoto ? "rgba(167,139,250,0.12)" : "rgba(167,139,250,0.07)" }}>
+                            style={{ background: meal.hasPhoto ? "rgba(var(--accent-rgb),0.12)" : "rgba(var(--accent-rgb),0.07)" }}>
                             {meal.hasPhoto
-                              ? <Camera size={14} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+                              ? <Camera size={14} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
                               : <span style={{ fontSize: 15 }}>{group.icon}</span>
                             }
                           </div>
 
                           {/* Info */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-tight truncate" style={{ color: "#2D3748" }}>
+                            <p className="text-sm font-medium leading-tight truncate" style={{ color: "var(--text-1)" }}>
                               {meal.name}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                              <span className="text-[10px]" style={{ color: "#A0AEC0" }}>{meal.time}</span>
+                              <span className="text-[10px]" style={{ color: "var(--text-3)" }}>{meal.time}</span>
                               {meal.proteins > 0 && (
                                 <>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full"
-                                    style={{ background: "rgba(167,139,250,0.1)", color: "#A78BFA" }}>
+                                    style={{ background: "rgba(var(--accent-rgb),0.1)", color: "var(--accent)" }}>
                                     P {meal.proteins}g
                                   </span>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full"
@@ -2418,7 +2804,7 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                                     G {meal.carbs}g
                                   </span>
                                   <span className="text-[10px] px-1.5 py-0.5 rounded-full hidden sm:inline-block"
-                                    style={{ background: "rgba(212,168,67,0.1)", color: "#D4A843" }}>
+                                    style={{ background: "rgba(var(--gold-rgb),0.1)", color: "var(--gold)" }}>
                                     L {meal.fats}g
                                   </span>
                                 </>
@@ -2429,8 +2815,8 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
                           {/* Calories + delete */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="text-right">
-                              <p className="text-sm font-semibold" style={{ color: "#2D3748" }}>{meal.calories}</p>
-                              <p className="text-[10px]" style={{ color: "#A0AEC0" }}>kcal</p>
+                              <p className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{meal.calories}</p>
+                              <p className="text-[10px]" style={{ color: "var(--text-3)" }}>kcal</p>
                             </div>
                             <motion.button whileTap={{ scale: 0.85 }}
                               onClick={() => deleteMeal(meal.id)}
@@ -2457,11 +2843,45 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
           <BarcodeScannerModal key="barcode" onClose={() => setShowBarcode(false)} onAdd={handleAddBarcode} />
         )}
         {showPhoto && (
-          <PhotoAnalysisModal key="photo" onClose={() => setShowPhoto(false)} onAdd={handleAddPhoto} />
+          <PhotoAnalysisModal key="photo"
+            onClose={() => { setShowPhoto(false); setPhotoFromMenu(false); }}
+            onAdd={handleAddPhoto}
+            onBack={photoFromMenu ? () => { setShowPhoto(false); setPhotoFromMenu(false); setShowMenu(true); } : undefined}
+          />
         )}
         {showManual && (
           <ManualModal key="manual" onClose={() => setShowManual(false)} onAdd={handleAddManual} />
         )}
+        {showMenu && (() => {
+          // Objectif du moment (données RÉELLES du jour, pas une estimation du plat)
+          const known = !!goals && goals.calories > 0;
+          const h = new Date().getHours();
+          const mealLabel = h < 11 ? "petit-déjeuner" : h < 15 ? "déjeuner" : h < 18 ? "goûter" : "dîner";
+          const cap = mealLabel.charAt(0).toUpperCase() + mealLabel.slice(1);
+          let diet: string[] = [];
+          try { if (user?.id) { const raw = localStorage.getItem(`vaiiya_diet_${user.id}`); if (raw) diet = JSON.parse(raw); } } catch { /* ignore */ }
+          const dietTxt = diet.length ? ` Régime/contraintes à respecter : ${diet.join(", ")}.` : "";
+          const remaining = known ? Math.max(0, Math.round((goals?.calories ?? 0) - totalCals)) : 0;
+          const protLeft = known ? Math.max(0, Math.round((goals?.proteins ?? 0) - totalProt)) : 0;
+          const objectiveLine = known
+            ? `Repas : ${mealLabel}. Il reste environ ${remaining} kcal sur la journée et ~${protLeft} g de protéines à couvrir.${dietTxt}`
+            : `Repas : ${mealLabel}. Objectif calorique inconnu — privilégie un plat équilibré et un bon apport en protéines.${dietTxt}`;
+          const objectiveChip = known ? `${cap} · ~${remaining} kcal restantes` : `${cap} · équilibre`;
+          return (
+            <MenuScanModal key="menu"
+              objectiveLine={objectiveLine} objectiveChip={objectiveChip} goalKnown={known}
+              initialResult={menuResult} onResult={setMenuResult}
+              onClose={() => setShowMenu(false)}
+              onPickDish={(name) => {
+                // On garde le classement en cache (menuResult) → la photo pourra revenir dessus
+                setShowMenu(false);
+                setPhotoFromMenu(true);
+                showToast(`Bon choix : « ${name} » 🍽️ Photographie ton assiette quand elle arrive pour le vrai décompte.`);
+                setShowPhoto(true);
+              }}
+            />
+          );
+        })()}
         {toast && (
           <motion.div key="toast"
             initial={{ opacity: 0, y: 30, scale: 0.9 }}
@@ -2470,14 +2890,14 @@ export default function NutritionTab({ showBackButton = true }: { showBackButton
             transition={{ type: "spring", bounce: 0.4 }}
             className="fixed bottom-32 md:bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-2xl flex items-center gap-2"
             style={{
-              background: "rgba(255,255,255,0.92)",
+              background: "rgba(var(--surface-rgb),0.92)",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.9)",
-              boxShadow: "0 8px 32px rgba(167,139,250,0.2)",
+              border: "1px solid rgba(var(--surface-rgb),0.9)",
+              boxShadow: "0 8px 32px rgba(var(--accent-rgb),0.2)",
               whiteSpace: "nowrap",
             }}>
-            <Check size={14} strokeWidth={2.5} style={{ color: "#D4A843" }} />
-            <span className="text-sm font-medium" style={{ color: "#2D3748" }}>{toast}</span>
+            <Check size={14} strokeWidth={2.5} style={{ color: "var(--gold)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{toast}</span>
           </motion.div>
         )}
       </AnimatePresence>

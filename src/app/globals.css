@@ -39,6 +39,7 @@
   /* Accents */
   --accent: #A78BFA;        --accent-rgb: 167, 139, 250;   /* violet */
   --gold:   #D4A843;        --gold-rgb:   212, 168, 67;    /* or beige */
+  --gold-soft: #FBF1DA;     /* aplat doré pâle (carte « Série ») */
   /* Surfaces translucides (base RGB) */
   --surface-rgb:      255, 255, 255;   /* verre blanc            */
   --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
@@ -52,6 +53,7 @@
   /* Fonds de page */
   --page-bg: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
   --html-bg: #F5F3FF;                  /* anti-flash au lancement PWA */
+  --page-fade-rgb: 248, 247, 252;      /* couleur des fondus de bord (carrousels) */
 }
 
 [data-theme="dark"] {
@@ -64,16 +66,20 @@
   --text-3: #9E98BE;                 --text-3-rgb: 158, 152, 190;
   --accent: #C3AEFF;        --accent-rgb: 195, 174, 255;   /* violet adouci */
   --gold:   #E6C56E;        --gold-rgb:   230, 197, 110;
-  --surface-rgb:     46, 39, 76;       /* panneau violet-gris surélevé */
-  --tint-violet-rgb: 58, 49, 94;
-  --tint-cream-rgb:  54, 46, 82;
+  --gold-soft: #3A2D12;     /* aplat doré profond & chaud (carte « Série ») */
+  --surface-rgb:     22, 18, 30;       /* carte sombre sur fond noir (distincte, discrète) */
+  --tint-violet-rgb: 40, 33, 60;
+  --tint-cream-rgb:  40, 33, 55;
   --violet-mid: #5A4B92;    --violet-mid-rgb: 90, 75, 146;
   --cream-mid:  #6E5CA0;    --cream-mid-rgb:  110, 92, 160;
   --glass-sheen: 188, 176, 236;
   --nav-fg-active: #F4F1FF;
   --nav-fg-inactive: #B3ABD2;
-  --page-bg: linear-gradient(150deg, #0E0B1A 0%, #16112B 50%, #0E0B1A 100%);
-  --html-bg: #0E0B1A;
+  /* Fond « complètement noir » (choix utilisateur) — un souffle de violet tout
+     en haut pour la profondeur, puis noir franc → les dégradés colorés claquent. */
+  --page-bg: radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000000 100%);
+  --html-bg: #000000;
+  --page-fade-rgb: 5, 2, 8;            /* fondus de bord → se fondent dans le noir */
 }
 
 @layer base {
@@ -105,6 +111,21 @@
   .mobile-nav { transition: transform 0.25s ease, opacity 0.2s ease; }
   body.chat-open .mobile-nav,
   body.modal-open .mobile-nav { transform: translateY(140%); opacity: 0; pointer-events: none; }
+
+  /* Le lecteur de conseils possède sa propre commande de fermeture. L'en-tête
+     flottant global (avatar, cloche et voile) disparaît pour ne pas superposer
+     deux niveaux de navigation au-dessus de la photo. */
+  .global-mobile-header { transition: opacity 0.16s ease; }
+  body.advice-reader-open .global-mobile-header { opacity: 0; pointer-events: none; }
+
+  /* Scanner code-barres : la <video> injectée par html5-qrcode remplit le viseur
+     (object-fit cover), comme le viseur caméra de la Photo IA. */
+  #aura-barcode-reader { line-height: 0; }
+  #aura-barcode-reader video {
+    position: absolute; inset: 0;
+    width: 100% !important; height: 100% !important;
+    object-fit: cover;
+  }
 
   /* Liquid glass — barres de navigation (frosté translucide, style iOS/Instagram) */
   .nav-glass {
@@ -248,6 +269,42 @@
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* ──────────────── PSEUDO BRILLANT (récompense du rang Éternel) ───────────────
+   La lumière traverse le pseudo EN CONTINU. Deux conditions pour que ce soit
+   fluide, apprises à la première version (pilotée par framer-motion, saccadée) :
+     • pas de JS dans la boucle : une animation CSS native, le navigateur la
+       tient seul même quand le fil principal travaille ;
+     • une boucle SANS raccord : le dégradé se répète tous les 260 px et on
+       décale d'exactement 260 px, donc l'image de fin est l'image de départ.
+       Un dégradé non périodique produit un saut visible à chaque tour.
+   Le décalage est horizontal exprès : à angle oblique, décaler en x ne vaut
+   plus une période entière et le raccord réapparaît. */
+.pseudo-brillant {
+  background-image: repeating-linear-gradient(
+    to right,
+    #FFD34E 0px,
+    #C13BC1 70px,
+    #8B5CF6 130px,
+    #C13BC1 190px,
+    #FFD34E 260px
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: pseudo-brillance 5s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes pseudo-brillance {
+  from { background-position: 0 0; }
+  to   { background-position: 260px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pseudo-brillant { animation: none; }
 }
 
 /* ─────────────────────────── HASHTAG ─────────────────────────── */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { aiFetch } from "@/lib/aiFetch";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Dumbbell, Settings, Home, MapPin, Play, X, Lock, ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,7 +11,7 @@ import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import WorkoutGuideModal from "@/components/WorkoutGuideModal";
 import {
-  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle,
+  ensureWeek, regenerateWeek, setDayStatus, ctxFromLieu, dayTitle, persistLieu, loadLieu,
   weekDatesForOffset, weekOffsetOf, weekdayIndex, todayWeekIndex,
   type PlanningDay, type GenInput,
 } from "@/lib/planning";
@@ -27,17 +28,17 @@ type ProfileData = {
   onboarding_weight: number | null;
 };
 
-/* ─── Badge styles by type ─── */
+/* ─── Badge styles by type — Système D : type = rôle couleur (comme le catalogue) ─── */
 function getBadgeStyle(type: string): React.CSSProperties {
+  const base = { borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 } as const;
   const t = type.toLowerCase();
-  if (t === "repos") return { background: "rgba(160,174,192,0.15)", color: "#718096", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "cardio" || t === "endurance") return { background: "rgba(96,165,250,0.15)", color: "#2563EB", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "force" || t === "haut du corps" || t === "bas du corps") return { background: "rgba(167,139,250,0.15)", color: "#7C3AED", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "hiit") return { background: "rgba(252,129,129,0.15)", color: "#DC2626", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "mobilité") return { background: "rgba(52,211,153,0.15)", color: "#059669", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  if (t === "full body") return { background: "rgba(251,191,36,0.15)", color: "#D97706", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
-  // default
-  return { background: "rgba(167,139,250,0.15)", color: "#7C3AED", borderRadius: 999, padding: "2px 10px", fontSize: 11, fontWeight: 600 };
+  if (t === "repos") return { ...base, background: "rgba(var(--text-3-rgb),0.15)", color: "var(--text-2)" };
+  // cardio / endurance / HIIT = énergie = orange
+  if (t === "cardio" || t === "endurance" || t === "hiit") return { ...base, background: "rgba(232,98,12,0.14)", color: "#E8620C" };
+  // mobilité = corps / récup = teal
+  if (t === "mobilité") return { ...base, background: "rgba(43,212,160,0.15)", color: "#12A87E" };
+  // force / haut / bas / full body / défaut = résistance = violet (action)
+  return { ...base, background: "rgba(139,92,246,0.15)", color: "#8B5CF6" };
 }
 
 /* ─── Goal labels ─── */
@@ -61,7 +62,7 @@ function SkeletonDetail() {
     <div className="flex flex-col gap-2 pt-1">
       {[60, 80, 50, 70, 55].map((w, i) => (
         <motion.div key={i} className="rounded-full"
-          style={{ height: 10, width: `${w}%`, background: "rgba(167,139,250,0.1)" }}
+          style={{ height: 10, width: `${w}%`, background: "rgba(var(--accent-rgb),0.1)" }}
           animate={{ opacity: [0.4, 0.9, 0.4] }}
           transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.12 }} />
       ))}
@@ -88,7 +89,7 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
   useEffect(() => {
     let cancelled = false;
     setState("loading"); setVideoId(null);
-    fetch(`/api/exercise-video?q=${encodeURIComponent(clean)}`)
+    aiFetch(`/api/exercise-video?q=${encodeURIComponent(clean)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
@@ -115,23 +116,23 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
         transition={{ type: "spring", damping: 28, stiffness: 280 }}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-3xl overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.97)", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 24px 70px rgba(167,139,250,0.3)" }}
+        style={{ background: "rgba(var(--surface-rgb),0.97)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 24px 70px rgba(var(--accent-rgb),0.3)" }}
       >
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A78BFA" }}>Tuto · démo</p>
-            <p className="text-sm font-semibold truncate" style={{ color: "#2D3748" }}>{clean}</p>
+            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--accent)" }}>Tuto · démo</p>
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--text-1)" }}>{clean}</p>
           </div>
           <button type="button" onClick={onClose}
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 cursor-pointer"
-            style={{ background: "rgba(167,139,250,0.12)" }}>
-            <X size={15} strokeWidth={2} style={{ color: "#A78BFA" }} />
+            style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+            <X size={15} strokeWidth={2} style={{ color: "var(--accent)" }} />
           </button>
         </div>
 
         {state === "loading" && (
-          <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(167,139,250,0.06)" }}>
-            <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(167,139,250,0.25)", borderTopColor: "#A78BFA" }} />
+          <div className="aspect-video w-full flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.06)" }}>
+            <div className="w-6 h-6 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(var(--accent-rgb),0.25)", borderTopColor: "var(--accent)" }} />
           </div>
         )}
         {state === "ready" && videoId && (
@@ -149,14 +150,14 @@ function ExerciseTutorial({ exercise, onClose }: { exercise: string; onClose: ()
         {state === "none" && (
           <a href={ytSearch} target="_blank" rel="noopener noreferrer"
             className="aspect-video w-full flex flex-col items-center justify-center gap-2 text-center px-4"
-            style={{ background: "rgba(167,139,250,0.06)", color: "#A78BFA" }}>
+            style={{ background: "rgba(var(--accent-rgb),0.06)", color: "var(--accent)" }}>
             <span className="inline-flex items-center justify-center w-12 h-12 rounded-full" style={{ background: "#FF0000" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
             </span>
             <span className="text-sm font-semibold">Voir la démo sur YouTube</span>
           </a>
         )}
-        <p className="text-[11px] font-light text-center px-5 py-3" style={{ color: "#A0AEC0" }}>
+        <p className="text-[11px] font-light text-center px-5 py-3" style={{ color: "var(--text-3)" }}>
           Inspire-toi de la technique, adapte à ton niveau 💪
         </p>
       </motion.div>
@@ -176,14 +177,14 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
       <div className="flex items-center gap-2 flex-wrap">
         <span style={getBadgeStyle(day.type)}>{day.type}</span>
         {!isRest && (
-          <span className="text-[10px] font-medium" style={{ color: "#A0AEC0" }}>{day.difficulty}</span>
+          <span className="text-[10px] font-medium" style={{ color: "var(--text-3)" }}>{day.difficulty}</span>
         )}
       </div>
       {!isRest && day.title && (
-        <p className="text-sm font-medium leading-snug" style={{ color: "#2D3748" }}>{day.title}</p>
+        <p className="text-sm font-medium leading-snug" style={{ color: "var(--text-1)" }}>{day.title}</p>
       )}
       {isRest && (
-        <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Journée de récupération — repose-toi bien 💤</p>
+        <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Journée de récupération — repose-toi bien 💤</p>
       )}
       {!isRest && day.exerciseList.length > 0 && (
         <>
@@ -194,16 +195,16 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
                 type="button"
                 onClick={() => onTuto(ex.name)}
                 className="flex items-center gap-2 w-full text-left rounded-xl px-2 py-1.5 -mx-1 cursor-pointer transition-colors"
-                style={{ background: "rgba(167,139,250,0.05)" }}
+                style={{ background: "rgba(var(--accent-rgb),0.05)" }}
                 aria-label={`Voir le tuto : ${ex.name}`}
               >
-                <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "#A78BFA", opacity: 0.8 }} />
-                <p className="text-[11px] leading-snug flex-1" style={{ color: "#4A5568" }}>{ex.name}</p>
-                <span className="text-[9px] font-medium flex-shrink-0" style={{ color: "#A0AEC0" }}>{ex.sets}×{ex.reps}</span>
+                <div className="rounded-full flex-shrink-0" style={{ width: 4, height: 4, background: "var(--accent)", opacity: 0.8 }} />
+                <p className="text-[11px] leading-snug flex-1" style={{ color: "var(--text-body)" }}>{ex.name}</p>
+                <span className="text-[9px] font-medium flex-shrink-0" style={{ color: "var(--text-3)" }}>{ex.sets}×{ex.reps}</span>
                 <span className="flex items-center gap-1 flex-shrink-0 rounded-full px-2 py-0.5"
-                  style={{ background: "rgba(167,139,250,0.12)" }}>
-                  <Play size={9} strokeWidth={2.5} style={{ color: "#A78BFA" }} fill="#A78BFA" />
-                  <span className="text-[9px] font-semibold" style={{ color: "#A78BFA" }}>Tuto</span>
+                  style={{ background: "rgba(var(--accent-rgb),0.12)" }}>
+                  <Play size={9} strokeWidth={2.5} style={{ color: "var(--accent)" }} fill="currentColor" />
+                  <span className="text-[9px] font-semibold" style={{ color: "var(--accent)" }}>Tuto</span>
                 </span>
               </button>
             ))}
@@ -214,10 +215,10 @@ function DayDetail({ day, onTuto, onStart }: { day: PlanningDay; onTuto: (ex: st
             whileTap={{ scale: 0.98 }}
             onClick={onStart}
             className="mt-1 w-full flex items-center justify-center gap-2 py-3 rounded-2xl cursor-pointer"
-            style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "0 6px 18px rgba(167,139,250,0.25), inset 0 1px 0 rgba(255,255,255,0.85)" }}
+            style={{ background: "linear-gradient(135deg,#8B5CF6,#C13BC1)", boxShadow: "0 6px 18px rgba(193,59,193,0.38)" }}
           >
-            <Play size={13} strokeWidth={2.5} style={{ color: "#2D3748", marginLeft: 1 }} fill="#2D3748" />
-            <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Commencer</span>
+            <Play size={13} strokeWidth={2.5} style={{ color: "#fff", marginLeft: 1 }} fill="currentColor" />
+            <span className="text-sm font-semibold" style={{ color: "#fff" }}>Commencer</span>
           </motion.button>
         </>
       )}
@@ -233,29 +234,29 @@ function LocationQuestion({ onChoose }: { onChoose: (loc: "salle" | "maison") =>
       className="flex flex-col gap-3 pt-1"
     >
       <div className="flex items-start gap-2.5 rounded-2xl px-3.5 py-3"
-        style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.18)" }}>
+        style={{ background: "rgba(var(--accent-rgb),0.08)", border: "1px solid rgba(var(--accent-rgb),0.18)" }}>
         <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-          style={{ background: "linear-gradient(135deg,#D4C0FF,#F5E6A3)" }}>
-          <Dumbbell size={13} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+          style={{ background: "linear-gradient(135deg,var(--violet-mid),var(--cream-mid))" }}>
+          <Dumbbell size={13} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
         </div>
-        <p className="text-[13px] font-light leading-snug" style={{ color: "#2D3748" }}>
+        <p className="text-[13px] font-light leading-snug" style={{ color: "var(--text-1)" }}>
           Avant de te créer ton programme, dis-moi : tu t&apos;entraînes plutôt <strong className="font-semibold">en salle</strong> ou <strong className="font-semibold">à la maison</strong> ? J&apos;adapterai les exercices 💪
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("salle")}
           className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.5)", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
-          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>En salle</span>
-          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Machines & charges</span>
+          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
+          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>En salle</span>
+          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Machines & charges</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("maison")}
           className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(245,230,163,0.6)", boxShadow: "0 2px 12px rgba(212,168,67,0.1)" }}>
-          <Home size={20} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>À la maison</span>
-          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Poids du corps</span>
+          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)", boxShadow: "0 2px 12px rgba(var(--gold-rgb),0.1)" }}>
+          <Home size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>À la maison</span>
+          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps</span>
         </motion.button>
       </div>
     </motion.div>
@@ -270,32 +271,32 @@ function HomeEquipQuestion({ onChoose, onBack }: { onChoose: (e: "halteres" | "p
       className="flex flex-col gap-3 pt-1"
     >
       <div className="flex items-start gap-2.5 rounded-2xl px-3.5 py-3"
-        style={{ background: "rgba(212,168,67,0.08)", border: "1px solid rgba(212,168,67,0.18)" }}>
+        style={{ background: "rgba(var(--gold-rgb),0.08)", border: "1px solid rgba(var(--gold-rgb),0.18)" }}>
         <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-          style={{ background: "linear-gradient(135deg,#F5E6A3,#D4C0FF)" }}>
-          <Dumbbell size={13} strokeWidth={1.8} style={{ color: "#2D3748" }} />
+          style={{ background: "linear-gradient(135deg,#C4A8FF,var(--violet-mid))" }}>
+          <Dumbbell size={13} strokeWidth={1.8} style={{ color: "var(--text-1)" }} />
         </div>
-        <p className="text-[13px] font-light leading-snug" style={{ color: "#2D3748" }}>
+        <p className="text-[13px] font-light leading-snug" style={{ color: "var(--text-1)" }}>
           Super, à la maison ! Une dernière chose : tu as des <strong className="font-semibold">haltères</strong> ? Sinon je te fais tout au <strong className="font-semibold">poids du corps</strong> 💪
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("halteres")}
           className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(245,230,163,0.6)", boxShadow: "0 2px 12px rgba(212,168,67,0.1)" }}>
-          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "#D4A843" }} />
-          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Oui, haltères</span>
-          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Poids du corps + haltères</span>
+          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--cream-mid-rgb),0.6)", boxShadow: "0 2px 12px rgba(var(--gold-rgb),0.1)" }}>
+          <Dumbbell size={20} strokeWidth={1.5} style={{ color: "var(--gold)" }} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Oui, haltères</span>
+          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps + haltères</span>
         </motion.button>
         <motion.button whileTap={{ scale: 0.96 }} onClick={() => onChoose("poids")}
           className="flex flex-col items-center gap-1.5 py-4 rounded-2xl cursor-pointer"
-          style={{ background: "rgba(255,255,255,0.8)", border: "1px solid rgba(212,192,255,0.5)", boxShadow: "0 2px 12px rgba(167,139,250,0.1)" }}>
-          <Home size={20} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
-          <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>Non</span>
-          <span className="text-[10px] font-light" style={{ color: "#A0AEC0" }}>Poids du corps uniquement</span>
+          style={{ background: "rgba(var(--surface-rgb),0.8)", border: "1px solid rgba(var(--violet-mid-rgb),0.5)", boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.1)" }}>
+          <Home size={20} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>Non</span>
+          <span className="text-[10px] font-light" style={{ color: "var(--text-3)" }}>Poids du corps uniquement</span>
         </motion.button>
       </div>
-      <button onClick={onBack} className="text-[10px] font-medium self-center cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none" }}>
+      <button onClick={onBack} className="text-[10px] font-medium self-center cursor-pointer" style={{ color: "var(--text-3)", background: "none", border: "none" }}>
         ← Changer de lieu
       </button>
     </motion.div>
@@ -324,15 +325,16 @@ export default function WeeklyProgramme() {
   // Semaine consultée : 0 = cette semaine, +1 = la prochaine, etc.
   const [weekOffset, setWeekOffset] = useState(0);
 
-  /* ── Charge le lieu + matériel enregistrés ── */
+  /* ── Charge le lieu + matériel : base d'abord (cross-device), fallback localStorage ── */
   useEffect(() => {
     if (!user) return;
-    try {
-      const v = localStorage.getItem(`vaiiya_lieu_${user.id}`);
-      if (v === "salle" || v === "maison") setLocation(v);
-      const e = localStorage.getItem(`vaiiya_lieu_equip_${user.id}`);
-      if (e === "halteres" || e === "poids") setHomeEquip(e);
-    } catch { /* ignore */ }
+    let alive = true;
+    void loadLieu(user.id).then(({ location, equip }) => {
+      if (!alive) return;
+      if (location) setLocation(location);
+      if (equip) setHomeEquip(equip);
+    });
+    return () => { alive = false; };
   }, [user]);
 
   /* ── Sync si le lieu change ailleurs (ex: coach chat) ── */
@@ -353,28 +355,22 @@ export default function WeeklyProgramme() {
   const chooseLocation = useCallback((loc: "salle" | "maison") => {
     if (loc === "salle") {
       if (user) {
-        try {
-          localStorage.setItem(`vaiiya_lieu_${user.id}`, "salle");
-          localStorage.removeItem(`vaiiya_lieu_equip_${user.id}`);
-        } catch { /* ignore */ }
+        void persistLieu(user.id, { location: "salle" }); // localStorage + base (cross-device)
+        try { localStorage.removeItem(`vaiiya_lieu_equip_${user.id}`); } catch { /* ignore */ }
       }
       forceNextRef.current = true;
       setHomeEquip(null);
       setLocation("salle");
     } else {
       // Maison → on demande ensuite s'il a des haltères (pas de génération tout de suite)
-      if (user) {
-        try { localStorage.setItem(`vaiiya_lieu_${user.id}`, "maison"); } catch { /* ignore */ }
-      }
+      if (user) void persistLieu(user.id, { location: "maison" });
       setHomeEquip(null);
       setLocation("maison");
     }
   }, [user]);
 
   const chooseHomeEquip = useCallback((equip: "halteres" | "poids") => {
-    if (user) {
-      try { localStorage.setItem(`vaiiya_lieu_equip_${user.id}`, equip); } catch { /* ignore */ }
-    }
+    if (user) void persistLieu(user.id, { equip }); // localStorage + base (cross-device)
     forceNextRef.current = true; // force la régénération avec le matériel choisi
     setHomeEquip(equip);
   }, [user]);
@@ -492,30 +488,30 @@ export default function WeeklyProgramme() {
       <div className="px-6 pb-4">
         <p
           className="text-lg font-light mb-3"
-          style={{ color: "#2D3748" }}
+          style={{ color: "var(--text-1)" }}
         >
           Programme auto-généré
         </p>
         <div
           className="rounded-2xl p-5 flex items-center gap-4"
           style={{
-            background: "rgba(255,255,255,0.7)",
+            background: "rgba(var(--surface-rgb),0.7)",
             backdropFilter: "blur(12px)",
             boxShadow:
-              "0 4px 24px rgba(167,139,250,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
+              "0 4px 24px rgba(var(--accent-rgb),0.1), inset 0 1px 0 rgba(var(--surface-rgb),0.8)",
           }}
         >
           <div
             className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(167,139,250,0.12)" }}
+            style={{ background: "rgba(var(--accent-rgb),0.12)" }}
           >
-            <Dumbbell size={18} strokeWidth={1.5} style={{ color: "#A78BFA" }} />
+            <Dumbbell size={18} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium mb-0.5" style={{ color: "#2D3748" }}>
+            <p className="text-sm font-medium mb-0.5" style={{ color: "var(--text-1)" }}>
               Complète ton profil pour obtenir ton programme
             </p>
-            <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>
+            <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>
               Niveau, objectifs et fréquence requis
             </p>
           </div>
@@ -525,12 +521,12 @@ export default function WeeklyProgramme() {
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl"
               style={{
-                background: "linear-gradient(135deg,#D4C0FF 0%,#F5E6A3 100%)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)",
+                boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)",
               }}
             >
-              <Settings size={12} strokeWidth={2} style={{ color: "#2D3748" }} />
-              <span className="text-xs font-semibold" style={{ color: "#2D3748" }}>
+              <Settings size={12} strokeWidth={2} style={{ color: "var(--text-1)" }} />
+              <span className="text-xs font-semibold" style={{ color: "var(--text-1)" }}>
                 Réglages
               </span>
             </motion.div>
@@ -605,18 +601,18 @@ export default function WeeklyProgramme() {
           disabled={weekOffset <= 0}
           aria-label="Semaine précédente"
           className="w-7 h-7 rounded-xl flex items-center justify-center transition-opacity"
-          style={{ background: "rgba(167,139,250,0.1)", cursor: weekOffset <= 0 ? "default" : "pointer", opacity: weekOffset <= 0 ? 0.3 : 1 }}>
-          <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "#A78BFA" }} />
+          style={{ background: "rgba(var(--accent-rgb),0.1)", cursor: weekOffset <= 0 ? "default" : "pointer", opacity: weekOffset <= 0 ? 0.3 : 1 }}>
+          <ChevronLeft size={15} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
         </button>
-        <span className="text-[12px] font-semibold" style={{ color: "#2D3748" }}>{weekLabel}</span>
+        <span className="text-[12px] font-semibold" style={{ color: "var(--text-1)" }}>{weekLabel}</span>
         <button
           type="button"
           onClick={() => goWeek(1)}
           disabled={weekOffset >= MAX_WEEK_AHEAD}
           aria-label="Semaine suivante"
           className="w-7 h-7 rounded-xl flex items-center justify-center transition-opacity"
-          style={{ background: "rgba(167,139,250,0.1)", cursor: weekOffset >= MAX_WEEK_AHEAD ? "default" : "pointer", opacity: weekOffset >= MAX_WEEK_AHEAD ? 0.3 : 1 }}>
-          <ChevronRight size={15} strokeWidth={2.2} style={{ color: "#A78BFA" }} />
+          style={{ background: "rgba(var(--accent-rgb),0.1)", cursor: weekOffset >= MAX_WEEK_AHEAD ? "default" : "pointer", opacity: weekOffset >= MAX_WEEK_AHEAD ? 0.3 : 1 }}>
+          <ChevronRight size={15} strokeWidth={2.2} style={{ color: "var(--accent)" }} />
         </button>
       </div>
 
@@ -631,7 +627,7 @@ export default function WeeklyProgramme() {
               onClick={() => setSelectedDay(i)}
               className="flex-shrink-0 cursor-pointer select-none"
               style={{
-                color: i === selectedDay ? "#2D3748" : "#A0AEC0",
+                color: i === selectedDay ? "var(--text-1)" : "var(--text-3)",
                 fontWeight: i === selectedDay ? 600 : 400,
                 fontSize: 12,
                 transition: "color 0.15s, font-weight 0.15s",
@@ -645,12 +641,12 @@ export default function WeeklyProgramme() {
         {/* Track draggable — pas de rond, juste la barre qui se remplit */}
         <div ref={trackRef}
           className="relative rounded-full cursor-pointer select-none touch-none"
-          style={{ height: 5, background: "rgba(167,139,250,0.12)" }}
+          style={{ height: 5, background: "rgba(var(--accent-rgb),0.12)" }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}>
           {/* Fill — centré sur le segment du jour */}
           <div className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
-            style={{ width: `${pct}%`, background: "linear-gradient(90deg, #A78BFA, #D4A843)", transition: "width 0.12s ease" }} />
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--accent), var(--gold))", transition: "width 0.12s ease" }} />
         </div>
 
         {/* Lieu + Régénérer */}
@@ -658,7 +654,7 @@ export default function WeeklyProgramme() {
           <div className="flex justify-between items-center">
             <button
               onClick={resetLocation}
-              className="flex items-center gap-1 cursor-pointer" style={{ color: "#A0AEC0", background: "none", border: "none", padding: 0 }}>
+              className="flex items-center gap-1 cursor-pointer" style={{ color: "var(--text-3)", background: "none", border: "none", padding: 0 }}>
               {location === "maison" ? <Home size={10} strokeWidth={2} /> : <MapPin size={10} strokeWidth={2} />}
               <span className="text-[9px] font-medium">
                 {location === "maison" ? (homeEquip === "halteres" ? "Maison · haltères" : "Maison · poids du corps") : "En salle"} · changer
@@ -666,7 +662,7 @@ export default function WeeklyProgramme() {
             </button>
             <button
               onClick={regenerateProgramme}
-              className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "#A0AEC0" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
+              className="flex items-center gap-1 cursor-pointer" style={{ color: isPremium ? "var(--text-3)" : "#B7A3E0", background: "none", border: "none", padding: 0 }}>
               {isPremium ? <RefreshCw size={10} strokeWidth={2.5} /> : <Lock size={10} strokeWidth={2.5} />}
               <span className="text-[9px] font-medium">{isPremium ? "Régénérer" : "Régénérer · Premium"}</span>
             </button>
@@ -718,7 +714,7 @@ export default function WeeklyProgramme() {
             <WorkoutGuideModal
               sessionId={`planning-${launchDay.date}`}
               title={dayTitle(launchDay)}
-              accent="#A78BFA"
+              accent="var(--accent)"
               duration={launchDay.type === "HIIT" ? 30 : 45}
               difficulty={launchDay.difficulty}
               category={launchDay.type}

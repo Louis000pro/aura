@@ -1,10 +1,9 @@
-import type { ElementType } from "react";
-import { Flame, Activity, Footprints, Heart, Droplet, Moon } from "lucide-react";
+import { Flame, Activity, Footprints, Heart, Droplet, Moon, type LucideIcon } from "lucide-react";
 
 export type SubItem = { title: string; amount: string };
 
 export type StatData = {
-  icon: ElementType;
+  icon: LucideIcon;
   label: string;
   value: string;
   unit: string;

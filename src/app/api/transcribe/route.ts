@@ -1,6 +1,18 @@
+/**
+ * POST /api/transcribe — dictée vocale (Groq Whisper).
+ *
+ * ⚠️ Cette route était ouverte à tout internet, sans connexion ni limite de
+ * taille : n'importe qui pouvait y déverser des heures d'audio sur notre clé.
+ * Connexion obligatoire + plafond d'usage + plafond de poids depuis le
+ * 2026-07-29.
+ */
 import { NextRequest, NextResponse } from "next/server";
+import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
 
 export async function POST(req: NextRequest) {
+  const garde = await garderIA(req, "vocal");
+  if (!garde.ok) return garde.reponse;
+
   const apiKey = process.env.COACH_AURA_KEY ?? process.env.Groq_api_key_vocal;
   if (!apiKey) {
     return NextResponse.json({ error: "GROQ_API_KEY not configured" }, { status: 500 });
@@ -12,6 +24,9 @@ export async function POST(req: NextRequest) {
 
     if (!audio || audio.size === 0) {
       return NextResponse.json({ error: "No audio received" }, { status: 400 });
+    }
+    if (audio.size > PLAFONDS.audioOctets) {
+      return refusTaille("Cet enregistrement");
     }
 
     // Forward to Groq Whisper (OpenAI-compatible endpoint)

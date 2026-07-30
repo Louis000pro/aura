@@ -1,13 +1,19 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { compteAppelant, refusAuth } from "@/lib/apiAuth";
 
 /**
  * POST /api/me/ensure-profile
- * Body: { user_id, pseudo, full_name, avatar_url, email }
+ * En-tête : Authorization: Bearer <access_token>
+ * Body: { pseudo, full_name, avatar_url, email } (facultatifs, complétés depuis auth.users)
  *
  * Crée le profil de l'utilisateur s'il n'existe pas (filet de sécurité
  * quand le trigger handle_new_user n'a pas tourné), ET répare un profil
  * existant dont le pseudo est manquant (cas des comptes Google sans pseudo).
+ *
+ * Le compte vient du jeton : la route écrit avec le service role, donc un
+ * `user_id` accepté depuis le corps de la requête aurait laissé n'importe qui
+ * poser le pseudo d'un compte Google encore vierge.
  */
 
 /* Génère un pseudo propre à partir d'un texte libre */
@@ -24,8 +30,11 @@ function slugify(s: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, pseudo, full_name, avatar_url, email } = await req.json();
-    if (!user_id) return Response.json({ error: "user_id requis" }, { status: 400 });
+    const appelant = await compteAppelant(req);
+    if (!appelant) return refusAuth();
+    const user_id = appelant.id;
+
+    const { pseudo, full_name, avatar_url, email } = await req.json();
 
     const supabase = createAdminClient();
 

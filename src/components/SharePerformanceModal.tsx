@@ -166,15 +166,15 @@ export default function SharePerformanceModal({
     <motion.button whileTap={{ scale: 0.92 }} onClick={onClick}
       className="px-3 py-1 rounded-full cursor-pointer text-[10px] font-semibold tracking-wide"
       style={{
-        background: active ? "rgba(167,139,250,0.16)" : "rgba(0,0,0,0.04)",
-        border:     active ? "1px solid rgba(167,139,250,0.32)" : "1px solid rgba(0,0,0,0.06)",
-        color:      active ? "#7C5CFA" : "#A0AEC0",
+        background: active ? "rgba(var(--accent-rgb),0.16)" : "rgba(0,0,0,0.04)",
+        border:     active ? "1px solid rgba(var(--accent-rgb),0.32)" : "1px solid rgba(0,0,0,0.06)",
+        color:      active ? "#7C5CFA" : "var(--text-3)",
       }}>
       {lbl}
     </motion.button>
   );
 
-  const Divider = () => <div className="mx-5 h-px" style={{ background: "rgba(167,139,250,0.08)" }} />;
+  const Divider = () => <div className="mx-5 h-px" style={{ background: "rgba(var(--accent-rgb),0.08)" }} />;
 
   return (
     <AnimatePresence>
@@ -183,7 +183,7 @@ export default function SharePerformanceModal({
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose} className="fixed inset-0 z-[100]"
-            style={{ background: "rgba(240,235,255,0.4)", backdropFilter: "blur(12px)" }}
+            style={{ background: "rgba(var(--tint-violet-rgb),0.4)", backdropFilter: "blur(12px)" }}
           />
 
           <motion.div
@@ -193,9 +193,9 @@ export default function SharePerformanceModal({
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
             className="fixed inset-x-4 bottom-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] z-[110] rounded-3xl overflow-hidden"
             style={{
-              background: "rgba(255,255,255,0.96)", backdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.9)",
-              boxShadow: "0 32px 80px rgba(167,139,250,0.18), 0 8px 32px rgba(0,0,0,0.1)",
+              background: "rgba(var(--surface-rgb),0.96)", backdropFilter: "blur(20px)",
+              border: "1px solid rgba(var(--surface-rgb),0.9)",
+              boxShadow: "0 32px 80px rgba(var(--accent-rgb),0.18), 0 8px 32px rgba(0,0,0,0.1)",
               maxHeight: "92vh", overflowY: "auto",
             }}
           >
@@ -214,24 +214,24 @@ export default function SharePerformanceModal({
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
                   transition={{ type: "spring", bounce: 0.5, delay: 0.1 }}
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)" }}>
-                  <Check size={24} strokeWidth={2} style={{ color: "#2D3748" }} />
+                  style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)" }}>
+                  <Check size={24} strokeWidth={2} style={{ color: "var(--text-1)" }} />
                 </motion.div>
-                <p className="text-base font-medium" style={{ color: "#2D3748" }}>Publié !</p>
-                <p className="text-xs font-light" style={{ color: "#A0AEC0" }}>Visible dans le feed de tes abonnés</p>
+                <p className="text-base font-medium" style={{ color: "var(--text-1)" }}>Publié !</p>
+                <p className="text-xs font-light" style={{ color: "var(--text-3)" }}>Visible dans le feed de tes abonnés</p>
               </motion.div>
             ) : (
               <>
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b" style={{ borderColor: "rgba(167,139,250,0.1)" }}>
+                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b" style={{ borderColor: "rgba(var(--accent-rgb),0.1)" }}>
                   <div>
-                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "#A0AEC0" }}>Partager</p>
-                    <p className="text-base font-light" style={{ color: "#2D3748" }}>Aperçu de la carte</p>
+                    <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Partager</p>
+                    <p className="text-base font-light" style={{ color: "var(--text-1)" }}>Aperçu de la carte</p>
                   </div>
                   <motion.button whileTap={{ scale: 0.9 }} onClick={onClose}
                     className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer"
-                    style={{ background: "rgba(240,235,255,0.6)" }}>
-                    <X size={15} strokeWidth={1.5} style={{ color: "#A0AEC0" }} />
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)" }}>
+                    <X size={15} strokeWidth={1.5} style={{ color: "var(--text-3)" }} />
                   </motion.button>
                 </div>
 
@@ -265,7 +265,7 @@ export default function SharePerformanceModal({
                       <motion.button key={idx} whileTap={{ scale: 0.94 }}
                         onClick={() => handleToggleSub(idx)}
                         className="flex items-center gap-1 px-2.5 py-1 rounded-full cursor-pointer"
-                        style={{ border: "1px dashed rgba(167,139,250,0.35)", background: "rgba(240,235,255,0.3)", color: "#A78BFA", fontSize: "0.65rem", fontWeight: 600 }}>
+                        style={{ border: "1px dashed rgba(var(--accent-rgb),0.35)", background: "rgba(var(--tint-violet-rgb),0.3)", color: "var(--accent)", fontSize: "0.65rem", fontWeight: 600 }}>
                         <Plus size={8} strokeWidth={2.5} />
                         {m.label || "Sans titre"}
                       </motion.button>
@@ -282,10 +282,10 @@ export default function SharePerformanceModal({
                         className="flex items-center justify-center rounded-xl cursor-pointer"
                         style={{
                           width: 32, height: 26,
-                          background: heroSizeKey === key ? "rgba(167,139,250,0.18)" : "rgba(240,235,255,0.4)",
-                          border:     heroSizeKey === key ? "1px solid rgba(167,139,250,0.3)" : "1px solid rgba(167,139,250,0.1)",
+                          background: heroSizeKey === key ? "rgba(var(--accent-rgb),0.18)" : "rgba(var(--tint-violet-rgb),0.4)",
+                          border:     heroSizeKey === key ? "1px solid rgba(var(--accent-rgb),0.3)" : "1px solid rgba(var(--accent-rgb),0.1)",
                           fontSize:   scale < 1 ? "0.6rem" : scale > 1 ? "0.9rem" : "0.74rem",
-                          fontWeight: 700, color: heroSizeKey === key ? "#7C5CFA" : "#A0AEC0",
+                          fontWeight: 700, color: heroSizeKey === key ? "#7C5CFA" : "var(--text-3)",
                         }}>
                         Aa
                       </motion.button>
@@ -297,8 +297,8 @@ export default function SharePerformanceModal({
                     {([{ a: "left" as const, I: AlignLeft }, { a: "center" as const, I: AlignCenter }] as const).map(({ a, I }) => (
                       <motion.button key={a} whileTap={{ scale: 0.88 }} onClick={() => setHeroAlign(a)}
                         className="flex items-center justify-center rounded-xl cursor-pointer"
-                        style={{ width: 32, height: 26, background: heroAlign === a ? "rgba(167,139,250,0.18)" : "rgba(240,235,255,0.4)", border: heroAlign === a ? "1px solid rgba(167,139,250,0.3)" : "1px solid rgba(167,139,250,0.1)" }}>
-                        <I size={13} strokeWidth={1.8} style={{ color: heroAlign === a ? "#7C5CFA" : "#A0AEC0" }} />
+                        style={{ width: 32, height: 26, background: heroAlign === a ? "rgba(var(--accent-rgb),0.18)" : "rgba(var(--tint-violet-rgb),0.4)", border: heroAlign === a ? "1px solid rgba(var(--accent-rgb),0.3)" : "1px solid rgba(var(--accent-rgb),0.1)" }}>
+                        <I size={13} strokeWidth={1.8} style={{ color: heroAlign === a ? "#7C5CFA" : "var(--text-3)" }} />
                       </motion.button>
                     ))}
                   </div>
@@ -311,19 +311,19 @@ export default function SharePerformanceModal({
                         style={{
                           width: 22, height: 22,
                           borderRadius: r / 2.5,
-                          background: cardRadius === r ? "rgba(167,139,250,0.22)" : "rgba(240,235,255,0.5)",
-                          border:     cardRadius === r ? "1.5px solid #A78BFA" : "1.5px solid rgba(167,139,250,0.18)",
+                          background: cardRadius === r ? "rgba(var(--accent-rgb),0.22)" : "rgba(var(--tint-violet-rgb),0.5)",
+                          border:     cardRadius === r ? "1.5px solid var(--accent)" : "1.5px solid rgba(var(--accent-rgb),0.18)",
                         }}
                       />
                     ))}
                   </div>
                 </div>
 
-                <div className="mx-5 mt-3 h-px" style={{ background: "rgba(167,139,250,0.08)" }} />
+                <div className="mx-5 mt-3 h-px" style={{ background: "rgba(var(--accent-rgb),0.08)" }} />
 
                 {/* ── Éléments (show/hide + font) ── */}
                 <div className="px-5 pt-3 pb-2">
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>Éléments</p>
+                  <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "var(--text-3)" }}>Éléments</p>
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     <Pill label="Badge"   active={showBadge}    onClick={() => setShowBadge(v => !v)} />
                     <Pill label="Date"    active={showDate}     onClick={() => setShowDate(v => !v)} />
@@ -332,7 +332,7 @@ export default function SharePerformanceModal({
                   </div>
 
                   {/* Font style */}
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: "#A0AEC0" }}>Police</p>
+                  <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: "var(--text-3)" }}>Police</p>
                   <div className="flex gap-1.5">
                     {([
                       { key: "light"   as FontStyle, fw: 300, label: "Léger"    },
@@ -342,10 +342,10 @@ export default function SharePerformanceModal({
                       <motion.button key={key} whileTap={{ scale: 0.92 }} onClick={() => setFontStyle(key)}
                         className="flex-1 py-1.5 rounded-xl cursor-pointer"
                         style={{
-                          background: fontStyle === key ? "rgba(167,139,250,0.18)" : "rgba(240,235,255,0.4)",
-                          border:     fontStyle === key ? "1px solid rgba(167,139,250,0.3)" : "1px solid rgba(167,139,250,0.1)",
+                          background: fontStyle === key ? "rgba(var(--accent-rgb),0.18)" : "rgba(var(--tint-violet-rgb),0.4)",
+                          border:     fontStyle === key ? "1px solid rgba(var(--accent-rgb),0.3)" : "1px solid rgba(var(--accent-rgb),0.1)",
                           fontWeight: fw, fontSize: "0.72rem",
-                          color: fontStyle === key ? "#7C5CFA" : "#A0AEC0",
+                          color: fontStyle === key ? "#7C5CFA" : "var(--text-3)",
                         }}>
                         {lbl}
                       </motion.button>
@@ -357,7 +357,7 @@ export default function SharePerformanceModal({
 
                 {/* ── Données ── */}
                 <div className="px-5 pt-3 pb-2">
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "#A0AEC0" }}>Données</p>
+                  <p className="text-[10px] font-bold tracking-widest uppercase mb-2.5" style={{ color: "var(--text-3)" }}>Données</p>
 
                   {/* Custom metric inputs */}
                   {customMetrics.map((cm, j) => (
@@ -367,21 +367,21 @@ export default function SharePerformanceModal({
                         onChange={(e) => updateCustomMetric(j, "label", e.target.value)}
                         placeholder="Label"
                         className="outline-none text-xs px-3 py-2 rounded-xl"
-                        style={{ flex: 2, background: "rgba(240,235,255,0.4)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748", minWidth: 0 }}
+                        style={{ flex: 2, background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)", minWidth: 0 }}
                       />
                       <input
                         value={cm.value}
                         onChange={(e) => updateCustomMetric(j, "value", e.target.value)}
                         placeholder="Valeur"
                         className="outline-none text-xs px-3 py-2 rounded-xl"
-                        style={{ flex: 2, background: "rgba(240,235,255,0.4)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748", minWidth: 0 }}
+                        style={{ flex: 2, background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)", minWidth: 0 }}
                       />
                       <input
                         value={cm.unit}
                         onChange={(e) => updateCustomMetric(j, "unit", e.target.value)}
                         placeholder="Unité"
                         className="outline-none text-xs px-3 py-2 rounded-xl"
-                        style={{ flex: 1, background: "rgba(240,235,255,0.4)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748", minWidth: 0 }}
+                        style={{ flex: 1, background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)", minWidth: 0 }}
                       />
                       <motion.button whileTap={{ scale: 0.85 }} onClick={() => removeCustomMetric(j)}
                         className="w-7 h-7 rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
@@ -394,7 +394,7 @@ export default function SharePerformanceModal({
                   {/* Add button */}
                   <motion.button whileTap={{ scale: 0.97 }} onClick={addCustomMetric}
                     className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl cursor-pointer"
-                    style={{ border: "1.5px dashed rgba(167,139,250,0.25)", background: "rgba(240,235,255,0.18)", color: "#A78BFA", fontSize: "0.75rem", fontWeight: 600 }}>
+                    style={{ border: "1.5px dashed rgba(var(--accent-rgb),0.25)", background: "rgba(var(--tint-violet-rgb),0.18)", color: "var(--accent)", fontSize: "0.75rem", fontWeight: 600 }}>
                     <Plus size={13} strokeWidth={2.5} />
                     Ajouter une donnée
                   </motion.button>
@@ -410,12 +410,12 @@ export default function SharePerformanceModal({
                       {/* Aucun */}
                       <button onClick={() => setPhotoFilterKey(undefined)}
                         className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
-                        <div className="relative overflow-hidden" style={{ width: 52, height: 52, borderRadius: 11, boxShadow: !photoFilterKey ? "0 0 0 2.5px #A78BFA" : "0 1px 6px rgba(0,0,0,0.16)" }}>
+                        <div className="relative overflow-hidden" style={{ width: 52, height: 52, borderRadius: 11, boxShadow: !photoFilterKey ? "0 0 0 2.5px var(--accent)" : "0 1px 6px rgba(0,0,0,0.16)" }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img loading="lazy" decoding="async" src={customBgImage} alt="" className="w-full h-full object-cover" />
-                          {!photoFilterKey && <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(167,139,250,0.22)" }}><Check size={13} strokeWidth={3} style={{ color: "#fff" }} /></div>}
+                          {!photoFilterKey && <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(var(--accent-rgb),0.22)" }}><Check size={13} strokeWidth={3} style={{ color: "#fff" }} /></div>}
                         </div>
-                        <span style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", color: !photoFilterKey ? "#A78BFA" : "#A0AEC0" }}>Aucun</span>
+                        <span style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", color: !photoFilterKey ? "var(--accent)" : "var(--text-3)" }}>Aucun</span>
                       </button>
 
                       {PHOTO_FILTER_PRESETS.map(({ key, name, filter }) => {
@@ -423,12 +423,12 @@ export default function SharePerformanceModal({
                         return (
                           <button key={key} onClick={() => setPhotoFilterKey(key)}
                             className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
-                            <div className="relative overflow-hidden" style={{ width: 52, height: 52, borderRadius: 11, boxShadow: sel ? "0 0 0 2.5px #A78BFA" : "0 1px 6px rgba(0,0,0,0.16)" }}>
+                            <div className="relative overflow-hidden" style={{ width: 52, height: 52, borderRadius: 11, boxShadow: sel ? "0 0 0 2.5px var(--accent)" : "0 1px 6px rgba(0,0,0,0.16)" }}>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img loading="lazy" decoding="async" src={customBgImage} alt={name} className="w-full h-full object-cover" style={{ filter }} />
                               {sel && <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.15)" }}><Check size={13} strokeWidth={3} style={{ color: "#fff" }} /></div>}
                             </div>
-                            <span style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", color: sel ? "#A78BFA" : "#A0AEC0" }}>{name}</span>
+                            <span style={{ fontSize: "0.5rem", fontWeight: 700, letterSpacing: "0.08em", color: sel ? "var(--accent)" : "var(--text-3)" }}>{name}</span>
                           </button>
                         );
                       })}
@@ -443,21 +443,21 @@ export default function SharePerformanceModal({
                   <div className="px-5 pt-3 pb-1">
                     <motion.button whileTap={{ scale: 0.98 }} onClick={() => photoInputRef.current?.click()}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl cursor-pointer"
-                      style={{ border: "1.5px dashed rgba(167,139,250,0.22)", background: "rgba(240,235,255,0.18)", color: "#B8A8E0", fontSize: "0.78rem", fontWeight: 500 }}>
+                      style={{ border: "1.5px dashed rgba(var(--accent-rgb),0.22)", background: "rgba(var(--tint-violet-rgb),0.18)", color: "#B8A8E0", fontSize: "0.78rem", fontWeight: 500 }}>
                       <Camera size={14} strokeWidth={1.5} />
                       <span>Ajouter une photo de fond</span>
                     </motion.button>
                   </div>
                 )}
 
-                <div className="mx-5 mt-3 h-px" style={{ background: "rgba(167,139,250,0.08)" }} />
+                <div className="mx-5 mt-3 h-px" style={{ background: "rgba(var(--accent-rgb),0.08)" }} />
 
                 {/* Caption */}
                 <div className="px-5 pt-3 pb-3">
                   <textarea value={caption} onChange={(e) => setCaption(e.target.value)}
                     placeholder="Ajouter une légende…" rows={2} maxLength={300}
                     className="w-full px-4 py-3 rounded-2xl text-sm font-light outline-none resize-none"
-                    style={{ background: "rgba(240,235,255,0.4)", border: "1px solid rgba(167,139,250,0.15)", color: "#2D3748" }} />
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.4)", border: "1px solid rgba(var(--accent-rgb),0.15)", color: "var(--text-1)" }} />
                 </div>
 
                 {/* Audience */}
@@ -465,9 +465,9 @@ export default function SharePerformanceModal({
                   {audiences.map(({ id, label, icon: Icon }) => (
                     <button key={id} onClick={() => setAudience(id)}
                       className="flex-1 rounded-xl py-2 px-3 flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                      style={audience === id ? { background: "linear-gradient(135deg, rgba(240,235,255,0.95), rgba(255,251,240,0.95))", border: "1px solid rgba(255,255,255,0.8)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)" } : { background: "rgba(240,235,255,0.3)", border: "1px solid rgba(167,139,250,0.1)" }}>
-                      <Icon size={12} strokeWidth={1.5} style={{ color: audience === id ? "#A78BFA" : "#CBD5E0" }} />
-                      <span className="text-[11px] font-medium" style={{ color: audience === id ? "#2D3748" : "#A0AEC0" }}>{label}</span>
+                      style={audience === id ? { background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.95), rgba(255,251,240,0.95))", border: "1px solid rgba(var(--surface-rgb),0.8)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" } : { background: "rgba(var(--tint-violet-rgb),0.3)", border: "1px solid rgba(var(--accent-rgb),0.1)" }}>
+                      <Icon size={12} strokeWidth={1.5} style={{ color: audience === id ? "var(--accent)" : "#CBD5E0" }} />
+                      <span className="text-[11px] font-medium" style={{ color: audience === id ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
                     </button>
                   ))}
                 </div>
@@ -478,13 +478,13 @@ export default function SharePerformanceModal({
                 <div className="px-5 pb-5">
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleShare} disabled={posting}
                     className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #D4C0FF 0%, #F5E6A3 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9), 0 4px 16px rgba(167,139,250,0.25)", opacity: posting ? 0.7 : 1 }}>
+                    style={{ background: "linear-gradient(135deg, var(--violet-mid) 0%, var(--accent) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9), 0 4px 16px rgba(var(--accent-rgb),0.25)", opacity: posting ? 0.7 : 1 }}>
                     {posting ? (
                       <motion.div className="w-4 h-4 rounded-full border-2"
-                        style={{ borderColor: "rgba(45,55,72,0.3)", borderTopColor: "#2D3748" }}
+                        style={{ borderColor: "rgba(45,55,72,0.3)", borderTopColor: "var(--text-1)" }}
                         animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }} />
-                    ) : <Send size={14} strokeWidth={2} style={{ color: "#2D3748" }} />}
-                    <span className="text-sm font-semibold" style={{ color: "#2D3748" }}>{posting ? "Publication…" : "Partager la performance"}</span>
+                    ) : <Send size={14} strokeWidth={2} style={{ color: "var(--text-1)" }} />}
+                    <span className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>{posting ? "Publication…" : "Partager la performance"}</span>
                   </motion.button>
                 </div>
               </>

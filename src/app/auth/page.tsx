@@ -9,17 +9,12 @@ import {
   User, Mail, Lock, CheckCircle2, AtSign, UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import FondPresentation from "@/components/FondPresentation";
 
-/* ── Particules ── */
-type PData = { id: number; x: number; y: number; size: number; delay: number; duration: number; color: string };
-function Particle({ x, y, size, delay, duration, color }: Omit<PData, "id">) {
-  return (
-    <motion.div className="absolute rounded-full pointer-events-none"
-      style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, background: color, filter: "blur(1px)" }}
-      animate={{ y: ["-20px","20px","-20px"], x: ["-10px","10px","-10px"], opacity: [0.2,0.7,0.2], scale: [1,1.3,1] }}
-      transition={{ duration, repeat: Infinity, delay, ease: "easeInOut" }} />
-  );
-}
+/* Système « D » : le bouton d'action principal est TOUJOURS violet vers magenta,
+   jamais violet vers or. Même couleur que le CTA de la page de présentation. */
+const ACTION_BG = "linear-gradient(135deg,#8B5CF6 0%,#C13BC1 100%)";
+const TEAL = "#2BD4A0"; // réussite
 
 /* ── Champ input ── */
 function Field({
@@ -30,24 +25,27 @@ function Field({
 }) {
   const [focused, setFocused] = useState(false);
   return (
-    <motion.div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-      style={{ background: "rgba(248,246,255,0.95)" }}
-      animate={{
-        border: focused ? "1px solid rgba(167,139,250,0.35)" : "1px solid rgba(220,215,235,0.6)",
-        boxShadow: focused ? "0 4px 20px rgba(167,139,250,0.10)" : "0 2px 8px rgba(167,139,250,0.04)",
+    /* Contour et icône passent par du CSS pur : framer-motion ne sait interpoler
+       ni le raccourci « border » ni une couleur écrite en variable, il les
+       ignorait en silence et les champs n'avaient aucun contour. */
+    <div className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl"
+      style={{
+        background: "rgba(var(--tint-violet-rgb),0.62)",
+        border: focused ? "1px solid rgba(var(--accent-rgb),0.5)" : "1px solid rgba(var(--accent-rgb),0.16)",
+        boxShadow: focused ? "0 4px 20px rgba(var(--accent-rgb),0.14)" : "0 2px 8px rgba(var(--accent-rgb),0.04)",
+        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
       }}
-      transition={{ duration: 0.15 }}
     >
-      <motion.span animate={{ color: focused ? "#A78BFA" : "#A0AEC0" }} transition={{ duration: 0.15 }}>
+      <span style={{ color: focused ? "var(--accent)" : "var(--text-3)", transition: "color 0.15s ease" }}>
         {icon}
-      </motion.span>
+      </span>
       <input type={type} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         required={required} autoFocus={autoFocus}
-        className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#A0AEC0]"
-        style={{ color: "#2D3748" }} />
+        className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--text-3)]"
+        style={{ color: "var(--text-1)" }} />
       {suffix}
-    </motion.div>
+    </div>
   );
 }
 
@@ -60,13 +58,15 @@ function pwdStrength(p: string) {
   if (/[A-Z]/.test(p)) s++;
   if (/[0-9]/.test(p)) s++;
   if (/[^A-Za-z0-9]/.test(p)) s++;
+  /* Rouge tant que ça ne tient pas, or quand c'est passable, teal dès que
+     c'est solide : les mêmes rôles de couleur que partout ailleurs. */
   const levels = [
-    { label: "Trop court",        color: "#FC8181", bars: 1 },
-    { label: "Faible 😬",         color: "#FC8181", bars: 1 },
-    { label: "Passable 👌",        color: "#F6AD55", bars: 2 },
-    { label: "Sécurisé 🔒",       color: "#68D391", bars: 3 },
-    { label: "Très sécurisé 💪",  color: "#A78BFA", bars: 4 },
-    { label: "Incroyable 🔥",     color: "#D4A843", bars: 5 },
+    { label: "Trop court",      color: "#E86A6A", bars: 1 },
+    { label: "Faible",          color: "#E86A6A", bars: 1 },
+    { label: "Passable",        color: "var(--gold)", bars: 2 },
+    { label: "Sécurisé",        color: TEAL, bars: 3 },
+    { label: "Très sécurisé",   color: TEAL, bars: 4 },
+    { label: "Excellent",       color: TEAL, bars: 5 },
   ];
   return { score: s, ...levels[Math.min(s, 5)] };
 }
@@ -78,14 +78,13 @@ function PasswordStrengthBar({ password }: { password: string }) {
     <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-1.5">
       <div className="flex gap-1">
         {[1,2,3,4,5].map(i => (
-          <motion.div key={i} className="flex-1 h-1 rounded-full"
-            animate={{ background: i <= s.bars ? s.color : "rgba(220,220,220,0.5)" }}
-            transition={{ duration: 0.3 }} />
+          <div key={i} className="flex-1 h-1 rounded-full"
+            style={{ background: i <= s.bars ? s.color : "rgba(var(--accent-rgb),0.14)", transition: "background 0.3s ease" }} />
         ))}
       </div>
-      <motion.p className="text-[10px] font-semibold" animate={{ color: s.color }} transition={{ duration: 0.3 }}>
+      <p className="text-[10px] font-semibold" style={{ color: s.color, transition: "color 0.3s ease" }}>
         {s.label}
-      </motion.p>
+      </p>
     </motion.div>
   );
 }
@@ -134,10 +133,10 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
             onFocus={e => e.target.select()}
             className="w-11 h-14 text-center text-xl font-bold rounded-2xl outline-none"
             style={{
-              background: "rgba(255,255,255,0.95)",
-              border: digit ? "1.5px solid rgba(167,139,250,0.55)" : "1.5px solid rgba(220,215,235,0.7)",
-              color: "#2D3748",
-              boxShadow: digit ? "0 4px 16px rgba(167,139,250,0.18)" : "0 2px 8px rgba(167,139,250,0.04)",
+              background: "rgba(var(--tint-violet-rgb),0.62)",
+              border: digit ? "1.5px solid rgba(var(--accent-rgb),0.55)" : "1.5px solid rgba(var(--accent-rgb),0.14)",
+              color: "var(--text-1)",
+              boxShadow: digit ? "0 4px 16px rgba(var(--accent-rgb),0.18)" : "0 2px 8px rgba(var(--accent-rgb),0.04)",
               transition: "all 0.15s ease",
             }}
           />
@@ -147,13 +146,23 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
   );
 }
 
+/* Destination après connexion : ?next=/chemin (invitation à un relais…).
+   On n'accepte qu'un chemin interne, jamais une URL absolue, sinon
+   n'importe qui peut fabriquer un lien de login qui renvoie ailleurs.
+   Lu sur window plutôt qu'avec useSearchParams : pas de Suspense à poser. */
+function destinationApres(): string {
+  if (typeof window === "undefined") return "/";
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const { signUp, signIn, signInWithGoogle, resetPassword, verifySignupOtp, resendSignupOtp, user, isLoading } = useAuth();
 
   // Redirige vers le dashboard si déjà connecté
   useEffect(() => {
-    if (!isLoading && user) router.replace("/");
+    if (!isLoading && user) router.replace(destinationApres());
   }, [user, isLoading, router]);
 
   const [mode, setMode]             = useState<"login"|"signup">("login");
@@ -168,7 +177,6 @@ export default function AuthPage() {
   const [success, setSuccess]       = useState(false);
   const [signupSent, setSignupSent] = useState(false);
   const [error, setError]           = useState<string|null>(null);
-  const [particles, setParticles]   = useState<PData[]>([]);
   const [isMobile, setIsMobile]     = useState(false);
 
   /* OTP */
@@ -188,15 +196,9 @@ export default function AuthPage() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if (p.get("mode") === "signup") setMode("signup");
-    // Mobile : on coupe les animations lourdes (orbes blur(80px) + particules)
-    // qui font ramer le GPU. Desktop : effet complet.
-    const mobile = window.matchMedia("(max-width: 767px)").matches;
-    setIsMobile(mobile);
-    setParticles(Array.from({ length: mobile ? 0 : 20 }, (_, i) => ({
-      id: i, x: Math.random()*100, y: Math.random()*100,
-      size: 4+Math.random()*10, delay: Math.random()*3, duration: 3+Math.random()*3,
-      color: i%3===0 ? "rgba(167,139,250,0.5)" : i%3===1 ? "rgba(212,168,67,0.4)" : "rgba(240,235,255,0.65)",
-    })));
+    // Le fond est statique : il ne reste que le flou de verre de la carte,
+    // qu'on coupe sur mobile pour ne pas faire ramer le GPU.
+    setIsMobile(window.matchMedia("(max-width: 767px)").matches);
   }, []);
 
   const canSubmit = mode === "login"
@@ -233,7 +235,7 @@ export default function AuthPage() {
 
     setLoading(false);
     setSuccess(true);
-    setTimeout(() => router.push("/"), 900);
+    setTimeout(() => router.push(destinationApres()), 900);
   };
 
   const handleGoogle = async () => {
@@ -285,7 +287,7 @@ export default function AuthPage() {
 
     setSignupSent(false);
     setSuccess(true);
-    setTimeout(() => router.push("/"), 1000);
+    setTimeout(() => router.push(destinationApres()), 1000);
   };
 
   const handleResendOtp = async () => {
@@ -322,45 +324,31 @@ export default function AuthPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      style={{ background: "linear-gradient(135deg,#faf8ff 0%,#fffef8 50%,#faf8ff 100%)" }}>
+      style={{ background: "var(--page-bg)" }}>
 
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ top:"-10%",left:"-5%",width:500,height:500,background:"rgba(212,192,255,0.45)",filter: isMobile ? "blur(60px)" : "blur(80px)" }}
-        animate={isMobile ? undefined : { scale:[1,1.25,1],x:[-20,30,-20],y:[-15,20,-15] }}
-        transition={isMobile ? undefined : { duration:9,repeat:Infinity,ease:"easeInOut" }} />
-      <motion.div className="absolute rounded-full pointer-events-none"
-        style={{ bottom:"-10%",right:"-5%",width:450,height:450,background:"rgba(245,230,163,0.4)",filter: isMobile ? "blur(60px)" : "blur(80px)" }}
-        animate={isMobile ? undefined : { scale:[1,1.2,1],x:[20,-25,20] }}
-        transition={isMobile ? undefined : { duration:8,repeat:Infinity,ease:"easeInOut",delay:1 }} />
-
-      {particles.map(({ id, ...r }) => <Particle key={id} {...r} />)}
-
-      {!isMobile && (
-        <motion.div className="absolute pointer-events-none rounded-full"
-          style={{ width:520,height:520,border:"1px solid rgba(167,139,250,0.12)" }}
-          animate={{ rotate:360 }} transition={{ duration:30,repeat:Infinity,ease:"linear" }} />
-      )}
+      <FondPresentation />
 
       <motion.div initial={{ opacity:0,y:36,scale:0.93 }} animate={{ opacity:1,y:0,scale:1 }}
         transition={{ duration:0.6,ease:[0.25,0.46,0.45,0.94] }}
         className="relative z-10 w-full max-w-md mx-4"
       >
         <div className="relative rounded-3xl px-8 py-10 overflow-hidden"
-          style={{ background: isMobile ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.85)", backdropFilter: isMobile ? "none" : "blur(12px) saturate(200%)", border:"1px solid rgba(255,255,255,0.88)",boxShadow:"0 1px 0 rgba(255,255,255,0.95) inset,0 32px 80px -16px rgba(167,139,250,0.2),0 8px 32px -8px rgba(245,230,163,0.15)" }}>
+          style={{ background: isMobile ? "rgba(var(--surface-rgb),0.96)" : "rgba(var(--surface-rgb),0.88)", backdropFilter: isMobile ? "none" : "blur(12px) saturate(180%)", border:"1px solid rgba(var(--accent-rgb),0.16)",boxShadow:"0 1px 0 rgba(var(--surface-rgb),0.95) inset,0 32px 80px -16px rgba(var(--accent-rgb),0.22)" }}>
 
+          {/* Liseré violet en haut de la carte : la marque, pas un reflet blanc. */}
           <div className="absolute top-0 left-0 right-0 h-px rounded-t-3xl"
-            style={{ background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.95),transparent)" }} />
+            style={{ background:"linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.55),transparent)" }} />
 
           {/* Success overlay (connexion) */}
           <AnimatePresence>
             {success && (
               <motion.div initial={{ opacity:0,scale:0.85 }} animate={{ opacity:1,scale:1 }}
                 className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-3"
-                style={{ background:"linear-gradient(135deg,rgba(212,192,255,0.97),rgba(245,230,163,0.97))",backdropFilter:"blur(10px)" }}>
+                style={{ background:"rgba(var(--surface-rgb),0.97)",backdropFilter:"blur(10px)" }}>
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }} transition={{ type:"spring",bounce:0.5 }}>
-                  <CheckCircle2 size={52} style={{ color:"#2D3748" }} strokeWidth={1.5} />
+                  <CheckCircle2 size={52} style={{ color:TEAL }} strokeWidth={1.5} />
                 </motion.div>
-                <p className="text-lg font-light" style={{ color:"#2D3748" }}>Bon retour !</p>
+                <p className="text-lg font-light" style={{ color:"var(--text-1)" }}>Bon retour !</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -371,23 +359,23 @@ export default function AuthPage() {
               <motion.div initial={{ opacity:0,scale:0.92 }} animate={{ opacity:1,scale:1 }} exit={{ opacity:0,scale:0.92 }}
                 transition={{ duration:0.35,ease:[0.25,0.46,0.45,0.94] }}
                 className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-3xl gap-5 px-8 py-10"
-                style={{ background:"rgba(255,255,255,0.97)",backdropFilter:"blur(10px)" }}>
+                style={{ background:"rgba(var(--surface-rgb),0.97)",backdropFilter:"blur(10px)" }}>
 
                 {/* Icône */}
                 <motion.div initial={{ scale:0,rotate:-180 }} animate={{ scale:1,rotate:0 }}
                   transition={{ type:"spring",bounce:0.5,delay:0.1 }}
                   className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ background:"linear-gradient(135deg,rgba(212,192,255,0.5),rgba(245,230,163,0.5))",boxShadow:"0 8px 28px rgba(167,139,250,0.2)" }}>
-                  <span className="text-3xl">📧</span>
+                  style={{ background:ACTION_BG,boxShadow:"0 8px 28px rgba(139,92,246,0.35)" }}>
+                  <Mail size={26} strokeWidth={1.6} color="#fff" />
                 </motion.div>
 
                 {/* Texte */}
                 <motion.div initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.15 }}
                   className="text-center">
-                  <p className="text-lg font-light mb-1" style={{ color:"#2D3748" }}>Code de confirmation</p>
-                  <p className="text-xs font-light leading-relaxed" style={{ color:"#718096" }}>
+                  <p className="text-lg font-light mb-1" style={{ color:"var(--text-1)" }}>Code de confirmation</p>
+                  <p className="text-xs font-light leading-relaxed" style={{ color:"var(--text-2)" }}>
                     Un code à 6 chiffres a été envoyé à<br/>
-                    <strong style={{ color:"#2D3748" }}>{email}</strong>
+                    <strong style={{ color:"var(--text-1)" }}>{email}</strong>
                   </p>
                 </motion.div>
 
@@ -417,14 +405,14 @@ export default function AuthPage() {
                     onClick={handleVerifyOtp}
                     className="relative w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
                     style={{
-                      background:"linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)",
+                      background:ACTION_BG,
                       color:"#fff",
                       opacity: otpCode.length < 6 || otpLoading ? 0.5 : 1,
-                      boxShadow:"0 4px 24px rgba(167,139,250,0.38),inset 0 1px 0 rgba(255,255,255,0.25)",
+                      boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",
                       transition:"opacity 0.2s",
                     }}>
                     <motion.div className="absolute inset-0 pointer-events-none"
-                      style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.25) 50%,transparent 60%)" }}
+                      style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
                       animate={{ x:["-120%","120%"] }} transition={{ duration:2.5,repeat:Infinity,repeatDelay:1.2 }} />
                     {otpLoading ? (
                       <motion.div className="w-4 h-4 rounded-full border-2 mx-auto relative z-10"
@@ -444,11 +432,11 @@ export default function AuthPage() {
                   className="flex flex-col items-center gap-1.5">
                   <button onClick={handleResendOtp} disabled={resendCooldown > 0}
                     className="text-xs font-medium cursor-pointer"
-                    style={{ color: resendCooldown > 0 ? "#A0AEC0" : "#A78BFA" }}>
+                    style={{ color: resendCooldown > 0 ? "var(--text-3)" : "var(--accent)" }}>
                     {resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : "Renvoyer le code"}
                   </button>
                   <button onClick={() => { setSignupSent(false); setOtpCode(""); setOtpError(null); }}
-                    className="text-xs cursor-pointer" style={{ color:"#A0AEC0" }}>
+                    className="text-xs cursor-pointer" style={{ color:"var(--text-3)" }}>
                     Annuler
                   </button>
                 </motion.div>
@@ -458,17 +446,15 @@ export default function AuthPage() {
 
           {/* Logo */}
           <div className="flex flex-col items-center mb-7">
-            <motion.div className="relative w-24 h-24 rounded-3xl flex items-center justify-center mb-3"
-              style={{ background:"#ffffff", border:"1px solid rgba(212,192,255,0.4)" }}
-              animate={{ boxShadow:["0 8px 28px rgba(167,139,250,0.4)","0 8px 36px rgba(212,168,67,0.45)","0 8px 28px rgba(167,139,250,0.4)"] }}
-              transition={{ duration:3,repeat:Infinity }}>
-              <motion.div className="absolute inset-0 rounded-3xl" style={{ border:"1px solid rgba(167,139,250,0.5)" }}
-                animate={{ scale:[1,1.3,1],opacity:[0.6,0,0.6] }} transition={{ duration:2,repeat:Infinity }} />
+            {/* Posé, sans pulsation ni anneau qui grandit : le logo se regarde,
+                il ne réclame pas l'attention. */}
+            <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center mb-3"
+              style={{ background:"rgb(var(--surface-rgb))", border:"1px solid rgba(var(--accent-rgb),0.22)", boxShadow:"0 10px 30px -8px rgba(139,92,246,0.35)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-vaiiya.png" alt="Vaiiya" className="w-20 h-20 object-contain relative z-10" />
-            </motion.div>
-            <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"#2D3748" }}>Vaiiya</h1>
-            <p className="text-[11px] font-light mt-0.5" style={{ color:"#A0AEC0" }}>Coach IA · Musculation · Nutrition</p>
+            </div>
+            <h1 className="text-xl font-extralight tracking-[0.2em]" style={{ color:"var(--text-1)" }}>Vaiiya</h1>
+            <p className="text-[11px] font-light mt-0.5" style={{ color:"var(--text-3)" }}>Coach IA · Musculation · Nutrition</p>
           </div>
 
           {/* Erreur globale */}
@@ -487,9 +473,9 @@ export default function AuthPage() {
             whileHover={{ scale:1.02,y:-1 }} whileTap={{ scale:0.97 }}
             onClick={handleGoogle} disabled={googleLoading}
             className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl text-sm font-medium cursor-pointer mb-5"
-            style={{ background:"rgba(255,255,255,0.8)",border:"1px solid rgba(255,255,255,0.9)",backdropFilter:"blur(10px)",color:"#2D3748",boxShadow:"0 2px 12px rgba(167,139,250,0.08),inset 0 1px 0 rgba(255,255,255,0.95)" }}>
+            style={{ background:"rgba(var(--surface-rgb),0.8)",border:"1px solid rgba(var(--accent-rgb),0.18)",backdropFilter:"blur(10px)",color:"var(--text-1)",boxShadow:"0 2px 12px rgba(var(--accent-rgb),0.08),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}>
             {googleLoading ? (
-              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(167,139,250,0.2)",borderTopColor:"#A78BFA" }}
+              <motion.div className="w-4 h-4 rounded-full border-2" style={{ borderColor:"rgba(var(--accent-rgb),0.2)",borderTopColor:"var(--accent)" }}
                 animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }} />
             ) : (
               <svg width="16" height="16" viewBox="0 0 24 24">
@@ -503,19 +489,20 @@ export default function AuthPage() {
           </motion.button>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px" style={{ background:"rgba(167,139,250,0.12)" }} />
-            <span className="text-[11px]" style={{ color:"#A0AEC0" }}>ou</span>
-            <div className="flex-1 h-px" style={{ background:"rgba(167,139,250,0.12)" }} />
+            <div className="flex-1 h-px" style={{ background:"rgba(var(--accent-rgb),0.12)" }} />
+            <span className="text-[11px]" style={{ color:"var(--text-3)" }}>ou</span>
+            <div className="flex-1 h-px" style={{ background:"rgba(var(--accent-rgb),0.12)" }} />
           </div>
 
           {/* Tabs */}
-          <div className="relative flex rounded-2xl p-1 mb-5 gap-1" style={{ background:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.7)" }}>
+          {/* Onglet actif = violet, comme partout dans l'app. */}
+          <div className="relative flex rounded-2xl p-1 mb-5 gap-1" style={{ background:"rgba(var(--tint-violet-rgb),0.5)",border:"1px solid rgba(var(--accent-rgb),0.12)" }}>
             {(["login","signup"] as const).map(m => (
               <button key={m} onClick={() => { setMode(m); setError(null); }}
                 className="relative flex-1 py-2.5 rounded-xl text-sm font-medium cursor-pointer z-10"
-                style={{ color:mode===m?"#2D3748":"#A0AEC0" }}>
+                style={{ color:mode===m?"var(--accent)":"var(--text-3)" }}>
                 {mode===m && <motion.div layoutId="auth-tab" className="absolute inset-0 rounded-xl"
-                  style={{ background:"rgba(255,255,255,0.92)",boxShadow:"0 2px 12px rgba(167,139,250,0.18),inset 0 1px 0 rgba(255,255,255,0.95)" }}
+                  style={{ background:"rgba(var(--surface-rgb),0.95)",border:"1px solid rgba(var(--accent-rgb),0.28)",boxShadow:"0 2px 12px rgba(var(--accent-rgb),0.18)" }}
                   transition={{ type:"spring",bounce:0.25,duration:0.4 }} />}
                 <span className="relative z-10">{m==="login"?"Se connecter":"Créer un compte"}</span>
               </button>
@@ -552,7 +539,7 @@ export default function AuthPage() {
                 type={showPwd?"text":"password"} placeholder="Mot de passe" value={password} onChange={setPassword} required
                 suffix={
                   <button type="button" onClick={() => setShowPwd(v=>!v)} className="cursor-pointer flex-shrink-0">
-                    {showPwd ? <EyeOff size={14} style={{ color:"#A0AEC0" }}/> : <Eye size={14} style={{ color:"#A0AEC0" }}/>}
+                    {showPwd ? <EyeOff size={14} style={{ color:"var(--text-3)" }}/> : <Eye size={14} style={{ color:"var(--text-3)" }}/>}
                   </button>
                 } />
               {mode === "signup" && <PasswordStrengthBar password={password} />}
@@ -561,9 +548,9 @@ export default function AuthPage() {
             <motion.button type="submit" disabled={loading||!canSubmit}
               whileHover={!loading?{scale:1.02,y:-2}:{}} whileTap={!loading?{scale:0.97}:{}}
               className="relative mt-1 w-full py-4 rounded-2xl text-sm font-semibold cursor-pointer overflow-hidden"
-              style={{ background:"linear-gradient(135deg,#A78BFA 0%,#D4A843 100%)",color:"#fff",boxShadow:"0 4px 24px rgba(167,139,250,0.38),inset 0 1px 0 rgba(255,255,255,0.25)",opacity:!canSubmit?0.6:1 }}>
+              style={{ background:ACTION_BG,color:"#fff",boxShadow:"0 4px 24px rgba(139,92,246,0.42),inset 0 1px 0 rgba(255,255,255,0.28)",opacity:!canSubmit?0.6:1 }}>
               <motion.div className="absolute inset-0 pointer-events-none"
-                style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.28) 50%,transparent 60%)" }}
+                style={{ background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.3) 50%,transparent 60%)" }}
                 animate={{ x:["-120%","120%"] }} transition={{ duration:2.5,repeat:Infinity,repeatDelay:1.2 }} />
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -589,29 +576,29 @@ export default function AuthPage() {
               <motion.div key="forgot"
                 initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }}
                 transition={{ duration:0.3 }} style={{ overflow:"hidden" }} className="mt-4">
-                <div className="rounded-2xl p-4" style={{ background:"rgba(240,235,255,0.5)",border:"1px solid rgba(167,139,250,0.15)" }}>
+                <div className="rounded-2xl p-4" style={{ background:"rgba(var(--tint-violet-rgb),0.5)",border:"1px solid rgba(var(--accent-rgb),0.15)" }}>
                   {forgotSent ? (
                     <motion.div initial={{ opacity:0,scale:0.9 }} animate={{ opacity:1,scale:1 }} className="flex flex-col items-center gap-2 py-1">
-                      <CheckCircle2 size={28} style={{ color:"#A78BFA" }} strokeWidth={1.5}/>
-                      <p className="text-xs text-center font-light" style={{ color:"#2D3748" }}>
+                      <CheckCircle2 size={28} style={{ color:"var(--accent)" }} strokeWidth={1.5}/>
+                      <p className="text-xs text-center font-light" style={{ color:"var(--text-1)" }}>
                         Email envoyé à <strong>{forgotEmail}</strong>.<br/>
-                        <span style={{ color:"#A0AEC0" }}>Vérifie ta boîte mail (et les spams).</span>
+                        <span style={{ color:"var(--text-3)" }}>Vérifie ta boîte mail (et les spams).</span>
                       </p>
                       <button onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(""); }}
-                        className="text-[11px] cursor-pointer hover:underline" style={{ color:"#A78BFA" }}>Fermer</button>
+                        className="text-[11px] cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Fermer</button>
                     </motion.div>
                   ) : (
                     <form onSubmit={handleForgot} className="flex flex-col gap-3">
-                      <p className="text-xs font-light" style={{ color:"#718096" }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
+                      <p className="text-xs font-light" style={{ color:"var(--text-2)" }}>Entre ton email pour recevoir un lien de réinitialisation.</p>
                       <Field icon={<Mail size={15}/>} type="email" placeholder="ton@email.com" value={forgotEmail} onChange={setForgotEmail} required />
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setForgotMode(false)}
                           className="flex-1 py-2.5 rounded-2xl text-xs font-medium cursor-pointer"
-                          style={{ background:"rgba(255,255,255,0.6)",border:"1px solid rgba(255,255,255,0.8)",color:"#718096" }}>Annuler</button>
+                          style={{ background:"rgba(var(--surface-rgb),0.6)",border:"1px solid rgba(var(--accent-rgb),0.18)",color:"var(--text-2)" }}>Annuler</button>
                         <motion.button type="submit" disabled={forgotLoading||!forgotEmail.trim()}
                           whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
                           className="flex-1 py-2.5 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center"
-                          style={{ background:"linear-gradient(135deg,#A78BFA,#D4A843)",color:"#fff",opacity:!forgotEmail.trim()?0.6:1 }}>
+                          style={{ background:ACTION_BG,color:"#fff",opacity:!forgotEmail.trim()?0.6:1 }}>
                           {forgotLoading
                             ? <motion.div className="w-3.5 h-3.5 rounded-full border-2" style={{ borderColor:"rgba(255,255,255,0.3)",borderTopColor:"#fff" }}
                                 animate={{ rotate:360 }} transition={{ duration:0.8,repeat:Infinity,ease:"linear" }}/>
@@ -625,21 +612,23 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
 
-          <p className="text-center text-[11px] mt-5 font-light" style={{ color:"#A0AEC0" }}>
+          <p className="text-center text-[11px] mt-5 font-light" style={{ color:"var(--text-3)" }}>
             {mode==="login" ? "Pas encore de compte ? " : "Déjà un compte ? "}
             <button onClick={() => { setMode(mode==="login"?"signup":"login"); setError(null); }}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"#2D3748" }}>
+              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--text-1)" }}>
               {mode==="login"?"Créer un compte":"Se connecter"}
             </button>
             {mode==="login" && <>{" · "}<button onClick={() => setForgotMode(v=>!v)}
-              className="font-medium cursor-pointer hover:underline" style={{ color:"#A78BFA" }}>Mot de passe oublié ?</button></>}
+              className="font-medium cursor-pointer hover:underline" style={{ color:"var(--accent)" }}>Mot de passe oublié ?</button></>}
           </p>
 
-          <p className="text-center text-[10px] mt-4 font-light leading-relaxed" style={{ color:"#A0AEC0" }}>
+          <p className="text-center text-[10px] mt-4 font-light leading-relaxed" style={{ color:"var(--text-3)" }}>
             En continuant, tu acceptes nos{" "}
-            <Link href="/mentions-legales" className="font-medium hover:underline" style={{ color:"#A78BFA" }}>Mentions légales</Link>
+            <Link href="/conditions" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Conditions générales</Link>
+            {", "}nos{" "}
+            <Link href="/mentions-legales" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Mentions légales</Link>
             {" "}et notre{" "}
-            <Link href="/confidentialite" className="font-medium hover:underline" style={{ color:"#A78BFA" }}>Politique de confidentialité</Link>.
+            <Link href="/confidentialite" className="font-medium hover:underline" style={{ color:"var(--accent)" }}>Politique de confidentialité</Link>.
           </p>
         </div>
       </motion.div>

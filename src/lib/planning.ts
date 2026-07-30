@@ -43,9 +43,9 @@ export interface GenInput {
 /* ═══════════════════════════ Banque d'exercices ═══════════════════════════ */
 const EX: Record<Ctx, Record<string, string[]>> = {
   salle: {
-    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
+    "Full Body": ["Presse à cuisses", "Développé couché", "Tirage poitrine", "Développé épaules machine", "Leg curl assis", "Rowing assis poulie", "Élévations latérales", "Crunch machine"],
     "Haut du corps": ["Développé couché", "Tirage poitrine", "Développé épaules machine", "Rowing assis poulie", "Pec deck", "Tirage vertical", "Élévations latérales", "Curl haltères", "Extensions triceps poulie"],
-    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
+    "Bas du corps": ["Presse à cuisses", "Leg extension", "Leg curl allongé", "Hip thrust machine", "Fentes haltères", "Mollets debout", "Abducteurs machine", "Soulevé de terre roumain"],
     "Push": ["Développé couché", "Développé incliné haltères", "Développé épaules machine", "Pec deck", "Élévations latérales", "Extensions triceps poulie", "Dips machine"],
     "Pull": ["Tirage vertical", "Rowing assis poulie", "Tirage poitrine", "Rowing haltère", "Curl barre EZ", "Curl haltères", "Face pull poulie", "Tirage horizontal"],
     "Cardio / HIIT": ["Tapis course 20 min", "Vélo 15 min", "Rameur 10 min", "Burpees 4x15", "Corde à sauter 5x2 min", "Mountain climbers 4x30s"],
@@ -164,6 +164,16 @@ export function weekDates(ref: Date = new Date()): string[] {
     const x = new Date(monday); x.setDate(monday.getDate() + i); return ymd(x);
   });
 }
+/** Les `n` prochaines dates À PARTIR d'aujourd'hui (et non du lundi) : c'est
+ *  ce qu'attend un choix « quand veux-tu la faire ? », qui ne doit jamais
+ *  proposer un jour déjà passé. */
+export function prochainsJours(n = 7): string[] {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  return Array.from({ length: n }, (_, i) => {
+    const x = new Date(d0); x.setDate(d0.getDate() + i); return ymd(x);
+  });
+}
+
 /** Les 7 dates de la semaine décalée de `offset` semaines vs aujourd'hui. */
 export function weekDatesForOffset(offset: number): string[] {
   const ref = new Date(); ref.setDate(ref.getDate() + offset * 7);
@@ -215,6 +225,12 @@ function generateWeek(gen: GenInput, dates: string[]): PlanningDay[] {
       status: "planned" as DayStatus,
     };
   });
+}
+
+/** Génère la semaine SANS rien écrire — pour préparer une carte de
+    confirmation (l'écriture n'arrive qu'au clic, via saveDay). */
+export function previewWeek(gen: GenInput, dates: string[] = weekDates()): PlanningDay[] {
+  return generateWeek(gen, dates);
 }
 
 /** Titre lisible d'un jour de planning (pour le lancement / l'historique). */
@@ -372,6 +388,67 @@ export function readLieu(userId: string): { location: "salle" | "maison" | null;
   } catch {
     return { location: null, equip: null };
   }
+}
+
+type Lieu = { location: "salle" | "maison" | null; equip: "halteres" | "poids" | null };
+
+/**
+ * Lit le lieu depuis la BASE (cross-device) puis retombe sur le localStorage.
+ * Hydrate le localStorage de l'appareil au passage (pour les lectures synchrones
+ * de `readLieu`). Défensif : si les colonnes n'existent pas encore (migration non
+ * passée), la requête échoue silencieusement → fallback localStorage, zéro régression.
+ */
+export async function loadLieu(userId: string): Promise<Lieu> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("training_location, training_equipment")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!error && data) {
+      const row = data as { training_location?: string | null; training_equipment?: string | null };
+      const location = row.training_location === "salle" || row.training_location === "maison" ? row.training_location : null;
+      const equip = row.training_equipment === "halteres" || row.training_equipment === "poids" ? row.training_equipment : null;
+      if (location || equip) {
+        try {
+          if (location) localStorage.setItem(`vaiiya_lieu_${userId}`, location);
+          if (equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, equip);
+        } catch { /* ignore */ }
+        return { location, equip };
+      }
+    }
+  } catch { /* colonnes absentes → fallback */ }
+  // Rien en base : on prend le localStorage de cet appareil et on le REMONTE en
+  // base (fire-and-forget) → la synchro cross-device démarre sans re-réglage.
+  const local = readLieu(userId);
+  if (local.location || local.equip) {
+    void persistLieu(userId, {
+      ...(local.location ? { location: local.location } : {}),
+      ...(local.equip ? { equip: local.equip } : {}),
+    });
+  }
+  return local;
+}
+
+/**
+ * Persiste le lieu en base (cross-device) ET en localStorage. On ne passe que les
+ * champs fournis (une carte qui ne règle que le lieu ne doit pas effacer le
+ * matériel). Défensif : si les colonnes n'existent pas, on garde au moins le
+ * localStorage.
+ */
+export async function persistLieu(userId: string, patch: { location?: "salle" | "maison"; equip?: "halteres" | "poids" }): Promise<void> {
+  try {
+    if (patch.location) localStorage.setItem(`vaiiya_lieu_${userId}`, patch.location);
+    if (patch.equip) localStorage.setItem(`vaiiya_lieu_equip_${userId}`, patch.equip);
+  } catch { /* ignore */ }
+  try {
+    const supabase = createClient();
+    const dbPatch: Record<string, string> = {};
+    if (patch.location) dbPatch.training_location = patch.location;
+    if (patch.equip) dbPatch.training_equipment = patch.equip;
+    if (Object.keys(dbPatch).length) await supabase.from("profiles").update(dbPatch).eq("id", userId);
+  } catch { /* colonnes absentes → localStorage seul */ }
 }
 
 /** Contexte matériel effectif (salle / haltères / poids du corps). */

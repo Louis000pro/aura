@@ -54,6 +54,19 @@ export const SITE_FEATURES: SiteFeature[] = [
     keywords: ["séance", "seance", "entraînement", "entrainement", "workout", "programme", "muscu", "musculation", "exercices"],
   },
   {
+    key: "analyse",
+    title: "Analyse de posture (caméra)",
+    route: "/analyse",
+    summary:
+      "Outil d'analyse de mouvement en temps réel via la caméra : compte les répétitions et corrige la posture (squat, pompes, curl biceps, fente, gainage). Tourne sur l'appareil, gratuit et illimité — n'utilise pas le coach IA.",
+    actions: [
+      "lancer l'analyse de posture en temps réel",
+      "corriger sa technique sur un exercice",
+      "compter ses répétitions à la caméra",
+    ],
+    keywords: ["analyse", "posture", "technique", "forme", "mouvement", "camera", "caméra", "corriger", "squat", "pompes", "curl", "fente", "gainage", "repetitions", "répétitions", "reps"],
+  },
+  {
     key: "repas",
     title: "Repas recommandés",
     route: "/",
@@ -64,16 +77,17 @@ export const SITE_FEATURES: SiteFeature[] = [
   },
   {
     key: "progression",
-    title: "Progression",
+    title: "Entraînement",
     route: "/progression",
     summary:
-      "Suivi des statistiques dans le temps : évolution du poids, séances réalisées, charges, badges et historique.",
+      "L'onglet Entraînement accueille avec la séance du jour (planning piloté par l'IA) : la lancer en un geste, improviser une séance selon son temps et son matériel, choisir dans ses séances (Vaiiya + personnalisées), ou organiser sa semaine.",
     actions: [
-      "voir l'évolution de son poids",
-      "consulter l'historique des séances",
-      "voir ses badges et records",
+      "lancer la séance du jour",
+      "improviser une séance (temps + matériel)",
+      "choisir ou créer une séance",
+      "organiser sa semaine d'entraînement",
     ],
-    keywords: ["progression", "stats", "statistiques", "poids", "courbe", "historique", "badges", "records"],
+    keywords: ["entraînement", "entrainement", "séance", "seance", "muscu", "musculation", "sport", "planning", "programme", "semaine", "improviser"],
   },
   {
     key: "nutrition",
@@ -87,19 +101,6 @@ export const SITE_FEATURES: SiteFeature[] = [
       "suivre ses calories et macros du jour",
     ],
     keywords: ["nutrition", "journal", "calories", "macros", "protéines", "scan", "code-barres", "suivi nutritionnel"],
-  },
-  {
-    key: "communaute",
-    title: "Communauté",
-    route: "/communaute",
-    summary:
-      "Fil social : posts, stories, vidéos, likes et commentaires, recherche de membres, suivi d'amis. C'est ici qu'on publie une perf ou un post.",
-    actions: [
-      "publier un post ou une perf",
-      "voir les stories et le feed",
-      "chercher et suivre des membres",
-    ],
-    keywords: ["communauté", "communaute", "feed", "fil", "social", "amis", "post", "publier", "story", "stories"],
   },
   {
     key: "profil",
@@ -140,14 +141,6 @@ export const SITE_FEATURES: SiteFeature[] = [
       "Conversation complète avec le coach IA Vaiiya pour des conseils détaillés sport, nutrition et santé.",
     actions: ["discuter en plein écran avec le coach", "demander un plan détaillé"],
     keywords: ["coach", "assistant", "chat", "discussion", "conversation"],
-  },
-  {
-    key: "decouverte",
-    title: "Découverte",
-    route: "/decouverte",
-    summary: "Page de découverte des contenus et fonctionnalités de Vaiiya.",
-    actions: ["explorer les contenus"],
-    keywords: ["découverte", "decouverte", "explorer"],
   },
   {
     key: "recherche",
@@ -192,11 +185,19 @@ export function resolveNavTarget(target: string): string | null {
   return null;
 }
 
-/** Construit le bloc « connaissance du site » pour le system prompt. */
-export function buildSiteKnowledgePrompt(currentPage?: string): string {
+/** Construit le bloc « connaissance du site » pour le system prompt.
+ *
+ *  ⚠️ `nav` doit rester FAUX pour l'assistant ✦. La navigation y passe par
+ *  l'outil `open_page` de l'aiguilleur, plus par un tag : lui réapprendre une
+ *  grammaire à crochets lui donne l'idée d'en inventer d'autres. Vécu le
+ *  2026-07-30 — le coach écrivait « [CARTE]Séance Pectoraux[/CARTE] » en clair
+ *  dans sa réponse, par analogie avec le [NAV]…[/NAV] enseigné juste ici.
+ *  Seuls les appelants historiques en texte brut (accueil, /coach), qui n'ont
+ *  aucun aiguilleur, gardent le tag. */
+export function buildSiteKnowledgePrompt(currentPage?: string, nav = true): string {
   const lines = SITE_FEATURES.map((f) => {
     const acts = f.actions?.length ? ` Actions : ${f.actions.join(" ; ")}.` : "";
-    return `- ${f.title} [cible NAV: ${f.key}] → ${f.summary}${acts}`;
+    return `- ${f.title}${nav ? ` [cible NAV: ${f.key}]` : ""} → ${f.summary}${acts}`;
   });
 
   let here = "";
@@ -208,10 +209,14 @@ export function buildSiteKnowledgePrompt(currentPage?: string): string {
       : `\n\nPAGE COURANTE : ${currentPage}.`;
   }
 
+  const commentFaire = nav
+    ? `- Réponds en 1 phrase claire indiquant la rubrique concernée, PUIS, si l'utilisateur veut clairement s'y rendre, emmène-le avec le tag [NAV]cible[/NAV] (cible = la clé entre crochets ci-dessus).`
+    : `- Réponds en 1 phrase claire indiquant la rubrique concernée et comment y arriver. Si l'utilisateur veut clairement s'y rendre, l'app l'y emmène toute seule : dis-le simplement, sans jamais écrire de code ni de balise.`;
+
   return `CONNAISSANCE DU SITE VAIIYA (tu connais l'app de A à Z et tu sais orienter) :
 ${lines.join("\n")}
 
 QUAND ON TE DEMANDE « COMMENT FAIRE X » OU « OÙ TROUVER X » :
-- Réponds en 1 phrase claire indiquant la rubrique concernée, PUIS, si l'utilisateur veut clairement s'y rendre, emmène-le avec le tag [NAV]cible[/NAV] (cible = la clé entre crochets ci-dessus).
+${commentFaire}
 - Si la question est juste informative (« c'est quoi la progression ? »), explique brièvement sans forcément naviguer.${here}`;
 }

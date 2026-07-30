@@ -4,7 +4,27 @@
  * (quotas + choix du modèle IA selon le tier).
  */
 
-export type PlanId = "free" | "premium" | "creator";
+/**
+ * L'abonnement est-il en vente ?
+ *
+ * Vendre au public en France suppose une entreprise déclarée : identité du
+ * vendeur, SIRET, adresse et médiateur de la consommation sont obligatoires
+ * dès le premier euro. Tant que ce n'est pas en place, on n'encaisse pas.
+ *
+ * Ce n'est PAS un drapeau de fonctionnalité : c'est une porte fermée. Elle est
+ * lue à la fois par l'écran (/premium) et par le serveur (/api/stripe/checkout),
+ * parce qu'une porte fermée seulement côté écran s'ouvre avec une requête.
+ *
+ * Pour rouvrir : passer à `true`, ET remplir l'identité dans
+ * /mentions-legales et /conditions, ET désigner le médiateur.
+ *
+ * Ce que ça ne coupe PAS, volontairement : les abonnements déjà actifs
+ * continuent, et le portail Stripe reste ouvert pour qu'on puisse toujours
+ * résilier. Fermer la sortie serait pire que fermer l'entrée.
+ */
+export const VENTE_OUVERTE = false;
+
+export type PlanId = "free" | "premium";
 
 export interface Plan {
   id: PlanId;
@@ -22,6 +42,16 @@ export interface Plan {
   limits: {
     chatPerDay: number;
     nutritionPerDay: number;
+    /** Missions illimitées (les missions supplémentaires du Premium). */
+    missionsUnlimited: boolean;
+    /**
+     * Combien de séances à soi on GARDE (Infinity = illimité).
+     * On limite le stock, jamais le fait de créer ni de s'entraîner :
+     * supprimer une séance libère toujours une place, et ce qui est déjà
+     * gardé ne se verrouille jamais (un abonnement qui s'arrête ne
+     * reprend rien).
+     */
+    sessionsMax: number;
     ads: boolean;
     exclusiveContent: boolean;
   };
@@ -37,12 +67,12 @@ export const PLANS: Record<PlanId, Plan> = {
     tagline: "Pour découvrir Vaiiya",
     aiModel: "llama-3.1-8b-instant", // modèle léger & rapide → coûts maîtrisés
     features: [
-      "Accès au feed & à la communauté",
-      "Publier, liker, commenter",
+      "Les missions de base pour gagner de l'EXP",
+      "3 séances à toi, gardées",
       "Coach IA — 5 messages/jour",
-      "Analyse nutrition — 3/jour",
+      "Analyse nutrition — 2/jour",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 3, ads: true, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, missionsUnlimited: false, sessionsMax: 3, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",
@@ -53,37 +83,33 @@ export const PLANS: Record<PlanId, Plan> = {
     tagline: "L'expérience Vaiiya complète",
     aiModel: "llama-3.3-70b-versatile", // modèle avancé
     features: [
+      "Missions supplémentaires en illimité",
+      "Tes propres séances, sans limite",
       "Coach IA avancé — illimité",
       "Analyse nutrition illimitée",
-      "Contenus & programmes exclusifs",
-      "Sans publicité",
+      "Détails complets de tes entraînements",
+      "Programmes & entraînements exclusifs",
       "Badge Premium",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, ads: false, exclusiveContent: true },
-  },
-  creator: {
-    id: "creator",
-    name: "Créateur",
-    priceCents: 999,
-    currency: "eur",
-    trialDays: 3,
-    tagline: "Pour les coachs & créateurs qui veulent grandir",
-    aiModel: "llama-3.3-70b-versatile",
-    features: [
-      "Tout le Premium",
-      "Mise en avant dans le feed & la découverte",
-      "Statistiques détaillées sur tes posts",
-      "Badge Créateur",
-    ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },
 };
 
-export const PAID_PLANS: PlanId[] = ["premium", "creator"];
+export const PAID_PLANS: PlanId[] = ["premium"];
 
 export function getPlan(id: string | null | undefined): Plan {
-  if (id && (id === "premium" || id === "creator")) return PLANS[id];
+  if (id === "premium") return PLANS.premium;
   return PLANS.free;
+}
+
+/**
+ * Un plan payant donne les accès Premium.
+ * Le palier « Premium+ » a été retiré le 2026-07-29 : il était facturé 9,99 €
+ * pour « des avantages exclusifs à venir », donc pour rien. On ne remet une
+ * offre en vente que le jour où elle contient quelque chose de réel.
+ */
+export function isPaidPlan(id: string | null | undefined): boolean {
+  return id === "premium";
 }
 
 /** Prix formaté pour l'affichage, ex. "5,99 €". */

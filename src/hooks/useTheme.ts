@@ -38,6 +38,18 @@ function applyTheme(pref: ThemePreference): void {
 }
 
 /**
+ * Applique une préférence de thème depuis l'EXTÉRIEUR du hook (l'assistant ✦
+ * quand l'utilisateur dit « passe en sombre »). Écrit la préférence, repose
+ * data-theme, et diffuse THEME_EVENT : toutes les instances de useTheme
+ * (paramètres, etc.) se resynchronisent toutes seules.
+ */
+export function setThemePreference(pref: ThemePreference): void {
+  try { localStorage.setItem(STORAGE_KEY, pref); } catch { /* ignore */ }
+  applyTheme(pref);
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(THEME_EVENT));
+}
+
+/**
  * Thème clair/sombre. La classe data-theme est déjà posée AVANT le paint par
  * un script inline du <head> (voir layout.tsx) → aucun flash. Ce hook ne fait
  * que lire/écrire la préférence (system | light | dark) et tenir l'UI à jour.

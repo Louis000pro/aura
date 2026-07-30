@@ -8,15 +8,15 @@ import { ArrowLeft } from "lucide-react";
 function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-7">
-      <h2 className="text-base font-semibold mb-2.5" style={{ color: "#2D3748" }}>{title}</h2>
+      <h2 className="text-base font-semibold mb-2.5" style={{ color: "var(--text-0)" }}>{title}</h2>
       <div
         className="rounded-3xl px-5 py-5 text-sm font-light leading-relaxed space-y-2.5"
         style={{
-          background: "rgba(255,255,255,0.7)",
-          border: "1px solid rgba(255,255,255,0.85)",
+          background: "rgba(var(--surface-rgb),0.7)",
+          border: "1px solid rgba(var(--accent-rgb),0.12)",
           backdropFilter: "blur(12px)",
-          boxShadow: "0 2px 12px rgba(167,139,250,0.05), inset 0 1px 0 rgba(255,255,255,0.9)",
-          color: "#4A5568",
+          boxShadow: "0 2px 12px rgba(var(--accent-rgb),0.05)",
+          color: "var(--text-body)",
         }}
       >
         {children}
@@ -35,22 +35,22 @@ export default function ConfidentialitePage() {
           whileTap={{ scale: 0.96 }}
           className="inline-flex items-center gap-2 mb-6 px-4 py-2.5 rounded-2xl cursor-pointer"
           style={{
-            background: "rgba(255,255,255,0.7)",
-            border: "1px solid rgba(255,255,255,0.85)",
+            background: "rgba(var(--surface-rgb),0.7)",
+            border: "1px solid rgba(var(--accent-rgb),0.12)",
             backdropFilter: "blur(12px)",
-            boxShadow: "0 2px 8px rgba(167,139,250,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
-            color: "#718096",
+            boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)",
+            color: "var(--text-2)",
           }}
         >
-          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "#A78BFA" }} />
+          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "var(--accent)" }} />
           <span className="text-sm font-medium">Retour</span>
         </motion.div>
       </Link>
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
-        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "#2D3748" }}>Politique de confidentialité</h1>
-        <p className="text-sm font-light mt-1.5" style={{ color: "#A0AEC0" }}>
+        <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>Politique de confidentialité</h1>
+        <p className="text-sm font-light mt-1.5" style={{ color: "var(--text-3)" }}>
           Comment Vaiiya collecte, utilise et protège vos données personnelles, conformément au RGPD.
         </p>
       </motion.div>
@@ -68,9 +68,9 @@ export default function ConfidentialitePage() {
             {/* À COMPLÉTER : adresse email de contact officielle */}
             {" "}<strong>bonjour@vaiiya.fr</strong>.
           </p>
-          <p className="text-xs" style={{ color: "#A0AEC0" }}>
+          <p className="text-xs" style={{ color: "var(--text-3)" }}>
             Les informations complètes sur l&apos;éditeur figurent dans les{" "}
-            <Link href="/mentions-legales" style={{ color: "#A78BFA" }} className="hover:underline">
+            <Link href="/mentions-legales" style={{ color: "var(--accent)" }} className="hover:underline">
               Mentions légales
             </Link>.
           </p>
@@ -81,7 +81,8 @@ export default function ConfidentialitePage() {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li><strong>Données d&apos;identification :</strong> adresse email, pseudo, nom complet, avatar (photo de profil).</li>
             <li><strong>Données de fitness et de nutrition :</strong> séances d&apos;entraînement, journaux de poids, journaux nutritionnels, statistiques quotidiennes.</li>
-            <li><strong>Contenus sociaux :</strong> posts, commentaires, likes, abonnements (follows), messages privés (messagerie directe), stories.</li>
+            <li><strong>Contenus partagés :</strong> affiches de performance publiées, relations d&apos;amitié, conversations et messages (texte et photos) échangés dans la messagerie.</li>
+            <li><strong>Échanges avec l&apos;assistant :</strong> vos messages, et les informations que vous lui demandez de retenir.</li>
             <li><strong>Abonnements aux notifications push :</strong> identifiants techniques permettant l&apos;envoi de notifications.</li>
             <li><strong>Données d&apos;usage :</strong> informations techniques sur votre utilisation de l&apos;application (interactions, préférences d&apos;affichage).</li>
           </ul>
@@ -92,7 +93,8 @@ export default function ConfidentialitePage() {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>Fournir et faire fonctionner le service (compte, suivi sportif et nutritionnel).</li>
             <li>Personnaliser le coaching assisté par intelligence artificielle selon votre profil et vos objectifs.</li>
-            <li>Afficher et animer le feed social (publications, abonnements, interactions).</li>
+            <li>Faire fonctionner la messagerie, les amis et les défis à deux.</li>
+            <li>Gérer votre abonnement et la facturation lorsque vous souscrivez.</li>
             <li>Vous envoyer des notifications par email et notifications push.</li>
             <li>Assurer la sécurité, prévenir la fraude et les abus.</li>
           </ul>
@@ -113,11 +115,18 @@ export default function ConfidentialitePage() {
             sens du RGPD) qui peuvent traiter certaines de vos données pour notre compte :
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Supabase</strong> (Supabase Inc.) — hébergement de la base de données et authentification.</li>
-            <li><strong>Vercel</strong> (Vercel Inc.) — hébergement de l&apos;application.</li>
+            <li><strong>Supabase</strong> (Supabase Inc.) — hébergement de la base de données, authentification et stockage des fichiers.</li>
+            <li><strong>Vercel</strong> (Vercel Inc.) — hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
             <li><strong>Resend</strong> — envoi des emails transactionnels.</li>
-            <li><strong>Groq</strong> — inférence des modèles d&apos;intelligence artificielle (coaching IA).</li>
+            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) — gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
+            <li><strong>Mistral AI</strong> (société française) — assistant conversationnel, génération de séances, de recettes et de menus.</li>
+            <li><strong>Groq</strong> (Groq Inc.) — analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
           </ul>
+          <p className="mt-2">
+            Les contenus que vous soumettez à ces fonctions (message, photo d&apos;assiette, enregistrement
+            vocal) sont transmis au prestataire concerné le temps de produire la réponse. Ne leur confiez pas
+            d&apos;information que vous ne souhaitez pas voir quitter votre appareil.
+          </p>
           <p className="mt-2">
             Certains de ces prestataires sont situés en dehors de l&apos;Union européenne, notamment aux
             <strong> États-Unis</strong>. Dans ce cas, les transferts de données sont encadrés par des
@@ -199,14 +208,14 @@ export default function ConfidentialitePage() {
             le droit d&apos;introduire une réclamation auprès de la <strong>CNIL</strong> (Commission Nationale
             de l&apos;Informatique et des Libertés) :
             {" "}
-            <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: "#A78BFA" }} className="hover:underline">
+            <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }} className="hover:underline">
               cnil.fr
             </a>.
           </p>
         </LegalSection>
 
-        <p className="text-center text-[11px] font-light mt-8" style={{ color: "#C4C9D4" }}>
-          Dernière mise à jour : Juin 2026 · Vaiiya
+        <p className="text-center text-[11px] font-light mt-8" style={{ color: "var(--text-3)" }}>
+          Dernière mise à jour : 30 juillet 2026 · Vaiiya
         </p>
       </motion.div>
     </div>

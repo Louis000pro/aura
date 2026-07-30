@@ -127,7 +127,7 @@ export default function FollowListModal({
           <div className="w-10 h-1 rounded-full" style={{ background: "rgba(0,0,0,0.12)" }} />
         </div>
         <div className="flex items-center justify-between px-5 pb-3 pt-1">
-          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>{type}</h2>
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Amis</h2>
           <motion.button whileTap={{ scale: 0.88 }} onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer" style={{ background: "rgba(0,0,0,0.06)" }}>
             <X size={14} strokeWidth={2.5} style={{ color: "var(--text-2)" }} />
           </motion.button>
@@ -150,7 +150,7 @@ export default function FollowListModal({
             <div className="flex flex-col items-center justify-center py-16 gap-2">
               <span className="text-3xl">👤</span>
               <p className="text-sm font-light" style={{ color: "var(--text-3)" }}>
-                {query ? "Aucun résultat" : type === "Abonnés" ? "Aucun abonné pour l'instant" : "Aucun abonnement pour l'instant"}
+                {query ? "Aucun résultat" : "Aucun ami pour l'instant"}
               </p>
             </div>
           ) : (
@@ -183,7 +183,7 @@ export default function FollowListModal({
                         : { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", color: "var(--text-1)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.7)" }
                       }
                     >
-                      {isF ? <><UserCheck size={11} strokeWidth={2.5} />Abonné</> : <><UserPlus size={11} strokeWidth={2.5} />Suivre</>}
+                      {isF ? <><UserCheck size={11} strokeWidth={2.5} />Ami</> : <><UserPlus size={11} strokeWidth={2.5} />Ajouter</>}
                     </motion.button>
                   )}
                 </motion.div>
