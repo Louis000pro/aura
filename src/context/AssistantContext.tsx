@@ -38,6 +38,26 @@ type MemoryAction =
   | { type: "forget"; keywords?: string }
   | { type: "none" };
 
+/* ── Filet anti-balises ──────────────────────────────────────────────
+   Le coach n'a plus aucun outil : c'est l'aiguilleur qui décide, et la carte
+   s'affiche toute seule. Sauf qu'un modèle à qui on décrit une carte finit
+   par essayer de l'invoquer avec un mot-clé qu'il invente. Signalé par Louis
+   le 2026-07-30 : « Je prépare une séance pecs […] [CARTE]Séance Pectoraux -
+   Débutant[/CARTE] » — du code au milieu d'une conversation.
+
+   La cause est traitée dans le prompt (plus aucune grammaire à crochets
+   enseignée au coach), ceci est le filet : on ne peut pas lister à l'avance
+   les balises qu'un modèle inventera, donc on les enlève toutes. Le motif est
+   volontairement étroit — MAJUSCULES, chiffres et tirets bas uniquement — pour
+   ne jamais toucher à une vraie phrase entre crochets. */
+const BALISE = /\[\/?[A-Z][A-Z0-9_]{1,23}\]/g;
+/** Coupe une balise en cours de frappe (« …prépare ça [CAR ») pendant le flux. */
+const BALISE_EN_COURS = /\[\/?[A-Z][A-Z0-9_]*$/;
+
+function sansBalises(texte: string): string {
+  return texte.replace(BALISE, "").replace(/[ \t]{2,}/g, " ");
+}
+
 /** Clés d'objectif (onboarding) → libellés compris par le générateur. */
 const GOAL_LABELS: Record<string, string> = {
   masse: "prise de masse", prise_de_masse: "prise de masse",
@@ -1180,7 +1200,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const lignes = buffer.split("\n");
         buffer = lignes.pop() ?? "";
         for (const l of lignes) lire(l);
-        setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: accumulated, streaming: true } : m));
+        // `accumulated` reste BRUT (les tags historiques sont relus plus bas) :
+        // on ne nettoie que ce qui s'affiche, sinon une balise clignoterait le
+        // temps d'un chunk.
+        const enCours = sansBalises(accumulated).replace(BALISE_EN_COURS, "");
+        setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: enCours, streaming: true } : m));
       }
       if (buffer) lire(buffer);
 
@@ -1194,8 +1218,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       let cleaned = stripMemoryTags(accumulated)
         .replace(/\[PROGRAMME_UPDATE\][\s\S]*?\[\/PROGRAMME_UPDATE\]/gi, "")
         .replace(/\[LIEU_UPDATE\][\s\S]*?\[\/LIEU_UPDATE\]/gi, "")
-        .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "")
-        .trim();
+        .replace(/\[NAV\][\s\S]*?\[\/NAV\]/gi, "");
+      // Les balises ci-dessus emportent leur contenu (c'était de la donnée) ;
+      // celles que le modèle invente encadrent une vraie phrase, on garde donc
+      // le texte et on ne retire que les crochets.
+      cleaned = sansBalises(cleaned).trim();
 
       // `action` n'est renseignée que dans une closure : TypeScript ne suit pas
       // cette affectation et la croit toujours nulle. Le cast rétablit son vrai

@@ -108,7 +108,10 @@ export function buildMemoryPrompt(memories: AiMemory[] | null | undefined): stri
   if (!memories || memories.length === 0) return "";
   const lines = memories
     .slice(0, 40)
-    .map((mm) => `- [${MEMORY_CATEGORY_LABEL[normalizeCategory(mm.category)]}] ${mm.content}`)
+    // Deux-points plutôt que des crochets : le coach n'a plus AUCUNE grammaire
+    // à balises, et tout ce qui y ressemble dans son prompt lui donne l'idée
+    // d'en inventer une (vécu le 2026-07-30 avec un « [CARTE]…[/CARTE] »).
+    .map((mm) => `- ${MEMORY_CATEGORY_LABEL[normalizeCategory(mm.category)]} : ${mm.content}`)
     .join("\n");
   return `\n\nCE QUE TU SAIS DÉJÀ SUR CET UTILISATEUR (mémoire long terme — à respecter ABSOLUMENT dans tes conseils) :
 ${lines}

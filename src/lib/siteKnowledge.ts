@@ -185,11 +185,19 @@ export function resolveNavTarget(target: string): string | null {
   return null;
 }
 
-/** Construit le bloc « connaissance du site » pour le system prompt. */
-export function buildSiteKnowledgePrompt(currentPage?: string): string {
+/** Construit le bloc « connaissance du site » pour le system prompt.
+ *
+ *  ⚠️ `nav` doit rester FAUX pour l'assistant ✦. La navigation y passe par
+ *  l'outil `open_page` de l'aiguilleur, plus par un tag : lui réapprendre une
+ *  grammaire à crochets lui donne l'idée d'en inventer d'autres. Vécu le
+ *  2026-07-30 — le coach écrivait « [CARTE]Séance Pectoraux[/CARTE] » en clair
+ *  dans sa réponse, par analogie avec le [NAV]…[/NAV] enseigné juste ici.
+ *  Seuls les appelants historiques en texte brut (accueil, /coach), qui n'ont
+ *  aucun aiguilleur, gardent le tag. */
+export function buildSiteKnowledgePrompt(currentPage?: string, nav = true): string {
   const lines = SITE_FEATURES.map((f) => {
     const acts = f.actions?.length ? ` Actions : ${f.actions.join(" ; ")}.` : "";
-    return `- ${f.title} [cible NAV: ${f.key}] → ${f.summary}${acts}`;
+    return `- ${f.title}${nav ? ` [cible NAV: ${f.key}]` : ""} → ${f.summary}${acts}`;
   });
 
   let here = "";
@@ -201,10 +209,14 @@ export function buildSiteKnowledgePrompt(currentPage?: string): string {
       : `\n\nPAGE COURANTE : ${currentPage}.`;
   }
 
+  const commentFaire = nav
+    ? `- Réponds en 1 phrase claire indiquant la rubrique concernée, PUIS, si l'utilisateur veut clairement s'y rendre, emmène-le avec le tag [NAV]cible[/NAV] (cible = la clé entre crochets ci-dessus).`
+    : `- Réponds en 1 phrase claire indiquant la rubrique concernée et comment y arriver. Si l'utilisateur veut clairement s'y rendre, l'app l'y emmène toute seule : dis-le simplement, sans jamais écrire de code ni de balise.`;
+
   return `CONNAISSANCE DU SITE VAIIYA (tu connais l'app de A à Z et tu sais orienter) :
 ${lines.join("\n")}
 
 QUAND ON TE DEMANDE « COMMENT FAIRE X » OU « OÙ TROUVER X » :
-- Réponds en 1 phrase claire indiquant la rubrique concernée, PUIS, si l'utilisateur veut clairement s'y rendre, emmène-le avec le tag [NAV]cible[/NAV] (cible = la clé entre crochets ci-dessus).
+${commentFaire}
 - Si la question est juste informative (« c'est quoi la progression ? »), explique brièvement sans forcément naviguer.${here}`;
 }
