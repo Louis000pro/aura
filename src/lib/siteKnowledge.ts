@@ -90,6 +90,20 @@ export const SITE_FEATURES: SiteFeature[] = [
     keywords: ["entraînement", "entrainement", "séance", "seance", "muscu", "musculation", "sport", "planning", "programme", "semaine", "improviser"],
   },
   {
+    key: "statistiques",
+    title: "Statistiques & progression",
+    route: "/statistiques",
+    summary:
+      "Page de suivi de la progression : évolution du poids, séances de la semaine, records personnels, et volume/calories des 8 dernières semaines. C'est ici qu'on VOIT ses stats et ses courbes de progression (à distinguer de l'onglet Entraînement qui sert à lancer/organiser les séances).",
+    actions: [
+      "voir ses statistiques et sa progression",
+      "consulter l'évolution de son poids",
+      "voir ses séances et calories de la semaine",
+      "consulter ses records personnels",
+    ],
+    keywords: ["statistiques", "statistique", "stats", "progrès", "progres", "ma progression", "mes progrès", "mes stats", "mes statistiques", "mes performances", "évolution", "evolution", "courbe", "courbes", "records", "graphique", "graphiques", "mon poids", "mes séances", "mes calories"],
+  },
+  {
     key: "nutrition",
     title: "Nutrition",
     route: "/nutrition",
