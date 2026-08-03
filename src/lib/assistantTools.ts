@@ -305,13 +305,13 @@ export const ASSISTANT_TOOLS: Tool[] = [
     function: {
       name: "open_page",
       description:
-        "Emmener l'utilisateur sur une page de l'app quand il veut clairement y ALLER (« montre mes repas », « ouvre mon programme », « je veux m'abonner »). Pas pour une simple question sur le contenu de la page. Utilise « statistiques » dès qu'il veut VOIR sa progression, ses stats, ses courbes, ses séances/calories/poids/records (« montre ma progression », « mes statistiques »).",
+        "Emmener l'utilisateur sur une page de l'app quand il veut clairement y ALLER. Pas pour une simple question sur le contenu de la page. Choix de la cible : « statistiques » = VOIR/CONSULTER sa progression, ses stats, ses courbes, son poids, ses records, ses séances/calories passées (« montre ma progression », « mes statistiques », « où voir mes progrès »). « entrainement » = aller à son programme / lancer ou organiser ses séances. « nutrition » = son journal de repas. « repas » = les repas recommandés. « premium » = les offres. « parametres » = les réglages.",
       parameters: {
         type: "object",
         properties: {
           cible: {
             type: "string",
-            enum: ["repas", "seances", "statistiques", "premium", "progression", "nutrition", "parametres"],
+            enum: ["repas", "seances", "statistiques", "premium", "entrainement", "nutrition", "parametres"],
           },
         },
         required: ["cible"],
