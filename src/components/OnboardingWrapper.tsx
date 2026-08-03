@@ -82,6 +82,23 @@ export default function OnboardingWrapper() {
       onboarding_completed:     isCompleted,
     }, { onConflict: "id" });
 
+    // Opt-in WhatsApp (facultatif) → table SÉPARÉE et privée (RLS owner-only),
+    // jamais dans `profiles` qui est lisible par d'autres. On n'enregistre le
+    // numéro QUE si le consentement est donné ET un numéro fourni, avec un
+    // horodatage qui fait preuve d'opt-in (exigé RGPD + WhatsApp).
+    const wOptin = !!(data.whatsapp && data.phone.trim());
+    if (data.whatsapp || data.phone.trim()) {
+      // Best-effort : si la migration n'est pas encore collée, l'erreur est
+      // renvoyée (pas jetée) et n'interrompt pas la fin de l'onboarding.
+      await supabase.from("user_contacts").upsert({
+        user_id: user.id,
+        phone: wOptin ? data.phone.trim() : null,
+        whatsapp_optin: wOptin,
+        whatsapp_optin_at: wOptin ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+    }
+
     setShowModal(false);
     if (!isCompleted) {
       // Champs incomplets → bulle visible

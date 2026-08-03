@@ -730,7 +730,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
               whileTap={{ scale: 0.96 }}
               onClick={() => {
                 if (confirm("Réinitialiser tous tes objectifs ?")) {
-                  setData({ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" });
+                  setData({ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "", phone: "", whatsapp: false });
                 }
               }}
               className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"
@@ -748,7 +748,7 @@ function GoalsEditModal({ pseudo, onClose, onSave }: { pseudo: string; onClose: 
               whileTap={{ scale: 0.96 }}
               onClick={() => {
                 if (confirm("Créer un 2ème objectif ? Tes données actuelles seront remplacées après sauvegarde.")) {
-                  setData({ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "" });
+                  setData({ age: "", height: "", weight: "", gender: "", goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "", phone: "", whatsapp: false });
                 }
               }}
               className="flex-1 py-3 rounded-2xl text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5"

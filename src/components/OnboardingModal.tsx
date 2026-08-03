@@ -14,11 +14,15 @@ export type OnboardingData = {
   sessionsPerWeek: string;
   mealsPerDay: string;
   diet: string;
+  /** Opt-in WhatsApp (facultatif) : rappels & motivation. */
+  phone: string;
+  whatsapp: boolean;
 };
 
 const defaultData: OnboardingData = {
   age: "", height: "", weight: "", gender: "",
   goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "",
+  phone: "", whatsapp: false,
 };
 
 const GOALS = [
@@ -93,6 +97,7 @@ const steps = [
   { title: "Tes objectifs",   subtitle: "Sélectionne tout ce qui s'applique" },
   { title: "Ton niveau",      subtitle: "Sois honnête, ça aide !" },
   { title: "Ta nutrition",    subtitle: "On adapte tes plans repas" },
+  { title: "Reste motivé",    subtitle: "Des rappels sur WhatsApp (facultatif)" },
 ];
 
 export default function OnboardingModal({
@@ -123,6 +128,7 @@ export default function OnboardingModal({
     data.goals.length > 0,
     data.level && data.sessionsPerWeek,
     data.mealsPerDay && data.diet,
+    true, // WhatsApp : étape facultative, jamais bloquante
   ][step];
 
   const variants = {
@@ -280,6 +286,51 @@ export default function OnboardingModal({
                       ))}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* ── Step 4 : WhatsApp (facultatif) ── */}
+              {step === 4 && (
+                <div className="flex flex-col gap-4">
+                  <button type="button" onClick={() => setData(d => ({ ...d, whatsapp: !d.whatsapp }))}
+                    className="flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl cursor-pointer border text-left"
+                    style={data.whatsapp
+                      ? { background: "linear-gradient(135deg,rgba(var(--violet-mid-rgb),0.85),rgba(var(--cream-mid-rgb),0.85))", borderColor: "rgba(var(--accent-rgb),0.4)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }
+                      : { background: "rgba(var(--surface-rgb),0.5)", borderColor: "rgba(var(--surface-rgb),0.7)" }
+                    }>
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-xl">💬</span>
+                      <span className="text-sm font-semibold" style={{ color: data.whatsapp ? "var(--text-1)" : "var(--text-2)" }}>
+                        Rappels &amp; motivation sur WhatsApp
+                      </span>
+                    </span>
+                    <span className="relative flex-shrink-0 w-10 h-6 rounded-full transition-colors"
+                      style={{ background: data.whatsapp ? "var(--accent)" : "rgba(var(--text-3-rgb),0.35)" }}>
+                      <motion.span className="absolute top-0.5 w-5 h-5 rounded-full bg-white"
+                        animate={{ left: data.whatsapp ? 18 : 2 }} transition={{ type: "spring", stiffness: 500, damping: 32 }} />
+                    </span>
+                  </button>
+
+                  {data.whatsapp ? (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Ton numéro WhatsApp</label>
+                      <div className="flex items-center gap-2 px-4 py-3 rounded-2xl"
+                        style={{ background: "rgba(var(--surface-rgb),0.7)", border: "1px solid rgba(var(--surface-rgb),0.8)" }}>
+                        <input type="tel" inputMode="tel" value={data.phone}
+                          onChange={e => setData(d => ({ ...d, phone: e.target.value }))}
+                          placeholder="+33 6 12 34 56 78" autoComplete="tel"
+                          className="flex-1 bg-transparent text-sm outline-none placeholder:text-[#C4CAD4]"
+                          style={{ color: "var(--text-1)" }} />
+                      </div>
+                      <p className="text-[11px] font-light leading-snug mt-0.5" style={{ color: "var(--text-3)" }}>
+                        En laissant ton numéro, tu acceptes de recevoir des rappels et de la motivation de Vaiiya sur WhatsApp. Rien d&apos;autre, et tu pourras te désinscrire à tout moment.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[12px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
+                      Facultatif — de petits rappels pour ne pas lâcher ta série. Tu peux l&apos;activer plus tard dans les réglages.
+                    </p>
+                  )}
                 </div>
               )}
             </motion.div>
