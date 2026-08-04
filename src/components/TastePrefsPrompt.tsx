@@ -23,7 +23,7 @@ import {
   type TasteProfile,
   Q_COOKING, Q_TIME, Q_INGREDIENTS,
   BASE_GROUPS, KNOWN_BASES,
-  isTasteComplete, saveTasteProfile, tasteTodayStr,
+  isTasteComplete, saveTasteProfile, tasteTodayStr, fetchTasteProfile,
 } from "@/lib/tasteProfile";
 import PlacesTop3Picker from "@/components/PlacesTop3Picker";
 
@@ -44,13 +44,13 @@ export default function TastePrefsPrompt() {
 
   useEffect(() => {
     if (!user?.id) return;
+    const uid = user.id;
     let cancelled = false;
 
+    // « Plus tard » → on attend la date snoozée. (Le « déjà répondu » est
+    // vérifié plus bas contre la BASE, pas seulement le localStorage.)
     try {
-      // Déjà répondu → on ne redemande plus.
-      if (localStorage.getItem(`vaiiya_taste_profile_${user.id}`)) return;
-      // « Plus tard » → on attend la date snoozée.
-      const snooze = localStorage.getItem(`vaiiya_taste_snooze_${user.id}`);
+      const snooze = localStorage.getItem(`vaiiya_taste_snooze_${uid}`);
       if (snooze && snooze > tasteTodayStr()) return;
     } catch { return; }
 
@@ -58,18 +58,29 @@ export default function TastePrefsPrompt() {
     // on l'ignore, sinon on regardera si une pesée est due plus bas.
     let weighinSnoozed = false;
     try {
-      const ws = localStorage.getItem(`vaiiya_weighin_snooze_${user.id}`);
+      const ws = localStorage.getItem(`vaiiya_weighin_snooze_${uid}`);
       weighinSnoozed = !!(ws && ws > tasteTodayStr());
     } catch { /* ignore */ }
 
     const supabase = createClient();
     (async () => {
+      // Déjà répondu ? On regarde le local ET la BASE (source de vérité) :
+      // sinon le popup revient sur un nouvel appareil / après un cache vidé /
+      // une mise à jour du service worker. Si la base a le profil, on réhydrate
+      // le flag local pour que ce soit instantané les fois suivantes.
+      const existing = await fetchTasteProfile(uid);
+      if (cancelled) return;
+      if (existing) {
+        try { localStorage.setItem(`vaiiya_taste_profile_${uid}`, JSON.stringify(existing)); } catch { /* ignore */ }
+        return;
+      }
+
       // On ne demande qu'aux gens qui utilisent VRAIMENT la nutrition : ≥ 3 repas notés.
       // Les curieux de passage ne sont jamais embêtés, et la perso s'active vite.
       const { count } = await supabase
         .from("nutrition_logs")
         .select("user_id", { count: "exact", head: true })
-        .eq("user_id", user.id);
+        .eq("user_id", uid);
       if (cancelled || (count ?? 0) < MEALS_BEFORE_ASKING) return;
 
       // Pesée due ? → on laisse passer le WeighInPrompt cette fois et on réessaiera.

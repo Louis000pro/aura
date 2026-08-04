@@ -2163,6 +2163,25 @@ export default function NutritionTab({ showBackButton = false, fullPage = true }
   const [toast, setToast] = useState<string | null>(null);
   const [journalOpen, setJournalOpen] = useState(false); // journal relégué en pied, déplié à la demande
 
+  /* Raccourci depuis l'accueil : « /nutrition?ajouter=repas » ouvre DIRECTEMENT
+     la saisie manuelle, sans passer par « On mange où ? ». On lit le paramètre
+     via window.location (pas useSearchParams → pas de contrainte Suspense) et on
+     nettoie l'URL pour ne pas rouvrir au rafraîchissement. */
+  const raccourciRepasRef = useRef(false);
+  useEffect(() => {
+    if (raccourciRepasRef.current) return;
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get("ajouter") === "repas") {
+        raccourciRepasRef.current = true;
+        setShowManual(true);
+        const url = new URL(window.location.href);
+        url.searchParams.delete("ajouter");
+        window.history.replaceState({}, "", url.pathname + url.search);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   /* Objectif du jour — lu depuis le profil central (base), partagé avec l'IA. */
   const { goals } = useNutritionGoals();
 
