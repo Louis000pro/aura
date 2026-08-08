@@ -11,49 +11,50 @@ import type { MetadataRoute } from "next";
  *    si elle répond 200. C'est pourquoi `/coach` en est sorti : c'est le chat de
  *    l'assistant, pas une page vitrine.
  *
- * 2. `lastModified` dit la vérité ou ne dit rien. La version précédente posait
+ * 2. Pas de `lastModified`, et c'est délibéré. La version précédente posait
  *    `new Date()` sur TOUTES les pages : à chaque déploiement, le sitemap
  *    annonçait que l'intégralité du site venait de changer. Un signal qui est
  *    toujours vrai n'apprend rien, et Google finit par ignorer le champ pour
- *    tout le domaine. On écrit donc une date fixe par page, prise de l'historique
- *    git réel du contenu correspondant.
+ *    tout le domaine. Une date figée écrite à la main n'est pas mieux : elle est
+ *    exacte le jour où on l'écrit, et elle devient fausse à la première
+ *    modification que personne ne pense à reporter ici. Tant qu'il n'existe pas
+ *    de source automatique et fiable de la dernière modification RÉELLE d'une
+ *    page, on préfère l'absence d'information à une information qui se périme
+ *    toute seule. Le champ est facultatif, et les moteurs revisitent de
+ *    toute façon.
  *
- * ⚠️ En modifiant le contenu d'une de ces pages, mets sa date à jour ici. Une
- * date figée est un moindre mal (le robot revient de lui-même), une date fausse
- * qui bouge tout le temps décrédibilise le fichier entier.
+ * `changeFrequency` est absent pour la même raison : Google l'ignore, et
+ * annoncer « monthly » sur une page qui n'a pas bougé depuis des mois était une
+ * affirmation de plus qu'on ne pouvait pas tenir.
  *
- * `changeFrequency` a été retiré : Google l'ignore, et annoncer « monthly » sur
- * une page qui n'a pas bougé depuis juin était une affirmation de plus qu'on ne
- * pouvait pas tenir.
+ * `priority`, lui, reste : ce n'est pas une observation qui peut devenir fausse
+ * mais une intention de notre part, celle de dire quelles pages comptent le
+ * plus dans le site.
+ *
+ * Ajouter une page ici = elle doit être publique, servir du contenu à un robot,
+ * et ne porter aucun `noindex`.
  */
 
-type Page = {
-  path: string;
-  /** Date de dernière modification réelle du contenu (AAAA-MM-JJ). */
-  maj: string;
-  priority: number;
-};
+const PAGES: { path: string; priority: number }[] = [
+  // L'accueil : la landing publique.
+  { path: "/", priority: 1.0 },
 
-const PAGES: Page[] = [
-  // L'accueil : la landing publique, refaite au lot SEO 1.
-  { path: "/", maj: "2026-08-08", priority: 1.0 },
-
-  // Les cinq pages vitrine (`lib/seoPages.ts`), écrites en juin.
-  { path: "/coach-ia", maj: "2026-06-12", priority: 0.9 },
-  { path: "/prise-de-masse", maj: "2026-06-12", priority: 0.9 },
-  { path: "/perte-de-poids", maj: "2026-06-12", priority: 0.9 },
-  { path: "/musculation-maison", maj: "2026-06-12", priority: 0.8 },
-  { path: "/nutrition-sportive", maj: "2026-06-12", priority: 0.8 },
+  // Les cinq pages vitrine (`lib/seoPages.ts`).
+  { path: "/coach-ia", priority: 0.9 },
+  { path: "/prise-de-masse", priority: 0.9 },
+  { path: "/perte-de-poids", priority: 0.9 },
+  { path: "/musculation-maison", priority: 0.8 },
+  { path: "/nutrition-sportive", priority: 0.8 },
 
   // L'offre. Indexable même vente fermée : « prix Vaiiya » se cherche de toute
   // façon, mieux vaut y répondre nous-mêmes.
-  { path: "/premium", maj: "2026-08-08", priority: 0.8 },
+  { path: "/premium", priority: 0.8 },
 
   // Le légal. Peu de trafic, mais leur présence rassure moteurs et lecteurs sur
   // l'existence réelle de l'éditeur.
-  { path: "/conditions", maj: "2026-08-08", priority: 0.3 },
-  { path: "/mentions-legales", maj: "2026-08-08", priority: 0.3 },
-  { path: "/confidentialite", maj: "2026-08-08", priority: 0.3 },
+  { path: "/conditions", priority: 0.3 },
+  { path: "/mentions-legales", priority: 0.3 },
+  { path: "/confidentialite", priority: 0.3 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -61,7 +62,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return PAGES.map((p) => ({
     url: `${base}${p.path}`,
-    lastModified: new Date(`${p.maj}T00:00:00Z`),
     priority: p.priority,
   }));
 }
