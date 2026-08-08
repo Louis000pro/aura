@@ -5,7 +5,9 @@
  * selon son activité du jour (séance faite ? repas loggés ?).
  *
  * Sécurité : header "Authorization: Bearer <CRON_SECRET>" (ajouté auto par Vercel
- * quand la variable CRON_SECRET existe).
+ * quand la variable CRON_SECRET existe). La vérification est fail-closed :
+ * sans CRON_SECRET défini en production, la route refuse tout (401) et les
+ * rappels ne partent plus. C'est volontaire, et c'est le bon sens du risque.
  */
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
@@ -109,13 +111,16 @@ async function rappelsRelais(
 }
 
 export async function GET(req: NextRequest) {
-  // ── Auth cron ──
+  // ── Auth cron (fail-closed) ──
+  // Sans CRON_SECRET configuré, ou avec un en-tête absent ou faux, on refuse
+  // TOUJOURS. Avant, l'absence de la variable ouvrait la route à tout internet :
+  // n'importe qui pouvait déclencher l'envoi des notifications à tous les
+  // comptes. Une porte dont la serrure est optionnelle n'est pas une serrure.
+  // Vercel Cron ajoute l'en-tête automatiquement quand la variable existe.
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: "non_autorisé" }, { status: 401 });
-    }
+  const auth = req.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "non_autorisé" }, { status: 401 });
   }
 
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
