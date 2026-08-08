@@ -378,8 +378,13 @@ export default function RecherchePage() {
                       style={{ background: "linear-gradient(135deg, rgba(var(--tint-violet-rgb),0.8) 0%, rgba(255,251,240,0.8) 100%)", boxShadow: "0 4px 16px rgba(var(--accent-rgb),0.15)" }}>
                       🌱
                     </div>
+                    {/* L'ancien texte promettait une communauté qui grandit et
+                        de « nouveaux membres à découvrir ». Ce produit n'existe
+                        plus : il n'y a ni fil ni annuaire, on retrouve
+                        quelqu'un qu'on connaît par son pseudo. Le vide se dit
+                        donc simplement, sans promettre un retour. */}
                     <p className="text-sm font-light text-center" style={{ color: "var(--text-3)" }}>
-                      La communauté grandit 💜<br />Reviens bientôt pour découvrir de nouveaux membres
+                      Rien à suggérer pour l&apos;instant.<br />Cherche un pseudo pour retrouver quelqu&apos;un.
                     </p>
                   </div>
                 )}
