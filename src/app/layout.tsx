@@ -43,9 +43,14 @@ export const metadata: Metadata = {
   creator: "Vaiiya",
   publisher: "Vaiiya",
   category: "health",
-  alternates: {
-    canonical: "https://vaiiya.fr",
-  },
+  // Pas de `alternates.canonical` ici, et ce n'est pas un oubli. Le layout
+  // racine est partagé par toutes les routes : une valeur posée ici est héritée
+  // par toute page qui ne la redéfinit pas. Elle valait « https://vaiiya.fr »,
+  // donc /premium, /conditions, /mentions-legales, /confidentialite et jusqu'à
+  // la page 404 se déclaraient doublons de l'accueil, ce qui revient à demander
+  // aux moteurs de ne pas les indexer. Chaque page publique porte désormais son
+  // propre canonical ; une page sans canonical est simplement canonique
+  // d'elle-même, ce qui est le comportement correct par défaut.
   robots: {
     index: true,
     follow: true,
