@@ -80,17 +80,32 @@ export default function LandingHero() {
       {/* ── Contenu du hero ── */}
       <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-6 text-center pb-16">
 
-        {/* Sur-titre : le concret, tout de suite */}
-        <motion.p
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}
-          className="text-[11px] md:text-xs font-semibold uppercase mb-7 md:mb-9"
-          style={{ letterSpacing: "0.26em", color: "var(--text-3)" }}
-        >
-          Entraînement · Nutrition · Coach IA
-        </motion.p>
+        {/*
+          Titre de la page.
 
-        {/* Titre : la promesse */}
+          Le sur-titre « Entraînement · Nutrition · Coach IA » et le slogan sont
+          deux morceaux du même titre : le premier dit ce qu'est Vaiiya, le
+          second pourquoi on y revient. Ils étaient dans deux éléments séparés,
+          et seul le slogan portait le rôle de titre. Une phrase magnifique mais
+          muette sur le produit était donc la seule chose qu'un moteur lisait en
+          h1.
+
+          Ils sont réunis ici sans qu'un mot change ni qu'un pixel bouge : le
+          sur-titre garde sa typo, son espacement et son animation, il devient
+          simplement la première ligne du h1. Rien n'a été écrit pour les
+          robots, on a seulement corrigé quel élément porte le titre.
+        */}
         <h1 className="mb-7 md:mb-8">
+          {/* Sur-titre : le concret, tout de suite */}
+          <motion.span
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}
+            className="block text-[11px] md:text-xs font-semibold uppercase mb-7 md:mb-9"
+            style={{ letterSpacing: "0.26em", color: "var(--text-3)" }}
+          >
+            Entraînement · Nutrition · Coach IA
+          </motion.span>
+
+          {/* La promesse */}
           <span className="block overflow-hidden">
             <motion.span
               initial={{ y: "108%", opacity: 0 }} animate={{ y: 0, opacity: 1 }}
@@ -119,7 +134,10 @@ export default function LandingHero() {
           className="text-[15px] md:text-lg font-light max-w-lg leading-relaxed mb-9 md:mb-10"
           style={{ color: "var(--text-2)" }}
         >
-          Vaiiya relie tes séances, tes repas et ton coach en un seul parcours,
+          {/* « coach IA » plutôt que « coach » : c'est le seul mot ajouté au
+              haut de la page, et il dit vrai. Le reste de la phrase ne bouge
+              pas, la première section porte déjà « une seule app ». */}
+          Vaiiya relie tes séances, tes repas et ton coach IA en un seul parcours,
           pour que revenir demain reste simple.
         </motion.p>
 
