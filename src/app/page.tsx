@@ -1227,42 +1227,42 @@ function LoadingSpinner() {
   );
 }
 
-/* ─── Bloc SEO ───
-   Rendu de façon INCONDITIONNELLE (hors du verrou `isLoading`), donc présent
-   dans le HTML servi côté serveur — Google le lit sans avoir à exécuter le JS.
-   Masqué visuellement (sr-only) : aucun impact sur le design. Lui donne un vrai
-   <h1> + un descriptif éditorial au lieu des chiffres décoratifs de l'aperçu. */
-function SeoIntro() {
-  return (
-    <section className="sr-only">
-      <h1>Vaiiya — Coach IA, musculation, nutrition et communauté</h1>
-      <p>
-        Vaiiya réunit tout ton coaching sportif au même endroit : un coach IA qui
-        crée tes séances de musculation personnalisées, un suivi nutrition à partir
-        d&apos;une simple photo, l&apos;analyse de ta progression et une communauté pour
-        rester motivé. Prise de masse, perte de poids ou remise en forme : Vaiiya
-        t&apos;accompagne au quotidien et te fait progresser plus vite.
-      </p>
-      <p>
-        Crée et partage tes programmes d&apos;entraînement, suis tes performances et
-        garde le cap grâce à ton score quotidien. Coach IA vocal, nutrition
-        intelligente et suivi de progression — inscription gratuite, sur le web,
-        iOS et Android.
-      </p>
-    </section>
-  );
-}
+/* ─── Page principale ───
+   Le serveur ignore qui demande la page : il rend donc la landing publique,
+   celle que voit un visiteur anonyme. C'est ce qui met la présentation réelle
+   de Vaiiya dans le HTML initial, sans qu'il faille exécuter le JavaScript.
 
-/* ─── Page principale ─── */
+   Avant, cet emplacement servait un spinner pendant la résolution de session,
+   et un paragraphe caché tenait lieu de contenu pour les robots. Le paragraphe
+   a disparu : le contenu montré aux moteurs est désormais celui montré aux
+   visiteurs, sans version parallèle à tenir à jour.
+
+   Celui qui est déjà connecté ne voit pas la landing passer pour autant : la
+   classe `a-session`, posée avant le premier paint par le script du <head>,
+   masque la landing et révèle l'attente (voir globals.css). La bascule est en
+   CSS et non en React, pour que le rendu reste identique serveur et client. */
 export default function HomePage() {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
   // Le popup animé "Bonsoir" est retiré au profit de l'intro logo (SplashIntro).
   void justLoggedIn; void isNewUser; void clearWelcome;
+
+  // Le script du <head> voit un jeton, pas une session valide : un jeton périmé
+  // ou révoqué ailleurs pose quand même `a-session`. Sans ce filet, la landing
+  // resterait masquée par la CSS et l'écran serait vide. Dès que la session est
+  // résolue sans compte, on lève la classe et la landing réapparaît.
+  useEffect(() => {
+    if (!isLoading && !user) document.documentElement.classList.remove("a-session");
+  }, [isLoading, user]);
+
+  // Session résolue, compte connecté : l'app prend toute la place.
+  if (!isLoading && user) return <Dashboard />;
+
+  // La landing garde sa position dans l'arbre quand `isLoading` retombe : elle
+  // n'est pas remontée, donc les animations du hero ne rejouent pas.
   return (
     <>
-      {/* Toujours rendu, même pendant le chargement → présent dans le HTML SSR (SEO). */}
-      <SeoIntro />
-      {isLoading ? <LoadingSpinner /> : user ? <Dashboard /> : <LandingPage />}
+      <div className="accueil-landing"><LandingPage /></div>
+      {isLoading && <div className="accueil-attente"><LoadingSpinner /></div>}
     </>
   );
 }

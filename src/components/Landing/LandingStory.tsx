@@ -720,6 +720,7 @@ function SectionRelais() {
             {[
               "Une équipe de deux, un simple lien d'invitation",
               "Un maillon par jour, jamais deux fois de suite la même personne",
+              "Tout se passe dans votre messagerie privée, jamais sur un fil public",
               "L'affiche gagnée devient votre trophée",
             ].map((b) => (
               <li key={b} className="flex items-start gap-2.5">

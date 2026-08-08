@@ -132,6 +132,15 @@ export default function RootLayout({
             s'allègent en conséquence. Seuils auto à garder synchro avec perfMode.ts. */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var q;try{q=localStorage.getItem('vaiiya-quality');}catch(e){}var lite;if(q==='high'){lite=false;}else if(q==='lite'){lite=true;}else{var n=navigator,m=n.deviceMemory,c=n.hardwareConcurrency,r=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;lite=!!(r||(typeof m==='number'&&m<=4)||(typeof c==='number'&&c<=4));}if(lite){document.documentElement.classList.add('perf-lite');}}catch(e){}})();` }} />
 
+        {/* Session déjà ouverte ? On le sait AVANT le premier paint. L'accueil
+            est servi avec la landing publique dans le HTML (c'est ce qui la rend
+            lisible sans JavaScript) ; celui qui est déjà connecté ne doit pas la
+            voir passer pour autant. `@supabase/ssr` range le jeton dans un cookie
+            `sb-<projet>-auth-token`, avec repli sur le localStorage. La bascule
+            se fait en CSS (voir `.accueil-attente` dans globals.css), donc le
+            rendu React reste identique serveur et client. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=/(^|;\\s*)sb-[^=]*-auth-token/.test(document.cookie);if(!s){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0){s=true;break;}}}catch(e){}}if(s){document.documentElement.classList.add('a-session');}}catch(e){}})();` }} />
+
         {/* Données structurées JSON-LD — aide Google à comprendre Vaiiya */}
         <script
           type="application/ld+json"
