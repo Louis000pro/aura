@@ -175,14 +175,30 @@ export default function RootLayout({
                     contactType: "customer support",
                     availableLanguage: ["fr"],
                   },
-                  // Pas de `sameAs`, pas de `foundingDate`, pas de `legalName` :
-                  // aucune de ces valeurs n'est vérifiable depuis le dépôt, et
-                  // une entité mal reliée vaut mieux qu'une entité mal décrite.
-                  // `sameAs` reste le levier le plus rentable pour qu'un moteur
-                  // relie ce domaine aux comptes TikTok, Instagram et YouTube :
-                  // à remplir dès que les URL exactes sont connues.
-                  // Les mentions légales déclarent un éditeur particulier non
-                  // professionnel : ne pas transformer Vaiiya en société ici.
+                  // Les comptes officiels, donnés par Louis le 2026-08-08.
+                  //
+                  // `sameAs` est ce qui permet à un moteur de comprendre que ce
+                  // domaine et ces profils sont la MÊME entité, au lieu de
+                  // quatre présences sans lien. Il est posé ici, sur
+                  // l'Organization, et nulle part ailleurs : c'est l'éditeur qui
+                  // tient des comptes, pas le site ni l'application.
+                  //
+                  // ⚠️ URL propres uniquement. Un lien copié depuis l'application
+                  // Instagram ou TikTok traîne des paramètres de partage
+                  // (`igsh`, `_t`, `_r`, `si`…) qui identifient la personne qui a
+                  // partagé : ils ne désignent plus le profil de façon stable, et
+                  // ils n'ont rien à faire dans une donnée structurée publique.
+                  //
+                  // Discord n'y est pas : il n'existe pas encore publiquement.
+                  // Pas de `foundingDate` ni de `legalName` non plus, rien ne les
+                  // atteste. Les mentions légales déclarent un éditeur
+                  // particulier non professionnel : ne pas transformer Vaiiya en
+                  // société ici.
+                  sameAs: [
+                    "https://www.instagram.com/vaiiyapro/",
+                    "https://www.tiktok.com/@vaiiyapro",
+                    "https://www.youtube.com/@vaiiyapro",
+                  ],
                 },
                 {
                   "@type": "WebSite",

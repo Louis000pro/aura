@@ -21,6 +21,15 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
+        // ⚠️ Un Disallow et un `noindex` sur la même URL s'annulent : le robot
+        // n'a pas le droit de visiter la page, donc il n'y lit jamais l'ordre
+        // de la retirer, et une URL déjà connue peut rester listée sans titre
+        // ni description. Une page à désindexer doit rester VISITABLE et porter
+        // sa balise (voir `lib/noindexEcranApp.ts`) ; le Disallow ne sert qu'à
+        // ce qu'on ne veut simplement pas voir visité.
+        //
+        // C'est pourquoi /recherche n'est plus ici : il porte désormais un
+        // vrai `noindex`, qui ne vaut que si le crawler peut le lire.
         disallow: [
           "/api/",
           "/auth",
@@ -28,7 +37,6 @@ export default function robots(): MetadataRoute.Robots {
           "/notifications",
           "/parametres",
           "/admin",
-          "/recherche",
         ],
       },
     ],

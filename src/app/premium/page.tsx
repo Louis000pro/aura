@@ -8,6 +8,7 @@ import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, VENTE_OUVERTE, formatPrice, type PlanId } from "@/lib/plans";
 import PremiumCelebration from "@/components/PremiumCelebration";
+import InfosPremium from "./InfosPremium";
 import styles from "./page.module.css";
 
 const ICONS: Record<PlanId, React.ReactNode> = {
@@ -15,18 +16,32 @@ const ICONS: Record<PlanId, React.ReactNode> = {
   premium: <Crown size={20} strokeWidth={1.8} />,
 };
 
+/**
+ * Lecteur des paramètres d'URL, isolé exprès dans son propre composant.
+ *
+ * `useSearchParams` force Next à rendre côté CLIENT tout ce qui se trouve dans
+ * sa frontière `<Suspense>`. Toute la page était dans cette frontière : le
+ * serveur ne renvoyait donc que le `fallback` (null), et /premium servait
+ * 61 caractères de texte à un robot, sans titre ni prix. Le retour de paiement
+ * est la seule chose qui a besoin de l'URL : il est seul à basculer côté
+ * client, le reste de la page est rendu par le serveur.
+ */
+function LecteurParams({ onParams }: { onParams: (p: URLSearchParams) => void }) {
+  const search = useSearchParams();
+  useEffect(() => {
+    onParams(new URLSearchParams(search?.toString() ?? ""));
+  }, [search, onParams]);
+  return null;
+}
+
 export default function PremiumPage() {
-  return (
-    <Suspense fallback={null}>
-      <PremiumInner />
-    </Suspense>
-  );
+  return <PremiumInner />;
 }
 
 function PremiumInner() {
   const { user, session, refreshProfile } = useAuth();
   const router = useRouter();
-  const params = useSearchParams();
+  const [params, setParams] = useState<URLSearchParams | null>(null);
   const [loading, setLoading] = useState<PlanId | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -190,19 +205,38 @@ function PremiumInner() {
         animate={isMobile ? undefined : { scale: [1, 1.1, 1] }}
         transition={isMobile ? undefined : { duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }} />
 
+      <Suspense fallback={null}>
+        <LecteurParams onParams={setParams} />
+      </Suspense>
+
       <div className="relative z-10 max-w-5xl mx-auto w-full flex flex-col">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="text-center mb-4 md:mb-8 flex-shrink-0">
-          <span className={`${styles.eyebrow} inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
-            VAIIYA PREMIUM ✦
-          </span>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "var(--text-0)" }}>
-            Passe au <span className={styles.titleAccent}>niveau supérieur</span>
+          {/* La pastille de marque est DANS le h1 : le titre de la page se lit
+              alors « Vaiiya Premium · Passe au niveau supérieur », donc il nomme
+              l'offre au lieu de la sous-entendre. Rien ne bouge à l'écran. */}
+          <h1 style={{ color: "var(--text-0)" }}>
+            <span className={`${styles.eyebrow} inline-block text-xs font-bold tracking-[0.2em] mb-3 px-3 py-1 rounded-full`}>
+              VAIIYA PREMIUM ✦
+            </span>
+            <span className="block text-3xl md:text-5xl font-black tracking-tight leading-tight">
+              Passe au <span className={styles.titleAccent}>niveau supérieur</span>
+            </span>
           </h1>
           <p className="mt-3 text-sm md:text-base font-light max-w-md mx-auto" style={{ color: "var(--text-soft)" }}>
             Coach IA <strong style={{ color: "var(--accent)" }}>sans limite</strong>, programmes exclusifs, zéro pub.
-            <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+            {VENTE_OUVERTE ? (
+              <>
+                <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+              </>
+            ) : (
+              <>
+                {/* Tant que la vente est fermée, on ne promet ni essai ni
+                    « annule en 1 clic » : ce serait vendre une porte close. */}
+                <br className="hidden md:block" /> L&apos;abonnement n&apos;est <strong style={{ color: "var(--accent)" }}>pas encore ouvert</strong> à la souscription.
+              </>
+            )}
           </p>
         </motion.div>
 
@@ -377,6 +411,41 @@ function PremiumInner() {
             <Link href="/conditions" className="underline" style={{ color: "var(--text-2)" }}>Conditions</Link>
           </p>
         )}
+
+        {/* Le contenu écrit : ce qui est gratuit, ce que Premium ajoute, le prix. */}
+        <InfosPremium />
+
+        {/*
+          Données structurées de la page.
+
+          On rattache /premium à l'entité déjà décrite dans le layout racine
+          (`#application`, `#website`) au lieu de redéclarer une application ou
+          une organisation, ce qui créerait deux entités concurrentes pour la
+          même chose.
+
+          Aucun nœud `Offer` ni `Product` n'est déclaré ici tant que la vente est
+          fermée : annoncer une offre en données structurées, c'est la déclarer
+          souscriptible. Le layout racine porte déjà l'offre gratuite et dit
+          explicitement que l'abonnement n'est pas ouvert.
+        */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "@id": "https://vaiiya.fr/premium#page",
+              url: "https://vaiiya.fr/premium",
+              name: `Vaiiya ${PLANS.premium.name}`,
+              inLanguage: "fr-FR",
+              description: VENTE_OUVERTE
+                ? `Ce que contient Vaiiya ${PLANS.premium.name} à ${formatPrice(PLANS.premium.priceCents)} par mois, et ce que le compte gratuit donne déjà.`
+                : `Ce que contient Vaiiya ${PLANS.premium.name} et ce que le compte gratuit donne déjà. L'abonnement n'est pas encore ouvert à la souscription.`,
+              isPartOf: { "@id": "https://vaiiya.fr/#website" },
+              about: { "@id": "https://vaiiya.fr/#application" },
+            }),
+          }}
+        />
       </div>
 
       {/* ── Célébration au retour de paiement ── */}
