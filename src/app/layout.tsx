@@ -18,6 +18,7 @@ import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
     default: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Coach IA, musculation, nutrition et communauté, tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
+  description: "Vaiiya réunit tes séances guidées, ta nutrition et ton coach IA dans une seule application web. Un catalogue de séances montrées mouvement par mouvement, la nutrition comprise d'une photo, et un rang qui monte à chaque effort.",
   applicationName: "Vaiiya",
   keywords: [
     "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
@@ -80,7 +81,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Vaiiya",
     title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Rejoins Vaiiya : ton coach fitness & nutrition piloté par l'IA. Partage tes performances, suis ta progression, et progresse avec ta communauté.",
+    description: "Séances guidées mouvement par mouvement, nutrition comprise d'une photo, coach IA qui agit. Une seule application pour t'entraîner, manger mieux et tenir dans le temps.",
     locale: "fr_FR",
     images: [
       {
@@ -94,7 +95,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Ton coach fitness & nutrition piloté par l'IA. Rejoins la communauté Vaiiya.",
+    description: "Séances guidées, nutrition comprise d'une photo et coach IA. Une seule application pour t'entraîner et tenir dans le temps.",
     images: ["/og-image.png"],
   },
 };
@@ -165,7 +166,7 @@ export default function RootLayout({
                     height: 512,
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
-                  description: "Coach IA, musculation et nutrition : accompagnement de santé premium piloté par l'IA.",
+                  description: "Vaiiya édite une application web française d'entraînement et de nutrition, guidée par un assistant IA.",
                 },
                 {
                   "@type": "WebSite",
@@ -180,15 +181,39 @@ export default function RootLayout({
                   name: "Vaiiya",
                   url: "https://vaiiya.fr",
                   applicationCategory: "HealthApplication",
-                  operatingSystem: "Web, iOS, Android",
+                  // « Web » seulement : les applications iOS et Android sont
+                  // prévues mais n'existent pas. L'annoncer ici serait un fait
+                  // faux porté par une donnée structurée, donc repris tel quel
+                  // par les moteurs et par les assistants IA.
+                  operatingSystem: "Web",
                   inLanguage: "fr-FR",
-                  description: "Coach IA fitness & nutrition : programmes personnalisés, suivi de progression et communauté.",
-                  offers: {
-                    "@type": "Offer",
-                    price: "0",
-                    priceCurrency: "EUR",
-                    description: "Inscription gratuite, abonnement Premium disponible.",
-                  },
+                  description: "Séances guidées montrées mouvement par mouvement, nutrition estimée à partir d'une photo, coach IA qui agit sur le planning et les repas, et une progression par rangs sans classement entre utilisateurs.",
+                  // Le prix n'est jamais écrit à la main : il vient de plans.ts,
+                  // comme la page /conditions. Tant que `VENTE_OUVERTE` est faux
+                  // (verrou juridique), rien n'est vendable, donc la seule offre
+                  // honnête est le compte gratuit. Le jour où la vente s'ouvre,
+                  // l'abonnement apparaît ici tout seul, au bon prix.
+                  offers: VENTE_OUVERTE
+                    ? [
+                        {
+                          "@type": "Offer",
+                          price: "0",
+                          priceCurrency: "EUR",
+                          description: "Compte gratuit, sans carte bancaire.",
+                        },
+                        {
+                          "@type": "Offer",
+                          price: (PLANS.premium.priceCents / 100).toFixed(2),
+                          priceCurrency: "EUR",
+                          description: "Vaiiya Premium, par mois, résiliable à tout moment.",
+                        },
+                      ]
+                    : {
+                        "@type": "Offer",
+                        price: "0",
+                        priceCurrency: "EUR",
+                        description: "Compte gratuit, sans carte bancaire. L'abonnement Premium n'est pas encore ouvert à la souscription.",
+                      },
                 },
               ],
             }),
