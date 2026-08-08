@@ -167,6 +167,22 @@ export default function RootLayout({
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
                   description: "Vaiiya édite une application web française d'entraînement et de nutrition, guidée par un assistant IA.",
+                  // Seul contact confirmé, celui des mentions légales.
+                  email: "bonjour@vaiiya.fr",
+                  contactPoint: {
+                    "@type": "ContactPoint",
+                    email: "bonjour@vaiiya.fr",
+                    contactType: "customer support",
+                    availableLanguage: ["fr"],
+                  },
+                  // Pas de `sameAs`, pas de `foundingDate`, pas de `legalName` :
+                  // aucune de ces valeurs n'est vérifiable depuis le dépôt, et
+                  // une entité mal reliée vaut mieux qu'une entité mal décrite.
+                  // `sameAs` reste le levier le plus rentable pour qu'un moteur
+                  // relie ce domaine aux comptes TikTok, Instagram et YouTube :
+                  // à remplir dès que les URL exactes sont connues.
+                  // Les mentions légales déclarent un éditeur particulier non
+                  // professionnel : ne pas transformer Vaiiya en société ici.
                 },
                 {
                   "@type": "WebSite",
@@ -175,11 +191,18 @@ export default function RootLayout({
                   name: "Vaiiya",
                   inLanguage: "fr-FR",
                   publisher: { "@id": "https://vaiiya.fr/#organization" },
+                  about: { "@id": "https://vaiiya.fr/#application" },
                 },
                 {
                   "@type": "WebApplication",
+                  // Un identifiant stable, et l'application rattachée à son
+                  // éditeur : sans ces liens, le graphe décrit trois choses
+                  // séparées au lieu d'une seule entité « Vaiiya ».
+                  "@id": "https://vaiiya.fr/#application",
                   name: "Vaiiya",
                   url: "https://vaiiya.fr",
+                  publisher: { "@id": "https://vaiiya.fr/#organization" },
+                  provider: { "@id": "https://vaiiya.fr/#organization" },
                   applicationCategory: "HealthApplication",
                   // « Web » seulement : les applications iOS et Android sont
                   // prévues mais n'existent pas. L'annoncer ici serait un fait
