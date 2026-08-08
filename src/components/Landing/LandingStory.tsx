@@ -26,6 +26,7 @@ import {
   Camera, Sparkles, ArrowRight, Check, Play, ChevronDown, X, ShieldCheck,
 } from "lucide-react";
 import { AssistantAvatar, AssistantSpark } from "@/components/AssistantMark";
+import { SEO_PAGES, LEGAL_PAGES } from "@/lib/seoPages";
 
 /* Couleur d'action du système D : violet vers magenta. Le CTA principal est
    TOUJOURS violet (jamais violet vers or). Constante de marque, stable clair/sombre. */
@@ -107,6 +108,28 @@ function CtaPrimary({ label, href = "/auth?mode=signup", big = false }: { label:
         <ArrowRight size={big ? 17 : 15} strokeWidth={2.4} className="relative z-10" />
       </motion.div>
     </Link>
+  );
+}
+
+/* ── Pied de page : une entrée, puis une colonne ── */
+function FooterLien({ href, label }: { href: string; label: string }) {
+  return (
+    <li>
+      <Link href={href} className="text-[13px] font-light hover:opacity-70" style={{ color: "var(--text-2)" }}>
+        {label}
+      </Link>
+    </li>
+  );
+}
+
+function FooterCol({ titre, liens }: { titre: string; liens: { href: string; label: string }[] }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: "var(--text-3)" }}>{titre}</p>
+      <ul className="space-y-2">
+        {liens.map((l) => <FooterLien key={l.href} href={l.href} label={l.label} />)}
+      </ul>
+    </div>
   );
 }
 
@@ -817,17 +840,42 @@ function SectionFinale() {
         </Reveal>
       </section>
 
-      {/* Pied de page */}
-      <footer className="relative px-6 py-10 border-t" style={{ borderColor: "rgba(var(--accent-rgb),0.12)" }}>
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-lg font-extralight tracking-[0.12em]" style={{ color: "var(--text-1)" }}>Vaiiya</span>
-          <p className="text-[12px] font-light" style={{ color: "var(--text-3)" }}>Entraînement · Nutrition · Coach IA</p>
-          <div className="flex items-center gap-5 text-[12px] font-light" style={{ color: "var(--text-3)" }}>
-            <Link href="/auth?mode=login"><span className="cursor-pointer hover:opacity-70">Se connecter</span></Link>
-            <Link href="/premium"><span className="cursor-pointer hover:opacity-70">Premium</span></Link>
-            <Link href="/confidentialite"><span className="cursor-pointer hover:opacity-70">Confidentialité</span></Link>
-            <span style={{ color: "var(--text-3)" }}>© 2026</span>
+      {/* Pied de page ─────────────────────────────────────────────────────
+          Il ne portait qu'une ligne de trois liens. Il porte maintenant les
+          pages vitrine (« Comprendre »), qui n'étaient liées depuis nulle part
+          ailleurs sur le site : elles ne se pointaient qu'entre elles, donc
+          elles ne recevaient aucun poids interne et un visiteur arrivant sur
+          l'accueil n'avait aucun chemin vers elles. Ce sont de vraies pages de
+          fond, à leur place dans un pied de page, pas une liste de mots-clés.
+          La liste vient de `lib/seoPages.ts`, source unique. */}
+      <footer className="relative px-6 pt-12 pb-10 border-t" style={{ borderColor: "rgba(var(--accent-rgb),0.12)" }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="grid gap-9 sm:grid-cols-3">
+            {/* Marque */}
+            <div>
+              <span className="text-lg font-extralight tracking-[0.12em]" style={{ color: "var(--text-1)" }}>Vaiiya</span>
+              <p className="mt-2 text-[12.5px] font-light leading-relaxed max-w-[24ch]" style={{ color: "var(--text-3)" }}>
+                Tes séances, tes repas et ton coach au même endroit. Application web, en français.
+              </p>
+            </div>
+
+            {/* Pages de fond */}
+            <FooterCol titre="Comprendre" liens={SEO_PAGES} />
+
+            {/* Le compte, puis le légal */}
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3" style={{ color: "var(--text-3)" }}>Vaiiya</p>
+              <ul className="space-y-2">
+                <FooterLien href="/auth?mode=login" label="Se connecter" />
+                <FooterLien href="/premium" label="Premium" />
+                {LEGAL_PAGES.map((p) => <FooterLien key={p.href} href={p.href} label={p.label} />)}
+              </ul>
+            </div>
           </div>
+
+          <p className="mt-10 pt-6 text-[12px] font-light border-t" style={{ color: "var(--text-3)", borderColor: "rgba(var(--accent-rgb),0.10)" }}>
+            © {new Date().getFullYear()} Vaiiya · Entraînement · Nutrition · Coach IA
+          </p>
         </div>
       </footer>
     </>
