@@ -18,6 +18,7 @@ import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
     default: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
     template: "%s · Vaiiya",
   },
-  description: "Coach IA, musculation, nutrition et communauté, tout au même endroit. Crée tes séances, suis ta progression et progresse plus vite avec Vaiiya.",
+  description: "Vaiiya réunit tes séances guidées, ta nutrition et ton coach IA dans une seule application web. Un catalogue de séances montrées mouvement par mouvement, la nutrition comprise d'une photo, et un rang qui monte à chaque effort.",
   applicationName: "Vaiiya",
   keywords: [
     "coach IA", "coach sportif IA", "musculation", "nutrition", "fitness",
@@ -43,9 +44,14 @@ export const metadata: Metadata = {
   creator: "Vaiiya",
   publisher: "Vaiiya",
   category: "health",
-  alternates: {
-    canonical: "https://vaiiya.fr",
-  },
+  // Pas de `alternates.canonical` ici, et ce n'est pas un oubli. Le layout
+  // racine est partagé par toutes les routes : une valeur posée ici est héritée
+  // par toute page qui ne la redéfinit pas. Elle valait « https://vaiiya.fr »,
+  // donc /premium, /conditions, /mentions-legales, /confidentialite et jusqu'à
+  // la page 404 se déclaraient doublons de l'accueil, ce qui revient à demander
+  // aux moteurs de ne pas les indexer. Chaque page publique porte désormais son
+  // propre canonical ; une page sans canonical est simplement canonique
+  // d'elle-même, ce qui est le comportement correct par défaut.
   robots: {
     index: true,
     follow: true,
@@ -75,7 +81,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Vaiiya",
     title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Rejoins Vaiiya : ton coach fitness & nutrition piloté par l'IA. Partage tes performances, suis ta progression, et progresse avec ta communauté.",
+    description: "Séances guidées mouvement par mouvement, nutrition comprise d'une photo, coach IA qui agit. Une seule application pour t'entraîner, manger mieux et tenir dans le temps.",
     locale: "fr_FR",
     images: [
       {
@@ -89,7 +95,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Vaiiya ✦ · Coach IA · Musculation · Nutrition",
-    description: "Ton coach fitness & nutrition piloté par l'IA. Rejoins la communauté Vaiiya.",
+    description: "Séances guidées, nutrition comprise d'une photo et coach IA. Une seule application pour t'entraîner et tenir dans le temps.",
     images: ["/og-image.png"],
   },
 };
@@ -132,6 +138,15 @@ export default function RootLayout({
             s'allègent en conséquence. Seuils auto à garder synchro avec perfMode.ts. */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var q;try{q=localStorage.getItem('vaiiya-quality');}catch(e){}var lite;if(q==='high'){lite=false;}else if(q==='lite'){lite=true;}else{var n=navigator,m=n.deviceMemory,c=n.hardwareConcurrency,r=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;lite=!!(r||(typeof m==='number'&&m<=4)||(typeof c==='number'&&c<=4));}if(lite){document.documentElement.classList.add('perf-lite');}}catch(e){}})();` }} />
 
+        {/* Session déjà ouverte ? On le sait AVANT le premier paint. L'accueil
+            est servi avec la landing publique dans le HTML (c'est ce qui la rend
+            lisible sans JavaScript) ; celui qui est déjà connecté ne doit pas la
+            voir passer pour autant. `@supabase/ssr` range le jeton dans un cookie
+            `sb-<projet>-auth-token`, avec repli sur le localStorage. La bascule
+            se fait en CSS (voir `.accueil-attente` dans globals.css), donc le
+            rendu React reste identique serveur et client. */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var s=/(^|;\\s*)sb-[^=]*-auth-token/.test(document.cookie);if(!s){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('sb-')===0&&k.indexOf('-auth-token')>0){s=true;break;}}}catch(e){}}if(s){document.documentElement.classList.add('a-session');}}catch(e){}})();` }} />
+
         {/* Données structurées JSON-LD — aide Google à comprendre Vaiiya */}
         <script
           type="application/ld+json"
@@ -151,7 +166,23 @@ export default function RootLayout({
                     height: 512,
                   },
                   image: "https://vaiiya.fr/icons/icon-512.png",
-                  description: "Coach IA, musculation et nutrition : accompagnement de santé premium piloté par l'IA.",
+                  description: "Vaiiya édite une application web française d'entraînement et de nutrition, guidée par un assistant IA.",
+                  // Seul contact confirmé, celui des mentions légales.
+                  email: "bonjour@vaiiya.fr",
+                  contactPoint: {
+                    "@type": "ContactPoint",
+                    email: "bonjour@vaiiya.fr",
+                    contactType: "customer support",
+                    availableLanguage: ["fr"],
+                  },
+                  // Pas de `sameAs`, pas de `foundingDate`, pas de `legalName` :
+                  // aucune de ces valeurs n'est vérifiable depuis le dépôt, et
+                  // une entité mal reliée vaut mieux qu'une entité mal décrite.
+                  // `sameAs` reste le levier le plus rentable pour qu'un moteur
+                  // relie ce domaine aux comptes TikTok, Instagram et YouTube :
+                  // à remplir dès que les URL exactes sont connues.
+                  // Les mentions légales déclarent un éditeur particulier non
+                  // professionnel : ne pas transformer Vaiiya en société ici.
                 },
                 {
                   "@type": "WebSite",
@@ -160,21 +191,52 @@ export default function RootLayout({
                   name: "Vaiiya",
                   inLanguage: "fr-FR",
                   publisher: { "@id": "https://vaiiya.fr/#organization" },
+                  about: { "@id": "https://vaiiya.fr/#application" },
                 },
                 {
                   "@type": "WebApplication",
+                  // Un identifiant stable, et l'application rattachée à son
+                  // éditeur : sans ces liens, le graphe décrit trois choses
+                  // séparées au lieu d'une seule entité « Vaiiya ».
+                  "@id": "https://vaiiya.fr/#application",
                   name: "Vaiiya",
                   url: "https://vaiiya.fr",
+                  publisher: { "@id": "https://vaiiya.fr/#organization" },
+                  provider: { "@id": "https://vaiiya.fr/#organization" },
                   applicationCategory: "HealthApplication",
-                  operatingSystem: "Web, iOS, Android",
+                  // « Web » seulement : les applications iOS et Android sont
+                  // prévues mais n'existent pas. L'annoncer ici serait un fait
+                  // faux porté par une donnée structurée, donc repris tel quel
+                  // par les moteurs et par les assistants IA.
+                  operatingSystem: "Web",
                   inLanguage: "fr-FR",
-                  description: "Coach IA fitness & nutrition : programmes personnalisés, suivi de progression et communauté.",
-                  offers: {
-                    "@type": "Offer",
-                    price: "0",
-                    priceCurrency: "EUR",
-                    description: "Inscription gratuite, abonnement Premium disponible.",
-                  },
+                  description: "Séances guidées montrées mouvement par mouvement, nutrition estimée à partir d'une photo, coach IA qui agit sur le planning et les repas, et une progression par rangs sans classement entre utilisateurs.",
+                  // Le prix n'est jamais écrit à la main : il vient de plans.ts,
+                  // comme la page /conditions. Tant que `VENTE_OUVERTE` est faux
+                  // (verrou juridique), rien n'est vendable, donc la seule offre
+                  // honnête est le compte gratuit. Le jour où la vente s'ouvre,
+                  // l'abonnement apparaît ici tout seul, au bon prix.
+                  offers: VENTE_OUVERTE
+                    ? [
+                        {
+                          "@type": "Offer",
+                          price: "0",
+                          priceCurrency: "EUR",
+                          description: "Compte gratuit, sans carte bancaire.",
+                        },
+                        {
+                          "@type": "Offer",
+                          price: (PLANS.premium.priceCents / 100).toFixed(2),
+                          priceCurrency: "EUR",
+                          description: "Vaiiya Premium, par mois, résiliable à tout moment.",
+                        },
+                      ]
+                    : {
+                        "@type": "Offer",
+                        price: "0",
+                        priceCurrency: "EUR",
+                        description: "Compte gratuit, sans carte bancaire. L'abonnement Premium n'est pas encore ouvert à la souscription.",
+                      },
                 },
               ],
             }),

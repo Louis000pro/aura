@@ -1,18 +1,16 @@
 import Link from "next/link";
+import { SEO_PAGES } from "@/lib/seoPages";
 
 /**
  * Shell vitrine SSR (Server Component) pour les pages SEO publiques.
  * Tout le texte est rendu côté serveur → crawlable par Google.
  * Pas de "use client" : ces pages doivent rester 100% statiques pour le référencement.
+ *
+ * La liste des pages vit dans `lib/seoPages.ts` : le pied de page de la landing
+ * la lit aussi, pour que ces pages cessent d'être une île qui ne se lie qu'à
+ * elle-même.
  */
-
-export const SEO_PAGES: { href: string; label: string }[] = [
-  { href: "/coach-ia",           label: "Coach sportif IA" },
-  { href: "/prise-de-masse",     label: "Prise de masse" },
-  { href: "/perte-de-poids",     label: "Perte de poids" },
-  { href: "/musculation-maison", label: "Musculation à la maison" },
-  { href: "/nutrition-sportive", label: "Nutrition sportive" },
-];
+export { SEO_PAGES };
 
 export default function MarketingShell({ children }: { children: React.ReactNode }) {
   return (

@@ -371,6 +371,23 @@ html.perf-lite .lg-strong {
 }
 html.perf-lite .lg-blob { filter: blur(34px); opacity: 0.5; }
 
+/* ──────────── ACCUEIL — ce que reçoit le HTML servi par le serveur ────────────
+   Le serveur ne peut pas savoir qui demande la page : il rend donc TOUJOURS la
+   landing publique. C'est ce qui la met dans le HTML initial, lisible sans
+   exécuter une ligne de JavaScript (robots, moteurs IA, connexion lente).
+
+   Reste le cas de celui qui est déjà connecté : sans rien, il verrait la landing
+   pendant le temps de résolution de sa session. Le script inline du <head> pose
+   `a-session` sur <html> AVANT le premier paint quand un jeton Supabase existe,
+   et l'échange se fait ici, en CSS. Le rendu React est identique des deux côtés,
+   donc aucune divergence d'hydratation.
+
+   Ce n'est pas du cloaking : un robot est un visiteur anonyme, et il reçoit
+   exactement ce que reçoit un visiteur anonyme. */
+.accueil-attente { display: none; }
+html.a-session .accueil-attente { display: block; }
+html.a-session .accueil-landing { display: none; }
+
 /* ─────────────────────── SKELETON SHIMMER ─────────────────────── */
 @layer utilities {
   .skeleton {
