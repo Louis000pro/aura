@@ -23,45 +23,41 @@ import type { MetadataRoute } from "next";
  *    toute seule. Le champ est facultatif, et les moteurs revisitent de
  *    toute façon.
  *
- * `changeFrequency` est absent pour la même raison : Google l'ignore, et
- * annoncer « monthly » sur une page qui n'a pas bougé depuis des mois était une
- * affirmation de plus qu'on ne pouvait pas tenir.
- *
- * `priority`, lui, reste : ce n'est pas une observation qui peut devenir fausse
- * mais une intention de notre part, celle de dire quelles pages comptent le
- * plus dans le site.
+ * `changeFrequency` et `priority` sont absents pour une raison voisine : Google
+ * ignore les deux. Le premier annonçait « monthly » sur des pages qui n'avaient
+ * pas bougé depuis des mois, le second classait nos pages entre elles alors
+ * qu'aucun moteur ne lit ce classement. Ce fichier ne garde donc que ce qu'il
+ * sait dire sans se tromper : la liste des URL publiques que nous voulons faire
+ * découvrir.
  *
  * Ajouter une page ici = elle doit être publique, servir du contenu à un robot,
  * et ne porter aucun `noindex`.
  */
 
-const PAGES: { path: string; priority: number }[] = [
+const PAGES: string[] = [
   // L'accueil : la landing publique.
-  { path: "/", priority: 1.0 },
+  "/",
 
   // Les cinq pages vitrine (`lib/seoPages.ts`).
-  { path: "/coach-ia", priority: 0.9 },
-  { path: "/prise-de-masse", priority: 0.9 },
-  { path: "/perte-de-poids", priority: 0.9 },
-  { path: "/musculation-maison", priority: 0.8 },
-  { path: "/nutrition-sportive", priority: 0.8 },
+  "/coach-ia",
+  "/prise-de-masse",
+  "/perte-de-poids",
+  "/musculation-maison",
+  "/nutrition-sportive",
 
   // L'offre. Indexable même vente fermée : « prix Vaiiya » se cherche de toute
   // façon, mieux vaut y répondre nous-mêmes.
-  { path: "/premium", priority: 0.8 },
+  "/premium",
 
   // Le légal. Peu de trafic, mais leur présence rassure moteurs et lecteurs sur
   // l'existence réelle de l'éditeur.
-  { path: "/conditions", priority: 0.3 },
-  { path: "/mentions-legales", priority: 0.3 },
-  { path: "/confidentialite", priority: 0.3 },
+  "/conditions",
+  "/mentions-legales",
+  "/confidentialite",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://vaiiya.fr";
 
-  return PAGES.map((p) => ({
-    url: `${base}${p.path}`,
-    priority: p.priority,
-  }));
+  return PAGES.map((chemin) => ({ url: `${base}${chemin}` }));
 }
