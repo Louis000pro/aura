@@ -22,7 +22,7 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   // respiration haut et bas (`PageVitrine`), donc aucun padding global.
   // ⚠️ Volontairement dans `fullBleed` et PAS dans `noNav` : `noNav` retire
   // aussi `md:pl-[88px]`, or le rail desktop reste affiché sur ces routes.
-  const publique = estSurfacePublique(pathname);
+  const publique = estSurfacePublique(pathname, !!user);
   // Communauté + Premium gèrent leur propre plein écran → aucun padding global
   const fullBleed = noNav || isFil || publique || pathname === "/premium";
 

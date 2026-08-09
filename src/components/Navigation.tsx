@@ -117,7 +117,7 @@ export default function Navigation() {
   /* Une surface publique (les fiches d'exercices) n'affiche aucune chrome
      applicative mobile : ni la barre du bas, ni la cloche flottante. Le
      rail desktop, lui, ne bouge pas. Voir `lib/surfacesPubliques.ts`. */
-  const surfacePublique = estSurfacePublique(pathname);
+  const surfacePublique = estSurfacePublique(pathname, !!user);
 
   const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
