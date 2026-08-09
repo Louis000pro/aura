@@ -415,9 +415,69 @@ export const FICHES: FichePublique[] = [
     exercice: "Burpees",
     categorie: "cardio",
     niveau: { de: "intermediaire", a: "confirme" },
-    title: "Burpees : le mouvement complet qui monte le cardio",
+    title: "Burpees : la séquence, le rythme, les erreurs",
     description:
-      "Comment faire un burpee proprement : enchaînement, rythme tenable, version allégée et erreurs fréquentes. Animation du mouvement.",
+      "Comment faire un burpee : la séquence décomposée, le rythme qu'on peut tenir, les adaptations possibles et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Un burpee enchaîne quatre choses sans s'arrêter : on descend au sol, on envoie les pieds en arrière pour se retrouver en planche, on les ramène sous soi, on se relève. Le corps entier change de position à chaque répétition, et c'est ce qui fait monter le rythme cardiaque aussi vite avec si peu de matériel.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Descendre au sol",
+          texte:
+            "De debout, accroupis-toi et pose les mains au sol devant tes pieds, à peu près à largeur d'épaules. Les mains touchent le sol avant que les pieds ne bougent : c'est ce qui empêche de partir en avant.",
+        },
+        {
+          titre: "Passer en planche",
+          texte:
+            "Envoie les deux pieds vers l'arrière d'un seul coup. Pendant la fraction de seconde où tu es en position de planche, le corps forme une ligne : ventre et fessiers serrés, bassin ni creusé ni en l'air.",
+        },
+        {
+          titre: "Revenir sous soi",
+          texte:
+            "Ramène les deux pieds vers les mains, pieds à plat si ta mobilité le permet. C'est le temps où l'enchaînement se casse le plus souvent, parce que c'est celui qui coûte le plus quand la fatigue monte. Garde-le fluide, quitte à ralentir l'ensemble.",
+        },
+        {
+          titre: "Se relever et enchaîner",
+          texte:
+            "Redresse-toi et repars. Avec ou sans saut en fin de mouvement, selon ce que tu cherches : le saut ajoute de l'intensité, la version sans saut permet de tenir des séries plus longues. Reçois-toi sur l'avant du pied puis le talon, genoux souples.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Partir trop vite sur les premières répétitions",
+          pourquoi:
+            "Un burpee coûte cher. Un départ lancé oblige presque toujours à s'arrêter au milieu de la série, et une série coupée en deux ne produit pas le même effort continu. Choisis d'emblée un rythme que tu peux tenir jusqu'à la dernière répétition.",
+        },
+        {
+          titre: "Laisser le bassin s'affaisser en position de planche",
+          pourquoi:
+            "Quand les pieds partent en arrière et que le ventre lâche, le bas du dos encaisse l'arrivée. Serre le ventre et les fessiers avant d'envoyer les jambes, même si le passage ne dure qu'un instant.",
+        },
+        {
+          titre: "Sacrifier le placement pour gagner du temps",
+          pourquoi:
+            "Mains mal posées, pieds à moitié ramenés, dos rond au moment de se relever : la vitesse gagnée se paie sur la qualité de chaque répétition, et le mouvement devient désagréable bien avant d'être efficace. Compte tes répétitions, pas tes secondes.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans passage au sol",
+          exercice: "Squats sautés",
+          texte:
+            "L'enchaînement se réduit au bas du corps : on garde l'impulsion et le rythme, on retire la planche et le retour au sol. Utile quand les poignets ou les épaules ne suivent pas, ou pour garder le cardio haut sans changer de position à chaque répétition.",
+        },
+        {
+          angle: "En restant au sol",
+          exercice: "Mountain climbers",
+          texte:
+            "On tient la position de planche et ce sont les genoux qui viennent vers la poitrine, en alternance. Le rythme cardiaque monte de la même façon, les épaules travaillent en continu, et il n'y a plus ni saut ni réception.",
+        },
+      ],
+      placement:
+        "Les burpees servent rarement de plat principal. Ils viennent en général dans un circuit, entre deux exercices de renforcement, ou en fin de séance sur un format court et minuté. Comme ils fatiguent le corps entier d'un coup, les placer avant un mouvement technique ou chargé dégrade presque toujours ce qui suit.",
+    },
   },
 ];
 
