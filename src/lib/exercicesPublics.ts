@@ -408,7 +408,62 @@ export const FICHES: FichePublique[] = [
     niveau: { de: "debutant", a: "confirme" },
     title: "Gainage : la position, la durée, les erreurs",
     description:
-      "Le gainage sur les coudes : alignement, respiration, combien de temps tenir, et les erreurs qui creusent le bas du dos. Animation de la position.",
+      "Le gainage sur les coudes : l'alignement, la tension à créer, la respiration et le temps de maintien. La position en animation.",
+    contenu: {
+      definition:
+        "Le gainage ne va nulle part, et c'est tout son principe. En appui sur les avant-bras et la pointe des pieds, le travail consiste à empêcher le corps de bouger : le bassin ne descend pas, ne monte pas, ne tourne pas. Les abdominaux et les muscles profonds du tronc y résistent au mouvement au lieu d'en produire un, ce qui explique qu'on le compte en secondes et non en répétitions.",
+      gabarit: "tenue",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Coudes au sol, juste sous les épaules, avant-bras parallèles. Pieds à largeur de bassin, en appui sur la pointe. La tête reste dans le prolongement du dos : regarde le sol un peu en avant de tes mains plutôt que tes pieds.",
+        },
+        {
+          titre: "Créer la tension",
+          texte:
+            "Serre les fessiers, rentre très légèrement le bassin pour que le bas du dos ne se creuse pas, et pousse le sol avec les avant-bras comme pour éloigner tes épaules de tes coudes. La position doit demander un effort dès la première seconde. Si elle est confortable, c'est en général qu'on est posé dessus plutôt qu'en train de la tenir.",
+        },
+        {
+          titre: "Tenir et respirer",
+          texte:
+            "Respire normalement, sans bloquer. La bonne durée est celle où l'alignement tient : dès que le bassin descend ou remonte, la série est finie, même si le chronomètre dit autre chose. Plusieurs séries courtes et propres valent mieux qu'une longue qui s'affaisse au milieu.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser le bassin descendre vers le sol",
+          pourquoi:
+            "Le tronc arrête alors de tenir la ligne et le bas du dos se retrouve en appui. C'est le signal que la série est terminée, pas qu'il faut serrer les dents dix secondes de plus.",
+        },
+        {
+          titre: "Monter le bassin en pointe",
+          pourquoi:
+            "La position devient nettement plus confortable, parce qu'une partie du poids repose sur les bras et les jambes au lieu du tronc. On tient plus longtemps en travaillant moins. Vise la ligne des talons à la tête, quitte à afficher un temps plus court.",
+        },
+        {
+          titre: "Bloquer sa respiration pour tenir plus longtemps",
+          pourquoi:
+            "La tension monte quelques secondes puis retombe d'un coup, et on quitte la position en s'effondrant plutôt qu'en la relâchant. Compte à voix basse : si tu ne peux plus parler, tu ne respires plus.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sur le côté",
+          exercice: "Planche latérale",
+          texte:
+            "En appui sur un seul avant-bras, corps de profil. Ce sont les muscles du côté du tronc qui empêchent le bassin de tomber vers le sol, un travail que le gainage face au sol ne demande pas. Une position par côté.",
+        },
+        {
+          angle: "Avec des appuis qui changent",
+          exercice: "Gainage dynamique",
+          texte:
+            "Même position de départ, mais on passe des avant-bras aux mains tendues, puis retour. Il faut tenir l'alignement pendant que les appuis bougent, ce qui ajoute les épaules et les bras au travail du tronc.",
+        },
+      ],
+      placement:
+        "Le gainage n'a pas de place obligée. En début de séance, il réveille le tronc avant des mouvements où il devra tenir seul. En fin de séance, il se fait sans matériel et sans installation, ce qui en fait un dernier exercice commode. Le seul moment discutable, c'est juste avant un mouvement chargé où le tronc doit rester solide : un tronc déjà fatigué change la façon dont on tient la position.",
+    },
   },
   {
     slug: "burpees",
