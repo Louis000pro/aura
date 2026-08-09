@@ -300,7 +300,70 @@ export const FICHES: FichePublique[] = [
     niveau: { de: "debutant", a: "confirme" },
     title: "Squat : le mouvement de base du bas du corps",
     description:
-      "Le squat au poids du corps : placement des pieds, profondeur, respiration, et les erreurs qui font mal aux genoux. Animation du mouvement.",
+      "Le squat au poids du corps : placement des pieds, profondeur, remontée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "S'accroupir puis se relever, les deux pieds au sol. C'est le seul mouvement de cette bibliothèque qu'on fait déjà plusieurs fois par jour sans y penser : se lever d'une chaise, ramasser quelque chose, s'asseoir. Les cuisses et les fessiers fournissent l'effort, pendant que le tronc empêche le buste de se plier vers l'avant.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Placer les pieds",
+          texte:
+            "Debout, pieds à peu près à largeur d'épaules, pointes légèrement ouvertes vers l'extérieur. L'écartement exact n'est pas le même pour tout le monde : la mobilité des hanches et des chevilles change ce qui est confortable. Cherche la position où tu peux descendre en gardant les talons au sol, et garde-la.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Pousse les hanches vers l'arrière et plie les genoux en même temps, comme pour t'asseoir sur une chaise basse. Les genoux suivent la direction des pointes de pieds. Garde la poitrine ouverte et le regard devant. Inspire pendant la descente.",
+        },
+        {
+          titre: "Trouver sa profondeur",
+          texte:
+            "Descends jusqu'où tu gardes le contrôle : talons au sol, bas du dos qui ne s'arrondit pas, remontée possible sans à-coup. Ce point est plus bas chez certains que chez d'autres, et il bouge avec le temps. Une descente moins profonde mais tenue vaut mieux qu'une descente basse dans laquelle tu t'effondres.",
+        },
+        {
+          titre: "Remonter",
+          texte:
+            "Pousse dans tout le pied et remonte, hanches et poitrine ensemble. Souffle au moment où ça devient dur. En haut, tends les jambes sans verrouiller sèchement les genoux, et enchaîne.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Chercher la profondeur avant le contrôle",
+          pourquoi:
+            "Passé un certain point, propre à chacun, le bassin bascule et le bas du dos s'arrondit en fin de descente. La profondeur utile est celle où la position tient encore. Descends un peu moins bas, et laisse l'amplitude venir avec les semaines.",
+        },
+        {
+          titre: "Laisser les genoux rentrer franchement vers l'intérieur",
+          pourquoi:
+            "Quand les genoux se rapprochent nettement l'un de l'autre pendant la remontée, c'est en général que l'effort dépasse ce que les hanches contrôlent à ce moment-là. Pense à écarter légèrement les genoux vers l'extérieur en poussant, et allège si ça revient à chaque répétition.",
+        },
+        {
+          titre: "Laisser le buste tomber vers l'avant",
+          pourquoi:
+            "Plus le buste s'incline, plus l'effort se déporte vers le bas du dos et moins les cuisses travaillent. Garde la poitrine ouverte du début à la fin. Si le buste plonge dès les premières répétitions, c'est souvent une question de mobilité de cheville plutôt que de force.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Avec une charge tenue devant",
+          exercice: "Goblet squat",
+          texte:
+            "Un haltère ou une kettlebell tenue contre la poitrine. Le poids placé devant a tendance à redresser le buste, ce qui aide beaucoup de gens à descendre plus droit. C'est aussi la façon la plus simple d'ajouter de la charge sans barre ni rack.",
+        },
+        {
+          angle: "Sur une seule jambe",
+          exercice: "Squat bulgare",
+          texte:
+            "Le pied arrière posé sur un banc, l'essentiel du poids passe sur la jambe avant. L'équilibre fait alors partie du travail, et chaque jambe est chargée séparément, ce qui rend visible une différence entre les deux côtés.",
+        },
+      ],
+      placement:
+        "Le squat demande peu d'installation et sollicite beaucoup de muscles à la fois : au poids du corps, il tient aussi bien en échauffement qu'au milieu d'un circuit, où l'intérêt devient le volume et le rythme. Chargé, il se place plutôt en début de séance de jambes, tant que la coordination est fraîche, parce que c'est elle qui part en premier.",
+      /* Ni `materiel` ni `materielCourt` : la famille de la bibliothèque
+         dit déjà « Sans matériel », ce qui est exact et se lit bien. On
+         ne redit pas ce que la donnée sait. */
+    },
   },
   {
     slug: "souleve-de-terre",
