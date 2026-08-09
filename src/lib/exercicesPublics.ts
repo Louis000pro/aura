@@ -388,9 +388,67 @@ export const FICHES: FichePublique[] = [
     exercice: "Développé militaire haltères",
     categorie: "epaules",
     niveau: { de: "debutant", a: "confirme" },
-    title: "Développé militaire haltères : épaules solides",
+    title: "Développé militaire haltères : technique et trajectoire",
     description:
-      "Le développé militaire aux haltères : gainage, trajectoire des bras, muscles travaillés et les erreurs qui cambrent le dos. Animation du mouvement.",
+      "Le développé militaire aux haltères : position de départ, trajectoire de la charge, tenue du tronc et erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "On pousse deux haltères depuis les épaules jusqu'au-dessus de la tête, bras tendus. À la différence des poussées faites allongé sur un banc, rien ne soutient le buste : le tronc doit tenir la position pendant que la charge monte au-dessus de lui. C'est ce qui rend ce mouvement aussi exigeant pour le ventre et le bas du dos que pour les épaules.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Prendre la position",
+          texte:
+            "Debout, pieds sous les hanches et bien ancrés, ou assis sur un banc à dossier haut. Monte les haltères à hauteur d'épaules, coudes sous les poignets. Paumes vers l'avant ou légèrement tournées vers l'intérieur : les deux prises se pratiquent, garde celle où ton épaule est à l'aise. Serre le ventre et les fessiers avant de pousser.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Monte les haltères vers le haut en gardant les poignets dans l'axe des avant-bras. La trajectoire passe près de la tête plutôt que loin devant. Souffle pendant la poussée. En haut, les bras sont tendus sans claquer les coudes, et les haltères se retrouvent à l'aplomb des épaules.",
+        },
+        {
+          titre: "Redescendre en contrôlant",
+          texte:
+            "Ramène les haltères à hauteur d'épaules sans les laisser tomber. Inspire pendant la descente. Descends jusqu'où l'épaule reste confortable : le point bas n'est pas le même pour tout le monde, et le chercher à tout prix ne rend pas le mouvement meilleur.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Cambrer le bas du dos pour finir la poussée",
+          pourquoi:
+            "Quand les épaules n'ont plus de marge, le réflexe est de basculer le buste en arrière : le mouvement ressemble alors à un développé incliné fait debout, et le bas du dos travaille pour compenser. Serre le ventre avant chaque répétition, et allège si la cambrure revient à chaque série.",
+        },
+        {
+          titre: "Pousser loin devant soi",
+          pourquoi:
+            "Des haltères qui montent en avant du visage obligent à terminer bras tendus vers l'avant, ce qui rend la fin de la poussée plus difficile qu'elle ne devrait l'être. Fais passer la charge près de la tête et termine à l'aplomb des épaules.",
+        },
+        {
+          titre: "Donner une impulsion avec les jambes",
+          pourquoi:
+            "Un petit fléchissement suivi d'une poussée des jambes fait passer le point dur. C'est un mouvement à part entière quand on le fait exprès, mais ici il remplace le travail des épaules sans qu'on s'en aperçoive. Si l'élan devient nécessaire pour finir, la série est finie.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Avec une rotation des mains",
+          exercice: "Développé Arnold",
+          texte:
+            "On part paumes tournées vers soi et les mains pivotent pendant la montée. L'épaule passe par une amplitude plus large, et la charge utilisée est en général plus légère que sur un développé classique.",
+        },
+        {
+          angle: "Sur machine",
+          exercice: "Développé épaules machine",
+          texte:
+            "La trajectoire est imposée et le dossier soutient le buste. Il ne reste qu'à pousser : plus besoin de stabiliser deux charges indépendantes ni de tenir le tronc, ce qui change beaucoup ce que l'exercice demande.",
+        },
+      ],
+      placement:
+        "C'est la poussée qui demande le plus de coordination et de tronc stable dans un travail d'épaules : elle se place donc en général avant les élévations et les mouvements d'isolation. Après un développé couché, elle part avec un avant d'épaule et des triceps déjà sollicités : c'est un choix défendable dans une séance de poussée, à condition de savoir qu'on baissera les charges.",
+      materiel: "Deux haltères",
+      materielCourt: "Haltères",
+      nomDansLeTitre: "le développé militaire aux haltères",
+    },
   },
   {
     slug: "curl-biceps-halteres",
