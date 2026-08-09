@@ -403,7 +403,7 @@ export const FICHES: FichePublique[] = [
       promesse:
         "Un mouvement qui met une grande partie du corps en jeu d'un coup : dos, fessiers, arrière des cuisses et tronc, sur chaque répétition.",
       definition:
-        "Ramasser une barre posée au sol, se relever avec, puis la reposer. Le mouvement démarre à l'arrêt complet, sans descente pour lancer la remontée : tout part donc de la position de départ, qu'on ne peut plus rattraper une fois la barre en l'air. C'est ce qui rend l'installation aussi importante que l'effort lui-même.",
+        "Dans la version classique montrée ici, la barre part du sol : on la ramasse, on se relève avec, puis on la repose. La première chose à réussir est donc la position de départ, qu'on ne peut plus rattraper une fois la barre en l'air, et c'est ce qui rend l'installation aussi importante que l'effort lui-même.",
       gabarit: "mouvement",
       etapes: [
         {
@@ -599,7 +599,7 @@ export const FICHES: FichePublique[] = [
         },
       ],
       placement:
-        "Parmi les mouvements d'épaules, c'est l'un de ceux qui demandent le plus de coordination et de tronc stable : il se place donc en général avant les élévations et les mouvements d'isolation. Après un développé couché, il part avec un avant d'épaule et des triceps déjà sollicités : c'est un choix défendable dans une séance de poussée, à condition de savoir qu'on baissera les charges.",
+        "Comme la charge se déplace au-dessus de la tête sans appui du buste, le mouvement demande de la coordination et un tronc stable. Il est donc souvent placé avant les mouvements d'isolation des épaules. Après un développé couché, il part avec un avant d'épaule et des triceps déjà sollicités : c'est un choix défendable dans une séance de poussée, à condition de savoir qu'on baissera les charges.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le développé militaire aux haltères",
@@ -645,9 +645,9 @@ export const FICHES: FichePublique[] = [
             "Quand les coudes partent vers l'avant, l'épaule prend le relais et le haut du mouvement devient facile. Garde les coudes à côté du buste du début à la fin, même si la charge doit baisser.",
         },
         {
-          titre: "Laisser tomber la charge à la descente",
+          titre: "Laisser tomber les haltères à la descente",
           pourquoi:
-            "Laisser filer la charge revient à ne faire que la moitié de chaque répétition, et l'arrêt en bas se fait alors d'un coup sec sur le poignet et le coude. Contrôle le retour jusqu'à bras presque tendus.",
+            "Si tu laisses simplement la gravité ramener la charge, tu perds une partie du contrôle de la répétition. Accompagne le retour jusqu'à avoir les bras presque tendus.",
         },
       ],
       variantes: [
@@ -711,9 +711,9 @@ export const FICHES: FichePublique[] = [
             "La position devient nettement plus confortable, parce qu'une partie du poids repose sur les bras et les jambes au lieu du tronc. On tient plus longtemps en travaillant moins. Vise la ligne des talons à la tête, quitte à afficher un temps plus court.",
         },
         {
-          titre: "Bloquer sa respiration pour tenir plus longtemps",
+          titre: "Bloquer volontairement sa respiration",
           pourquoi:
-            "En apnée, la tension monte quelques secondes puis retombe d'un coup, et on quitte la position en s'effondrant plutôt qu'en la relâchant. Garde une respiration régulière du début à la fin, sans blocage prolongé.",
+            "Tu n'as pas besoin de retenir ton souffle pour tenir la position. Garde une respiration régulière pendant toute la série.",
         },
       ],
       variantes: [
@@ -739,7 +739,12 @@ export const FICHES: FichePublique[] = [
     slug: "burpees",
     exercice: "Burpees",
     categorie: "cardio",
-    niveau: { de: "intermediaire", a: "confirme" },
+    /* Pas de `niveau` : il n'existe aucune donnée de difficulté dans
+       `exerciseLibrary.ts` (le type `Raw` n'en a pas de champ), donc
+       « Intermédiaire à confirmé » était un jugement écrit pour cette page
+       seule. Sur un mouvement au poids du corps que beaucoup de débutants
+       font en cours collectif, il fermait une porte qu'aucune donnée ne
+       nous autorisait à fermer. Rien ne le remplace. */
     title: "Burpees : la séquence, le rythme, les erreurs",
     description:
       "Comment faire un burpee : la séquence décomposée, le rythme qu'on peut tenir, les adaptations possibles et les erreurs fréquentes. Le mouvement en animation.",
