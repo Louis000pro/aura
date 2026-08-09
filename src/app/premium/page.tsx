@@ -8,6 +8,7 @@ import { Check, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { PLANS, VENTE_OUVERTE, formatPrice, type PlanId } from "@/lib/plans";
 import PremiumCelebration from "@/components/PremiumCelebration";
+import { VitrinePied } from "@/components/seo/VitrineChrome";
 import InfosPremium from "./InfosPremium";
 import styles from "./page.module.css";
 
@@ -446,6 +447,18 @@ function PremiumInner() {
             }),
           }}
         />
+
+        {/* Le maillage public, exactement celui des autres pages vitrine.
+            /premium ne renvoyait vers aucune autre page publique : on y
+            arrivait depuis un moteur et on n'en repartait que par la barre
+            d'adresse. Rien de nouveau ici, c'est le composant partagé.
+
+            `pb-28` reprend la respiration de `PageVitrine` : sur mobile, un
+            membre connecté garde sa barre du bas, qui recouvrirait sinon la
+            dernière ligne. */}
+        <div className="pb-28">
+          <VitrinePied />
+        </div>
       </div>
 
       {/* ── Célébration au retour de paiement ── */}

@@ -25,19 +25,22 @@ export default function robots(): MetadataRoute.Robots {
         // n'a pas le droit de visiter la page, donc il n'y lit jamais l'ordre
         // de la retirer, et une URL déjà connue peut rester listée sans titre
         // ni description. Une page à désindexer doit rester VISITABLE et porter
-        // sa balise (voir `lib/noindexEcranApp.ts`) ; le Disallow ne sert qu'à
-        // ce qu'on ne veut simplement pas voir visité.
+        // sa balise (voir `lib/noindexEcranApp.ts`).
         //
-        // C'est pourquoi /recherche n'est plus ici : il porte désormais un
-        // vrai `noindex`, qui ne vaut que si le crawler peut le lire.
-        disallow: [
-          "/api/",
-          "/auth",
-          "/auth/",
-          "/notifications",
-          "/parametres",
-          "/admin",
-        ],
+        // C'est pourquoi /recherche n'est plus ici, puis /auth, /notifications,
+        // /parametres et /admin : les cinq portent désormais un vrai `noindex`,
+        // qui ne vaut que si le crawler peut le lire. /auth était le cas le plus
+        // net, puisque toutes les pages vitrine la lient (« Créer mon compte ») :
+        // le moteur voyait le lien, ne pouvait pas visiter la page, et ne lisait
+        // donc jamais la consigne qu'elle portait.
+        //
+        // Accessoirement, un `Disallow: /admin` publiait le chemin dans un
+        // fichier que tout le monde lit. La page se garde toute seule ; le
+        // retirer d'ici en dit moins, pas plus.
+        //
+        // Il ne reste donc que /api/ : des routes sans HTML, donc sans endroit
+        // où poser une balise, et qu'aucun robot n'a de raison d'appeler.
+        disallow: ["/api/"],
       },
     ],
     sitemap: "https://vaiiya.fr/sitemap.xml",
