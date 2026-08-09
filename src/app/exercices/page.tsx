@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageVitrine } from "@/components/seo/VitrineChrome";
 import CarteExercice from "@/components/exercices/CarteExercice";
-import { fichesPubliees, verifierFiches } from "@/lib/exercicesPublics";
+import { fichesPubliees, libelleCategorie, verifierFiches } from "@/lib/exercicesPublics";
 
 export const metadata: Metadata = {
   title: "Exercices de musculation : la bibliothèque animée",
@@ -107,6 +107,7 @@ export default function ExercicesPage() {
               lib={f.lib}
               href={`/exercices/${f.slug}`}
               materiel={f.contenu.materielCourt}
+              zone={libelleCategorie(f.categorie)}
               priorite={i < 4}
             />
           ))}

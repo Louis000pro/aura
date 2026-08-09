@@ -12,6 +12,7 @@ import {
   slugDeLExercice,
   verifierFiches,
   voisinsPublies,
+  type FicheResolue,
   type Variante,
 } from "@/lib/exercicesPublics";
 import { EQUIPS, trouverExercice, type LibExercise } from "@/lib/exerciseLibrary";
@@ -162,7 +163,7 @@ export default async function FicheExercicePage({
           </p>
 
           <ul className="flex flex-wrap gap-2 mb-7">
-            {lib.muscles.map((m, i) => (
+            {(contenu.muscles ?? lib.muscles).map((m, i) => (
               <li
                 key={m}
                 className="px-3 py-1.5 rounded-full text-[12.5px] font-semibold"
@@ -183,13 +184,12 @@ export default async function FicheExercicePage({
               séance : une fiche d'exercice n'a pas à trancher ça. Le
               libellé « Exemple » le dit en un mot, sans ajouter de note ni
               toucher au composant. Règle générale pour les futures fiches,
-              voir docs/lot-seo-3-fiches-exercices.md. */}
+              voir docs/lot-seo-3-fiches-exercices.md.
+
+              Le nombre de lignes n'est pas fixe : « Pour » ne s'affiche que
+              lorsqu'elle distingue quelque chose. Voir `lignesDuHero`. */}
           <dl className="text-[14px]">
-            {[
-              ["Matériel", materiel],
-              ["Pour", libelleNiveau(fiche.niveau.de, fiche.niveau.a)],
-              ["Exemple", ligneExemple(lib)],
-            ].map(([cle, valeur], i) => (
+            {lignesDuHero(fiche, materiel).map(([cle, valeur], i) => (
               <div
                 key={cle}
                 className="flex gap-4 py-2.5"
@@ -318,7 +318,7 @@ export default async function FicheExercicePage({
 
         {/* Variantes */}
         <h2 className="mt-12 mb-5 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
-          Variantes et progressions
+          {contenu.titreVariantes ?? "Variantes et progressions"}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {contenu.variantes.map((v) => (
@@ -388,6 +388,7 @@ export default async function FicheExercicePage({
                 lib={v.lib}
                 href={`/exercices/${v.slug}`}
                 materiel={v.contenu.materielCourt}
+                zone={libelleCategorie(v.categorie)}
                 taille={124}
               />
             ))}
@@ -405,6 +406,28 @@ export default async function FicheExercicePage({
 }
 
 /* ─────────────────────────── Pièces ─────────────────────────────── */
+
+/** Les lignes du héros, dans l'ordre, en sautant celles qui n'ont rien à
+    dire.
+
+    Seule « Pour » est facultative aujourd'hui, et elle l'est pour une
+    raison précise : elle affichait « Débutant à confirmé » sur cinq fiches
+    sur huit, c'est-à-dire tout le monde. Une ligne qui ne distingue
+    personne occupe une place sans informer, et elle apprend surtout au
+    lecteur à ne plus regarder ce bloc. Elle ne reste que là où elle dit
+    quelque chose (« Intermédiaire à confirmé »), et son absence se lit
+    alors correctement : cet exercice n'a pas de porte d'entrée à annoncer.
+
+    ⚠️ On ne comble pas le trou avec une autre donnée. Deux lignes qui
+    informent valent mieux que trois lignes dont une est décorative. */
+function lignesDuHero(fiche: FicheResolue, materiel: string): [string, string][] {
+  const lignes: [string, string][] = [["Matériel", materiel]];
+  if (fiche.niveau) {
+    lignes.push(["Pour", libelleNiveau(fiche.niveau.de, fiche.niveau.a)]);
+  }
+  lignes.push(["Exemple", ligneExemple(fiche.lib)]);
+  return lignes;
+}
 
 /** La ligne « Exemple » du héros, composée ici plutôt que reprise de
     `libelleReps`.

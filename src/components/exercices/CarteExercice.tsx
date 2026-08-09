@@ -18,21 +18,34 @@ import { EQUIPS, ZONES, type LibExercise } from "@/lib/exerciseLibrary";
    donc personne ne pourra la contourner par inadvertance dans six mois.
    ════════════════════════════════════════════════════════════════════ */
 
-/* La ligne sous le nom. `materiel` permet à la fiche d'imposer son
-   libellé court : la famille de la bibliothèque range le développé couché
-   dans « Haltères & barre », ce qui est juste pour un filtre d'écran mais
-   ambigu sur une carte qui annonce un mouvement À LA BARRE. Sans
-   précision, on retombe sur la famille. */
-function meta(lib: LibExercise, materiel?: string): string {
-  const zone = ZONES.find((z) => z.id === lib.zone)?.label ?? lib.zone;
+/* La ligne sous le nom. Les deux moitiés peuvent être imposées par la
+   fiche, et pour la même raison : la bibliothèque nomme ses cases pour un
+   écran de filtres, pas pour une page publique.
+
+   `materiel` : elle range le développé couché dans « Haltères & barre »,
+   ce qui est juste pour trier et ambigu sur une carte qui annonce un
+   mouvement À LA BARRE.
+
+   `zone` : elle appelle la zone des abdos « Abdos & gainage », ce qui aide
+   à la trouver dans une liste de neuf cases. Sur la carte du gainage, ça
+   donnait « Gainage » puis « Abdos & gainage · Sans matériel », soit le
+   nom de l'exercice redit dans sa propre catégorie. Les catégories
+   publiques (`CATEGORIES` de `exercicesPublics`) disent « Abdos », et
+   c'est aussi ce qu'affichent le fil d'Ariane et le surtitre de la fiche :
+   passer le libellé public aligne les trois.
+
+   Sans précision, on retombe sur les libellés de la bibliothèque. */
+function meta(lib: LibExercise, materiel?: string, zone?: string): string {
+  const z = zone ?? ZONES.find((x) => x.id === lib.zone)?.label ?? lib.zone;
   const equip = materiel ?? EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
-  return `${zone} · ${equip}`;
+  return `${z} · ${equip}`;
 }
 
 export default function CarteExercice({
   lib,
   href,
   materiel,
+  zone,
   taille = 148,
   priorite = false,
 }: {
@@ -40,6 +53,9 @@ export default function CarteExercice({
   /** Le matériel en libellé court, quand la fiche en donne un de plus
       précis que la famille de la bibliothèque. */
   materiel?: string;
+  /** La catégorie publique, quand le libellé de zone de la bibliothèque
+      n'est pas celui qu'on montre au public. */
+  zone?: string;
   /** La fiche publiée. Sans destination, pas de carte. */
   href: string;
   taille?: number;
@@ -72,7 +88,7 @@ export default function CarteExercice({
         {lib.name}
       </p>
       <p className="mt-0.5 text-[12px]" style={{ color: "#8B84A8" }}>
-        {meta(lib, materiel)}
+        {meta(lib, materiel, zone)}
       </p>
     </Link>
   );
