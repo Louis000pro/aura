@@ -3,7 +3,7 @@ import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
 
 export const metadata: Metadata = {
-  title: "Programme prise de masse — musculation & nutrition pour prendre du muscle",
+  title: "Programme prise de masse : prendre du muscle",
   description:
     "Programme de prise de masse personnalisé : entraînement musculation, surplus calorique et apport en protéines pour prendre du muscle efficacement. Généré par l'IA Vaiiya.",
   alternates: { canonical: "https://vaiiya.fr/prise-de-masse" },

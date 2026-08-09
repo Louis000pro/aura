@@ -3,7 +3,7 @@ import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
 
 export const metadata: Metadata = {
-  title: "Perte de poids — programme sèche, sport et nutrition pour maigrir",
+  title: "Perte de poids : programme pour maigrir durablement",
   description:
     "Perdre du poids durablement : déficit calorique, musculation et cardio. Programme de sèche et plan nutrition personnalisés par l'IA Vaiiya pour maigrir sans reprendre.",
   alternates: { canonical: "https://vaiiya.fr/perte-de-poids" },
