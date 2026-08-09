@@ -10,6 +10,7 @@ import {
   Settings, Shield, ChevronRight, Crown, MessageCircle, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { estSurfacePublique } from "@/lib/surfacesPubliques";
 import NotificationBell from "@/components/NotificationBell";
 import NavOrb from "@/components/NavOrb";
 import { useEffect, useRef, useState } from "react";
@@ -112,6 +113,11 @@ export default function Navigation() {
   if (!user && (pathname === "/" || pathname.startsWith("/rejoindre"))) return null;
 
   const handleLogout = () => { logout(); router.push("/"); };
+
+  /* Une surface publique (les fiches d'exercices) n'affiche aucune chrome
+     applicative mobile : ni la barre du bas, ni la cloche flottante. Le
+     rail desktop, lui, ne bouge pas. Voir `lib/surfacesPubliques.ts`. */
+  const surfacePublique = estSurfacePublique(pathname);
 
   const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
@@ -259,7 +265,7 @@ export default function Navigation() {
             (avatar + cloche) pour que le contenu scrolle proprement dessous au
             lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
             lourde. ══ */}
-      {user && pathname !== "/profil" && pathname !== "/communaute" && (
+      {user && !surfacePublique && pathname !== "/profil" && pathname !== "/communaute" && (
         <div className="global-mobile-header md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
           style={{
             height: "calc(env(safe-area-inset-top) + 56px)",
@@ -267,7 +273,7 @@ export default function Navigation() {
           }} />
       )}
 
-      {user && pathname !== "/profil" && pathname !== "/communaute" && (
+      {user && !surfacePublique && pathname !== "/profil" && pathname !== "/communaute" && (
         <div className="global-mobile-header md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <NotificationBell side="top" />
@@ -296,7 +302,10 @@ export default function Navigation() {
         </div>
       )}
 
-      {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou) ══ */}
+      {/* ══ Mobile Bottom Bar — barre pleine, opaque, edge-to-edge (façon TikTok / Insta / ShapeYou)
+            Absente des surfaces publiques : elle donnait à un visiteur venu
+            d'un moteur de recherche l'impression d'être déjà dans l'app. ══ */}
+      {!surfacePublique && (
       <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ willChange: "transform" }}>
         <div
           className="relative flex items-stretch justify-around px-1"
@@ -326,6 +335,7 @@ export default function Navigation() {
           <NavIcon href={TABS[3].href} label={TABS[3].label} icon={TABS[3].icon} sub={TABS[3].sub} mobile tourAnchor={TABS[3].tourAnchor} />
         </div>
       </nav>
+      )}
 
       {/* ══ Desktop Sidebar ══ */}
       <aside className="hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col" style={{ willChange: "transform", transform: "translateZ(0)" }}>
