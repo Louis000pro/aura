@@ -370,9 +370,81 @@ export const FICHES: FichePublique[] = [
     exercice: "Soulevé de terre classique",
     categorie: "dos",
     niveau: { de: "intermediaire", a: "confirme" },
-    title: "Soulevé de terre : technique et dos plat",
+    title: "Soulevé de terre : installation, tension, exécution",
     description:
-      "Le soulevé de terre à la barre : position de départ, ordre des mouvements, dos plat, et les erreurs à ne pas faire. Animation du mouvement.",
+      "Le soulevé de terre à la barre : la position de départ, la tension à créer avant de décoller, la coordination de la montée et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      promesse:
+        "Un mouvement qui met une grande partie du corps en jeu d'un coup : dos, fessiers, arrière des cuisses et tronc, sur chaque répétition.",
+      definition:
+        "Ramasser une barre posée au sol, se relever avec, puis la reposer. C'est le seul mouvement de cette bibliothèque qui démarre à l'arrêt complet, sans descente pour lancer la remontée. Tout dépend donc de la position de départ, qu'on ne peut pas rattraper une fois la barre en l'air : c'est ce qui rend l'installation aussi importante que l'effort lui-même.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Installer la barre et les appuis",
+          texte:
+            "Barre au-dessus du milieu du pied, presque au contact des tibias. Pieds à largeur de bassin. Penche-toi en poussant les hanches vers l'arrière, plie les genoux et attrape la barre juste à l'extérieur des jambes, bras tendus.",
+        },
+        {
+          titre: "Créer la tension avant de décoller",
+          texte:
+            "Avant que la barre ne bouge, descends la poitrine et monte légèrement les hanches jusqu'à sentir l'arrière des cuisses se tendre. Serre le ventre, et tire sur la barre juste assez pour supprimer le jeu entre la barre et les disques. On ne décolle jamais d'un corps relâché.",
+        },
+        {
+          titre: "Se relever",
+          texte:
+            "Pousse le sol avec les jambes et redresse le buste en même temps : les hanches et les épaules montent ensemble, pas l'une après l'autre. La barre reste au contact des jambes tout du long, tibias puis cuisses. Souffle en fin de montée.",
+        },
+        {
+          titre: "Verrouiller, puis reposer",
+          texte:
+            "Debout, les hanches finissent tendues sous les épaules. Il n'y a rien à ajouter à ce moment-là. Pour reposer, refais le chemin en sens inverse : pousse les hanches vers l'arrière, laisse la barre glisser le long des cuisses, et plie les genoux une fois qu'elle les a dépassés.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Laisser la barre s'éloigner des jambes",
+          pourquoi:
+            "Plus la barre s'écarte du corps, plus le buste doit tenir un levier long, à charge identique. Le mouvement devient nettement plus difficile sans que rien n'ait changé sur les disques. Garde-la au contact des tibias, puis des cuisses.",
+        },
+        {
+          titre: "Décoller d'un corps relâché",
+          pourquoi:
+            "Partir sans tension fait presque toujours monter les hanches en premier, et le buste se retrouve seul à finir le travail dans une position qu'il n'a pas choisie. Prends le temps de te tendre avant chaque répétition, y compris au milieu d'une série.",
+        },
+        {
+          titre: "Basculer en arrière en fin de mouvement",
+          pourquoi:
+            "Le verrouillage se fait en tendant les hanches, pas en penchant le buste vers l'arrière. Une fois debout, bassin sous les épaules, le mouvement est terminé : continuer n'ajoute rien.",
+        },
+        {
+          titre: "Enchaîner les répétitions en rebond",
+          pourquoi:
+            "Laisser tomber la barre et repartir sur le rebond fait perdre l'installation, et chaque répétition démarre alors d'une position un peu moins bonne que la précédente. Repose, replace-toi, repars.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Sans revenir au sol",
+          exercice: "Soulevé de terre roumain",
+          texte:
+            "La barre part du haut et descend le long des jambes jusqu'à mi-tibia, sans se reposer entre les répétitions. Les genoux restent peu fléchis : le mouvement se concentre sur la bascule des hanches et l'étirement de l'arrière des cuisses.",
+        },
+        {
+          angle: "En balancier, avec une kettlebell",
+          exercice: "Kettlebell swing",
+          texte:
+            "La même bascule de hanches, mais rapide et sans temps d'arrêt : la charge passe entre les jambes puis remonte par l'impulsion des hanches. C'est un travail de rythme et de vitesse, pas de charge maximale.",
+        },
+      ],
+      placement:
+        "Le soulevé de terre se place en début de séance, et pratiquement jamais ailleurs. Il demande une position précise que la fatigue dégrade vite, et il fatigue à son tour presque tout ce qui sert ensuite, du dos aux avant-bras. Beaucoup de gens le gardent pour un jour où il est le seul mouvement lourd de la séance, simplement parce qu'il laisse peu d'énergie pour un second.",
+      materiel: "Une barre et des disques",
+      materielCourt: "Barre",
+      nomDansLeTitre: "le soulevé de terre",
+      precaution:
+        "La charge se monte par paliers. Sur ce mouvement, la position se perd avant que la barre ne devienne impossible à décoller : c'est donc la position qui donne le repère pour s'arrêter, pas la barre qui refuse de monter. Si une répétition demande de changer de placement pour passer, la suivante n'apportera rien de bon.",
+    },
   },
   {
     slug: "rowing-barre",
