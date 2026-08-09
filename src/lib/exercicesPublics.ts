@@ -161,8 +161,30 @@ export type ContenuFiche = {
   etapes: Etape[];
   erreurs: Erreur[];
   variantes: Variante[];
+  /** Le titre de la section des variantes, quand « Variantes et
+      progressions » serait inexact.
+
+      Les burpees n'ont pas de variante dans la bibliothèque : les squats
+      sautés et les mountain climbers sont des mouvements voisins qu'on
+      choisit à leur place, pas des versions du burpee. Le soulevé de
+      terre mélange les deux cas, avec un vrai dérivé (le roumain) et un
+      mouvement proche qui partage sa charnière de hanches (le swing).
+      Laisser « progressions » sur ces deux fiches ferait passer une
+      alternative pour une marche à monter. */
+  titreVariantes?: string;
   /** Où le placer dans une séance. Court, concret, propre au mouvement. */
   placement: string;
+  /** Les pastilles du héros, quand celles de la bibliothèque ne peuvent
+      pas être servies telles quelles.
+
+      `lib.muscles` est une liste d'étiquettes d'écran : elle range côte à
+      côte des muscles (« Biceps »), des régions (« Dos ») et des
+      catégories d'effort (« Cardio », « Corps entier »). C'est cohérent
+      pour un filtre dans l'application, où elles servent à trier. Sur une
+      page publique lue par quelqu'un qui cherche ce qu'un exercice
+      travaille, « Cardio » posé au milieu de noms de muscles n'est pas
+      une réponse. Cette liste, quand elle est là, remplace la sienne. */
+  muscles?: string[];
   /** Le matériel en clair, quand le libellé de famille de la bibliothèque
       est trop vague pour une page publique : « Haltères & barre » est un
       filtre d'écran correct, mais un visiteur veut savoir qu'il lui faut
@@ -209,7 +231,13 @@ export type FichePublique = {
   /** Nom canonique EXACT d'une entrée de `EXERCISE_LIBRARY`. */
   exercice: string;
   categorie: CategoriePublique;
-  niveau: { de: NiveauPublic; a: NiveauPublic };
+  /** Facultatif, et c'est le point : la ligne « Pour » n'a de valeur que
+      lorsqu'elle distingue quelque chose. Cinq fiches sur huit affichaient
+      « Débutant à confirmé », c'est-à-dire tout le monde, ce qui revient à
+      occuper une ligne du héros pour ne rien dire. On ne la remplace par
+      aucune autre donnée : deux lignes qui informent valent mieux que
+      trois lignes dont une est décorative. Absente, la ligne disparaît. */
+  niveau?: { de: NiveauPublic; a: NiveauPublic };
   /** Le title de la balise, sans le suffixe « · Vaiiya » que le gabarit
       racine ajoute (9 caractères). Écrit à la main : un gabarit produirait
       huit titres jumeaux, ce qui est exactement le défaut qu'on évite. */
@@ -229,7 +257,6 @@ export const FICHES: FichePublique[] = [
     slug: "developpe-couche",
     exercice: "Développé couché",
     categorie: "pectoraux",
-    niveau: { de: "debutant", a: "confirme" },
     title: "Développé couché : technique, muscles et erreurs",
     description:
       "Comment faire le développé couché à la barre : placement, exécution, muscles travaillés et les erreurs qui limitent la progression. Animation du mouvement.",
@@ -297,13 +324,12 @@ export const FICHES: FichePublique[] = [
     slug: "squat",
     exercice: "Squat",
     categorie: "jambes",
-    niveau: { de: "debutant", a: "confirme" },
-    title: "Squat : le mouvement de base du bas du corps",
+    title: "Squat : technique, muscles et erreurs fréquentes",
     description:
       "Le squat au poids du corps : placement des pieds, profondeur, remontée et les erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "S'accroupir puis se relever, les deux pieds au sol. C'est le seul mouvement de cette bibliothèque qu'on fait déjà plusieurs fois par jour sans y penser : se lever d'une chaise, ramasser quelque chose, s'asseoir. Les cuisses et les fessiers fournissent l'effort, pendant que le tronc empêche le buste de se plier vers l'avant.",
+        "S'accroupir puis se relever, les deux pieds au sol. C'est un geste qu'on retrouve dans la vie courante, quand on se lève d'une chaise ou qu'on ramasse quelque chose au sol. Les cuisses et les fessiers fournissent l'effort, pendant que le tronc et le dos tiennent la position du buste, dont l'inclinaison varie selon la morphologie et la version du squat.",
       gabarit: "mouvement",
       etapes: [
         {
@@ -339,9 +365,9 @@ export const FICHES: FichePublique[] = [
             "Quand les genoux se rapprochent nettement l'un de l'autre pendant la remontée, c'est en général que l'effort dépasse ce que les hanches contrôlent à ce moment-là. Pense à écarter légèrement les genoux vers l'extérieur en poussant, et allège si ça revient à chaque répétition.",
         },
         {
-          titre: "Laisser le buste tomber vers l'avant",
+          titre: "Laisser le buste s'effondrer",
           pourquoi:
-            "Plus le buste s'incline, plus l'effort se déporte vers le bas du dos et moins les cuisses travaillent. Garde la poitrine ouverte du début à la fin. Si le buste plonge dès les premières répétitions, c'est souvent une question de mobilité de cheville plutôt que de force.",
+            "Une certaine inclinaison du buste est normale, et elle n'est pas la même selon la morphologie et selon la version du squat. Ce qui pose problème, c'est la perte de position : le buste qui plonge d'un coup pendant la descente, ou qui se casse vers l'avant au moment de repousser. Cherche une inclinaison qui reste la même du début à la fin de la répétition, et allège ou réduis l'amplitude dès qu'elle se dégrade en cours de série.",
         },
       ],
       variantes: [
@@ -377,7 +403,7 @@ export const FICHES: FichePublique[] = [
       promesse:
         "Un mouvement qui met une grande partie du corps en jeu d'un coup : dos, fessiers, arrière des cuisses et tronc, sur chaque répétition.",
       definition:
-        "Ramasser une barre posée au sol, se relever avec, puis la reposer. C'est le seul mouvement de cette bibliothèque qui démarre à l'arrêt complet, sans descente pour lancer la remontée. Tout dépend donc de la position de départ, qu'on ne peut pas rattraper une fois la barre en l'air : c'est ce qui rend l'installation aussi importante que l'effort lui-même.",
+        "Ramasser une barre posée au sol, se relever avec, puis la reposer. Le mouvement démarre à l'arrêt complet, sans descente pour lancer la remontée : tout part donc de la position de départ, qu'on ne peut plus rattraper une fois la barre en l'air. C'est ce qui rend l'installation aussi importante que l'effort lui-même.",
       gabarit: "mouvement",
       etapes: [
         {
@@ -388,12 +414,12 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Créer la tension avant de décoller",
           texte:
-            "Avant que la barre ne bouge, descends la poitrine et monte légèrement les hanches jusqu'à sentir l'arrière des cuisses se tendre. Serre le ventre, et tire sur la barre juste assez pour supprimer le jeu entre la barre et les disques. On ne décolle jamais d'un corps relâché.",
+            "Avant que la barre ne quitte le sol, installe le buste et les hanches dans une position stable, serre le tronc, puis tire sur la barre juste assez pour en enlever le jeu. La hauteur exacte des hanches au départ n'est pas la même pour tout le monde : cherche celle que tu peux tenir pendant toute la montée. On ne décolle jamais d'un corps relâché.",
         },
         {
           titre: "Se relever",
           texte:
-            "Pousse le sol avec les jambes et redresse le buste en même temps : les hanches et les épaules montent ensemble, pas l'une après l'autre. La barre reste au contact des jambes tout du long, tibias puis cuisses. Souffle en fin de montée.",
+            "Pousse le sol avec les jambes et redresse le buste en même temps : les hanches et les épaules montent ensemble, pas l'une après l'autre. La barre reste proche des jambes pendant la montée, tibias puis cuisses. Souffle en fin de montée.",
         },
         {
           titre: "Verrouiller, puis reposer",
@@ -405,7 +431,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Laisser la barre s'éloigner des jambes",
           pourquoi:
-            "Plus la barre s'écarte du corps, plus le buste doit tenir un levier long, à charge identique. Le mouvement devient nettement plus difficile sans que rien n'ait changé sur les disques. Garde-la au contact des tibias, puis des cuisses.",
+            "Plus la barre s'écarte du corps, plus le buste doit tenir un levier long, à charge identique. Le mouvement devient nettement plus difficile sans que rien n'ait changé sur les disques. Garde-la proche des tibias, puis des cuisses.",
         },
         {
           titre: "Décoller d'un corps relâché",
@@ -437,13 +463,14 @@ export const FICHES: FichePublique[] = [
             "La même bascule de hanches, mais rapide et sans temps d'arrêt : la charge passe entre les jambes puis remonte par l'impulsion des hanches. C'est un travail de rythme et de vitesse, pas de charge maximale.",
         },
       ],
+      titreVariantes: "Variantes et mouvements proches",
       placement:
-        "Le soulevé de terre se place en début de séance, et pratiquement jamais ailleurs. Il demande une position précise que la fatigue dégrade vite, et il fatigue à son tour presque tout ce qui sert ensuite, du dos aux avant-bras. Beaucoup de gens le gardent pour un jour où il est le seul mouvement lourd de la séance, simplement parce qu'il laisse peu d'énergie pour un second.",
+        "Le soulevé de terre est souvent placé tôt dans la séance, quand il en est le mouvement prioritaire : il demande une position précise que la fatigue dégrade vite, et il sollicite à son tour une bonne partie de ce qui sert ensuite, du dos aux avant-bras. Son emplacement dépend malgré tout de la séance et de ce qu'on veut y faire passer.",
       materiel: "Une barre et des disques",
       materielCourt: "Barre",
       nomDansLeTitre: "le soulevé de terre",
       precaution:
-        "La charge se monte par paliers. Sur ce mouvement, la position se perd avant que la barre ne devienne impossible à décoller : c'est donc la position qui donne le repère pour s'arrêter, pas la barre qui refuse de monter. Si une répétition demande de changer de placement pour passer, la suivante n'apportera rien de bon.",
+        "La charge se monte par paliers, et le repère utile est observable : si la charge ou la fatigue t'oblige à abandonner la position que tu cherchais, c'est le signal pour arrêter la série ou réduire la difficulté, plutôt que pour tenter une répétition de plus.",
     },
   },
   {
@@ -451,7 +478,7 @@ export const FICHES: FichePublique[] = [
     exercice: "Rowing barre",
     categorie: "dos",
     niveau: { de: "intermediaire", a: "confirme" },
-    title: "Rowing barre : buste penché, dos stable",
+    title: "Rowing barre : technique, posture et erreurs fréquentes",
     description:
       "Le rowing barre buste penché : inclinaison, trajectoire de la barre, contrôle de la descente et erreurs fréquentes. Le mouvement en animation.",
     contenu: {
@@ -479,7 +506,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Se redresser à chaque répétition",
           pourquoi:
-            "Un buste qui remonte pendant le tirage aide la barre à monter, mais l'amplitude réellement parcourue par le dos diminue d'autant. C'est l'erreur la plus difficile à sentir soi-même : une vidéo de profil la rend évidente en dix secondes.",
+            "Un buste qui remonte pendant le tirage aide la barre à monter, mais l'amplitude réellement parcourue par le dos diminue d'autant. C'est une erreur difficile à sentir soi-même : une vidéo de profil la rend évidente en dix secondes.",
         },
         {
           titre: "Tirer avec un coup de reins",
@@ -507,7 +534,7 @@ export const FICHES: FichePublique[] = [
         },
       ],
       placement:
-        "Le rowing barre est le tirage le plus coûteux de la bibliothèque à cause de la position penchée : il se place tôt dans une séance de dos, avant les tirages où l'on est assis ou soutenu et où la fatigue du tronc compte moins. Placé après un soulevé de terre, il part avec une chaîne postérieure déjà bien sollicitée, ce qui limite en général ce qu'on peut y mettre.",
+        "Comme le buste reste penché pendant toute la série, le rowing barre demande aussi un effort de maintien du tronc : on le place donc plutôt tôt dans une séance de dos, avant les tirages où l'on est assis ou soutenu et où la fatigue du tronc compte moins. Placé après un soulevé de terre, il part avec une chaîne postérieure déjà bien sollicitée, ce qui limite en général ce qu'on peut y mettre.",
       materiel: "Une barre et des disques",
       materielCourt: "Barre",
     },
@@ -516,13 +543,12 @@ export const FICHES: FichePublique[] = [
     slug: "developpe-militaire-halteres",
     exercice: "Développé militaire haltères",
     categorie: "epaules",
-    niveau: { de: "debutant", a: "confirme" },
     title: "Développé militaire haltères : technique et trajectoire",
     description:
       "Le développé militaire aux haltères : position de départ, trajectoire de la charge, tenue du tronc et erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "On pousse deux haltères depuis les épaules jusqu'au-dessus de la tête, bras tendus. À la différence des poussées faites allongé sur un banc, rien ne soutient le buste : le tronc doit tenir la position pendant que la charge monte au-dessus de lui. C'est ce qui rend ce mouvement aussi exigeant pour le ventre et le bas du dos que pour les épaules.",
+        "On pousse deux haltères depuis les épaules jusqu'au-dessus de la tête, bras tendus. À la différence des poussées faites allongé sur un banc, rien ne soutient le buste : le tronc participe aussi à stabiliser la position pendant que les épaules et les triceps poussent les haltères.",
       gabarit: "mouvement",
       etapes: [
         {
@@ -573,7 +599,7 @@ export const FICHES: FichePublique[] = [
         },
       ],
       placement:
-        "C'est la poussée qui demande le plus de coordination et de tronc stable dans un travail d'épaules : elle se place donc en général avant les élévations et les mouvements d'isolation. Après un développé couché, elle part avec un avant d'épaule et des triceps déjà sollicités : c'est un choix défendable dans une séance de poussée, à condition de savoir qu'on baissera les charges.",
+        "Parmi les mouvements d'épaules, c'est l'un de ceux qui demandent le plus de coordination et de tronc stable : il se place donc en général avant les élévations et les mouvements d'isolation. Après un développé couché, il part avec un avant d'épaule et des triceps déjà sollicités : c'est un choix défendable dans une séance de poussée, à condition de savoir qu'on baissera les charges.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le développé militaire aux haltères",
@@ -583,13 +609,12 @@ export const FICHES: FichePublique[] = [
     slug: "curl-biceps-halteres",
     exercice: "Curl haltères",
     categorie: "bras",
-    niveau: { de: "debutant", a: "confirme" },
-    title: "Curl biceps haltères : le travail direct du bras",
+    title: "Curl biceps haltères : technique et erreurs fréquentes",
     description:
       "Le curl aux haltères : position des coudes, amplitude, contrôle de la descente et les erreurs fréquentes. Le mouvement en animation.",
     contenu: {
       definition:
-        "Le curl est l'un des rares mouvements de la bibliothèque où une seule articulation travaille : le coude plie, le reste du corps ne fait rien. C'est ce qui le rend simple à comprendre et facile à dénaturer, puisque tout ce qui bouge en plus du coude retire du travail au biceps.",
+        "Le mouvement principal du curl se fait au coude : le biceps fléchit l'avant-bras pendant que l'épaule et le reste du corps servent surtout à stabiliser la position. C'est ce qui le rend simple à comprendre et facile à dénaturer, puisque tout ce qui bouge en plus du coude retire du travail au biceps.",
       gabarit: "mouvement",
       etapes: [
         {
@@ -600,7 +625,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Monter",
           texte:
-            "Plie les coudes et amène les haltères vers les épaules. Seuls les avant-bras bougent. Souffle en montant. Inutile de chercher à monter très haut : dès que l'avant-bras dépasse la verticale, la charge repose sur l'articulation plutôt que sur le muscle.",
+            "Plie les coudes et amène les haltères vers les épaules. Souffle en montant. Monte tant que les coudes restent stables : inutile de chercher à rapprocher les haltères au maximum des épaules si cela oblige à avancer les coudes.",
         },
         {
           titre: "Redescendre lentement",
@@ -622,7 +647,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Laisser tomber la charge à la descente",
           pourquoi:
-            "La descente compte autant que la montée. La laisser filer revient à ne faire que la moitié de chaque répétition, tout en fatiguant le poignet et le coude au moment de l'arrêt.",
+            "Laisser filer la charge revient à ne faire que la moitié de chaque répétition, et l'arrêt en bas se fait alors d'un coup sec sur le poignet et le coude. Contrôle le retour jusqu'à bras presque tendus.",
         },
       ],
       variantes: [
@@ -640,7 +665,7 @@ export const FICHES: FichePublique[] = [
         },
       ],
       placement:
-        "Le curl arrive après. C'est un mouvement d'isolation : il ne prépare rien et fatigue les biceps, dont on a besoin sur tous les tirages. Le placer avant un travail de dos revient à le saboter. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
+        "Le curl est un mouvement d'isolation : il ne prépare rien et fatigue les biceps, dont on se sert sur tous les tirages. Dans une séance contenant de gros tirages, il est donc souvent placé après afin de ne pas fatiguer les biceps avant eux. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le curl aux haltères",
@@ -650,10 +675,9 @@ export const FICHES: FichePublique[] = [
     slug: "gainage",
     exercice: "Gainage",
     categorie: "abdos",
-    niveau: { de: "debutant", a: "confirme" },
     title: "Gainage : la position, la durée, les erreurs",
     description:
-      "Le gainage sur les coudes : l'alignement, la tension à créer, la respiration et le temps de maintien. La position en animation.",
+      "Le gainage sur les coudes : l'alignement, la tension à créer, la respiration et le temps de maintien. Le placement illustré.",
     contenu: {
       definition:
         "Le gainage ne va nulle part, et c'est tout son principe. En appui sur les avant-bras et la pointe des pieds, le travail consiste à empêcher le corps de bouger : le bassin ne descend pas, ne monte pas, ne tourne pas. Les abdominaux et les muscles profonds du tronc y résistent au mouvement au lieu d'en produire un, ce qui explique qu'on le compte en secondes et non en répétitions.",
@@ -667,7 +691,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Créer la tension",
           texte:
-            "Serre les fessiers, rentre très légèrement le bassin pour que le bas du dos ne se creuse pas, et pousse le sol avec les avant-bras comme pour éloigner tes épaules de tes coudes. La position doit demander un effort dès la première seconde. Si elle est confortable, c'est en général qu'on est posé dessus plutôt qu'en train de la tenir.",
+            "Rentre très légèrement le bassin pour que le bas du dos ne se creuse pas, et pousse le sol avec les avant-bras comme pour éloigner tes épaules de tes coudes. Crée une tension volontaire dans le tronc et les fessiers, et continue à respirer normalement pendant que tu la tiens.",
         },
         {
           titre: "Tenir et respirer",
@@ -679,7 +703,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Laisser le bassin descendre vers le sol",
           pourquoi:
-            "Le tronc arrête alors de tenir la ligne et le bas du dos se retrouve en appui. C'est le signal que la série est terminée, pas qu'il faut serrer les dents dix secondes de plus.",
+            "Quand le bassin s'affaisse, le tronc ne tient plus la ligne et la position se creuse au niveau du bas du dos. C'est le signal que la série est terminée, pas qu'il faut serrer les dents dix secondes de plus.",
         },
         {
           titre: "Monter le bassin en pointe",
@@ -689,7 +713,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Bloquer sa respiration pour tenir plus longtemps",
           pourquoi:
-            "La tension monte quelques secondes puis retombe d'un coup, et on quitte la position en s'effondrant plutôt qu'en la relâchant. Compte à voix basse : si tu ne peux plus parler, tu ne respires plus.",
+            "En apnée, la tension monte quelques secondes puis retombe d'un coup, et on quitte la position en s'effondrant plutôt qu'en la relâchant. Garde une respiration régulière du début à la fin, sans blocage prolongé.",
         },
       ],
       variantes: [
@@ -706,6 +730,7 @@ export const FICHES: FichePublique[] = [
             "Même position de départ, mais on passe des avant-bras aux mains tendues, puis retour. Il faut tenir l'alignement pendant que les appuis bougent, ce qui ajoute les épaules et les bras au travail du tronc.",
         },
       ],
+      muscles: ["Abdominaux", "Muscles profonds du tronc"],
       placement:
         "Le gainage n'a pas de place obligée. En début de séance, il réveille le tronc avant des mouvements où il devra tenir seul. En fin de séance, il se fait sans matériel et sans installation, ce qui en fait un dernier exercice commode. Le seul moment discutable, c'est juste avant un mouvement chargé où le tronc doit rester solide : un tronc déjà fatigué change la façon dont on tient la position.",
     },
@@ -748,7 +773,7 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Partir trop vite sur les premières répétitions",
           pourquoi:
-            "Un burpee coûte cher. Un départ lancé oblige presque toujours à s'arrêter au milieu de la série, et une série coupée en deux ne produit pas le même effort continu. Choisis d'emblée un rythme que tu peux tenir jusqu'à la dernière répétition.",
+            "Un burpee coûte cher, et un départ lancé oblige presque toujours à ralentir ou à s'arrêter au milieu de la série. Choisis d'emblée un rythme que tu peux tenir jusqu'à la dernière répétition, sans dégrader les transitions.",
         },
         {
           titre: "Laisser le bassin s'affaisser en position de planche",
@@ -775,8 +800,15 @@ export const FICHES: FichePublique[] = [
             "On tient la position de planche et ce sont les genoux qui viennent vers la poitrine, en alternance. Le rythme cardiaque monte de la même façon, les épaules travaillent en continu, et il n'y a plus ni saut ni réception.",
         },
       ],
+      /* Ni les squats sautés ni les mountain climbers ne sont des versions
+         du burpee : ce sont des mouvements qu'on choisit à sa place. La
+         bibliothèque ne contient aucune vraie variante de burpee, donc on
+         nomme la section pour ce qu'elle est plutôt que de faire passer
+         une alternative pour une progression. */
+      titreVariantes: "Alternatives proches",
+      muscles: ["Jambes", "Épaules", "Abdominaux"],
       placement:
-        "Les burpees servent rarement de plat principal. Ils viennent en général dans un circuit, entre deux exercices de renforcement, ou en fin de séance sur un format court et minuté. Comme ils fatiguent le corps entier d'un coup, les placer avant un mouvement technique ou chargé dégrade presque toujours ce qui suit.",
+        "Les burpees servent rarement de plat principal. Ils viennent en général dans un circuit, entre deux exercices de renforcement, ou en fin de séance sur un format court et minuté. Comme ils fatiguent le corps entier d'un coup, les placer avant un mouvement technique ou chargé peut réduire la qualité de ce qui suit.",
     },
   },
 ];
