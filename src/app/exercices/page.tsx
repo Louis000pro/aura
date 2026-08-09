@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageVitrine } from "@/components/seo/VitrineChrome";
 import CarteExercice from "@/components/exercices/CarteExercice";
-import { fichesPubliees, fichesAVenir, verifierFiches } from "@/lib/exercicesPublics";
-import { EXERCISE_LIBRARY, estAnime } from "@/lib/exerciseLibrary";
+import { fichesPubliees, verifierFiches } from "@/lib/exercicesPublics";
 
 export const metadata: Metadata = {
   title: "Exercices de musculation : la bibliothèque animée",
@@ -19,10 +18,29 @@ export const metadata: Metadata = {
   },
 };
 
-/* Le nombre de mouvements animés réellement livrés. Il n'est pas écrit à
-   la main : une promesse chiffrée qui se périme est pire que pas de
-   chiffre du tout, et celui-ci est vérifiable à chaque construction. */
-const NB_ANIMES = EXERCISE_LIBRARY.filter((e) => estAnime(e.name)).length;
+/* ── Ce que ces pages apportent, dit au lecteur ────────────────────────
+   Ces trois blocs parlaient de notre méthode de fabrication (« écrite à
+   la main », « pas de remplissage pour faire long ») : ce sont nos règles
+   internes de qualité, elles n'ont rien à faire sur une page publique.
+   Un visiteur se demande ce qu'il va trouver, pas comment on l'a produit.
+
+   Une phrase a aussi disparu, « un exercice se comprend en le voyant, pas
+   en lisant sa description » : l'idée est juste, la forme opposait le
+   texte à l'image alors que la fiche fait les deux.                     */
+const APPORTS = [
+  {
+    t: "Le mouvement en animation",
+    d: "Le geste est montré pose après pose, dans le bon ordre, pour qu'on le comprenne d'un coup d'œil plutôt qu'en imaginant une description.",
+  },
+  {
+    t: "Les repères essentiels",
+    d: "Les muscles sollicités, le matériel, le placement, l'exécution étape par étape et les erreurs fréquentes.",
+  },
+  {
+    t: "Libre à consulter",
+    d: "Aucun compte n'est nécessaire pour lire une fiche. Vaiiya n'intervient que si tu veux transformer le mouvement en séance.",
+  },
+];
 
 export default function ExercicesPage() {
   /* Un nom mal orthographié, un slug en double : ces fautes ne se voient
@@ -32,7 +50,6 @@ export default function ExercicesPage() {
   if (soucis.length) throw new Error(`Fiches d'exercices : ${soucis.join(" | ")}`);
 
   const publiees = fichesPubliees();
-  const aVenir = fichesAVenir();
 
   const filAriane = {
     "@context": "https://schema.org",
@@ -62,51 +79,42 @@ export default function ExercicesPage() {
           Les exercices de musculation, montrés en mouvement
         </h1>
         <p className="max-w-[640px] text-[1.05rem] leading-[1.65]" style={{ color: "#4A5568" }}>
-          Un exercice se comprend en le voyant, pas en lisant sa description. Chaque fiche part
-          donc du geste animé, puis dit l&apos;essentiel : les muscles qui travaillent, comment
-          exécuter le mouvement, et les erreurs qui coûtent cher. Rien à installer, rien à créer.
+          Un mouvement se comprend mieux quand on le voit. Chaque fiche montre le geste en
+          animation, les muscles sollicités, les repères d&apos;exécution et les erreurs
+          fréquentes.
         </p>
       </section>
 
-      {/* ── Les fiches ───────────────────────────────────────────── */}
+      {/* ── Les fiches ───────────────────────────────────────────────
+          Uniquement celles qui sont rédigées. Le hub n'annonce jamais un
+          exercice qu'il ne peut pas ouvrir : `CarteExercice` exige
+          désormais une destination, donc le compilateur tient la règle. */}
       <section>
         <h2 className="text-[1.35rem] font-medium mb-1" style={{ color: "#2D2150" }}>
-          Les fiches disponibles
+          Les exercices
         </h2>
         <p className="text-sm mb-6" style={{ color: "#8B84A8" }}>
-          Nous ouvrons la bibliothèque exercice par exercice, en écrivant chaque fiche à la main.
+          Choisis un exercice pour voir le mouvement et ses repères.
         </p>
 
-        {/* Les fiches rédigées d'abord, celles à venir ensuite. Les quatre
-            premières cartes sont prioritaires : ce sont elles qu'on voit
-            en arrivant, et une grille qui s'ouvre sur des cases vides
-            annulerait tout l'intérêt de la page. */}
+        {/* Les quatre premières cartes sont prioritaires : ce sont elles
+            qu'on voit en arrivant, et une grille qui s'ouvre sur des cases
+            vides annulerait tout l'intérêt de la page. */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {[
-            ...publiees.map((f) => ({ cle: f.slug, lib: f.lib, href: `/exercices/${f.slug}` })),
-            ...aVenir.map(({ fiche, lib }) => ({ cle: fiche.slug, lib, href: undefined })),
-          ].map((c, i) => (
-            <CarteExercice key={c.cle} lib={c.lib} href={c.href} priorite={i < 4} />
+          {publiees.map((f, i) => (
+            <CarteExercice
+              key={f.slug}
+              lib={f.lib}
+              href={`/exercices/${f.slug}`}
+              priorite={i < 4}
+            />
           ))}
         </div>
       </section>
 
-      {/* ── Ce qui distingue ces fiches ──────────────────────────── */}
+      {/* ── Ce qu'on trouve dans une fiche ───────────────────────── */}
       <section className="mt-14 grid gap-5 md:grid-cols-3">
-        {[
-          {
-            t: "Le geste avant le texte",
-            d: `Nos ${NB_ANIMES} mouvements ont leur personnage animé, dessiné pour Vaiiya. Il rejoue le geste, pose après pose.`,
-          },
-          {
-            t: "Ce qu'il faut savoir, pas plus",
-            d: "Le placement, l'exécution, les deux erreurs qui reviennent le plus. Pas de remplissage pour faire long.",
-          },
-          {
-            t: "Utile sans compte",
-            d: "Tout est lisible tout de suite. Vaiiya sert à construire la séance autour, si tu en as envie.",
-          },
-        ].map((c) => (
+        {APPORTS.map((c) => (
           <div
             key={c.t}
             className="rounded-3xl p-6"

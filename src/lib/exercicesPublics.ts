@@ -60,7 +60,7 @@
       comme à venir. C'est ce qui permet de lancer un pilote sans mentir.
    ════════════════════════════════════════════════════════════════════ */
 
-import { EXERCISE_LIBRARY, trouverExercice, type LibExercise } from "./exerciseLibrary";
+import { trouverExercice, type LibExercise } from "./exerciseLibrary";
 import { resolveGuide } from "./exerciseGuides";
 
 /* ─────────────────────────── Catégories ───────────────────────────
@@ -122,9 +122,18 @@ export type Erreur = { titre: string; pourquoi: string };
 /** Une variante. `exercice` pointe vers un nom canonique de la
     bibliothèque, donc la carte peut afficher sa vraie animation. Si cet
     exercice a lui aussi une fiche publiée, l'affichage en fait un lien ;
-    sinon la carte reste informative. Jamais de lien mort. */
+    sinon la carte reste informative. Jamais de lien mort.
+
+    ⚠️ `angle` dit EN QUOI la variante diffère, jamais si elle est plus
+    facile ou plus difficile. Les deux premières fiches montraient les
+    pompes comme « plus facile » et les haltères comme « plus difficile » :
+    c'est faux pour beaucoup de gens. Des pompes tenues proprement sont
+    exigeantes, et des haltères légers sont plus abordables qu'une barre
+    chargée. On décrit donc la vraie différence (poids du corps, matériel,
+    stabilité, amplitude) et on laisse le lecteur juger de ce qui est dur
+    pour lui. */
 export type Variante = {
-  sens: "plus-facile" | "plus-difficile";
+  angle: string;
   exercice: string;
   texte: string;
 };
@@ -190,18 +199,18 @@ export const FICHES: FichePublique[] = [
       "Comment faire le développé couché à la barre : placement, exécution, muscles travaillés et les erreurs qui limitent la progression. Animation du mouvement.",
     contenu: {
       definition:
-        "Allongé sur un banc, on descend une barre jusqu'au bas de la poitrine puis on la repousse à bout de bras. Le banc stabilise le buste, et c'est ce qui change tout : rien ne limite la charge à part la force de poussée elle-même, ce qui en fait le mouvement le plus lourd du haut du corps.",
+        "Allongé sur un banc, on descend une barre jusqu'au bas de la poitrine puis on la repousse à bout de bras. Le banc porte le buste, donc il n'y a pas d'équilibre à gérer : c'est l'une des raisons pour lesquelles on y manipule en général des charges plus élevées que sur les autres mouvements de poussée du haut du corps.",
       gabarit: "mouvement",
       etapes: [
         {
           titre: "S'installer",
           texte:
-            "Allonge-toi les yeux à l'aplomb de la barre. Cinq appuis, et ils comptent : la tête, le haut du dos et les fessiers sur le banc, les deux pieds à plat au sol. Serre les omoplates l'une vers l'autre et garde-les serrées jusqu'à la fin de la série, c'est ce placement qui garde l'épaule en sécurité. Prends la barre un peu plus large que les épaules, poignets dans l'axe des avant-bras.",
+            "Allonge-toi les yeux à l'aplomb de la barre. Cinq appuis, et ils comptent : la tête, le haut du dos et les fessiers sur le banc, les deux pieds à plat au sol. Serre les omoplates l'une vers l'autre et garde-les serrées jusqu'à la fin de la série : c'est ce placement qui donne à l'épaule un appui stable. Prends la barre un peu plus large que les épaules, poignets dans l'axe des avant-bras.",
         },
         {
           titre: "Descendre",
           texte:
-            "Sors la barre du rack et amène-la à l'aplomb des épaules, bras tendus. Descends lentement en gardant les coudes à environ 45 degrés du buste, jusqu'à toucher le bas des pectoraux. Inspire pendant la descente. La barre se pose, elle ne s'écrase pas.",
+            "Sors la barre du rack et amène-la à l'aplomb des épaules, bras tendus. Descends lentement en gardant les coudes à environ 45 degrés du buste, vers le bas des pectoraux, dans l'amplitude où l'épaule reste confortable. Inspire pendant la descente. La barre se pose, elle ne s'écrase pas.",
         },
         {
           titre: "Pousser",
@@ -213,38 +222,38 @@ export const FICHES: FichePublique[] = [
         {
           titre: "Faire rebondir la barre sur la poitrine",
           pourquoi:
-            "L'élan fait alors une partie du travail à la place des pectoraux, et le choc arrive directement sur le sternum. Descends au contact, marque un temps très court, puis repousse.",
+            "L'élan prend une partie du travail à la place des pectoraux, et le contact devient brutal. Descends jusqu'au contact, marque un temps très court, puis repousse.",
         },
         {
           titre: "Ouvrir les coudes à 90 degrés",
           pourquoi:
-            "Coudes complètement écartés, c'est l'avant de l'épaule qui encaisse et qui lâche avant les pectoraux. Environ 45 degrés du buste laisse la poussée là où elle doit être.",
+            "Coudes complètement écartés, l'avant de l'épaule est davantage sollicité et fatigue souvent avant les pectoraux. Autour de 45 degrés du buste, la poussée se répartit mieux.",
         },
         {
           titre: "Décoller les fessiers du banc",
           pourquoi:
-            "On gagne quelques kilos en cambrant, mais la charge quitte les pectoraux et le bas du dos travaille en compression pour rien. Si les fessiers se lèvent, la barre est trop lourde.",
+            "Cambrer permet souvent de pousser un peu plus lourd, mais une partie du travail quitte les pectoraux et le bas du dos se retrouve sollicité au passage. Si les fessiers se lèvent série après série, c'est en général le signe qu'il faut alléger.",
         },
       ],
       variantes: [
         {
-          sens: "plus-facile",
+          angle: "Au poids du corps",
           exercice: "Pompes",
           texte:
-            "Le même schéma de poussée, mais tu ne déplaces qu'une partie de ton poids de corps, et poser les genoux allège encore. La façon la plus simple d'installer le geste avant de toucher une barre.",
+            "Le même schéma de poussée, sans matériel, avec une partie de ton poids de corps comme charge. Les appuis au sol demandent plus de gainage, et poser les genoux ou surélever les mains permet d'ajuster.",
         },
         {
-          sens: "plus-difficile",
+          angle: "Avec deux haltères",
           exercice: "Développé couché haltères",
           texte:
-            "À charge égale, deux haltères demandent plus : chaque bras se stabilise seul et l'amplitude descend plus bas. Un bon relais quand la barre stagne.",
+            "Chaque bras porte sa charge et se stabilise seul, ce qui demande plus de contrôle. L'amplitude descend souvent plus bas, et les haltères se posent sur les côtés en fin de série.",
         },
       ],
       placement:
-        "En début de séance haut du corps, quand tu es frais. C'est un mouvement lourd qui demande de la coordination, et il ne donne rien de bon exécuté fatigué. Trois à cinq séries, puis les mouvements d'isolation derrière.",
+        "En début de séance haut du corps, tant que tu es frais : c'est un mouvement chargé qui demande de la coordination, et la technique se dégrade vite une fois fatigué. Trois à cinq séries, puis les mouvements d'isolation derrière.",
       materiel: "Barre, banc et supports",
       precaution:
-        "Ne t'allonge jamais sous une barre chargée sans pareur ni barres de sécurité réglées à hauteur de poitrine. C'est le seul exercice où la charge peut te bloquer sur le banc : aux haltères on peut lâcher sur les côtés, à la barre non.",
+        "Travaille avec un pareur, ou avec des barres de sécurité réglées à hauteur de poitrine. Une barre qu'on n'arrive plus à repousser reste au-dessus de soi, alors que des haltères se posent sur les côtés.",
     },
   },
   {
@@ -329,13 +338,14 @@ export function fichesPubliees(): FicheResolue[] {
   return FICHES.map(resoudre).filter((f): f is FicheResolue => f !== null);
 }
 
-/** Les fiches connues mais pas encore rédigées. Le hub les annonce comme
-    à venir plutôt que de faire semblant qu'elles existent. */
-export function fichesAVenir(): { fiche: FichePublique; lib: LibExercise }[] {
-  return FICHES.filter((f) => !f.contenu)
-    .map((f) => ({ fiche: f, lib: trouverExercice(f.exercice)! }))
-    .filter((x) => !!x.lib);
-}
+/* `fichesAVenir()` a existé et a été SUPPRIMÉE : le hub s'en servait pour
+   afficher les fiches non rédigées en « fiche en préparation ». Décision de
+   Louis, et elle vaut pour toute la suite : le public ne voit jamais un
+   chantier. Une fiche sans contenu reste dans la donnée, elle tient son slug
+   et son title, mais rien ne l'expose. Ne pas la ressusciter pour « montrer
+   ce qui arrive » : le jour où le pilote est complet, la question ne se pose
+   plus, et d'ici là une case grise dit surtout que le produit n'est pas
+   fini. */
 
 export function ficheParSlug(slug: string): FicheResolue | null {
   const f = PAR_SLUG.get(slug);
@@ -396,12 +406,18 @@ export function verifierFiches(): string[] {
 }
 
 /** Les autres exercices de la même zone, pour la rangée de fin de fiche.
-    On pioche dans la bibliothèque entière et pas seulement dans les
-    fiches publiées : montrer un mouvement animé qu'on ne propose pas
-    encore en fiche reste utile, et c'est l'argument le plus parlant du
-    catalogue. L'affichage décide seul de ce qui devient un lien. */
-export function voisinsDeZone(fiche: FicheResolue, max = 4): LibExercise[] {
-  return EXERCISE_LIBRARY.filter(
-    (e) => e.zone === fiche.lib.zone && e.name !== fiche.lib.name && !!resolveGuide(e.name),
-  ).slice(0, max);
+
+    On ne pioche QUE dans les fiches publiées. La première version allait
+    chercher dans toute la bibliothèque, en se disant qu'un mouvement animé
+    reste intéressant même sans fiche : c'était une erreur de jugement. Une
+    rangée où trois vignettes sur quatre ne mènent nulle part se lit comme
+    un catalogue en travaux, pas comme une profondeur de contenu.
+
+    Conséquence assumée : tant qu'une zone n'a qu'une fiche, la rangée est
+    vide et la page masque toute la section. Mieux vaut une fiche qui
+    s'arrête net qu'une fiche qui promet une suite inexistante. */
+export function voisinsPublies(fiche: FicheResolue, max = 4): FicheResolue[] {
+  return fichesPubliees()
+    .filter((f) => f.slug !== fiche.slug && f.lib.zone === fiche.lib.zone)
+    .slice(0, max);
 }

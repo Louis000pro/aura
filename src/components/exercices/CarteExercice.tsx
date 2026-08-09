@@ -10,10 +10,12 @@ import { EQUIPS, ZONES, type LibExercise } from "@/lib/exerciseLibrary";
    envie de cliquer ici, c'est le personnage qui bouge, pas une phrase
    d'accroche de plus.
 
-   Une carte SANS destination ne devient jamais un lien mort : elle reste
-   une carte, un peu en retrait, et dit franchement que la fiche n'est
-   pas encore écrite. Annoncer huit fiches quand une seule existe serait
-   la version web de la promesse sans carte.
+   ⚠️ `href` est OBLIGATOIRE, et c'est le point important de ce fichier.
+   La première version acceptait une carte sans destination et l'affichait
+   en retrait, marquée « fiche en préparation ». Louis l'a refusé : un
+   visiteur ne doit jamais voir un produit inachevé. Le rendre obligatoire
+   plutôt que de retirer la branche fait porter la règle au compilateur,
+   donc personne ne pourra la contourner par inadvertance dans six mois.
    ════════════════════════════════════════════════════════════════════ */
 
 function meta(lib: LibExercise): string {
@@ -29,8 +31,8 @@ export default function CarteExercice({
   priorite = false,
 }: {
   lib: LibExercise;
-  /** La fiche publiée, ou rien si elle n'est pas encore écrite. */
-  href?: string;
+  /** La fiche publiée. Sans destination, pas de carte. */
+  href: string;
   taille?: number;
   /** À réserver aux cartes visibles sans défiler. Sur le hub, les
       vignettes SONT le contenu : la première rangée doit s'afficher tout
@@ -38,8 +40,16 @@ export default function CarteExercice({
       attend le défilement, et c'est très bien. */
   priorite?: boolean;
 }) {
-  const corps = (
-    <>
+  return (
+    <Link
+      href={href}
+      className="block rounded-3xl p-4 transition-transform hover:-translate-y-0.5"
+      style={{
+        background: "#fff",
+        border: "1px solid rgba(167,139,250,0.16)",
+        boxShadow: "0 6px 24px rgba(90,60,180,0.07)",
+      }}
+    >
       <div
         className="flex items-center justify-center rounded-2xl mb-3"
         style={{
@@ -53,32 +63,8 @@ export default function CarteExercice({
         {lib.name}
       </p>
       <p className="mt-0.5 text-[12px]" style={{ color: "#8B84A8" }}>
-        {href ? meta(lib) : "Fiche en préparation"}
+        {meta(lib)}
       </p>
-    </>
-  );
-
-  const style = {
-    background: "#fff",
-    border: "1px solid rgba(167,139,250,0.16)",
-    boxShadow: "0 6px 24px rgba(90,60,180,0.07)",
-  } as const;
-
-  if (!href) {
-    return (
-      <div className="rounded-3xl p-4" style={{ ...style, opacity: 0.62 }}>
-        {corps}
-      </div>
-    );
-  }
-
-  return (
-    <Link
-      href={href}
-      className="block rounded-3xl p-4 transition-transform hover:-translate-y-0.5"
-      style={style}
-    >
-      {corps}
     </Link>
   );
 }

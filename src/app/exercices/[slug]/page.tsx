@@ -11,7 +11,8 @@ import {
   libelleNiveau,
   slugDeLExercice,
   verifierFiches,
-  voisinsDeZone,
+  voisinsPublies,
+  type Variante,
 } from "@/lib/exercicesPublics";
 import { EQUIPS, libelleReps, trouverExercice } from "@/lib/exerciseLibrary";
 
@@ -63,6 +64,7 @@ export default async function FicheExercicePage({
 
   const { lib, contenu } = fiche;
   const categorie = libelleCategorie(fiche.categorie);
+  const voisins = voisinsPublies(fiche);
   const materiel =
     contenu.materiel ?? EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
 
@@ -256,44 +258,62 @@ export default async function FicheExercicePage({
           </p>
         )}
 
-        {/* Erreurs */}
+        {/* ── Erreurs ──────────────────────────────────────────────
+            En cartes côte à côte, trois erreurs donnaient deux cartes en
+            haut et une orpheline en bas. Trois colonnes ont été mesurées
+            plutôt que supposées : dans la colonne de lecture de 680 px,
+            chaque carte tomberait à 216 px, dont 176 px de texte utile,
+            et un titre comme « Faire rebondir la barre sur la poitrine »
+            y prend quatre lignes. Ce serait faire rentrer trois colonnes
+            au prix de la lisibilité.
+
+            Elles deviennent donc des lignes pleine largeur, séparées par
+            un filet. Aucune n'est orpheline puisqu'il n'y a plus de
+            grille, chacune garde toute la largeur de lecture, et ça se lit
+            pour ce que c'est : une liste de choses à ne pas faire. Sur
+            téléphone, le rendu est exactement le même. */}
         <h2 className="mt-12 mb-5 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
-          Les erreurs qui coûtent cher
+          Erreurs fréquentes
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {contenu.erreurs.map((err) => (
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "#fff", border: "1px solid rgba(232,98,12,0.18)" }}
+        >
+          {contenu.erreurs.map((err, i) => (
             <div
               key={err.titre}
-              className="rounded-2xl p-5"
-              style={{ background: "#fff", border: "1px solid rgba(232,98,12,0.18)" }}
+              className="flex items-start gap-3.5 px-5 py-4"
+              style={i > 0 ? { borderTop: "1px solid rgba(232,98,12,0.14)" } : undefined}
             >
               {/* La croix est DESSINÉE, pas écrite. Un « ✕ » posé dans le
                   flux se recolle au titre dès qu'on extrait le texte de la
                   page, et c'est exactement ce que le contrôle d'espacement
                   attrape. Un SVG est un graphique : il ne laisse rien
                   derrière lui dans le texte, et il est déjà décoratif. */}
-              <p className="flex items-start gap-2.5 text-[0.98rem] font-semibold mb-1.5" style={{ color: "#1A1535" }}>
-                <svg
-                  aria-hidden
-                  viewBox="0 0 16 16"
-                  className="shrink-0"
-                  style={{ width: 15, height: 15, marginTop: 3, stroke: "#E8620C", strokeWidth: 2.2, strokeLinecap: "round" }}
-                >
-                  <line x1="4" y1="4" x2="12" y2="12" />
-                  <line x1="12" y1="4" x2="4" y2="12" />
-                </svg>
-                <span>{err.titre}</span>
-              </p>
-              <p className="text-[0.93rem] leading-[1.6]" style={{ color: "#4A5568" }}>
-                {err.pourquoi}
-              </p>
+              <svg
+                aria-hidden
+                viewBox="0 0 16 16"
+                className="shrink-0"
+                style={{ width: 16, height: 16, marginTop: 4, stroke: "#E8620C", strokeWidth: 2.2, strokeLinecap: "round" }}
+              >
+                <line x1="4" y1="4" x2="12" y2="12" />
+                <line x1="12" y1="4" x2="4" y2="12" />
+              </svg>
+              <div>
+                <p className="text-[1rem] font-semibold mb-1" style={{ color: "#1A1535" }}>
+                  {err.titre}
+                </p>
+                <p className="text-[0.95rem] leading-[1.6]" style={{ color: "#4A5568" }}>
+                  {err.pourquoi}
+                </p>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Variantes */}
         <h2 className="mt-12 mb-5 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
-          Plus facile, plus difficile
+          Variantes et progressions
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {contenu.variantes.map((v) => (
@@ -340,23 +360,30 @@ export default async function FicheExercicePage({
         </Link>
       </section>
 
-      {/* ── Les voisins ──────────────────────────────────────────── */}
-      <section className="mt-16">
-        <h2 className="text-[1.35rem] font-medium mb-5" style={{ color: "#2D2150" }}>
-          Les autres exercices {categorie.toLowerCase()}
-        </h2>
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {voisinsDeZone(fiche).map((e) => {
-            const s = slugDeLExercice(e.name);
-            return <CarteExercice key={e.name} lib={e} href={s ? `/exercices/${s}` : undefined} taille={124} />;
-          })}
-        </div>
-        <p className="mt-6 text-sm">
-          <Link href="/exercices" className="font-medium hover:underline" style={{ color: "#7C5CFA" }}>
-            Voir toute la bibliothèque
-          </Link>
-        </p>
-      </section>
+      {/* ── Les voisins ──────────────────────────────────────────────
+          Uniquement des fiches publiées, donc toutes cliquables. Quand la
+          zone n'en a pas d'autre, la section entière disparaît : une
+          rangée de vignettes qui ne mènent nulle part se lirait comme un
+          catalogue en travaux. Le lien vers le hub, lui, reste toujours
+          là, sinon la fiche deviendrait un cul-de-sac. */}
+      {voisins.length > 0 && (
+        <section className="mt-16">
+          <h2 className="text-[1.35rem] font-medium mb-5" style={{ color: "#2D2150" }}>
+            Les autres exercices {categorie.toLowerCase()}
+          </h2>
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            {voisins.map((v) => (
+              <CarteExercice key={v.slug} lib={v.lib} href={`/exercices/${v.slug}`} taille={124} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <p className="mt-12 text-sm">
+        <Link href="/exercices" className="font-medium hover:underline" style={{ color: "#7C5CFA" }}>
+          Voir tous les exercices
+        </Link>
+      </p>
     </PageVitrine>
   );
 }
@@ -373,16 +400,11 @@ function motDeLExercice(nom: string): string {
   return `le ${nom.charAt(0).toLowerCase()}${nom.slice(1)}`;
 }
 
-function CarteVariante({
-  variante,
-}: {
-  variante: { sens: "plus-facile" | "plus-difficile"; exercice: string; texte: string };
-}) {
+function CarteVariante({ variante }: { variante: Variante }) {
   const lib = trouverExercice(variante.exercice);
   if (!lib) return null;
 
   const slug = slugDeLExercice(lib.name);
-  const facile = variante.sens === "plus-facile";
 
   const corps = (
     <>
@@ -398,11 +420,17 @@ function CarteVariante({
           <AnimationExercice nom={lib.name} taille={76} label={labelAnimation(lib.name)} />
         </div>
         <div>
+          {/* L'étiquette dit EN QUOI la variante diffère, pas si elle est
+              plus facile. Elle portait « Plus facile » en teal et « Plus
+              difficile » en orange : deux couleurs opposées installaient
+              une échelle de difficulté qui n'est vraie pour personne en
+              particulier. Un seul violet, neutre, et c'est le texte qui
+              renseigne. */}
           <p
             className="text-[10.5px] font-bold tracking-[0.16em] uppercase mb-1"
-            style={{ color: facile ? "#12A67C" : "#E8620C" }}
+            style={{ color: "#A78BFA" }}
           >
-            {facile ? "Plus facile" : "Plus difficile"}
+            {variante.angle}
           </p>
           <p className="text-[15px] font-semibold leading-tight" style={{ color: "#1A1535" }}>
             {lib.name}
