@@ -358,8 +358,13 @@ function TunnelPhone() {
             <ChevronDown size={12} strokeWidth={2.2} style={{ opacity: 0.6 }} />
           </span>
 
-          {/* Le personnage-guide, sur ses vraies frames */}
-          <div className="relative mt-2 flex items-center justify-center" style={{ height: 150 }}>
+          {/* Le personnage-guide, sur ses vraies frames.
+              Les trois images sont les poses d'un même mouvement, et une seule est
+              visible à la fois : leur donner chacune un `alt` ferait lire trois fois
+              la même chose. On décrit donc le GROUPE (`role="img"` + `aria-label`) et
+              les frames restent décoratives, ce qu'elles sont individuellement. */}
+          <div className="relative mt-2 flex items-center justify-center" style={{ height: 150 }}
+            role="img" aria-label="Personnage guide Vaiiya montrant le mouvement du crunch, pose après pose">
             <div className="absolute pointer-events-none"
               style={{
                 width: 210, height: 210, borderRadius: "50%",
