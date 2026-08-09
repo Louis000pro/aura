@@ -379,9 +379,66 @@ export const FICHES: FichePublique[] = [
     exercice: "Rowing barre",
     categorie: "dos",
     niveau: { de: "intermediaire", a: "confirme" },
-    title: "Rowing barre : construire l'épaisseur du dos",
+    title: "Rowing barre : buste penché, dos stable",
     description:
-      "Le rowing barre buste penché : inclinaison, trajectoire de la barre, muscles travaillés et erreurs fréquentes. Animation du mouvement.",
+      "Le rowing barre buste penché : inclinaison, trajectoire de la barre, contrôle de la descente et erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Buste penché vers l'avant, on tire une barre vers le bas du torse puis on la laisse redescendre bras tendus. La difficulté est double : le dos tire, pendant que tout le reste du corps tient une position penchée qui demande déjà un effort. C'est ce qui sépare ce mouvement des autres tirages de la bibliothèque, où l'on est assis sur un siège ou en appui d'un genou sur un banc.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Pieds à largeur de bassin, barre au-dessus du milieu du pied. Plie légèrement les genoux, pousse les hanches vers l'arrière et penche le buste vers l'avant en gardant le dos plat. Prends la barre un peu plus large que les épaules. Autour de quarante-cinq degrés est un bon repère de départ : plus tu te rapproches de l'horizontale, plus la position elle-même devient coûteuse à tenir.",
+        },
+        {
+          titre: "Tirer",
+          texte:
+            "Amène la barre vers le haut du ventre ou le bas du torse en menant avec les coudes, qui partent vers l'arrière plutôt que vers l'extérieur. Les omoplates se rapprochent en fin de tirage. Souffle sur cette partie.",
+        },
+        {
+          titre: "Contrôler la descente",
+          texte:
+            "Laisse la barre redescendre jusqu'à bras tendus, sans la lâcher. Le buste, lui, reste exactement à la même hauteur qu'au départ : c'est le repère qui dit si la série est encore propre.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Se redresser à chaque répétition",
+          pourquoi:
+            "Un buste qui remonte pendant le tirage aide la barre à monter, mais l'amplitude réellement parcourue par le dos diminue d'autant. C'est l'erreur la plus difficile à sentir soi-même : une vidéo de profil la rend évidente en dix secondes.",
+        },
+        {
+          titre: "Tirer avec un coup de reins",
+          pourquoi:
+            "Une impulsion des hanches à chaque répétition permet de mettre plus lourd, et le travail se déplace vers cette impulsion. Garde le bassin immobile et ralentis volontairement la descente : c'est le meilleur moyen de voir la charge réellement gérable.",
+        },
+        {
+          titre: "Laisser le haut du dos s'enrouler sous la charge",
+          pourquoi:
+            "Quand la barre devient trop lourde pour la position penchée, le dos s'arrondit progressivement, série après série, souvent sans qu'on le décide. C'est le signal pour alléger plutôt que pour finir la série.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "À un bras, buste soutenu",
+          exercice: "Rowing haltère",
+          texte:
+            "Un genou et une main en appui sur un banc : il n'y a plus de position penchée à tenir, ce qui déplace tout l'effort vers le tirage. Chaque côté travaille seul, et une différence entre les deux devient visible.",
+        },
+        {
+          angle: "Au poids du corps",
+          exercice: "Rowing inversé",
+          texte:
+            "Suspendu sous une barre basse, corps gainé, on tire la poitrine vers la barre. La charge est une fraction du poids du corps et se règle en changeant l'inclinaison du corps plutôt qu'en ajoutant des disques.",
+        },
+      ],
+      placement:
+        "Le rowing barre est le tirage le plus coûteux de la bibliothèque à cause de la position penchée : il se place tôt dans une séance de dos, avant les tirages où l'on est assis ou soutenu et où la fatigue du tronc compte moins. Placé après un soulevé de terre, il part avec une chaîne postérieure déjà bien sollicitée, ce qui limite en général ce qu'on peut y mettre.",
+      materiel: "Une barre et des disques",
+      materielCourt: "Barre",
+    },
   },
   {
     slug: "developpe-militaire-halteres",
