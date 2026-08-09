@@ -514,7 +514,65 @@ export const FICHES: FichePublique[] = [
     niveau: { de: "debutant", a: "confirme" },
     title: "Curl biceps haltères : le travail direct du bras",
     description:
-      "Le curl haltères pour les biceps : position des coudes, tempo, amplitude, et pourquoi le balancier vous fait perdre le bénéfice. Animation du mouvement.",
+      "Le curl aux haltères : position des coudes, amplitude, contrôle de la descente et les erreurs fréquentes. Le mouvement en animation.",
+    contenu: {
+      definition:
+        "Le curl est l'un des rares mouvements de la bibliothèque où une seule articulation travaille : le coude plie, le reste du corps ne fait rien. C'est ce qui le rend simple à comprendre et facile à dénaturer, puisque tout ce qui bouge en plus du coude retire du travail au biceps.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "Se placer",
+          texte:
+            "Debout, pieds sous les hanches, un haltère dans chaque main le long du corps, paumes vers l'avant. Coudes près du buste, épaules basses et ventre légèrement serré.",
+        },
+        {
+          titre: "Monter",
+          texte:
+            "Plie les coudes et amène les haltères vers les épaules. Seuls les avant-bras bougent. Souffle en montant. Inutile de chercher à monter très haut : dès que l'avant-bras dépasse la verticale, la charge repose sur l'articulation plutôt que sur le muscle.",
+        },
+        {
+          titre: "Redescendre lentement",
+          texte:
+            "Redescends jusqu'à bras presque tendus, plus lentement que tu n'es monté. C'est la moitié du mouvement que l'on abandonne le plus souvent, et celle qui distingue une série faite d'une série expédiée.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Balancer le buste pour lancer la charge",
+          pourquoi:
+            "Le corps recule puis avance pour donner l'impulsion, et le biceps se contente d'accompagner. Si le balancier devient nécessaire pour finir la série, la série est finie.",
+        },
+        {
+          titre: "Avancer les coudes en fin de montée",
+          pourquoi:
+            "Quand les coudes partent vers l'avant, l'épaule prend le relais et le haut du mouvement devient facile. Garde les coudes à côté du buste du début à la fin, même si la charge doit baisser.",
+        },
+        {
+          titre: "Laisser tomber la charge à la descente",
+          pourquoi:
+            "La descente compte autant que la montée. La laisser filer revient à ne faire que la moitié de chaque répétition, tout en fatiguant le poignet et le coude au moment de l'arrêt.",
+        },
+      ],
+      variantes: [
+        {
+          angle: "Paumes face à face",
+          exercice: "Curl marteau",
+          texte:
+            "Les mains restent tournées vers l'intérieur pendant tout le mouvement. Cette prise sollicite davantage l'avant-bras, et beaucoup de gens la trouvent plus confortable pour le poignet.",
+        },
+        {
+          angle: "Les deux bras sur une même barre",
+          exercice: "Curl barre EZ",
+          texte:
+            "Les deux bras travaillent ensemble, ce qui permet en général plus de charge totale. La barre coudée laisse les poignets légèrement tournés, une position souvent plus agréable qu'une barre droite.",
+        },
+      ],
+      placement:
+        "Le curl arrive après. C'est un mouvement d'isolation : il ne prépare rien et fatigue les biceps, dont on a besoin sur tous les tirages. Le placer avant un travail de dos revient à le saboter. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
+      materiel: "Deux haltères",
+      materielCourt: "Haltères",
+      nomDansLeTitre: "le curl aux haltères",
+    },
   },
   {
     slug: "gainage",
