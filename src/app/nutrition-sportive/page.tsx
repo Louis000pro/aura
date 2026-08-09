@@ -21,7 +21,7 @@ export default function NutritionSportivePage() {
     <MarketingShell>
       <h1>Nutrition sportive : la moitié de tes résultats</h1>
       <p className="lead">
-        Quel que soit ton objectif, la <strong>nutrition</strong> pèse autant que l&apos;entraînement.
+        Quel que soit ton objectif, la <strong>nutrition</strong>{" "}pèse autant que l&apos;entraînement.
         Comprendre tes calories et tes macros — protéines, glucides, lipides — te permet de progresser
         vraiment. Vaiiya calcule tes besoins et te propose des repas équilibrés adaptés.
       </p>
@@ -45,7 +45,7 @@ export default function NutritionSportivePage() {
       <p>
         Un repas type associe une <strong>source de protéines</strong> (œufs, poulet, poisson, légumineuses,
         tofu), des <strong>glucides</strong> (riz, pâtes, patate douce, pain complet), des{" "}
-        <strong>légumes</strong> et un peu de <strong>bon gras</strong> (huile d&apos;olive, oléagineux,
+        <strong>légumes</strong> et un peu de <strong>bon gras</strong>{" "}(huile d&apos;olive, oléagineux,
         avocat). Pas besoin d&apos;aliments « miracle »&nbsp;: la régularité et l&apos;équilibre font le travail.
       </p>
 
@@ -58,7 +58,7 @@ export default function NutritionSportivePage() {
 
       <h2>Ton plan nutrition personnalisé</h2>
       <p>
-        Le <Link href="/coach-ia">coach IA Vaiiya</Link> calcule tes calories et tes macros, puis te suggère
+        Le <Link href="/coach-ia">coach IA Vaiiya</Link>{" "}calcule tes calories et tes macros, puis te suggère
         des repas adaptés à ton objectif et à tes préférences — que tu t&apos;entraînes en salle ou à la{" "}
         <Link href="/musculation-maison">maison</Link>. Crée ton compte gratuit pour commencer.
       </p>

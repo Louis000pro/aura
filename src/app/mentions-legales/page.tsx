@@ -60,7 +60,7 @@ export default function MentionsLegalesPage() {
         <LegalSection title="Éditeur du site">
           <p>
             Le site et l&apos;application <strong>Vaiiya</strong> sont édités à titre non professionnel
-            par un particulier. Le service est proposé <strong>gratuitement</strong> : aucun abonnement
+            par un particulier. Le service est proposé <strong>gratuitement</strong>{" "}: aucun abonnement
             n&apos;est en vente et aucun paiement n&apos;est encaissé.
           </p>
           <ul className="list-none space-y-1.5 mt-2">
@@ -108,7 +108,7 @@ export default function MentionsLegalesPage() {
             constitue une contrefaçon.
           </p>
           <p>
-            Les utilisateurs <strong>conservent l&apos;intégralité des droits</strong> sur les contenus qu&apos;ils
+            Les utilisateurs <strong>conservent l&apos;intégralité des droits</strong>{" "}sur les contenus qu&apos;ils
             publient (affiches de performance, photos, messages, etc.). En publiant un contenu sur Vaiiya,
             l&apos;utilisateur accorde toutefois à l&apos;éditeur une licence non exclusive et gratuite d&apos;affichage
             et de diffusion de ce contenu, dans le seul but de faire fonctionner le service (affichage du

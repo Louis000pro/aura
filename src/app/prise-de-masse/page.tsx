@@ -21,7 +21,7 @@ export default function PriseDeMassePage() {
     <MarketingShell>
       <h1>Programme prise de masse : prendre du muscle efficacement</h1>
       <p className="lead">
-        La <strong>prise de masse</strong> repose sur trois piliers : un entraînement de musculation en
+        La <strong>prise de masse</strong>{" "}repose sur trois piliers : un entraînement de musculation en
         surcharge progressive, un léger surplus calorique et un apport suffisant en protéines. Vaiiya génère
         ton programme prise de masse personnalisé et l&apos;ajuste à mesure que tu progresses.
       </p>
@@ -31,7 +31,7 @@ export default function PriseDeMassePage() {
       <p>
         Pour prendre du muscle, tes séances doivent privilégier les exercices polyarticulaires (squat,
         développé couché, soulevé de terre, tractions) avec des charges qui augmentent progressivement. Un
-        schéma de <strong>4 séries de 8 à 12 répétitions</strong> est idéal pour l&apos;hypertrophie.
+        schéma de <strong>4 séries de 8 à 12 répétitions</strong>{" "}est idéal pour l&apos;hypertrophie.
       </p>
       <h3>2. Le surplus calorique</h3>
       <p>
