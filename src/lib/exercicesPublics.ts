@@ -349,7 +349,7 @@ export const FICHES: FichePublique[] = [
           angle: "Avec une charge tenue devant",
           exercice: "Goblet squat",
           texte:
-            "Un haltère ou une kettlebell tenue contre la poitrine. Le poids placé devant a tendance à redresser le buste, ce qui aide beaucoup de gens à descendre plus droit. C'est aussi la façon la plus simple d'ajouter de la charge sans barre ni rack.",
+            "Un haltère ou une kettlebell tenue contre la poitrine. Le poids placé devant a tendance à redresser le buste, ce qui aide beaucoup de gens à descendre plus droit. C'est aussi la façon d'ajouter de la charge qui demande le moins de matériel : ni barre, ni rack.",
         },
         {
           angle: "Sur une seule jambe",
