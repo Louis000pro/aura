@@ -3,7 +3,7 @@ import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
 
 export const metadata: Metadata = {
-  title: "Coach sportif IA — ton coach musculation & nutrition personnalisé",
+  title: "Coach sportif IA : musculation et nutrition",
   description:
     "Vaiiya est ton coach sportif IA : programmes de musculation personnalisés, plans nutrition et suivi de progression pilotés par l'intelligence artificielle. Gratuit pour commencer.",
   alternates: { canonical: "https://vaiiya.fr/coach-ia" },

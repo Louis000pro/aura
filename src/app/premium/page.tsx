@@ -228,7 +228,7 @@ function PremiumInner() {
             Coach IA <strong style={{ color: "var(--accent)" }}>sans limite</strong>, programmes exclusifs, zéro pub.
             {VENTE_OUVERTE ? (
               <>
-                <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong> · 0 € aujourd&apos;hui · annule en 1 clic.
+                <br className="hidden md:block" /> <strong style={{ color: "var(--accent)" }}>3 jours gratuits</strong>{" "}· 0 € aujourd&apos;hui · annule en 1 clic.
               </>
             ) : (
               <>
@@ -398,7 +398,7 @@ function PremiumInner() {
             se lire AVANT de payer, pas après. */}
         {VENTE_OUVERTE ? (
           <p className="text-center text-[11px] md:text-xs font-light mt-3 md:mt-6 flex-shrink-0" style={{ color: "var(--text-3)" }}>
-            <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong> · annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
+            <strong style={{ color: "#7C5CFA" }}>0 € aujourd&apos;hui</strong>{" "}· annulable en 1 clic avant la fin de l&apos;essai · paiement sécurisé Stripe 🔒
             <br />
             Puis {formatPrice(PLANS.premium.priceCents)}/mois, reconduit automatiquement, résiliable à tout moment.
             {" "}

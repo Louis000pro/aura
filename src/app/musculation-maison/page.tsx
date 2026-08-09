@@ -3,7 +3,7 @@ import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
 
 export const metadata: Metadata = {
-  title: "Musculation à la maison — programme sans salle, haltères & poids du corps",
+  title: "Musculation à la maison : poids du corps et haltères",
   description:
     "Programme de musculation à la maison : exercices au poids du corps et aux haltères pour progresser sans salle de sport. Plan personnalisé par l'IA Vaiiya, gratuit.",
   alternates: { canonical: "https://vaiiya.fr/musculation-maison" },
@@ -21,7 +21,7 @@ export default function MusculationMaisonPage() {
     <MarketingShell>
       <h1>Musculation à la maison : progresser sans salle de sport</h1>
       <p className="lead">
-        Pas besoin d&apos;abonnement en salle pour te muscler. Avec le <strong>poids du corps</strong> et une
+        Pas besoin d&apos;abonnement en salle pour te muscler. Avec le <strong>poids du corps</strong>{" "}et une
         simple paire d&apos;<strong>haltères</strong>, tu peux construire du muscle chez toi. Vaiiya adapte ton
         programme de musculation maison à ton matériel et à ton niveau.
       </p>

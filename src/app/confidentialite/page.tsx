@@ -130,7 +130,7 @@ export default function ConfidentialitePage() {
           <p className="mt-2">
             Certains de ces prestataires sont situés en dehors de l&apos;Union européenne, notamment aux
             <strong> États-Unis</strong>. Dans ce cas, les transferts de données sont encadrés par des
-            <strong> garanties appropriées</strong> (clauses contractuelles types de la Commission
+            <strong> garanties appropriées</strong>{" "}(clauses contractuelles types de la Commission
             européenne ou mécanismes équivalents) afin d&apos;assurer un niveau de protection adéquat.
           </p>
           <p>Nous ne vendons jamais vos données personnelles à des tiers.</p>
@@ -205,7 +205,7 @@ export default function ConfidentialitePage() {
         <LegalSection title="Réclamation">
           <p>
             Si vous estimez que le traitement de vos données ne respecte pas la réglementation, vous avez
-            le droit d&apos;introduire une réclamation auprès de la <strong>CNIL</strong> (Commission Nationale
+            le droit d&apos;introduire une réclamation auprès de la <strong>CNIL</strong>{" "}(Commission Nationale
             de l&apos;Informatique et des Libertés) :
             {" "}
             <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }} className="hover:underline">

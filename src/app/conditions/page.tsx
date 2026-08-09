@@ -86,7 +86,7 @@ export default function ConditionsPage() {
             l&apos;éditeur figurent dans les <Link href="/mentions-legales" className="underline" style={{ color: "var(--accent)" }}>mentions légales</Link>.
           </p>
           <p>
-            <strong>Vaiiya est aujourd&apos;hui entièrement gratuit.</strong> L&apos;abonnement décrit à
+            <strong>Vaiiya est aujourd&apos;hui entièrement gratuit.</strong>{" "}L&apos;abonnement décrit à
             l&apos;article 4 n&apos;est pas encore ouvert : aucun paiement n&apos;est possible, aucun moyen de
             paiement ne vous est demandé, et rien ne vous est facturé. Les articles relatifs à
             l&apos;abonnement ne s&apos;appliqueront qu&apos;à compter de son ouverture, qui sera annoncée dans
@@ -97,7 +97,7 @@ export default function ConditionsPage() {
             En créant un compte, vous acceptez les présentes conditions.
           </p>
           <p>
-            <strong>Vaiiya n&apos;est pas un service de santé.</strong> Les séances, les estimations
+            <strong>Vaiiya n&apos;est pas un service de santé.</strong>{" "}Les séances, les estimations
             nutritionnelles et les réponses de l&apos;assistant sont générées automatiquement, à titre
             informatif. Elles ne constituent ni un diagnostic, ni une prescription, ni un avis médical, et
             ne remplacent pas un professionnel de santé. Demandez l&apos;avis d&apos;un médecin avant de
@@ -133,7 +133,7 @@ export default function ConditionsPage() {
             se poursuit automatiquement et le premier prélèvement a lieu, sauf si vous avez résilié avant.
           </p>
           <p>
-            <strong>L&apos;abonnement se reconduit automatiquement chaque mois</strong> jusqu&apos;à
+            <strong>L&apos;abonnement se reconduit automatiquement chaque mois</strong>{" "}jusqu&apos;à
             résiliation. Chaque échéance est prélevée d&apos;avance, pour le mois à venir.
           </p>
           <p>
@@ -155,7 +155,7 @@ export default function ConditionsPage() {
             n&apos;est prélevé ensuite.
           </p>
           <p>
-            <strong>Droit de rétractation.</strong> Vous disposez de 14 jours pour vous rétracter d&apos;un
+            <strong>Droit de rétractation.</strong>{" "}Vous disposez de 14 jours pour vous rétracter d&apos;un
             achat à distance. L&apos;abonnement donnant accès à un contenu numérique immédiatement, vous
             acceptez, en souscrivant, que l&apos;exécution commence tout de suite et vous renoncez à votre
             droit de rétractation pour la période déjà exécutée. Cela ne vous empêche jamais de résilier
@@ -172,7 +172,7 @@ export default function ConditionsPage() {
           <p>
             Les fonctions d&apos;IA de Vaiiya (assistant, analyse de photo, estimation de repas, génération
             de recettes et de séances, dictée) reposent sur des services payants à l&apos;usage. Nous les
-            présentons comme <strong>illimitées</strong> pour les abonnés, et elles le sont pour un usage
+            présentons comme <strong>illimitées</strong>{" "}pour les abonnés, et elles le sont pour un usage
             normal : les plafonds ci-dessous sont posés très au-dessus de ce qu&apos;une personne fait
             réellement en une journée. Ils n&apos;existent que pour empêcher un usage automatisé ou
             manifestement disproportionné.
@@ -208,7 +208,7 @@ export default function ConditionsPage() {
             plafonnée.
           </p>
           <p>
-            <strong>Ce qui est interdit :</strong> accéder au service autrement que par l&apos;application
+            <strong>Ce qui est interdit :</strong>{" "}accéder au service autrement que par l&apos;application
             (script, robot, automatisation), revendre ou redistribuer les réponses de l&apos;IA, partager un
             compte entre plusieurs personnes, ou contourner les limites de quelque manière que ce soit.
           </p>
@@ -255,14 +255,14 @@ export default function ConditionsPage() {
           </p>
           <p>
             Nous pouvons en particulier <strong>suspendre, limiter, corriger, modifier ou retirer une
-            fonctionnalité sans préavis</strong> lorsque c&apos;est nécessaire pour : corriger une anomalie,
+            fonctionnalité sans préavis</strong>{" "}lorsque c&apos;est nécessaire pour : corriger une anomalie,
             protéger vos données ou celles des autres, contenir un abus ou une faille de sécurité, ou parce
             qu&apos;un prestataire dont nous dépendons (hébergement, base de données, paiement, modèles
             d&apos;intelligence artificielle) est indisponible, modifie ses conditions ou cesse son service.
             Quand la situation le permet, nous prévenons dans l&apos;application.
           </p>
           <p>
-            Certaines fonctionnalités sont <strong>récentes ou expérimentales</strong> et peuvent comporter
+            Certaines fonctionnalités sont <strong>récentes ou expérimentales</strong>{" "}et peuvent comporter
             des anomalies, en particulier celles reposant sur l&apos;intelligence artificielle. Elles peuvent
             être ajustées, remplacées ou retirées.
           </p>
@@ -274,7 +274,7 @@ export default function ConditionsPage() {
             mois.
           </p>
           <p>
-            <strong>Ce que cette clause ne fait pas :</strong> elle n&apos;autorise pas à vous facturer un
+            <strong>Ce que cette clause ne fait pas :</strong>{" "}elle n&apos;autorise pas à vous facturer un
             service que vous n&apos;auriez pas. Si une interruption longue nous est imputable, vous obtenez
             sur demande un geste commercial au prorata. Si une fonctionnalité essentielle de
             l&apos;abonnement disparaissait durablement, vous pouvez résilier et être remboursé au prorata.
@@ -284,7 +284,7 @@ export default function ConditionsPage() {
 
         <Section title="8. Réclamation et litige">
           <p>
-            En cas de problème, écrivez-nous d&apos;abord à <strong>bonjour@vaiiya.fr</strong> : c&apos;est
+            En cas de problème, écrivez-nous d&apos;abord à <strong>bonjour@vaiiya.fr</strong>{" "}: c&apos;est
             presque toujours le plus rapide.
           </p>
           <p>

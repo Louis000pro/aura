@@ -3,7 +3,7 @@ import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
 
 export const metadata: Metadata = {
-  title: "Perte de poids — programme sèche, sport et nutrition pour maigrir",
+  title: "Perte de poids : programme pour maigrir durablement",
   description:
     "Perdre du poids durablement : déficit calorique, musculation et cardio. Programme de sèche et plan nutrition personnalisés par l'IA Vaiiya pour maigrir sans reprendre.",
   alternates: { canonical: "https://vaiiya.fr/perte-de-poids" },
@@ -21,7 +21,7 @@ export default function PerteDePoidsPage() {
     <MarketingShell>
       <h1>Perte de poids : maigrir durablement avec sport et nutrition</h1>
       <p className="lead">
-        La <strong>perte de poids</strong> repose sur un déficit calorique maîtrisé, associé à de la
+        La <strong>perte de poids</strong>{" "}repose sur un déficit calorique maîtrisé, associé à de la
         musculation pour préserver le muscle et à de l&apos;activité pour augmenter ta dépense. Vaiiya
         construit ton programme de <strong>sèche</strong> et ton plan nutrition adaptés à ton rythme.
       </p>
@@ -29,7 +29,7 @@ export default function PerteDePoidsPage() {
       <h2>Le principe : le déficit calorique</h2>
       <p>
         Pour maigrir, tu dois consommer moins de calories que tu n&apos;en dépenses. Un déficit modéré de{" "}
-        <strong>300 à 500 kcal par jour</strong> permet de perdre environ 0,5&nbsp;kg par semaine — un rythme
+        <strong>300 à 500 kcal par jour</strong>{" "}permet de perdre environ 0,5&nbsp;kg par semaine — un rythme
         sain et tenable, sans effet yo-yo. Les régimes trop agressifs font perdre du muscle et reprendre vite.
       </p>
 
