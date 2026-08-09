@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:seo-spacing": "node scripts/check-seo-spacing.mjs",
     "guides": "node scripts/build-guides.mjs && node scripts/normalize-guides.mjs",
     "guides:build": "node scripts/build-guides.mjs",
     "guides:normalize": "node scripts/normalize-guides.mjs"
