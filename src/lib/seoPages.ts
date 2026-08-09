@@ -15,6 +15,10 @@ export const SEO_PAGES: { href: string; label: string }[] = [
   { href: "/perte-de-poids", label: "Perte de poids" },
   { href: "/musculation-maison", label: "Musculation à la maison" },
   { href: "/nutrition-sportive", label: "Nutrition sportive" },
+  // Le hub des fiches d'exercices. Il est listé ici dès sa mise en ligne :
+  // une page que personne ne lie ne reçoit aucun poids interne, et c'est
+  // exactement ce qui avait rendu /guides invisible et inutile.
+  { href: "/exercices", label: "Exercices" },
 ];
 
 /** Les pages légales publiques, dans l'ordre où on les présente. */

@@ -47,8 +47,10 @@ export default function AnimationExercice({
 }: {
   /** Nom canonique de l'exercice (celui de `EXERCISE_LIBRARY`). */
   nom: string;
-  /** Côté du carré, en pixels. Le sprite est carré (1024×1024). */
-  taille: number;
+  /** Côté du carré. Le sprite est carré (1024×1024), donc une seule
+      mesure suffit. Une chaîne CSS est acceptée pour les grilles qui
+      veulent une case fluide (« 100% » dans un parent en aspect carré). */
+  taille: number | string;
   /** Ce que l'animation montre, pour qui ne la voit pas. */
   label: string;
   /** Le héros de la fiche, et lui seul. */
