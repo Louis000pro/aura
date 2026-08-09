@@ -665,7 +665,7 @@ export const FICHES: FichePublique[] = [
         },
       ],
       placement:
-        "Le curl est un mouvement d'isolation : il ne prépare rien et fatigue les biceps, dont on se sert sur tous les tirages. Dans une séance contenant de gros tirages, il est donc souvent placé après afin de ne pas fatiguer les biceps avant eux. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
+        "Le curl est un mouvement d'isolation : il ne prépare rien et fatigue les biceps, dont on se sert sur tous les tirages. Dans une séance qui contient de gros tirages, il est donc souvent placé après eux. En fin de séance, ou dans une séance de bras, la question ne se pose pas.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le curl aux haltères",
