@@ -77,12 +77,16 @@ export default function ExercicesPage() {
           Nous ouvrons la bibliothèque exercice par exercice, en écrivant chaque fiche à la main.
         </p>
 
+        {/* Les fiches rédigées d'abord, celles à venir ensuite. Les quatre
+            premières cartes sont prioritaires : ce sont elles qu'on voit
+            en arrivant, et une grille qui s'ouvre sur des cases vides
+            annulerait tout l'intérêt de la page. */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {publiees.map((f) => (
-            <CarteExercice key={f.slug} lib={f.lib} href={`/exercices/${f.slug}`} />
-          ))}
-          {aVenir.map(({ fiche, lib }) => (
-            <CarteExercice key={fiche.slug} lib={lib} />
+          {[
+            ...publiees.map((f) => ({ cle: f.slug, lib: f.lib, href: `/exercices/${f.slug}` })),
+            ...aVenir.map(({ fiche, lib }) => ({ cle: fiche.slug, lib, href: undefined })),
+          ].map((c, i) => (
+            <CarteExercice key={c.cle} lib={c.lib} href={c.href} priorite={i < 4} />
           ))}
         </div>
       </section>

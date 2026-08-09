@@ -79,11 +79,39 @@ export default function AnimationExercice({
           width={1024}
           height={1024}
           decoding="async"
-          loading={priorite ? "eager" : "lazy"}
+          /* `priorite` ne concerne QUE la première pose, celle qu'on voit
+             avant que l'animation ait bougé. Les suivantes restent en
+             `lazy`, et ce n'est pas un compromis : une image `lazy` déjà
+             présente dans la fenêtre est chargée immédiatement de toute
+             façon. On gagne donc le démarrage sans payer trois à cinq
+             images bloquantes par vignette. */
+          loading={priorite && i === 0 ? "eager" : "lazy"}
           fetchPriority={priorite && i === 0 ? "high" : undefined}
-          /* Le décalage qui fait l'animation. Chaque pose joue la même
-             chose, un cran plus loin dans le cycle. */
-          style={{ animationDelay: `${-i * 0.9}s` }}
+          /* Le décalage qui fait l'animation. Deux pièges s'annulent ici,
+             et la formule tient les deux à la fois. Les deux ont été
+             vérifiés en scrutant les opacités pose par pose dans un vrai
+             navigateur, pas déduits.
+
+             1. L'ORDRE. Un délai négatif AVANCE l'animation, il ne la
+                retarde pas. Décaler la pose i de -i × 0,9 s la place donc
+                plus loin dans son cycle que la pose précédente, et un
+                mouvement à trois poses se joue 1, 3, 2 : sur un développé
+                couché, la poussée passe avant la descente. Pour que la
+                pose i prenne la main à i × 0,9 s, il faut au contraire la
+                RETARDER de i × 0,9 s.
+
+             2. LE PREMIER TOUR. Un délai franchement positif laisse la
+                pose suivante à l'arrêt pendant que la précédente s'efface :
+                au tout premier passage, le personnage s'estompe dans le
+                vide avant que la suite n'apparaisse d'un coup.
+
+             D'où `(i - poses) × 0,9` : le même décalage que le retard
+             voulu, moins un cycle entier. Comme l'animation boucle, une
+             période complète ne change rien au régime établi, mais le
+             délai devient négatif, donc toutes les poses tournent déjà à
+             la première image et les fondus se croisent dès la première
+             transition. */
+          style={{ animationDelay: `${(i - guide.frames) * 0.9}s` }}
         />
       ))}
     </div>

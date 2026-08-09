@@ -147,6 +147,11 @@ export type ContenuFiche = {
   variantes: Variante[];
   /** Où le placer dans une séance. Court, concret, propre au mouvement. */
   placement: string;
+  /** Le matériel en clair, quand le libellé de famille de la bibliothèque
+      est trop vague pour une page publique : « Haltères & barre » est un
+      filtre d'écran correct, mais un visiteur veut savoir qu'il lui faut
+      un banc. Absent, on retombe sur le libellé de famille. */
+  materiel?: string;
   /** Facultatif : la précaution qui mérite d'être dite. Rien de médical,
       rien d'alarmiste, et surtout pas sur toutes les fiches, sinon elle
       devient un bandeau qu'on ne lit plus. */
@@ -183,7 +188,64 @@ export const FICHES: FichePublique[] = [
     title: "Développé couché : technique, muscles et erreurs",
     description:
       "Comment faire le développé couché à la barre : placement, exécution, muscles travaillés et les erreurs qui limitent la progression. Animation du mouvement.",
-    // Le contenu rédigé arrive avec la mise en ligne de la fiche.
+    contenu: {
+      definition:
+        "Allongé sur un banc, on descend une barre jusqu'au bas de la poitrine puis on la repousse à bout de bras. Le banc stabilise le buste, et c'est ce qui change tout : rien ne limite la charge à part la force de poussée elle-même, ce qui en fait le mouvement le plus lourd du haut du corps.",
+      gabarit: "mouvement",
+      etapes: [
+        {
+          titre: "S'installer",
+          texte:
+            "Allonge-toi les yeux à l'aplomb de la barre. Cinq appuis, et ils comptent : la tête, le haut du dos et les fessiers sur le banc, les deux pieds à plat au sol. Serre les omoplates l'une vers l'autre et garde-les serrées jusqu'à la fin de la série, c'est ce placement qui garde l'épaule en sécurité. Prends la barre un peu plus large que les épaules, poignets dans l'axe des avant-bras.",
+        },
+        {
+          titre: "Descendre",
+          texte:
+            "Sors la barre du rack et amène-la à l'aplomb des épaules, bras tendus. Descends lentement en gardant les coudes à environ 45 degrés du buste, jusqu'à toucher le bas des pectoraux. Inspire pendant la descente. La barre se pose, elle ne s'écrase pas.",
+        },
+        {
+          titre: "Pousser",
+          texte:
+            "Repousse la barre vers le haut, légèrement en direction des épaules, en poussant aussi le sol avec les pieds. Souffle au moment où ça devient dur. Tends les bras sans claquer les coudes en fin de mouvement.",
+        },
+      ],
+      erreurs: [
+        {
+          titre: "Faire rebondir la barre sur la poitrine",
+          pourquoi:
+            "L'élan fait alors une partie du travail à la place des pectoraux, et le choc arrive directement sur le sternum. Descends au contact, marque un temps très court, puis repousse.",
+        },
+        {
+          titre: "Ouvrir les coudes à 90 degrés",
+          pourquoi:
+            "Coudes complètement écartés, c'est l'avant de l'épaule qui encaisse et qui lâche avant les pectoraux. Environ 45 degrés du buste laisse la poussée là où elle doit être.",
+        },
+        {
+          titre: "Décoller les fessiers du banc",
+          pourquoi:
+            "On gagne quelques kilos en cambrant, mais la charge quitte les pectoraux et le bas du dos travaille en compression pour rien. Si les fessiers se lèvent, la barre est trop lourde.",
+        },
+      ],
+      variantes: [
+        {
+          sens: "plus-facile",
+          exercice: "Pompes",
+          texte:
+            "Le même schéma de poussée, mais tu ne déplaces qu'une partie de ton poids de corps, et poser les genoux allège encore. La façon la plus simple d'installer le geste avant de toucher une barre.",
+        },
+        {
+          sens: "plus-difficile",
+          exercice: "Développé couché haltères",
+          texte:
+            "À charge égale, deux haltères demandent plus : chaque bras se stabilise seul et l'amplitude descend plus bas. Un bon relais quand la barre stagne.",
+        },
+      ],
+      placement:
+        "En début de séance haut du corps, quand tu es frais. C'est un mouvement lourd qui demande de la coordination, et il ne donne rien de bon exécuté fatigué. Trois à cinq séries, puis les mouvements d'isolation derrière.",
+      materiel: "Barre, banc et supports",
+      precaution:
+        "Ne t'allonge jamais sous une barre chargée sans pareur ni barres de sécurité réglées à hauteur de poitrine. C'est le seul exercice où la charge peut te bloquer sur le banc : aux haltères on peut lâcher sur les côtés, à la barre non.",
+    },
   },
   {
     slug: "squat",

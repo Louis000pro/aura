@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 /**
- * Métadonnées de /guides — l'écran de revue des planches d'animation.
+ * Métadonnées de /guides, l'écran de revue des planches d'animation.
  *
  * Cette page est un OUTIL DE PRODUCTION, pas une page publique : elle affiche
  * les 102 personnages-guides d'un coup d'œil pour vérifier une vague après un

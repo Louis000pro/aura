@@ -26,11 +26,17 @@ export default function CarteExercice({
   lib,
   href,
   taille = 148,
+  priorite = false,
 }: {
   lib: LibExercise;
   /** La fiche publiée, ou rien si elle n'est pas encore écrite. */
   href?: string;
   taille?: number;
+  /** À réserver aux cartes visibles sans défiler. Sur le hub, les
+      vignettes SONT le contenu : la première rangée doit s'afficher tout
+      de suite, sinon la page s'ouvre sur des cases vides. Tout le reste
+      attend le défilement, et c'est très bien. */
+  priorite?: boolean;
 }) {
   const corps = (
     <>
@@ -41,7 +47,7 @@ export default function CarteExercice({
           background: "radial-gradient(circle at 50% 45%, rgba(139,92,246,0.13), rgba(139,92,246,0) 68%)",
         }}
       >
-        <AnimationExercice nom={lib.name} taille={taille} label={labelAnimation(lib.name)} />
+        <AnimationExercice nom={lib.name} taille={taille} label={labelAnimation(lib.name)} priorite={priorite} />
       </div>
       <p className="text-[15px] font-semibold leading-snug" style={{ color: "#1A1535" }}>
         {lib.name}
