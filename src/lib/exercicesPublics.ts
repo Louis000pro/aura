@@ -231,12 +231,28 @@ export type FichePublique = {
   /** Nom canonique EXACT d'une entrée de `EXERCISE_LIBRARY`. */
   exercice: string;
   categorie: CategoriePublique;
-  /** Facultatif, et c'est le point : la ligne « Pour » n'a de valeur que
-      lorsqu'elle distingue quelque chose. Cinq fiches sur huit affichaient
-      « Débutant à confirmé », c'est-à-dire tout le monde, ce qui revient à
-      occuper une ligne du héros pour ne rien dire. On ne la remplace par
-      aucune autre donnée : deux lignes qui informent valent mieux que
-      trois lignes dont une est décorative. Absente, la ligne disparaît. */
+  /** ⚠️ AUCUNE FICHE NE DOIT LE REMPLIR AUJOURD'HUI. Règle durable, posée
+      par Louis le 2026-08-09 et écrite dans le contrat éditorial
+      (`docs/lot-seo-3-fiches-exercices.md`, section 3) :
+
+        On n'attribue pas de niveau public à un exercice tant que Vaiiya ne
+        possède pas une taxonomie de difficulté ou de niveau explicitement
+        définie et validée comme donnée produit. On n'invente jamais cette
+        valeur fiche par fiche pour remplir le héros.
+
+      Ce champ a été créé pour ce chantier alors qu'aucune donnée de
+      difficulté n'existe dans `exerciseLibrary.ts` (le type `Raw` n'en a
+      pas de champ). Résultat : cinq fiches sur huit ont affiché « Débutant
+      à confirmé », c'est-à-dire tout le monde, et les trois autres un
+      jugement écrit pour la page seule. Sur les burpees, un mouvement au
+      poids du corps que beaucoup de débutants pratiquent, « Intermédiaire
+      à confirmé » fermait une porte qu'aucune donnée ne nous autorisait à
+      fermer.
+
+      Il reste déclaré, facultatif et inutilisé, pour le jour où la
+      taxonomie existera. Le héros s'en passe par construction :
+      `lignesDuHero` saute la ligne absente, et on ne met RIEN à sa
+      place. */
   niveau?: { de: NiveauPublic; a: NiveauPublic };
   /** Le title de la balise, sans le suffixe « · Vaiiya » que le gabarit
       racine ajoute (9 caractères). Écrit à la main : un gabarit produirait
@@ -395,7 +411,6 @@ export const FICHES: FichePublique[] = [
     slug: "souleve-de-terre",
     exercice: "Soulevé de terre classique",
     categorie: "dos",
-    niveau: { de: "intermediaire", a: "confirme" },
     title: "Soulevé de terre : installation, tension, exécution",
     description:
       "Le soulevé de terre à la barre : la position de départ, la tension à créer avant de décoller, la coordination de la montée et les erreurs fréquentes. Le mouvement en animation.",
@@ -477,7 +492,6 @@ export const FICHES: FichePublique[] = [
     slug: "rowing-barre",
     exercice: "Rowing barre",
     categorie: "dos",
-    niveau: { de: "intermediaire", a: "confirme" },
     title: "Rowing barre : technique, posture et erreurs fréquentes",
     description:
       "Le rowing barre buste penché : inclinaison, trajectoire de la barre, contrôle de la descente et erreurs fréquentes. Le mouvement en animation.",
@@ -599,7 +613,7 @@ export const FICHES: FichePublique[] = [
         },
       ],
       placement:
-        "Comme la charge se déplace au-dessus de la tête sans appui du buste, le mouvement demande de la coordination et un tronc stable. Il est donc souvent placé avant les mouvements d'isolation des épaules. Après un développé couché, il part avec un avant d'épaule et des triceps déjà sollicités : c'est un choix défendable dans une séance de poussée, à condition de savoir qu'on baissera les charges.",
+        "Comme la charge se déplace au-dessus de la tête sans appui du buste, le mouvement demande de la coordination et un tronc stable. Il est donc souvent placé avant les mouvements d'isolation des épaules. Après un développé couché, l'avant d'épaule et les triceps sont déjà sollicités : c'est un choix possible dans une séance de poussée, mais les performances peuvent y être un peu plus basses.",
       materiel: "Deux haltères",
       materielCourt: "Haltères",
       nomDansLeTitre: "le développé militaire aux haltères",
@@ -739,12 +753,6 @@ export const FICHES: FichePublique[] = [
     slug: "burpees",
     exercice: "Burpees",
     categorie: "cardio",
-    /* Pas de `niveau` : il n'existe aucune donnée de difficulté dans
-       `exerciseLibrary.ts` (le type `Raw` n'en a pas de champ), donc
-       « Intermédiaire à confirmé » était un jugement écrit pour cette page
-       seule. Sur un mouvement au poids du corps que beaucoup de débutants
-       font en cours collectif, il fermait une porte qu'aucune donnée ne
-       nous autorisait à fermer. Rien ne le remplace. */
     title: "Burpees : la séquence, le rythme, les erreurs",
     description:
       "Comment faire un burpee : la séquence décomposée, le rythme qu'on peut tenir, les adaptations possibles et les erreurs fréquentes. Le mouvement en animation.",

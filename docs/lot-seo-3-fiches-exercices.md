@@ -57,6 +57,27 @@ porte le libellé **« Exemple »** (déjà en place), et selon le cas on peut d
 dépendent de l'objectif, du niveau et de la séance. Une fiche d'exercice n'est pas
 un programme.
 
+### La ligne « Pour » n'existe pas tant qu'il n'y a pas de taxonomie
+
+**Ne pas attribuer de niveau public à un exercice tant que Vaiiya ne possède pas
+une taxonomie de difficulté ou de niveau explicitement définie et validée comme
+donnée produit. Ne jamais inventer cette valeur fiche par fiche pour remplir le
+héros.**
+
+Ce qui s'est passé, pour que la règle ne se redécouvre pas : le champ `niveau` a
+été créé dans `exercicesPublics.ts` pour ce chantier, alors qu'aucune donnée de
+difficulté n'existe dans `exerciseLibrary.ts` (le type `Raw` n'en a pas de champ).
+Cinq fiches sur huit affichaient donc « Débutant à confirmé », c'est-à-dire tout
+le monde, et les trois autres portaient un jugement écrit pour la page seule. Sur
+les burpees, un mouvement au poids du corps que beaucoup de débutants pratiquent,
+« Intermédiaire à confirmé » fermait une porte qu'aucune donnée ne nous autorisait
+à fermer.
+
+Le champ existe toujours, facultatif et **utilisé par aucune fiche**, pour le jour
+où la taxonomie existera. Le héros est conçu pour s'en passer : `lignesDuHero`
+saute la ligne absente, et on ne met **rien** à sa place. Deux lignes qui
+informent valent mieux que trois dont une est décorative.
+
 ## 4. La structure d'exécution épouse le geste
 
 Ne pas forcer toutes les fiches dans trois étapes identiques. Logiques possibles,
