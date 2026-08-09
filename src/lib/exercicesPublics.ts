@@ -53,6 +53,13 @@
    leur mot.
 
    ── AJOUTER UNE FICHE ───────────────────────────────────────────────
+   ⚠️ LIRE D'ABORD `docs/lot-seo-3-fiches-exercices.md`. C'est le contrat
+   éditorial du lot, et il n'est pas décoratif : il dit notamment qu'il
+   n'y a AUCUN quota de mots, que le développé couché est un modèle
+   visuel et pas un modèle éditorial à recopier, et qu'une variante ne se
+   classe jamais en « plus facile » ou « plus difficile ». Il contient
+   aussi le brief de chacune des sept fiches restantes.
+
    1. une entrée ici, avec un slug qu'on n'aura plus jamais le droit de
       changer, et `contenu` rédigé à la main ;
    2. c'est tout. Sans `contenu`, la fiche est connue mais pas publiée :
@@ -161,6 +168,15 @@ export type ContenuFiche = {
       filtre d'écran correct, mais un visiteur veut savoir qu'il lui faut
       un banc. Absent, on retombe sur le libellé de famille. */
   materiel?: string;
+  /** Le même matériel en un ou deux mots, pour le surtitre du héros.
+
+      Il en faut un séparé, et pas seulement une troncature : le surtitre
+      annonçait « PECTORAUX · HALTÈRES & BARRE » sur une fiche qui décrit
+      le développé couché À LA BARRE. Le libellé de famille de la
+      bibliothèque range les deux ensemble, ce qui est juste pour un
+      filtre d'écran et ambigu en tête de page. Absent, on retombe sur le
+      libellé de famille. */
+  materielCourt?: string;
   /** Facultatif : la précaution qui mérite d'être dite. Rien de médical,
       rien d'alarmiste, et surtout pas sur toutes les fiches, sinon elle
       devient un bandeau qu'on ne lit plus. */
@@ -246,12 +262,13 @@ export const FICHES: FichePublique[] = [
           angle: "Avec deux haltères",
           exercice: "Développé couché haltères",
           texte:
-            "Chaque bras porte sa charge et se stabilise seul, ce qui demande plus de contrôle. L'amplitude descend souvent plus bas, et les haltères se posent sur les côtés en fin de série.",
+            "Chaque bras porte sa charge et se stabilise seul, ce qui demande plus de contrôle. Les haltères laissent aussi les mains descendre un peu plus bas que la barre, qui s'arrête au contact de la poitrine, et ils se posent sur les côtés en fin de série.",
         },
       ],
       placement:
-        "En début de séance haut du corps, tant que tu es frais : c'est un mouvement chargé qui demande de la coordination, et la technique se dégrade vite une fois fatigué. Trois à cinq séries, puis les mouvements d'isolation derrière.",
+        "C'est un mouvement chargé et technique, dont l'exécution se dégrade vite une fois fatigué : on le place donc souvent tôt dans une séance de haut du corps, tant qu'on est frais. Ce qui vient après dépend de la séance et de l'objectif, mais le travail plus léger ou plus ciblé se garde en général pour la suite, une fois le gros du travail fait.",
       materiel: "Barre, banc et supports",
+      materielCourt: "Barre",
       precaution:
         "Travaille avec un pareur, ou avec des barres de sécurité réglées à hauteur de poitrine. Une barre qu'on n'arrive plus à repousser reste au-dessus de soi, alors que des haltères se posent sur les côtés.",
     },

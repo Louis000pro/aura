@@ -65,8 +65,9 @@ export default async function FicheExercicePage({
   const { lib, contenu } = fiche;
   const categorie = libelleCategorie(fiche.categorie);
   const voisins = voisinsPublies(fiche);
-  const materiel =
-    contenu.materiel ?? EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
+  const familleMateriel = EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
+  const materiel = contenu.materiel ?? familleMateriel;
+  const materielCourt = contenu.materielCourt ?? familleMateriel;
 
   /* Le fil d'Ariane, et lui seul.
 
@@ -128,7 +129,7 @@ export default async function FicheExercicePage({
             className="text-[11px] font-bold tracking-[0.22em] uppercase mb-3"
             style={{ color: "#A78BFA" }}
           >
-            {categorie} · {EQUIPS.find((e) => e.id === lib.equip)?.label}
+            {categorie} · {materielCourt}
           </p>
           <h1
             className="font-light leading-[1.05]"
@@ -176,12 +177,19 @@ export default async function FicheExercicePage({
             ))}
           </ul>
 
+          {/* ⚠️ La troisième ligne s'appelait « Repères », ce qui la faisait
+              lire comme LA façon de faire l'exercice. Séries, répétitions
+              et repos dépendent de l'objectif, du niveau et du reste de la
+              séance : une fiche d'exercice n'a pas à trancher ça. Le
+              libellé « Exemple » le dit en un mot, sans ajouter de note ni
+              toucher au composant. Règle générale pour les futures fiches,
+              voir docs/lot-seo-3-fiches-exercices.md. */}
           <dl className="text-[14px]">
             {[
               ["Matériel", materiel],
               ["Pour", libelleNiveau(fiche.niveau.de, fiche.niveau.a)],
               [
-                "Repères",
+                "Exemple",
                 `${lib.sets} × ${libelleReps(lib.mode, lib.reps, lib.seconds, lib.unite)} · ${lib.rest} s de repos`,
               ],
             ].map(([cle, valeur], i) => (
@@ -340,8 +348,13 @@ export default async function FicheExercicePage({
         }}
       >
         <p className="text-[13px] font-semibold mb-2" style={{ color: "#7C5CFA" }}>✦ Vaiiya</p>
+        {/* Le titre nommait la catégorie (« une séance pectoraux ») : trop
+            restrictif, le développé couché entre aussi bien dans un haut
+            du corps, un full body ou un push. On parle donc d'intégration
+            à une séance adaptée, sans présumer du format. Design du CTA
+            inchangé. */}
         <h2 className="text-2xl font-light mb-2 max-w-[520px]" style={{ color: "#1A1535" }}>
-          Une séance {categorie.toLowerCase()} construite autour de ce mouvement
+          Intègre ce mouvement à une séance qui te correspond
         </h2>
         <p className="text-sm mb-6 max-w-[520px]" style={{ color: "#4A5568" }}>
           Dis ton matériel et ton niveau, Vaiiya compose la séance et te guide pendant l&apos;effort,
@@ -373,7 +386,13 @@ export default async function FicheExercicePage({
           </h2>
           <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             {voisins.map((v) => (
-              <CarteExercice key={v.slug} lib={v.lib} href={`/exercices/${v.slug}`} taille={124} />
+              <CarteExercice
+                key={v.slug}
+                lib={v.lib}
+                href={`/exercices/${v.slug}`}
+                materiel={v.contenu.materielCourt}
+                taille={124}
+              />
             ))}
           </div>
         </section>

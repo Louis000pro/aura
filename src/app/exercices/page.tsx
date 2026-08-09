@@ -106,6 +106,7 @@ export default function ExercicesPage() {
               key={f.slug}
               lib={f.lib}
               href={`/exercices/${f.slug}`}
+              materiel={f.contenu.materielCourt}
               priorite={i < 4}
             />
           ))}

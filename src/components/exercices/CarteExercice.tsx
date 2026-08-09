@@ -18,19 +18,28 @@ import { EQUIPS, ZONES, type LibExercise } from "@/lib/exerciseLibrary";
    donc personne ne pourra la contourner par inadvertance dans six mois.
    ════════════════════════════════════════════════════════════════════ */
 
-function meta(lib: LibExercise): string {
+/* La ligne sous le nom. `materiel` permet à la fiche d'imposer son
+   libellé court : la famille de la bibliothèque range le développé couché
+   dans « Haltères & barre », ce qui est juste pour un filtre d'écran mais
+   ambigu sur une carte qui annonce un mouvement À LA BARRE. Sans
+   précision, on retombe sur la famille. */
+function meta(lib: LibExercise, materiel?: string): string {
   const zone = ZONES.find((z) => z.id === lib.zone)?.label ?? lib.zone;
-  const equip = EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
+  const equip = materiel ?? EQUIPS.find((e) => e.id === lib.equip)?.label ?? lib.equip;
   return `${zone} · ${equip}`;
 }
 
 export default function CarteExercice({
   lib,
   href,
+  materiel,
   taille = 148,
   priorite = false,
 }: {
   lib: LibExercise;
+  /** Le matériel en libellé court, quand la fiche en donne un de plus
+      précis que la famille de la bibliothèque. */
+  materiel?: string;
   /** La fiche publiée. Sans destination, pas de carte. */
   href: string;
   taille?: number;
@@ -63,7 +72,7 @@ export default function CarteExercice({
         {lib.name}
       </p>
       <p className="mt-0.5 text-[12px]" style={{ color: "#8B84A8" }}>
-        {meta(lib)}
+        {meta(lib, materiel)}
       </p>
     </Link>
   );
