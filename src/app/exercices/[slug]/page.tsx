@@ -14,7 +14,7 @@ import {
   voisinsPublies,
   type Variante,
 } from "@/lib/exercicesPublics";
-import { EQUIPS, libelleReps, trouverExercice } from "@/lib/exerciseLibrary";
+import { EQUIPS, trouverExercice, type LibExercise } from "@/lib/exerciseLibrary";
 
 /* Seules les fiches RÉDIGÉES existent en tant qu'URL. Les sept autres
    slugs sont déjà réservés côté données, mais un slug réservé n'est pas
@@ -158,7 +158,7 @@ export default async function FicheExercicePage({
 
         <div className="order-3 md:order-none md:col-start-2 md:row-start-2">
           <p className="text-[1.12rem] leading-[1.55] mb-6" style={{ color: "#4A5568" }}>
-            {lib.benefit}
+            {contenu.promesse ?? lib.benefit}
           </p>
 
           <ul className="flex flex-wrap gap-2 mb-7">
@@ -188,10 +188,7 @@ export default async function FicheExercicePage({
             {[
               ["Matériel", materiel],
               ["Pour", libelleNiveau(fiche.niveau.de, fiche.niveau.a)],
-              [
-                "Exemple",
-                `${lib.sets} × ${libelleReps(lib.mode, lib.reps, lib.seconds, lib.unite)} · ${lib.rest} s de repos`,
-              ],
+              ["Exemple", ligneExemple(lib)],
             ].map(([cle, valeur], i) => (
               <div
                 key={cle}
@@ -230,7 +227,7 @@ export default async function FicheExercicePage({
 
         {/* Exécution */}
         <h2 className="mt-12 mb-6 text-[1.45rem] font-medium" style={{ color: "#2D2150" }}>
-          Comment faire {motDeLExercice(lib.name)}
+          Comment faire {contenu.nomDansLeTitre ?? motDeLExercice(lib.name)}
         </h2>
         <ol className="list-none p-0 m-0">
           {contenu.etapes.map((e, i) => (
@@ -408,6 +405,25 @@ export default async function FicheExercicePage({
 }
 
 /* ─────────────────────────── Pièces ─────────────────────────────── */
+
+/** La ligne « Exemple » du héros, composée ici plutôt que reprise de
+    `libelleReps`.
+
+    Cette fonction est faite pour un écran d'application, où la place est
+    comptée : elle rend « 40s », collé, et une fiche affichait donc
+    « 3 × 40s · 45 s de repos », avec l'espace d'un côté et pas de
+    l'autre. Le réglage se voit sur les exercices tenus, qui sont
+    justement ceux où l'exemple en durée est le plus utile. On compose
+    donc la phrase publique ici, sans toucher à la bibliothèque.
+
+    Le contenu, lui, vient entièrement de la bibliothèque : ce sont ses
+    réglages de départ, propres à chaque exercice. Rien n'est inventé
+    pour la page, et surtout rien n'est recopié d'une fiche à l'autre. */
+function ligneExemple(lib: LibExercise): string {
+  const effort =
+    lib.mode === "temps" ? `${lib.seconds} s` : `${lib.reps} ${lib.unite}`;
+  return `${lib.sets} × ${effort} · ${lib.rest} s de repos`;
+}
 
 /** « Comment faire le développé couché » / « … les burpees ».
     Le titre le plus cherché commence par « comment faire », et il sonne

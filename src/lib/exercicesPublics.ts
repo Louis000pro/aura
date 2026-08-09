@@ -181,6 +181,26 @@ export type ContenuFiche = {
       rien d'alarmiste, et surtout pas sur toutes les fiches, sinon elle
       devient un bandeau qu'on ne lit plus. */
   precaution?: string;
+  /** La phrase du héros, quand celle de la bibliothèque ne peut pas être
+      servie au public.
+
+      Par défaut c'est `lib.benefit` qui parle, et c'est très bien : elle
+      est déjà écrite par exercice. Mais elle a été écrite pour un écran
+      d'application, où l'emphase est sans conséquence. Le soulevé de
+      terre y est « le mouvement le plus complet de toute la salle » : un
+      superlatif, exactement ce que le contrat éditorial interdit sur une
+      page publique. Plutôt que de corriger `exerciseLibrary.ts`, que
+      treize modules lisent, la fiche peut dire la sienne. */
+  promesse?: string;
+  /** Le nom tel qu'il doit apparaître dans « Comment faire … ».
+
+      L'affichage déduit l'article du nom, et sa règle est bonne dans la
+      plupart des cas. Elle se trompe sur tout nom qui finit par
+      « haltères » : elle y lit un pluriel et écrit « comment faire LES
+      développé militaire haltères ». Le nom est aussi parfois plus long
+      que ce qu'on dit à l'oral (« soulevé de terre classique »). Cette
+      valeur, quand elle est là, remplace la déduction. */
+  nomDansLeTitre?: string;
 };
 
 export type FichePublique = {
