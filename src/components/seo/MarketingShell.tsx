@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SEO_PAGES } from "@/lib/seoPages";
+import { VitrineHeader, VitrinePied } from "./VitrineChrome";
 
 /**
  * Shell vitrine SSR (Server Component) pour les pages SEO publiques.
@@ -20,20 +21,7 @@ export default function MarketingShell({ children }: { children: React.ReactNode
     >
       <div className="mx-auto max-w-3xl px-5 pt-10 pb-28" style={{ paddingTop: "calc(env(safe-area-inset-top) + 28px)" }}>
         {/* En-tête : logo + CTA connexion */}
-        <header className="flex items-center justify-between mb-10">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="Accueil Vaiiya">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-192.png" alt="Logo Vaiiya" width={36} height={36} className="rounded-xl" />
-            <span className="text-lg font-light tracking-[0.18em]" style={{ color: "#1A1535" }}>VAIIYA</span>
-          </Link>
-          <Link
-            href="/auth"
-            className="px-4 py-2 rounded-full text-[13px] font-semibold"
-            style={{ background: "linear-gradient(135deg,#A78BFA,#D4A843)", color: "#fff", boxShadow: "0 4px 16px rgba(167,139,250,0.32)" }}
-          >
-            Créer mon compte
-          </Link>
-        </header>
+        <VitrineHeader />
 
         {/* Contenu de l'article (H1, H2, texte…) */}
         <article className="seo-article">{children}</article>
@@ -57,24 +45,7 @@ export default function MarketingShell({ children }: { children: React.ReactNode
         </section>
 
         {/* Maillage interne : liens vers les autres pages SEO */}
-        <nav className="mt-12 pt-8 border-t" style={{ borderColor: "rgba(167,139,250,0.18)" }} aria-label="Pages Vaiiya">
-          <p className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4" style={{ color: "#A78BFA" }}>Explorer</p>
-          <ul className="flex flex-wrap gap-x-5 gap-y-2.5">
-            {SEO_PAGES.map((p) => (
-              <li key={p.href}>
-                <Link href={p.href} className="text-sm font-medium hover:underline" style={{ color: "#6B5BA0" }}>
-                  {p.label}
-                </Link>
-              </li>
-            ))}
-            <li><Link href="/premium" className="text-sm font-medium hover:underline" style={{ color: "#6B5BA0" }}>Vaiiya Premium</Link></li>
-          </ul>
-          <p className="mt-8 text-[11px]" style={{ color: "#A0AEC0" }}>
-            © {new Date().getFullYear()} Vaiiya ·{" "}
-            <Link href="/mentions-legales" className="hover:underline">Mentions légales</Link> ·{" "}
-            <Link href="/confidentialite" className="hover:underline">Confidentialité</Link>
-          </p>
-        </nav>
+        <VitrinePied />
       </div>
     </div>
   );

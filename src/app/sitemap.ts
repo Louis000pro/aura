@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { fichesPubliees } from "@/lib/exercicesPublics";
 
 /**
  * Sitemap des pages publiques indexables de Vaiiya.
@@ -45,6 +46,11 @@ const PAGES: string[] = [
   "/musculation-maison",
   "/nutrition-sportive",
 
+  // Le hub de la bibliothèque d'exercices. Les fiches elles-mêmes sont
+  // ajoutées plus bas, depuis la liste de celles qui sont rédigées : une
+  // fiche sans contenu n'a pas de route, elle n'a donc rien à faire ici.
+  "/exercices",
+
   // L'offre. Indexable même vente fermée : « prix Vaiiya » se cherche de toute
   // façon, mieux vaut y répondre nous-mêmes.
   "/premium",
@@ -59,5 +65,12 @@ const PAGES: string[] = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://vaiiya.fr";
 
-  return PAGES.map((chemin) => ({ url: `${base}${chemin}` }));
+  /* Les fiches d'exercices ne sont pas recopiées à la main : elles sortent
+     de la même source que leurs routes, donc le sitemap ne peut annoncer
+     ni une URL qui n'existe pas, ni oublier celle qui vient d'être écrite.
+     C'est la seule liste du fichier qu'on peut se permettre de générer,
+     précisément parce qu'elle est adossée à `generateStaticParams`. */
+  const fiches = fichesPubliees().map((f) => `/exercices/${f.slug}`);
+
+  return [...PAGES, ...fiches].map((chemin) => ({ url: `${base}${chemin}` }));
 }
