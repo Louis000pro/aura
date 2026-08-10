@@ -24,10 +24,15 @@ import { fichesPubliees } from "./exercicesPublics";
  * pas exporté, dans un composant de page de 2 800 lignes. L'importer depuis
  * ailleurs tirerait tout l'écran Entraînement dans la landing.
  *
- * Le nombre a donc été recompté à la main sur la source, le 2026-08-10 :
- * 53 entrées littérales dans `workoutSessions` (les 26 mini-cours y sont
- * ajoutés séparément, par un `...ADVICE_ARTICLES.map()`, et ne sont pas
- * comptés ici).
+ * Le nombre a donc été recompté sur la source, le 2026-08-10 : **53 `id`
+ * uniques** dans le tableau littéral `workoutSessions`. Les 26 mini-cours n'y
+ * sont pas comptés : ils arrivent par un `...ADVICE_ARTICLES` étalé dans le
+ * même tableau, et ils ont leur propre chiffre ci-dessous.
+ *
+ * Pour le revérifier : isoler le tableau depuis `const workoutSessions:
+ * WorkoutSession[] = [` jusqu'à son crochet fermant (en comptant les
+ * crochets, pas en cherchant le premier `]` : l'annotation de type en
+ * contient un), puis compter les `id: "…"` distincts.
  *
  * À revérifier à chaque vague de contenu. Le jour où le catalogue sortira de
  * la page vers un module de données, cette constante devra disparaître au

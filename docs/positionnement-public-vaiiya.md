@@ -120,12 +120,27 @@ marque, jamais comme argument de fonctionnalité.
 
 ## 9. Histoire publique autorisée
 
+**Faits evergreen**, publiables sur une page qui reste en ligne des années :
+
 - Vaiiya a commencé le **1er mai 2026**.
-- Le projet est développé par **deux lycéens de 16 et 17 ans, en région lyonnaise**.
+- Le projet est développé par **deux lycéens de la région lyonnaise**, en parallèle
+  du lycée.
 - **Aucun prénom ni nom** n'est publié pour l'instant.
 - L'idée initiale a été **suggérée par une IA**, ce qui peut se raconter simplement.
-- La **structure juridique est en cours de création**. Pas de récit héroïque, pas de
+- Ambition entrepreneuriale assumée, étape par étape. Pas de récit héroïque, pas de
   levée de fonds, pas d'équipe fantôme, pas de « nous sommes une startup ».
+
+**À ne pas écrire sur une page evergreen**, parce que ces faits vieillissent tout
+seuls :
+
+| Fait | Pourquoi il ne tient pas dans le temps |
+|---|---|
+| l'âge des fondateurs | faux au premier anniversaire |
+| « structure juridique en cours de création » | faux le jour où elle existe, et inutile pour comprendre le produit |
+| le nombre de comptes | voir §10 |
+
+Ces faits restent utilisables dans un **support daté** (dossier de presse, message à
+un journaliste, candidature), après revalidation. Voir les instantanés du §16.
 
 ## 10. Chiffres produit stables
 
@@ -207,7 +222,16 @@ fermée.
 - **Séries d'affiches du relais autres que `sillage`** : en cours.
 - **Discord** : pas de serveur public, donc absent de `sameAs`.
 
-## 16. Faits temporaires à revalider
+## 16. Instantanés et faits temporaires à revalider
+
+**Instantanés au 2026-08-10.** Aucun des deux n'est écrit dans le site, et aucun ne
+doit l'être. Ils servent à une communication externe datée, et **se revérifient
+avant chaque réutilisation** :
+
+| Instantané | Valeur au 2026-08-10 |
+|---|---|
+| Âge des deux fondateurs | 17 ans et 16 ans |
+| Comptes créés | 52 (comptes créés, **pas** utilisateurs actifs) |
 
 À reconfirmer auprès du fondateur avant toute réutilisation publique :
 

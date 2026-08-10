@@ -5,7 +5,7 @@ import MarketingShell from "@/components/seo/MarketingShell";
 import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 
 /**
- * /a-propos — la page qui explique l'entité Vaiiya.
+ * /a-propos : la page qui explique l'entité Vaiiya.
  *
  * Elle existe parce qu'aucune page publique ne répondait à « c'est quoi
  * Vaiiya, et qui le fait ». Les cinq pages vitrine répondent à des questions
@@ -164,21 +164,26 @@ export default function AProposPage() {
       </p>
 
       <h2>Comment le projet a commencé</h2>
+      {/* Ni âges ni structure juridique ici : cette page est evergreen, et les
+          deux vieillissent. Un âge devient faux à un anniversaire, une structure
+          « en cours de création » devient fausse le jour où elle existe. Les
+          deux vivent dans `docs/positionnement-public-vaiiya.md` comme des
+          instantanés datés, à revalider avant tout usage externe. */}
       <p>
         Vaiiya a démarré le <strong>1er mai 2026</strong>. Le projet est développé par{" "}
-        <strong>deux lycéens de 16 et 17 ans, en région lyonnaise</strong>, en parallèle du lycée.
+        <strong>deux lycéens de la région lyonnaise</strong>, en parallèle du lycée.
       </p>
       <p>
         L&apos;idée de départ, un coach sportif guidé par une intelligence artificielle, a elle-même été
         suggérée par une IA. Le point d&apos;arrivée a peu à voir avec ce point de départ&nbsp;: à force de
         construire, la question n&apos;était plus «&nbsp;comment faire un coach IA&nbsp;» mais «&nbsp;pourquoi
         faut-il trois applications et deux carnets pour suivre une semaine d&apos;entraînement&nbsp;». C&apos;est
-        de là que vient la convergence, et c&apos;est ce qui reste quand on enlève le mot IA.
+        de cette question qu&apos;est venu le reste, et c&apos;est ce qui tient encore quand on enlève le mot
+        IA.
       </p>
       <p>
-        Le projet avance étape par étape, avec une ambition entrepreneuriale assumée. La structure qui
-        exploitera le service est <strong>en cours de création</strong>&nbsp;; en attendant, Vaiiya est
-        entièrement gratuit et rien n&apos;est encaissé.
+        Le projet avance étape par étape, avec une ambition entrepreneuriale assumée. Aujourd&apos;hui,
+        Vaiiya est entièrement gratuit et rien n&apos;est encaissé.
       </p>
 
       <h2>Ce qu&apos;il y a dedans aujourd&apos;hui</h2>
