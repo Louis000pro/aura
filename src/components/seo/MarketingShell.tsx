@@ -32,8 +32,13 @@ export default function MarketingShell({ children }: { children: React.ReactNode
           style={{ background: "linear-gradient(135deg,rgba(212,192,255,0.55),rgba(245,230,163,0.45))", border: "1px solid rgba(255,255,255,0.9)", boxShadow: "0 12px 40px rgba(167,139,250,0.18)" }}
         >
           <h2 className="text-2xl font-light mb-2" style={{ color: "#1A1535" }}>Commence gratuitement avec Vaiiya</h2>
+          {/* L'ancienne phrase promettait « tes programmes de musculation et ton
+              suivi nutrition personnalisés en 2 minutes » : un programme au
+              pluriel qu'on ne construit pas, et une personnalisation complète en
+              deux minutes que personne ne peut tenir. Le compte gratuit et la
+              première séance suffisent à donner envie, et ils sont vrais. */}
           <p className="text-sm mb-6" style={{ color: "#4A5568" }}>
-            Ton coach IA, tes programmes de musculation et ton suivi nutrition — personnalisés en 2 minutes.
+            Compte gratuit, sans carte bancaire. Ta première séance guidée dès l&apos;inscription.
           </p>
           <Link
             href="/auth"

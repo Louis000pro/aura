@@ -2,15 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
 
+/**
+ * « Vaiiya adapte ton programme à ton matériel » laissait entendre un suivi
+ * permanent. Le fait réel est plus simple et plus intéressant : le matériel est
+ * pris en compte au moment de la génération. La page dit maintenant les deux
+ * façons de composer une séance chez soi, dont celle où l'utilisateur la
+ * construit lui-même (voir `docs/positionnement-public-vaiiya.md`, §4).
+ */
 export const metadata: Metadata = {
   title: "Musculation à la maison : poids du corps et haltères",
   description:
-    "Programme de musculation à la maison : exercices au poids du corps et aux haltères pour progresser sans salle de sport. Plan personnalisé par l'IA Vaiiya, gratuit.",
+    "Musculation à la maison : exercices au poids du corps et aux haltères pour progresser sans salle. Vaiiya compose la séance avec ce que tu as, ou tu la construis toi-même. Gratuit.",
   alternates: { canonical: "https://vaiiya.fr/musculation-maison" },
   openGraph: {
-    title: "Musculation à la maison — Vaiiya",
+    title: "Musculation à la maison · Vaiiya",
     description:
-      "Progresse sans salle : programme musculation maison au poids du corps et haltères, personnalisé par l'IA.",
+      "Progresse sans salle : des séances au poids du corps ou aux haltères, composées avec toi ou construites par toi.",
     url: "https://vaiiya.fr/musculation-maison",
     images: ["/og-image.png"],
   },
@@ -22,8 +29,9 @@ export default function MusculationMaisonPage() {
       <h1>Musculation à la maison : progresser sans salle de sport</h1>
       <p className="lead">
         Pas besoin d&apos;abonnement en salle pour te muscler. Avec le <strong>poids du corps</strong>{" "}et une
-        simple paire d&apos;<strong>haltères</strong>, tu peux construire du muscle chez toi. Vaiiya adapte ton
-        programme de musculation maison à ton matériel et à ton niveau.
+        simple paire d&apos;<strong>haltères</strong>, tu peux construire du muscle chez toi. Vaiiya tient
+        compte de ton matériel au moment où il compose ta séance&nbsp;: il ne te proposera pas une machine
+        que tu n&apos;as pas.
       </p>
 
       <h2>S&apos;entraîner au poids du corps</h2>
@@ -43,11 +51,11 @@ export default function MusculationMaisonPage() {
 
       <h2>Exemple de séance full body maison</h2>
       <ul>
-        <li>Squats ou fentes — 4 × 12</li>
-        <li>Pompes (variante adaptée) — 4 × max</li>
-        <li>Rowing haltères ou tractions — 4 × 10</li>
-        <li>Développé épaules haltères — 3 × 12</li>
-        <li>Gainage — 3 × 45&nbsp;s</li>
+        <li>Squats ou fentes, 4 × 12</li>
+        <li>Pompes (variante adaptée), 4 × max</li>
+        <li>Rowing haltères ou tractions, 4 × 10</li>
+        <li>Développé épaules haltères, 3 × 12</li>
+        <li>Gainage, 3 × 45&nbsp;s</li>
       </ul>
       <p>
         Trois séances full body par semaine suffisent pour des résultats visibles quand l&apos;entraînement
@@ -60,10 +68,18 @@ export default function MusculationMaisonPage() {
         <Link href="/nutrition-sportive">nutrition sportive</Link> pour accompagner tes séances.
       </p>
 
-      <h2>Ton programme maison personnalisé</h2>
+      <h2>Composer ta séance maison</h2>
       <p>
-        Indique ton matériel (rien, haltères, élastiques) et laisse le{" "}
-        <Link href="/coach-ia">coach IA Vaiiya</Link> bâtir un programme adapté à ton salon. Inscription
+        Deux façons de faire, et aucune n&apos;est meilleure que l&apos;autre. Tu dis à Vaiiya où tu
+        t&apos;entraînes (chez toi au poids du corps, chez toi avec des haltères, ou en salle) et le{" "}
+        <Link href="/coach-ia">coach IA</Link> compose une séance qui n&apos;utilise que ce que tu as sous la
+        main, en te la montrant avant que tu la gardes.
+      </p>
+      <p>
+        Ou tu la construis toi-même. La bibliothèque contient <strong>102 mouvements animés</strong>{" "}
+        filtrables par zone du corps et par matériel&nbsp;: tu choisis les exercices, tu règles les séries,
+        les répétitions et le repos, et la séance est à toi. Les mouvements se regardent aussi librement dans
+        les <Link href="/exercices">fiches d&apos;exercices</Link>, sans compte. L&apos;inscription est
         gratuite.
       </p>
     </MarketingShell>
