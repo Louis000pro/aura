@@ -16,7 +16,7 @@ import { Send, X, Mic, Square, Check, CalendarDays, Play, BookmarkPlus, Utensils
 import { useAssistant } from "@/context/AssistantContext";
 import type { QuestionCliquable } from "@/lib/assistantTools";
 import type { JourDispo } from "@/context/AssistantContext";
-import CarteSeance from "@/components/assistant/CarteSeance";
+import CarteSeance, { type ExerciceCarte } from "@/components/assistant/CarteSeance";
 import { useWorkoutLaunch } from "@/context/WorkoutLaunchContext";
 import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
@@ -37,6 +37,30 @@ const MEAL_LABEL: Record<string, string> = {
 function libelleJour(jours: JourDispo[] | null, ymd: string | null): string {
   const j = jours?.find((x) => x.ymd === ymd);
   return (j?.label ?? "").toLowerCase();
+}
+
+/** Le choix de jour d'une carte : les deux cartes l'ouvrent exactement pareil.
+ *  Les jours ne sont chargés qu'à l'ouverture, et une seule fois — c'est une
+ *  requête, elle n'a pas à partir pour une carte qu'on ne déplie jamais. */
+function useChoixJour(chargerJours: () => Promise<JourDispo[]>) {
+  const [jours, setJours] = useState<JourDispo[] | null>(null);
+  const [ouvert, setOuvert] = useState(false);
+  const ouvrirJours = () => {
+    setOuvert((v) => !v);
+    if (!jours) void chargerJours().then(setJours);
+  };
+  return { jours, ouvert, setOuvert, ouvrirJours };
+}
+
+/** Les mouvements tels que la carte les affiche. Une séance proposée et une
+ *  séance de planning se lisent de la même façon : même dose, mêmes muscles.
+ *  Typé sur les seuls champs lus, pas sur un `Exercise` complet : les deux
+ *  sources divergent ailleurs (`ProposedExercise` a `tip` optionnel) et la
+ *  carte n'a aucune raison d'en dépendre. */
+function exercicesCarte(
+  liste: { name: string; sets: number; reps: string; muscles?: string[] }[] | undefined,
+): ExerciceCarte[] {
+  return (liste ?? []).map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }));
 }
 
 const SUGGESTIONS = [
@@ -173,17 +197,11 @@ function QuestionChips({ q, actif, onChoisir }: {
 function CarteProposition() {
   const { pendingSeance, confirmSeance, garderSeance, cancelSeance, chargerJours, close, bibliothequePleine } = useAssistant();
   const { launchWorkout } = useWorkoutLaunch();
-  const [jours, setJours] = useState<JourDispo[] | null>(null);
+  const { jours, ouvert, ouvrirJours } = useChoixJour(chargerJours);
   const [jourChoisi, setJourChoisi] = useState<string | null>(null);
-  const [ouvert, setOuvert] = useState(false);
 
   if (!pendingSeance) return null;
   const s = pendingSeance;
-
-  const ouvrirJours = () => {
-    setOuvert((v) => !v);
-    if (!jours) void chargerJours().then(setJours);
-  };
 
   /* « La faire maintenant » lance la séance SANS rien garder ni programmer :
      s'entraîner ne doit jamais obliger à ranger quelque chose d'abord. */
@@ -214,7 +232,7 @@ function CarteProposition() {
       kicker="Proposition"
       titre={s.title}
       meta={[CATEGORY_LABEL[s.category], `${s.duration} min`, s.difficulty].join(" · ")}
-      exercices={s.exerciseList.map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
+      exercices={exercicesCarte(s.exerciseList)}
       /* Stock gratuit plein : la carte ne propose que ce qui reste possible.
          Un bouton « Garder » qui refuserait au clic, ou un mur découvert après
          l'effort, ce serait le contraire de la règle — le plafond se voit
@@ -244,17 +262,11 @@ function CarteProposition() {
    un état local ici : c'est la date de la proposition elle-même. */
 function CartePlanning() {
   const { pendingPlan, confirmPlan, retargetPlan, cancelPlan, chargerJours } = useAssistant();
-  const [jours, setJours] = useState<JourDispo[] | null>(null);
-  const [ouvert, setOuvert] = useState(false);
+  const { jours, ouvert, setOuvert, ouvrirJours } = useChoixJour(chargerJours);
   const [garderAussi, setGarderAussi] = useState(false);
 
   if (!pendingPlan) return null;
   const p = pendingPlan;
-
-  const ouvrirJours = () => {
-    setOuvert((v) => !v);
-    if (!jours) void chargerJours().then(setJours);
-  };
 
   return (
     <CarteSeance
@@ -262,7 +274,7 @@ function CartePlanning() {
       ton="jour"
       titre={p.title}
       meta={p.meta}
-      exercices={(p.preview?.exerciseList ?? []).map((ex) => ({ name: ex.name, dose: `${ex.sets} × ${ex.reps}`, muscles: ex.muscles }))}
+      exercices={exercicesCarte(p.preview?.exerciseList)}
       options={[
         ...(p.retargetable ? [{ id: "day", icone: <CalendarDays size={15} strokeWidth={2} />, ligne1: "Un autre", ligne2: "jour", actif: ouvert, onClick: ouvrirJours }] : []),
         ...(p.gardable ? [{ id: "keep", icone: <BookmarkPlus size={15} strokeWidth={2} />, ligne1: "La garder", ligne2: "aussi", actif: garderAussi, onClick: () => setGarderAussi((v) => !v) }] : []),

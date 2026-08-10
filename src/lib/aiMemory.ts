@@ -118,17 +118,11 @@ ${lines}
 (Ne re-mémorise pas ces faits. Si l'un d'eux change, mémorise la mise à jour ; l'utilisateur peut les consulter et les supprimer dans Paramètres.)`;
 }
 
-/** Protocole d'écriture mémoire, injecté dans le system prompt. */
-export const MEMORY_PROTOCOL_PROMPT = `MÉMOIRE LONG TERME (faits durables sur l'utilisateur) :
-Tu peux mémoriser des faits DURABLES et IMPORTANTS sur l'utilisateur, utiles pour TOUTES tes prochaines conversations : blessures et contre-indications, régime / restrictions ou allergies alimentaires, planning d'entraînement habituel, objectifs de fond, fortes préférences (matériel, lieu, style de coaching).
-- Quand l'utilisateur te demande explicitement de retenir ("retiens que…", "souviens-toi…", "n'oublie pas que…", "note que…") OU quand il révèle spontanément un fait durable et important, ajoute à la TOUTE FIN de ta réponse, sur sa propre ligne (sans markdown, sans guillemets) :
-[MEMOIRE]categorie|fait court, à la 3e personne[/MEMOIRE]
-  • categorie ∈ sante | nutrition | planning | objectif | preference
-  • exemple : [MEMOIRE]sante|Douleur à l'épaule droite, éviter le développé militaire[/MEMOIRE]
-  • exemple : [MEMOIRE]nutrition|Végétarien, ne mange pas de poisson[/MEMOIRE]
-- Quand l'utilisateur te demande d'oublier ("oublie que…", "supprime ce que tu sais sur…", "ce n'est plus vrai"), ajoute à la fin, sur sa propre ligne :
-[OUBLI]mots-clés du fait concerné[/OUBLI]
-RÈGLES STRICTES :
-- Ne mémorise JAMAIS les banalités ni le temporaire (humeur du jour, "j'ai mangé une pomme", une question ponctuelle), ni une info déjà présente dans son profil ou ses stats.
-- Un seul [MEMOIRE] par réponse (le fait le plus important).
-- Ces tags sont INVISIBLES pour l'utilisateur : n'y fais JAMAIS référence. N'annonce pas non plus que tu "retiens", "notes" ou "mémorises" quoi que ce soit — réponds simplement, naturellement et chaleureusement, comme si tu t'en souvenais déjà.`;
+/* Il y avait ici un MEMORY_PROTOCOL_PROMPT qui enseignait au coach à écrire
+   [MEMOIRE]…[/MEMOIRE] à la fin de ses réponses. Il n'était plus importé nulle
+   part : la mémoire s'extrait désormais dans un appel séparé et silencieux
+   (ANALYZE_SYSTEM, qui répond en JSON). On le supprime au lieu de le laisser
+   dormir, parce qu'un prompt mort qui enseigne une grammaire à crochets est
+   précisément ce qui a produit le « [CARTE]…[/CARTE] » du 2026-07-30 : le
+   modèle recopie le motif qu'on lui montre. Voir buildMemoryPrompt ci-dessus,
+   qui a été réécrit en « - Catégorie : fait » pour la même raison. */
