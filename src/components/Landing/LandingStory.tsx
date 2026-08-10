@@ -23,10 +23,13 @@ import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Camera, Sparkles, ArrowRight, Check, Play, ChevronDown, X, ShieldCheck,
+  Camera, Sparkles, ArrowRight, Check, Play, Plus, ChevronDown, X, ShieldCheck,
 } from "lucide-react";
 import { AssistantAvatar, AssistantSpark } from "@/components/AssistantMark";
 import { SEO_PAGES, LEGAL_PAGES } from "@/lib/seoPages";
+/* Le type seul. Les nombres sont comptés côté serveur et descendus en props :
+   voir `lib/chiffresPublics.ts`. */
+import type { ChiffresPublics } from "@/lib/chiffresPublics";
 
 /* Couleur d'action du système D : violet vers magenta. Le CTA principal est
    TOUJOURS violet (jamais violet vers or). Constante de marque, stable clair/sombre. */
@@ -147,13 +150,17 @@ function CtaGhost({ label, href }: { label: string; href: string }) {
 
 /* ════════════════════════════ 1 · CE QU'EST VAIIYA ════════════════════════════ */
 
-const PREUVES = [
-  { n: "53", label: "séances guidées" },
-  { n: "26", label: "mini-cours" },
-  { n: "102", label: "mouvements montrés" },
-];
+function SectionQuoi({ chiffres }: { chiffres: ChiffresPublics }) {
+  /* Les nombres viennent du serveur (`lib/chiffresPublics.ts`), qui compte les
+     mini-cours et les mouvements dans leurs vraies sources. Les séances, elles,
+     sont encore comptées à la main : le catalogue vit dans un composant de page,
+     pas dans un module de données. Le détail est écrit là-bas. */
+  const preuves = [
+    { n: chiffres.seances, label: "séances guidées" },
+    { n: chiffres.miniCours, label: "mini-cours" },
+    { n: chiffres.mouvements, label: "mouvements montrés" },
+  ];
 
-function SectionQuoi() {
   return (
     <section id={DISCOVER_ANCHOR} className="relative px-6 py-24 md:py-32 scroll-mt-10">
       <div className="max-w-3xl mx-auto text-center">
@@ -171,10 +178,10 @@ function SectionQuoi() {
           </p>
         </Reveal>
 
-        {/* Preuves de profondeur. TODO : dériver du catalogue réel plutôt que de figer les nombres. */}
+        {/* Preuves de profondeur. */}
         <Reveal delay={0.18}>
           <div className="mt-12 grid grid-cols-3 gap-3 max-w-lg mx-auto">
-            {PREUVES.map((p) => (
+            {preuves.map((p) => (
               <div key={p.label} className="rounded-[22px] p-4 lg-surface lg-highlight">
                 <p className="text-[clamp(1.8rem,6vw,2.6rem)] font-extralight leading-none" style={ACCENT_TEXT}>{p.n}</p>
                 <p className="mt-2 text-[12px] font-medium leading-tight" style={{ color: "var(--text-3)" }}>{p.label}</p>
@@ -252,6 +259,172 @@ function SectionCatalogue() {
           <div className="mt-10 text-center">
             <CtaGhost label="Voir tout le catalogue" href="/auth?mode=signup" />
           </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════ 2 bis · COMPOSER SA SÉANCE ════════════════════════════
+   La page montrait un catalogue et un assistant, donc elle décrivait un produit
+   où l'on choisit parmi ce qui existe ou l'on demande à l'IA. La troisième porte
+   manquait : construire sa séance soi-même, mouvement par mouvement. C'est une
+   fonctionnalité importante (voir `docs/positionnement-public-vaiiya.md`, §4), et
+   c'est aussi le seul endroit où les mouvements animés comptés plus haut servent
+   à quelque chose de visible.
+
+   Elle est posée juste après le catalogue : on montre d'abord ce qui est prêt,
+   ensuite on dit qu'on n'y est pas enfermé. Le panneau reprend la vraie
+   bibliothèque de l'application, avec ses vrais sprites.
+   ───────────────────────────────────────────────────────────────────── */
+
+const PORTES = [
+  { t: "Suivre une séance", d: "Le catalogue est prêt, tu appuies et elle démarre." },
+  { t: "Composer la tienne", d: "Tu choisis les mouvements, tu règles séries, répétitions et repos." },
+  { t: "La demander à l’✦", d: "Tu dis ce que tu veux, l’assistant propose, tu gardes ou non." },
+  { t: "Improviser", d: "Tu commences sans rien préparer, et tu peux garder la séance à la fin." },
+];
+
+/* Quatre gestes de la vraie bibliothèque, avec leurs planches livrées. Si l'un
+   d'eux change, vérifier que les fichiers existent toujours dans
+   `public/entrainement/guides` : une vitrine qui promet des animations ne peut
+   pas se permettre une image manquante. */
+const MOUVEMENTS_VITRINE = [
+  { cle: "squat", genre: "f", poses: 3, nom: "Squat", zone: "Quadriceps · Fessiers", choisi: true },
+  { cle: "pompes", genre: "f", poses: 3, nom: "Pompes", zone: "Pectoraux · Triceps", choisi: true },
+  { cle: "developpecouche", genre: "h", poses: 3, nom: "Développé couché", zone: "Pectoraux", choisi: true },
+  { cle: "fentes", genre: "f", poses: 4, nom: "Fentes", zone: "Quadriceps · Fessiers", choisi: false },
+];
+
+function VignetteMouvement({
+  m,
+  frame,
+  index,
+}: {
+  m: (typeof MOUVEMENTS_VITRINE)[number];
+  frame: number;
+  index: number;
+}) {
+  /* Un décalage par vignette : quatre personnages qui bougent à l'unisson
+     ressemblent à une animation, quatre qui se répondent ressemblent à une
+     bibliothèque. Une seule horloge pour les quatre, en revanche. */
+  const pose = ((frame + index) % m.poses) + 1;
+
+  return (
+    <div className="relative rounded-[18px] p-2.5 lg-surface"
+      style={{ border: "1px solid rgba(var(--accent-rgb),0.14)" }}>
+      <div className="relative w-full overflow-hidden rounded-[12px]"
+        style={{ aspectRatio: "1 / 1", background: "rgba(var(--accent-rgb),0.06)" }}>
+        <Image
+          src={`/entrainement/guides/${m.cle}-${m.genre}-${pose}.webp`}
+          alt={m.nom}
+          fill
+          sizes="120px"
+          style={{ objectFit: "contain" }}
+        />
+      </div>
+      <p className="mt-2 text-[12px] font-semibold leading-tight truncate" style={{ color: "var(--text-1)" }}>{m.nom}</p>
+      <p className="text-[10.5px] font-light leading-tight truncate" style={{ color: "var(--text-3)" }}>{m.zone}</p>
+
+      {/* La pastille : teal quand le mouvement est déjà dans la séance, violet
+          quand elle reste à toucher. Système « D », rien d'inventé ici. */}
+      <span aria-hidden className="absolute top-3.5 right-3.5 w-[22px] h-[22px] rounded-full flex items-center justify-center"
+        style={{ background: m.choisi ? TEAL : ACTION_BG, boxShadow: "0 4px 12px rgba(0,0,0,0.18)" }}>
+        {m.choisi
+          ? <Check size={12} color="#04150F" strokeWidth={3.5} />
+          : <Plus size={13} color="#fff" strokeWidth={3} />}
+      </span>
+    </div>
+  );
+}
+
+function PanneauBibliotheque({ mouvements }: { mouvements: number }) {
+  const reduce = useReducedMotion();
+  const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const t = setInterval(() => setFrame((f) => f + 1), 900);
+    return () => clearInterval(t);
+  }, [reduce]);
+
+  const choisis = MOUVEMENTS_VITRINE.filter((m) => m.choisi).length;
+
+  return (
+    <div className="rounded-[30px] overflow-hidden lg-surface lg-highlight"
+      style={{ border: "1px solid rgba(var(--accent-rgb),0.16)" }}>
+
+      <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.1)" }}>
+        <p className="text-[14px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>La bibliothèque</p>
+        <p className="text-[11.5px] font-light" style={{ color: "var(--text-3)" }}>
+          {mouvements} mouvements, tous animés
+        </p>
+      </div>
+
+      {/* Les filtres réels de l'écran : la zone du corps et le matériel. */}
+      <div className="flex flex-wrap gap-1.5 px-5 pt-4">
+        {["Tout le corps", "Sans matériel", "Haltères"].map((f, i) => (
+          <span key={f} className="px-2.5 py-1 rounded-full text-[11px] font-medium"
+            style={i === 0
+              ? { background: "rgba(var(--accent-rgb),0.14)", color: "var(--accent)" }
+              : { background: "rgba(var(--surface-rgb),0.7)", color: "var(--text-3)" }}>
+            {f}
+          </span>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 px-5 py-4">
+        {MOUVEMENTS_VITRINE.map((m, i) => (
+          <VignetteMouvement key={m.cle} m={m} frame={frame} index={i} />
+        ))}
+      </div>
+
+      <div className="px-5 pb-5">
+        <span className="flex items-center justify-center py-3 rounded-full text-[13.5px] font-semibold text-white"
+          style={{ background: ACTION_BG }}>
+          En faire une séance ({choisis})
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SectionComposer({ chiffres }: { chiffres: ChiffresPublics }) {
+  return (
+    <section className="relative px-6 py-24 md:py-32">
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 md:gap-14 items-center">
+
+        <Reveal>
+          <Eyebrow>Ta séance</Eyebrow>
+          <SectionTitle>
+            Suis-en une. Ou <span style={ACCENT_TEXT}>compose la tienne</span>.
+          </SectionTitle>
+          <p className="mt-5 text-[15px] md:text-base font-light leading-relaxed" style={{ color: "var(--text-2)" }}>
+            Le catalogue est une porte d&rsquo;entrée, pas la seule. Selon le jour, tu prends une séance toute
+            faite, tu la construis mouvement par mouvement, tu la demandes à l&rsquo;assistant, ou tu
+            improvises.
+          </p>
+
+          <div className="mt-8 space-y-4">
+            {PORTES.map((p, i) => (
+              <Reveal key={p.t} delay={0.08 + i * 0.06} y={14}>
+                <div className="flex gap-3.5">
+                  <span className="mt-[3px] w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: ACTION_BG }}>
+                    <Check size={10} color="#fff" strokeWidth={3.5} />
+                  </span>
+                  <div>
+                    <p className="text-[14.5px] font-semibold leading-snug" style={{ color: "var(--text-1)" }}>{p.t}</p>
+                    <p className="mt-0.5 text-[13.5px] font-light leading-relaxed" style={{ color: "var(--text-3)" }}>{p.d}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.1}>
+          <PanneauBibliotheque mouvements={chiffres.mouvements} />
         </Reveal>
       </div>
     </section>
@@ -769,6 +942,7 @@ function SectionRelais() {
 
 const INCLUS = [
   "Le catalogue de séances gratuites",
+  "La bibliothèque de mouvements, pour composer les tiennes",
   "Le tunnel guidé et ses démonstrations",
   "La nutrition par photo",
   "Ton planning de la semaine",
@@ -887,11 +1061,12 @@ function SectionFinale() {
   );
 }
 
-export default function LandingStory() {
+export default function LandingStory({ chiffres }: { chiffres: ChiffresPublics }) {
   return (
     <div className="relative w-full">
-      <SectionQuoi />
+      <SectionQuoi chiffres={chiffres} />
       <SectionCatalogue />
+      <SectionComposer chiffres={chiffres} />
       <SectionTunnel />
       <SectionIntelligence />
       <SectionConstance />

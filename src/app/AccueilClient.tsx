@@ -13,6 +13,9 @@ import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIC
 import StatDetailModal from "@/components/StatDetailModal";
 import LandingStory from "@/components/Landing/LandingStory";
 import LandingHero from "@/components/Landing/LandingHero";
+/* Le type seul : la coquille serveur (`app/page.tsx`) fait le comptage et
+   descend trois entiers, pour que les données ne traversent pas jusqu'ici. */
+import type { ChiffresPublics } from "@/lib/chiffresPublics";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import type { StatData } from "@/data/statsData";
@@ -182,11 +185,11 @@ function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: R
    Hero + présentation vivent dans src/components/Landing/ pour garder
    ce fichier (partagé entre agents) le plus petit possible.
 ───────────────────────────────────────────────── */
-function LandingPage() {
+function LandingPage({ chiffres }: { chiffres: ChiffresPublics }) {
   return (
     <div className="relative w-full" style={{ overflowX: "clip", background: "var(--page-bg)" }}>
       <LandingHero />
-      <LandingStory />
+      <LandingStory chiffres={chiffres} />
     </div>
   );
 }
@@ -1241,7 +1244,7 @@ function LoadingSpinner() {
    classe `a-session`, posée avant le premier paint par le script du <head>,
    masque la landing et révèle l'attente (voir globals.css). La bascule est en
    CSS et non en React, pour que le rendu reste identique serveur et client. */
-export default function AccueilClient() {
+export default function AccueilClient({ chiffres }: { chiffres: ChiffresPublics }) {
   const { user, isLoading, justLoggedIn, isNewUser, clearWelcome } = useAuth();
   // Le popup animé "Bonsoir" est retiré au profit de l'intro logo (SplashIntro).
   void justLoggedIn; void isNewUser; void clearWelcome;
@@ -1261,7 +1264,7 @@ export default function AccueilClient() {
   // n'est pas remontée, donc les animations du hero ne rejouent pas.
   return (
     <>
-      <div className="accueil-landing"><LandingPage /></div>
+      <div className="accueil-landing"><LandingPage chiffres={chiffres} /></div>
       {isLoading && <div className="accueil-attente"><LoadingSpinner /></div>}
     </>
   );

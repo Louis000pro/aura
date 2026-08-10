@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import RetourLegal from "@/components/legal/RetourLegal";
 
 /* ── Section block ──────────────────────────────────────── */
 function LegalSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -28,24 +28,7 @@ function LegalSection({ title, children }: { title: string; children: React.Reac
 export default function ConfidentialitePage() {
   return (
     <div className="min-h-screen px-4 md:px-8 pt-8 pb-28 max-w-3xl mx-auto">
-      {/* Back button */}
-      <Link href="/parametres">
-        <motion.div
-          whileHover={{ x: -2 }}
-          whileTap={{ scale: 0.96 }}
-          className="inline-flex items-center gap-2 mb-6 px-4 py-2.5 rounded-2xl cursor-pointer"
-          style={{
-            background: "rgba(var(--surface-rgb),0.7)",
-            border: "1px solid rgba(var(--accent-rgb),0.12)",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 2px 8px rgba(var(--accent-rgb),0.06)",
-            color: "var(--text-2)",
-          }}
-        >
-          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "var(--accent)" }} />
-          <span className="text-sm font-medium">Retour</span>
-        </motion.div>
-      </Link>
+      <RetourLegal />
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
@@ -115,12 +98,12 @@ export default function ConfidentialitePage() {
             sens du RGPD) qui peuvent traiter certaines de vos données pour notre compte :
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Supabase</strong> (Supabase Inc.) — hébergement de la base de données, authentification et stockage des fichiers.</li>
-            <li><strong>Vercel</strong> (Vercel Inc.) — hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
-            <li><strong>Resend</strong> — envoi des emails transactionnels.</li>
-            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) — gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
-            <li><strong>Mistral AI</strong> (société française) — assistant conversationnel, génération de séances, de recettes et de menus.</li>
-            <li><strong>Groq</strong> (Groq Inc.) — analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
+            <li><strong>Supabase</strong> (Supabase Inc.) : hébergement de la base de données, authentification et stockage des fichiers.</li>
+            <li><strong>Vercel</strong> (Vercel Inc.) : hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
+            <li><strong>Resend</strong> : envoi des emails transactionnels.</li>
+            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) : gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
+            <li><strong>Mistral AI</strong> (société française) : assistant conversationnel, génération de séances, de recettes et de menus.</li>
+            <li><strong>Groq</strong> (Groq Inc.) : analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
           </ul>
           <p className="mt-2">
             Les contenus que vous soumettez à ces fonctions (message, photo d&apos;assiette, enregistrement

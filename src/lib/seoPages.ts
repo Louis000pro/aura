@@ -19,6 +19,10 @@ export const SEO_PAGES: { href: string; label: string }[] = [
   // une page que personne ne lie ne reçoit aucun poids interne, et c'est
   // exactement ce qui avait rendu /guides invisible et inutile.
   { href: "/exercices", label: "Exercices" },
+  // La page qui explique l'entité elle-même. Elle est en dernier parce qu'elle
+  // ne répond pas à une question d'entraînement : on y va quand on se demande
+  // qui est derrière, pas quand on cherche un programme.
+  { href: "/a-propos", label: "À propos" },
 ];
 
 /** Les pages légales publiques, dans l'ordre où on les présente. */

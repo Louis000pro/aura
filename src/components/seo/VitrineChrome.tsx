@@ -33,21 +33,32 @@ export function VitrineHeader() {
   );
 }
 
-export function VitrinePied() {
+/** `suitLeTheme` n'est vrai que sur /premium. Les pages vitrine forcent un fond
+    clair quel que soit le thème de l'utilisateur : leur pied doit donc garder
+    les valeurs claires, sinon un membre en mode sombre lirait du mauve pâle sur
+    du blanc. /premium, elle, suit le thème de l'application, et son pied doit
+    suivre avec. Les valeurs claires des tokens sont exactement celles d'avant,
+    sauf le label et la ligne © qui échouaient à l'accessibilité (voir
+    `globals.css`) : en mode clair, le rendu ne change qu'à ces deux endroits. */
+export function VitrinePied({ suitLeTheme = false }: { suitLeTheme?: boolean }) {
+  const lien = suitLeTheme ? "var(--pied-lien)" : "#6B5BA0";
+  const titre = suitLeTheme ? "var(--pied-titre)" : "#6B4FD8";
+  const bas = suitLeTheme ? "var(--pied-bas)" : "#4A5568";
+
   return (
     <nav className="mt-12 pt-8 border-t" style={{ borderColor: "rgba(167,139,250,0.18)" }} aria-label="Pages Vaiiya">
-      <p className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4" style={{ color: "#A78BFA" }}>Explorer</p>
+      <p className="text-[11px] font-bold tracking-[0.2em] uppercase mb-4" style={{ color: titre }}>Explorer</p>
       <ul className="flex flex-wrap gap-x-5 gap-y-2.5">
         {SEO_PAGES.map((p) => (
           <li key={p.href}>
-            <Link href={p.href} className="text-sm font-medium hover:underline" style={{ color: "#6B5BA0" }}>
+            <Link href={p.href} className="text-sm font-medium hover:underline" style={{ color: lien }}>
               {p.label}
             </Link>
           </li>
         ))}
-        <li><Link href="/premium" className="text-sm font-medium hover:underline" style={{ color: "#6B5BA0" }}>Vaiiya Premium</Link></li>
+        <li><Link href="/premium" className="text-sm font-medium hover:underline" style={{ color: lien }}>Vaiiya Premium</Link></li>
       </ul>
-      <p className="mt-8 text-[11px]" style={{ color: "#A0AEC0" }}>
+      <p className="mt-8 text-[11px]" style={{ color: bas }}>
         © {new Date().getFullYear()} Vaiiya ·{" "}
         <Link href="/mentions-legales" className="hover:underline">Mentions légales</Link> ·{" "}
         <Link href="/confidentialite" className="hover:underline">Confidentialité</Link>

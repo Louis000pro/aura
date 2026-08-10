@@ -54,6 +54,13 @@
   --page-bg: linear-gradient(135deg, #faf8ff 0%, #fffef8 50%, #faf8ff 100%);
   --html-bg: #F5F3FF;                  /* anti-flash au lancement PWA */
   --page-fade-rgb: 248, 247, 252;      /* couleur des fondus de bord (carrousels) */
+  /* Pied de page public. Trois couleurs à part parce que les valeurs générales
+     n'y passaient pas l'accessibilité : le label et la ligne © étaient à 2,58:1
+     et 2,14:1 sur le fond clair, sous le minimum AA de 4,5:1, et le lien tombait
+     à 3,63:1 sur le fond sombre de /premium. Mêmes teintes, assez contrastées. */
+  --pied-lien:  #6B5BA0;               /* 5,49:1 sur #faf8ff */
+  --pied-titre: #6B4FD8;               /* 5,34:1 */
+  --pied-bas:   #4A5568;               /* 7,14:1 */
 }
 
 [data-theme="dark"] {
@@ -80,6 +87,9 @@
   --page-bg: radial-gradient(120% 72% at 50% -6%, #100B1E 0%, #050208 52%, #000000 100%);
   --html-bg: #000000;
   --page-fade-rgb: 5, 2, 8;            /* fondus de bord → se fondent dans le noir */
+  --pied-lien:  #BAB2DD;               /* 10,50:1 sur #000 */
+  --pied-titre: #C3AEFF;               /* 10,82:1 */
+  --pied-bas:   #9E98BE;               /*  7,69:1 */
 }
 
 @layer base {

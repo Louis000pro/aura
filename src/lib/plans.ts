@@ -69,8 +69,8 @@ export const PLANS: Record<PlanId, Plan> = {
     features: [
       "Les missions de base pour gagner de l'EXP",
       "3 séances à toi, gardées",
-      "Coach IA — 5 messages/jour",
-      "Analyse nutrition — 2/jour",
+      "Coach IA : 5 messages/jour",
+      "Analyse nutrition : 2/jour",
     ],
     limits: { chatPerDay: 5, nutritionPerDay: 2, missionsUnlimited: false, sessionsMax: 3, ads: false, exclusiveContent: false },
   },
@@ -85,7 +85,7 @@ export const PLANS: Record<PlanId, Plan> = {
     features: [
       "Missions supplémentaires en illimité",
       "Tes propres séances, sans limite",
-      "Coach IA avancé — illimité",
+      "Coach IA avancé : illimité",
       "Analyse nutrition illimitée",
       "Détails complets de tes entraînements",
       "Programmes & entraînements exclusifs",
