@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
+import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 
 /**
  * Cette page décrivait un produit que Vaiiya n'a jamais eu : des « plans
@@ -61,8 +62,8 @@ export default function CoachIaPage() {
       <p>
         L&apos;assistant est une porte d&apos;entrée, pas un passage obligé. Tu peux aussi bien{" "}
         <strong>suivre une séance du catalogue</strong>, <strong>construire entièrement la tienne</strong>{" "}
-        en piochant dans les 102 mouvements animés de la bibliothèque, ou{" "}
-        <strong>improviser</strong> et garder la séance à la fin si elle t&apos;a plu. Les mouvements se
+        en piochant dans les {CHIFFRES_PUBLICS.mouvements} mouvements animés de la bibliothèque, ou{" "}
+        <strong>improviser</strong>{" "}et garder la séance à la fin si elle t&apos;a plu. Les mouvements se
         consultent librement dans les <Link href="/exercices">fiches d&apos;exercices</Link>.
       </p>
 
@@ -78,7 +79,7 @@ export default function CoachIaPage() {
       <p>
         L&apos;inscription est <strong>gratuite</strong>, sans carte bancaire. Tu obtiens le catalogue de
         séances, la bibliothèque de mouvements, le suivi de tes repas et ta progression sans rien payer. Un
-        abonnement <Link href="/premium">Vaiiya Premium</Link> lèvera plus tard les plafonds de
+        abonnement <Link href="/premium">Vaiiya Premium</Link>{" "}lèvera plus tard les plafonds de
         l&apos;assistant et ouvrira des programmes réservés : il n&apos;est <strong>pas encore ouvert à la
         souscription</strong>, et aucun paiement n&apos;est possible aujourd&apos;hui.
       </p>

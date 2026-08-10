@@ -42,6 +42,7 @@ const PUBLIQUES_TOUJOURS = ["/exercices"];
 /** À double vie : vitrine pour un visiteur, écran de l'app pour un membre. */
 const PUBLIQUES_SI_ANONYME = [
   "/",
+  "/a-propos",
   "/coach-ia",
   "/prise-de-masse",
   "/perte-de-poids",

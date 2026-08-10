@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
+import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 
 /**
  * « Vaiiya adapte ton programme à ton matériel » laissait entendre un suivi
@@ -72,11 +73,11 @@ export default function MusculationMaisonPage() {
       <p>
         Deux façons de faire, et aucune n&apos;est meilleure que l&apos;autre. Tu dis à Vaiiya où tu
         t&apos;entraînes (chez toi au poids du corps, chez toi avec des haltères, ou en salle) et le{" "}
-        <Link href="/coach-ia">coach IA</Link> compose une séance qui n&apos;utilise que ce que tu as sous la
+        <Link href="/coach-ia">coach IA</Link>{" "}compose une séance qui n&apos;utilise que ce que tu as sous la
         main, en te la montrant avant que tu la gardes.
       </p>
       <p>
-        Ou tu la construis toi-même. La bibliothèque contient <strong>102 mouvements animés</strong>{" "}
+        Ou tu la construis toi-même. La bibliothèque contient <strong>{CHIFFRES_PUBLICS.mouvements} mouvements animés</strong>{" "}
         filtrables par zone du corps et par matériel&nbsp;: tu choisis les exercices, tu règles les séries,
         les répétitions et le repos, et la séance est à toi. Les mouvements se regardent aussi librement dans
         les <Link href="/exercices">fiches d&apos;exercices</Link>, sans compte. L&apos;inscription est

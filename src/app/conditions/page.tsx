@@ -22,7 +22,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import RetourLegal from "@/components/legal/RetourLegal";
 import { PLANS, formatPrice } from "@/lib/plans";
 import { LIMITES, QUOTAS_PUBLICS } from "@/lib/aiQuotas";
 
@@ -52,21 +52,7 @@ export default function ConditionsPage() {
 
   return (
     <div className="min-h-screen px-4 md:px-8 pt-8 pb-28 max-w-3xl mx-auto">
-      <Link href="/parametres">
-        <motion.div
-          whileHover={{ x: -2 }}
-          whileTap={{ scale: 0.96 }}
-          className="inline-flex items-center gap-2 mb-6 px-4 py-2.5 rounded-2xl cursor-pointer"
-          style={{
-            background: "rgba(var(--surface-rgb),0.7)",
-            border: "1px solid rgba(var(--accent-rgb),0.12)",
-            color: "var(--text-2)",
-          }}
-        >
-          <ArrowLeft size={15} strokeWidth={1.75} style={{ color: "var(--accent)" }} />
-          <span className="text-sm font-medium">Retour</span>
-        </motion.div>
-      </Link>
+      <RetourLegal />
 
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="mb-8">
         <h1 className="text-3xl font-extralight tracking-tight" style={{ color: "var(--text-0)" }}>

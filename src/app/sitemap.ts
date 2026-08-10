@@ -46,6 +46,11 @@ const PAGES: string[] = [
   "/musculation-maison",
   "/nutrition-sportive",
 
+  // La page qui décrit l'entité Vaiiya (ce que c'est, qui le fait, ce qu'il y
+  // a dedans). C'est la page que l'on veut voir répondre à « c'est quoi
+  // Vaiiya », donc elle a sa place ici comme les autres pages de fond.
+  "/a-propos",
+
   // Le hub de la bibliothèque d'exercices. Les fiches elles-mêmes sont
   // ajoutées plus bas, depuis la liste de celles qui sont rédigées : une
   // fiche sans contenu n'a pas de route, elle n'a donc rien à faire ici.

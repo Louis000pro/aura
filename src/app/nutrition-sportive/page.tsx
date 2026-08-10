@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import MarketingShell from "@/components/seo/MarketingShell";
+import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 
 /**
  * Le contenu de fond de cette page (calories, macros, repas équilibrés,
@@ -86,7 +87,7 @@ export default function NutritionSportivePage() {
 
       <h2>Des idées quand tu ne sais pas quoi manger</h2>
       <p>
-        Vaiiya contient <strong>78 recettes</strong> écrites et photographiées, avec leurs macros par
+        Vaiiya contient <strong>{CHIFFRES_PUBLICS.recettes} recettes</strong>{" "}écrites et photographiées, avec leurs macros par
         portion. L&apos;assistant peut aussi te proposer une recette à partir de ce qu&apos;il te reste dans
         le frigo. Et parce qu&apos;on ne mange pas toujours chez soi, l&apos;application part de la vraie
         question&nbsp;: on mange où&nbsp;? À la maison, au restaurant ou en livraison, elle t&apos;aide à

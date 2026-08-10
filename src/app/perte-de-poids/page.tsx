@@ -60,7 +60,7 @@ export default function PerteDePoidsPage() {
 
       <h2>Bien manger sans frustration</h2>
       <p>
-        Une bonne <Link href="/nutrition-sportive">nutrition sportive</Link> ne veut pas dire se priver.
+        Une bonne <Link href="/nutrition-sportive">nutrition sportive</Link>{" "}ne veut pas dire se priver.
         Vaiiya te propose des idées de repas qui tiennent dans tes calories, et note ce que tu manges à
         partir d&apos;une photo, d&apos;un code-barres ou de ce que tu écris, que tu sois chez toi, au
         restaurant ou en <Link href="/musculation-maison">séance à la maison</Link>.
@@ -68,7 +68,7 @@ export default function PerteDePoidsPage() {
 
       <h2>Commencer ta perte de poids avec Vaiiya</h2>
       <p>
-        Le <Link href="/coach-ia">coach IA Vaiiya</Link> calcule ton déficit et compose tes séances. Quand ta
+        Le <Link href="/coach-ia">coach IA Vaiiya</Link>{" "}calcule ton déficit et compose tes séances. Quand ta
         semaine change, tu lui demandes de la réorganiser&nbsp;: il te montre la nouvelle semaine et tu
         valides. Rien ne se réécrit tout seul dans ton dos. Crée ton compte gratuit pour commencer.
       </p>

@@ -15,6 +15,8 @@
 
 import { ADVICE_ARTICLES } from "./adviceArticles";
 import { EXERCISE_LIBRARY } from "./exerciseLibrary";
+import { RECIPES } from "./recipeBank";
+import { fichesPubliees } from "./exercicesPublics";
 
 /**
  * Le catalogue de séances, lui, n'est pas dérivable aujourd'hui : il vit dans
@@ -40,10 +42,16 @@ export type ChiffresPublics = {
   miniCours: number;
   /** Mouvements de la bibliothèque, tous animés par un personnage-guide. */
   mouvements: number;
+  /** Recettes écrites et photographiées de la banque. */
+  recettes: number;
+  /** Fiches d'exercices publiques réellement rédigées et publiées. */
+  fiches: number;
 };
 
 export const CHIFFRES_PUBLICS: ChiffresPublics = {
   seances: SEANCES_CATALOGUE,
   miniCours: ADVICE_ARTICLES.length,
   mouvements: EXERCISE_LIBRARY.length,
+  recettes: RECIPES.length,
+  fiches: fichesPubliees().length,
 };
