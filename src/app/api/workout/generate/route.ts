@@ -208,10 +208,13 @@ ${targetSeconds ? `- DUREE : total proche de ${targetMinutes} min (${targetSecon
     );
     const pertinent = (e: LibExercise) =>
       vises.size === 0 || e.muscles.some((m) => vises.has(aplatir(m)));
-    const renfort = [...dispo.filter(pertinent), ...dispo].filter((e) => !vus.has(aplatir(e.name)));
+    // Les pertinents d'abord, puis les autres : deux filtres complémentaires
+    // plutôt qu'une concaténation avec toute la bibliothèque, qui listait deux
+    // fois les pertinents et obligeait à les écarter au tour suivant.
+    const renfort = [...dispo.filter(pertinent), ...dispo.filter((e) => !pertinent(e))]
+      .filter((e) => !vus.has(aplatir(e.name)));
     for (const e of renfort) {
       if (gardes.length >= EXOS_MIN) break;
-      if (vus.has(aplatir(e.name))) continue; // `renfort` liste deux fois les pertinents
       vus.add(aplatir(e.name));
       gardes.push(depuisLaBibliotheque(e));
     }
