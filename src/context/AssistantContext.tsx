@@ -1485,8 +1485,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           muscles: [],
           rawExercises: p.exerciseList,
         });
-        const { error } = await createClient().from("custom_sessions").insert(seanceToRow(seance, user.id));
-        gardee = !error;
+        /* Passe par `garderSeance` plutôt que de refaire l'insert : c'était la
+           seule porte qui ajoutait une séance à la bibliothèque SANS vérifier
+           le plafond gratuit. Quand le stock est plein, `gardee` reste faux et
+           le message ne dit plus qu'elle a été gardée — le planning, lui, est
+           mis à jour dans tous les cas. */
+        gardee = await garderSeance(seance);
       }
       setPendingPlan(null);
       setMemoryNotice(gardee ? "Planning mis à jour, séance gardée ✓" : "Planning mis à jour ✓");
@@ -1494,7 +1498,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setMemoryNotice("Oups, impossible de mettre à jour le planning.");
     }
-  }, [user?.id, pendingPlan]);
+  }, [user?.id, pendingPlan, garderSeance]);
 
   const cancelPlan = useCallback(() => setPendingPlan(null), []);
 
@@ -1506,7 +1510,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     const { error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id,
-      date: now.toISOString().slice(0, 10),
+      // Date LOCALE, même raison que dans confirmMeal ci-dessous.
+      date: todayYmd(),
       meal_type: "dejeuner",
       food_name: pendingRecipe.nom,
       description: null,
@@ -1534,7 +1539,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     const { error } = await supabase.from("nutrition_logs").insert({
       user_id: user.id,
-      date: now.toISOString().slice(0, 10),
+      // Date LOCALE : l'écran nutrition écrit et relit ses repas avec la date
+      // locale, donc un `toISOString()` rangeait la veille tout repas noté
+      // entre minuit et 2 h à Paris — et il disparaissait de la journée.
+      date: todayYmd(),
       meal_type: pendingMeal.mealType,
       food_name: pendingMeal.foodName,
       description: null,
