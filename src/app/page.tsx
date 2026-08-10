@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AccueilClient from "./AccueilClient";
+import { CHIFFRES_PUBLICS } from "@/lib/chiffresPublics";
 
 /**
  * Coquille serveur de l'accueil.
@@ -19,5 +20,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <AccueilClient />;
+  /* Les chiffres de la landing sont comptés ici, côté serveur, et descendus en
+     props. Les importer directement dans `LandingStory` (composant client)
+     enverrait au navigateur le texte intégral des 26 mini-cours pour n'afficher
+     qu'un nombre. Voir `lib/chiffresPublics.ts`. */
+  return <AccueilClient chiffres={CHIFFRES_PUBLICS} />;
 }
