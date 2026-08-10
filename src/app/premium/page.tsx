@@ -457,7 +457,9 @@ function PremiumInner() {
             membre connecté garde sa barre du bas, qui recouvrirait sinon la
             dernière ligne. */}
         <div className="pb-28">
-          <VitrinePied />
+          {/* Seule page publique dont le fond suit le thème de l'app : son pied
+              doit suivre aussi, sinon les liens tombent à 3,63:1 sur le noir. */}
+          <VitrinePied suitLeTheme />
         </div>
       </div>
 
