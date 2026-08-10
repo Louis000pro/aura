@@ -185,7 +185,6 @@ export function useAssistant(): AssistantContextValue {
 
 let _counter = 0;
 const uid = () => `${Date.now()}-${++_counter}`;
-const todayISODate = () => new Date().toISOString().slice(0, 10);
 
 const CAP = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
@@ -196,6 +195,17 @@ function jourCourt(date: string): string {
   if (date === resolveWhen("demain")) return "demain";
   return dayLabel(date).toLowerCase();
 }
+
+/* Les deux questions que le CODE pose (jamais le modèle) quand le lieu
+   d'entraînement manque. Le TEXTE varie avec le contexte — « cette semaine »,
+   « avant de te préparer ça » — mais les puces, elles, ne varient jamais :
+   `repondreQuestion` relit la réponse au libellé (/salle/i, /halt/i), donc une
+   copie qui divergerait (« En club ») enregistrerait le mauvais lieu en
+   silence. Elles étaient recopiées à cinq endroits ; elles s'écrivent ici. */
+const questionLieu = (relance?: string): QuestionCliquable =>
+  ({ choix: ["En salle", "À la maison"], genre: "lieu", ...(relance ? { relance } : {}) });
+const questionEquip = (relance?: string): QuestionCliquable =>
+  ({ choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", ...(relance ? { relance } : {}) });
 
 /** Lieu d'un jour de planning, en français lisible. */
 const LIEU_LABEL: Record<string, string> = {
@@ -378,7 +388,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       userContextRef.current = { pseudo: user.pseudo, skipped: true };
     }
 
-    const today = todayISODate();
+    /* `todayYmd` (date LOCALE), pas `toISOString()` : les repas sont écrits
+       avec la date locale (toDateStr de NutritionTab), donc une clé UTC lisait
+       la veille entre minuit et 2 h du matin à Paris, et le coach annonçait
+       les calories d'hier comme celles du jour. */
+    const today = todayYmd();
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
@@ -638,9 +652,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         // Lieu incomplet : on le demande en puces plutôt que de rester muet
         // sur une promesse. La demande d'origine repart dès qu'on a la réponse.
         if (!saved.location) {
-          poserQuestion("Tu t'entraînes où cette semaine ?", { choix: ["En salle", "À la maison"], genre: "lieu", relance: text });
+          poserQuestion("Tu t'entraînes où cette semaine ?", questionLieu(text));
         } else {
-          poserQuestion("Tu as des haltères à la maison ?", { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text });
+          poserQuestion("Tu as des haltères à la maison ?", questionEquip(text));
         }
         return;
       }
@@ -874,9 +888,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (location === "maison" && !equip) {
         // Une seule question à la fois : le matériel arrive maintenant, et
         // c'est lui qui relancera la demande.
-        poserQuestion("Tu as des haltères à la maison ?", {
-          choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: attente,
-        });
+        poserQuestion("Tu as des haltères à la maison ?", questionEquip(attente));
         return;
       }
       attenteRef.current = null;
@@ -1002,9 +1014,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        ici, c'était une demande sans réponse et sans explication. */
     const { location: lieu, equip } = readLieu(user.id);
     if (!lieu) {
-      poserQuestion("Avant de te préparer ça, tu t'entraînes où ?", {
-        choix: ["En salle", "À la maison"], genre: "lieu", relance: text,
-      });
+      poserQuestion("Avant de te préparer ça, tu t'entraînes où ?", questionLieu(text));
       return;
     }
 
@@ -1072,11 +1082,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // qu'elle soit touchée (puce) ou tapée à la main (outil save_lieu).
     if (!location) {
       attenteRef.current = text;
-      return { texte: "Avant de te préparer ça, tu t'entraînes où ?", question: { choix: ["En salle", "À la maison"], genre: "lieu", relance: text } };
+      return { texte: "Avant de te préparer ça, tu t'entraînes où ?", question: questionLieu(text) };
     }
     if (location === "maison" && !equip) {
       attenteRef.current = text;
-      return { texte: "Tu as des haltères à la maison ?", question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text } };
+      return { texte: "Tu as des haltères à la maison ?", question: questionEquip(text) };
     }
     return null;
   }, [user?.id]);
@@ -1095,21 +1105,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", id: assistantId, streaming: true }]);
     setIsStreaming(true);
 
-    // Limite quotidienne (comptes gratuits) — admin/premium illimité
-    const isUnlimited = !!(user?.is_admin || user?.is_premium);
-    if (!isUnlimited && user) {
-      const dayKey = `vaiiya_ai_count_${user.id}_${todayISODate()}`;
-      const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
-      if (count >= 12) {
-        setMessages((prev) => prev.map((m) => m.id === assistantId
-          ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages/jour. Passe au plan supérieur pour un coach illimité — je t'emmène voir les offres…", streaming: false }
-          : m));
-        setIsStreaming(false);
-        setTimeout(() => router.push("/premium"), 1900);
-        return;
-      }
-      try { localStorage.setItem(dayKey, String(count + 1)); } catch { /* ignore */ }
-    }
+    /* Il y avait ici un compteur de messages dans le localStorage, qui bloquait
+       à 12/jour. Il est retiré : le plafond réel est tenu par `garderIA` dans
+       /api/chat (5/jour en gratuit, la valeur qu'annonce /premium), et
+       `messageDeRefus` rend plus bas le message du serveur. Ce compteur-ci
+       annonçait donc un chiffre faux, refusait avant même d'avoir demandé au
+       serveur, et se remettait à zéro en vidant son navigateur : il ne
+       protégeait rien et contredisait la page qui vend l'abonnement. */
 
     /* Le lieu d'entraînement n'est plus DEVINÉ ici. Deux regex tentaient de
        reconnaître qu'un message répondait à la question du tour précédent
@@ -1324,7 +1326,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (location === "maison" && !readLieu(user.id).equip) {
         setMessages((prev) => [...prev, {
           role: "assistant" as const, content: "Tu as des haltères à la maison ?", id: uid(),
-          question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip" as const, relance },
+          question: questionEquip(relance),
         }]);
         return;
       }
