@@ -98,12 +98,12 @@ export default function ConfidentialitePage() {
             sens du RGPD) qui peuvent traiter certaines de vos données pour notre compte :
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2">
-            <li><strong>Supabase</strong> (Supabase Inc.) — hébergement de la base de données, authentification et stockage des fichiers.</li>
-            <li><strong>Vercel</strong> (Vercel Inc.) — hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
-            <li><strong>Resend</strong> — envoi des emails transactionnels.</li>
-            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) — gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
-            <li><strong>Mistral AI</strong> (société française) — assistant conversationnel, génération de séances, de recettes et de menus.</li>
-            <li><strong>Groq</strong> (Groq Inc.) — analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
+            <li><strong>Supabase</strong> (Supabase Inc.) : hébergement de la base de données, authentification et stockage des fichiers.</li>
+            <li><strong>Vercel</strong> (Vercel Inc.) : hébergement de l&apos;application et mesure d&apos;audience anonyme.</li>
+            <li><strong>Resend</strong> : envoi des emails transactionnels.</li>
+            <li><strong>Stripe</strong> (Stripe Inc. et Stripe Payments Europe) : gestion des abonnements et des paiements. Stripe reçoit votre adresse email et vos données de paiement, que nous ne voyons jamais.</li>
+            <li><strong>Mistral AI</strong> (société française) : assistant conversationnel, génération de séances, de recettes et de menus.</li>
+            <li><strong>Groq</strong> (Groq Inc.) : analyse des photos de repas et de cartes de restaurant, estimation nutritionnelle, transcription de la dictée vocale.</li>
           </ul>
           <p className="mt-2">
             Les contenus que vous soumettez à ces fonctions (message, photo d&apos;assiette, enregistrement
