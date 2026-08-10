@@ -10,23 +10,31 @@
    dans laquelle il n'est pas entré, juste sous un en-tête qui l'invite
    à créer un compte. Les deux se contredisent.
 
-   Une surface applicative garde sa navigation, inchangée. Le rail
-   desktop n'est jamais concerné : il ne s'agit ici que du mobile.
+   Une surface applicative garde sa navigation, inchangée.
+
+   ⚠️ Le rail desktop EST concerné, contrairement à ce que disait ce
+   fichier. Il était rendu sans condition, donc une page vitrine
+   affichait un rail applicatif à gauche d'un en-tête qui invite à créer
+   un compte : les deux se contredisent exactement comme sur mobile.
 
    ── Pourquoi DEUX listes ────────────────────────────────────────────
    Parce que les pages n'ont pas toutes la même vie.
 
-   Les fiches d'exercices n'ont aucune porte d'entrée depuis
-   l'application : personne n'y arrive en étant connecté, sinon par le
-   pied de page vitrine. Elles sont publiques pour tout le monde.
+   Les pages vitrine (fiches d'exercices, pages SEO, /a-propos) rendent
+   le même gabarit pour tout le monde : le serveur ne regarde pas qui
+   demande, et elles n'ont aucune porte d'entrée depuis l'application,
+   sinon le pied de page vitrine. Un membre qui y arrive en ressort par
+   le logo de l'en-tête, qui pointe vers « / ». Elles sont donc vitrine
+   quel que soit le visiteur, et c'est ce qui leur évite tout
+   scintillement : leur réponse ne dépend pas d'une session à résoudre.
 
    Les autres sont à double vie. /premium se lit depuis Paramètres,
    les pages légales aussi, et « / » EST l'accueil de l'application dès
-   qu'on a un compte. Leur retirer la barre du bas pour un membre le
-   priverait de sa navigation au milieu de son propre parcours, et
-   /premium n'a pas de bouton retour : dans la PWA installée, sans barre
-   du bas ni chrome de navigateur, on y serait enfermé. Elles ne sont
-   donc publiques que pour un visiteur non connecté, ce qui est
+   qu'on a un compte. Leur retirer la navigation pour un membre le
+   priverait de ses déplacements au milieu de son propre parcours, et
+   /premium n'a même pas de bouton retour : dans la PWA installée, sans
+   barre du bas ni chrome de navigateur, on y serait enfermé. Elles ne
+   sont donc publiques que pour un visiteur non connecté, ce qui est
    exactement la personne pour qui ce chantier existe.
 
    ⚠️ /guides est volontairement absente : écran de revue interne
@@ -36,18 +44,21 @@
    un audit séparé du parcours d'invitation.
    ════════════════════════════════════════════════════════════════════ */
 
-/** Vitrine pure, publique quel que soit le visiteur. */
-const PUBLIQUES_TOUJOURS = ["/exercices"];
-
-/** À double vie : vitrine pour un visiteur, écran de l'app pour un membre. */
-const PUBLIQUES_SI_ANONYME = [
-  "/",
+/** Vitrine pure, publique quel que soit le visiteur : ces pages passent toutes
+    par `MarketingShell` ou `PageVitrine`, gabarits sans branche d'authentification. */
+const PUBLIQUES_TOUJOURS = [
+  "/exercices",
   "/a-propos",
   "/coach-ia",
   "/prise-de-masse",
   "/perte-de-poids",
   "/musculation-maison",
   "/nutrition-sportive",
+];
+
+/** À double vie : vitrine pour un visiteur, écran de l'app pour un membre. */
+const PUBLIQUES_SI_ANONYME = [
+  "/",
   "/premium",
   "/conditions",
   "/mentions-legales",
@@ -65,4 +76,20 @@ function couvre(racines: string[], pathname: string): boolean {
 export function estSurfacePublique(pathname: string, connecte: boolean): boolean {
   if (couvre(PUBLIQUES_TOUJOURS, pathname)) return true;
   return !connecte && couvre(PUBLIQUES_SI_ANONYME, pathname);
+}
+
+/** Vitrine pour tout le monde : la réponse ne dépend d'aucune session, donc
+    elle est la même au rendu serveur et à chaque rendu client. C'est ce qui
+    permet de ne rendre aucune chrome applicative du tout, sans scintillement. */
+export function estVitrinePure(pathname: string): boolean {
+  return couvre(PUBLIQUES_TOUJOURS, pathname);
+}
+
+/** À double vie. Le serveur ne peut pas savoir qui demande la page : il rend
+    donc la version membre, et c'est la classe `a-session` (posée sur <html>
+    avant le premier paint, voir le <head> du layout) qui la masque en CSS pour
+    un visiteur anonyme. Même mécanique que la landing, et pour la même raison :
+    trancher en JavaScript ferait apparaître le rail après coup. */
+export function estVitrineSiAnonyme(pathname: string): boolean {
+  return couvre(PUBLIQUES_SI_ANONYME, pathname);
 }

@@ -81,7 +81,8 @@ export function PageVitrine({
 }) {
   return (
     <div
-      className="min-h-screen w-full md:pl-[88px]"
+      /* Aucune réserve pour le rail : il n'y en a pas sur une vitrine. */
+      className="min-h-screen w-full"
       style={{ background: "linear-gradient(180deg,#faf8ff 0%,#fffef8 100%)" }}
     >
       <div className={`mx-auto ${largeur} px-5 pt-10 pb-28`} style={{ paddingTop: "calc(env(safe-area-inset-top) + 28px)" }}>
