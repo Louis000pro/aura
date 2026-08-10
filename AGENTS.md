@@ -14,6 +14,16 @@ Ce fichier est la source de vérité partagée entre tous les agents qui travail
 
 La vision : « tout connecté » — une seule source de données par concept (fini les doublons localStorage/base), un assistant IA qui connaît tout le site et peut agir, un langage simple et humain, **zéro culpabilisation** : on réagit à la réalité de l'utilisateur, on ne prescrit pas.
 
+### ⚠️ Avant toute écriture PUBLIQUE : lire `docs/positionnement-public-vaiiya.md`
+
+Obligatoire avant de toucher à du **marketing**, du **SEO**, des **metadata**, des
+**données structurées** ou une **page publique** (landing, pages vitrine, `/exercices`,
+`/premium`, pages légales). Ce fichier dit ce que Vaiiya est, les chiffres qu'on a le
+droit d'écrire, les claims autorisés et surtout les claims **interdits** (plan
+nutrition, adaptation automatique, applications iOS/Android, abonnement présenté comme
+achetable, chiffres d'utilisateurs). Le code reste la source de vérité des
+fonctionnalités ; ce document est la source de vérité de ce qu'on en dit dehors.
+
 ## Louis (le fondateur) — comment travailler avec lui
 
 - Il travaille en **français**, souvent en dictée vocale → certains mots arrivent mal transcrits : interpréter le sens, pas la lettre.
