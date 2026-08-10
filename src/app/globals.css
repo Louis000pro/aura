@@ -398,6 +398,22 @@ html.perf-lite .lg-blob { filter: blur(34px); opacity: 0.5; }
 html.a-session .accueil-attente { display: block; }
 html.a-session .accueil-landing { display: none; }
 
+/* Le rail desktop des pages à double vie (« / », /premium, pages légales), et
+   les 88 px que le contenu lui laisse. Ces pages sont vitrine pour un visiteur
+   et écran de l'application pour un membre ; le serveur ne sait pas lequel des
+   deux demande, il rend donc la version membre.
+
+   La bascule se fait ici, pour la même raison que la landing juste au-dessus :
+   trancher en JavaScript ferait entrer le rail dans la page une fois la session
+   résolue, et pousserait tout le contenu de 88 px sous les yeux du visiteur.
+
+   Rien pour les vitrines pures (/coach-ia, /a-propos, les fiches…) : là, le
+   rail n'est rendu pour personne, donc il n'y a rien à masquer. */
+@media (min-width: 768px) {
+  html:not(.a-session) .rail-membre { display: none; }
+  html:not(.a-session) .reserve-rail-membre { padding-left: 0; }
+}
+
 /* ─────────────────────── SKELETON SHIMMER ─────────────────────── */
 @layer utilities {
   .skeleton {

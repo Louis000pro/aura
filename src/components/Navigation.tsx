@@ -10,7 +10,7 @@ import {
   Settings, Shield, ChevronRight, Crown, MessageCircle, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { estSurfacePublique } from "@/lib/surfacesPubliques";
+import { estSurfacePublique, estVitrinePure, estVitrineSiAnonyme } from "@/lib/surfacesPubliques";
 import NotificationBell from "@/components/NotificationBell";
 import NavOrb from "@/components/NavOrb";
 import { useEffect, useRef, useState } from "react";
@@ -114,10 +114,22 @@ export default function Navigation() {
 
   const handleLogout = () => { logout(); router.push("/"); };
 
-  /* Une surface publique (les fiches d'exercices) n'affiche aucune chrome
-     applicative mobile : ni la barre du bas, ni la cloche flottante. Le
-     rail desktop, lui, ne bouge pas. Voir `lib/surfacesPubliques.ts`. */
+  /* Une surface publique n'affiche AUCUNE chrome applicative : ni la barre du
+     bas, ni la cloche flottante, ni le rail desktop. Voir
+     `lib/surfacesPubliques.ts`. */
   const surfacePublique = estSurfacePublique(pathname, !!user);
+
+  /* Le rail desktop, en deux temps.
+
+     Sur une vitrine pure, il ne doit exister pour personne : on ne le rend
+     pas du tout, donc il n'est même pas dans le HTML.
+
+     Sur une page à double vie (/premium, pages légales, « / »), il appartient
+     au membre et pas au visiteur. On le rend toujours, et `a-session` le
+     masque en CSS avant le premier paint : décider ici, en JavaScript, le
+     ferait apparaître une fois la session résolue. */
+  const railAbsent = estVitrinePure(pathname);
+  const railSelonSession = estVitrineSiAnonyme(pathname);
 
   const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
@@ -338,7 +350,8 @@ export default function Navigation() {
       )}
 
       {/* ══ Desktop Sidebar ══ */}
-      <aside className="hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      {!railAbsent && (
+      <aside className={`hidden md:flex fixed left-4 top-4 bottom-4 z-50 flex-col${railSelonSession ? " rail-membre" : ""}`} style={{ willChange: "transform", transform: "translateZ(0)" }}>
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -416,6 +429,7 @@ export default function Navigation() {
           )}
         </motion.div>
       </aside>
+      )}
     </>
   );
 }
