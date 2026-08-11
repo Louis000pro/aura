@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Check, Lock, Crown, Link2, Camera, ChevronRight,
-  Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2,
+  Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2, Shield,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareButton from "@/components/PerfShareButton";
@@ -1060,6 +1060,26 @@ export default function ProfilPage() {
             <Crown size={15} strokeWidth={2} style={{ color: "#fff" }} />
           </motion.div>
         </Link>
+        {/* Administration : l'écran existait déjà sur téléphone, mais au bout de
+            quatre taps (Profil → Paramètres → tout en bas). Il vit là où on le
+            cherche, et seulement pour un admin. */}
+        {user?.is_admin && (
+          <Link href="/admin">
+            <motion.div
+              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+              className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer"
+              style={{
+                background: "rgba(var(--surface-rgb),0.88)",
+                backdropFilter: "blur(16px)",
+                border: "1px solid rgba(var(--gold-rgb),0.5)",
+                boxShadow: "0 2px 14px rgba(var(--gold-rgb),0.18)",
+              }}
+              aria-label="Administration"
+            >
+              <Shield size={15} strokeWidth={1.8} style={{ color: "var(--gold)" }} />
+            </motion.div>
+          </Link>
+        )}
         <Link href="/parametres">
           <motion.div
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}

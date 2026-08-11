@@ -130,6 +130,11 @@ export default function Navigation() {
   const railAbsent = estVitrinePure(pathname);
   const railSelonSession = estVitrineSiAnonyme(pathname);
 
+  /* Pages qui portent DÉJÀ leur propre barre du haut. Y superposer le voile
+     et la cloche flottante ferait deux barres l'une sur l'autre : sur /admin,
+     la cloche venait se poser exactement sur le bouton « Actualiser ». */
+  const barrePropre = pathname === "/profil" || pathname === "/communaute" || pathname === "/admin";
+
   const isProgActive = pathname === "/progression";
   const avatarLetter = (user?.pseudo ?? user?.name ?? "?")[0]?.toUpperCase() ?? "?";
   const isAdmin = user?.is_admin || user?.email === "teyprox@gmail.com";
@@ -276,7 +281,7 @@ export default function Navigation() {
             (avatar + cloche) pour que le contenu scrolle proprement dessous au
             lieu de « tomber » dessus. Fondu vers le transparent = pas de barre
             lourde. ══ */}
-      {user && !surfacePublique && pathname !== "/profil" && pathname !== "/communaute" && (
+      {user && !surfacePublique && !barrePropre && (
         <div className="global-mobile-header md:hidden fixed top-0 left-0 right-0 z-30 pointer-events-none"
           style={{
             height: "calc(env(safe-area-inset-top) + 56px)",
@@ -284,7 +289,7 @@ export default function Navigation() {
           }} />
       )}
 
-      {user && !surfacePublique && pathname !== "/profil" && pathname !== "/communaute" && (
+      {user && !surfacePublique && !barrePropre && (
         <div className="global-mobile-header md:hidden fixed top-0 right-0 z-40 flex items-center px-3"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}>
           <NotificationBell side="top" />

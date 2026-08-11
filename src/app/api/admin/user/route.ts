@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { exigerAdmin } from "@/lib/adminGuard";
 
 /**
  * POST /api/admin/user
@@ -14,28 +14,13 @@ import { createAdminClient } from "@/lib/supabase-admin";
  *   - delete
  */
 export async function POST(req: NextRequest) {
-  const admin = createAdminClient();
+  // Authentification + droit admin : une seule porte, partagée avec
+  // /api/admin/stats (voir lib/adminGuard.ts).
+  const porte = await exigerAdmin(req);
+  if (!porte.ok) return porte.reponse;
+  const { admin } = porte;
 
-  // ── 1) Authentifier l'appelant via son access token ──
-  const authHeader = req.headers.get("authorization") || "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) return NextResponse.json({ error: "non_authentifié" }, { status: 401 });
-
-  const { data: userData, error: userErr } = await admin.auth.getUser(token);
-  const caller = userData?.user;
-  if (userErr || !caller) return NextResponse.json({ error: "token_invalide" }, { status: 401 });
-
-  // ── 2) Vérifier que l'appelant est admin ──
-  const { data: callerProfile } = await admin
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", caller.id)
-    .maybeSingle();
-  if (!callerProfile?.is_admin) {
-    return NextResponse.json({ error: "accès_refusé" }, { status: 403 });
-  }
-
-  // ── 3) Exécuter l'action ──
+  // ── Exécuter l'action ──
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "bad_request" }, { status: 400 }); }
 
