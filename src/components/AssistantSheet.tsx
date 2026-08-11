@@ -24,11 +24,14 @@ import { PLANS } from "@/lib/plans";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { AssistantAvatar } from "@/components/AssistantMark";
 
-/** Libellé lisible d'un moment de repas (valeurs canoniques du journal). */
+/** Libellé lisible d'un moment de repas (valeurs canoniques du journal).
+ *  ⚠️ `gouter` se dit « Goûter », jamais « Collation » (choix de Louis,
+ *  2026-08-11) : c'est déjà le mot de l'écran Nutrition et du coach, et
+ *  l'✦ était le seul endroit à nommer autrement le même créneau. */
 const MEAL_LABEL: Record<string, string> = {
   "petit-dejeuner": "Petit-déjeuner",
   "dejeuner": "Déjeuner",
-  "gouter": "Collation",
+  "gouter": "Goûter",
   "diner": "Dîner",
 };
 

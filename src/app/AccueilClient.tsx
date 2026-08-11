@@ -6,9 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import StatsDrawer from "@/components/StatsDrawer";
-import DailyDrawer from "@/components/DailyDrawer";
 import AIChatPanel, { initialChatMessages, type Message } from "@/components/AIChatPanel";
-import StatDetailModal from "@/components/StatDetailModal";
 import LandingStory from "@/components/Landing/LandingStory";
 import LandingHero from "@/components/Landing/LandingHero";
 /* Le type seul : la coquille serveur (`app/page.tsx`) fait le comptage et
@@ -16,7 +14,6 @@ import LandingHero from "@/components/Landing/LandingHero";
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
 import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
-import type { StatData } from "@/data/statsData";
 import { createClient } from "@/lib/supabase";
 import { stripMemoryTags } from "@/lib/aiMemory";
 import AccueilSignature from "@/components/AccueilSignature";
@@ -112,69 +109,6 @@ function HomeToast({ message }: { message: string }) {
   );
 }
 
-/* ─── Repas Modal ─── */
-type MealType = "petit-dejeuner" | "dejeuner" | "diner" | "gouter";
-const mealTypesList: { id: MealType; label: string; emoji: string }[] = [
-  { id: "petit-dejeuner", label: "Petit-déj", emoji: "☀️" },
-  { id: "dejeuner",       label: "Déjeuner",  emoji: "🍽️" },
-  { id: "diner",          label: "Dîner",     emoji: "🌙" },
-  { id: "gouter",         label: "Goûter",    emoji: "🍎" },
-];
-type RepasModalSaveArgs = { name: string; calories: number; type: MealType };
-function RepasModal({ onClose, onSave }: { onClose: () => void; onSave: (meal: RepasModalSaveArgs) => Promise<void> | void }) {
-  const [name, setName] = useState("");
-  const [calories, setCalories] = useState("");
-  const [type, setType] = useState<MealType>("dejeuner");
-  const [saving, setSaving] = useState(false);
-  const handleSubmit = async () => {
-    if (!name.trim() || saving) return;
-    setSaving(true);
-    try {
-      await onSave({ name: name.trim(), calories: parseInt(calories) || 0, type });
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
-      style={{ background: "rgba(var(--tint-violet-rgb),0.4)", backdropFilter: "blur(12px)" }} onClick={onClose}>
-      <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
-        transition={{ type: "spring", damping: 28, stiffness: 280 }}
-        className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: "rgba(var(--surface-rgb),0.88)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15),inset 0 1px 0 rgba(var(--surface-rgb),0.95)" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <div><p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: "var(--text-3)" }}>Nutrition</p><h2 className="text-lg font-light" style={{ color: "var(--text-1)" }}>Ajouter un repas</h2></div>
-          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}><X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} /></motion.button>
-        </div>
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          {mealTypesList.map(({ id, label, emoji }) => (
-            <motion.button key={id} whileTap={{ scale: 0.93 }} onClick={() => setType(id)}
-              className="flex flex-col items-center gap-1 py-2.5 rounded-2xl cursor-pointer transition-all duration-150"
-              style={type === id ? { background: "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)", boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb),0.9)" } : { background: "rgba(var(--tint-violet-rgb),0.5)" }}>
-              <span className="text-base leading-none">{emoji}</span>
-              <span className="text-[9px] font-semibold" style={{ color: type === id ? "var(--text-1)" : "var(--text-3)" }}>{label}</span>
-            </motion.button>
-          ))}
-        </div>
-        <div className="mb-3">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Aliment / Plat</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex : Poulet grillé, riz complet…" autoFocus className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }} />
-        </div>
-        <div className="mb-5">
-          <label className="text-[10px] font-semibold tracking-widest uppercase mb-1.5 block" style={{ color: "var(--text-3)" }}>Calories (kcal)</label>
-          <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)} placeholder="Ex : 450" className="w-full px-4 py-3 rounded-2xl text-sm outline-none" style={{ background: "rgba(var(--tint-violet-rgb),0.5)", border: "1px solid rgba(var(--violet-mid-rgb),0.6)", color: "var(--text-1)" }} />
-        </div>
-        <motion.button whileHover={{ scale: saving ? 1 : 1.02 }} whileTap={{ scale: saving ? 1 : 0.97 }} disabled={saving} onClick={handleSubmit}
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold cursor-pointer transition-all duration-200"
-          style={{ background: name.trim() && !saving ? "linear-gradient(135deg,var(--violet-mid) 0%,var(--cream-mid) 100%)" : "rgba(220,220,220,0.45)", color: name.trim() && !saving ? "var(--text-1)" : "var(--text-3)", boxShadow: name.trim() && !saving ? "inset 0 1px 0 rgba(var(--surface-rgb),0.9),0 4px 16px rgba(var(--accent-rgb),0.2)" : "none" }}>
-          {saving ? "Enregistrement…" : "Enregistrer le repas"}
-        </motion.button>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 
 /* ─────────────────────────────────────────────────
@@ -213,12 +147,8 @@ function Dashboard() {
     return () => document.body.classList.remove("chat-open");
   }, [showChat]);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
-  const [showDailyDrawer, setShowDailyDrawer] = useState(false);
-  const [showRepas, setShowRepas] = useState(false);
-  const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
   const [parisDay, setParisDay] = useState(() => parisDateStr());
   const [toast, setToast] = useState<string|null>(null);
-  const [selectedStat, setSelectedStat] = useState<StatData | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>(initialChatMessages);
   const [aiTyping, setAiTyping] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -279,7 +209,7 @@ function Dashboard() {
         noterRang(user.id, etat.rang);
       })
       .catch(() => setAuraLoaded(true));
-  }, [user, mealsRefreshKey, statsTick, parisDay]);
+  }, [user, statsTick, parisDay]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur
   // et la pastille pulse. On garde la 1re valeur en référence (pas d'anim au chargement).
@@ -700,13 +630,6 @@ function Dashboard() {
         user={user}
       />
 
-      {/* ────────────────── DRAWER DAILY (bottom → up) — 3 cards swipables */}
-      <DailyDrawer
-        open={showDailyDrawer}
-        onClose={() => setShowDailyDrawer(false)}
-        user={user}
-      />
-
       {/* ────────────────── CHAT PANEL (overlay) ─────────────────────── */}
       <AnimatePresence>
         {showChat && (
@@ -731,36 +654,6 @@ function Dashboard() {
 
 
       <AnimatePresence>
-        {showRepas && <RepasModal key="repas" onClose={() => setShowRepas(false)} onSave={async (meal) => {
-          if (!user) { showToast("Connecte-toi pour sauvegarder"); return; }
-          const supabase = createClient();
-          const now = new Date();
-          const date = now.toISOString().slice(0, 10);
-          const time = now.toTimeString().slice(0, 8);
-          const { error } = await supabase.from("nutrition_logs").insert({
-            user_id: user.id,
-            date,
-            meal_type: meal.type,
-            food_name: meal.name,
-            description: null,
-            calories: meal.calories,
-            proteins: 0, carbs: 0, fats: 0,
-            has_photo: false,
-            time,
-          });
-          if (error) {
-            showToast("Erreur lors de l'ajout 🙏");
-          } else {
-            setShowRepas(false);
-            setMealsRefreshKey(k => k + 1);
-            showToast(`${meal.name} enregistré ✓`);
-            // Recalcule le score → il monte en direct (déclenche l'animation)
-            computeAndSaveScore(user.id, supabase)
-              .then((c) => setLiveStats(prev => ({ ...prev, score: c.score, calories: c.calories, burned: c.burned, loaded: true })))
-              .catch(() => {});
-          }
-        }} />}
-        {selectedStat && <StatDetailModal key="statdetail" stat={selectedStat} onClose={() => setSelectedStat(null)} />}
         {toast && <HomeToast key="toast" message={toast} />}
         {showOnboarding && user && (
           <OnboardingModal key="onboarding" pseudo={user.pseudo ?? user.name ?? ""} onComplete={handleOnboardingComplete} onSkip={handleOnboardingSkip} />
