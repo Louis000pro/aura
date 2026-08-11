@@ -466,34 +466,3 @@ function completedPerfectWeeks(days: Set<string>): number {
   return [...weeks.values()].filter((count) => count >= 7).length;
 }
 
-/**
- * La série racontée comme une histoire (jamais un compteur froid).
- * Chaque jour = un chapitre. Le jour 0 = le tout début.
- */
-export function histoireSerie(streak: number): { titre: string; sous: string } {
-  if (streak <= 0) {
-    return {
-      titre: "Le début d'une grande histoire ✨",
-      sous: "Ouvre le premier chapitre aujourd'hui",
-    };
-  }
-  if (streak === 1) {
-    return { titre: "Chapitre 1 — c'est parti 🔥", sous: "Reviens demain pour la suite" };
-  }
-  if (streak === 2) {
-    return { titre: "Jour 2, te revoilà 👊", sous: "L'histoire continue — reviens demain pour le chapitre 3" };
-  }
-  if (streak < 7) {
-    return { titre: `Jour ${streak}, ça devient une habitude`, sous: "Ne casse pas la série" };
-  }
-  if (streak === 7) {
-    return { titre: "Une semaine. Chapitre 1 bouclé 🔥", sous: "Tu tiens le rythme" };
-  }
-  if (streak < 30) {
-    return { titre: `${streak} jours d'affilée`, sous: "Ton histoire s'écrit, jour après jour" };
-  }
-  if (streak === 30) {
-    return { titre: "Un mois. T'es plus le même 💪", sous: "Respect total" };
-  }
-  return { titre: `${streak} jours — une légende`, sous: "Continue d'écrire l'histoire" };
-}

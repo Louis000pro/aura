@@ -68,6 +68,3 @@ export const GUIDE_SECTIONS: GuideSection[] = [
 
 /** L'id de séance d'une section, le catalogue et le tunnel s'accordent ici. */
 export const sectionSessionId = (s: GuideSection) => `defi-anim-${s.id}`;
-
-/** Tous les exos animés, tous thèmes confondus (pour un compteur). */
-export const ALL_GUIDE_NAMES = GUIDE_SECTIONS.flatMap(s => s.items);

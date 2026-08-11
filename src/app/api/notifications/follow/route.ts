@@ -3,10 +3,7 @@ import nodemailer from "nodemailer";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { sendPushToUser } from "@/lib/sendPushToUser";
 import { ensureProfileForUser } from "@/lib/ensureProfile";
-
-function cleanEnv(val: string | undefined): string {
-  return (val ?? "").replace(/[^\x20-\x7E]/g, "").trim();
-}
+import { cleanEnv } from "@/lib/serverEnv";
 
 export async function POST(req: NextRequest) {
   try {

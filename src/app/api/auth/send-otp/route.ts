@@ -1,32 +1,7 @@
 import { createHmac } from "crypto";
 import { NextRequest } from "next/server";
-
-function cleanEnv(val: string | undefined): string {
-  return (val ?? "").replace(/[^\x20-\x7E]/g, "").trim();
-}
-
-function getSecret(): Buffer {
-  const secret = cleanEnv(process.env.AUTH_SECRET);
-  if (!secret) throw new Error("AUTH_SECRET manquant — configuration serveur requise");
-  return Buffer.from(secret, "utf8");
-}
-
-// ─── Rate limit en mémoire (3 OTP/heure par email) ───────────────────
-type Bucket = { count: number; resetAt: number };
-const rateLimits = new Map<string, Bucket>();
-
-function checkRateLimit(email: string): boolean {
-  const now = Date.now();
-  const k = email.toLowerCase().trim();
-  const b = rateLimits.get(k);
-  if (!b || now > b.resetAt) {
-    rateLimits.set(k, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return true;
-  }
-  if (b.count >= 3) return false;
-  b.count++;
-  return true;
-}
+import { cleanEnv, getAuthSecret } from "@/lib/serverEnv";
+import { autoriserEnvoiEmail } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +11,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Email invalide" }, { status: 400 });
     }
 
-    if (!checkRateLimit(email)) {
+    if (!autoriserEnvoiEmail("otp", email)) {
       return Response.json(
         { error: "Trop de demandes. Réessaie dans une heure." },
         { status: 429 }
@@ -56,7 +31,7 @@ export async function POST(req: NextRequest) {
     const expires = Date.now() + 10 * 60 * 1000;
 
     const data = JSON.stringify({ email, otp, expires });
-    const sig = createHmac("sha256", getSecret()).update(data).digest("hex");
+    const sig = createHmac("sha256", getAuthSecret()).update(data).digest("hex");
     const token = Buffer.from(data).toString("base64") + "." + sig;
 
     const fromAddress = cleanEnv(process.env.RESEND_FROM) || "Vaiiya <onboarding@resend.dev>";

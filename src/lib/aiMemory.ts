@@ -66,42 +66,10 @@ export function stripMemoryTags(raw: string): string {
     .replace(/\[OUBLI\][\s\S]*?\[\/OUBLI\]/gi, "");
 }
 
-/**
- * Extrait les ordres de mémoire émis par le modèle :
- *  [MEMOIRE]categorie|fait[/MEMOIRE]  → à enregistrer
- *  [OUBLI]mots-clés[/OUBLI]           → à supprimer
- */
-export function parseMemoryTags(raw: string): {
-  saves: { category: MemoryCategory; content: string }[];
-  forgets: string[];
-} {
-  const saves: { category: MemoryCategory; content: string }[] = [];
-  const forgets: string[] = [];
-
-  const memRe = /\[MEMOIRE\]\s*([\s\S]*?)\s*\[\/MEMOIRE\]/gi;
-  let m: RegExpExecArray | null;
-  while ((m = memRe.exec(raw)) !== null) {
-    const inner = m[1].trim();
-    if (!inner) continue;
-    const pipe = inner.indexOf("|");
-    let category: MemoryCategory = "autre";
-    let content = inner;
-    if (pipe >= 0) {
-      category = normalizeCategory(inner.slice(0, pipe));
-      content = inner.slice(pipe + 1);
-    }
-    content = content.replace(/^["'«»\s]+|["'«»\s]+$/g, "").trim();
-    if (content) saves.push({ category, content });
-  }
-
-  const forgetRe = /\[OUBLI\]\s*([\s\S]*?)\s*\[\/OUBLI\]/gi;
-  while ((m = forgetRe.exec(raw)) !== null) {
-    const inner = m[1].trim();
-    if (inner) forgets.push(inner);
-  }
-
-  return { saves, forgets };
-}
+/* Il n'y a plus de LECTURE de tags mémoire : le coach n'écrit plus aucune
+   balise (voir « LE COACH N'ÉCRIT PLUS DE BALISES » dans AGENTS.md), et
+   l'extraction passe par /api/assistant/analyze qui rend du JSON. Seul
+   `stripMemoryTags` reste, en filet, pour les vieux messages déjà en session. */
 
 /** Bloc injecté dans le system prompt : ce que l'IA sait déjà sur l'utilisateur. */
 export function buildMemoryPrompt(memories: AiMemory[] | null | undefined): string {
@@ -117,18 +85,3 @@ export function buildMemoryPrompt(memories: AiMemory[] | null | undefined): stri
 ${lines}
 (Ne re-mémorise pas ces faits. Si l'un d'eux change, mémorise la mise à jour ; l'utilisateur peut les consulter et les supprimer dans Paramètres.)`;
 }
-
-/** Protocole d'écriture mémoire, injecté dans le system prompt. */
-export const MEMORY_PROTOCOL_PROMPT = `MÉMOIRE LONG TERME (faits durables sur l'utilisateur) :
-Tu peux mémoriser des faits DURABLES et IMPORTANTS sur l'utilisateur, utiles pour TOUTES tes prochaines conversations : blessures et contre-indications, régime / restrictions ou allergies alimentaires, planning d'entraînement habituel, objectifs de fond, fortes préférences (matériel, lieu, style de coaching).
-- Quand l'utilisateur te demande explicitement de retenir ("retiens que…", "souviens-toi…", "n'oublie pas que…", "note que…") OU quand il révèle spontanément un fait durable et important, ajoute à la TOUTE FIN de ta réponse, sur sa propre ligne (sans markdown, sans guillemets) :
-[MEMOIRE]categorie|fait court, à la 3e personne[/MEMOIRE]
-  • categorie ∈ sante | nutrition | planning | objectif | preference
-  • exemple : [MEMOIRE]sante|Douleur à l'épaule droite, éviter le développé militaire[/MEMOIRE]
-  • exemple : [MEMOIRE]nutrition|Végétarien, ne mange pas de poisson[/MEMOIRE]
-- Quand l'utilisateur te demande d'oublier ("oublie que…", "supprime ce que tu sais sur…", "ce n'est plus vrai"), ajoute à la fin, sur sa propre ligne :
-[OUBLI]mots-clés du fait concerné[/OUBLI]
-RÈGLES STRICTES :
-- Ne mémorise JAMAIS les banalités ni le temporaire (humeur du jour, "j'ai mangé une pomme", une question ponctuelle), ni une info déjà présente dans son profil ou ses stats.
-- Un seul [MEMOIRE] par réponse (le fait le plus important).
-- Ces tags sont INVISIBLES pour l'utilisateur : n'y fais JAMAIS référence. N'annonce pas non plus que tu "retiens", "notes" ou "mémorises" quoi que ce soit — réponds simplement, naturellement et chaleureusement, comme si tu t'en souvenais déjà.`;

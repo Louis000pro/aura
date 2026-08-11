@@ -20,18 +20,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "./supabase-admin";
 import { LIMITES, PLAFONDS, type CategorieIA } from "./aiQuotas";
+import { parisDateStr } from "./dates";
 
 // Les chiffres vivent dans `aiQuotas.ts` (sans dépendance serveur) pour que la
 // page des conditions générales affiche exactement ce que ce fichier applique.
 export { LIMITES, PLAFONDS };
 export type { CategorieIA };
-
-/** Jour parisien, pour que les compteurs se remettent à zéro à minuit comme le reste de l'app. */
-function jourParis(d = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(d);
-}
 
 /** Minute courante, pour la fenêtre de rafale. */
 function minuteUTC(d = new Date()): string {
@@ -131,7 +125,9 @@ export async function garderIA(req: Request, categorie: CategorieIA): Promise<Re
   if (!estAdmin) {
     const plafond = estPremium ? limite.premium : limite.gratuit;
     const finJour = new Date(Date.now() + 36 * 60 * 60 * 1000);
-    const aujourdhui = await compter(`${categorie}:${jourParis()}`, finJour);
+    // Jour parisien : les compteurs se remettent à zéro à minuit, comme les
+    // missions et la présence. Un seul calendrier pour toute l'app.
+    const aujourdhui = await compter(`${categorie}:${parisDateStr()}`, finJour);
 
     if (aujourdhui !== null && aujourdhui > plafond) {
       return {

@@ -854,48 +854,10 @@ export async function creerConversation(membres: string[], nom?: string) {
 export type RelationAmi = "aucune" | "envoyee" | "recue" | "ami";
 export type ResultatRechercheAmi = Personne & { relation: RelationAmi };
 
-async function relationAvec(moi: string, autre: string): Promise<RelationAmi> {
-  const supabase = createClient();
-  const [sortante, entrante] = await Promise.all([
-    supabase.from("followers").select("follower_id")
-      .eq("follower_id", moi).eq("following_id", autre).maybeSingle(),
-    supabase.from("followers").select("follower_id")
-      .eq("follower_id", autre).eq("following_id", moi).maybeSingle(),
-  ]);
-  const erreur = sortante.error ?? entrante.error;
-  if (erreur) throw new Error(erreur.message);
-  if (sortante.data && entrante.data) return "ami";
-  if (sortante.data) return "envoyee";
-  if (entrante.data) return "recue";
-  return "aucune";
-}
-
-/** Recherche volontairement exacte : ce champ sert à retrouver quelqu'un que
- * l'on connaît, jamais à parcourir un annuaire d'inconnus. */
-export async function rechercherAmiParPseudo(
-  moi: string,
-  saisie: string,
-): Promise<ResultatRechercheAmi | null> {
-  const pseudo = saisie.trim().replace(/^@/, "");
-  if (!pseudo) return null;
-  const motifExact = pseudo.replace(/[\\%_]/g, "\\$&");
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, pseudo, avatar_url")
-    .ilike("pseudo", motifExact)
-    .neq("id", moi)
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return null;
-  return {
-    id: data.id as string,
-    pseudo: (data.pseudo as string) ?? pseudo,
-    avatar: (data.avatar_url as string | null) ?? null,
-    relation: await relationAvec(moi, data.id as string),
-  };
-}
+/* La recherche exacte (`rechercherAmiParPseudo`) et son `relationAvec` à deux
+   requêtes par personne ont été retirées le 2026-08-11 : plus aucune interface
+   ne les appelait depuis le passage à la recherche partielle ci-dessous, qui
+   résout les relations EN MASSE en une seule requête. */
 
 /** Recherche PARTIELLE (choix de Louis, 2026-07-25) : les suggestions ne
  * s'affichent qu'après 2 caractères saisis. On retrouve les pseudos qui

@@ -8,8 +8,6 @@ import {
   X, Check, Lock, Crown, Link2, Camera, ChevronRight,
   Pencil, Dumbbell, Play, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Trash2,
 } from "lucide-react";
-import Badges from "@/components/Badges";
-import BadgesRelais from "@/components/defi/BadgesRelais";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareButton from "@/components/PerfShareButton";
 import PerfShareCard from "@/components/PerfShareCard";
@@ -832,34 +830,6 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ─────────────── Published session types ─────────────── */
-type PublishedSession = {
-  id: string;
-  title: string;
-  subtitle: string;
-  category: string;
-  duration: number;
-  difficulty: string;
-  exercises: number;
-  muscles: string[];
-  accent: string;
-  icon: string;
-  exercise_list: Exercise[];
-  visibility: "friends" | "public";
-};
-
-const PROF_ICON_MAP: Record<string, typeof Dumbbell> = { Dumbbell, Flame, Wind, Layers, Sparkles };
-const resolveProfileIcon = (name: string): typeof Dumbbell => PROF_ICON_MAP[name] ?? Dumbbell;
-
-const PROF_DIFF_COLOR: Record<string, string> = {
-  "Débutant": "#34D399", "Intermédiaire": "#FBBF24", "Avancé": "var(--accent)",
-};
-
-const VIS_LABELS: Record<string, { label: string; icon: typeof Globe; color: string }> = {
-  friends: { label: "Amis",   icon: Users,  color: "#8B5CF6" },
-  public:  { label: "Public", icon: Globe,  color: "#2BD4A0" },
-};
-
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
   const { user, logout, refreshProfile } = useAuth();
@@ -901,7 +871,6 @@ export default function ProfilPage() {
   const [editBio, setEditBio] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionItem[]>([]);
-  const { settings, updateSettings } = useProfileSettings();
 
   /* Fetch profile + stats */
   useEffect(() => {
@@ -1009,10 +978,6 @@ export default function ProfilPage() {
     });
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push("/auth");
-  };
 
   const handleSaveProfile = (newPseudo: string, newFullName: string, newBio: string, newAvatar: string) => {
     setProfilePseudo(newPseudo);

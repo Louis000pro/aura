@@ -35,3 +35,7 @@ seed_videos/
 
 # planches brutes des personnages-guides (entrée de `npm run guides`)
 /guides-src
+
+# Worktrees des autres agents : ce sont des dépôts git imbriqués. Sans cette
+# ligne, un simple `git add -A` les commite comme sous-modules cassés.
+/.claude/worktrees/

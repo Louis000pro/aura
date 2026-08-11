@@ -1,21 +1,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase-admin";
-
-function cleanEnv(val: string | undefined): string {
-  return (val ?? "").replace(/[^\x20-\x7E]/g, "").trim();
-}
-
-// ─── Rate limit en mémoire (3 demandes/heure par email) ───
-type Bucket = { count: number; resetAt: number };
-const rateLimits = new Map<string, Bucket>();
-function checkRateLimit(email: string): boolean {
-  const now = Date.now();
-  const k = email.toLowerCase().trim();
-  const b = rateLimits.get(k);
-  if (!b || now > b.resetAt) { rateLimits.set(k, { count: 1, resetAt: now + 3600_000 }); return true; }
-  if (b.count >= 3) return false;
-  b.count++; return true;
-}
+import { cleanEnv } from "@/lib/serverEnv";
+import { autoriserEnvoiEmail } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +10,7 @@ export async function POST(req: NextRequest) {
     if (!email || !email.includes("@")) {
       return Response.json({ error: "Email invalide" }, { status: 400 });
     }
-    if (!checkRateLimit(email)) {
+    if (!autoriserEnvoiEmail("reset", email)) {
       return Response.json({ error: "Trop de demandes. Réessaie dans une heure." }, { status: 429 });
     }
 

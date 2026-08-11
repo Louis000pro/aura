@@ -95,13 +95,6 @@ export const PLANS: Record<PlanId, Plan> = {
   },
 };
 
-export const PAID_PLANS: PlanId[] = ["premium"];
-
-export function getPlan(id: string | null | undefined): Plan {
-  if (id === "premium") return PLANS.premium;
-  return PLANS.free;
-}
-
 /**
  * Un plan payant donne les accès Premium.
  * Le palier « Premium+ » a été retiré le 2026-07-29 : il était facturé 9,99 €

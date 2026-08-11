@@ -2970,8 +2970,6 @@ export const RECIPES: Recipe[] = [
 ];
 
 /* ─── Sélection ─── */
-export const getRecipe = (id: string): Recipe | undefined => RECIPES.find((r) => r.id === id);
-
 const norm = (s: string) => slugify(s);
 
 /* Recettes proposables pour un contexte (moment de repas, régime, « vite fait »). */
@@ -2997,23 +2995,6 @@ export function pickRecipes(opts: {
     for (const d of dietSet) if (!r.diet.includes(d as DietKey)) return false;
     return true;
   });
-}
-
-/* « J'ai des trucs à finir » : recettes classées par recouvrement d'ingrédients. */
-export function matchByIngredients(have: string[], diet: string[] = []): Recipe[] {
-  const wanted = have.map(norm).filter(Boolean);
-  if (!wanted.length) return [];
-  const dietSet = new Set(diet);
-  return RECIPES
-    .filter((r) => { for (const d of dietSet) if (!r.diet.includes(d as DietKey)) return false; return true; })
-    .map((r) => {
-      const names = r.ingredients.map((i) => norm(i.nom));
-      const score = wanted.reduce((n, w) => n + (names.some((x) => x.includes(w) || w.includes(x)) ? 1 : 0), 0);
-      return { r, score };
-    })
-    .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map((x) => x.r);
 }
 
 /* ════════════════════════════════════════════════════════════════════

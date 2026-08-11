@@ -1,15 +1,6 @@
 import { createHmac } from "crypto";
 import { NextRequest } from "next/server";
-
-function cleanEnv(val: string | undefined): string {
-  return (val ?? "").replace(/[^\x20-\x7E]/g, "").trim();
-}
-
-function getSecret(): Buffer {
-  const secret = cleanEnv(process.env.AUTH_SECRET);
-  if (!secret) throw new Error("AUTH_SECRET manquant — configuration serveur requise");
-  return Buffer.from(secret, "utf8");
-}
+import { getAuthSecret } from "@/lib/serverEnv";
 
 // ─── Anti-replay : signatures consommées (en mémoire) ─────────────────
 // Une signature ne peut être utilisée qu'une seule fois.
@@ -37,7 +28,7 @@ export async function POST(req: NextRequest) {
     const sig = token.slice(dotIndex + 1);
 
     const data = Buffer.from(dataB64, "base64").toString();
-    const expectedSig = createHmac("sha256", getSecret()).update(data).digest("hex");
+    const expectedSig = createHmac("sha256", getAuthSecret()).update(data).digest("hex");
 
     if (sig !== expectedSig) return Response.json({ error: "Token invalide" }, { status: 400 });
 

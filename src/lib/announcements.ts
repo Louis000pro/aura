@@ -122,11 +122,6 @@ export function getUnseenAnnouncementIds(): Set<string> {
   return new Set(ANNOUNCEMENTS.filter((a) => !seen.has(a.id)).map((a) => a.id));
 }
 
-/** Nombre d'annonces non vues (pour la pastille de la cloche). */
-export function unseenAnnouncementCount(): number {
-  return getUnseenAnnouncementIds().size;
-}
-
 /** Marque toutes les annonces (ou une liste) comme vues. */
 export function markAnnouncementsSeen(ids: string[] = ANNOUNCEMENTS.map((a) => a.id)): void {
   if (typeof window === "undefined") return;
