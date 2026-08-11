@@ -11,13 +11,9 @@ const COLORS = ["#A78BFA", "#C4A8FF", "#7C5CFA", "#F5E6A3", "#FFB088", "#FFFFFF"
  * Reste dans la DA Vaiiya (dégradés violet/doré/corail).
  */
 export default function PremiumCelebration({ onClose }: { onClose: () => void }) {
-  const [vh, setVh] = useState(900);
-  const [vw, setVw] = useState(500);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    setVh(window.innerHeight);
-    setVw(window.innerWidth);
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);
   }, []);
 

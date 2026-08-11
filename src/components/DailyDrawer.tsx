@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Play, Dumbbell, Trophy, Clock, Flame, ChevronRight, Volume2, VolumeX, BadgeCheck, Eye } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import type { User } from "@/context/AuthContext";
 import WorkoutGuideModal, { type Exercise } from "@/components/WorkoutGuideModal";
@@ -57,7 +56,6 @@ export default function DailyDrawer({
   const [videoMuted, setVideoMuted] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const videoElRef = useRef<HTMLVideoElement>(null);
-  const router = useRouter();
 
   /* ─ Charge la VIDÉO DU JOUR : la plus vue des dernières 24h ─ */
   useEffect(() => {

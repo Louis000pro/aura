@@ -15,7 +15,7 @@ import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home, UtensilsCrossed, Sandwich, Sparkles, Heart, Camera, Barcode,
-  Plus, BookOpen, ShoppingBag, ChevronLeft, ChevronRight, Clock, Carrot,
+  Plus, BookOpen, ShoppingBag, ChevronLeft, ChevronRight, Carrot,
   Store, Check, X, Loader2, Flame, ArrowRight, ArrowLeft, ChefHat, Pencil, Search,
   CupSoda, IceCreamCone, Droplet, Coffee, Soup, Salad, GlassWater, Croissant,
 } from "lucide-react";

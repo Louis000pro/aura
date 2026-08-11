@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Maximize2, Minimize2, X } from "lucide-react";
+import { Send, Sparkles, Maximize2, Minimize2 } from "lucide-react";
 
 export type Message = { id: number; from: "ai" | "me"; text: string; time: string };
 

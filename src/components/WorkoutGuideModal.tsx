@@ -658,7 +658,7 @@ export function resolveSessionId(title: string): string | null {
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function WorkoutGuideModal({
-  sessionId, title, accent, duration, difficulty, category, heroImage, onClose, onComplete, exerciseList,
+  sessionId, title, duration, category, heroImage, onClose, onComplete, exerciseList,
   onGarder,
 }: WorkoutGuideModalProps) {
   // On injecte un `auto` (durée) déduit des reps pour les exos chronométrés d'une

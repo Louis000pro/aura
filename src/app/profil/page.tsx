@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Check, Lock, Crown, Link2, Camera, ChevronRight,
-  Pencil, Dumbbell, Play, Globe, Users, Flame, Wind, Layers, Sparkles, Settings, Trash2,
+  Pencil, Dumbbell, Play, Users, Sparkles, Settings, Trash2,
 } from "lucide-react";
 import PerformanceCard, { type PerformanceData } from "@/components/PerformanceCard";
 import PerfShareButton from "@/components/PerfShareButton";
@@ -53,7 +53,6 @@ import type { WorkoutCategory } from "@/lib/assistantActions";
 import Link from "next/link";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import { useAuth } from "@/context/AuthContext";
-import { useProfileSettings } from "@/hooks/useProfileSettings";
 import { createClient } from "@/lib/supabase";
 
 /* ─────────────── Toast ─────────────── */
@@ -832,7 +831,7 @@ function PrivacyModal({ onClose }: { onClose: () => void }) {
 
 /* ─────────────── Main Page ─────────────── */
 export default function ProfilPage() {
-  const { user, logout, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"sillages" | "seances" | "amis">("sillages");
   const [aura, setAura] = useState<EtatAura | null>(null);

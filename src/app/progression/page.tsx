@@ -40,7 +40,7 @@ import { createClient } from "@/lib/supabase";
 import { lockBodyModal } from "@/lib/bodyModal";
 import { PLANS } from "@/lib/plans";
 import { levelToDifficulty, normalizeDifficulty } from "@/lib/assistantActions";
-import { FAMILY, resolveArt, type Family, type Art } from "@/lib/workoutArt";
+import { FAMILY, resolveArt, type Family } from "@/lib/workoutArt";
 import {
   ADVICE_ARTICLES,
   ADVICE_THEMES,

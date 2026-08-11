@@ -158,7 +158,7 @@ function destinationApres(): string {
 
 export default function AuthPage() {
   const router = useRouter();
-  const { signUp, signIn, signInWithGoogle, resetPassword, verifySignupOtp, resendSignupOtp, user, isLoading } = useAuth();
+  const { signUp, signIn, signInWithGoogle, resetPassword, user, isLoading } = useAuth();
 
   // Redirige vers le dashboard si déjà connecté
   useEffect(() => {

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  UserPlus, UserCheck, Dumbbell, Flame, ArrowLeft, Check, LayoutList,
-  X, Sparkles, Lock, Users, ChevronRight, UserMinus,
+  UserPlus, UserCheck, Dumbbell, ArrowLeft, Check, LayoutList,
+  X, Sparkles, Lock, UserMinus,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase";
@@ -68,7 +68,6 @@ export default function PublicProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const [recentSessions, setRecentSessions] = useState<DbSession[]>([]);
@@ -137,14 +136,15 @@ export default function PublicProfilePage() {
         supabase.from("profiles").select("is_certified").eq("id", data.id).maybeSingle()
           .then(({ data: c }) => { if (c && (c as { is_certified?: boolean }).is_certified) setCertified(true); });
 
-        const [followersRes, followingRes, sessionsRes, recentRes] = await Promise.all([
-          supabase.from("followers").select("follower_id", { count: "exact", head: true }).eq("following_id", data.id),
+        // Le nombre d'abonnés était compté ici sans jamais être affiché : la
+        // requête est retirée avec son état (2026-08-11). L'écran ne montre
+        // que les amis, les séances et les 3 dernières séances.
+        const [followingRes, sessionsRes, recentRes] = await Promise.all([
           supabase.from("followers").select("following_id", { count: "exact", head: true }).eq("follower_id", data.id),
           supabase.from("workout_sessions").select("id", { count: "exact", head: true }).eq("user_id", data.id),
           supabase.from("workout_sessions").select("id, title, started_at").eq("user_id", data.id).order("started_at", { ascending: false }).limit(3),
         ]);
 
-        setFollowerCount(followersRes.count ?? 0);
         setFollowingCount(followingRes.count ?? 0);
         setSessionCount(sessionsRes.count ?? 0);
         if (recentRes.data) setRecentSessions(recentRes.data);
@@ -216,7 +216,6 @@ export default function PublicProfilePage() {
         .eq("following_id", profile.id);
       if (error) { console.error("unfollow:", error); showToast("Impossible de retirer, réessaie"); setFollowLoading(false); return; }
       setIsFollowing(false);
-      setFollowerCount((c) => Math.max(0, c - 1));
       setShowRemoveConfirm(false);
       showToast("Retiré de tes amis");
     } else {
@@ -237,7 +236,6 @@ export default function PublicProfilePage() {
         }).catch(() => {});
       });
       setIsFollowing(true);
-      setFollowerCount((c) => c + 1);
       showToast("Ami ajouté ! 🎉");
     }
 

@@ -332,7 +332,7 @@ export default function RecherchePage() {
                   Tendances
                 </p>
                 <div className="flex gap-2 flex-wrap">
-                  {TRENDING_TAGS.map(({ tag, icon, color }) => (
+                  {TRENDING_TAGS.map(({ tag, color }) => (
                     <motion.button
                       key={tag}
                       whileHover={{ y: -1 }}

@@ -60,18 +60,6 @@ function relativeTime(iso: string): string {
   return `${Math.floor(diff / 604800)}sem`;
 }
 
-function notifText(n: Notification): string {
-  switch (n.type) {
-    case "follow":  return `@${n.from_pseudo} te suit maintenant`;
-    case "like":    return `@${n.from_pseudo} a aimé ta publication`;
-    case "comment": return `@${n.from_pseudo} a commenté ton post`;
-    case "repost":  return `@${n.from_pseudo} a repartagé ta publication`;
-    case "mention": return `@${n.from_pseudo} t'a mentionné dans un commentaire`;
-    case "relais":  return `@${n.from_pseudo} a franchi son maillon — l'affiche s'est dévoilée`;
-    case "message": return `@${n.from_pseudo} t'a envoyé un message`;
-    default:        return `@${n.from_pseudo} a interagi`;
-  }
-}
 
 /* ─── Sub-components ─────────────────────────────────────────── */
 

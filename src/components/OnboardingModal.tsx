@@ -96,7 +96,6 @@ const steps = [
 ];
 
 export default function OnboardingModal({
-  pseudo,
   onComplete,
   onSkip,
 }: {

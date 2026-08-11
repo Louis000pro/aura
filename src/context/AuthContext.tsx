@@ -30,8 +30,6 @@ type AuthCtx = {
   signInWithGoogle: () => Promise<AuthError>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<AuthError>;
-  verifySignupOtp: (email: string, token: string) => Promise<AuthError>;
-  resendSignupOtp: (email: string) => Promise<AuthError>;
   clearWelcome: () => void;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -221,19 +219,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const verifySignupOtp: AuthCtx["verifySignupOtp"] = async (email, token) => {
-    const { error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
-    return error ? { message: error.message } : null;
-  };
-
-  const resendSignupOtp: AuthCtx["resendSignupOtp"] = async (email) => {
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-    return error ? { message: error.message } : null;
-  };
+  /* Les codes de confirmation d'inscription NE passent pas par Supabase :
+     ils sont émis et vérifiés par /api/auth/send-otp et /api/auth/verify-otp,
+     qui envoient l'e-mail via Resend et scellent le jeton en HMAC. Les deux
+     méthodes Supabase équivalentes (`verifyOtp` / `resend`) étaient exposées
+     ici sans que personne ne les appelle, et proposaient un second chemin
+     d'authentification silencieusement mort. Retirées le 2026-08-11. */
 
   const clearWelcome = () => setJustLoggedIn(false);
 
@@ -246,7 +237,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user, session, isLoading, justLoggedIn, isNewUser,
       signUp, signIn, signInWithGoogle, signOut, resetPassword,
-      verifySignupOtp, resendSignupOtp,
       clearWelcome, logout: signOut, refreshProfile,
     }}>
       {children}

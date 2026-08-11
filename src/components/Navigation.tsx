@@ -14,7 +14,6 @@ import { estSurfacePublique, estVitrinePure, estVitrineSiAnonyme } from "@/lib/s
 import NotificationBell from "@/components/NotificationBell";
 import NavOrb from "@/components/NavOrb";
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase";
 
 type TabItem = {
   href: string;

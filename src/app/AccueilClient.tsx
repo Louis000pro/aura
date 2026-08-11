@@ -202,21 +202,10 @@ let __statsCache = { score: 0, calories: 0, burned: 0, steps: 0, sleepHours: 0, 
 function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
-  const { user, logout, isNewUser } = useAuth();
+  const { user, isNewUser } = useAuth();
   const router = useRouter();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
-  const [mobilePanel, setMobilePanel] = useState<"chat"|"stats"|null>(null);
-  // Détection mobile pour adapter les tailles (orbe, carte Du Jour)
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  // Nouveaux états pour la refonte mobile portrait
   const [showChat, setShowChat] = useState(false);
   // Masque la barre du bas quand le chat IA est ouvert (évite la superposition)
   useEffect(() => {
@@ -225,7 +214,6 @@ function Dashboard() {
   }, [showChat]);
   const [showStatsDrawer, setShowStatsDrawer] = useState(false);
   const [showDailyDrawer, setShowDailyDrawer] = useState(false);
-  void mobilePanel; void setMobilePanel; void logout; void router; void isMobile; // legacy refs, unused dans la nouvelle layout (dashboard scrollable)
   const [showRepas, setShowRepas] = useState(false);
   const [mealsRefreshKey, setMealsRefreshKey] = useState(0);
   const [parisDay, setParisDay] = useState(() => parisDateStr());
