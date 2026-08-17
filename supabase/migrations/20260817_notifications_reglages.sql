@@ -61,6 +61,33 @@ CREATE TRIGGER notification_prefs_touch
   FOR EACH ROW EXECUTE FUNCTION public.touch_notification_prefs();
 
 
+-- ── Le journal des rappels du soir ──────────────────────────────────────
+-- Il sert à trois choses à la fois :
+--   · plafonner la cadence (X rappels sur 7 jours glissants selon le palier
+--     d'engagement de la personne) ;
+--   · se souvenir des formulations déjà envoyées, pour ne pas répéter la
+--     même phrase à quelqu'un qui en reçoit cinq par semaine ;
+--   · garantir côté BASE qu'une personne ne reçoit qu'un rappel par soir,
+--     même si le cron est rejoué : c'est le rôle de la clé unique.
+CREATE TABLE IF NOT EXISTS public.notification_rappels (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  jour       DATE        NOT NULL,
+  cle        TEXT        NOT NULL,   -- quel message (planning, serie, reprise…)
+  variante   SMALLINT    NOT NULL DEFAULT 0,  -- quelle formulation exactement
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, jour)
+);
+
+CREATE INDEX IF NOT EXISTS notification_rappels_user_jour_idx
+  ON public.notification_rappels (user_id, jour DESC);
+
+ALTER TABLE public.notification_rappels ENABLE ROW LEVEL SECURITY;
+
+-- Aucune policy : ce journal ne se lit et ne s'écrit que par le serveur
+-- (service_role), qui contourne la RLS. Rien côté client n'en a besoin.
+
+
 -- ── Rattrapage : la table des abonnements push ──────────────────────────
 -- Elle existe déjà en production, mais elle n'avait jamais été écrite dans
 -- une migration : elle était créée à chaud par un appel qui ne pouvait pas

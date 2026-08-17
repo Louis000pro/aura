@@ -6,24 +6,15 @@
  * planifier qu'en UTC, donc une seule entrée dérivait d'une heure deux fois
  * par an au changement d'heure. L'entrée qui tombe à côté sort en no-op.
  *
- * ── Ce qu'on s'autorise à envoyer (règles posées avec Louis) ──
+ * Cette route ne DÉCIDE rien : elle rassemble les faits, les donne à
+ * `rappelsProfil.ts` (qui porte les règles de cadence et les textes), et
+ * exécute. Tout ce qu'on peut relire sans base de données vit là-bas.
  *
- * 1. RIEN à qui a déjà fait sa séance du jour. L'ancienne version envoyait
- *    « Tu gères aujourd'hui 🔥 » : une notification qui ne demande rien, ne
- *    mène nulle part, et arrive quand même tous les soirs. C'est celle qu'on
- *    coupe, et en la coupant on coupait aussi les quatre autres familles.
- *
- * 2. Le rappel nutrition ne part QU'À qui note habituellement ses repas (au
- *    moins un dans les 7 derniers jours). Proposer un usage que la personne
- *    n'a pas, c'est prescrire ; on réagit à sa réalité.
- *
- * 3. SILENCE après 14 jours sans une seule venue. Pas de « tu nous manques » :
- *    ce serait exactement le message culpabilisant qu'on s'interdit. On se
- *    tait, et le rappel repart tout seul à la première présence.
- *
- * 4. Un seul push par personne et par soir : le relais passe avant le rappel.
- *
- * 5. Chaque famille respecte le réglage de l'utilisateur (notification_prefs).
+ * Ce qu'elle garantit, elle :
+ *  · un seul push par personne et par soir, le relais passant avant ;
+ *  · chaque famille respecte le réglage de l'utilisateur ;
+ *  · tout est lu en un nombre FIXE de requêtes, quel que soit le nombre de
+ *    comptes (avant : trois requêtes par personne, en série).
  *
  * Sécurité : header « Authorization: Bearer <CRON_SECRET> » (ajouté auto par
  * Vercel quand la variable existe). Fail-closed : sans CRON_SECRET en
@@ -34,7 +25,14 @@ import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { parisDateStr, parisHour, shiftDateStr } from "@/lib/dates";
-import { preferencesDeLot, type Preferences } from "@/lib/notificationPrefs";
+import { preferencesDeLot, PAR_DEFAUT } from "@/lib/notificationPrefs";
+import {
+  palierDe,
+  rappelPour,
+  JOURS_AVANT_SILENCE,
+  type Envoi,
+  type Rappel,
+} from "@/lib/rappelsProfil";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
@@ -47,61 +45,26 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 /** L'heure du rappel, en heure de Paris. Un seul endroit pour la changer. */
 const HEURE_ENVOI = 19;
 
-/** Au-delà, on se tait. Le rappel repart seul dès la première venue. */
-const JOURS_AVANT_SILENCE = 14;
-
 /** Fenêtre qui définit « cette personne note ses repas ». */
 const JOURS_HABITUDE_REPAS = 7;
 
-type Reminder = { title: string; body: string; url: string };
-
-/**
- * Le rappel du soir, ou `null` quand il n'y a rien à dire.
- * Renvoyer `null` est le cas NORMAL, pas un cas d'erreur : le plus souvent,
- * la bonne notification est celle qu'on n'envoie pas.
- */
-function rappelDuSoir(opts: {
-  seanceFaite: boolean;
-  repasNotes: boolean;
-  noteHabituellement: boolean;
-  streak: number;
-}): Reminder | null {
-  if (!opts.seanceFaite) {
-    return {
-      title: "Ta séance t'attend 💪",
-      body: opts.streak > 0
-        ? `Garde ta série de ${opts.streak} jour${opts.streak > 1 ? "s" : ""} ! Ouvre Vaiiya pour ta séance du jour.`
-        : "Prêt à bouger ? Ta séance du jour est dans Vaiiya.",
-      url: "/progression",
-    };
-  }
-
-  if (!opts.repasNotes && opts.noteHabituellement) {
-    return {
-      title: "Et tes repas ? 🍽️",
-      body: "Séance faite ✓, il ne te manque que ce que tu as mangé aujourd'hui.",
-      url: "/nutrition",
-    };
-  }
-
-  // Séance faite (et repas à jour, ou personne qui ne les note pas) : on se tait.
-  return null;
-}
+/** Fenêtre d'observation de l'engagement. */
+const JOURS_OBSERVATION = 28;
 
 /**
  * Le rappel du relais, envoyé UNIQUEMENT au moment décisif : le jour
  * où il reste exactement autant de jours que de maillons manquants.
  * Rater ce jour-là, c'est l'affiche qui ne pourra plus être terminée.
  *
- * Rare par construction — c'est ce qui fait qu'il veut dire quelque
+ * Rare par construction, c'est ce qui fait qu'il veut dire quelque
  * chose quand il arrive. Il ne part pas à celui qui a franchi la
  * veille : ce n'est pas son tour, la règle le lui interdit.
  */
 async function rappelsRelais(
   admin: ReturnType<typeof createAdminClient>,
   today: string,
-): Promise<Map<string, Reminder>> {
-  const cibles = new Map<string, Reminder>();
+): Promise<Map<string, Rappel>> {
+  const cibles = new Map<string, Rappel>();
 
   const { data: runs } = await admin
     .from("challenge_runs")
@@ -137,6 +100,8 @@ async function rappelsRelais(
       const uid = m.user_id as string;
       if (uid === bloque) continue;
       cibles.set(uid, {
+        cle:      "relais_decisif",
+        variante: 0,
         title: "L'affiche se joue aujourd'hui",
         body:  "Sans un maillon aujourd'hui, elle restera incomplète. Dix minutes suffisent.",
         url:   run.conversation_id ? `/communaute/${run.conversation_id}` : "/defi",
@@ -147,56 +112,134 @@ async function rappelsRelais(
   return cibles;
 }
 
+type Portrait = {
+  seancesTotal: number;
+  seances28: number;
+  presences28: number;
+  joursDepuisVenue: number | null;
+  seanceFaite: boolean;
+  repasNotes: boolean;
+  noteHabituellement: boolean;
+  serie: number;
+  seancePrevue: string | null;
+  jourDeRepos: boolean;
+  exp: number | null;
+  pseudo: string | null;
+  envois: Envoi[];
+};
+
 /**
- * L'activité de tout le monde en trois requêtes, au lieu de trois par
- * personne comme avant. Même compromis que /api/admin/stats : on lit large
- * et on agrège en JS, ce qui est le bon choix à quelques dizaines de comptes.
- * Le jour où le nombre de comptes change d'ordre de grandeur, c'est ici
- * qu'il faudra paginer.
+ * Tout le monde en sept requêtes, au lieu de trois PAR PERSONNE en série.
+ * Même compromis que /api/admin/stats : on lit large et on agrège en JS,
+ * ce qui est le bon choix à quelques dizaines de comptes. Le jour où le
+ * nombre de comptes change d'ordre de grandeur, c'est ici qu'il faudra
+ * borner les lectures (les séances et les crédits d'EXP en premier, ce
+ * sont les deux seules sans filtre de date).
  */
-async function activiteDuJour(
+async function portraits(
   admin: ReturnType<typeof createAdminClient>,
   ids: string[],
   today: string,
-) {
-  const debutHabitude = shiftDateStr(today, -JOURS_HABITUDE_REPAS);
-  const debutPresence = shiftDateStr(today, -JOURS_AVANT_SILENCE);
+): Promise<{ carte: Map<string, Portrait>; presenceFiable: boolean }> {
+  const debutHabitude    = shiftDateStr(today, -JOURS_HABITUDE_REPAS);
+  const debutObservation = shiftDateStr(today, -JOURS_OBSERVATION);
+  const debutJournal     = shiftDateStr(today, -JOURS_AVANT_SILENCE);
+
+  const [seancesRes, repasRes, presenceRes, planningRes, expRes, journalRes, profilsRes] =
+    await Promise.all([
+      admin.from("workout_sessions").select("user_id, started_at").in("user_id", ids),
+      admin.from("nutrition_logs").select("user_id, date").in("user_id", ids).gte("date", debutHabitude),
+      admin.from("daily_stats").select("user_id, date, streak").in("user_id", ids).gte("date", debutObservation),
+      admin.from("planning_days").select("user_id, type, title, exercise_list, status").in("user_id", ids).eq("date", today),
+      admin.from("aura_mission_credits").select("user_id, points").in("user_id", ids),
+      admin.from("notification_rappels").select("user_id, jour, cle, variante").in("user_id", ids).gte("jour", debutJournal).order("jour", { ascending: false }),
+      admin.from("profiles").select("id, pseudo").in("id", ids),
+    ]);
+
+  const carte = new Map<string, Portrait>();
+  for (const id of ids) {
+    carte.set(id, {
+      seancesTotal: 0, seances28: 0, presences28: 0, joursDepuisVenue: null,
+      seanceFaite: false, repasNotes: false, noteHabituellement: false, serie: 0,
+      seancePrevue: null, jourDeRepos: false, exp: null, pseudo: null, envois: [],
+    });
+  }
+
+  const ecart = (jour: string) =>
+    Math.round((new Date(today + "T12:00:00Z").getTime() - new Date(jour + "T12:00:00Z").getTime()) / 86_400_000);
 
   // Les séances sont horodatées (timestamptz) alors que le jour métier est
-  // parisien : on ratisse large, puis on compare des jours parisiens en JS.
-  // Borner en SQL décalerait d'une à deux heures selon la saison, et une
-  // séance faite à 00 h 30 compterait pour la veille.
-  const depuis = new Date(Date.now() - 40 * 3_600_000).toISOString();
-
-  const [seancesRes, repasRes, presenceRes] = await Promise.all([
-    admin.from("workout_sessions").select("user_id, started_at").in("user_id", ids).gte("started_at", depuis),
-    admin.from("nutrition_logs").select("user_id, date").in("user_id", ids).gte("date", debutHabitude),
-    admin.from("daily_stats").select("user_id, date, streak").in("user_id", ids).gte("date", debutPresence),
-  ]);
-
-  const seanceFaite  = new Set<string>();
-  const repasNotes   = new Set<string>();
-  const habitude     = new Set<string>();
-  const vuRecemment  = new Set<string>();
-  const streaks      = new Map<string, number>();
-
+  // parisien : on convertit chaque horodatage en jour de Paris plutôt que
+  // de borner en SQL, ce qui décalerait d'une à deux heures selon la saison
+  // et ferait compter une séance de 00 h 30 pour la veille.
   for (const s of seancesRes.data ?? []) {
-    if (parisDateStr(new Date(s.started_at as string)) === today) seanceFaite.add(s.user_id as string);
+    const p = carte.get(s.user_id as string);
+    if (!p) continue;
+    p.seancesTotal += 1;
+    const jour = parisDateStr(new Date(s.started_at as string));
+    if (jour === today) p.seanceFaite = true;
+    if (ecart(jour) < JOURS_OBSERVATION) p.seances28 += 1;
   }
+
   for (const r of repasRes.data ?? []) {
-    habitude.add(r.user_id as string);
-    if (r.date === today) repasNotes.add(r.user_id as string);
+    const p = carte.get(r.user_id as string);
+    if (!p) continue;
+    p.noteHabituellement = true;
+    if (r.date === today) p.repasNotes = true;
   }
+
   for (const d of presenceRes.data ?? []) {
-    vuRecemment.add(d.user_id as string);
-    if (d.date === today) streaks.set(d.user_id as string, (d.streak as number) ?? 0);
+    const p = carte.get(d.user_id as string);
+    if (!p) continue;
+    p.presences28 += 1;
+    const jours = ecart(d.date as string);
+    if (p.joursDepuisVenue === null || jours < p.joursDepuisVenue) p.joursDepuisVenue = jours;
+    if (d.date === today) p.serie = (d.streak as number) ?? 0;
   }
 
-  // Filet : si la lecture de présence échoue, on ne coupe personne. Une
-  // requête ratée ne doit jamais faire taire tous les rappels d'un coup.
-  const presenceFiable = !presenceRes.error;
+  for (const j of planningRes.data ?? []) {
+    const p = carte.get(j.user_id as string);
+    if (!p) continue;
+    const type = String(j.type ?? "");
+    const exos = Array.isArray(j.exercise_list) ? j.exercise_list.length : 0;
+    // Même définition que `hasSession` côté client : un jour « Repos », ou
+    // un jour sans exercice, n'est pas une séance à faire.
+    if (type.toLowerCase() === "repos" || exos === 0) { p.jourDeRepos = true; continue; }
+    if (j.status === "done") { p.seanceFaite = true; continue; }
+    p.seancePrevue = String(j.title || type);
+  }
 
-  return { seanceFaite, repasNotes, habitude, vuRecemment, streaks, presenceFiable };
+  // 10 EXP de bienvenue, comme la RPC `etat_missions_aura`.
+  if (!expRes.error) {
+    for (const id of ids) {
+      const p = carte.get(id);
+      if (p) p.exp = 10;
+    }
+    for (const c of expRes.data ?? []) {
+      const p = carte.get(c.user_id as string);
+      if (p && p.exp !== null) p.exp += Number(c.points ?? 0);
+    }
+  }
+
+  // Trié par jour décroissant à la requête : `envois` reste donc du plus
+  // récent au plus ancien, ce sur quoi `habiller` s'appuie pour ne jamais
+  // reprendre la formulation précédente.
+  for (const e of journalRes.data ?? []) {
+    carte.get(e.user_id as string)?.envois.push({
+      jour: e.jour as string,
+      cle: e.cle as string,
+      variante: Number(e.variante ?? 0),
+    });
+  }
+
+  for (const pr of profilsRes.data ?? []) {
+    const p = carte.get(pr.id as string);
+    if (p) p.pseudo = (pr.pseudo as string) ?? null;
+  }
+
+  // Filet : si la lecture de présence échoue, on ne fait taire personne à
+  // tort. Une requête ratée ne doit jamais couper tous les rappels d'un coup.
+  return { carte, presenceFiable: !presenceRes.error };
 }
 
 export async function GET(req: NextRequest) {
@@ -219,7 +262,6 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient();
   const today = parisDateStr(maintenant);
 
-  // ── Utilisateurs abonnés aux push ──
   const { data: subs } = await admin
     .from("push_subscriptions")
     .select("user_id, endpoint, p256dh, auth");
@@ -236,43 +278,62 @@ export async function GET(req: NextRequest) {
 
   const ids = [...byUser.keys()];
 
-  const [relais, activite, prefs] = await Promise.all([
+  const [relais, portraitsRes, prefs] = await Promise.all([
     rappelsRelais(admin, today),
-    activiteDuJour(admin, ids, today),
+    portraits(admin, ids, today),
     preferencesDeLot(admin, ids),
   ]);
+
+  const { carte, presenceFiable } = portraitsRes;
 
   let sent = 0;
   let usersNotified = 0;
   let silencieux = 0;
+  const parPalier: Record<string, number> = {};
 
   for (const [uid, userSubs] of byUser) {
-    const pref: Preferences = prefs.get(uid) ?? { rappel: true, message: true, ami: true, relais: true };
+    const pref = prefs.get(uid) ?? PAR_DEFAUT;
+    const p = carte.get(uid);
 
     // Le relais passe AVANT : on n'envoie jamais deux push le même soir.
-    const duRelais = pref.relais ? relais.get(uid) : undefined;
+    let rappel: Rappel | null = (pref.relais ? relais.get(uid) : undefined) ?? null;
+    const duRelais = rappel !== null;
 
-    let reminder: Reminder | null = duRelais ?? null;
+    if (!rappel && pref.rappel && p) {
+      // Une présence illisible ne doit pas faire passer tout le monde
+      // « endormi » : dans ce cas on considère la personne venue aujourd'hui.
+      const signaux = {
+        seancesTotal: p.seancesTotal,
+        seances28: p.seances28,
+        presences28: p.presences28,
+        joursDepuisVenue: presenceFiable ? p.joursDepuisVenue : 0,
+      };
+      const palier = palierDe(signaux);
+      parPalier[palier] = (parPalier[palier] ?? 0) + 1;
 
-    if (!reminder && pref.rappel) {
-      const endormi = activite.presenceFiable && !activite.vuRecemment.has(uid);
-      if (!endormi) {
-        reminder = rappelDuSoir({
-          seanceFaite:        activite.seanceFaite.has(uid),
-          repasNotes:         activite.repasNotes.has(uid),
-          noteHabituellement: activite.habitude.has(uid),
-          streak:             activite.streaks.get(uid) ?? 0,
-        });
-      }
+      rappel = rappelPour({
+        aujourdHui: today,
+        palier,
+        pseudo: p.pseudo,
+        joursDepuisVenue: signaux.joursDepuisVenue,
+        seancePrevue: p.seancePrevue,
+        jourDeRepos: p.jourDeRepos,
+        seanceFaite: p.seanceFaite,
+        repasNotes: p.repasNotes,
+        noteHabituellement: p.noteHabituellement,
+        serie: p.serie,
+        exp: p.exp,
+        envois: p.envois,
+      });
     }
 
-    if (!reminder) { silencieux += 1; continue; }
+    if (!rappel) { silencieux += 1; continue; }
 
     const payload = JSON.stringify({
-      title: reminder.title,
-      body: reminder.body,
+      title: rappel.title,
+      body: rappel.body,
       icon: "/icons/icon-192.png",
-      url: reminder.url,
+      url: rappel.url,
     });
 
     const results = await Promise.allSettled(
@@ -290,8 +351,21 @@ export async function GET(req: NextRequest) {
     );
     const ok = results.filter((r) => r.status === "fulfilled").length;
     sent += ok;
-    if (ok > 0) usersNotified += 1;
+    if (ok === 0) continue;
+
+    usersNotified += 1;
+
+    // Le journal sert à la fois de plafond et de mémoire des formulations.
+    // Le relais décisif n'y entre pas : il n'est pas soumis à la cadence,
+    // et l'y écrire consommerait le quota du rappel du soir.
+    // `UNIQUE (user_id, jour)` fait la même garantie côté base : un seul
+    // rappel par personne et par soir, même si la route est rejouée.
+    if (!duRelais) {
+      await admin.from("notification_rappels")
+        .insert({ user_id: uid, jour: today, cle: rappel.cle, variante: rappel.variante })
+        .then(undefined, () => {});
+    }
   }
 
-  return NextResponse.json({ ok: true, users: usersNotified, sent, silencieux });
+  return NextResponse.json({ ok: true, users: usersNotified, sent, silencieux, paliers: parPalier });
 }
