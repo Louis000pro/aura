@@ -84,8 +84,13 @@ export type Cadence = {
   ecartJours: number;
 };
 
+/** Fenêtre du journal à charger : elle doit couvrir l'écart des endormis. */
+export const JOURS_JOURNAL = 35;
+
 export const CADENCE: Record<Palier, Cadence> = {
-  endormi:      { parSemaine: 0, ecartJours: 0 },
+  // Une seule fois par mois, et rien d'autre. Ce n'est pas une relance :
+  // c'est une veilleuse qui dit que la porte n'est pas fermée. Voir VEILLEUSE.
+  endormi:      { parSemaine: 1, ecartJours: 29 },
   // Le décrochage est traité à part dans `rappelPour` : un seul message,
   // et c'est celui de la reprise, jamais un rappel ordinaire.
   decrochage:   { parSemaine: 1, ecartJours: 0 },
@@ -126,6 +131,9 @@ export type ContexteRappel = {
 
   /** EXP totale, ou null si on n'a pas pu la lire. */
   exp: number | null;
+
+  /** Séances terminées depuis toujours (la veilleuse s'en sert). */
+  seancesTotal: number;
 
   /** Rappels du soir déjà envoyés, 14 derniers jours, plus récent d'abord. */
   envois: Envoi[];
@@ -262,6 +270,45 @@ const REPRISE: Modele = {
   ],
 };
 
+/**
+ * La veilleuse : une fois par mois, pour quelqu'un qui n'est plus là.
+ *
+ * Le reste du temps on se tait complètement, et c'est ce qui rend ce message
+ * tenable. Il n'invite pas à « revenir » (ce qui sous-entend un départ à
+ * justifier), il dit simplement que rien ne s'est perdu et que rien n'est à
+ * rattraper. Aucune promesse de nouveauté non plus : on ne peut pas savoir
+ * ici si quelque chose a changé depuis son dernier passage, et une phrase
+ * qu'on ne peut pas garantir n'a rien à faire dans un push.
+ */
+const VEILLEUSE: Modele = {
+  cle: "veilleuse",
+  quand: (c) => c.palier === "endormi",
+  url: "/progression",
+  variantes: (c) => {
+    const acquis =
+      c.seancesTotal >= 3
+        ? {
+            title: `Tes ${c.seancesTotal} séances sont toujours là`,
+            body: "Reprendre est plus simple que commencer. Quand tu veux.",
+          }
+        : {
+            title: "Ta place ne bouge pas",
+            body: "Quinze minutes suffisent pour t'y remettre. Quand tu veux.",
+          };
+    return [
+      acquis,
+      {
+        title: "Vaiiya t'attend sans compter",
+        body: "Aucun rattrapage, aucune série à récupérer. On reprend quand ça te dit.",
+      },
+      {
+        title: "Rien ne presse",
+        body: "La séance la plus courte fait quinze minutes, sans matériel.",
+      },
+    ];
+  },
+};
+
 /** Le rappel nutrition, à part : il ne concerne que qui note ses repas. */
 const REPAS: Modele = {
   cle: "repas",
@@ -302,12 +349,16 @@ export function cadenceAutorise(c: ContexteRappel): boolean {
  * soirs, la bonne notification est celle qu'on n'envoie pas.
  */
 export function rappelPour(c: ContexteRappel): Rappel | null {
-  // Un jour de repos au planning est un choix de la personne, pas un oubli.
-  // Lui écrire « ta séance t'attend » ce jour-là, c'est prouver qu'on ne
-  // regarde pas son programme.
-  if (c.jourDeRepos) return null;
-
   if (!cadenceAutorise(c)) return null;
+
+  /* Les deux paliers d'absence passent AVANT le jour de repos : leur message
+     ne parle pas de la séance du jour, donc un vieux « Repos » resté au
+     planning n'a aucune raison de les bloquer. */
+
+  // Un endormi ne reçoit QUE la veilleuse, et la cadence l'a déjà espacée
+  // d'un mois. Aucun rappel de séance ne lui parvient : il n'a plus de
+  // planning en cours, et lui en inventer un serait parler dans le vide.
+  if (c.palier === "endormi") return habiller(VEILLEUSE, c);
 
   // Quelqu'un qui décroche ne reçoit PAS un rappel de plus : il reçoit un
   // message, un seul, qui ne lui reproche rien. Tant qu'il n'est pas revenu,
@@ -316,6 +367,11 @@ export function rappelPour(c: ContexteRappel): Rappel | null {
     if (c.envois.some((e) => e.cle === "reprise")) return null;
     return habiller(REPRISE, c);
   }
+
+  // Un jour de repos au planning est un choix de la personne, pas un oubli.
+  // Lui écrire « ta séance t'attend » ce jour-là, c'est prouver qu'on ne
+  // regarde pas son programme.
+  if (c.jourDeRepos) return null;
 
   if (c.seanceFaite) {
     return REPAS.quand(c) ? habiller(REPAS, c) : null;

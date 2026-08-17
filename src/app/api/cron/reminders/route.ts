@@ -29,10 +29,11 @@ import { preferencesDeLot, PAR_DEFAUT } from "@/lib/notificationPrefs";
 import {
   palierDe,
   rappelPour,
-  JOURS_AVANT_SILENCE,
+  JOURS_JOURNAL,
   type Envoi,
   type Rappel,
 } from "@/lib/rappelsProfil";
+import { ANNOUNCEMENTS, JOURS_ANNONCE_POUSSABLE, type Announcement } from "@/lib/announcements";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
@@ -112,6 +113,29 @@ async function rappelsRelais(
   return cibles;
 }
 
+/**
+ * L'annonce de mise à jour à pousser ce soir, s'il y en a une.
+ *
+ * La source est `ANNOUNCEMENTS`, celle qui alimente déjà la cloche et le
+ * récap : pas de second endroit où écrire la même chose. Deux conditions,
+ * et les deux comptent :
+ *  · l'annonce porte un bloc `push` (donc c'est une GROSSE mise à jour, pas
+ *    une correction de bug) ;
+ *  · sa date remonte à moins d'une semaine, pour qu'ajouter `push` après
+ *    coup sur une vieille annonce ne réveille pas tout le monde.
+ */
+function annonceDuSoir(today: string): { id: string; push: NonNullable<Announcement["push"]> } | null {
+  for (const a of ANNOUNCEMENTS) {
+    if (!a.push) continue;
+    const age = Math.round(
+      (new Date(today + "T12:00:00Z").getTime() - new Date(a.date + "T12:00:00Z").getTime()) / 86_400_000,
+    );
+    if (age < 0 || age > JOURS_ANNONCE_POUSSABLE) continue;
+    return { id: a.id, push: a.push };
+  }
+  return null;
+}
+
 type Portrait = {
   seancesTotal: number;
   seances28: number;
@@ -143,7 +167,7 @@ async function portraits(
 ): Promise<{ carte: Map<string, Portrait>; presenceFiable: boolean }> {
   const debutHabitude    = shiftDateStr(today, -JOURS_HABITUDE_REPAS);
   const debutObservation = shiftDateStr(today, -JOURS_OBSERVATION);
-  const debutJournal     = shiftDateStr(today, -JOURS_AVANT_SILENCE);
+  const debutJournal     = shiftDateStr(today, -JOURS_JOURNAL);
 
   const [seancesRes, repasRes, presenceRes, planningRes, expRes, journalRes, profilsRes] =
     await Promise.all([
@@ -278,6 +302,21 @@ export async function GET(req: NextRequest) {
 
   const ids = [...byUser.keys()];
 
+  const annonce = annonceDuSoir(today);
+
+  // Qui l'a déjà reçue ? Une annonce ne part qu'une fois par personne, même
+  // si le cron est rejoué ou si la personne était prioritaire sur le relais
+  // hier soir (auquel cas elle la reçoit ce soir).
+  const dejaAnnonce = new Set<string>();
+  if (annonce) {
+    const { data } = await admin
+      .from("notification_annonces")
+      .select("user_id")
+      .eq("annonce_id", annonce.id)
+      .in("user_id", ids);
+    for (const r of data ?? []) dejaAnnonce.add(r.user_id as string);
+  }
+
   const [relais, portraitsRes, prefs] = await Promise.all([
     rappelsRelais(admin, today),
     portraits(admin, ids, today),
@@ -295,9 +334,28 @@ export async function GET(req: NextRequest) {
     const pref = prefs.get(uid) ?? PAR_DEFAUT;
     const p = carte.get(uid);
 
-    // Le relais passe AVANT : on n'envoie jamais deux push le même soir.
+    /* Un seul push par personne et par soir, dans cet ordre de priorité :
+       le relais décisif (daté, le rater coûte l'affiche), puis l'annonce de
+       mise à jour (qui peut attendre un jour, et qui repartira demain), puis
+       le rappel du soir. */
     let rappel: Rappel | null = (pref.relais ? relais.get(uid) : undefined) ?? null;
     const duRelais = rappel !== null;
+
+    // L'annonce part à TOUT LE MONDE, y compris aux endormis : c'est
+    // justement la seule chose qu'on ait de neuf à leur dire, et elle ne
+    // consomme pas leur cadence.
+    const pourAnnonce = Boolean(
+      !rappel && annonce && pref.maj && !dejaAnnonce.has(uid),
+    );
+    if (pourAnnonce && annonce) {
+      rappel = {
+        cle: "maj",
+        variante: 0,
+        title: annonce.push.title,
+        body: annonce.push.body,
+        url: annonce.push.url ?? "/notifications",
+      };
+    }
 
     if (!rappel && pref.rappel && p) {
       // Une présence illisible ne doit pas faire passer tout le monde
@@ -323,6 +381,7 @@ export async function GET(req: NextRequest) {
         noteHabituellement: p.noteHabituellement,
         serie: p.serie,
         exp: p.exp,
+        seancesTotal: p.seancesTotal,
         envois: p.envois,
       });
     }
@@ -355,9 +414,16 @@ export async function GET(req: NextRequest) {
 
     usersNotified += 1;
 
+    if (pourAnnonce && annonce) {
+      await admin.from("notification_annonces")
+        .insert({ user_id: uid, annonce_id: annonce.id })
+        .then(undefined, () => {});
+      continue;
+    }
+
     // Le journal sert à la fois de plafond et de mémoire des formulations.
-    // Le relais décisif n'y entre pas : il n'est pas soumis à la cadence,
-    // et l'y écrire consommerait le quota du rappel du soir.
+    // Ni le relais décisif ni l'annonce n'y entrent : ils ne sont pas soumis
+    // à la cadence, et les y écrire consommerait le quota du rappel du soir.
     // `UNIQUE (user_id, jour)` fait la même garantie côté base : un seul
     // rappel par personne et par soir, même si la route est rejouée.
     if (!duRelais) {

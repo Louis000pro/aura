@@ -24,7 +24,22 @@ export type Announcement = {
   items: AnnouncementItem[];
   /** Bouton en bas de la carte : ouvre le récap complet en grand. */
   recapComplet?: boolean;
+  /**
+   * Présent UNIQUEMENT sur une grosse mise à jour : le soir du déploiement,
+   * une notification part à tous ceux qui ont accepté la famille « Vaiiya
+   * change ». Une annonce sans ce champ ne déclenche aucun push, ce qui est
+   * volontaire : une correction de bug se lit dans la cloche, elle ne réveille
+   * pas les téléphones de tout le monde.
+   *
+   * ⚠️ L'ajouter APRÈS COUP sur une vieille annonce n'envoie rien : le cron
+   * refuse toute annonce dont la `date` remonte à plus d'une semaine. C'est le
+   * garde-fou qui évite d'annoncer en fanfare une mise à jour d'il y a un mois.
+   */
+  push?: { title: string; body: string; url?: string };
 };
+
+/** Au-delà, une annonce ne part plus en notification (voir `push`). */
+export const JOURS_ANNONCE_POUSSABLE = 7;
 
 /* Les plus récentes EN PREMIER. */
 export const ANNOUNCEMENTS: Announcement[] = [

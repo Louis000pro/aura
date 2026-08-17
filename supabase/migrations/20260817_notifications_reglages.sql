@@ -16,8 +16,13 @@ CREATE TABLE IF NOT EXISTS public.notification_prefs (
   message    BOOLEAN     NOT NULL DEFAULT TRUE,   -- messages des conversations
   ami        BOOLEAN     NOT NULL DEFAULT TRUE,   -- demandes et ajouts d'amis
   relais     BOOLEAN     NOT NULL DEFAULT TRUE,   -- maillons et jour décisif
+  maj        BOOLEAN     NOT NULL DEFAULT TRUE,   -- les grosses mises à jour
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Rattrapage si la table existait déjà sans cette colonne.
+ALTER TABLE public.notification_prefs
+  ADD COLUMN IF NOT EXISTS maj BOOLEAN NOT NULL DEFAULT TRUE;
 
 ALTER TABLE public.notification_prefs ENABLE ROW LEVEL SECURITY;
 
@@ -86,6 +91,24 @@ ALTER TABLE public.notification_rappels ENABLE ROW LEVEL SECURITY;
 
 -- Aucune policy : ce journal ne se lit et ne s'écrit que par le serveur
 -- (service_role), qui contourne la RLS. Rien côté client n'en a besoin.
+
+
+-- ── Les annonces de mise à jour déjà envoyées ───────────────────────────
+-- Une grosse mise à jour part une fois par personne, jamais deux. La clé
+-- unique le garantit côté base : si le cron est rejoué, l'insertion échoue
+-- et rien ne repart. Le contenu de l'annonce, lui, reste dans le code
+-- (src/lib/announcements.ts) comme le récap et la cloche : une seule
+-- source pour un seul texte.
+CREATE TABLE IF NOT EXISTS public.notification_annonces (
+  user_id    UUID        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  annonce_id TEXT        NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, annonce_id)
+);
+
+ALTER TABLE public.notification_annonces ENABLE ROW LEVEL SECURITY;
+
+-- Aucune policy : écrite et lue uniquement par le serveur (service_role).
 
 
 -- ── Rattrapage : la table des abonnements push ──────────────────────────

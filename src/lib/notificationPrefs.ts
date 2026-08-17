@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════════════════════════════
    notificationPrefs.ts : CE QUE VAIIYA A LE DROIT D'ENVOYER
 
-   Source unique des quatre familles de notification. Ajouter une famille
+   Source unique des cinq familles de notification. Ajouter une famille
    se fait ICI (et nulle part ailleurs) : une entrée dans CATEGORIES, une
    colonne dans la table, et l'écran de réglages la montre tout seul.
 
@@ -14,10 +14,10 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type CategorieNotif = "rappel" | "message" | "ami" | "relais";
+export type CategorieNotif = "rappel" | "message" | "ami" | "relais" | "maj";
 
 /**
- * Les quatre familles, dans l'ordre où l'écran de réglages les montre.
+ * Les cinq familles, dans l'ordre où l'écran de réglages les montre.
  * `texte` décrit ce qui arrive VRAIMENT, pas la catégorie en abstrait :
  * un réglage se lit avant de s'ouvrir, et personne ne coupe une case
  * dont il ne sait pas ce qu'elle contient.
@@ -47,6 +47,11 @@ export const CATEGORIES: {
     titre: "Le relais",
     texte: "Quand ton équipier franchit un maillon, et le jour décisif.",
   },
+  {
+    cle: "maj",
+    titre: "Vaiiya change",
+    texte: "Quelques fois par an, quand une grosse mise à jour arrive.",
+  },
 ];
 
 export type Preferences = Record<CategorieNotif, boolean>;
@@ -57,6 +62,7 @@ export const PAR_DEFAUT: Preferences = {
   message: true,
   ami:     true,
   relais:  true,
+  maj:     true,
 };
 
 type Ligne = Partial<Record<CategorieNotif, boolean>> & { user_id?: string };
@@ -68,6 +74,7 @@ function depuisLigne(ligne: Ligne | null | undefined): Preferences {
     message: ligne.message ?? true,
     ami:     ligne.ami     ?? true,
     relais:  ligne.relais  ?? true,
+    maj:     ligne.maj     ?? true,
   };
 }
 
@@ -86,7 +93,7 @@ export async function preferencesDe(
 ): Promise<Preferences> {
   const { data, error } = await client
     .from("notification_prefs")
-    .select("rappel, message, ami, relais")
+    .select("rappel, message, ami, relais, maj")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -105,7 +112,7 @@ export async function preferencesDeLot(
 
   const { data, error } = await client
     .from("notification_prefs")
-    .select("user_id, rappel, message, ami, relais")
+    .select("user_id, rappel, message, ami, relais, maj")
     .in("user_id", userIds);
 
   if (error || !data) return carte;
