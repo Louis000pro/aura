@@ -3,14 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, MessageCircle, UserPlus, Bell, CheckCheck, Repeat2, AtSign, Sparkle } from "lucide-react";
+import { MessageCircle, UserPlus, Bell, CheckCheck, AtSign, Sparkle } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais" | "message";
+/* Voir NotificationBell : `like`, `comment` et `repost` sont partis avec
+   leurs routes, mais d'anciennes lignes subsistent en base : on tolère
+   l'inconnu au lieu de planter dessus. */
+type NotifType = "follow" | "mention" | "relais" | "message";
 
 type Notification = {
   id: string;
@@ -65,15 +68,12 @@ function relativeTime(iso: string): string {
 
 function TypeBadge({ type }: { type: NotifType }) {
   const cfgMap = {
-    like:    { icon: <Heart size={9} fill="currentColor" />, bg: "#FEE2E2", color: "#EF4444" },
-    comment: { icon: <MessageCircle size={9} />,            bg: "#DBEAFE", color: "#8B5CF6" },
     follow:  { icon: <UserPlus size={9} />,                 bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
-    repost:  { icon: <Repeat2 size={9} />,                  bg: "rgba(43,212,160,0.2)",   color: "#2BD4A0" },
     mention: { icon: <AtSign size={9} />,                   bg: "rgba(var(--violet-mid-rgb),0.6)",  color: "var(--accent)" },
     relais:  { icon: <Sparkle size={9} />,                  bg: "rgba(215,166,42,0.22)",  color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
-  const cfg = cfgMap[type] ?? cfgMap.like;
+  const cfg = cfgMap[type] ?? cfgMap.follow;
 
   return (
     <span
@@ -376,13 +376,13 @@ export default function NotificationsPage() {
                       <span className="font-semibold">@{notif.from_pseudo}</span>
                       {" "}
                       <span className="font-light">
-                        {notif.type === "follow" && "te suit maintenant"}
-                        {notif.type === "like" && "a aimé ta publication"}
-                        {notif.type === "comment" && "a commenté ton post"}
-                        {notif.type === "repost" && "a repartagé ta publication"}
-                        {notif.type === "mention" && "t'a mentionné dans un commentaire"}
-                        {notif.type === "relais" && "a franchi son maillon — l'affiche s'est dévoilée"}
-                        {notif.type === "message" && "t'a envoyé un message"}
+                        {notif.type === "mention"
+                          ? "t'a mentionné dans un commentaire"
+                          : notif.type === "relais"
+                          ? "a franchi son maillon, l'affiche s'est dévoilée"
+                          : notif.type === "message"
+                          ? "t'a envoyé un message"
+                          : "t'a ajouté à ses amis"}
                       </span>
                     </p>
                     <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>

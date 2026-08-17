@@ -19,44 +19,12 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
-// ── SQL to create push_subscriptions table (idempotent) ──────────────────────
-const SETUP_SQL = `
-CREATE TABLE IF NOT EXISTS public.push_subscriptions (
-  id         UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id    UUID        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  endpoint   TEXT        NOT NULL UNIQUE,
-  p256dh     TEXT        NOT NULL,
-  auth       TEXT        NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON public.push_subscriptions(user_id);
-ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='push_subscriptions' AND policyname='Service role full access') THEN
-    CREATE POLICY "Service role full access" ON public.push_subscriptions USING (true) WITH CHECK (true);
-  END IF;
-END $$;
-`;
-
-async function ensureTable() {
-  const supabase = createAdminClient();
-  // Quick check — if table exists, skip setup
-  const { error: checkErr } = await supabase.from("push_subscriptions").select("id").limit(1);
-  if (!checkErr) return;
-
-  // Table doesn't exist — create it via Management API or pg/query
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-  const projectRef  = supabaseUrl.match(/https:\/\/([^.]+)\./)?.[1] ?? "";
-
-  if (projectRef && serviceKey) {
-    await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ query: SETUP_SQL }),
-    }).catch(() => {});
-  }
-}
+/* La table `push_subscriptions` se crée par migration, comme tout le reste.
+   Il y avait ici un `ensureTable()` qui tentait de la créer à chaud en
+   présentant la clé service_role à api.supabase.com : cette API attend un
+   jeton personnel, l'appel ne pouvait donc pas aboutir, et son `.catch(() => {})`
+   rendait l'échec invisible. Un filet qui n'attrape rien est pire qu'aucun
+   filet : il fait croire que le cas est couvert. */
 
 // ── POST — save subscription ──────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
@@ -74,8 +42,6 @@ export async function POST(req: NextRequest) {
     if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
       return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
     }
-
-    await ensureTable();
 
     const supabase = createAdminClient();
     await supabase.from("push_subscriptions").upsert({
@@ -164,8 +130,10 @@ export async function PUT(req: NextRequest) {
           },
           payload
         ).catch(async (err: { statusCode?: number }) => {
-          // 410 Gone → subscription expired, remove it
-          if (err?.statusCode === 410) {
+          // 410 Gone / 404 Not Found → abonnement mort, on le retire.
+          // Le cron traitait déjà les deux ; ici seul 410 l'était, donc un
+          // endpoint en 404 restait en base et on le réessayait chaque jour.
+          if (err?.statusCode === 410 || err?.statusCode === 404) {
             await supabase.from("push_subscriptions").delete().match({ endpoint: sub.endpoint });
           }
           throw err;

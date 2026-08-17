@@ -302,7 +302,7 @@ function AjouterAmi({
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({ follower_id: moi, followed_id: cible, kind: "friend_request" }),
+      body: JSON.stringify({ follower_id: moi, followed_id: cible }),
     }).catch(() => {});
   };
 

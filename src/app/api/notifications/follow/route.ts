@@ -4,10 +4,11 @@ import { createAdminClient } from "@/lib/supabase-admin";
 import { sendPushToUser } from "@/lib/sendPushToUser";
 import { ensureProfileForUser } from "@/lib/ensureProfile";
 import { cleanEnv } from "@/lib/serverEnv";
+import { preferencesDe } from "@/lib/notificationPrefs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { follower_id, followed_id, kind } = await req.json();
+    const { follower_id, followed_id } = await req.json();
     if (!follower_id || !followed_id) {
       return Response.json({ error: "Paramètres manquants" }, { status: 400 });
     }
@@ -60,12 +61,31 @@ export async function POST(req: NextRequest) {
     const followerName = follower?.full_name || `@${follower?.pseudo}` || "Quelqu'un";
     const followerHandle = follower?.pseudo ? `@${follower.pseudo}` : "";
     const followedPseudo = followedProfile?.pseudo ?? "toi";
-    const demandeAmi = kind === "friend_request";
-    const texteRelation = demandeAmi ? "veut t'ajouter à ses amis sur Vaiiya." : "te suit maintenant sur Vaiiya !";
-    const titrePush = demandeAmi ? "Vaiiya · Demande d'ami" : "Vaiiya · Nouvel abonné";
-    const lienAction = demandeAmi
-      ? "/communaute?amis=demandes"
-      : `/profil/${encodeURIComponent(follower?.pseudo ?? "")}`;
+
+    /* Amis, pas abonnés (vocabulaire verrouillé depuis le 2026-07-25).
+       La réciprocité se LIT en base au lieu d'être annoncée par l'appelant :
+       le paramètre `kind` n'était envoyé que par la feuille Amis, donc les
+       deux autres portes d'ajout parlaient encore d'abonnement. Une relation
+       à sens unique est une demande, une relation réciproque est une amitié :
+       la base le sait déjà, personne n'a besoin de nous le dire. */
+    const { data: retour } = await supabase
+      .from("followers")
+      .select("follower_id")
+      .eq("follower_id", followed_id)
+      .eq("following_id", follower_id)
+      .maybeSingle();
+    const desormaisAmis = Boolean(retour);
+
+    const texteRelation = desormaisAmis
+      ? "t'a ajouté à ses amis sur Vaiiya. Votre discussion est ouverte."
+      : "veut t'ajouter à ses amis sur Vaiiya.";
+    const titrePush = desormaisAmis ? "Vaiiya · Nouvel ami" : "Vaiiya · Demande d'ami";
+    const corpsPush = desormaisAmis
+      ? `${followerName} t'a ajouté. Votre discussion est ouverte.`
+      : `${followerName} veut t'ajouter à ses amis.`;
+    // Une notification mène toujours quelque part : vers la demande à
+    // traiter, ou vers la conversation qui vient de s'ouvrir.
+    const lienAction = desormaisAmis ? "/communaute" : "/communaute?amis=demandes";
 
     // ── Assurer les profils des 2 users avant la notif (FK constraint) ──────
     await Promise.all([ensureProfileForUser(follower_id), ensureProfileForUser(followed_id)]);
@@ -78,22 +98,28 @@ export async function POST(req: NextRequest) {
         from_pseudo: follower?.pseudo ?? null,
         from_avatar_url: follower?.avatar_url ?? null,
         type: "follow",
-        lien: demandeAmi ? lienAction : null,
+        lien: lienAction,
       });
       if (insErr) console.error("[notify-follow] insert failed:", insErr);
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://aura.app";
 
+    // Le push filtre lui-même sur la préférence ; l'e-mail doit suivre la
+    // même règle, sinon couper « Les amis » dans ses réglages laisserait
+    // passer un e-mail, le canal le plus intrusif des deux.
+    const veutEtrePrevenu = (await preferencesDe(supabase, followed_id)).ami;
+
     // ── Envoi email (non-bloquant : si GMAIL non configuré, on skip) ─────────
     const gmailUser = cleanEnv(process.env.GMAIL_USER);
     const gmailPass = cleanEnv(process.env.GMAIL_PASS).replace(/\s/g, "");
-    if (!gmailUser || !gmailPass) {
+    if (!gmailUser || !gmailPass || !veutEtrePrevenu) {
       // ── Push notification puis on sort proprement ──
       void sendPushToUser({
         user_id: followed_id,
+        categorie: "ami",
         title: titrePush,
-        body:  `${followerName} ${demandeAmi ? "veut t'ajouter." : "te suit maintenant !"}`,
+        body:  corpsPush,
         url:   lienAction,
       });
       return Response.json({ ok: true, notif: true, email: false });
@@ -107,9 +133,9 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: `"Vaiiya" <${cleanEnv(process.env.GMAIL_USER)}>`,
       to: followedEmail,
-      subject: demandeAmi
-        ? `${followerName} veut t'ajouter sur Vaiiya`
-        : `${followerName} te suit maintenant sur Vaiiya`,
+      subject: desormaisAmis
+        ? `${followerName} t'a ajouté à ses amis sur Vaiiya`
+        : `${followerName} veut t'ajouter à ses amis sur Vaiiya`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
@@ -136,16 +162,16 @@ export async function POST(req: NextRequest) {
     </div>
 
     <p style="text-align:center;font-size:14px;color:#718096;margin:0 0 28px;line-height:1.6">
-      ${demandeAmi
-        ? "Accepte la demande pour ouvrir votre discussion privée."
-        : "Va voir son profil et suis-le en retour si tu le souhaites."}
+      ${desormaisAmis
+        ? "Votre discussion privée est ouverte."
+        : "Accepte la demande pour ouvrir votre discussion privée."}
     </p>
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:28px">
       <a href="${appUrl}${lienAction}"
          style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#D4C0FF,#F5E6A3);color:#2D3748;text-decoration:none;border-radius:16px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(167,139,250,0.25)">
-        ${demandeAmi ? "Voir la demande" : "Voir le profil"}
+        ${desormaisAmis ? "Ouvrir la discussion" : "Voir la demande"}
       </a>
     </div>
 
@@ -153,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     <p style="text-align:center;font-size:11px;color:#A0AEC0;margin:0">
       Tu reçois cet email car tu as un compte Vaiiya (@${followedPseudo}).<br/>
-      <a href="${appUrl}/profil" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
+      <a href="${appUrl}/parametres" style="color:#A78BFA;text-decoration:none">Gérer mes notifications</a>
     </p>
 
   </div>
@@ -164,8 +190,9 @@ export async function POST(req: NextRequest) {
     // Push déjà envoyé plus haut si GMAIL non configuré, sinon on l'envoie ici
     void sendPushToUser({
       user_id: followed_id,
+      categorie: "ami",
       title: titrePush,
-      body:  `${followerName} ${demandeAmi ? "veut t'ajouter." : "te suit maintenant !"}`,
+      body:  corpsPush,
       url:   lienAction,
     });
 

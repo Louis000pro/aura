@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
           lien,
         });
 
-        await sendPushToUser({ user_id: userId, title: titre, body: corps, url: lien });
+        await sendPushToUser({ user_id: userId, categorie: "relais", title: titre, body: corps, url: lien });
       }),
     );
 

@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
 
         await sendPushToUser({
           user_id: userId,
+          categorie: "message",
           title: `${pseudo} t'a écrit`,
           body: apercu || "Nouveau message",
           url: lien,

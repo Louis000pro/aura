@@ -1,17 +1,40 @@
 /**
- * GET /api/cron/reminders
- * Déclenché chaque jour par Vercel Cron (voir vercel.json).
- * Envoie une notification de rappel personnalisée à chaque utilisateur abonné,
- * selon son activité du jour (séance faite ? repas loggés ?).
+ * GET /api/cron/reminders : LE RAPPEL DU SOIR
  *
- * Sécurité : header "Authorization: Bearer <CRON_SECRET>" (ajouté auto par Vercel
- * quand la variable CRON_SECRET existe). La vérification est fail-closed :
- * sans CRON_SECRET défini en production, la route refuse tout (401) et les
- * rappels ne partent plus. C'est volontaire, et c'est le bon sens du risque.
+ * Déclenché par Vercel Cron (voir vercel.json). Deux entrées UTC pointent
+ * ici, et la route ne travaille qu'à 19 h heure de Paris : Vercel ne sait
+ * planifier qu'en UTC, donc une seule entrée dérivait d'une heure deux fois
+ * par an au changement d'heure. L'entrée qui tombe à côté sort en no-op.
+ *
+ * ── Ce qu'on s'autorise à envoyer (règles posées avec Louis) ──
+ *
+ * 1. RIEN à qui a déjà fait sa séance du jour. L'ancienne version envoyait
+ *    « Tu gères aujourd'hui 🔥 » : une notification qui ne demande rien, ne
+ *    mène nulle part, et arrive quand même tous les soirs. C'est celle qu'on
+ *    coupe, et en la coupant on coupait aussi les quatre autres familles.
+ *
+ * 2. Le rappel nutrition ne part QU'À qui note habituellement ses repas (au
+ *    moins un dans les 7 derniers jours). Proposer un usage que la personne
+ *    n'a pas, c'est prescrire ; on réagit à sa réalité.
+ *
+ * 3. SILENCE après 14 jours sans une seule venue. Pas de « tu nous manques » :
+ *    ce serait exactement le message culpabilisant qu'on s'interdit. On se
+ *    tait, et le rappel repart tout seul à la première présence.
+ *
+ * 4. Un seul push par personne et par soir : le relais passe avant le rappel.
+ *
+ * 5. Chaque famille respecte le réglage de l'utilisateur (notification_prefs).
+ *
+ * Sécurité : header « Authorization: Bearer <CRON_SECRET> » (ajouté auto par
+ * Vercel quand la variable existe). Fail-closed : sans CRON_SECRET en
+ * production, la route refuse tout (401). Une serrure optionnelle n'est pas
+ * une serrure.
  */
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { parisDateStr, parisHour, shiftDateStr } from "@/lib/dates";
+import { preferencesDeLot, type Preferences } from "@/lib/notificationPrefs";
 
 const VAPID_PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? "";
@@ -21,32 +44,48 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
+/** L'heure du rappel, en heure de Paris. Un seul endroit pour la changer. */
+const HEURE_ENVOI = 19;
+
+/** Au-delà, on se tait. Le rappel repart seul dès la première venue. */
+const JOURS_AVANT_SILENCE = 14;
+
+/** Fenêtre qui définit « cette personne note ses repas ». */
+const JOURS_HABITUDE_REPAS = 7;
+
 type Reminder = { title: string; body: string; url: string };
 
-function pickReminder(hasWorkout: boolean, hasMeals: boolean, streak: number): Reminder {
-  if (!hasWorkout) {
+/**
+ * Le rappel du soir, ou `null` quand il n'y a rien à dire.
+ * Renvoyer `null` est le cas NORMAL, pas un cas d'erreur : le plus souvent,
+ * la bonne notification est celle qu'on n'envoie pas.
+ */
+function rappelDuSoir(opts: {
+  seanceFaite: boolean;
+  repasNotes: boolean;
+  noteHabituellement: boolean;
+  streak: number;
+}): Reminder | null {
+  if (!opts.seanceFaite) {
     return {
       title: "Ta séance t'attend 💪",
-      body: streak > 0
-        ? `Garde ta série de ${streak} jour${streak > 1 ? "s" : ""} ! Ouvre Vaiiya pour ta séance du jour.`
+      body: opts.streak > 0
+        ? `Garde ta série de ${opts.streak} jour${opts.streak > 1 ? "s" : ""} ! Ouvre Vaiiya pour ta séance du jour.`
         : "Prêt à bouger ? Ta séance du jour est dans Vaiiya.",
       url: "/progression",
     };
   }
-  if (!hasMeals) {
+
+  if (!opts.repasNotes && opts.noteHabituellement) {
     return {
       title: "Et tes repas ? 🍽️",
-      body: "Pense à enregistrer ce que tu manges aujourd'hui pour suivre ta progression.",
+      body: "Séance faite ✓, il ne te manque que ce que tu as mangé aujourd'hui.",
       url: "/nutrition",
     };
   }
-  return {
-    title: "Tu gères aujourd'hui 🔥",
-    body: streak > 1
-      ? `${streak} jours d'affilée ! Continue comme ça, c'est exactement ça la régularité.`
-      : "Séance ✓ et repas ✓ — beau travail. Garde le rythme !",
-    url: "/",
-  };
+
+  // Séance faite (et repas à jour, ou personne qui ne les note pas) : on se tait.
+  return null;
 }
 
 /**
@@ -71,9 +110,7 @@ async function rappelsRelais(
 
   if (!runs?.length) return cibles;
 
-  const hier = new Date(today + "T12:00:00");
-  hier.setDate(hier.getDate() - 1);
-  const hierStr = hier.toISOString().slice(0, 10);
+  const hierStr = shiftDateStr(today, -1);
 
   for (const run of runs) {
     const [actionsRes, membresRes] = await Promise.all([
@@ -88,8 +125,8 @@ async function rappelsRelais(
     if (manquants <= 0) continue;
 
     // Jours restants, aujourd'hui compris.
-    const fin = new Date((run.ends_on as string) + "T12:00:00");
-    const jour = new Date(today + "T12:00:00");
+    const fin = new Date((run.ends_on as string) + "T12:00:00Z");
+    const jour = new Date(today + "T12:00:00Z");
     const restants = Math.floor((fin.getTime() - jour.getTime()) / 86_400_000) + 1;
 
     if (restants <= 0 || manquants !== restants) continue;    // pas encore décisif
@@ -110,13 +147,59 @@ async function rappelsRelais(
   return cibles;
 }
 
+/**
+ * L'activité de tout le monde en trois requêtes, au lieu de trois par
+ * personne comme avant. Même compromis que /api/admin/stats : on lit large
+ * et on agrège en JS, ce qui est le bon choix à quelques dizaines de comptes.
+ * Le jour où le nombre de comptes change d'ordre de grandeur, c'est ici
+ * qu'il faudra paginer.
+ */
+async function activiteDuJour(
+  admin: ReturnType<typeof createAdminClient>,
+  ids: string[],
+  today: string,
+) {
+  const debutHabitude = shiftDateStr(today, -JOURS_HABITUDE_REPAS);
+  const debutPresence = shiftDateStr(today, -JOURS_AVANT_SILENCE);
+
+  // Les séances sont horodatées (timestamptz) alors que le jour métier est
+  // parisien : on ratisse large, puis on compare des jours parisiens en JS.
+  // Borner en SQL décalerait d'une à deux heures selon la saison, et une
+  // séance faite à 00 h 30 compterait pour la veille.
+  const depuis = new Date(Date.now() - 40 * 3_600_000).toISOString();
+
+  const [seancesRes, repasRes, presenceRes] = await Promise.all([
+    admin.from("workout_sessions").select("user_id, started_at").in("user_id", ids).gte("started_at", depuis),
+    admin.from("nutrition_logs").select("user_id, date").in("user_id", ids).gte("date", debutHabitude),
+    admin.from("daily_stats").select("user_id, date, streak").in("user_id", ids).gte("date", debutPresence),
+  ]);
+
+  const seanceFaite  = new Set<string>();
+  const repasNotes   = new Set<string>();
+  const habitude     = new Set<string>();
+  const vuRecemment  = new Set<string>();
+  const streaks      = new Map<string, number>();
+
+  for (const s of seancesRes.data ?? []) {
+    if (parisDateStr(new Date(s.started_at as string)) === today) seanceFaite.add(s.user_id as string);
+  }
+  for (const r of repasRes.data ?? []) {
+    habitude.add(r.user_id as string);
+    if (r.date === today) repasNotes.add(r.user_id as string);
+  }
+  for (const d of presenceRes.data ?? []) {
+    vuRecemment.add(d.user_id as string);
+    if (d.date === today) streaks.set(d.user_id as string, (d.streak as number) ?? 0);
+  }
+
+  // Filet : si la lecture de présence échoue, on ne coupe personne. Une
+  // requête ratée ne doit jamais faire taire tous les rappels d'un coup.
+  const presenceFiable = !presenceRes.error;
+
+  return { seanceFaite, repasNotes, habitude, vuRecemment, streaks, presenceFiable };
+}
+
 export async function GET(req: NextRequest) {
-  // ── Auth cron (fail-closed) ──
-  // Sans CRON_SECRET configuré, ou avec un en-tête absent ou faux, on refuse
-  // TOUJOURS. Avant, l'absence de la variable ouvrait la route à tout internet :
-  // n'importe qui pouvait déclencher l'envoi des notifications à tous les
-  // comptes. Une porte dont la serrure est optionnelle n'est pas une serrure.
-  // Vercel Cron ajoute l'en-tête automatiquement quand la variable existe.
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
   if (!secret || auth !== `Bearer ${secret}`) {
@@ -127,8 +210,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "VAPID non configuré" }, { status: 500 });
   }
 
+  // ── L'heure de Paris, pas celle d'UTC ──
+  const maintenant = new Date();
+  if (parisHour(maintenant) !== HEURE_ENVOI) {
+    return NextResponse.json({ ok: true, ignore: "hors_heure", heure: parisHour(maintenant) });
+  }
+
   const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = parisDateStr(maintenant);
 
   // ── Utilisateurs abonnés aux push ──
   const { data: subs } = await admin
@@ -138,7 +227,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, users: 0, sent: 0 });
   }
 
-  // Regroupe les abonnements par utilisateur
   const byUser = new Map<string, { endpoint: string; p256dh: string; auth: string }[]>();
   for (const s of subs) {
     const arr = byUser.get(s.user_id) ?? [];
@@ -146,30 +234,39 @@ export async function GET(req: NextRequest) {
     byUser.set(s.user_id, arr);
   }
 
+  const ids = [...byUser.keys()];
+
+  const [relais, activite, prefs] = await Promise.all([
+    rappelsRelais(admin, today),
+    activiteDuJour(admin, ids, today),
+    preferencesDeLot(admin, ids),
+  ]);
+
   let sent = 0;
   let usersNotified = 0;
-
-  // Le relais passe AVANT le rappel générique : on n'envoie jamais
-  // deux notifications le même soir à la même personne.
-  const relais = await rappelsRelais(admin, today);
+  let silencieux = 0;
 
   for (const [uid, userSubs] of byUser) {
-    const duRelais = relais.get(uid);
+    const pref: Preferences = prefs.get(uid) ?? { rappel: true, message: true, ami: true, relais: true };
 
-    // Activité du jour
-    const [wRes, nRes, dRes] = await Promise.all([
-      admin.from("workout_sessions").select("id", { count: "exact", head: true })
-        .eq("user_id", uid).gte("started_at", today + "T00:00:00").lte("started_at", today + "T23:59:59"),
-      admin.from("nutrition_logs").select("id", { count: "exact", head: true })
-        .eq("user_id", uid).eq("date", today),
-      admin.from("daily_stats").select("streak").eq("user_id", uid).eq("date", today).maybeSingle(),
-    ]);
+    // Le relais passe AVANT : on n'envoie jamais deux push le même soir.
+    const duRelais = pref.relais ? relais.get(uid) : undefined;
 
-    const reminder = duRelais ?? pickReminder(
-      (wRes.count ?? 0) > 0,
-      (nRes.count ?? 0) > 0,
-      (dRes.data?.streak as number) ?? 0
-    );
+    let reminder: Reminder | null = duRelais ?? null;
+
+    if (!reminder && pref.rappel) {
+      const endormi = activite.presenceFiable && !activite.vuRecemment.has(uid);
+      if (!endormi) {
+        reminder = rappelDuSoir({
+          seanceFaite:        activite.seanceFaite.has(uid),
+          repasNotes:         activite.repasNotes.has(uid),
+          noteHabituellement: activite.habitude.has(uid),
+          streak:             activite.streaks.get(uid) ?? 0,
+        });
+      }
+    }
+
+    if (!reminder) { silencieux += 1; continue; }
 
     const payload = JSON.stringify({
       title: reminder.title,
@@ -196,5 +293,5 @@ export async function GET(req: NextRequest) {
     if (ok > 0) usersNotified += 1;
   }
 
-  return NextResponse.json({ ok: true, users: usersNotified, sent });
+  return NextResponse.json({ ok: true, users: usersNotified, sent, silencieux });
 }

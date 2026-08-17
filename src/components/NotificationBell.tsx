@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Bell, Heart, MessageCircle, Repeat2, UserPlus, Sparkles } from "lucide-react";
+import { Bell, MessageCircle, UserPlus, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
@@ -10,7 +10,11 @@ import { useAuth } from "@/context/AuthContext";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import { ANNOUNCEMENTS, getUnseenAnnouncementIds, markAnnouncementsSeen } from "@/lib/announcements";
 
-type NotifType = "follow" | "like" | "comment" | "repost" | "mention" | "relais" | "message";
+/* Les types VIVANTS. `like`, `comment` et `repost` ont disparu avec leurs
+   routes au grand ménage du 2026-08-11, mais d'anciennes lignes existent
+   encore en base : l'affichage doit donc rester tolérant à un type inconnu
+   plutôt que de planter sur une notification de l'an dernier. */
+type NotifType = "follow" | "mention" | "relais" | "message";
 
 type Notif = {
   id: string;
@@ -26,27 +30,23 @@ type Notif = {
 
 function notifLabel(n: Notif): string {
   switch (n.type) {
-    case "like":    return `a aimé ta publication`;
-    case "comment": return `a commenté ton post`;
-    case "repost":  return `a reposté ta publication`;
     case "mention": return `t'a mentionné dans un commentaire`;
     case "relais":  return `a franchi son maillon`;
     case "message": return `t'a envoyé un message`;
-    default:        return `te suit maintenant`;
+    // « t'a ajouté à ses amis » est vrai des deux côtés : une demande est
+    // déjà un ajout, elle attend seulement d'être rendue.
+    default:        return `t'a ajouté à ses amis`;
   }
 }
 
 function NotifIcon({ type }: { type: NotifType }) {
   const cfg: Record<NotifType, { icon: React.ReactNode; bg: string; color: string }> = {
-    like:    { icon: <Heart size={9} fill="currentColor" />,    bg: "#FEE2E2", color: "#EF4444" },
-    comment: { icon: <MessageCircle size={9} />,                bg: "#DBEAFE", color: "#8B5CF6" },
-    repost:  { icon: <Repeat2 size={9} />,                      bg: "#D1FAE5", color: "#2BD4A0" },
     follow:  { icon: <UserPlus size={9} />,                     bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
     mention: { icon: <MessageCircle size={9} />,                bg: "rgba(var(--violet-mid-rgb),0.6)", color: "var(--accent)" },
     relais:  { icon: <Sparkles size={9} />,                     bg: "rgba(215,166,42,0.22)", color: "#D7A62A" },
     message: { icon: <MessageCircle size={9} fill="currentColor" />, bg: "rgba(139,92,246,0.16)", color: "#8B5CF6" },
   };
-  const c = cfg[type];
+  const c = cfg[type] ?? cfg.follow;
   return (
     <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white"
       style={{ background: c.bg, color: c.color }}>
