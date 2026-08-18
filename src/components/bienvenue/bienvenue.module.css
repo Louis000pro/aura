@@ -785,20 +785,61 @@
   position: fixed;
   inset: 0;
   z-index: 101;
-  background: rgba(10, 7, 24, 0.42);
+  background: rgba(10, 7, 24, 0.52);
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  /* Le voile assombrit, il ne doit pas laisser lire ce qu'il y a dessous :
+     sur fond clair, le Guide et le bouton violet restaient très présents
+     derrière une feuille qui, elle, n'avait pas de fond. */
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: voileEntre 0.18s ease-out;
 }
 
+.voile > * { animation: feuilleMonte 0.26s cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+@keyframes voileEntre { from { opacity: 0; } to { opacity: 1; } }
+@keyframes feuilleMonte { from { transform: translateY(14px); } to { transform: none; } }
+
+/* ⚠️ `rgb(var(--surface-rgb))`, JAMAIS `var(--surface)` : ce token
+   n'existe pas dans `globals.css`, seule la base RGB y est définie. La
+   déclaration invalide était simplement ignorée, donc la feuille n'avait
+   AUCUN fond : ses puces et son bouton se dessinaient directement sur le
+   Guide et sur le bouton violet restés visibles derrière. Le même piège
+   est déjà documenté dans `PopupNouveautes.module.css`.
+
+   Un vrai panneau demande les trois : un fond opaque, un liseré qui le
+   décolle du voile, et une ombre portée qui dit qu'il est au-dessus. */
 .feuille {
   width: 100%;
   max-width: 560px;
   border-radius: 24px 24px 0 0;
-  background: var(--surface);
-  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  background: rgb(var(--surface-rgb));
+  border-top: 1px solid rgba(var(--accent-rgb), 0.16);
+  box-shadow: 0 -14px 44px rgba(10, 5, 28, 0.30);
+  padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
   max-height: 80vh;
+  /* `dvh` sur les navigateurs mobiles : `vh` y compte la barre d'outils
+     rétractée, donc 80 vh peut dépasser ce qu'on voit réellement. */
+  max-height: 80dvh;
   overflow-y: auto;
+  /* Le défilement de la feuille ne se propage pas à la page derrière. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* La poignée. Elle ne sert pas à glisser (la fermeture se fait par le
+   bouton, par le voile ou par Échap), elle dit d'un coup d'oeil que ce
+   bloc est une feuille posée par-dessus, et pas un morceau de la page. */
+.feuille::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.28);
 }
 
 .feuilleNom {
