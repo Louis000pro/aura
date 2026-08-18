@@ -66,6 +66,45 @@ fonctionnalités ; ce document est la source de vérité de ce qu'on en dit deho
 - L'assistant a UN visage : l'étincelle ✦ bicolore violet+or via `src/components/AssistantMark.tsx` (`AssistantSpark` dans la nav, `AssistantAvatar` dans le chat). Ne pas la remplacer.
 - Direction visuelle « clarté » : un seul accent = action, hiérarchie franche, typo forte, affordances nettes.
 
+## Les Guides Nora & Sasha (VERROUILLÉ)
+
+Vaiiya aura deux Guides personnels au choix : **Nora** (féminine) et **Sasha**
+(masculin). Cinq règles protègent l'architecture, elles ne se rediscutent pas.
+
+- **Toute phrase prononcée par l'assistant passe par `src/lib/guides.ts`.** Si
+  une chaîne est susceptible de varier selon Nora ou Sasha, elle s'écrit là,
+  jamais en dur dans un composant. Une réplique s'écrit
+  `{ commun, nora?, sasha? }` : `voix(guide, cle, ctx?)` la rend,
+  `voixAction(guide, action)` traduit un intent d'outil. Restent hors de cette
+  couche, et c'est normal : les libellés d'interface, les mots de l'utilisateur
+  (suggestions, réponses à toucher) et les messages d'échec technique.
+- **Nora et Sasha ont exactement les mêmes capacités, données, outils, règles,
+  limites et recommandations de fond.** Seule la formulation change : l'ordre
+  des informations, la longueur, le rythme, la manière d'expliquer et
+  d'encourager. Le choix du Guide ne doit JAMAIS changer la qualité du
+  coaching, ni le fond d'un conseil. Un seul système d'IA, plus une courte
+  variation de ton indexée sur `guide_id` ; jamais deux prompts indépendants.
+- **Le Guide ne se déduit de rien.** Ni de `onboarding_gender`, ni du sexe, ni
+  du prénom, ni d'aucune autre caractéristique. Pas de choix précoché, pas de
+  tirage au sort, pas de valeur par défaut, pas de backfill en base. `guide_id`
+  vaut `NULL` tant que la personne n'a pas répondu, et c'est ce `NULL` qui
+  déclenche l'écran de choix. Un Guide que personne n'a choisi est un bug.
+- **`✦` reste l'identité de Vaiiya**, pas celle d'une personne : l'orbe de
+  navigation, la marque et les textes de l'app gardent l'étincelle. Nora et
+  Sasha sont les Guides personnels, ils vivent dans la conversation et dans
+  l'accompagnement, pas sur le chrome du site.
+- **Le personnage animé des exercices n'est ni Nora ni Sasha.** C'est un
+  démonstrateur anonyme, et il le reste.
+
+⚠️ Pièges techniques déjà rencontrés : ne PAS ajouter `guide_id` au select
+d'`enrichUser` (AuthContext), son repli défensif ferait perdre `is_premium`,
+`is_certified` et `is_banned` à tout le monde ; le Guide se lit dans son propre
+contexte (`src/context/GuideContext.tsx`, `useGuideActif()`). Et ce contexte
+porte **quatre** états, jamais trois : `chargement`, `aucun` (la base a répondu
+NULL), `actif`, `inconnu` (la lecture a échoué). Seul `aucun` autorise une
+redirection ; confondre `aucun` et `inconnu` enfermerait dans l'écran de choix
+quelqu'un qui a déjà choisi et qui est hors ligne.
+
 ## Chantiers en cours (juillet 2026)
 
 - **⭐ L'ADMINISTRATION PASSE AU TÉLÉPHONE, ET SES CHIFFRES DEVIENNENT VRAIS — maquette validée par Louis puis CODÉE le 2026-08-11.** Demande de départ : « le mode administrateur n'est disponible que sur PC ». **L'entrée existait déjà sur téléphone** (Paramètres → Compte → Administration, en prod), elle était juste au bout de quatre taps. Le vrai sujet était ailleurs, et il y avait pire qu'un problème d'ergonomie.
