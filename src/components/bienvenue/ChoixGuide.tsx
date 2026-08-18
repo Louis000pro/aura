@@ -36,12 +36,17 @@ type Fiche = {
   nom: string;
   trait: string;
   pour: string;
-  /** La phrase qui dit CE QUE LE GUIDE FAIT, pas ce qu'il vaut. C'est
-   *  elle qui rend la différence lisible sans « en savoir plus ». */
+  /** ⚠️ UNE SCÈNE, PAS UNE REFORMULATION. Elle ouvre « En savoir plus »
+   *  en montrant la même demande traitée par l'un et par l'autre. Les
+   *  versions précédentes redisaient le trait et le « tu préfères… » de
+   *  la carte avec d'autres adjectifs : on lisait trois fois la même
+   *  chose, donc on n'apprenait rien en ouvrant. */
   maniere: string;
-  /* La version longue, derrière « En savoir plus ». Elle décrit une
-     maniere de faire, jamais une qualité : aucun des deux Guides n'est
-     meilleur, ils n'ont pas les mêmes gestes. */
+  /* Les trois lignes de détail. Elles suivent les MÊMES trois axes chez
+     les deux Guides (longueur des réponses, rythme de l'échange, façon
+     d'encourager), pour qu'on puisse les comparer d'un coup d'oeil. Ce
+     sont des manières de faire, jamais des qualités : aucun des deux
+     n'est meilleur, ils n'ont pas les mêmes gestes. */
   detail: string[];
 };
 
@@ -51,12 +56,11 @@ const FICHES: Fiche[] = [
     nom: "Nora",
     trait: "Calme et méthodique",
     pour: "Tu préfères comprendre avant d'agir.",
-    maniere: "Elle structure davantage, explique ses choix et t'aide à avancer étape par étape.",
+    maniere: "Tu lui demandes une séance de dos : elle t'explique le choix des mouvements, puis te la propose.",
     detail: [
-      "Plus posée.",
-      "Explique davantage le pourquoi.",
-      "Structure avant l'action.",
-      "Convient à quelqu'un qui aime comprendre et avancer étape par étape.",
+      "Des réponses un peu plus longues, avec le raisonnement derrière la consigne.",
+      "Elle récapitule avant de conclure.",
+      "Elle encourage en rappelant le chemin déjà fait.",
     ],
   },
   {
@@ -64,12 +68,11 @@ const FICHES: Fiche[] = [
     nom: "Sasha",
     trait: "Direct et dynamique",
     pour: "Tu préfères avancer puis ajuster en chemin.",
-    maniere: "Il va plus vite à l'essentiel, garde les échanges rythmés et t'aide à passer à l'action.",
+    maniere: "Tu lui demandes une séance de dos : il te la propose, et il détaille si tu creuses.",
     detail: [
-      "Plus direct.",
-      "Va plus vite à l'action.",
-      "Garde les échanges plus rythmés.",
-      "Convient à quelqu'un qui préfère avancer puis ajuster.",
+      "Des réponses courtes, la consigne d'abord.",
+      "Il conclut et enchaîne sur la suite.",
+      "Il encourage en te projetant sur la prochaine séance.",
     ],
   },
 ];
@@ -249,13 +252,21 @@ export default function ChoixGuide({
         >
           <div className={s.feuille} onClick={(e) => e.stopPropagation()}>
             <span className={s.feuilleNom}>{detail.nom}</span>
-            {/* La phrase de manière ouvre le détail. Elle était sur la
-                scène, où elle prenait deux lignes de personnage pour
-                dire ce que le trait et le « tu préfères… » disent déjà. */}
+            {/* Une situation concrète ouvre le détail : c'est la seule
+                façon de montrer la différence sans la nommer une
+                troisième fois avec des adjectifs. */}
             <p className={s.feuilleManiere}>{detail.maniere}</p>
             <ul className={s.feuilleListe}>
               {detail.detail.map((d) => <li key={d}>{d}</li>)}
             </ul>
+            {/* La vraie question de quelqu'un qui ouvre « En savoir
+                plus » : est-ce que je perds quelque chose en choisissant
+                l'autre ? Elle est écrite ICI et une seule fois, plutôt
+                que recopiée dans les deux fiches. */}
+            <p className={s.feuilleEgalite}>
+              Mêmes séances, mêmes données, mêmes conseils dans les deux cas.
+              C&apos;est la façon de te parler qui change.
+            </p>
             <button type="button" className={s.secondaire} onClick={() => setDetail(null)}>
               Fermer
             </button>

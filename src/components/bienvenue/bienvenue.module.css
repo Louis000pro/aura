@@ -280,54 +280,46 @@
    questionnaire. Ce n'est plus une vignette d'identité de 56 px, c'est
    un buste.
 
-   ⚠️ LE CALCUL, parce que c'est lui qui justifie le recadrage.
-   Mesuré sur les vrais fichiers : la tête occupe 21 % de la hauteur
-   (Nora 5,6 % → 26,9 %, Sasha 5,6 % → 25,3 %). Montrée en entier dans
-   une boîte de 140 px, elle ferait 30 px, c'est-à-dire une icône,
-   exactement le reproche fait au bandeau. Pour une tête de 45 px il
-   faudrait 210 px de portrait au-dessus du formulaire : sur un écran de
-   640, ce n'est plus une présence.
+   ⚠️ LE RECADRAGE A QUITTÉ CETTE FEUILLE (2026-08-19), et c'est la
+   correction d'un vrai défaut. Le CSS dessinait ici le portrait entier à
+   235 % de sa fenêtre, remonté de 2 % : il cadrait donc au centre du
+   FICHIER, sans rien savoir de la tête qu'il montrait. Or les deux têtes
+   ne sont pas peintes au même endroit de leur toile, le crâne de Nora
+   est 81 px à droite du centre, et la fenêtre lui coupait la mèche
+   droite. Aucune valeur ne pouvait convenir aux deux, et une valeur par
+   Guide aurait fait entrer les défauts d'un fichier dans la feuille de
+   style, en silence à la prochaine illustration.
 
-   On recadre donc : le fichier est dessiné à 235 % de la largeur de la
-   fenêtre, et remonté de 2 % de sa propre hauteur. La fenêtre ne montre
-   plus que la bande 2 %–42 % du fichier, soit la tête et les épaules.
-   Résultat mesuré : une tête d'environ 80 px pour 140 px de hauteur
-   occupée, contre 30 px sans recadrage.
+   `scripts/build-portraits.mjs` mesure donc la tête et taille un fichier
+   de buste autour d'elle : centrée, 12 % d'air au-dessus, jamais plus de
+   76 % de la largeur. Il ne reste ici qu'un remplissage de boîte, et le
+   cadrage devient vrai pour toute illustration future sans qu'on ait à
+   revenir dans ce fichier.
 
-   ⚠️ CONSÉQUENCE SUR L'ILLUSTRATION, et c'est une contrainte dure : le
-   haut du crâne se pose à 5,6 % de la hauteur du fichier, et le menton
-   reste au-dessus de 27 %. C'est `scripts/build-portraits.mjs` qui tient
-   la première moitié (il replace le personnage sur sa toile), le dessin
-   qui doit tenir la seconde. C'est ce qui rend le recadrage déterministe
-   et permet de n'avoir qu'un seul fichier par Guide.
+   Le buste garde le même poids à l'écran qu'avant : la tête occupe
+   51 % de la hauteur de la fenêtre (Nora) et 52 % (Sasha), contre 53 %
+   au recadrage précédent, mais elle est entière.
+
+   ⚠️ LES TROIS TAILLES SONT EN 4:5, comme le fichier. Un autre ratio
+   ferait rogner `cover`, et il rognerait justement l'air qu'on vient de
+   garantir.
    ════════════════════════════════════════════════════════════════════ */
 .pg_presence {
   width: 140px;
   height: 175px;
-  /* Le buste est déjà coupé à la poitrine par le recadrage. Une bande
-     courte suffit à effacer cette coupe nette : le Guide entre dans
-     l'écran au lieu d'être une photo découpée. L'étincelle du haut tombe
-     à ~78 % de la fenêtre, la bande commence à 85 %. */
+  /* Le buste s'arrête à la poitrine. Une bande courte suffit à effacer
+     cette coupe nette : le Guide entre dans l'écran au lieu d'être une
+     photo découpée. L'étincelle de la tenue se dissout avec elle, ce qui
+     est le seul endroit où elle pouvait tomber sans rapetisser la tête. */
   --fondu: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
 }
 
 .pg_presence .pgImage {
-  inset: auto;
-  left: 50%;
-  top: 0;
-  width: 235%;
-  height: auto;
-  aspect-ratio: 3 / 4;
-  object-fit: contain;
-  transform: translate(-50%, -2%);
-  /* ⚠️ SANS CETTE LIGNE IL N'Y A PAS DE RECADRAGE. La base de Tailwind
-     applique `img { max-width: 100% }` à toute l'application, ce qui
-     ramenait ces 235 % à 100 % : l'image tenait pile dans sa fenêtre, on
-     revoyait le portrait entier en tout petit, et rien ne signalait
-     l'erreur. Le gabarit précédent était un <span>, que cette règle ne
-     touche pas, donc le défaut ne pouvait apparaître qu'avec la vraie
-     image. */
-  max-width: none;
+  /* `cover` et non `contain` : le fichier a exactement le ratio de la
+     boîte, donc rien n'est rogné, mais si un écart d'un pixel apparaît
+     c'est le bord qui cède, jamais l'air au-dessus du crâne. */
+  object-fit: cover;
+  object-position: 50% 0;
 }
 
 /* La lumière du buste déborde jusque SOUS LE TEXTE de l'étape : c'est
@@ -848,8 +840,21 @@
   color: var(--text-0);
 }
 
+/* La ligne d'égalité, commune aux deux Guides. Elle se lit comme une
+   note et non comme un argument de plus : plus petite, plus douce, et
+   posée sur un filet qui la sépare des trois différences au-dessus. */
+.feuilleEgalite {
+  margin: 0 0 18px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--accent-rgb), 0.14);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  text-wrap: pretty;
+}
+
 .feuilleListe {
-  margin: 12px 0 18px;
+  margin: 12px 0 14px;
   padding: 0;
   list-style: none;
   display: flex;
@@ -972,7 +977,9 @@
      À 118 × 148 la tête fait encore ~85 px, donc un visage, pas une icône. */
   .presence { padding-bottom: 8px; gap: 10px; }
   .libelle { margin-bottom: 4px; }
-  .pg_presence { width: 118px; height: 148px; --fondu: linear-gradient(to bottom, #000 calc(100% - 22px), transparent 100%); }
+  /* 4:5 exact, comme le fichier de buste : 118 x 148 rognait 0,4 % sur
+     les cotes. */
+  .pg_presence { width: 116px; height: 145px; --fondu: linear-gradient(to bottom, #000 calc(100% - 22px), transparent 100%); }
   .presenceMots { padding-bottom: 6px; }
   .presenceNom { font-size: 16px; }
   .presencePhrase { font-size: 13.5px; }

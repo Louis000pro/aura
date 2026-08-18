@@ -10,33 +10,27 @@
    sans contour, un bas qui se dissout dans la page, et le fait qu'il
    touche les bords de l'écran.
 
-   ── UN SEUL FICHIER, TROIS CADRAGES ──────────────────────────────
-   Les trois formes montrent le MÊME fichier 3:4. Deux le montrent en
-   entier, une le recadre :
+   ── DEUX FICHIERS, TROIS FORMES ──────────────────────────────────
+     scene    · le portrait entier 3:4, sur l'écran de choix
+     fin      · le même fichier, plus petit, sur la conclusion
+     presence · le BUSTE 4:5, pendant les questions
 
-     scene    · le fichier entier, sur l'écran de choix
-     fin      · le fichier entier, plus petit, sur la conclusion
-     presence · un BUSTE, recadré dans le haut du fichier, pendant les
-                questions
+   ⚠️ LE BUSTE EST UN FICHIER, PLUS UN RECADRAGE CSS, et c'est la
+   correction du 2026-08-19. Le CSS dessinait le portrait entier à 235 %
+   de sa fenêtre et le remontait de 2 %, donc il cadrait au centre du
+   FICHIER. Or les deux têtes n'y sont pas peintes au même endroit : le
+   crâne de Nora est 81 px à droite du centre de sa toile, et la fenêtre
+   lui coupait la mèche droite. Un cadrage à l'aveugle ne pouvait pas
+   faire mieux : il ne sait ni où est la tête, ni quelle largeur elle
+   fait.
 
-   Le recadrage n'est pas une commodité, c'est le seul moyen d'avoir un
-   vrai buste sans manger l'écran. Dans ce cadrage, la tête tient dans
-   ~21 % de la hauteur : à 175 px de haut elle ferait 37 px, donc une
-   icône. Il faudrait une boîte de 400 px pour lui donner 85 px, et
-   400 px de portrait au-dessus d'un formulaire, ce n'est plus une
-   présence, c'est un obstacle. Recadré à 235 %, le même fichier donne
-   une tête d'environ 94 px dans une boîte de 175.
-
-   La mécanique est dans le CSS (`.pg_presence .pgImage`) : la boîte
-   coupe, l'image est dessinée à 235 % de sa largeur et remontée pour ne
-   garder que le haut du fichier.
-
-   ⚠️ CE QUI TIENT LE RECADRAGE : les deux fichiers posent le haut du
-   crâne sur la MÊME ligne, à 5,6 % de leur hauteur. Ce n'est pas un
-   hasard de dessin, c'est `scripts/build-portraits.mjs` qui l'impose
-   (Sasha arrivait à 1,2 %, et la fenêtre lui coupait les cheveux). Une
-   nouvelle illustration passe par ce script, jamais directement dans
-   `public/guides/`.
+   `scripts/build-portraits.mjs` MESURE donc la tête (haut du crâne et
+   base du cou, lus dans le profil de largeur du dessin) et taille
+   `<guide>-buste-v1.webp` autour d'elle : centrée, 12 % d'air au-dessus,
+   et la tête occupe au plus 76 % de la largeur. Le contrat vaut pour les
+   deux Guides et pour toute illustration future ; le CSS n'a plus qu'à
+   remplir sa boîte. Une nouvelle illustration passe par ce script,
+   jamais directement dans `public/guides/`.
    ════════════════════════════════════════════════════════════════════ */
 
 import { motion } from "framer-motion";
@@ -52,6 +46,14 @@ const FORME = {
   /** Le portrait de l'écran de conclusion. */
   fin: s.pg_fin,
 } as const;
+
+/** Le fichier que chaque forme montre. Le buste a le sien, cadré sur la
+ *  tête à la génération : voir l'en-tête. */
+const FICHIER: Record<keyof typeof FORME, string> = {
+  scene: "master",
+  presence: "buste",
+  fin: "master",
+};
 
 export default function PortraitGuide({
   guide,
@@ -96,13 +98,12 @@ export default function PortraitGuide({
         {/* ⚠️ `<img>` et pas `next/image` : ces fichiers sont déjà en
             WebP, à la taille exacte du plus grand usage, et servis en
             statique. Les faire passer par l'optimiseur coûterait une
-            transformation par format sans rien gagner, et compliquerait
-            le recadrage, qui a besoin d'une image plus large que sa
-            fenêtre. Même choix que les sprites d'exercice. */}
+            transformation par format sans rien gagner. Même choix que
+            les sprites d'exercice. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={s.pgImage}
-          src={`/guides/${guide}-master-v1.webp`}
+          src={`/guides/${guide}-${FICHIER[forme]}-v1.webp`}
           alt=""
           decoding="async"
           fetchPriority={forme === "scene" ? "high" : "auto"}

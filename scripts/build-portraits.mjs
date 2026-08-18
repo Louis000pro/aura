@@ -73,6 +73,28 @@ const LARGEUR_CHAT = 0.99;
  *  les 1254 px d'origine. */
 const COTE_CHAT = 512;
 
+/** ── LE BUSTE DU QUESTIONNAIRE ────────────────────────────────────────────
+ *  La part de la HAUTEUR du buste occupee par la tete, du haut du crane a la
+ *  base du cou. 52 %, mesure sur l'ancien cadrage CSS qui donnait 53 % : la
+ *  stature ne change pas, seul le cadrage devient sur. */
+const PART_TETE_H = 0.52;
+
+/** La part de la LARGEUR du buste occupee par la tete. C'est cette contrainte
+ *  qui a motive le fichier : les cheveux de Nora sont larges et son crane est
+ *  peint 81 px a droite du centre de sa toile. Le CSS recadrait au centre du
+ *  FICHIER, donc il lui coupait la meche droite. Ici la fenetre se centre sur
+ *  la TETE mesuree, et 76 % laisse a la coiffure la plus large 12 % d'air de
+ *  chaque cote. */
+const PART_TETE_L = 0.76;
+
+/** L'air au-dessus du crane, en part de la hauteur du buste. */
+const AIR_TETE = 0.12;
+
+/** Le buste est affiche au plus a 164 x 205 px CSS, soit 492 x 615 sur un
+ *  ecran a DPR 3. Le ratio 4:5 est celui des trois tailles d'affichage. */
+const LARGEUR_BUSTE = 512;
+const HAUTEUR_BUSTE = 640;
+
 async function boiteAlpha(buf) {
   const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width: w, height: h, channels: c } = info;
@@ -137,6 +159,119 @@ async function chat(nom) {
   return { src, buf: sortie, boite, zoom, cote, left, top };
 }
 
+/** Mesure la tete : du haut du crane a la base du cou.
+ *
+ *  Le cou n'est pas devine, il se lit dans le profil de largeur du dessin.
+ *  En descendant depuis le crane, la largeur monte jusqu'aux cheveux les plus
+ *  larges, redescend jusqu'au cou, puis remonte franchement aux epaules. La
+ *  base du cou est ce creux. On exige une remontee SOUTENUE avant de le
+ *  declarer, sinon un pixel de lissage suffirait a le placer trop haut. */
+async function tete(buf, boite) {
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h, channels: c } = info;
+  const bords = [];
+  for (let y = 0; y < h; y++) {
+    let min = -1, max = -1;
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * c + 3] <= SEUIL_ALPHA) continue;
+      if (min < 0) min = x;
+      max = x;
+    }
+    bords.push([min, max]);
+  }
+  const large = (y) => (bords[y][0] < 0 ? 0 : bords[y][1] - bords[y][0] + 1);
+
+  // Le profil est lisse sur 5 lignes : une meche ou un lissage de bord ne
+  // doit pas compter pour un sommet.
+  const lisse = (y) => {
+    let somme = 0, n = 0;
+    for (let k = -2; k <= 2; k++) if (y + k >= 0 && y + k < h) { somme += large(y + k); n++; }
+    return somme / n;
+  };
+  // La zone de recherche s'arrete au tiers de la toile : plus bas, c'est le
+  // torse, et son creux de taille se ferait passer pour un cou.
+  const fin = Math.round(0.40 * h);
+  const TENUE = 12, JEU = 2;
+  /** Le premier endroit ou la largeur cesse de varier dans le sens donne, et
+   *  ne repart pas dans ce sens sur TENUE lignes. */
+  const tournant = (depart, sens) => {
+    for (let y = depart; y < fin; y++) {
+      let tient = true;
+      for (let k = 1; k <= TENUE && y + k < fin; k++) {
+        if (sens * (lisse(y + k) - lisse(y)) > JEU) { tient = false; break; }
+      }
+      if (tient) return y;
+    }
+    return -1;
+  };
+  // Le sommet, c'est la coiffure la plus large.
+  const sommet = tournant(boite.top, 1);
+  if (sommet < 0) throw new Error("sommet du crane introuvable : la largeur ne cesse jamais de croitre");
+  // Les epaules, c'est l'endroit ou le corps redevient aussi large que la
+  // coiffure. Entre les deux, la ligne la plus etroite EST le cou : pas de
+  // seuil a regler, pas de tolerance a deviner.
+  // On ne cherche les epaules qu'une fois la coiffure nettement retrecie :
+  // juste sous le sommet la largeur oscille encore, et le premier pixel
+  // remonte se ferait passer pour une epaule.
+  let retreci = fin;
+  for (let y = sommet; y < fin; y++) if (lisse(y) <= 0.85 * lisse(sommet)) { retreci = y; break; }
+  let epaules = fin;
+  for (let y = retreci; y < fin; y++) if (lisse(y) >= lisse(sommet)) { epaules = y; break; }
+  let cou = sommet;
+  for (let y = sommet; y < epaules; y++) if (lisse(y) < lisse(cou)) cou = y;
+  if (cou === sommet) throw new Error("base du cou introuvable : la largeur ne redescend jamais sous la coiffure");
+
+  let gauche = w, droite = -1;
+  for (let y = boite.top; y <= cou; y++) {
+    if (bords[y][0] < 0) continue;
+    if (bords[y][0] < gauche) gauche = bords[y][0];
+    if (bords[y][1] > droite) droite = bords[y][1];
+  }
+  return { crane: boite.top, cou, gauche, droite, hauteur: cou - boite.top + 1, largeur: droite - gauche + 1 };
+}
+
+/** ── LE BUSTE ─────────────────────────────────────────────────────────────
+ *  Le questionnaire montrait ce buste en recadrant le master DANS LE CSS :
+ *  image dessinee a 235 % de sa fenetre et remontee de 2 %. Le cadrage etait
+ *  donc centre sur le fichier, alors que les deux tetes n'y sont pas peintes
+ *  au meme endroit, et il ne connaissait ni la taille ni la position d'une
+ *  tete. Nora y perdait sa meche droite.
+ *
+ *  Le buste devient donc un fichier a lui, comme le carre de conversation :
+ *  la fenetre se pose sur la tete MESUREE, avec de l'air garanti au-dessus,
+ *  et le CSS n'a plus qu'a remplir sa boite. Une nouvelle illustration
+ *  repasse par ici et se retrouve cadree pareil, sans qu'on ait a toucher a
+ *  une feuille de style. */
+async function buste(nom, buf, boite) {
+  const t = await tete(buf, boite);
+
+  // Deux contraintes, on garde la plus large : la tete doit tenir une part
+  // donnee de la hauteur ET de la largeur. Sur Nora c'est la largeur qui
+  // commande (ses cheveux), sur Sasha la hauteur.
+  const parHauteur = t.hauteur / PART_TETE_H;
+  const parLargeur = (t.largeur / PART_TETE_L) * (HAUTEUR_BUSTE / LARGEUR_BUSTE);
+  const hauteur = Math.round(Math.max(parHauteur, parLargeur));
+  const largeur = Math.round((hauteur * LARGEUR_BUSTE) / HAUTEUR_BUSTE);
+
+  const cx = (t.gauche + t.droite) / 2;
+  const left = Math.round(cx - largeur / 2);
+  const top = Math.round(t.crane - AIR_TETE * hauteur);
+
+  // On refuse plutot que de rogner en silence : une illustration qui ne
+  // rentre pas doit se voir a la generation, pas sur le telephone de
+  // quelqu'un.
+  if (left < 0 || top < 0 || left + largeur > boite.w || top + hauteur > boite.h) {
+    throw new Error(`buste hors toile (${left},${top} ${largeur}x${hauteur} sur ${boite.w}x${boite.h}) : le personnage est trop pres d'un bord`);
+  }
+
+  const sortie = await sharp(buf)
+    .extract({ left, top, width: largeur, height: hauteur })
+    .resize({ width: LARGEUR_BUSTE, height: HAUTEUR_BUSTE, kernel: "lanczos3" })
+    .png()
+    .toBuffer();
+  return { buf: sortie, t, left, top, largeur, hauteur };
+}
+
 /** ── LE REGLAGE, ET POURQUOI CELUI-LA ──────────────────────────────────────
  *  `alphaQuality: 100` n'est pas un confort : mesure sur les deux fichiers,
  *  le canal alpha ressort alors identique au bit pres (ecart maximum 0). Rien
@@ -176,6 +311,17 @@ for (const nom of ["nora", "sasha"]) {
   console.log(`${nom} master  ${m.w} x ${m.h}  ratio ${(m.w / m.h).toFixed(4)}`);
   console.log(`  crane   y ${m.boite.top} (${(100 * m.boite.top / m.h).toFixed(1)} %) -> y ${m.vise} (${(100 * LIGNE_TETE).toFixed(1)} %)   translation ${m.dy >= 0 ? "+" : ""}${m.dy} px`);
   console.log(`  poids   PNG ${ko(poidsSrcM)} -> WebP ${ko(rM.buf.length)}   [${rM.reglage}]`);
+
+  // Le buste se taille dans le master DEJA normalise : c'est le fichier que
+  // le site montre, donc les deux cadrages ne peuvent pas diverger.
+  const boiteM = await boiteAlpha(m.buf);
+  const b = await buste(nom, m.buf, boiteM);
+  const destB = path.join(OUT, `${nom}-buste-v1.webp`);
+  const rB = await ecrire(b.buf, destB);
+  console.log(`${nom} buste   fenetre ${b.largeur} x ${b.hauteur} en (${b.left}, ${b.top}) -> ${LARGEUR_BUSTE} x ${HAUTEUR_BUSTE}`);
+  console.log(`  tete    y ${b.t.crane}..${b.t.cou} (${b.t.hauteur} px), x ${b.t.gauche}..${b.t.droite} (${b.t.largeur} px)`);
+  console.log(`  cadrage tete ${(100 * b.t.hauteur / b.hauteur).toFixed(1)} % de la hauteur, ${(100 * b.t.largeur / b.largeur).toFixed(1)} % de la largeur, air ${(100 * (b.t.crane - b.top) / b.hauteur).toFixed(1)} % au-dessus`);
+  console.log(`  poids   WebP ${ko(rB.buf.length)}`);
 
   const c = await chat(nom);
   const destC = path.join(OUT, `${nom}-chat-v1.webp`);
