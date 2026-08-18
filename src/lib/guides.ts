@@ -12,11 +12,11 @@
    React, à Supabase ni à quoi que ce soit de serveur. On lui passe le
    Guide, il rend une chaîne.
 
-   ⚠️ ÉTAT ACTUEL (phase 0) : aucune réplique n'a encore de variante.
-   `nora`, `sasha` et « pas de Guide » rendent donc EXACTEMENT le même
-   texte, au caractère près, que ce que l'app affichait avant ce
-   refactor. C'est volontaire : cette phase ne doit rien changer à
-   l'écran. Les personnalités s'écriront plus tard, avec Louis.
+   ⚠️ ÉTAT ACTUEL : seul le parcours d'entrée (`bienvenue.*`) est
+   différencié. Partout ailleurs, `nora`, `sasha` et « pas de Guide »
+   rendent EXACTEMENT le même texte, au caractère près, que ce que l'app
+   affichait avant ce refactor. C'est volontaire : les personnalités
+   conversationnelles s'écriront plus tard, avec Louis.
 
    ── Comment on différenciera, le moment venu ──
    Une réplique est un objet `{ commun, nora?, sasha? }`. Ajouter une
@@ -135,18 +135,49 @@ const REPLIQUES = {
   "panne.erreur":       { commun: "Désolé, une erreur est survenue. Réessaie ✨" },
 
   /* ── Le parcours d'entrée (/bienvenue) ──
-     Les deux SEULES vraies prises de parole du parcours : l'ouverture,
-     juste après le choix, et la conclusion. Entre les deux, les sections
-     gardent un texte commun : une personnalité réinjectée à chaque clic
-     sonnerait faux et allongerait tout.
+     SIX prises de parole : une par section du questionnaire, plus la
+     conclusion.
+
+     ⚠️ Une par SECTION, jamais une par réponse. C'est la frontière, et
+     elle est nette : le Guide ouvre l'étape, puis il se tait pendant
+     qu'on répond. Un mot après chaque clic ferait de lui un
+     commentateur, et le questionnaire durerait deux fois plus
+     longtemps. Une version précédente n'en gardait que deux (ouverture
+     et conclusion) : testée en vrai, elle rendait le Guide passif, on
+     remplissait un formulaire avec son portrait dans un coin.
+
+     ⚠️ Nora et Sasha posent EXACTEMENT les mêmes questions et demandent
+     exactement les mêmes données. Seule la manière d'ouvrir l'étape
+     change. Aucune de ces phrases ne doit ajouter, retirer ou nuancer
+     une information que l'autre ne donnerait pas.
 
      `commun` n'est pas décoratif ici : il sert si l'on arrive sur ces
      écrans sans Guide résolu, ce qui ne devrait pas arriver mais ne doit
      pas laisser une page muette. */
-  "bienvenue.ouverture": {
-    commun: "Quelques questions pour adapter tes séances et tes repères. Tu pourras tout changer plus tard.",
-    nora:   "Je vais te poser quelques questions. Elles servent à adapter tes séances et tes repères, et tu pourras tout changer plus tard.",
-    sasha:  "Quelques questions, et on entre. Tu pourras tout ajuster ensuite.",
+  "bienvenue.section.corps": {
+    commun: "Quelques repères sur toi, pour ajuster la suite.",
+    nora:   "Je commence par quelques repères sur toi. Ils m'aideront à mieux ajuster la suite.",
+    sasha:  "On commence par quelques repères sur toi, et on pourra déjà mieux ajuster la suite.",
+  },
+  "bienvenue.section.objectifs": {
+    commun: "Ce que tu veux faire évoluer donnera la direction.",
+    nora:   "Maintenant, dis-moi ce que tu veux faire évoluer. On pourra construire la suite autour de ça.",
+    sasha:  "Maintenant, on fixe ce que tu veux faire évoluer. Ça nous donne une direction claire.",
+  },
+  "bienvenue.section.niveau": {
+    commun: "Ton niveau et ton rythme, pour partir sur quelque chose qui te correspond.",
+    nora:   "Je veux aussi situer ton niveau et le rythme qui te correspond vraiment.",
+    sasha:  "On règle ton niveau et ton rythme pour partir sur quelque chose qui te correspond.",
+  },
+  "bienvenue.section.entrainement": {
+    commun: "Où et avec quoi tu t'entraînes le plus souvent.",
+    nora:   "Il me reste à comprendre où et avec quoi tu t'entraînes le plus souvent.",
+    sasha:  "Dis-moi où et avec quoi tu t'entraînes le plus souvent, et on adapte autour.",
+  },
+  "bienvenue.section.nutrition": {
+    commun: "Si tu utilises la nutrition, ces repères permettent de l'adapter.",
+    nora:   "Si tu utilises aussi la partie nutrition, ces quelques repères permettront de mieux l'adapter.",
+    sasha:  "Si tu veux utiliser la nutrition aussi, on règle rapidement tes repères ici.",
   },
   "bienvenue.fin": {
     commun: "C'est enregistré. Vaiiya est adapté à ce que tu as indiqué.",

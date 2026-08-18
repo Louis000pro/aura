@@ -171,10 +171,7 @@ export default function ChoixGuide({
               inert={i !== index}
             >
               <div className={s.scene}>
-                {/* Seul le Guide visible porte l'identité de transition :
-                    deux éléments partageant le même `layoutId` en même
-                    temps se disputeraient la position. */}
-                <PortraitGuide forme="scene" partage={i === index} anime={!reduit} />
+                <PortraitGuide forme="scene" anime={!reduit} />
               </div>
 
               <div className={s.identite}>

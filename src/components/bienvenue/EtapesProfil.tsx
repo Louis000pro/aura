@@ -3,12 +3,16 @@
 /* ════════════════════════════════════════════════════════════════════
    Les cinq sections de questions, après le choix du Guide.
 
-   ⚠️ Elles sont COMMUNES à Nora et Sasha. Le Guide reste identifiable en
-   haut de l'écran (portrait + prénom), mais il ne reprend pas la parole
-   à chaque question : une personnalité réinjectée à chaque clic sonne
-   faux, allonge tout, et ferait croire à deux questionnaires différents
-   alors que ce sont exactement les mêmes questions et les mêmes
-   réponses possibles.
+   ⚠️ Les QUESTIONS sont communes à Nora et Sasha : mêmes libellés,
+   mêmes options, mêmes colonnes écrites. Ce qui change, c'est la phrase
+   qui OUVRE la section, et elle vit dans `lib/guides.ts`
+   (`bienvenue.section.*`), jamais ici. Ce fichier ne contient donc
+   aucune parole de Guide, et il ne doit jamais en contenir : le jour où
+   une chaîne d'ici varie selon Nora ou Sasha, elle est au mauvais
+   endroit.
+
+   Le Guide ouvre l'étape puis se tait pendant qu'on répond. Pas un mot
+   après chaque clic : ce serait un commentateur, pas un guide.
 
    Les options viennent de `OnboardingModal`, où elles vivaient déjà :
    deux écrans qui remplissent les mêmes colonnes doivent proposer les
@@ -17,6 +21,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { GOALS, LEVELS, GENDERS, SESSIONS, MEALS, DIETS, type OnboardingData } from "@/components/OnboardingModal";
+import type { CleVoix } from "@/lib/guides";
 import s from "./bienvenue.module.css";
 
 /** Le lieu et le matériel, aux seules valeurs que le reste du code sait
@@ -28,27 +33,44 @@ export type Entrainement = {
 
 export type Section = "corps" | "objectifs" | "niveau" | "entrainement" | "nutrition";
 
-/** Titre et ligne d'explication de chaque section. Textes COMMUNS. */
-export const SECTIONS: Record<Section, { titre: string; ligne: string }> = {
+/** Titre de chaque section, et la ligne neutre quand il en reste une.
+ *
+ *  ⚠️ `ligne` est devenue RARE, et c'est le but. Chaque section porte
+ *  maintenant une phrase du Guide (`bienvenue.section.*` dans
+ *  `lib/guides.ts`), et quatre des cinq lignes neutres disaient
+ *  exactement la même chose juste en dessous : « Dis-nous où et avec
+ *  quoi tu t'entraînes le plus souvent » sous « Il me reste à
+ *  comprendre où et avec quoi tu t'entraînes le plus souvent ». Une
+ *  phrase incarnée suivie de sa reformulation d'interface, ce n'est pas
+ *  deux fois plus clair, c'est deux fois plus long.
+ *
+ *  Une ligne ne survit donc que si elle dit quelque chose que le Guide
+ *  ne dit pas. Il en reste UNE : le fait que les objectifs se cochent à
+ *  plusieurs, qui est une règle de saisie et pas une intention. */
+/** `voix` est une CLÉ, pas une phrase : le texte vit dans `guides.ts`.
+ *  Le champ est obligatoire, donc ajouter une section sans lui donner sa
+ *  phrase de Guide ne compile pas. */
+export const SECTIONS: Record<Section, { titre: string; voix: CleVoix; ligne?: string }> = {
   corps: {
     titre: "Ton corps",
-    ligne: "Pour calibrer tes séances et tes repères.",
+    voix: "bienvenue.section.corps",
   },
   objectifs: {
     titre: "Tes objectifs",
-    ligne: "Choisis ce que tu veux faire évoluer. Tu pourras en changer.",
+    voix: "bienvenue.section.objectifs",
+    ligne: "Plusieurs choix possibles. Tu pourras en changer.",
   },
   niveau: {
     titre: "Ton niveau et ton rythme",
-    ligne: "Ça nous aide à ajuster le niveau et le rythme de tes séances.",
+    voix: "bienvenue.section.niveau",
   },
   entrainement: {
     titre: "Ton entraînement",
-    ligne: "Dis-nous où et avec quoi tu t'entraînes le plus souvent.",
+    voix: "bienvenue.section.entrainement",
   },
   nutrition: {
     titre: "Ta nutrition",
-    ligne: "Pour ajuster tes repères de repas, si tu t'en sers.",
+    voix: "bienvenue.section.nutrition",
   },
 };
 
@@ -115,15 +137,23 @@ export default function EtapesProfil({
               </Pastille>
             ))}
           </div>
-          {/* ⚠️ Cette précision est OBLIGATOIRE : le choix juste avant
-              était « Nora ou Sasha », et sans elle la question suivante
-              se lit comme une confirmation de ce choix. La première
-              phrase dit ce à quoi la donnée sert VRAIMENT : elle nourrit
-              l'estimation des besoins caloriques (lib/nutritionGoals) ET
-              le contexte envoyé au coach (api/chat). Écrire « sert au
-              calcul calorique » tout court serait faux. */}
+          {/* ⚠️ « Sans lien avec ton Guide » est OBLIGATOIRE : le choix
+              juste avant était « Nora ou Sasha », et sans cette phrase la
+              question se lit comme une confirmation de ce choix.
+
+              ⚠️ Le sujet est « Vaiiya », pas « le coach ». Trois noms se
+              disputaient la même place dans cet écran (Vaiiya, ton Guide,
+              le coach), et le troisième était un personnage qui n'existe
+              pas. Règle : Vaiiya pour le produit, Nora/Sasha ou « ton
+              Guide » pour l'accompagnement, jamais « le coach ».
+
+              VÉRIFIÉ, la phrase n'est pas du décor : le genre nourrit
+              l'estimation des besoins caloriques (`lib/nutritionGoals`,
+              qui s'en sert pour le métabolisme de base) ET le contexte
+              envoyé au modèle (`api/chat`). D'où « certains calculs et
+              conseils », qui couvre exactement ces deux usages. */}
           <span className={s.aide}>
-            Sert à estimer tes besoins, et le coach en tient compte. Sans lien avec ton Guide.
+            Vaiiya en tient compte pour certains calculs et conseils. Sans lien avec ton Guide.
           </span>
         </div>
       </div>
@@ -205,8 +235,20 @@ export default function EtapesProfil({
             </div>
           </div>
         )}
+        {/* ⚠️ La seconde moitié de cette phrase a été SUPPRIMÉE, pas
+            reformulée : elle était fausse. Elle promettait que le coach
+            « te le redemandera si ton contexte change ». Vérifié dans
+            `AssistantContext` (`questionManquante`) : le Guide ne pose la
+            question que si le lieu est INCONNU, jamais parce qu'il aurait
+            changé, et rien ne surveille ce changement. Réécrire « ton
+            Guide pourra te le redemander » aurait gardé une promesse que
+            le code ne tient pas.
+
+            Ce qui reste est vrai et vérifiable : le lieu se change depuis
+            le programme (`WeeklyProgramme`), et en le disant au Guide
+            (outil `save_lieu`). */}
         <span className={s.aide}>
-          Tu pourras le changer à tout moment, et le coach te le redemandera si ton contexte change.
+          Tu pourras changer ça à tout moment, depuis ton programme ou en le disant à ton Guide.
         </span>
       </div>
     );

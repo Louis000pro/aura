@@ -62,20 +62,19 @@
   text-wrap: pretty;
 }
 
-.sousTitre {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-soft);
-  margin: 0 0 12px;
-  text-wrap: pretty;
-}
-
+/* La ligne neutre sous un titre de section. Elle est devenue RARE : il
+   n'en reste qu'une (voir `SECTIONS` dans EtapesProfil), les autres
+   reformulaient la phrase du Guide juste au-dessus. */
 .ligneCommune {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-soft);
-  margin: 0 0 18px;
+  margin: 0 0 6px;
 }
+
+/* L'espace entre le titre de l'étape et la première question, qu'il y
+   ait une ligne neutre ou non. */
+.questions { margin-top: 12px; }
 
 /* ════════════════════════════════════════════════════════════════════
    LE CARROUSEL
@@ -177,10 +176,16 @@
 
 /* ⚠️ AUCUN VISUEL N'EXISTE ENCORE. La boîte n'a donc pas de fond : un
    simple liseré pointillé, pour qu'on puisse juger de la taille et du
-   cadrage sans qu'un aplat plein ne recrée la sensation de carte. */
+   cadrage sans qu'un aplat plein ne recrée la sensation de carte.
+
+   La boîte est la FENÊTRE VISIBLE. `.pgCadre` à l'intérieur est la
+   géométrie du fichier : identique à la fenêtre pour la scène et la
+   conclusion, plus grande et remontée pour le buste. C'est ce couple qui
+   rend le recadrage mesurable avant que les images existent. */
 .pgBoite {
   position: relative;
   height: 100%;
+  width: 100%;
   border-radius: 18px;
   border: 1px dashed rgba(var(--accent-rgb), 0.26);
   display: flex;
@@ -189,7 +194,16 @@
   overflow: hidden;
 }
 
+/* L'emplacement du futur fichier. Par défaut il épouse la fenêtre : la
+   scène et la conclusion montrent le fichier entier. */
+.pgCadre {
+  position: absolute;
+  inset: 0;
+  border-radius: 17px;
+}
+
 .pgMot {
+  position: relative;         /* au-dessus du cadre, centré dans la fenêtre */
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -209,10 +223,43 @@
   max-width: 100%;
 }
 
-/* Forme « bandeau » : la présence pendant le questionnaire. */
-.pg_bandeau { width: 56px; height: 56px; }
-.pg_bandeau .pgBoite { border-radius: 18px; }
-.pg_bandeau .pgHalo { width: 138%; height: 138%; }
+/* ════════════════════════════════════════════════════════════════════
+   Forme « présence » : le Guide qui CONDUIT chaque étape du
+   questionnaire. Ce n'est plus une vignette d'identité de 56 px, c'est
+   un buste.
+
+   ⚠️ LE CALCUL, parce que c'est lui qui justifie le recadrage.
+   Dans un cadre mi-corps, la tête occupe ~23 % de la hauteur du fichier.
+   Montré en entier dans une boîte de 140 px, ça fait une tête de 32 px,
+   c'est-à-dire une icône, exactement le reproche fait au bandeau. Pour
+   une tête de 48 px il faudrait 210 px de portrait au-dessus du
+   formulaire : sur un écran de 640, ce n'est plus une présence.
+
+   On recadre donc : le fichier est dessiné à 235 % de la largeur de la
+   fenêtre, et remonté de 2 % de sa propre hauteur. La fenêtre ne montre
+   plus que la bande 2 %–42 % du fichier, soit la tête (4 %–27 %) et les
+   épaules. Résultat mesurable : une tête d'environ 80 px pour 140 px de
+   hauteur occupée, contre 32 px sans recadrage.
+
+   ⚠️ CONSÉQUENCE SUR L'ILLUSTRATION, et c'est une contrainte dure : la
+   tête doit tenir dans la bande 4 %–27 % de la hauteur du fichier. C'est
+   ce qui rend le recadrage déterministe et permet de n'avoir qu'un seul
+   fichier par Guide.
+   ════════════════════════════════════════════════════════════════════ */
+.pg_presence { width: 112px; height: 140px; }
+
+.pg_presence .pgCadre {
+  inset: auto;
+  left: 50%;
+  top: 0;
+  width: 235%;
+  aspect-ratio: 3 / 4;
+  transform: translate(-50%, -2%);
+  border: 1px dashed rgba(var(--accent-rgb), 0.20);
+  border-radius: 22px;
+}
+
+.pg_presence .pgHalo { width: 150%; height: 128%; }
 
 /* Forme « fin » : le même fichier, en grand, sur l'écran de conclusion. */
 .pg_fin { width: 168px; height: 224px; }
@@ -390,40 +437,61 @@
    LE QUESTIONNAIRE
    ════════════════════════════════════════════════════════════════════ */
 
-/* ── Le bandeau du Guide, présent sur toutes les étapes ──────────── */
-/* Le Guide ne rétrécit pas jusqu'à devenir une icône décorative : il
-   garde un portrait de 56 px, son prénom en gras, et le mot qui dit ce
-   qu'il est pour la personne. « Ton guide » est un LIBELLÉ d'interface,
-   pas une réplique : aucune parole nouvelle n'est ajoutée ici, sans
-   quoi il faudrait la faire passer par `lib/guides.ts`. */
-.bandeau {
+/* ── La présence du Guide, sur chaque étape ──────────────────────── */
+/* ⚠️ C'est le cœur de cette passe. Le bandeau précédent posait un
+   portrait de 56 px, le prénom et l'étiquette « TON GUIDE » : propre,
+   mais ça donnait au personnage un rôle d'avatar d'identité, et on
+   remplissait un formulaire avec son Guide affiché dans un coin.
+
+   Ici le buste et sa phrase forment UN BLOC. Le prénom sert
+   d'attribution à la phrase juste dessous, écrite à la première
+   personne : c'est ce couple qui fait « Nora me demande » plutôt que
+   « page objectifs ».
+
+   ⚠️ COMPOSITION HORIZONTALE, et c'est mesuré, pas esthétique. En
+   vertical (buste centré, prénom dessous, phrase dessous) le bloc coûte
+   la hauteur du buste PLUS celle de la phrase, soit ~225 px. En
+   horizontal il coûte le plus grand des deux, soit 140 px. Sur un
+   360 × 640 où la section la plus dense débordait déjà, les 85 px
+   d'écart sont la différence entre un petit débord et un écran qu'il
+   faut parcourir avant de voir la première question.
+
+   ⚠️ L'étiquette « TON GUIDE » est SUPPRIMÉE. Une phrase à la première
+   personne signée d'un prénom n'a pas besoin qu'on explique que c'est
+   un guide qui parle. */
+.presence {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
+  gap: 14px;
+  padding-bottom: 16px;
 }
 
-.bandeauNom {
-  font-size: 16px;
+.presenceMots {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.presenceNom {
+  font-size: 17px;
   font-weight: 800;
   color: var(--text-0);
-  line-height: 1.15;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
-.bandeauRole {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-soft);
-}
-
-.bandeauEtape {
-  margin-left: auto;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--text-soft);
-  white-space: nowrap;
+/* La phrase du Guide. Elle est le texte le plus lisible du haut de
+   l'écran : c'est elle qui conduit l'étape, le titre ne fait que la
+   nommer. */
+.presencePhrase {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--text-1);
+  text-wrap: pretty;
 }
 
 .jauge {
@@ -442,6 +510,28 @@
 }
 
 .corps { flex: 1; display: flex; flex-direction: column; }
+
+/* Le titre de l'étape garde toute son importance : le Guide nomme
+   l'intention, le titre nomme la structure. Le compteur se range au bout
+   de cette ligne plutôt que sur une rangée à lui : il économise ~16 px
+   de hauteur, et « où j'en suis » se lit contre « ce que je règle ». */
+.titreLigne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.titreLigne .titre { margin: 0; }
+
+.compteur {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
 
 .champs { display: flex; flex-direction: column; gap: 16px; }
 
@@ -666,6 +756,22 @@
   cursor: pointer;
 }
 
+/* ⚠️ En revue, les deux actions de fin ne partent nulle part : « Entrer »
+   quitterait le mode, et « Découvrir Vaiiya » lance la vraie visite
+   guidée, dont l'achèvement écrirait `profiles.tour_completed`. Elles
+   restent donc VISIBLES et cliquables (il faut pouvoir juger l'écran tel
+   qu'il sera), mais elles disent ce qu'elles auraient fait au lieu de le
+   faire. Un bouton qui ne réagit pas serait pire : on ne saurait pas
+   s'il est neutralisé ou cassé. */
+.revueNote {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-soft);
+  text-align: center;
+  max-width: 320px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ecran * { animation: none !important; transition: none !important; }
 }
@@ -689,11 +795,17 @@
   .cta { min-height: 46px; padding: 12px 10px; }
   .nav { padding-top: 6px; }
   .note { margin-top: 6px; }
-  /* Le questionnaire aussi : le bandeau garde sa présence mais rend
-     quelques pixels à la première section, la plus chargée. */
-  .bandeau { padding-bottom: 10px; }
-  .pg_bandeau { width: 48px; height: 48px; }
+  /* Le questionnaire aussi. ⚠️ Le buste rend 20 px de hauteur, pas plus :
+     on resserre la typo et les marges autour de lui AVANT de le réduire,
+     parce qu'un Guide miniaturisé est exactement le défaut qu'on corrige.
+     À 96 × 120 la tête fait encore ~69 px, donc un visage, pas une icône. */
+  .presence { padding-bottom: 12px; gap: 12px; }
+  .pg_presence { width: 96px; height: 120px; }
+  .presenceNom { font-size: 16px; }
+  .presencePhrase { font-size: 13.5px; }
   .jauge { margin-bottom: 14px; }
+  .titreLigne { margin-bottom: 4px; }
+  .questions { margin-top: 10px; }
   .pied { padding-top: 16px; }
 }
 
@@ -706,4 +818,10 @@
   .pg_scene { max-height: 470px; }
   .pg_fin { width: 198px; height: 264px; }
   .nom { font-size: 27px; }
+  /* Le desktop n'est pas une autre composition : c'est la même, avec un
+     buste un peu plus grand et une phrase un peu plus lisible. */
+  .pg_presence { width: 128px; height: 160px; }
+  .presence { gap: 18px; padding-bottom: 20px; }
+  .presenceNom { font-size: 19px; }
+  .presencePhrase { font-size: 15px; }
 }

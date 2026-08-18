@@ -86,6 +86,8 @@ export default function ParcoursBienvenue() {
   const [erreur, setErreur] = useState<string | null>(null);
   /** Le Guide « choisi » en mode revue. Il ne quitte jamais la mémoire. */
   const [guideRevue, setGuideRevue] = useState<GuideId | null>(null);
+  /** Ce qu'une action de fin AURAIT fait, quand la revue l'a retenue. */
+  const [noteRevue, setNoteRevue] = useState<string | null>(null);
 
   /** Les réponses telles qu'elles ont été lues, pour que « Recommencer »
    *  reparte du vrai profil et pas d'un formulaire à moitié modifié. */
@@ -224,6 +226,7 @@ export default function ParcoursBienvenue() {
   const recommencer = () => {
     setGuideRevue(null);
     setErreur(null);
+    setNoteRevue(null);
     setEtape(null);
     const depart = departRef.current;
     setDataBrut(depart ? depart.data : VIDE);
@@ -251,9 +254,30 @@ export default function ParcoursBienvenue() {
     setEtape("pret");
   };
 
-  const entrer = () => router.replace(destination);
+  /* ⚠️ LES DEUX SORTIES SONT FERMÉES EN REVUE, et c'est la dernière fuite
+     qui restait. « Découvrir Vaiiya » lançait la VRAIE visite guidée,
+     dont l'achèvement écrit `profiles.tour_completed` : la revue n'était
+     donc hermétique que tant qu'on ne touchait pas ce bouton. « Entrer »
+     quitte le mode et rend la main à l'app, qui marque la présence du
+     jour (`marquerPresence`) et écrit donc elle aussi.
+
+     Les boutons restent VISIBLES et réagissent : il faut pouvoir juger
+     l'écran tel qu'il sera, et un bouton qui ne répond pas ne dit pas
+     s'il est neutralisé ou cassé. Ils annoncent ce qu'ils auraient fait,
+     et la pastille « Recommencer » est juste au-dessus pour rejouer. */
+  const entrer = () => {
+    if (revue) {
+      setNoteRevue("En revue, on reste ici. En vrai, ce bouton t'emmène dans Vaiiya.");
+      return;
+    }
+    router.replace(destination);
+  };
 
   const decouvrir = () => {
+    if (revue) {
+      setNoteRevue("En revue, la visite guidée n'est pas lancée : la terminer enregistrerait un réglage sur ton compte.");
+      return;
+    }
     router.replace(destination);
     /* La visite se joue PAR-DESSUS l'écran courant, sans redirection : on
        arrive donc d'abord à destination, puis on la lance. Sans ce court
@@ -298,37 +322,60 @@ export default function ParcoursBienvenue() {
 
         {etape !== "guide" && etape !== "pret" && (
           <>
-            {/* Le Guide reste présent en haut de chaque étape : portrait
-                de 56 px, prénom, et ce qu'il est pour la personne. Il ne
-                se réduit pas à une icône décorative, et il ne reprend pas
-                la parole non plus (« Ton guide » est un libellé, pas une
-                réplique). */}
-            <div className={s.bandeau}>
-              <PortraitGuide forme="bandeau" partage anime={!reduit} />
-              <div>
-                <div className={s.bandeauNom}>{nomGuide}</div>
-                <div className={s.bandeauRole}>Ton guide</div>
+            {/* ⚠️ LE GUIDE CONDUIT L'ÉTAPE, il ne la décore pas.
+                Buste + prénom + une phrase à la première personne, dans un
+                seul bloc. Le prénom sert d'attribution à la phrase : c'est
+                ce couple qui fait « Nora me demande ce que je veux faire
+                évoluer » plutôt que « page objectifs, avec Nora dans
+                l'en-tête ».
+
+                Une phrase par SECTION, jamais par réponse : il ouvre, puis
+                il se tait pendant qu'on répond. Et elle vient de
+                `lib/guides.ts`, donc elle porte la personnalité au lieu de
+                la simuler ici.
+
+                Pas de bulle, pas de pointe, pas de personnage qui flotte
+                au-dessus des champs : ce n'est pas une conversation, c'est
+                quelqu'un qui mène un questionnaire. */}
+            <div className={s.presence}>
+              <PortraitGuide forme="presence" anime={!reduit} />
+              <div className={s.presenceMots}>
+                <div className={s.presenceNom}>{nomGuide}</div>
+                <p className={s.presencePhrase}>
+                  {voix(guideAffiche, SECTIONS[etape as Section].voix)}
+                </p>
               </div>
-              <div className={s.bandeauEtape}>Étape {index + 1} sur {ORDRE.length}</div>
             </div>
+
             <div className={s.jauge}>
               <div className={s.jaugeBarre} style={{ width: `${((index + 1) / ORDRE.length) * 100}%` }} />
             </div>
 
             <div className={s.corps}>
-              <h1 className={s.titre}>{SECTIONS[etape as Section].titre}</h1>
-              {/* La seule vraie prise de parole du milieu de parcours :
-                  l'ouverture, une fois, sur la première section. */}
-              {index === 0 && <p className={s.sousTitre}>{voix(guideAffiche, "bienvenue.ouverture")}</p>}
-              <p className={s.ligneCommune}>{SECTIONS[etape as Section].ligne}</p>
+              {/* Le titre garde toute son importance : le Guide nomme
+                  l'intention, le titre nomme la structure. Le compteur se
+                  range au bout de la même ligne, il ne mérite pas une
+                  rangée à lui. */}
+              <div className={s.titreLigne}>
+                <h1 className={s.titre}>{SECTIONS[etape as Section].titre}</h1>
+                <span className={s.compteur}>Étape {index + 1} sur {ORDRE.length}</span>
+              </div>
+              {/* Presque toutes les lignes neutres ont disparu : elles
+                  reformulaient la phrase du Guide. Celles qui restent
+                  disent quelque chose qu'il ne dit pas. */}
+              {SECTIONS[etape as Section].ligne && (
+                <p className={s.ligneCommune}>{SECTIONS[etape as Section].ligne}</p>
+              )}
 
-              <EtapesProfil
-                section={etape as Section}
-                data={data}
-                setData={setData}
-                entrainement={entrainement}
-                setEntrainement={setEntrainement}
-              />
+              <div className={s.questions}>
+                <EtapesProfil
+                  section={etape as Section}
+                  data={data}
+                  setData={setData}
+                  entrainement={entrainement}
+                  setEntrainement={setEntrainement}
+                />
+              </div>
 
               <div className={s.pied}>
                 {index > 0 && (
@@ -367,6 +414,7 @@ export default function ParcoursBienvenue() {
                 </button>
               )}
             </div>
+            {noteRevue && <p className={s.revueNote}>{noteRevue}</p>}
           </div>
         )}
       </div>

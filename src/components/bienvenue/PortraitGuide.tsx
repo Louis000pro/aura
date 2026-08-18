@@ -19,51 +19,92 @@
    les portraits n'existent pas : une nuance suffirait à donner un
    avantage à l'un des deux pendant les tests.
 
+   ── UN SEUL FICHIER, TROIS CADRAGES ──────────────────────────────
+   Les trois formes montrent le MÊME fichier 3:4 (mi-corps). Deux le
+   montrent en entier, une le recadre :
+
+     scene    · le fichier entier, mi-corps, sur l'écran de choix
+     fin      · le fichier entier, plus petit, sur la conclusion
+     presence · un BUSTE, recadré dans le haut du fichier, pendant les
+                questions
+
+   Le recadrage n'est pas une commodité, c'est le seul moyen d'avoir un
+   vrai buste sans manger l'écran. Dans un cadre mi-corps, la tête tient
+   dans ~23 % de la hauteur : à 140 px de haut elle ferait 32 px, donc
+   une icône. Il faudrait une boîte de 210 px pour lui donner 48 px, et
+   210 px de portrait au-dessus d'un formulaire, sur un écran de 640, ce
+   n'est plus une présence, c'est un obstacle. Recadré à 235 %, le même
+   fichier donne une tête de ~80 px dans une boîte de 140.
+
+   La mécanique est dans le CSS (`.pg_presence .pgCadre`) : la boîte
+   coupe, le cadre intérieur est dessiné à 235 % de sa largeur et remonté
+   pour ne garder que le haut du fichier. Le liseré pointillé montre donc
+   le fichier ENTIER en train d'être coupé, ce qui rend le recadrage
+   mesurable dès maintenant, avant que les images existent.
+
    Le jour où les fichiers arrivent, c'est le seul fichier à toucher :
-   remplacer `.pgBoite` par une <Image>, en gardant les mêmes boîtes.
+   `.pgCadre` devient une <Image>, les boîtes ne bougent pas.
    ════════════════════════════════════════════════════════════════════ */
 
 import { motion } from "framer-motion";
 import s from "./bienvenue.module.css";
 
-/** L'identité de transition partagée. Le grand portrait de l'écran de
- *  choix et la vignette du bandeau la portent tous les deux : c'est ce
- *  qui fait glisser l'un vers l'autre au lieu de faire disparaître le
- *  Guide puis réapparaître un formulaire. */
-export const LAYOUT_PORTRAIT = "vaiiya-portrait-guide";
-
 const FORME = {
   /** La scène de l'écran de choix. C'est elle qui fixe le ratio du
    *  fichier à produire, et sa hauteur vient du `flex: 1` du CSS. */
   scene: s.pg_scene,
-  /** La présence pendant le questionnaire (56 px, pas une icône). */
-  bandeau: s.pg_bandeau,
+  /** Le buste qui conduit chaque étape du questionnaire. */
+  presence: s.pg_presence,
   /** Le portrait de l'écran de conclusion. */
   fin: s.pg_fin,
 } as const;
 
 export default function PortraitGuide({
   forme,
-  partage = false,
   anime = true,
 }: {
   forme: keyof typeof FORME;
-  /** Participe à la transition partagée choix → bandeau. */
-  partage?: boolean;
   /** Coupé quand le mouvement est refusé par le système. */
   anime?: boolean;
 }) {
+  /* ⚠️ PAS de transition partagée entre la scène et le buste, et c'est un
+     choix, pas un oubli.
+
+     Un `layoutId` partagé anime la BOÎTE, pas ce qu'elle contient. Or
+     ces deux boîtes ne montrent pas la même chose : l'une le fichier
+     entier, l'autre son quart supérieur agrandi 2,35 fois. Le morphing
+     ferait donc sauter le cadrage à l'instant du départ, puis animerait
+     une image déjà fausse. C'est le genre d'effet qui se répare en le
+     regardant tourner, et l'animation n'est justement pas observable
+     dans cet environnement.
+
+     À la place, une arrivée simple et sûre : le buste monte et se révèle.
+     Ce qui porte vraiment la continuité, c'est que le Guide soit là,
+     grand, immédiatement, avec son prénom et sa phrase. */
   return (
-    <div className={`${s.pg} ${FORME[forme]}`} aria-hidden="true">
+    <motion.div
+      className={`${s.pg} ${FORME[forme]}`}
+      aria-hidden="true"
+      initial={anime ? { opacity: 0, y: 8, scale: 0.96 } : false}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
+    >
       <span className={s.pgHalo} />
-      {forme !== "bandeau" && <span className={s.pgSol} />}
-      <motion.span
-        className={s.pgBoite}
-        layoutId={partage && anime ? LAYOUT_PORTRAIT : undefined}
-        transition={{ type: "spring", stiffness: 260, damping: 32 }}
-      >
-        {forme === "scene" && <span className={s.pgMot}>portrait</span>}
-      </motion.span>
-    </div>
+      {/* Le buste ne pose sur rien : une ombre au sol sous un cadrage
+          coupé à la poitrine dessinerait un sol qui n'est pas dans
+          l'image. */}
+      {forme !== "presence" && <span className={s.pgSol} />}
+      <span className={s.pgBoite}>
+        {/* La géométrie du futur fichier. Pour `presence` elle déborde
+            de la boîte : c'est le recadrage, et il est donc mesurable
+            avant que les images existent. */}
+        <span className={s.pgCadre} />
+        {/* Le mot est centré dans la FENÊTRE, pas dans le fichier :
+            sinon, sur le buste, il tomberait sous la ligne de coupe. */}
+        {forme !== "fin" && (
+          <span className={s.pgMot}>{forme === "scene" ? "portrait" : "buste"}</span>
+        )}
+      </span>
+    </motion.div>
   );
 }
