@@ -108,6 +108,11 @@ export default function Navigation() {
   }, [router]);
 
   if (pathname === "/auth") return null;
+  /* Le parcours d'entrée occupe tout l'écran et son premier choix est
+     obligatoire : lui laisser une barre de navigation derrière, c'est
+     offrir une sortie qui n'existe pas, et laisser le clavier tabuler
+     dans des liens invisibles sous le voile. Même traitement que /auth. */
+  if (pathname === "/bienvenue") return null;
   // Pages publiques : accueil vitrine et invitation à un relais.
   if (!user && (pathname === "/" || pathname.startsWith("/rejoindre"))) return null;
 

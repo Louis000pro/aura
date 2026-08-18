@@ -134,6 +134,33 @@ const REPLIQUES = {
   "panne.sans_reponse": { commun: "Je n'ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement." },
   "panne.erreur":       { commun: "Désolé, une erreur est survenue. Réessaie ✨" },
 
+  /* ── Le parcours d'entrée (/bienvenue) ──
+     Les deux SEULES vraies prises de parole du parcours : l'ouverture,
+     juste après le choix, et la conclusion. Entre les deux, les sections
+     gardent un texte commun : une personnalité réinjectée à chaque clic
+     sonnerait faux et allongerait tout.
+
+     `commun` n'est pas décoratif ici : il sert si l'on arrive sur ces
+     écrans sans Guide résolu, ce qui ne devrait pas arriver mais ne doit
+     pas laisser une page muette. */
+  "bienvenue.ouverture": {
+    commun: "Quelques questions pour adapter tes séances et tes repères. Tu pourras tout changer plus tard.",
+    nora:   "Je vais te poser quelques questions. Elles servent à adapter tes séances et tes repères, et tu pourras tout changer plus tard.",
+    sasha:  "Quelques questions, et on entre. Tu pourras tout ajuster ensuite.",
+  },
+  "bienvenue.fin": {
+    commun: "C'est enregistré. Vaiiya est adapté à ce que tu as indiqué.",
+    nora:   "C'est enregistré. J'ai de quoi adapter Vaiiya à ce que tu m'as indiqué.",
+    sasha:  "C'est bon, on est prêts. On peut commencer.",
+  },
+  /* Compte déjà configuré : il n'a répondu qu'au choix du Guide, donc on
+     ne peut pas lui dire qu'on vient d'enregistrer ses réponses. */
+  "bienvenue.fin_retour": {
+    commun: "C'est enregistré. Tu peux reprendre où tu en étais.",
+    nora:   "C'est enregistré. Je reprends là où tu en étais.",
+    sasha:  "C'est noté. On y va.",
+  },
+
   /* ── Pendant la séance ──
      Une seule phrase, mais celle que l'on voit le plus souvent de toute
      l'app : elle revient à chaque repos, quinze à vingt-cinq fois par

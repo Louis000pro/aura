@@ -1,0 +1,404 @@
+/* ════════════════════════════════════════════════════════════════════
+   Le parcours d'entrée. Tout passe par les tokens de `globals.css` :
+   le rendu clair reste inchangé, le sombre suit tout seul. Aucune
+   couleur de surface ni de texte n'est écrite en dur.
+
+   ⚠️ Les deux cartes de choix sont posées en `1fr 1fr`. La symétrie
+   n'est donc pas une valeur qu'on entretient à la main, c'est la
+   grille qui la garantit : Nora et Sasha ne peuvent PAS avoir des
+   tailles différentes, et aucune des deux ne passe sous la ligne de
+   flottaison avant l'autre.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── L'écran ─────────────────────────────────────────────────────── */
+.ecran {
+  position: fixed;
+  inset: 0;
+  z-index: 100;            /* au-dessus de la barre du bas (50) et de la cloche (40) */
+  overflow-y: auto;
+  background: var(--page-bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+.conteneur {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 20px) 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* ── Le bandeau du Guide, présent sur toutes les étapes après le choix ── */
+.bandeau {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+}
+
+/* Emplacement du futur portrait, version bandeau. Le fichier sera le même
+   que celui des cartes : c'est `object-fit: cover` qui le recadrera ici.
+   ⚠️ Les classes de BOÎTE ne portent que des dimensions, jamais
+   l'apparence : elles ne peuvent donc pas se marcher dessus selon leur
+   ordre dans ce fichier. L'apparence vit dans `.portraitFond`. */
+.bandeauPortrait {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.bandeauNom {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-0);
+  line-height: 1.1;
+}
+
+.bandeauEtape {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft);
+  letter-spacing: 0.04em;
+}
+
+/* ── Titres ──────────────────────────────────────────────────────── */
+.titre {
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 800;
+  color: var(--text-0);
+  text-wrap: balance;
+  margin: 0 0 8px;
+}
+
+.sousTitre {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  margin: 0 0 20px;
+  text-wrap: pretty;
+}
+
+.ligneCommune {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  margin: 0 0 18px;
+}
+
+/* ── Les deux cartes de choix ────────────────────────────────────── */
+.grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(var(--surface-rgb), 0.72);
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  min-width: 0;
+}
+
+/* L'aplat temporaire. Il n'imite RIEN : ni visage, ni initiale, ni
+   silhouette. Il tient exactement la place du futur portrait, pour
+   qu'on mesure du réel plutôt que d'estimer. */
+.portraitFond {
+  background: rgba(var(--accent-rgb), 0.09);
+  border: 1px dashed rgba(var(--accent-rgb), 0.30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Boîte des cartes de choix : c'est ELLE qui fixe le ratio du futur
+   fichier, et donc le cadrage à demander au dessinateur. */
+.portrait {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+}
+
+.portraitMot {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(var(--accent-rgb), 0.55);
+}
+
+.nom {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-0);
+  line-height: 1.1;
+}
+
+/* ⚠️ MESURÉ : `var(--accent)` (#A78BFA) tombe à 2,58:1 sur le fond clair,
+   très en dessous du seuil de lisibilité. Même piège que le teal
+   #2BD4A0 dans `admin.module.css`, même remède : un violet assombri en
+   clair, l'accent tel quel en sombre où il passe à 10,6:1. */
+.trait {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6941C6;
+  line-height: 1.25;
+}
+
+:global([data-theme="dark"]) .trait { color: var(--accent); }
+
+.pour {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-soft);
+  flex: 1;
+  text-wrap: pretty;
+}
+
+/* ── Boutons ─────────────────────────────────────────────────────── */
+/* Violet plein = L'ACTION (système D). Les deux cartes portent le même,
+   donc aucune ne se présente comme le choix « par défaut ». */
+.cta {
+  width: 100%;
+  padding: 11px 8px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(100deg, #8B5CF6, #C13BC1);
+  box-shadow: 0 8px 20px -8px rgba(193, 59, 193, 0.5);
+  cursor: pointer;
+  border: none;
+  min-height: 44px;        /* cible tactile */
+}
+
+.cta:disabled { opacity: 0.55; cursor: default; }
+
+.ctaLarge { max-width: 320px; margin: 0 auto; }
+
+.secondaire {
+  width: 100%;
+  padding: 11px 8px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  background: rgba(var(--accent-rgb), 0.10);
+  border: 1px solid rgba(var(--accent-rgb), 0.20);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.enSavoirPlus {
+  align-self: center;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.note {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.erreur {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #E8620C;
+}
+
+/* ── Les étapes de questions ─────────────────────────────────────── */
+.corps { flex: 1; display: flex; flex-direction: column; }
+
+.champs { display: flex; flex-direction: column; gap: 16px; }
+
+.libelle {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+
+.aide {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-soft);
+  margin-top: 6px;
+}
+
+.saisie {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  color: var(--text-1);
+  background: rgba(var(--surface-rgb), 0.72);
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  outline: none;
+}
+
+.saisie:focus-visible { box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.45); }
+
+.pastilles { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.pastille {
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  background: rgba(var(--surface-rgb), 0.72);
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.pastilleActive {
+  color: #fff;
+  background: linear-gradient(100deg, #8B5CF6, #C13BC1);
+  border-color: transparent;
+}
+
+.pied {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 22px;
+  margin-top: auto;
+}
+
+.passer {
+  padding: 10px 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+/* ── L'écran de fin ──────────────────────────────────────────────── */
+.fin {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 6px;
+  padding: 24px 0;
+}
+
+.finPortrait {
+  width: 96px;
+  height: 128px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.finPhrase {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-0);
+  font-weight: 600;
+  max-width: 340px;
+  text-wrap: pretty;
+}
+
+.finActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 26px;
+}
+
+/* ── Le détail « en savoir plus » ────────────────────────────────── */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  background: rgba(10, 7, 24, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.feuille {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 24px 24px 0 0;
+  background: var(--surface);
+  padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.feuilleListe {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.feuilleListe li {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-soft);
+  padding-left: 16px;
+  position: relative;
+}
+
+.feuilleListe li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ── Écran d'attente ─────────────────────────────────────────────── */
+.attente {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecran * { animation: none !important; transition: none !important; }
+}

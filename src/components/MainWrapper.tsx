@@ -9,11 +9,13 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
   const { user, isLoading } = useAuth();
 
   const isAuth = pathname === "/auth";
+  // Le parcours d'entrée n'a ni barre du bas ni rail (voir Navigation).
+  const isBienvenue = pathname === "/bienvenue";
   const isLanding = pathname === "/" && !user && !isLoading;
   // Invitation à un relais : page publique, sans navigation, pour un
   // visiteur qui n'a pas encore de compte.
   const isInvitation = pathname.startsWith("/rejoindre") && !user && !isLoading;
-  const noNav = isAuth || isLanding || isInvitation;
+  const noNav = isAuth || isBienvenue || isLanding || isInvitation;
   // Le fil d'une conversation occupe toute la hauteur et masque la barre du
   // bas (comme le tunnel de séance) → aucun padding global.
   const isFil = /^\/communaute\/[^/]+$/.test(pathname);
