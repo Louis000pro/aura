@@ -164,7 +164,7 @@ async function portraits(
   admin: ReturnType<typeof createAdminClient>,
   ids: string[],
   today: string,
-): Promise<{ carte: Map<string, Portrait>; presenceFiable: boolean }> {
+): Promise<{ carte: Map<string, Portrait>; presenceFiable: boolean; journalFiable: boolean }> {
   const debutHabitude    = shiftDateStr(today, -JOURS_HABITUDE_REPAS);
   const debutObservation = shiftDateStr(today, -JOURS_OBSERVATION);
   const debutJournal     = shiftDateStr(today, -JOURS_JOURNAL);
@@ -261,9 +261,18 @@ async function portraits(
     if (p) p.pseudo = (pr.pseudo as string) ?? null;
   }
 
-  // Filet : si la lecture de présence échoue, on ne fait taire personne à
-  // tort. Une requête ratée ne doit jamais couper tous les rappels d'un coup.
-  return { carte, presenceFiable: !presenceRes.error };
+  /* Deux filets, et ils tirent dans des sens OPPOSÉS, à dessein.
+     Présence illisible : on ne fait taire personne à tort, une requête ratée
+     ne doit pas couper tous les rappels d'un coup.
+     Journal illisible : on se TAIT. Le journal porte le plafond ; sans lui,
+     « une fois par semaine » et « une fois par mois » deviennent « tous les
+     soirs ». Tant que la migration n'est pas passée, mieux vaut aucun rappel
+     qu'un rappel quotidien à quelqu'un qui n'a rien demandé. */
+  if (journalRes.error) {
+    console.warn("[reminders] notification_rappels illisible, rappels suspendus :", journalRes.error.message);
+  }
+
+  return { carte, presenceFiable: !presenceRes.error, journalFiable: !journalRes.error };
 }
 
 export async function GET(req: NextRequest) {
@@ -308,12 +317,20 @@ export async function GET(req: NextRequest) {
   // si le cron est rejoué ou si la personne était prioritaire sur le relais
   // hier soir (auquel cas elle la reçoit ce soir).
   const dejaAnnonce = new Set<string>();
+  let annonceEnvoyable = annonce !== null;
   if (annonce) {
-    const { data } = await admin
+    const { data, error } = await admin
       .from("notification_annonces")
       .select("user_id")
       .eq("annonce_id", annonce.id)
       .in("user_id", ids);
+    // Même raisonnement que le journal : sans la table qui retient à qui
+    // l'annonce est déjà partie, elle repartirait CHAQUE soir. On préfère
+    // ne pas l'annoncer du tout.
+    if (error) {
+      annonceEnvoyable = false;
+      console.warn("[reminders] notification_annonces illisible, annonce suspendue :", error.message);
+    }
     for (const r of data ?? []) dejaAnnonce.add(r.user_id as string);
   }
 
@@ -323,7 +340,7 @@ export async function GET(req: NextRequest) {
     preferencesDeLot(admin, ids),
   ]);
 
-  const { carte, presenceFiable } = portraitsRes;
+  const { carte, presenceFiable, journalFiable } = portraitsRes;
 
   let sent = 0;
   let usersNotified = 0;
@@ -345,7 +362,7 @@ export async function GET(req: NextRequest) {
     // justement la seule chose qu'on ait de neuf à leur dire, et elle ne
     // consomme pas leur cadence.
     const pourAnnonce = Boolean(
-      !rappel && annonce && pref.maj && !dejaAnnonce.has(uid),
+      !rappel && annonce && annonceEnvoyable && pref.maj && !dejaAnnonce.has(uid),
     );
     if (pourAnnonce && annonce) {
       rappel = {
@@ -357,7 +374,7 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    if (!rappel && pref.rappel && p) {
+    if (!rappel && pref.rappel && journalFiable && p) {
       // Une présence illisible ne doit pas faire passer tout le monde
       // « endormi » : dans ce cas on considère la personne venue aujourd'hui.
       const signaux = {
@@ -433,5 +450,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, users: usersNotified, sent, silencieux, paliers: parPalier });
+  return NextResponse.json({
+    ok: true,
+    users: usersNotified,
+    sent,
+    silencieux,
+    paliers: parPalier,
+    ...(journalFiable ? {} : { migration_manquante: "notification_rappels" }),
+  });
 }
