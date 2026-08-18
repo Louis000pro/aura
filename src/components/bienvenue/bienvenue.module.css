@@ -3,11 +3,17 @@
    le rendu clair reste inchangé, le sombre suit tout seul. Aucune
    couleur de surface ni de texte n'est écrite en dur.
 
-   ⚠️ Les deux cartes de choix sont posées en `1fr 1fr`. La symétrie
-   n'est donc pas une valeur qu'on entretient à la main, c'est la
-   grille qui la garantit : Nora et Sasha ne peuvent PAS avoir des
-   tailles différentes, et aucune des deux ne passe sous la ligne de
-   flottaison avant l'autre.
+   ⚠️ MOBILE D'ABORD. Les hauteurs ne sont pas posées en pixels : la
+   scène du Guide prend `flex: 1`, c'est-à-dire TOUT ce qui reste une
+   fois le texte et les boutons placés. Conséquence directe : le
+   personnage est aussi grand que l'écran le permet, et il n'y a jamais
+   de scroll à inventer. Le desktop n'est pas une autre mise en page,
+   c'est la même scène avec plus d'air.
+
+   ⚠️ Le Guide n'est PAS dans une carte. Pas de fond, pas de bordure
+   pleine, pas de rectangle opaque : un halo qui déborde de sa boîte et
+   une ombre au sol. C'est ce qui fait la différence entre « je
+   rencontre quelqu'un » et « je coche une option ».
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── L'écran ─────────────────────────────────────────────────────── */
@@ -24,46 +30,16 @@
   width: 100%;
   max-width: 560px;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 20px) 16px calc(24px + env(safe-area-inset-bottom));
+  padding: calc(env(safe-area-inset-top) + 18px) 16px calc(20px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   min-height: 100%;
 }
 
-/* ── Le bandeau du Guide, présent sur toutes les étapes après le choix ── */
-.bandeau {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 14px;
-}
-
-/* Emplacement du futur portrait, version bandeau. Le fichier sera le même
-   que celui des cartes : c'est `object-fit: cover` qui le recadrera ici.
-   ⚠️ Les classes de BOÎTE ne portent que des dimensions, jamais
-   l'apparence : elles ne peuvent donc pas se marcher dessus selon leur
-   ordre dans ce fichier. L'apparence vit dans `.portraitFond`. */
-.bandeauPortrait {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-.bandeauNom {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-0);
-  line-height: 1.1;
-}
-
-.bandeauEtape {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-soft);
-  letter-spacing: 0.04em;
-}
+/* L'écran de choix est plus étroit que le questionnaire, et c'est
+   voulu : une scène se compose, un formulaire s'étale. Sur desktop on
+   ne remet donc PAS deux Guides côte à côte parce qu'il y a la place. */
+.conteneurScene { max-width: 430px; }
 
 /* ── Titres ──────────────────────────────────────────────────────── */
 .titre {
@@ -72,14 +48,25 @@
   font-weight: 800;
   color: var(--text-0);
   text-wrap: balance;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
+}
+
+/* La phrase d'égalité entre les deux Guides. Elle reste dite, mais elle
+   ne pèse plus autant que le titre : c'est une précision, pas une
+   annonce. */
+.ligneEgalite {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-soft);
+  margin: 0 0 10px;
+  text-wrap: pretty;
 }
 
 .sousTitre {
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-soft);
-  margin: 0 0 20px;
+  margin: 0 0 12px;
   text-wrap: pretty;
 }
 
@@ -90,58 +77,161 @@
   margin: 0 0 18px;
 }
 
-/* ── Les deux cartes de choix ────────────────────────────────────── */
-.grille {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: stretch;
+/* ════════════════════════════════════════════════════════════════════
+   LE CARROUSEL
+   ════════════════════════════════════════════════════════════════════ */
+
+/* La fenêtre. Elle découpe le rail, et c'est elle qui porte le `flex: 1`
+   qui donne sa hauteur à toute la scène. */
+.piste {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  /* On prend le geste horizontal, on laisse le vertical au navigateur. */
+  touch-action: pan-y;
 }
 
-.carte {
+/* Le rail porte la POSITION, en pourcentage. Deux slides, donc 200 % de
+   large : un cran vaut `translateX(-50%)`. Aucune mesure, aucune
+   animation JavaScript, donc aucune façon d'atterrir entre deux Guides. */
+.rail {
+  display: flex;
+  flex: 0 0 200%;
+  min-height: 0;
+  transition: transform 380ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+
+/* La couche du geste. Elle ne porte que l'écart du doigt et revient
+   toujours à zéro : elle ne peut donc pas laisser le carrousel quelque
+   part entre deux slides. */
+.geste {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  cursor: grab;
+}
+
+.geste:active { cursor: grabbing; }
+
+/* Une slide = une composition COMPLÈTE : le personnage, son nom, sa
+   description et son bouton se déplacent ensemble. Rien ne reste en
+   arrière pendant que le Guide change. */
+.slide {
+  flex: 0 0 50%;          /* 50 % du rail, donc 100 % de la fenêtre */
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 20px;
-  background: rgba(var(--surface-rgb), 0.72);
-  border: 1px solid rgba(var(--accent-rgb), 0.14);
-  min-width: 0;
+  padding: 0 2px;
 }
 
-/* L'aplat temporaire. Il n'imite RIEN : ni visage, ni initiale, ni
-   silhouette. Il tient exactement la place du futur portrait, pour
-   qu'on mesure du réel plutôt que d'estimer. */
-.portraitFond {
-  background: rgba(var(--accent-rgb), 0.09);
-  border: 1px dashed rgba(var(--accent-rgb), 0.30);
+/* ── La scène du Guide ───────────────────────────────────────────── */
+.scene {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 164px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+/* ── L'emplacement du portrait ───────────────────────────────────── */
+.pg { position: relative; flex-shrink: 0; }
+
+/* Le halo. Il DÉBORDE volontairement de la boîte du personnage : c'est
+   lui qui empêche la zone de se lire comme une tuile. */
+.pgHalo {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 152%;
+  height: 116%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 50% at 50% 47%,
+    rgba(var(--accent-rgb), 0.30) 0%,
+    rgba(var(--accent-rgb), 0.11) 44%,
+    rgba(var(--accent-rgb), 0) 72%
+  );
+}
+
+/* L'ombre au sol : le personnage pose quelque part au lieu de flotter. */
+.pgSol {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 66%;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(var(--accent-rgb), 0.26) 0%,
+    rgba(var(--accent-rgb), 0) 72%
+  );
+}
+
+/* ⚠️ AUCUN VISUEL N'EXISTE ENCORE. La boîte n'a donc pas de fond : un
+   simple liseré pointillé, pour qu'on puisse juger de la taille et du
+   cadrage sans qu'un aplat plein ne recrée la sensation de carte. */
+.pgBoite {
+  position: relative;
+  height: 100%;
+  border-radius: 18px;
+  border: 1px dashed rgba(var(--accent-rgb), 0.26);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 
-/* Boîte des cartes de choix : c'est ELLE qui fixe le ratio du futur
-   fichier, et donc le cadrage à demander au dessinateur. */
-.portrait {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  border-radius: 14px;
-}
-
-.portraitMot {
+.pgMot {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(var(--accent-rgb), 0.55);
 }
 
+/* Forme « scène » : la boîte prend toute la hauteur disponible, sa
+   largeur en découle. C'est le contrat 3:4 du futur fichier. */
+.pg_scene {
+  height: 100%;
+  /* Le plafond ne bride pas le personnage, il lui laisse de l'air sur les
+     côtés : sans lui, un 430 × 932 dérive une largeur de 384 px dans
+     398 px utiles, et le portrait touche presque les deux bords. */
+  max-height: 470px;
+  aspect-ratio: 3 / 4;
+  max-width: 100%;
+}
+
+/* Forme « bandeau » : la présence pendant le questionnaire. */
+.pg_bandeau { width: 56px; height: 56px; }
+.pg_bandeau .pgBoite { border-radius: 18px; }
+.pg_bandeau .pgHalo { width: 138%; height: 138%; }
+
+/* Forme « fin » : le même fichier, en grand, sur l'écran de conclusion. */
+.pg_fin { width: 168px; height: 224px; }
+
+/* ── Le texte de la slide ────────────────────────────────────────── */
+.identite {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 16px;
+  text-align: center;
+}
+
 .nom {
-  font-size: 17px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--text-0);
   line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 /* ⚠️ MESURÉ : `var(--accent)` (#A78BFA) tombe à 2,58:1 sur le fond clair,
@@ -149,60 +239,36 @@
    #2BD4A0 dans `admin.module.css`, même remède : un violet assombri en
    clair, l'accent tel quel en sombre où il passe à 10,6:1. */
 .trait {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: #6941C6;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 :global([data-theme="dark"]) .trait { color: var(--accent); }
 
 .pour {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.4;
-  color: var(--text-soft);
-  flex: 1;
-  text-wrap: pretty;
-}
-
-/* ── Boutons ─────────────────────────────────────────────────────── */
-/* Violet plein = L'ACTION (système D). Les deux cartes portent le même,
-   donc aucune ne se présente comme le choix « par défaut ». */
-.cta {
-  width: 100%;
-  padding: 11px 8px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(100deg, #8B5CF6, #C13BC1);
-  box-shadow: 0 8px 20px -8px rgba(193, 59, 193, 0.5);
-  cursor: pointer;
-  border: none;
-  min-height: 44px;        /* cible tactile */
-}
-
-.cta:disabled { opacity: 0.55; cursor: default; }
-
-.ctaLarge { max-width: 320px; margin: 0 auto; }
-
-.secondaire {
-  width: 100%;
-  padding: 11px 8px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 600;
   color: var(--text-1);
-  background: rgba(var(--accent-rgb), 0.10);
-  border: 1px solid rgba(var(--accent-rgb), 0.20);
-  cursor: pointer;
-  min-height: 44px;
+  font-weight: 600;
+  text-wrap: pretty;
+  margin-top: 2px;
+}
+
+.secondaire2 {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-soft);
+  text-wrap: pretty;
+  margin-top: 6px;
 }
 
 .enSavoirPlus {
   align-self: center;
-  padding: 6px 4px;
-  font-size: 11px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-soft);
   background: none;
@@ -213,22 +279,168 @@
   min-height: 32px;
 }
 
+/* ── L'indicateur de deuxième Guide ──────────────────────────────── */
+/* ⚠️ Il NOMME l'autre Guide. C'est le vrai correctif du biais de
+   premier slide : ce biais vient de ne pas savoir ce qu'il y a en face,
+   pas du geste. Un point anonyme laisse la question ouverte, « Voir
+   Sasha » la ferme, même pour quelqu'un qui ne swipe jamais. */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 12px;
+}
+
+.points { display: flex; align-items: center; }
+
+/* ⚠️ Le point mesure 6 px, le BOUTON en mesure 26 : un point de 6 px de
+   haut n'est pas une cible qu'on vise au doigt. Le rembourrage porte la
+   zone tactile, le `span` porte le dessin. */
+.point {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.pointRond {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.30);
+  transition: width 0.22s ease, background 0.22s ease;
+}
+
+.pointActif .pointRond { width: 18px; background: var(--accent); }
+
+.autre {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6941C6;
+  background: rgba(var(--accent-rgb), 0.10);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  cursor: pointer;
+}
+
+:global([data-theme="dark"]) .autre { color: var(--accent); }
+
+/* ── Boutons ─────────────────────────────────────────────────────── */
+/* Violet plein = L'ACTION (système D). Les deux slides portent le même,
+   donc aucune ne se présente comme le choix « par défaut ». */
+.cta {
+  width: 100%;
+  padding: 13px 10px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(100deg, #8B5CF6, #C13BC1);
+  box-shadow: 0 10px 24px -10px rgba(193, 59, 193, 0.55);
+  cursor: pointer;
+  border: none;
+  min-height: 48px;        /* cible tactile */
+}
+
+.cta:disabled { opacity: 0.55; cursor: default; }
+
+.ctaSlide { margin-top: 14px; }
+
+.secondaire {
+  width: 100%;
+  padding: 12px 10px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  background: rgba(var(--accent-rgb), 0.10);
+  border: 1px solid rgba(var(--accent-rgb), 0.20);
+  cursor: pointer;
+  min-height: 46px;
+}
+
 .note {
-  margin: 16px 0 0;
+  margin: 10px 0 0;
   text-align: center;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-soft);
 }
 
 .erreur {
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   text-align: center;
   font-size: 12.5px;
   line-height: 1.45;
   color: #E8620C;
 }
 
-/* ── Les étapes de questions ─────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+   LE QUESTIONNAIRE
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Le bandeau du Guide, présent sur toutes les étapes ──────────── */
+/* Le Guide ne rétrécit pas jusqu'à devenir une icône décorative : il
+   garde un portrait de 56 px, son prénom en gras, et le mot qui dit ce
+   qu'il est pour la personne. « Ton guide » est un LIBELLÉ d'interface,
+   pas une réplique : aucune parole nouvelle n'est ajoutée ici, sans
+   quoi il faudrait la faire passer par `lib/guides.ts`. */
+.bandeau {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.bandeauNom {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-0);
+  line-height: 1.15;
+}
+
+.bandeauRole {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.bandeauEtape {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.jauge {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.16);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.jaugeBarre {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8B5CF6, #C13BC1);
+  transition: width 0.32s ease;
+}
+
 .corps { flex: 1; display: flex; flex-direction: column; }
 
 .champs { display: flex; flex-direction: column; gap: 16px; }
@@ -266,12 +478,15 @@
 
 .pastilles { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* ⚠️ MESURÉ : `--text-2` (#718096) donnait 3,81:1 sur la surface claire,
+   sous le seuil de 4,5. Une pastille non sélectionnée n'est pas du texte
+   décoratif, c'est l'option qu'il faut lire pour choisir. */
 .pastille {
   padding: 9px 14px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-2);
+  color: var(--text-1);
   background: rgba(var(--surface-rgb), 0.72);
   border: 1px solid rgba(var(--accent-rgb), 0.14);
   cursor: pointer;
@@ -304,6 +519,9 @@
 }
 
 /* ── L'écran de fin ──────────────────────────────────────────────── */
+/* Même critique que l'écran de choix : le Guide doit être là. Ce n'est
+   pas une page de confirmation, c'est le moment où quelqu'un vient de
+   choisir la personne qui va l'accompagner. */
 .fin {
   flex: 1;
   display: flex;
@@ -311,24 +529,27 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 6px;
-  padding: 24px 0;
+  padding: 20px 0;
 }
 
-.finPortrait {
-  width: 96px;
-  height: 128px;
-  border-radius: 20px;
-  margin-bottom: 10px;
+/* Ordre à l'écran : portrait, puis le prénom en petit, puis la phrase. */
+.finNom {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin: 22px 0 0;
 }
 
 .finPhrase {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.5;
   color: var(--text-0);
-  font-weight: 600;
-  max-width: 340px;
+  font-weight: 700;
+  max-width: 320px;
   text-wrap: pretty;
+  margin: 8px 0 0;
 }
 
 .finActions {
@@ -337,7 +558,7 @@
   gap: 10px;
   width: 100%;
   max-width: 320px;
-  margin-top: 26px;
+  margin-top: 28px;
 }
 
 /* ── Le détail « en savoir plus » ────────────────────────────────── */
@@ -361,8 +582,14 @@
   overflow-y: auto;
 }
 
+.feuilleNom {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-0);
+}
+
 .feuilleListe {
-  margin: 12px 0 0;
+  margin: 12px 0 18px;
   padding: 0;
   list-style: none;
   display: flex;
@@ -396,9 +623,87 @@
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: var(--text-3);
+  color: var(--text-soft);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LE MODE REVUE (hors production uniquement)
+   ════════════════════════════════════════════════════════════════════ */
+/* Discret par construction : il ne doit rien changer à la composition
+   qu'on est en train de juger. D'où le `position: fixed` en haut à
+   droite, hors du flux. */
+.revue {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: 10px;
+  z-index: 102;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px 5px 10px;
+  border-radius: 999px;
+  background: rgba(var(--surface-rgb), 0.86);
+  border: 1px dashed rgba(var(--accent-rgb), 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.revueMot {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.revueBouton {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(100deg, #8B5CF6, #C13BC1);
+  border: none;
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ecran * { animation: none !important; transition: none !important; }
+}
+
+/* ── Écrans courts : on comprime le texte, jamais le personnage ──── */
+/* Sur un 360 × 640, le bloc de texte et les boutons mangeaient la moitié
+   de la hauteur et le Guide tombait à un tiers de l'écran. On resserre
+   donc les marges et la typo plutôt que de retirer du contenu ou de
+   laisser la page scroller : la scène récupère mécaniquement tout ce
+   qu'on rend, puisqu'elle est en `flex: 1`. */
+@media (max-height: 720px) {
+  .conteneur { padding-top: calc(env(safe-area-inset-top) + 12px); padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .titre { font-size: 22px; margin-bottom: 4px; }
+  .ligneEgalite { font-size: 12px; margin-bottom: 6px; }
+  .identite { padding-top: 10px; gap: 1px; }
+  .nom { font-size: 21px; }
+  .pour { font-size: 13px; }
+  .secondaire2 { font-size: 12px; margin-top: 4px; }
+  .enSavoirPlus { margin-top: 2px; min-height: 28px; padding: 4px 8px; }
+  .ctaSlide { margin-top: 10px; }
+  .cta { min-height: 46px; padding: 12px 10px; }
+  .nav { padding-top: 6px; }
+  .note { margin-top: 6px; }
+  /* Le questionnaire aussi : le bandeau garde sa présence mais rend
+     quelques pixels à la première section, la plus chargée. */
+  .bandeau { padding-bottom: 10px; }
+  .pg_bandeau { width: 48px; height: 48px; }
+  .jauge { margin-bottom: 14px; }
+  .pied { padding-top: 16px; }
+}
+
+/* ── Desktop : la même scène, avec plus d'air ────────────────────── */
+/* On ne repasse PAS à deux Guides côte à côte parce qu'il y a la place.
+   Le personnage reste dominant, le contenu reste centré et étroit. */
+@media (min-width: 900px) {
+  .conteneur { padding-top: 40px; padding-bottom: 32px; }
+  .titre { font-size: 30px; }
+  .pg_scene { max-height: 470px; }
+  .pg_fin { width: 198px; height: 264px; }
+  .nom { font-size: 27px; }
 }

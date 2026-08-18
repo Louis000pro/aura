@@ -21,6 +21,20 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["framer-motion", "lucide-react"],
   },
 
+  // ── L'environnement, lisible aussi côté navigateur ────────────
+  // `VERCEL_ENV` est la source de vérité de l'environnement dans ce repo
+  // (robots.ts, en-têtes noindex ci-dessous), mais il n'existe que côté
+  // serveur. On le recopie ici pour que le client puisse savoir s'il est
+  // en production : c'est ce qui ferme le mode revue de `/bienvenue`
+  // (`src/lib/modeRevue.ts`) partout ailleurs qu'en préversion.
+  //
+  // Recopié explicitement plutôt que laissé au réglage « exposer
+  // automatiquement les variables système » de Vercel : ce réglage peut
+  // être décoché sans qu'on le remarque, ce fichier non.
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV ?? "",
+  },
+
   // ── Non-indexation de tout ce qui n'est pas la production ─────
   // Sur les préversions Vercel (`VERCEL_ENV=preview`) et en local, on pose
   // `X-Robots-Tag: noindex, nofollow` sur TOUTES les réponses. C'est la
