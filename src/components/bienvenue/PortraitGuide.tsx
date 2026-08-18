@@ -1,57 +1,50 @@
 "use client";
 
 /* ════════════════════════════════════════════════════════════════════
-   L'emplacement du portrait de Nora ou Sasha.
+   Le portrait de Nora ou de Sasha.
 
-   ⚠️ AUCUN VISUEL N'EXISTE ENCORE. Ce composant ne dessine donc ni
-   visage, ni initiale, ni silhouette, rien qui ressemble à un avatar.
-   Il pose la SCÈNE autour du futur fichier (un halo qui déborde, une
-   ombre au sol) et réserve sa boîte au liseré pointillé, pour qu'on
-   puisse juger de la taille, du cadrage et de la respiration sur le
-   composant réel plutôt que sur une estimation.
-
-   Le halo n'est pas de la décoration : c'est lui qui empêche la zone de
-   se lire comme une carte. Un aplat plein dans un rectangle fermé
-   ramènerait exactement la sensation de tuile qu'on vient de retirer.
-
-   Les deux Guides reçoivent la même scène, la même taille et la même
-   couleur. Rien ne doit distinguer Nora de Sasha visuellement tant que
-   les portraits n'existent pas : une nuance suffirait à donner un
-   avantage à l'un des deux pendant les tests.
+   Il pose la SCÈNE autour du personnage (un halo qui déborde, une ombre
+   au sol) et découpe la fenêtre qui le montre. Le halo n'est pas de la
+   décoration : c'est lui qui empêche la zone de se lire comme une carte.
+   Un aplat plein dans un rectangle fermé ramènerait exactement la
+   sensation de tuile qu'on a retirée.
 
    ── UN SEUL FICHIER, TROIS CADRAGES ──────────────────────────────
-   Les trois formes montrent le MÊME fichier 3:4 (mi-corps). Deux le
-   montrent en entier, une le recadre :
+   Les trois formes montrent le MÊME fichier 3:4. Deux le montrent en
+   entier, une le recadre :
 
-     scene    · le fichier entier, mi-corps, sur l'écran de choix
+     scene    · le fichier entier, sur l'écran de choix
      fin      · le fichier entier, plus petit, sur la conclusion
      presence · un BUSTE, recadré dans le haut du fichier, pendant les
                 questions
 
    Le recadrage n'est pas une commodité, c'est le seul moyen d'avoir un
-   vrai buste sans manger l'écran. Dans un cadre mi-corps, la tête tient
-   dans ~23 % de la hauteur : à 140 px de haut elle ferait 32 px, donc
-   une icône. Il faudrait une boîte de 210 px pour lui donner 48 px, et
+   vrai buste sans manger l'écran. Dans ce cadrage, la tête tient dans
+   ~21 % de la hauteur : à 140 px de haut elle ferait 30 px, donc une
+   icône. Il faudrait une boîte de 210 px pour lui donner 45 px, et
    210 px de portrait au-dessus d'un formulaire, sur un écran de 640, ce
    n'est plus une présence, c'est un obstacle. Recadré à 235 %, le même
-   fichier donne une tête de ~80 px dans une boîte de 140.
+   fichier donne une tête d'environ 80 px dans une boîte de 140.
 
-   La mécanique est dans le CSS (`.pg_presence .pgCadre`) : la boîte
-   coupe, le cadre intérieur est dessiné à 235 % de sa largeur et remonté
-   pour ne garder que le haut du fichier. Le liseré pointillé montre donc
-   le fichier ENTIER en train d'être coupé, ce qui rend le recadrage
-   mesurable dès maintenant, avant que les images existent.
+   La mécanique est dans le CSS (`.pg_presence .pgImage`) : la boîte
+   coupe, l'image est dessinée à 235 % de sa largeur et remontée pour ne
+   garder que le haut du fichier.
 
-   Le jour où les fichiers arrivent, c'est le seul fichier à toucher :
-   `.pgCadre` devient une <Image>, les boîtes ne bougent pas.
+   ⚠️ CE QUI TIENT LE RECADRAGE : les deux fichiers posent le haut du
+   crâne sur la MÊME ligne, à 5,6 % de leur hauteur. Ce n'est pas un
+   hasard de dessin, c'est `scripts/build-portraits.mjs` qui l'impose
+   (Sasha arrivait à 1,2 %, et la fenêtre lui coupait les cheveux). Une
+   nouvelle illustration passe par ce script, jamais directement dans
+   `public/guides/`.
    ════════════════════════════════════════════════════════════════════ */
 
 import { motion } from "framer-motion";
+import type { GuideId } from "@/lib/guides";
 import s from "./bienvenue.module.css";
 
 const FORME = {
   /** La scène de l'écran de choix. C'est elle qui fixe le ratio du
-   *  fichier à produire, et sa hauteur vient du `flex: 1` du CSS. */
+   *  fichier, et sa hauteur vient du `flex: 1` du CSS. */
   scene: s.pg_scene,
   /** Le buste qui conduit chaque étape du questionnaire. */
   presence: s.pg_presence,
@@ -60,9 +53,11 @@ const FORME = {
 } as const;
 
 export default function PortraitGuide({
+  guide,
   forme,
   anime = true,
 }: {
+  guide: GuideId;
   forme: keyof typeof FORME;
   /** Coupé quand le mouvement est refusé par le système. */
   anime?: boolean;
@@ -74,13 +69,11 @@ export default function PortraitGuide({
      ces deux boîtes ne montrent pas la même chose : l'une le fichier
      entier, l'autre son quart supérieur agrandi 2,35 fois. Le morphing
      ferait donc sauter le cadrage à l'instant du départ, puis animerait
-     une image déjà fausse. C'est le genre d'effet qui se répare en le
-     regardant tourner, et l'animation n'est justement pas observable
-     dans cet environnement.
+     une image déjà fausse.
 
-     À la place, une arrivée simple et sûre : le buste monte et se révèle.
-     Ce qui porte vraiment la continuité, c'est que le Guide soit là,
-     grand, immédiatement, avec son prénom et sa phrase. */
+     À la place, une arrivée simple et sûre : le portrait monte et se
+     révèle. Ce qui porte vraiment la continuité, c'est que le Guide soit
+     là, grand, immédiatement, avec son prénom et sa phrase. */
   return (
     <motion.div
       className={`${s.pg} ${FORME[forme]}`}
@@ -95,15 +88,20 @@ export default function PortraitGuide({
           l'image. */}
       {forme !== "presence" && <span className={s.pgSol} />}
       <span className={s.pgBoite}>
-        {/* La géométrie du futur fichier. Pour `presence` elle déborde
-            de la boîte : c'est le recadrage, et il est donc mesurable
-            avant que les images existent. */}
-        <span className={s.pgCadre} />
-        {/* Le mot est centré dans la FENÊTRE, pas dans le fichier :
-            sinon, sur le buste, il tomberait sous la ligne de coupe. */}
-        {forme !== "fin" && (
-          <span className={s.pgMot}>{forme === "scene" ? "portrait" : "buste"}</span>
-        )}
+        {/* ⚠️ `<img>` et pas `next/image` : ces fichiers sont déjà en
+            WebP, à la taille exacte du plus grand usage, et servis en
+            statique. Les faire passer par l'optimiseur coûterait une
+            transformation par format sans rien gagner, et compliquerait
+            le recadrage, qui a besoin d'une image plus large que sa
+            fenêtre. Même choix que les sprites d'exercice. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className={s.pgImage}
+          src={`/guides/${guide}-master-v1.webp`}
+          alt=""
+          decoding="async"
+          fetchPriority={forme === "scene" ? "high" : "auto"}
+        />
       </span>
     </motion.div>
   );

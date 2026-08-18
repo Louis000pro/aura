@@ -174,41 +174,34 @@
   );
 }
 
-/* ⚠️ AUCUN VISUEL N'EXISTE ENCORE. La boîte n'a donc pas de fond : un
-   simple liseré pointillé, pour qu'on puisse juger de la taille et du
-   cadrage sans qu'un aplat plein ne recrée la sensation de carte.
+/* La boîte est la FENÊTRE VISIBLE. `.pgImage` à l'intérieur est le
+   fichier : il épouse la fenêtre pour la scène et la conclusion, il est
+   plus large et remonté pour le buste.
 
-   La boîte est la FENÊTRE VISIBLE. `.pgCadre` à l'intérieur est la
-   géométrie du fichier : identique à la fenêtre pour la scène et la
-   conclusion, plus grande et remontée pour le buste. C'est ce couple qui
-   rend le recadrage mesurable avant que les images existent. */
+   ⚠️ NI FOND, NI BORDURE, NI COIN ARRONDI. Les portraits sont détourés :
+   le personnage doit se poser sur la page, pas dans un cadre. Une
+   bordure, même discrète, redessinerait la tuile qu'on a retirée, et un
+   coin arrondi trahirait le rectangle du fichier là où l'oeil ne doit
+   voir qu'une silhouette. */
 .pgBoite {
   position: relative;
   height: 100%;
   width: 100%;
-  border-radius: 18px;
-  border: 1px dashed rgba(var(--accent-rgb), 0.26);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   overflow: hidden;
 }
 
-/* L'emplacement du futur fichier. Par défaut il épouse la fenêtre : la
-   scène et la conclusion montrent le fichier entier. */
-.pgCadre {
+/* Par défaut le fichier épouse la fenêtre : la scène et la conclusion
+   montrent le portrait entier. Il est déjà en 3:4, donc `contain` ne
+   rogne rien, il protège seulement d'une déformation si un futur fichier
+   arrivait au mauvais ratio. */
+.pgImage {
   position: absolute;
   inset: 0;
-  border-radius: 17px;
-}
-
-.pgMot {
-  position: relative;         /* au-dessus du cadre, centré dans la fenêtre */
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(var(--accent-rgb), 0.55);
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
 /* Forme « scène » : la boîte prend toute la hauteur disponible, sa
@@ -229,34 +222,45 @@
    un buste.
 
    ⚠️ LE CALCUL, parce que c'est lui qui justifie le recadrage.
-   Dans un cadre mi-corps, la tête occupe ~23 % de la hauteur du fichier.
-   Montré en entier dans une boîte de 140 px, ça fait une tête de 32 px,
-   c'est-à-dire une icône, exactement le reproche fait au bandeau. Pour
-   une tête de 48 px il faudrait 210 px de portrait au-dessus du
-   formulaire : sur un écran de 640, ce n'est plus une présence.
+   Mesuré sur les vrais fichiers : la tête occupe 21 % de la hauteur
+   (Nora 5,6 % → 26,9 %, Sasha 5,6 % → 25,3 %). Montrée en entier dans
+   une boîte de 140 px, elle ferait 30 px, c'est-à-dire une icône,
+   exactement le reproche fait au bandeau. Pour une tête de 45 px il
+   faudrait 210 px de portrait au-dessus du formulaire : sur un écran de
+   640, ce n'est plus une présence.
 
    On recadre donc : le fichier est dessiné à 235 % de la largeur de la
    fenêtre, et remonté de 2 % de sa propre hauteur. La fenêtre ne montre
-   plus que la bande 2 %–42 % du fichier, soit la tête (4 %–27 %) et les
-   épaules. Résultat mesurable : une tête d'environ 80 px pour 140 px de
-   hauteur occupée, contre 32 px sans recadrage.
+   plus que la bande 2 %–42 % du fichier, soit la tête et les épaules.
+   Résultat mesuré : une tête d'environ 80 px pour 140 px de hauteur
+   occupée, contre 30 px sans recadrage.
 
-   ⚠️ CONSÉQUENCE SUR L'ILLUSTRATION, et c'est une contrainte dure : la
-   tête doit tenir dans la bande 4 %–27 % de la hauteur du fichier. C'est
-   ce qui rend le recadrage déterministe et permet de n'avoir qu'un seul
-   fichier par Guide.
+   ⚠️ CONSÉQUENCE SUR L'ILLUSTRATION, et c'est une contrainte dure : le
+   haut du crâne se pose à 5,6 % de la hauteur du fichier, et le menton
+   reste au-dessus de 27 %. C'est `scripts/build-portraits.mjs` qui tient
+   la première moitié (il replace le personnage sur sa toile), le dessin
+   qui doit tenir la seconde. C'est ce qui rend le recadrage déterministe
+   et permet de n'avoir qu'un seul fichier par Guide.
    ════════════════════════════════════════════════════════════════════ */
 .pg_presence { width: 112px; height: 140px; }
 
-.pg_presence .pgCadre {
+.pg_presence .pgImage {
   inset: auto;
   left: 50%;
   top: 0;
   width: 235%;
+  height: auto;
   aspect-ratio: 3 / 4;
+  object-fit: contain;
   transform: translate(-50%, -2%);
-  border: 1px dashed rgba(var(--accent-rgb), 0.20);
-  border-radius: 22px;
+  /* ⚠️ SANS CETTE LIGNE IL N'Y A PAS DE RECADRAGE. La base de Tailwind
+     applique `img { max-width: 100% }` à toute l'application, ce qui
+     ramenait ces 235 % à 100 % : l'image tenait pile dans sa fenêtre, on
+     revoyait le portrait entier en tout petit, et rien ne signalait
+     l'erreur. Le gabarit précédent était un <span>, que cette règle ne
+     touche pas, donc le défaut ne pouvait apparaître qu'avec la vraie
+     image. */
+  max-width: none;
 }
 
 .pg_presence .pgHalo { width: 150%; height: 128%; }

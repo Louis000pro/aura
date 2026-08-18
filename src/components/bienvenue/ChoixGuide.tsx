@@ -171,7 +171,7 @@ export default function ChoixGuide({
               inert={i !== index}
             >
               <div className={s.scene}>
-                <PortraitGuide forme="scene" anime={!reduit} />
+                <PortraitGuide guide={f.id} forme="scene" anime={!reduit} />
               </div>
 
               <div className={s.identite}>

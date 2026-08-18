@@ -177,7 +177,15 @@ export default function ParcoursBienvenue() {
   const debut: Etape = !revue && etat === "actif" && profilLu !== null
     ? (profilLu ? "pret" : ORDRE[0])
     : "guide";
-  const etape: Etape = etapeChoisie ?? debut;
+  const etapeVoulue: Etape = etapeChoisie ?? debut;
+
+  /* Passé l'écran de choix, le Guide est forcément connu : c'est le choix
+     lui-même qui fait avancer, et un compte déjà réglé n'arrive à la
+     conclusion que si `etat === "actif"`. Si l'invariant tombait quand
+     même, on ne bricole pas un portrait par défaut et on n'affiche pas un
+     écran amputé : on repose la question. Un Guide que personne n'a choisi
+     est un bug, pas une valeur. */
+  const etape: Etape = etapeVoulue !== "guide" && !guideAffiche ? "guide" : etapeVoulue;
 
   const setData = useCallback((patch: Partial<OnboardingData>) => setDataBrut((d) => ({ ...d, ...patch })), []);
   const setEntrainement = useCallback((patch: Partial<Entrainement>) => setEntrainementBrut((e) => ({ ...e, ...patch })), []);
@@ -320,7 +328,7 @@ export default function ParcoursBienvenue() {
           <ChoixGuide onChoisir={(g) => { void choisir(g); }} enCours={enCours} erreur={erreur} />
         )}
 
-        {etape !== "guide" && etape !== "pret" && (
+        {etape !== "guide" && etape !== "pret" && guideAffiche && (
           <>
             {/* ⚠️ LE GUIDE CONDUIT L'ÉTAPE, il ne la décore pas.
                 Buste + prénom + une phrase à la première personne, dans un
@@ -338,7 +346,7 @@ export default function ParcoursBienvenue() {
                 au-dessus des champs : ce n'est pas une conversation, c'est
                 quelqu'un qui mène un questionnaire. */}
             <div className={s.presence}>
-              <PortraitGuide forme="presence" anime={!reduit} />
+              <PortraitGuide guide={guideAffiche} forme="presence" anime={!reduit} />
               <div className={s.presenceMots}>
                 <div className={s.presenceNom}>{nomGuide}</div>
                 <p className={s.presencePhrase}>
@@ -393,11 +401,11 @@ export default function ParcoursBienvenue() {
           </>
         )}
 
-        {etape === "pret" && (
+        {etape === "pret" && guideAffiche && (
           <div className={s.fin}>
             {/* Le Guide donne son identité à la conclusion aussi : sans
                 lui, cet écran redevient une page de confirmation. */}
-            <PortraitGuide forme="fin" />
+            <PortraitGuide guide={guideAffiche} forme="fin" />
             <p className={s.finNom}>{nomGuide}</p>
             <p className={s.finPhrase}>
               {voix(guideAffiche, dejaVu ? "bienvenue.fin_retour" : "bienvenue.fin")}
