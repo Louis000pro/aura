@@ -25,13 +25,22 @@ import { resolveNavTarget } from "@/lib/siteKnowledge";
 import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory } from "@/lib/aiMemory";
 import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
-import { phraseDeRepli, normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
+import { normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
+import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type GuideRef } from "@/lib/guides";
 import { PLANS } from "@/lib/plans";
 import {
   resolveWhen, dayLabel, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay, prochainsJours,
   ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
+
+/* ── Le Guide qui parle ──────────────────────────────────────────────
+   Toutes les phrases de l'assistant passent par `voix()` / `voixAction()`
+   (src/lib/guides.ts). Aucune réplique n'a encore de variante Nora/Sasha,
+   donc `null` rend exactement le texte que l'app affichait avant. Quand le
+   choix du Guide existera, c'est CETTE ligne qui devient une lecture de
+   `useGuideActif()` : aucun des appels ci-dessous n'aura à bouger. */
+const GUIDE: GuideRef = null;
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -508,7 +517,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       await supabase.from("ai_memories").delete().in("id", ids);
       const idSet = new Set(ids);
       memoriesRef.current = memoriesRef.current.filter((mm) => !idSet.has(mm.id));
-      setMemoryNotice("C'est noté, j'oublie ça.");
+      setMemoryNotice(voix(GUIDE, "memoire.oubliee"));
       return;
     }
 
@@ -528,7 +537,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .single();
       if (!error && data) {
         memoriesRef.current = [data as AiMemory, ...memoriesRef.current];
-        setMemoryNotice("Je m'en souviendrai 🧠");
+        setMemoryNotice(voix(GUIDE, "memoire.retenue"));
       }
     }
   }, [user?.id]);
@@ -585,7 +594,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         if (next) { from = next; src = weekMap[next]; }
       }
       if (!hasSeance(src) || !from) {
-        say("Je ne trouve pas de séance à déplacer cette semaine 🤔 Dis-moi le jour de départ, par ex. « déplace la séance de jeudi à vendredi ».");
+        say(voix(GUIDE, "impasse.move_introuvable"));
         return;
       }
       // Empêchement sans destination (« je ne peux pas jeudi ») → on choisit
@@ -600,12 +609,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           ?? weekDates().find((d) => d >= todayYmd() && d !== from && rest(d))
           ?? null;
         if (!to) {
-          say("Vers quel jour veux-tu déplacer la séance ? (par ex. « demain », « dans 2 jours » ou « vendredi ») 📅");
+          say(voix(GUIDE, "impasse.move_sans_jour"));
           return;
         }
       }
       if (from === to) {
-        say(`La séance est déjà prévue le ${dayLabelLong(to)} 🙂`);
+        say(voix(GUIDE, "impasse.move_deja_prevu", { jour: dayLabelLong(to) }));
         return;
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
@@ -638,9 +647,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         // Lieu incomplet : on le demande en puces plutôt que de rester muet
         // sur une promesse. La demande d'origine repart dès qu'on a la réponse.
         if (!saved.location) {
-          poserQuestion("Tu t'entraînes où cette semaine ?", { choix: ["En salle", "À la maison"], genre: "lieu", relance: text });
+          poserQuestion(voix(GUIDE, "question.lieu_semaine"), { choix: CHOIX_LIEU, genre: "lieu", relance: text });
         } else {
-          poserQuestion("Tu as des haltères à la maison ?", { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text });
+          poserQuestion(voix(GUIDE, "question.equip"), { choix: CHOIX_EQUIP, genre: "equip", relance: text });
         }
         return;
       }
@@ -667,7 +676,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .filter((d) => d.date >= todayYmd() && existing[d.date]?.status !== "done");
       const nbSeances = writes.filter(hasSeance).length;
       if (nbSeances === 0) {
-        say("Il ne reste plus de jour modifiable cette semaine 🙂 Décale plutôt une séance précise, ou redemande-moi lundi pour la semaine d'après.");
+        say(voix(GUIDE, "impasse.regen_semaine_finie"));
         return;
       }
       const adjustLabel = adjust === "leger" ? " · plus légère"
@@ -690,12 +699,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (action.intent === "plan_library") {
       const day = resolveWhen(action.when || "aujourd_hui");
       if (!day) {
-        say("Quel jour veux-tu programmer cette séance ? (par ex. « mardi » ou « demain ») 📅");
+        say(voix(GUIDE, "impasse.library_sans_jour"));
         return;
       }
       const title = (action.title || "").trim();
       if (!title) {
-        say("Quelle séance de ta bibliothèque veux-tu programmer ? Donne-moi son nom 🙂");
+        say(voix(GUIDE, "impasse.library_sans_nom"));
         return;
       }
       const supabase = createClient();
@@ -708,7 +717,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .limit(1);
       const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
       if (!row) {
-        say(`Je ne trouve pas de séance « ${title} » dans ta bibliothèque 🤔 Vérifie le nom, ou demande-moi de la créer.`);
+        say(voix(GUIDE, "impasse.library_introuvable", { titre: title }));
         return;
       }
       const category = normalizeWorkoutCategory(row.category);
@@ -874,8 +883,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (location === "maison" && !equip) {
         // Une seule question à la fois : le matériel arrive maintenant, et
         // c'est lui qui relancera la demande.
-        poserQuestion("Tu as des haltères à la maison ?", {
-          choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: attente,
+        poserQuestion(voix(GUIDE, "question.equip"), {
+          choix: CHOIX_EQUIP, genre: "equip", relance: attente,
         });
         return;
       }
@@ -1002,8 +1011,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        ici, c'était une demande sans réponse et sans explication. */
     const { location: lieu, equip } = readLieu(user.id);
     if (!lieu) {
-      poserQuestion("Avant de te préparer ça, tu t'entraînes où ?", {
-        choix: ["En salle", "À la maison"], genre: "lieu", relance: text,
+      poserQuestion(voix(GUIDE, "question.lieu"), {
+        choix: CHOIX_LIEU, genre: "lieu", relance: text,
       });
       return;
     }
@@ -1072,11 +1081,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // qu'elle soit touchée (puce) ou tapée à la main (outil save_lieu).
     if (!location) {
       attenteRef.current = text;
-      return { texte: "Avant de te préparer ça, tu t'entraînes où ?", question: { choix: ["En salle", "À la maison"], genre: "lieu", relance: text } };
+      return { texte: voix(GUIDE, "question.lieu"), question: { choix: CHOIX_LIEU, genre: "lieu", relance: text } };
     }
     if (location === "maison" && !equip) {
       attenteRef.current = text;
-      return { texte: "Tu as des haltères à la maison ?", question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip", relance: text } };
+      return { texte: voix(GUIDE, "question.equip"), question: { choix: CHOIX_EQUIP, genre: "equip", relance: text } };
     }
     return null;
   }, [user?.id]);
@@ -1246,19 +1255,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           const choix = normaliserChoix(recue.choix);
           if (choix.length >= 2) {
             questionAttachee = { choix, genre: "libre" };
-            cleaned = phraseDeRepli(recue);
+            cleaned = voixAction(GUIDE, recue);
           }
         }
         // Filet : le coach parle normalement sur ces tours depuis que la
         // décision d'action est sortie de son prompt, mais un flux coupé ou
         // un refus laisserait une bulle vide.
-        if (!cleaned) cleaned = phraseDeRepli(recue);
+        if (!cleaned) cleaned = voixAction(GUIDE, recue);
       }
 
       // Ni texte ni action : ça ne doit JAMAIS passer inaperçu. Une version
       // précédente supprimait la bulle vide, du coup l'utilisateur envoyait un
       // message et il ne se passait rien du tout, sans la moindre explication.
-      if (!cleaned) cleaned = "Je n'ai pas réussi à répondre à ce message 😕 Réessaie, ou reformule-le autrement.";
+      if (!cleaned) cleaned = voix(GUIDE, "panne.sans_reponse");
 
       setMessages((prev) => {
         const next = prev.map((m) => m.id === assistantId
@@ -1280,7 +1289,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
       setMessages((prev) => prev.map((m) => m.id === assistantId
-        ? { ...m, content: "Désolé, une erreur est survenue. Réessaie ✨", streaming: false } : m));
+        ? { ...m, content: voix(GUIDE, "panne.erreur"), streaming: false } : m));
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
@@ -1323,8 +1332,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // le lieu connu, et jamais en même temps que la première question.
       if (location === "maison" && !readLieu(user.id).equip) {
         setMessages((prev) => [...prev, {
-          role: "assistant" as const, content: "Tu as des haltères à la maison ?", id: uid(),
-          question: { choix: ["Oui, des haltères", "Au poids du corps"], genre: "equip" as const, relance },
+          role: "assistant" as const, content: voix(GUIDE, "question.equip"), id: uid(),
+          question: { choix: CHOIX_EQUIP, genre: "equip" as const, relance },
         }]);
         return;
       }

@@ -23,6 +23,11 @@ import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { PLANS } from "@/lib/plans";
 import { heroImageForSeance } from "@/lib/workoutArt";
 import { AssistantAvatar } from "@/components/AssistantMark";
+import { voix, type GuideRef } from "@/lib/guides";
+
+/* Phase 0 : aucun Guide choisi, donc `voix` rend le texte actuel à
+   l'identique. En phase 1 cette ligne lira `useGuideActif()`. */
+const GUIDE: GuideRef = null;
 
 /** Libellé lisible d'un moment de repas (valeurs canoniques du journal).
  *  ⚠️ `gouter` se dit « Goûter », jamais « Collation » (choix de Louis,
@@ -404,10 +409,10 @@ export default function AssistantSheet() {
                   </motion.div>
                   <div>
                     <p className="text-base font-semibold mb-1" style={{ color: "var(--text-0)" }}>
-                      Salut{pseudo ? `, ${pseudo}` : ""} ✦
+                      {voix(GUIDE, "accueil.salut", { pseudo: pseudo ?? "" })}
                     </p>
                     <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-soft)" }}>
-                      Demande-moi n'importe quoi, ou dis-moi où tu veux aller dans l'app.
+                      {voix(GUIDE, "accueil.invite")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 justify-center">

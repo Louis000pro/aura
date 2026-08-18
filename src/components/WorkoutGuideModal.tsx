@@ -5,6 +5,7 @@ import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, Check, Plus } from "lucide-react";
 import { AssistantSpark } from "@/components/AssistantMark";
+import { voix, type GuideRef } from "@/lib/guides";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
@@ -24,6 +25,11 @@ import { WAVE_3_EXERCISES } from "@/lib/workoutWave3";
 import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
 import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
+
+/* Phase 0 : aucun Guide choisi. L'encouragement du repos est la phrase la
+   plus vue de toute l'app (une par récupération) : c'est par elle que les
+   voix Nora/Sasha se sépareront côté sport. Ici, texte inchangé. */
+const GUIDE: GuideRef = null;
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -1288,7 +1294,7 @@ export default function WorkoutGuideModal({
                 <div className="relative z-[2] flex gap-3 items-center rounded-2xl px-3.5 py-3 mt-4"
                   style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
                   <span className="flex-shrink-0"><AssistantSpark px={16} /></span>
-                  <p className="text-[12px]" style={{ color: TUN.t2 }}>Souffle — la prochaine série est la bonne.</p>
+                  <p className="text-[12px]" style={{ color: TUN.t2 }}>{voix(GUIDE, "seance.repos")}</p>
                 </div>
               </motion.div>
             )}

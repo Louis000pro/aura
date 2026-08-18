@@ -320,37 +320,8 @@ export const ASSISTANT_TOOLS: Tool[] = [
   },
 ];
 
-/** Ce que dit le coach quand une carte s'ouvre sans qu'il ait écrit un mot.
- *
- *  Depuis que la décision d'action est sortie du prompt du coach (voir
- *  `assistantRouter`), celui-ci parle normalement sur les tours d'action :
- *  cette fonction n'est plus le chemin ordinaire, mais le filet. Elle sert
- *  quand le texte revient vide (flux coupé, refus, réponse muette).
- *
- *  Elle DOIT quand même couvrir tous les intents : une phrase vide
- *  laisserait une bulle sans contenu, et c'est exactement le symptôme qu'on
- *  chasse. La phrase est déduite de l'action, donc elle ne peut pas la
- *  contredire. */
-export function phraseDeRepli(action: AssistantAction): string {
-  const t = (action.theme ?? "").toLowerCase();
-  switch (action.intent) {
-    case "create_seance": return "Voici une proposition de séance, regarde juste en dessous 👇";
-    case "plan_set": return "Ça marche, je te prépare ça. Valide juste en dessous 👇";
-    case "plan_move": return "Pas de souci, je te propose un nouveau jour. Valide en dessous 👇";
-    case "plan_location": return "C'est noté pour le lieu. Valide la séance juste en dessous 👇";
-    case "plan_library": return "Je te la programme, valide juste en dessous 👇";
-    case "plan_regen": return "Ça marche, je te prépare une nouvelle semaine. Valide en dessous ✦";
-    case "log_meal": return "C'est noté, je te prépare l'ajout. Valide juste en dessous 👇";
-    case "create_recipe": return "Je t'écris ça, regarde juste en dessous 👇";
-    // La question EST la bulle : c'est le seul intent dont le texte vient du
-    // modèle, puisque c'est lui qui formule ce qu'il ne sait pas.
-    case "ask_choice": return (action.question ?? "").trim() || "J'ai besoin d'une précision ✦";
-    case "open_page": return "Je t'emmène ✦";
-    case "save_lieu": return "C'est noté, je m'en souviens ✦";
-    case "set_theme":
-      return t.startsWith("somb") ? "C'est passé en sombre ✦"
-        : t.startsWith("clair") ? "Retour en clair ✦"
-        : "Thème réglé sur automatique, il suivra ton téléphone ✦";
-    default: return "C'est noté ✦";
-  }
-}
+/* La parole de l'assistant a quitté ce fichier : elle vit dans
+   `src/lib/guides.ts` (`voixAction`). Ici on ne déclare plus que des
+   capacités, pas des phrases. Ajouter une capacité = 1) une entrée dans
+   ASSISTANT_TOOLS, 2) sa phrase dans `guides.ts`, 3) une branche dans
+   `runAction`, 4) une carte de confirmation si ça écrit. */
