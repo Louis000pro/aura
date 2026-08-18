@@ -1,7 +1,9 @@
 import { noindexEcranApp } from "@/lib/noindexEcranApp";
 import { GuideProvider } from "@/context/GuideContext";
 
-export const metadata = noindexEcranApp("Bienvenue · Vaiiya");
+// Le suffixe « · Vaiiya » vient du `template` du layout racine : le passer
+// ici aussi affichait « Bienvenue · Vaiiya · Vaiiya ».
+export const metadata = noindexEcranApp("Bienvenue");
 
 /* ⚠️ `GuideProvider` est monté ICI, sur cette seule route, et PAS dans
    `app/layout.tsx`.
