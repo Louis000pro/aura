@@ -3,11 +3,12 @@
 /* ════════════════════════════════════════════════════════════════════
    Le portrait de Nora ou de Sasha.
 
-   Il pose la SCÈNE autour du personnage (un halo qui déborde, une ombre
-   au sol) et découpe la fenêtre qui le montre. Le halo n'est pas de la
-   décoration : c'est lui qui empêche la zone de se lire comme une carte.
-   Un aplat plein dans un rectangle fermé ramènerait exactement la
-   sensation de tuile qu'on a retirée.
+   Il pose la LUMIÈRE autour du personnage et découpe la fenêtre qui le
+   montre. Rien d'autre : ni fond, ni bordure, ni ombre au sol. Ce qui
+   empêche la zone de se lire comme une carte, ce sont trois choses qui
+   ne dessinent aucune forme : une lumière beaucoup plus large que lui et
+   sans contour, un bas qui se dissout dans la page, et le fait qu'il
+   touche les bords de l'écran.
 
    ── UN SEUL FICHIER, TROIS CADRAGES ──────────────────────────────
    Les trois formes montrent le MÊME fichier 3:4. Deux le montrent en
@@ -20,11 +21,11 @@
 
    Le recadrage n'est pas une commodité, c'est le seul moyen d'avoir un
    vrai buste sans manger l'écran. Dans ce cadrage, la tête tient dans
-   ~21 % de la hauteur : à 140 px de haut elle ferait 30 px, donc une
-   icône. Il faudrait une boîte de 210 px pour lui donner 45 px, et
-   210 px de portrait au-dessus d'un formulaire, sur un écran de 640, ce
-   n'est plus une présence, c'est un obstacle. Recadré à 235 %, le même
-   fichier donne une tête d'environ 80 px dans une boîte de 140.
+   ~21 % de la hauteur : à 175 px de haut elle ferait 37 px, donc une
+   icône. Il faudrait une boîte de 400 px pour lui donner 85 px, et
+   400 px de portrait au-dessus d'un formulaire, ce n'est plus une
+   présence, c'est un obstacle. Recadré à 235 %, le même fichier donne
+   une tête d'environ 94 px dans une boîte de 175.
 
    La mécanique est dans le CSS (`.pg_presence .pgImage`) : la boîte
    coupe, l'image est dessinée à 235 % de sa largeur et remontée pour ne
@@ -82,11 +83,15 @@ export default function PortraitGuide({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
     >
+      {/* La lumière. Ce n'est pas un fond derrière le personnage : c'est
+          une ambiance beaucoup plus large que lui, sans contour, qui
+          déborde jusque sous le texte. Le détail est dans le CSS, avec
+          la raison pour laquelle son opacité ne doit pas remonter. */}
       <span className={s.pgHalo} />
-      {/* Le buste ne pose sur rien : une ombre au sol sous un cadrage
-          coupé à la poitrine dessinerait un sol qui n'est pas dans
-          l'image. */}
-      {forme !== "presence" && <span className={s.pgSol} />}
+      {/* ⚠️ PLUS D'OMBRE AU SOL. Le personnage ne pose plus sur une
+          surface, son bas se dissout dans la page. Les deux ensemble se
+          contrediraient, et l'ombre redessinait une limite là où on
+          cherche justement à n'en laisser aucune. */}
       <span className={s.pgBoite}>
         {/* ⚠️ `<img>` et pas `next/image` : ces fichiers sont déjà en
             WebP, à la taille exacte du plus grand usage, et servis en

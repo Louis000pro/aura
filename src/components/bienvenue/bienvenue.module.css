@@ -10,17 +10,29 @@
    de scroll à inventer. Le desktop n'est pas une autre mise en page,
    c'est la même scène avec plus d'air.
 
-   ⚠️ Le Guide n'est PAS dans une carte. Pas de fond, pas de bordure
-   pleine, pas de rectangle opaque : un halo qui déborde de sa boîte et
-   une ombre au sol. C'est ce qui fait la différence entre « je
-   rencontre quelqu'un » et « je coche une option ».
+   ⚠️ Le Guide n'est DANS RIEN. Ni carte, ni cadre, ni pastille, ni
+   médaillon. Trois moyens y concourent, et aucun ne dessine une forme :
+   il touche les bords de l'écran, son bas se DISSOUT dans la page, et
+   la lumière autour de lui est une ambiance large, pas un disque.
+
+   ⚠️ Ce qui a été RETIRÉ, et pourquoi ne pas le remettre : le halo
+   d'avant était une ellipse à 30 % d'opacité, à peine plus large que le
+   personnage. Sur le fond clair, ça donnait un ovale lilas net derrière
+   lui, c'est-à-dire exactement le « post-it » qu'on nous a reproché.
+   Une ombre au sol dessinait la même chose par en dessous. Un fond, une
+   bordure, un coin arrondi feraient revenir la vignette en une ligne.
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── L'écran ─────────────────────────────────────────────────────── */
+/* ⚠️ `overflow-x: clip` : la lumière autour du Guide déborde volontairement
+   des boîtes, et sur un écran étroit elle dépasse la largeur utile. Sans
+   cette ligne, ce débordement créerait un défilement horizontal. `clip`
+   et pas `hidden` : on coupe sans rendre la zone défilable. */
 .ecran {
   position: fixed;
   inset: 0;
   z-index: 100;            /* au-dessus de la barre du bas (50) et de la cloche (40) */
+  overflow-x: clip;
   overflow-y: auto;
   background: var(--page-bg);
   -webkit-overflow-scrolling: touch;
@@ -38,8 +50,23 @@
 
 /* L'écran de choix est plus étroit que le questionnaire, et c'est
    voulu : une scène se compose, un formulaire s'étale. Sur desktop on
-   ne remet donc PAS deux Guides côte à côte parce qu'il y a la place. */
-.conteneurScene { max-width: 430px; }
+   ne remet donc PAS deux Guides côte à côte parce qu'il y a la place.
+
+   ⚠️ IL N'A PLUS DE MARGE HORIZONTALE, et c'est la condition du plein
+   bord. Un rembourrage sur le conteneur borne la fenêtre du carrousel,
+   donc borne le personnage : sur un 390 large, il perdait 32 px de large
+   et, à 3:4, 43 px de haut. Le rembourrage est descendu sur les enfants
+   qui en ont besoin (`.enTete`, `.slide`, `.nav`, `.note`) ; la scène,
+   elle, va d'un bord à l'autre. */
+.conteneurScene { max-width: 430px; padding-left: 0; padding-right: 0; }
+
+/* Le titre et sa ligne. Ils portent le rembourrage que le conteneur n'a
+   plus, et ils ont MAIGRI : c'est le Guide qu'on doit ressentir en
+   premier, pas la consigne. « Choisis ton guide » reste un h1, il n'a
+   simplement plus besoin de peser 26 px au-dessus d'un personnage qui
+   occupe les deux tiers de l'écran. */
+.enTete { padding: 0 16px; }
+.enTete .titre { font-size: 20px; }
 
 /* ── Titres ──────────────────────────────────────────────────────── */
 .titre {
@@ -122,73 +149,92 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 2px;
+  /* Le rembourrage est ICI et pas sur le conteneur : la scène le reprend
+     en marge négative pour aller au bord, sans déborder de sa propre
+     slide (ce que la fenêtre du carrousel couperait). */
+  padding: 0 16px;
 }
 
 /* ── La scène du Guide ───────────────────────────────────────────── */
+/* Elle prend toute la hauteur restante ET toute la largeur de l'écran.
+   Le texte d'identité vient se poser DESSUS, en bas, là où le personnage
+   se dissout : il ne coûte donc plus un seul pixel de hauteur au Guide.
+   C'est ce qui fait passer le personnage de 43 % à ~65 % de l'écran sur
+   un téléphone, sans rien retirer de lisible. */
 .scene {
   position: relative;
   flex: 1 1 auto;
-  min-height: 164px;
+  min-height: 200px;
   display: flex;
   align-items: stretch;
   justify-content: center;
+  margin: 0 -16px;
 }
 
 /* ── L'emplacement du portrait ───────────────────────────────────── */
 .pg { position: relative; flex-shrink: 0; }
 
-/* Le halo. Il DÉBORDE volontairement de la boîte du personnage : c'est
-   lui qui empêche la zone de se lire comme une tuile. */
+/* ⚠️ LA LUMIÈRE, ET PAS UN DISQUE. C'est le point le plus sensible de
+   cette passe. L'ancienne version était une ellipse à 30 % d'opacité,
+   large de 152 % du personnage : sur le fond clair (#faf8ff), un ovale
+   lilas parfaitement lisible derrière lui, autrement dit un support, une
+   pastille, un post-it.
+
+   Ici la boîte est BEAUCOUP plus grande que le personnage et les
+   dégradés s'éteignent bien AVANT ses bords : il n'existe aucun contour,
+   nulle part. Deux nappes superposées, une haute et serrée (la source),
+   une basse et large (le rebond), plus un flou qui achève de supprimer
+   toute limite. On lit une ambiance, pas une forme.
+
+   ⚠️ Ne pas remonter l'opacité pour « mieux détacher » le Guide : c'est
+   exactement le geste qui redessine la pastille. Sur fond sombre, ce
+   sont les mèches violettes et le haut lilas de l'illustration qui font
+   le détachement, mesuré et vérifié. */
 .pgHalo {
   position: absolute;
   left: 50%;
-  top: 48%;
-  width: 152%;
-  height: 116%;
+  top: 46%;
+  width: 188%;
+  height: 130%;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(
-    50% 50% at 50% 47%,
-    rgba(var(--accent-rgb), 0.30) 0%,
-    rgba(var(--accent-rgb), 0.11) 44%,
-    rgba(var(--accent-rgb), 0) 72%
-  );
-}
-
-/* L'ombre au sol : le personnage pose quelque part au lieu de flotter. */
-.pgSol {
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 66%;
-  height: 18px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    rgba(var(--accent-rgb), 0.26) 0%,
-    rgba(var(--accent-rgb), 0) 72%
-  );
+  filter: blur(22px);
+  background:
+    radial-gradient(40% 34% at 50% 30%, rgba(var(--accent-rgb), 0.20) 0%, rgba(var(--accent-rgb), 0) 100%),
+    radial-gradient(54% 44% at 50% 60%, rgba(var(--accent-rgb), 0.085) 0%, rgba(var(--accent-rgb), 0) 100%);
 }
 
 /* La boîte est la FENÊTRE VISIBLE. `.pgImage` à l'intérieur est le
    fichier : il épouse la fenêtre pour la scène et la conclusion, il est
    plus large et remonté pour le buste.
 
-   ⚠️ NI FOND, NI BORDURE, NI COIN ARRONDI. Les portraits sont détourés :
-   le personnage doit se poser sur la page, pas dans un cadre. Une
-   bordure, même discrète, redessinerait la tuile qu'on a retirée, et un
-   coin arrondi trahirait le rectangle du fichier là où l'oeil ne doit
-   voir qu'une silhouette. */
+   ⚠️ NI FOND, NI BORDURE, NI COIN ARRONDI, NI OMBRE AU SOL. Les
+   portraits sont détourés : le personnage doit se poser sur la page, pas
+   dans un cadre. Une bordure, même discrète, redessinerait la tuile
+   qu'on a retirée ; un coin arrondi trahirait le rectangle du fichier là
+   où l'oeil ne doit voir qu'une silhouette ; et l'ombre au sol, qui
+   existait ici, dessinait la même limite par en dessous.
+
+   ⚠️ LE FONDU DU BAS remplace tout ça. Le personnage ne s'arrête pas sur
+   une ligne, il se DISSOUT dans la page : plus aucun bord n'existe, donc
+   plus rien à confondre avec un cadre, et le texte peut venir se poser
+   sur cette zone sans jamais buter contre une image.
+
+   Le fondu est une bande en PIXELS, pas un pourcentage : selon l'écran,
+   la fenêtre est parfois plus haute que le fichier qu'elle contient (le
+   personnage est alors bridé par la largeur), et un pourcentage
+   mangerait beaucoup plus de personnage sur ces écrans-là. Mesuré, une
+   bande fixe reste entre 77 % et 84 % de la hauteur du dessin partout.
+   Elle ne touche que la cuisse : l'étincelle du haut est à ~33 % du
+   fichier, très au-dessus. */
 .pgBoite {
   position: relative;
   height: 100%;
   width: 100%;
   display: block;
   overflow: hidden;
+  -webkit-mask-image: var(--fondu, none);
+  mask-image: var(--fondu, none);
 }
 
 /* Par défaut le fichier épouse la fenêtre : la scène et la conclusion
@@ -205,15 +251,28 @@
 }
 
 /* Forme « scène » : la boîte prend toute la hauteur disponible, sa
-   largeur en découle. C'est le contrat 3:4 du futur fichier. */
+   largeur en découle. C'est le contrat 3:4 du fichier.
+
+   ⚠️ LE PLAFOND DE 470 px EST RETIRÉ. Il existait pour « laisser de
+   l'air sur les côtés » à une époque où le personnage était un gabarit
+   au milieu d'une carte. Maintenant qu'il touche les bords volontairement
+   et que son bas se dissout, ce plafond ne protégeait plus rien : il
+   bridait le seul élément qu'on veut voir grand. Le personnage prend
+   donc toute la hauteur disponible, et `max-width` le rattrape sur les
+   écrans étroits pour qu'aucune main ne sorte du cadre. */
 .pg_scene {
   height: 100%;
-  /* Le plafond ne bride pas le personnage, il lui laisse de l'air sur les
-     côtés : sans lui, un 430 × 932 dérive une largeur de 384 px dans
-     398 px utiles, et le portrait touche presque les deux bords. */
-  max-height: 470px;
   aspect-ratio: 3 / 4;
   max-width: 100%;
+  /* ⚠️ CE FONDU-LÀ NE FINIT PAS EN BAS, il finit AU-DESSUS DU TEXTE, et
+     c'est la seule version qui tienne. Première tentative, la bande allait
+     jusqu'au bas de la boîte : au niveau du prénom le dessin était encore
+     à moitié opaque, donc « Nora » en gras sombre s'écrivait sur un
+     legging bleu nuit. Illisible, et surtout ça ressemblait à une erreur.
+     Ici le personnage est complètement dissous 120 px avant le bas, soit
+     exactement là où commence son prénom : le texte se lit toujours sur
+     le fond de page, jamais sur du dessin. */
+  --fondu: linear-gradient(to bottom, #000 calc(100% - 226px), transparent calc(100% - 136px));
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -242,7 +301,15 @@
    qui doit tenir la seconde. C'est ce qui rend le recadrage déterministe
    et permet de n'avoir qu'un seul fichier par Guide.
    ════════════════════════════════════════════════════════════════════ */
-.pg_presence { width: 112px; height: 140px; }
+.pg_presence {
+  width: 140px;
+  height: 175px;
+  /* Le buste est déjà coupé à la poitrine par le recadrage. Une bande
+     courte suffit à effacer cette coupe nette : le Guide entre dans
+     l'écran au lieu d'être une photo découpée. L'étincelle du haut tombe
+     à ~78 % de la fenêtre, la bande commence à 85 %. */
+  --fondu: linear-gradient(to bottom, #000 calc(100% - 26px), transparent 100%);
+}
 
 .pg_presence .pgImage {
   inset: auto;
@@ -263,26 +330,59 @@
   max-width: none;
 }
 
-.pg_presence .pgHalo { width: 150%; height: 128%; }
+/* La lumière du buste déborde jusque SOUS LE TEXTE de l'étape : c'est
+   elle qui soude le personnage et sa phrase en un seul bloc d'accueil.
+   Cadrée sur le buste seul, elle redevenait une pastille. */
+.pg_presence .pgHalo { width: 235%; height: 150%; left: 62%; }
+
+/* La conclusion est le seul écran où la lumière est CENTRÉE et non bornée
+   par une fenêtre : à 188 % elle dépassait la largeur de l'écran des deux
+   côtés. Rien ne se voyait (le dégradé y est déjà éteint) mais la page se
+   déclarait plus large qu'elle, ce qui est le genre de détail qui finit
+   par produire un vrai débord ailleurs. */
+.pg_fin .pgHalo { width: 150%; }
 
 /* Forme « fin » : le même fichier, en grand, sur l'écran de conclusion. */
-.pg_fin { width: 168px; height: 224px; }
+.pg_fin {
+  width: 264px;
+  height: 352px;
+  --fondu: linear-gradient(to bottom, #000 calc(100% - 88px), transparent 100%);
+}
 
 /* ── Le texte de la slide ────────────────────────────────────────── */
+/* ⚠️ IL EST POSÉ SUR LE PERSONNAGE, pas en dessous, et c'est le geste
+   qui rend la refonte possible. En dessous, ces quatre lignes coûtaient
+   ~110 px de hauteur, pris directement sur le Guide. Ici elles occupent
+   la zone où il se dissout : elles ne lui coûtent RIEN, et le
+   personnage récupère tout, d'un coup.
+
+   La lisibilité n'est pas un pari : le fondu du bas rend cette bande
+   quasi transparente, donc le texte se lit sur le fond de page, pas sur
+   du dessin. Les contrastes mesurés y sont les mêmes qu'avant. */
 .identite {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-top: 16px;
+  padding: 0 16px 2px;
   text-align: center;
+  pointer-events: none;   /* le geste de glisse traverse le texte */
 }
 
+/* Seul « En savoir plus » reprend la main : c'est la seule chose à
+   toucher dans ce bloc. */
+.identite button { pointer-events: auto; }
+
 .nom {
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 800;
   color: var(--text-0);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
 }
 
 /* ⚠️ MESURÉ : `var(--accent)` (#A78BFA) tombe à 2,58:1 sur le fond clair,
@@ -290,10 +390,11 @@
    #2BD4A0 dans `admin.module.css`, même remède : un violet assombri en
    clair, l'accent tel quel en sombre où il passe à 10,6:1. */
 .trait {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #6941C6;
   line-height: 1.3;
+  letter-spacing: 0.01em;
 }
 
 :global([data-theme="dark"]) .trait { color: var(--accent); }
@@ -307,17 +408,21 @@
   margin-top: 2px;
 }
 
-.secondaire2 {
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--text-soft);
+/* La phrase de manière (« Elle structure davantage… ») est descendue
+   dans la feuille « En savoir plus ». Elle prenait deux lignes sur le
+   personnage pour dire ce que le couple trait + « tu préfères… » dit
+   déjà en un coup d'oeil. Rien n'est perdu : elle ouvre le détail. */
+.feuilleManiere {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-1);
   text-wrap: pretty;
-  margin-top: 6px;
 }
 
 .enSavoirPlus {
   align-self: center;
-  margin-top: 8px;
+  margin-top: 4px;
   padding: 6px 8px;
   font-size: 11.5px;
   font-weight: 600;
@@ -340,7 +445,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding-top: 12px;
+  padding: 12px 16px 0;
 }
 
 .points { display: flex; align-items: center; }
@@ -423,14 +528,14 @@
 }
 
 .note {
-  margin: 10px 0 0;
+  margin: 10px 16px 0;
   text-align: center;
   font-size: 11.5px;
   color: var(--text-soft);
 }
 
 .erreur {
-  margin: 10px 0 0;
+  margin: 10px 16px 0;
   text-align: center;
   font-size: 12.5px;
   line-height: 1.45;
@@ -462,12 +567,27 @@
 
    ⚠️ L'étiquette « TON GUIDE » est SUPPRIMÉE. Une phrase à la première
    personne signée d'un prénom n'a pas besoin qu'on explique que c'est
-   un guide qui parle. */
+   un guide qui parle.
+
+   ⚠️ LE BUSTE PART DU BORD DE L'ÉCRAN (marge négative de 16 px, celle
+   du conteneur). Aligné dans la colonne de texte, il se lisait comme une
+   vignette rangée dans un en-tête. Au bord, il entre dans la page, et
+   c'est la même idée qu'à l'écran de choix : le Guide n'est pas posé
+   dans une zone, il occupe l'écran avec nous. Sur desktop la marge
+   revient à zéro, un conteneur centré au milieu du vide n'a pas de bord
+   dont on puisse venir.
+
+   ⚠️ ALIGNÉ EN BAS et pas au centre : avec un buste plus haut, un
+   alignement centré fait flotter la phrase au milieu de nulle part. En
+   bas, le prénom et la phrase arrivent à hauteur de poitrine, et les
+   deux se lisent comme un même bloc. */
 .presence {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-end;
+  gap: 12px;
   padding-bottom: 16px;
+  margin-left: -16px;
 }
 
 .presenceMots {
@@ -476,6 +596,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  padding-bottom: 10px;
 }
 
 .presenceNom {
@@ -626,14 +747,18 @@
   padding: 20px 0;
 }
 
-/* Ordre à l'écran : portrait, puis le prénom en petit, puis la phrase. */
+/* Ordre à l'écran : portrait, puis le prénom en petit, puis la phrase.
+   La marge du haut est courte (4 px) parce que le portrait se dissout
+   maintenant sur ses 78 derniers pixels : l'espace est déjà là, dans
+   l'image. Les 22 px d'avant, ajoutés à ce fondu, éloignaient le Guide
+   de sa propre phrase. */
 .finNom {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-soft);
-  margin: 22px 0 0;
+  margin: 4px 0 0;
 }
 
 .finPhrase {
@@ -789,28 +914,38 @@
 @media (max-height: 720px) {
   .conteneur { padding-top: calc(env(safe-area-inset-top) + 12px); padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
   .titre { font-size: 22px; margin-bottom: 4px; }
+  .enTete .titre { font-size: 18px; }
   .ligneEgalite { font-size: 12px; margin-bottom: 6px; }
-  .identite { padding-top: 10px; gap: 1px; }
-  .nom { font-size: 21px; }
+  .identite { gap: 1px; }
+  .nom { font-size: 26px; }
   .pour { font-size: 13px; }
-  .secondaire2 { font-size: 12px; margin-top: 4px; }
-  .enSavoirPlus { margin-top: 2px; min-height: 28px; padding: 4px 8px; }
+  .enSavoirPlus { margin-top: 0; min-height: 28px; padding: 4px 8px; }
+  .pg_scene { --fondu: linear-gradient(to bottom, #000 calc(100% - 196px), transparent calc(100% - 116px)); }
   .ctaSlide { margin-top: 10px; }
   .cta { min-height: 46px; padding: 12px 10px; }
   .nav { padding-top: 6px; }
   .note { margin-top: 6px; }
-  /* Le questionnaire aussi. ⚠️ Le buste rend 20 px de hauteur, pas plus :
+  /* Le questionnaire aussi. ⚠️ Le buste rend 30 px de hauteur, pas plus :
      on resserre la typo et les marges autour de lui AVANT de le réduire,
      parce qu'un Guide miniaturisé est exactement le défaut qu'on corrige.
-     À 96 × 120 la tête fait encore ~69 px, donc un visage, pas une icône. */
-  .presence { padding-bottom: 12px; gap: 12px; }
-  .pg_presence { width: 96px; height: 120px; }
+     À 118 × 148 la tête fait encore ~85 px, donc un visage, pas une icône. */
+  .presence { padding-bottom: 8px; gap: 10px; }
+  .libelle { margin-bottom: 4px; }
+  .pg_presence { width: 118px; height: 148px; --fondu: linear-gradient(to bottom, #000 calc(100% - 22px), transparent 100%); }
+  .presenceMots { padding-bottom: 6px; }
   .presenceNom { font-size: 16px; }
   .presencePhrase { font-size: 13.5px; }
-  .jauge { margin-bottom: 14px; }
+  .pg_fin { width: 228px; height: 304px; --fondu: linear-gradient(to bottom, #000 calc(100% - 76px), transparent 100%); }
+  /* ⚠️ CES QUATRE VALEURS PAIENT LE BUSTE. Il passe de 120 à 148 px de
+     haut sur un petit téléphone, et la section la plus dense (« Ton
+     corps », quatre champs) débordait alors de 34 px. On reprend ces
+     34 px sur les respirations autour du formulaire, jamais sur le
+     Guide : c'est exactement la règle qui a présidé à toute la passe. */
+  .jauge { margin-bottom: 10px; }
   .titreLigne { margin-bottom: 4px; }
-  .questions { margin-top: 10px; }
-  .pied { padding-top: 16px; }
+  .questions { margin-top: 8px; }
+  .champs { gap: 12px; }
+  .pied { padding-top: 12px; }
 }
 
 /* ── Desktop : la même scène, avec plus d'air ────────────────────── */
@@ -819,13 +954,21 @@
 @media (min-width: 900px) {
   .conteneur { padding-top: 40px; padding-bottom: 32px; }
   .titre { font-size: 30px; }
-  .pg_scene { max-height: 470px; }
-  .pg_fin { width: 198px; height: 264px; }
-  .nom { font-size: 27px; }
+  .enTete .titre { font-size: 23px; }
+  /* ⚠️ LE SEUL ARBITRAGE VRAIMENT DIFFÉRENT DU MOBILE. Sur un écran de
+     bureau, la hauteur disponible ferait dériver un personnage de plus
+     de 700 px de haut, plus grand que nature et sans rapport avec le
+     reste de l'application. Il est donc borné ici, et NULLE PART sur
+     téléphone, qui est la référence. */
+  .pg_scene { max-height: 560px; }
+  .pg_fin { width: 300px; height: 400px; --fondu: linear-gradient(to bottom, #000 calc(100% - 100px), transparent 100%); }
+  .nom { font-size: 34px; }
   /* Le desktop n'est pas une autre composition : c'est la même, avec un
      buste un peu plus grand et une phrase un peu plus lisible. */
-  .pg_presence { width: 128px; height: 160px; }
-  .presence { gap: 18px; padding-bottom: 20px; }
+  .pg_presence { width: 164px; height: 205px; --fondu: linear-gradient(to bottom, #000 calc(100% - 30px), transparent 100%); }
+  /* Pas de débord au bord : un conteneur centré au milieu du vide n'a pas
+     de bord d'écran dont le Guide puisse venir. */
+  .presence { gap: 18px; padding-bottom: 20px; margin-left: 0; }
   .presenceNom { font-size: 19px; }
   .presencePhrase { font-size: 15px; }
 }

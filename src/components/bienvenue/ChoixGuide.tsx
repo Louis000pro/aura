@@ -121,10 +121,16 @@ export default function ChoixGuide({
 
   return (
     <>
-      <h1 className={s.titre}>Choisis ton guide</h1>
-      <p className={s.ligneEgalite}>
-        Deux façons de t&apos;accompagner. La même intelligence Vaiiya.
-      </p>
+      {/* La consigne a maigri exprès. Elle reste un h1, elle ne domine
+          simplement plus la personne qu'on est en train de rencontrer :
+          on lit « Choisis ton guide » une fois, on regarde Nora ensuite,
+          et c'est le bouton qui redit quoi faire. */}
+      <div className={s.enTete}>
+        <h1 className={s.titre}>Choisis ton guide</h1>
+        <p className={s.ligneEgalite}>
+          Deux façons de t&apos;accompagner. La même intelligence Vaiiya.
+        </p>
+      </div>
 
       <div
         ref={pisteRef}
@@ -170,18 +176,21 @@ export default function ChoixGuide({
                  pendant qu'on regarde Nora. */
               inert={i !== index}
             >
+              {/* ⚠️ LE TEXTE EST DANS LA SCÈNE, posé sur le bas du
+                  personnage là où il se dissout. Sorti de la scène, il
+                  reprendrait ~110 px de hauteur au Guide, c'est-à-dire
+                  précisément ce qui le rendait petit. */}
               <div className={s.scene}>
                 <PortraitGuide guide={f.id} forme="scene" anime={!reduit} />
-              </div>
 
-              <div className={s.identite}>
-                <span className={s.nom}>{f.nom}</span>
-                <span className={s.trait}>{f.trait}</span>
-                <span className={s.pour}>{f.pour}</span>
-                <span className={s.secondaire2}>{f.maniere}</span>
-                <button type="button" className={s.enSavoirPlus} onClick={() => setDetail(f)}>
-                  En savoir plus
-                </button>
+                <div className={s.identite}>
+                  <span className={s.nom}>{f.nom}</span>
+                  <span className={s.trait}>{f.trait}</span>
+                  <span className={s.pour}>{f.pour}</span>
+                  <button type="button" className={s.enSavoirPlus} onClick={() => setDetail(f)}>
+                    En savoir plus
+                  </button>
+                </div>
               </div>
 
               <button
@@ -240,6 +249,10 @@ export default function ChoixGuide({
         >
           <div className={s.feuille} onClick={(e) => e.stopPropagation()}>
             <span className={s.feuilleNom}>{detail.nom}</span>
+            {/* La phrase de manière ouvre le détail. Elle était sur la
+                scène, où elle prenait deux lignes de personnage pour
+                dire ce que le trait et le « tu préfères… » disent déjà. */}
+            <p className={s.feuilleManiere}>{detail.maniere}</p>
             <ul className={s.feuilleListe}>
               {detail.detail.map((d) => <li key={d}>{d}</li>)}
             </ul>
