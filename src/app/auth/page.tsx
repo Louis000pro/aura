@@ -9,6 +9,7 @@ import {
   User, Mail, Lock, CheckCircle2, AtSign, UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { destinationDepuisUrl } from "@/lib/destinationInterne";
 import FondPresentation from "@/components/FondPresentation";
 
 /* Système « D » : le bouton d'action principal est TOUJOURS violet vers magenta,
@@ -150,11 +151,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
    On n'accepte qu'un chemin interne, jamais une URL absolue, sinon
    n'importe qui peut fabriquer un lien de login qui renvoie ailleurs.
    Lu sur window plutôt qu'avec useSearchParams : pas de Suspense à poser. */
-function destinationApres(): string {
-  if (typeof window === "undefined") return "/";
-  const n = new URLSearchParams(window.location.search).get("next");
-  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
-}
+const destinationApres = () => destinationDepuisUrl("/");
 
 export default function AuthPage() {
   const router = useRouter();

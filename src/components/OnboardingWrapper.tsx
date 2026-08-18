@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import OnboardingModal, { type OnboardingData } from "@/components/OnboardingModal";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
 import { createClient } from "@/lib/supabase";
+import { enregistrerProfil } from "@/lib/profilOnboarding";
 import { useGuidedTour, hasTourBeenCompleted } from "@/context/GuidedTourContext";
 
 export default function OnboardingWrapper() {
@@ -62,25 +63,10 @@ export default function OnboardingWrapper() {
   const handleComplete = async (data: OnboardingData) => {
     if (!user) return;
 
-    // Sauvegarde le contexte côté client (le coach IA s'en sert)
-    try { localStorage.setItem(`vaiiya_ob_${user.id}`, JSON.stringify(data)); } catch { /* ignore */ }
-
-    const isCompleted = !!(data.age && data.weight && data.gender && data.goals.length > 0 && data.level && data.sessionsPerWeek && data.mealsPerDay && data.diet);
-
-    const supabase = createClient();
-    await supabase.from("profiles").upsert({
-      id:                       user.id,
-      onboarding_age:           data.age           ? parseInt(data.age)            : null,
-      onboarding_height:        data.height        ? parseInt(data.height)         : null,
-      onboarding_weight:        data.weight        ? parseFloat(data.weight)       : null,
-      onboarding_gender:        data.gender        || null,
-      onboarding_goals:         data.goals.length  ? data.goals                   : null,
-      onboarding_level:         data.level         || null,
-      onboarding_sessions_week: data.sessionsPerWeek ? parseInt(data.sessionsPerWeek) : null,
-      onboarding_meals_day:     data.mealsPerDay   ? parseInt(data.mealsPerDay)   : null,
-      onboarding_diet:          data.diet          || null,
-      onboarding_completed:     isCompleted,
-    }, { onConflict: "id" });
+    // L'écriture des dix colonnes vit dans `lib/profilOnboarding` : le
+    // parcours /bienvenue remplit exactement les mêmes, et deux copies de
+    // la règle de complétude donneraient deux vérités sur la même personne.
+    const isCompleted = await enregistrerProfil(user.id, data);
 
     setShowModal(false);
     if (!isCompleted) {

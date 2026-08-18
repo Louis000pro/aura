@@ -21,7 +21,11 @@ const defaultData: OnboardingData = {
   goals: [], level: "", sessionsPerWeek: "", mealsPerDay: "", diet: "",
 };
 
-const GOALS = [
+/* ⚠️ Ces listes sont EXPORTÉES : le parcours /bienvenue pose les mêmes
+   questions et doit proposer exactement les mêmes réponses. Les recopier
+   ailleurs, c'est se réveiller un jour avec deux questionnaires qui ne
+   donnent pas les mêmes valeurs dans la même colonne. */
+export const GOALS = [
   { id: "masse",      label: "Prise de masse",   emoji: "💪" },
   { id: "poids",      label: "Perte de poids",   emoji: "🔥" },
   { id: "force",      label: "Force",             emoji: "🏋️" },
@@ -30,21 +34,21 @@ const GOALS = [
   { id: "souplesse",  label: "Souplesse",         emoji: "🧘" },
 ];
 
-const LEVELS = [
+export const LEVELS = [
   { id: "debutant",      label: "Débutant",       sub: "< 6 mois" },
   { id: "intermediaire", label: "Intermédiaire",  sub: "6 mois – 2 ans" },
   { id: "avance",        label: "Avancé",         sub: "> 2 ans" },
 ];
 
-const GENDERS = [
+export const GENDERS = [
   { id: "homme", label: "Homme" },
   { id: "femme", label: "Femme" },
   { id: "autre", label: "Autre" },
 ];
 
-const SESSIONS = ["1", "2", "3", "4", "5", "6", "7"];
-const MEALS    = ["2", "3", "4", "5", "6+"];
-const DIETS    = [
+export const SESSIONS = ["1", "2", "3", "4", "5", "6", "7"];
+export const MEALS    = ["2", "3", "4", "5", "6+"];
+export const DIETS    = [
   { id: "omnivore",    label: "Omnivore",   emoji: "🥩" },
   { id: "vegetarien",  label: "Végétarien", emoji: "🥗" },
   { id: "vegan",       label: "Vegan",      emoji: "🌱" },
