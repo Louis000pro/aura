@@ -27,20 +27,13 @@ import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import { normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
 import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type GuideRef } from "@/lib/guides";
+import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
   resolveWhen, dayLabel, dayLabelLong, dayTitle, fetchDay, fetchRange, hasSeance, saveDay, prochainsJours,
   ctxFromLieu, readLieu, loadLieu, persistLieu, readVariant, weekDates, todayYmd, normalizeExercises, previewWeek,
   PLANNING_TYPE_BY_CATEGORY, type PlanningDay, type GenInput,
 } from "@/lib/planning";
-
-/* ── Le Guide qui parle ──────────────────────────────────────────────
-   Toutes les phrases de l'assistant passent par `voix()` / `voixAction()`
-   (src/lib/guides.ts). Aucune réplique n'a encore de variante Nora/Sasha,
-   donc `null` rend exactement le texte que l'app affichait avant. Quand le
-   choix du Guide existera, c'est CETTE ligne qui devient une lecture de
-   `useGuideActif()` : aucun des appels ci-dessous n'aura à bouger. */
-const GUIDE: GuideRef = null;
 
 type MemoryAction =
   | { type: "save"; category?: string; fact?: string }
@@ -272,6 +265,25 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      clic et ne propose alors que ce qui reste possible (s'entraîner). On ne
      limite jamais le fait de créer ni de s'entraîner, seulement le rangement. */
   const [bibliothequePleine, setBibliothequePleine] = useState(false);
+
+  /* ── Le Guide qui parle ──────────────────────────────────────────────
+     Toutes les phrases de l'assistant passent par `voix()` / `voixAction()`
+     (src/lib/guides.ts), et depuis le 2026-08-19 elles ont une variante
+     Nora et une variante Sasha.
+
+     ⚠️ LU DANS UNE RÉF, PAS DIRECTEMENT DANS LES CALLBACKS, et ce n'est pas
+     de la paresse. Une vingtaine de `useCallback` d'ici prononcent une
+     phrase ; passer `guide` en dépendance les recréerait tous à chaque
+     changement de Guide, et surtout il suffirait d'en oublier un pour
+     qu'une phrase reste figée sur l'ancien Guide, sans erreur ni symptôme.
+     Une réf lue au moment où l'on parle ne peut pas se désynchroniser.
+     C'est le même motif que `liveStatsRef` juste en dessous. */
+  const { guide } = useGuideActif();
+  const guideRef = useRef<GuideRef>(guide);
+  // Écrit dans un effet, jamais pendant le rendu : un rendu concurrent peut
+  // être abandonné, et une réf écrite dans un rendu jeté est une valeur
+  // fantôme.
+  useEffect(() => { guideRef.current = guide; }, [guide]);
 
   const userContextRef = useRef<UserContext | null>(null);
   const liveStatsRef = useRef<LiveStats | null>(null);
@@ -517,7 +529,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       await supabase.from("ai_memories").delete().in("id", ids);
       const idSet = new Set(ids);
       memoriesRef.current = memoriesRef.current.filter((mm) => !idSet.has(mm.id));
-      setMemoryNotice(voix(GUIDE, "memoire.oubliee"));
+      setMemoryNotice(voix(guideRef.current, "memoire.oubliee"));
       return;
     }
 
@@ -537,7 +549,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .single();
       if (!error && data) {
         memoriesRef.current = [data as AiMemory, ...memoriesRef.current];
-        setMemoryNotice(voix(GUIDE, "memoire.retenue"));
+        setMemoryNotice(voix(guideRef.current, "memoire.retenue"));
       }
     }
   }, [user?.id]);
@@ -594,7 +606,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         if (next) { from = next; src = weekMap[next]; }
       }
       if (!hasSeance(src) || !from) {
-        say(voix(GUIDE, "impasse.move_introuvable"));
+        say(voix(guideRef.current, "impasse.move_introuvable"));
         return;
       }
       // Empêchement sans destination (« je ne peux pas jeudi ») → on choisit
@@ -609,12 +621,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           ?? weekDates().find((d) => d >= todayYmd() && d !== from && rest(d))
           ?? null;
         if (!to) {
-          say(voix(GUIDE, "impasse.move_sans_jour"));
+          say(voix(guideRef.current, "impasse.move_sans_jour"));
           return;
         }
       }
       if (from === to) {
-        say(voix(GUIDE, "impasse.move_deja_prevu", { jour: dayLabelLong(to) }));
+        say(voix(guideRef.current, "impasse.move_deja_prevu", { jour: dayLabelLong(to) }));
         return;
       }
       const movedDay: PlanningDay = { ...src, date: to, status: "planned" };
@@ -647,9 +659,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         // Lieu incomplet : on le demande en puces plutôt que de rester muet
         // sur une promesse. La demande d'origine repart dès qu'on a la réponse.
         if (!saved.location) {
-          poserQuestion(voix(GUIDE, "question.lieu_semaine"), { choix: CHOIX_LIEU, genre: "lieu", relance: text });
+          poserQuestion(voix(guideRef.current, "question.lieu_semaine"), { choix: CHOIX_LIEU, genre: "lieu", relance: text });
         } else {
-          poserQuestion(voix(GUIDE, "question.equip"), { choix: CHOIX_EQUIP, genre: "equip", relance: text });
+          poserQuestion(voix(guideRef.current, "question.equip"), { choix: CHOIX_EQUIP, genre: "equip", relance: text });
         }
         return;
       }
@@ -676,7 +688,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .filter((d) => d.date >= todayYmd() && existing[d.date]?.status !== "done");
       const nbSeances = writes.filter(hasSeance).length;
       if (nbSeances === 0) {
-        say(voix(GUIDE, "impasse.regen_semaine_finie"));
+        say(voix(guideRef.current, "impasse.regen_semaine_finie"));
         return;
       }
       const adjustLabel = adjust === "leger" ? " · plus légère"
@@ -699,12 +711,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (action.intent === "plan_library") {
       const day = resolveWhen(action.when || "aujourd_hui");
       if (!day) {
-        say(voix(GUIDE, "impasse.library_sans_jour"));
+        say(voix(guideRef.current, "impasse.library_sans_jour"));
         return;
       }
       const title = (action.title || "").trim();
       if (!title) {
-        say(voix(GUIDE, "impasse.library_sans_nom"));
+        say(voix(guideRef.current, "impasse.library_sans_nom"));
         return;
       }
       const supabase = createClient();
@@ -717,7 +729,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         .limit(1);
       const row = data?.[0] as { id: string; title: string; category: string | null; difficulty: string | null; exercise_list: unknown } | undefined;
       if (!row) {
-        say(voix(GUIDE, "impasse.library_introuvable", { titre: title }));
+        say(voix(guideRef.current, "impasse.library_introuvable", { titre: title }));
         return;
       }
       const category = normalizeWorkoutCategory(row.category);
@@ -820,7 +832,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (e) {
       const detail = (e as { message?: string })?.message ?? String(e);
-      say(`⚠️ Modification du planning échouée — ${detail}`);
+      say(`⚠️ Modification du planning échouée : ${detail}`);
     } finally {
       setActionLoading(false);
     }
@@ -883,7 +895,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (location === "maison" && !equip) {
         // Une seule question à la fois : le matériel arrive maintenant, et
         // c'est lui qui relancera la demande.
-        poserQuestion(voix(GUIDE, "question.equip"), {
+        poserQuestion(voix(guideRef.current, "question.equip"), {
           choix: CHOIX_EQUIP, genre: "equip", relance: attente,
         });
         return;
@@ -1011,7 +1023,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
        ici, c'était une demande sans réponse et sans explication. */
     const { location: lieu, equip } = readLieu(user.id);
     if (!lieu) {
-      poserQuestion(voix(GUIDE, "question.lieu"), {
+      poserQuestion(voix(guideRef.current, "question.lieu"), {
         choix: CHOIX_LIEU, genre: "lieu", relance: text,
       });
       return;
@@ -1081,11 +1093,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // qu'elle soit touchée (puce) ou tapée à la main (outil save_lieu).
     if (!location) {
       attenteRef.current = text;
-      return { texte: voix(GUIDE, "question.lieu"), question: { choix: CHOIX_LIEU, genre: "lieu", relance: text } };
+      return { texte: voix(guideRef.current, "question.lieu"), question: { choix: CHOIX_LIEU, genre: "lieu", relance: text } };
     }
     if (location === "maison" && !equip) {
       attenteRef.current = text;
-      return { texte: voix(GUIDE, "question.equip"), question: { choix: CHOIX_EQUIP, genre: "equip", relance: text } };
+      return { texte: voix(guideRef.current, "question.equip"), question: { choix: CHOIX_EQUIP, genre: "equip", relance: text } };
     }
     return null;
   }, [user?.id]);
@@ -1111,7 +1123,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const count = parseInt(localStorage.getItem(dayKey) || "0") || 0;
       if (count >= 12) {
         setMessages((prev) => prev.map((m) => m.id === assistantId
-          ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages/jour. Passe au plan supérieur pour un coach illimité — je t'emmène voir les offres…", streaming: false }
+          ? { ...m, content: "🚀 Tu as atteint ta limite gratuite de 12 messages par jour. Passe au plan supérieur pour continuer sans limite, je t'emmène voir les offres…", streaming: false }
           : m));
         setIsStreaming(false);
         setTimeout(() => router.push("/premium"), 1900);
@@ -1157,6 +1169,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           currentPage: pathname,
           memories: memoriesRef.current,
           memoryEnabled: true,
+          // Le prénom et la manière de parler du Guide. Le serveur en tire
+          // un bloc de ton COURT ; les règles et les données ne changent pas.
+          guide: guideRef.current,
           // Lieu connu → le chat ne redemande pas « salle ou maison ? »
           lieu: user?.id ? (localStorage.getItem(`vaiiya_lieu_${user.id}`) || null) : null,
           lieu_equip: user?.id ? (localStorage.getItem(`vaiiya_lieu_equip_${user.id}`) || null) : null,
@@ -1255,19 +1270,19 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           const choix = normaliserChoix(recue.choix);
           if (choix.length >= 2) {
             questionAttachee = { choix, genre: "libre" };
-            cleaned = voixAction(GUIDE, recue);
+            cleaned = voixAction(guideRef.current, recue);
           }
         }
         // Filet : le coach parle normalement sur ces tours depuis que la
         // décision d'action est sortie de son prompt, mais un flux coupé ou
         // un refus laisserait une bulle vide.
-        if (!cleaned) cleaned = voixAction(GUIDE, recue);
+        if (!cleaned) cleaned = voixAction(guideRef.current, recue);
       }
 
       // Ni texte ni action : ça ne doit JAMAIS passer inaperçu. Une version
       // précédente supprimait la bulle vide, du coup l'utilisateur envoyait un
       // message et il ne se passait rien du tout, sans la moindre explication.
-      if (!cleaned) cleaned = voix(GUIDE, "panne.sans_reponse");
+      if (!cleaned) cleaned = voix(guideRef.current, "panne.sans_reponse");
 
       setMessages((prev) => {
         const next = prev.map((m) => m.id === assistantId
@@ -1289,7 +1304,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
       setMessages((prev) => prev.map((m) => m.id === assistantId
-        ? { ...m, content: voix(GUIDE, "panne.erreur"), streaming: false } : m));
+        ? { ...m, content: voix(guideRef.current, "panne.erreur"), streaming: false } : m));
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
@@ -1332,7 +1347,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // le lieu connu, et jamais en même temps que la première question.
       if (location === "maison" && !readLieu(user.id).equip) {
         setMessages((prev) => [...prev, {
-          role: "assistant" as const, content: voix(GUIDE, "question.equip"), id: uid(),
+          role: "assistant" as const, content: voix(guideRef.current, "question.equip"), id: uid(),
           question: { choix: CHOIX_EQUIP, genre: "equip" as const, relance },
         }]);
         return;

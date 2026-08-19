@@ -6,6 +6,7 @@ import { buildMemoryPrompt, type AiMemory } from "@/lib/aiMemory";
 import { type ChatEvent } from "@/lib/assistantTools";
 import { deciderAction, cadreAction } from "@/lib/assistantRouter";
 import { garderIA, PLAFONDS, refusTaille } from "@/lib/aiLimits";
+import { ouvertureGuide, tonDuGuide, type GuideRef } from "@/lib/guides";
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -139,7 +140,8 @@ function buildSystemPrompt(
   equip?: string | null,
   currentPage?: string | null,
   memories?: AiMemory[] | null,
-  memoryEnabled?: boolean
+  memoryEnabled?: boolean,
+  guide?: GuideRef
 ): string {
   // ── Repère temporel (fuseau France) ──
   let dateContext = "";
@@ -151,9 +153,9 @@ function buildSystemPrompt(
     dateContext = `\n\nREPÈRE TEMPOREL (très important) :\nNous sommes aujourd'hui ${dateLongue}. Le jour de la semaine EN COURS est "${jourCap}".\n- Quand l'utilisateur dit "aujourd'hui", "séance du jour", "ma séance", "ce soir", etc., tu te bases TOUJOURS sur ${jourCap}.\n- Si tu proposes la séance du jour depuis son programme, prends la ligne du jour "${jourCap}" — JAMAIS Lundi par défaut.\n- "Demain" = le jour suivant ${jourCap}, "hier" = le jour précédent.`;
   } catch { /* ignore */ }
 
-  const base = `Tu es Vaiiya, un coach de santé IA premium, bienveillant, motivant et expert en nutrition, fitness et bien-être.
+  const base = `${ouvertureGuide(guide ?? null)}
 Tu réponds toujours en français, de manière concise et encourageante (2-4 phrases maximum sauf si on te demande un plan détaillé).
-Tu es personnalisé, précis et tu utilises des données réelles de l'utilisateur quand elles sont disponibles.${dateContext}
+Tu réponds de façon personnalisée et précise, en t'appuyant sur les données réelles de l'utilisateur quand elles sont disponibles.${dateContext}
 
 DOMAINES AUTORISÉS (tu ne réponds QU'à ces sujets) :
 - Sport, entraînement, musculation, cardio, mobilité, récupération, performance
@@ -207,7 +209,7 @@ ${lieu === "salle"
   : `Lieu d'entraînement inconnu → reste NEUTRE sur le lieu dans ta phrase (ne dis ni "en salle" ni "à la maison") : l'app posera elle-même la question avec des réponses à toucher, puis reprendra la demande. Tu ne DÉDUIS JAMAIS le lieu et tu n'en SUPPOSES aucun.`}
 Quand l'utilisateur t'indique son lieu d'entraînement (ex: "à la maison", "en salle", "chez moi", "à la gym", "j'ai des haltères"), tu n'as rien à faire : l'app le retient toute seule. Accuse simplement réception en une phrase.
 
-${buildSiteKnowledgePrompt(currentPage ?? undefined, !memoryEnabled)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}`;
+${buildSiteKnowledgePrompt(currentPage ?? undefined, !memoryEnabled)}${memoryEnabled ? buildMemoryPrompt(memories) : ""}${programme ? `\n\nProgramme actuel :\n${programme}` : ""}${tonDuGuide(guide ?? null)}`;
 
   // ── Bloc stats du jour ──
   const statsBlock = live ? `
@@ -319,6 +321,10 @@ export async function POST(req: NextRequest) {
   let currentPage: string | null = null;
   let memories: AiMemory[] | null = null;
   let memoryEnabled = false;
+  /* Le Guide vient du client (GuideContext). Il ne sert QU'À la formulation :
+     une valeur absente ou fantaisiste retombe sur `null`, donc sur le prompt
+     commun, et personne ne perd de fonctionnalité. */
+  let guide: GuideRef = null;
   let maxTokens = 600;
 
   try {
@@ -334,6 +340,7 @@ export async function POST(req: NextRequest) {
     currentPage = body.currentPage ?? null;
     memories = body.memories ?? null;
     memoryEnabled = body.memoryEnabled === true;
+    guide = body.guide === "nora" || body.guide === "sasha" ? body.guide : null;
     // Les tâches de génération (programme, plan repas) peuvent demander plus de tokens
     // pour éviter un JSON tronqué. Plafonné pour rester raisonnable.
     if (body.maxTokens) maxTokens = Math.min(Math.max(Number(body.maxTokens) || 800, 800), 4000);
@@ -383,7 +390,7 @@ export async function POST(req: NextRequest) {
   const action = ndjson ? await deciderAction(historique) : null;
 
   const systemPrompt =
-    buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled) +
+    buildSystemPrompt(userContext, pseudo, liveStats, programme, richProfile, lieu, lieuEquip, currentPage, memories, memoryEnabled, guide) +
     (ndjson ? cadreAction(action) : "");
 
   try {

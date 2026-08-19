@@ -27,13 +27,17 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion, type PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { GuideId } from "@/lib/guides";
+import { PORTRAIT_GUIDE, PRENOM_GUIDE, type GuideId } from "@/lib/guides";
 import PortraitGuide from "./PortraitGuide";
 import s from "./bienvenue.module.css";
 
 type Fiche = {
   id: GuideId;
   nom: string;
+  /* ⚠️ `trait` et `pour` ne s'écrivent PAS ici : ils viennent de
+     `PORTRAIT_GUIDE` (guides.ts), parce que la ligne « Ton Guide » des
+     paramètres montre exactement les mêmes mots. Deux copies auraient
+     divergé au premier ajustement. */
   trait: string;
   pour: string;
   /** ⚠️ CE SONT SES MOTS, PAS UNE DESCRIPTION. Le Guide parle, à la
@@ -58,9 +62,8 @@ type Fiche = {
 const FICHES: Fiche[] = [
   {
     id: "nora",
-    nom: "Nora",
-    trait: "Calme et méthodique",
-    pour: "Tu préfères comprendre avant d'agir.",
+    nom: PRENOM_GUIDE.nora,
+    ...PORTRAIT_GUIDE.nora,
     voix: "On pose les bases, je t'explique au passage.",
     detail: [
       "Des réponses un peu plus longues, avec le raisonnement derrière la consigne.",
@@ -70,9 +73,8 @@ const FICHES: Fiche[] = [
   },
   {
     id: "sasha",
-    nom: "Sasha",
-    trait: "Direct et dynamique",
-    pour: "Tu préfères avancer puis ajuster en chemin.",
+    nom: PRENOM_GUIDE.sasha,
+    ...PORTRAIT_GUIDE.sasha,
     voix: "On y va, je t'explique en route si tu veux.",
     detail: [
       "Des réponses courtes, la consigne d'abord.",

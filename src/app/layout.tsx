@@ -13,6 +13,7 @@ import PremiumBanner from "@/components/PremiumBanner";
 import PresenceDuJour from "@/components/PresenceDuJour";
 import CelebrationRang from "@/components/rang/CelebrationRang";
 import PopupNouveautes from "@/components/maj/PopupNouveautes";
+import { GuideProvider } from "@/context/GuideContext";
 import { AssistantProvider } from "@/context/AssistantContext";
 import { WorkoutLaunchProvider } from "@/context/WorkoutLaunchContext";
 import AssistantSheet from "@/components/AssistantSheet";
@@ -267,6 +268,18 @@ export default function RootLayout({
           <PresenceDuJour />
           {/* Le rang peut monter n'importe où : la célébration vit au-dessus de tout. */}
           <CelebrationRang />
+          {/* ⚠️ `GuideProvider` ENGLOBE `AssistantProvider`, et l'ordre n'est
+              pas décoratif : c'est le cerveau de l'assistant qui lit le
+              Guide pour choisir ses phrases, donc il doit être à
+              l'intérieur. Monté ici depuis le 2026-08-19 (il ne vivait que
+              sur `/bienvenue`) parce que le Guide parle maintenant dans la
+              conversation et se change dans les paramètres : deux surfaces
+              globales, qu'un provider de route ne peut pas servir.
+              ⚠️ Tant que `20260818_guide_id.sql` n'est pas collé, la
+              lecture échoue, l'état vaut « inconnu », et « inconnu » ne
+              redirige personne et ne change aucun texte : l'app se
+              comporte exactement comme avant. */}
+          <GuideProvider>
           <AssistantProvider>
             <WorkoutLaunchProvider>
               <GuidedTourProvider>
@@ -284,6 +297,7 @@ export default function RootLayout({
               </GuidedTourProvider>
             </WorkoutLaunchProvider>
           </AssistantProvider>
+          </GuideProvider>
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

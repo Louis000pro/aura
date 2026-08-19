@@ -1,23 +1,22 @@
 import { noindexEcranApp } from "@/lib/noindexEcranApp";
-import { GuideProvider } from "@/context/GuideContext";
 
 // Le suffixe « · Vaiiya » vient du `template` du layout racine : le passer
 // ici aussi affichait « Bienvenue · Vaiiya · Vaiiya ».
 export const metadata = noindexEcranApp("Bienvenue");
 
-/* ⚠️ `GuideProvider` est monté ICI, sur cette seule route, et PAS dans
-   `app/layout.tsx`.
+/* ⚠️ `GuideProvider` N'EST PLUS MONTÉ ICI. Il vit dans `app/layout.tsx`
+   depuis le 2026-08-19.
 
-   Monté globalement, il ferait une lecture de `profiles.guide_id` à
-   chaque ouverture de l'app, pour tout le monde. Tant que la migration
-   `20260818_guide_id.sql` n'est pas collée, ce serait une requête en
-   échec par session et par compte, sur un projet dont l'egress Supabase
-   a déjà explosé une fois.
+   La raison d'origine tenait tant que le Guide ne parlait que sur cette
+   route : le monter globalement aurait fait une lecture de
+   `profiles.guide_id` par session pour tout le monde, sans rien rendre en
+   échange. Ce n'est plus le cas. Le Guide porte maintenant la voix et le
+   visage de la conversation, et se change dans les paramètres : deux
+   surfaces présentes sur toutes les pages. Une seule lecture d'une seule
+   colonne par session, mise en cache localement dès la première réponse
+   confirmée, est le prix normal de ça.
 
-   Ici, seul quelqu'un qui vient réellement choisir son Guide déclenche
-   la lecture. Le jour où la garde s'active (phase 1C), le provider
-   remontera dans le layout racine et ce fichier n'aura plus qu'à
-   disparaître : le contexte est le même, aucun composant ne change. */
+   Ce layout ne garde donc que son titre de page. */
 export default function BienvenueLayout({ children }: { children: React.ReactNode }) {
-  return <GuideProvider>{children}</GuideProvider>;
+  return <>{children}</>;
 }

@@ -3,14 +3,18 @@
 /* ════════════════════════════════════════════════════════════════════
    GuideContext — qui accompagne cette personne, Nora ou Sasha.
 
-   ⚠️ PHASE 1A : CE PROVIDER N'EST MONTÉ NULLE PART, ET C'EST VOULU.
-   L'infrastructure est prête, elle n'est pas active. Tant que
-   `/bienvenue` n'existe pas, personne ne doit pouvoir être renvoyé vers
-   un écran de choix qui n'existe pas ; et tant que la migration
-   `20260818_guide_id.sql` n'est pas collée, une lecture montée dans le
-   layout ferait une requête en échec à chaque ouverture, pour tout le
-   monde. Le brancher est la PREMIÈRE étape de la phase 1B :
-   `<GuideProvider>` dans `app/layout.tsx`, à l'intérieur d'`AuthProvider`.
+   Monté dans `app/layout.tsx`, à l'intérieur d'`AuthProvider` et AUTOUR
+   d'`AssistantProvider` (depuis le 2026-08-19) : le Guide porte la voix
+   et le visage de la conversation, et se change dans les paramètres.
+   Avant cette date il ne vivait que sur `/bienvenue`, où seule la
+   personne venant choisir déclenchait la lecture.
+
+   ⚠️ MONTER LE PROVIDER NE REDIRIGE PERSONNE. C'est `GardeGuide` qui
+   redirige, et il n'est toujours monté nulle part. La distinction
+   compte : ce fichier ne fait que LIRE, et une lecture ratée n'enferme
+   personne. Tant que `20260818_guide_id.sql` n'est pas collée, l'état
+   vaut « inconnu », la conversation garde l'étincelle ✦ et son texte
+   d'avant, et la ligne « Ton Guide » des paramètres ne s'affiche pas.
 
    ── Pourquoi un contexte séparé, et pas `enrichUser` ────────────────
    Parce que le select d'`enrichUser` (AuthContext) est défensif : quand
@@ -88,11 +92,12 @@ function ecrireCache(userId: string, g: GuideId | null) {
   } catch { /* navigation privée, quota : le cache est un confort */ }
 }
 
-/* Valeur rendue quand le hook est appelé HORS provider, ce qui est le cas
-   normal en phase 1A puisque rien ne le monte. `inconnu` ne redirige
-   jamais et `choisirGuide` ne prétend pas avoir écrit : oublier de monter
-   le provider ne peut donc bloquer personne, seulement priver le Guide de
-   sa voix. */
+/* Valeur rendue quand le hook est appelé HORS provider. Ce n'est plus le
+   cas normal (le layout racine le monte), mais c'est le repli qui compte le
+   jour où quelqu'un rend un composant hors de l'arbre, dans un test ou dans
+   une future route isolée : `inconnu` ne redirige jamais et `choisirGuide`
+   ne prétend pas avoir écrit. Oublier le provider ne peut donc bloquer
+   personne, seulement priver le Guide de sa voix. */
 const HORS_PROVIDER: ValeurGuide = {
   etat: "inconnu",
   guide: null,

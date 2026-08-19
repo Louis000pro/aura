@@ -22,12 +22,9 @@ import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { PLANS } from "@/lib/plans";
 import { heroImageForSeance } from "@/lib/workoutArt";
-import { AssistantAvatar } from "@/components/AssistantMark";
-import { voix, type GuideRef } from "@/lib/guides";
-
-/* Phase 0 : aucun Guide choisi, donc `voix` rend le texte actuel à
-   l'identique. En phase 1 cette ligne lira `useGuideActif()`. */
-const GUIDE: GuideRef = null;
+import { VisageGuide } from "@/components/AssistantMark";
+import { useGuideActif } from "@/context/GuideContext";
+import { voix, nomGuide, roleGuide } from "@/lib/guides";
 
 /** Libellé lisible d'un moment de repas (valeurs canoniques du journal).
  *  ⚠️ `gouter` se dit « Goûter », jamais « Collation » (choix de Louis,
@@ -288,6 +285,10 @@ function CartePlanning() {
 
 export default function AssistantSheet() {
   const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
+  /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
+     été fait (ou que la lecture a échoué) : tout retombe alors sur ✦ et
+     sur le texte commun, donc rien ne casse. */
+  const { guide } = useGuideActif();
   const [mounted, setMounted] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -384,10 +385,14 @@ export default function AssistantSheet() {
               </div>
               <div className="flex items-center gap-3 px-4 pb-3 pt-1"
                 style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                <AssistantAvatar size={36} />
+                <VisageGuide guide={guide} size={36} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-semibold leading-tight" style={{ color: "var(--text-0)" }}>Vaiiya ✦</p>
-                  <p className="text-[11px] font-medium" style={{ color: "var(--accent)" }}>Ton assistant — partout, tout le temps</p>
+                  {/* Un seul mot pour désigner Nora et Sasha : « Guide ».
+                      L'en-tête disait « Ton assistant », les cartes disaient
+                      « le coach » et le produit dit ✦ : trois noms pour un
+                      seul interlocuteur. */}
+                  <p className="text-[15px] font-semibold leading-tight truncate" style={{ color: "var(--text-0)" }}>{nomGuide(guide)}</p>
+                  <p className="text-[11px] font-medium truncate" style={{ color: "var(--accent)" }}>{roleGuide(guide)}</p>
                 </div>
                 <button onClick={close} aria-label="Fermer"
                   className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer flex-shrink-0"
@@ -405,14 +410,14 @@ export default function AssistantSheet() {
                   className="flex flex-col items-center justify-center gap-5 flex-1 text-center px-4">
                   <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
                     className="flex items-center justify-center">
-                    <AssistantAvatar size={80} />
+                    <VisageGuide guide={guide} size={80} />
                   </motion.div>
                   <div>
                     <p className="text-base font-semibold mb-1" style={{ color: "var(--text-0)" }}>
-                      {voix(GUIDE, "accueil.salut", { pseudo: pseudo ?? "" })}
+                      {voix(guide, "accueil.salut", { pseudo: pseudo ?? "" })}
                     </p>
                     <p className="text-sm font-light leading-relaxed" style={{ color: "var(--text-soft)" }}>
-                      {voix(GUIDE, "accueil.invite")}
+                      {voix(guide, "accueil.invite")}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 justify-center">
@@ -439,7 +444,7 @@ export default function AssistantSheet() {
                     transition={{ duration: 0.26, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
                     {msg.role === "assistant" && (
-                      <AssistantAvatar size={28} className="mb-0.5" />
+                      <VisageGuide guide={guide} size={28} className="mb-0.5" />
                     )}
                     <div className="px-4 py-2.5 rounded-3xl text-[14px] font-light leading-relaxed"
                       style={{

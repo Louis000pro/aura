@@ -8,9 +8,10 @@
      1. `20260818_guide_id.sql` est collé en base ;
      2. `/bienvenue` a été parcourue en vrai (Nora, Sasha, compte neuf,
         compte existant, `next=`, mobile) ;
-     3. `<GuideProvider>` est remonté de `app/bienvenue/layout.tsx` vers
-        `app/layout.tsx`, sans quoi la garde lirait un contexte absent et
-        resterait bloquée sur « inconnu » partout ;
+     3. ✅ FAIT le 2026-08-19 : `<GuideProvider>` est monté dans
+        `app/layout.tsx` (il ne vivait que sur `/bienvenue`). Sans lui, la
+        garde lirait un contexte absent et resterait sur « inconnu »
+        partout. Le monter ne redirige personne : lire n'est pas garder ;
      4. la liste d'exemptions ci-dessous a été relue une dernière fois.
 
    Un fichier dormant et documenté vaut mieux qu'une redirection qui

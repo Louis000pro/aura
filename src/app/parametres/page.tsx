@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import WelcomeCelebration from "@/components/WelcomeCelebration";
 import AiMemoryManager from "@/components/AiMemoryManager";
 import TasteProfileModal from "@/components/TasteProfileModal";
-import { AssistantSpark } from "@/components/AssistantMark";
+import { AssistantSpark, VisageGuide } from "@/components/AssistantMark";
 import { Lock, LogOut, ChevronRight, Eye, EyeOff, Check, AlertTriangle, X, Shield, Moon, Sun, Target, Compass, Gauge, Gem, Utensils, CreditCard, Sparkles, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -20,6 +20,8 @@ import { fetchTasteProfile } from "@/lib/tasteProfile";
 import { calculerAura, type EtatAura } from "@/lib/aura";
 import { PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import { ouvrirNouveautes } from "@/lib/nouveautes";
+import { useGuideActif } from "@/context/GuideContext";
+import { PORTRAIT_GUIDE, PRENOM_GUIDE, type GuideId } from "@/lib/guides";
 
 /* ════════════════════════════════════════════════════════════
    Un écran de réglages se LIT avant de s'ouvrir.
@@ -509,6 +511,121 @@ function ProfileDataModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
   );
 }
 
+/* ── Changer de Guide ─────────────────────────────────────
+   Le changement est IMMÉDIAT, GRATUIT, sans délai d'attente et sans rien
+   perdre : ni séance, ni planning, ni souvenir de la conversation. C'est
+   la conséquence directe d'une règle produit, pas une faveur : Nora et
+   Sasha ont exactement les mêmes capacités, les mêmes données et les
+   mêmes conseils de fond, donc changer de Guide ne change que la façon
+   dont on te parle. Il n'y a rien à re-gagner, donc rien à protéger par
+   un cooldown.
+
+   ⚠️ On n'écrit RIEN tant que la base n'a pas confirmé. `choisirGuide`
+   rend `false` si l'écriture échoue, et dans ce cas on le dit au lieu de
+   basculer l'écran : un choix qui disparaît au prochain chargement, sans
+   explication, est pire que le refus lui-même. */
+function GuideModal({ onClose, onChoisi }: { onClose: () => void; onChoisi: (g: GuideId) => void }) {
+  const { guide, choisirGuide } = useGuideActif();
+  const [enCours, setEnCours] = useState<GuideId | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  /* ⚠️ Le refus a besoin de DEUX oranges, pas d'un. Mesuré sur les fonds de
+     l'app : #E8620C ne tient que 3,3:1 en clair, donc il échoue AA sur du
+     petit texte ; et un orange assez sombre pour passer en clair devient
+     illisible sur le fond sombre. D'où la paire, choisie ici en JS parce
+     que cet écran s'écrit en styles en ligne, qui ne savent pas dépendre
+     du thème. */
+  const { isDark } = useTheme();
+  const orangeRefus = isDark ? "#FF9A4D" : "#B54708";
+
+  const basculer = async (g: GuideId) => {
+    if (g === guide || enCours) return;
+    setErreur(null);
+    setEnCours(g);
+    const ok = await choisirGuide(g);
+    setEnCours(null);
+    if (!ok) { setErreur("Le changement n'a pas pu être enregistré. Vérifie ta connexion et réessaie."); return; }
+    onChoisi(g);
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center px-4 pb-6 md:pb-0"
+      style={{ background: "rgba(0,0,0,0.2)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.97 }}
+        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+        className="w-full max-w-sm rounded-3xl p-6"
+        style={{ background: "rgba(var(--surface-rgb),0.95)", backdropFilter: "blur(12px)", border: "1px solid rgba(var(--surface-rgb),0.9)", boxShadow: "0 20px 60px rgba(var(--accent-rgb),0.15), inset 0 1px 0 rgba(var(--surface-rgb),0.9)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-base font-semibold" style={{ color: "var(--text-1)" }}>Ton Guide</h2>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} aria-label="Fermer" className="w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer" style={{ background: "rgba(var(--tint-violet-rgb),0.8)" }}>
+            <X size={14} strokeWidth={2} style={{ color: "var(--text-3)" }} />
+          </motion.button>
+        </div>
+        <p className="text-xs font-light mb-4" style={{ color: "var(--text-3)" }}>
+          Mêmes séances, mêmes données, mêmes conseils dans les deux cas. C&apos;est la façon de te parler qui change.
+        </p>
+
+        <div className="flex flex-col gap-2.5">
+          {(["nora", "sasha"] as GuideId[]).map((g) => {
+            const actif = g === guide;
+            return (
+              <motion.button
+                key={g}
+                whileTap={actif ? undefined : { scale: 0.98 }}
+                onClick={() => { void basculer(g); }}
+                disabled={actif || enCours !== null}
+                className="w-full flex items-center gap-3.5 p-3 rounded-2xl text-left"
+                style={{
+                  background: actif ? "rgba(var(--accent-rgb),0.10)" : "rgba(var(--tint-violet-rgb),0.5)",
+                  border: actif ? "1px solid rgba(var(--accent-rgb),0.42)" : "1px solid rgba(var(--accent-rgb),0.14)",
+                  cursor: actif ? "default" : "pointer",
+                  opacity: enCours && enCours !== g ? 0.5 : 1,
+                }}
+              >
+                <VisageGuide guide={g} size={52} />
+                <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                  <span className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>{PRENOM_GUIDE[g]}</span>
+                  <span className="text-[12px] font-medium" style={{ color: "var(--accent)" }}>{PORTRAIT_GUIDE[g].trait}</span>
+                  <span className="text-[11.5px] font-light" style={{ color: "var(--text-3)" }}>{PORTRAIT_GUIDE[g].pour}</span>
+                </span>
+                {actif
+                  ? <Pastille texte="Actif" ton="teal" />
+                  : enCours === g
+                    ? <span className="text-[11px] font-semibold flex-shrink-0" style={{ color: "var(--text-3)" }}>…</span>
+                    : <ChevronRight size={16} strokeWidth={1.8} className="flex-shrink-0" style={{ color: "var(--text-3)", opacity: 0.6 }} />}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <AnimatePresence>
+          {erreur && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              role="status"
+              className="text-[12px] font-medium mt-3"
+              style={{ color: orangeRefus }}
+            >
+              {erreur}
+            </motion.p>
+          )}
+        </AnimatePresence>
+
+        <p className="text-[11.5px] font-light mt-4" style={{ color: "var(--text-3)" }}>
+          Tu peux changer quand tu veux. Tes séances, ton planning et ce que ton Guide retient de toi ne bougent pas.
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ── Change Password Modal ───────────────────────────────── */
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [current, setCurrent]   = useState("");
@@ -733,6 +850,14 @@ export default function ParametresPage() {
   const [showDeleteModal, setShowDeleteModal]     = useState(false);
   const [showMemoryModal, setShowMemoryModal]     = useState(false);
   const [showTasteModal, setShowTasteModal]       = useState(false);
+  const [showGuideModal, setShowGuideModal]      = useState(false);
+  /* ⚠️ L'état « inconnu » n'affiche PAS la ligne. Il veut dire « la lecture
+     a échoué » (colonne pas encore en base, réseau coupé, session expirée),
+     pas « pas de Guide » : montrer un réglage qu'on ne saurait ni lire ni
+     écrire, c'est promettre un bouton qui refusera après le clic. Tant que
+     `20260818_guide_id.sql` n'est pas collé, la ligne n'existe simplement
+     pas et l'écran est celui d'avant. */
+  const { etat: etatGuide, guide } = useGuideActif();
   const [toast, setToast] = useState<string | null>(null);
   const [pushLoading, setPushLoading]             = useState(false);
   const [pushEnabled, setPushEnabled]             = useState(false);
@@ -905,10 +1030,19 @@ export default function ParametresPage() {
             <Ligne
               icon={Target}
               label="Mon corps et mes objectifs"
-              sub="Ce sur quoi l'✦ calibre tes séances"
+              sub="Ce sur quoi ton Guide calibre tes séances"
               value={resumeCorps ?? undefined}
               onClick={() => setShowProfileModal(true)}
             />
+            {(etatGuide === "actif" || etatGuide === "aucun") && (
+              <Ligne
+                mark={<VisageGuide guide={guide} size={20} />}
+                label="Ton Guide"
+                sub={guide ? PORTRAIT_GUIDE[guide].trait : "Nora ou Sasha, à toi de voir"}
+                value={guide ? PRENOM_GUIDE[guide] : "Pas encore choisi"}
+                onClick={() => setShowGuideModal(true)}
+              />
+            )}
             <Ligne
               icon={Utensils}
               label="Mes goûts cuisine"
@@ -918,7 +1052,7 @@ export default function ParametresPage() {
             />
             <Ligne
               mark={<AssistantSpark px={18} />}
-              label="Ce que l'✦ retient de toi"
+              label={guide ? `Ce que ${PRENOM_GUIDE[guide]} retient de toi` : "Ce que ton Guide retient de toi"}
               sub="Consulter, corriger, effacer"
               value={nbMemoires === null ? undefined : nbMemoires === 1 ? "1 souvenir" : `${nbMemoires} souvenirs`}
               onClick={() => setShowMemoryModal(true)}
@@ -1059,6 +1193,7 @@ export default function ParametresPage() {
         {showDeleteModal   && <DeleteAccountModal  onClose={() => setShowDeleteModal(false)} />}
         {showMemoryModal   && <AiMemoryManager     onClose={() => setShowMemoryModal(false)} />}
         {showTasteModal    && <TasteProfileModal   onClose={() => setShowTasteModal(false)} onSaved={() => showToast("Goûts enregistrés ✓")} />}
+        {showGuideModal    && <GuideModal          onClose={() => setShowGuideModal(false)} onChoisi={(g) => showToast(`${PRENOM_GUIDE[g]} est ton Guide ✓`)} />}
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.95 }}
