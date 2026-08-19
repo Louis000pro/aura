@@ -76,6 +76,59 @@ export const SECTIONS: Record<Section, { titre: string; voix: CleVoix; ligne?: s
 
 export const ORDRE: Section[] = ["corps", "objectifs", "niveau", "entrainement", "nutrition"];
 
+/* ════════════════════════════════════════════════════════════════════
+   CE QUI MANQUE POUR PASSER À LA SUITE
+
+   ⚠️ La liste vit ICI, avec les champs, et pas dans le parcours. C'est
+   le même fichier qui dessine une question et qui dit si elle est
+   répondue : on ne peut donc pas ajouter un champ en oubliant sa
+   vérification, ni retirer un champ en laissant une vérification qui
+   bloque sur une question devenue invisible.
+
+   Les libellés sont écrits pour se lire APRÈS « Il manque » : c'est le
+   parcours qui compose la phrase, parce que lui seul sait combien
+   d'éléments il a à annoncer.
+
+   ⚠️ ON NE VÉRIFIE QUE LA PRÉSENCE, jamais la vraisemblance. Un âge
+   « raisonnable » ou une taille « normale » sont des jugements, et le
+   jour où quelqu'un tombe hors de nos bornes on lui refuse l'entrée de
+   l'app pour un chiffre juste. Un nombre positif suffit.
+   ════════════════════════════════════════════════════════════════════ */
+const nombreDonne = (v: string) => {
+  const n = Number(String(v).replace(",", "."));
+  return v.trim() !== "" && Number.isFinite(n) && n > 0;
+};
+
+export function champsManquants(
+  section: Section,
+  data: OnboardingData,
+  entrainement: Entrainement,
+): string[] {
+  const manque: string[] = [];
+  if (section === "corps") {
+    if (!nombreDonne(data.age)) manque.push("ton âge");
+    if (!nombreDonne(data.height)) manque.push("ta taille");
+    if (!nombreDonne(data.weight)) manque.push("ton poids");
+    if (!data.gender) manque.push("ton genre");
+  }
+  if (section === "objectifs" && data.goals.length === 0) manque.push("un objectif");
+  if (section === "niveau") {
+    if (!data.level) manque.push("ton niveau");
+    if (!data.sessionsPerWeek) manque.push("ton nombre de séances par semaine");
+  }
+  if (section === "entrainement") {
+    if (!entrainement.location) manque.push("l'endroit où tu t'entraînes");
+    // La question du matériel n'existe qu'à la maison : on ne réclame
+    // jamais une réponse à une question qui n'est pas à l'écran.
+    else if (entrainement.location === "maison" && !entrainement.equip) manque.push("ton matériel");
+  }
+  if (section === "nutrition") {
+    if (!data.mealsPerDay) manque.push("ton nombre de repas");
+    if (!data.diet) manque.push("ton type d'alimentation");
+  }
+  return manque;
+}
+
 /* ── Briques ─────────────────────────────────────────────────────── */
 
 function Pastille({ actif, onClick, children }: { actif: boolean; onClick: () => void; children: React.ReactNode }) {

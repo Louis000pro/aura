@@ -49,7 +49,7 @@ import { voix } from "@/lib/guides";
 import type { GuideId } from "@/lib/guides";
 import type { OnboardingData } from "@/components/OnboardingModal";
 import ChoixGuide from "./ChoixGuide";
-import EtapesProfil, { ORDRE, SECTIONS, type Entrainement, type Section } from "./EtapesProfil";
+import EtapesProfil, { ORDRE, SECTIONS, champsManquants, type Entrainement, type Section } from "./EtapesProfil";
 import PortraitGuide from "./PortraitGuide";
 import s from "./bienvenue.module.css";
 
@@ -88,6 +88,10 @@ export default function ParcoursBienvenue() {
   const [guideRevue, setGuideRevue] = useState<GuideId | null>(null);
   /** Ce qu'une action de fin AURAIT fait, quand la revue l'a retenue. */
   const [noteRevue, setNoteRevue] = useState<string | null>(null);
+  /** Vrai une fois qu'on a tenté de continuer sur une étape incomplète.
+   *  C'est lui qui autorise la phrase « Il manque… » : sans tentative,
+   *  pas de reproche. */
+  const [manqueVu, setManqueVu] = useState(false);
 
   /** Les réponses telles qu'elles ont été lues, pour que « Recommencer »
    *  reparte du vrai profil et pas d'un formulaire à moitié modifié. */
@@ -245,7 +249,33 @@ export default function ParcoursBienvenue() {
 
   const index = ORDRE.indexOf(etape as Section);
 
+  /* ⚠️ « CONTINUER » NE PASSE PLUS SUR UNE ÉTAPE VIDE (décision de
+     Louis, 2026-08-19). Avant, le bouton avançait quoi qu'il arrive :
+     on pouvait traverser les cinq écrans sans rien toucher et arriver
+     dans Vaiiya avec un profil vide, sans jamais l'avoir décidé. Ce
+     n'était pas une liberté, c'était un piège silencieux.
+
+     ⚠️ ET IL RESTE CLIQUABLE, éteint mais vivant (`aria-disabled` et
+     non `disabled`). Un bouton mort ne dit pas s'il est refusé ou
+     cassé : on tape, rien ne bouge, on n'apprend rien. Ici le clic
+     répond, en nommant ce qui manque.
+
+     ⚠️ La phrase n'apparaît qu'APRÈS une tentative. L'afficher en
+     arrivant sur l'étape reviendrait à reprocher une question avant de
+     l'avoir posée. */
+  const manquants = index >= 0 ? champsManquants(etape as Section, data, entrainement) : [];
+  const bloque = manquants.length > 0;
+
+  /** « ton âge, ta taille et ton poids » : la virgule partout, « et »
+   *  pour le dernier. Composé ici parce que seul l'appelant sait
+   *  combien d'éléments il annonce. */
+  const phraseManque = manquants.length === 0 ? null
+    : manquants.length === 1 ? `Il manque ${manquants[0]}.`
+    : `Il manque ${manquants.slice(0, -1).join(", ")} et ${manquants[manquants.length - 1]}.`;
+
   const suivant = async () => {
+    if (bloque) { setManqueVu(true); return; }
+    setManqueVu(false);
     await enregistrer();
     setEtape(index >= ORDRE.length - 1 ? "pret" : ORDRE[index + 1]);
   };
@@ -254,12 +284,8 @@ export default function ParcoursBienvenue() {
     // On ne revient JAMAIS sur le choix du Guide : il est déjà écrit, et
     // le rejouer ferait croire qu'il n'a pas été pris en compte. Il se
     // change dans les paramètres, comme l'écran 0 l'annonce.
+    setManqueVu(false);
     if (index > 0) setEtape(ORDRE[index - 1]);
-  };
-
-  const plusTard = async () => {
-    await enregistrer();
-    setEtape("pret");
   };
 
   /* ⚠️ LES DEUX SORTIES SONT FERMÉES EN REVUE, et c'est la dernière fuite
@@ -385,17 +411,42 @@ export default function ParcoursBienvenue() {
                 />
               </div>
 
-              <div className={s.pied}>
-                {index > 0 && (
-                  <button type="button" className={s.passer} onClick={precedent}>Retour</button>
+              {/* ⚠️ « PLUS TARD » A ÉTÉ SUPPRIMÉ (Louis, 2026-08-19).
+                  Il ouvrait une sortie à chacune des cinq étapes, donc
+                  la question la plus fréquente devenait « est-ce que je
+                  peux éviter ça ? » plutôt que la question posée. Cinq
+                  écrans courts, ce n'est pas trop demander pour ce
+                  qu'ils débloquent derrière. Ne pas le remettre « pour
+                  laisser le choix » : le choix existe encore, il se
+                  prend en quittant la page, il n'est simplement plus
+                  proposé à chaque écran. */}
+              <div className={manqueVu && phraseManque ? `${s.piedBloc} ${s.piedBlocAvecMot}` : s.piedBloc}>
+                {/* ⚠️ AU-DESSUS DES BOUTONS, pas en dessous. Mesuré sur
+                    un écran de 640 : la phrase ajoute 14 px, donc posée
+                    sous le bouton elle passait sous le pli, et
+                    l'explication qu'on vient de demander se retrouvait
+                    hors de vue. Ici elle est prise dans l'espace libre
+                    que le pied laissait au-dessus de lui.
+
+                    `role="status"` et pas `alert` : ce n'est pas une
+                    erreur, c'est une question encore ouverte. */}
+                {manqueVu && phraseManque && (
+                  <p className={s.manque} id="bv-manque" role="status">{phraseManque}</p>
                 )}
-                {/* Le questionnaire reste quittable : c'est ce qu'il est
-                    aujourd'hui, et le rendre obligatoire au passage serait
-                    un changement de produit déguisé en refonte. */}
-                <button type="button" className={s.passer} onClick={() => { void plusTard(); }}>Plus tard</button>
-                <button type="button" className={s.cta} onClick={() => { void suivant(); }}>
-                  {index >= ORDRE.length - 1 ? "Terminer" : "Continuer"}
-                </button>
+                <div className={s.pied}>
+                  {index > 0 && (
+                    <button type="button" className={s.passer} onClick={precedent}>Retour</button>
+                  )}
+                  <button
+                    type="button"
+                    className={bloque ? `${s.cta} ${s.ctaEteint}` : s.cta}
+                    aria-disabled={bloque}
+                    aria-describedby={manqueVu && phraseManque ? "bv-manque" : undefined}
+                    onClick={() => { void suivant(); }}
+                  >
+                    {index >= ORDRE.length - 1 ? "Terminer" : "Continuer"}
+                  </button>
+                </div>
               </div>
             </div>
           </>

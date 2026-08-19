@@ -404,11 +404,29 @@
    dans la feuille « En savoir plus ». Elle prenait deux lignes sur le
    personnage pour dire ce que le couple trait + « tu préfères… » dit
    déjà en un coup d'oeil. Rien n'est perdu : elle ouvre le détail. */
-.feuilleManiere {
-  margin: 8px 0 0;
-  font-size: 14px;
+/* ⚠️ LA VOIX DU GUIDE, dans la feuille « En savoir plus ». C'est la
+   seule ligne de tout l'écran où Nora ou Sasha parle à la première
+   personne, et il faut que ça se voie tout de suite : sinon « On y va,
+   je t'explique en route » se lit comme un slogan de Vaiiya.
+
+   Trois marques, toutes typographiques, aucune boîte : les guillemets,
+   le filet d'accent qui tient la citation, et un texte plus fort que la
+   description qui suit.
+
+   ⚠️ Les guillemets viennent du `<q>`, pas de la chaîne. `quotes`
+   impose les guillemets FRANÇAIS avec leurs espaces insécables : sans
+   cette ligne, Chrome rend « … » et Safari “ … ”, donc la même phrase
+   n'a pas la même ponctuation d'un téléphone à l'autre. */
+.feuilleVoix {
+  display: block;
+  quotes: "\00ab\00a0" "\00a0\00bb";
+  margin: 10px 0 0;
+  padding-left: 12px;
+  border-left: 2px solid rgba(var(--accent-rgb), 0.38);
+  font-size: 15px;
   line-height: 1.5;
-  color: var(--text-1);
+  font-weight: 500;
+  color: var(--text-0);
   text-wrap: pretty;
 }
 
@@ -706,13 +724,53 @@
   border-color: transparent;
 }
 
+/* Le pied et, quand il y en a une, la phrase de ce qui manque. C'est
+   ce bloc qui est poussé en bas de l'écran, pas les boutons seuls :
+   sinon la phrase se retrouvait sous le pli des petits écrans. */
+.piedBloc {
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+/* Quand la phrase est là, elle occupe elle-même l'espace qui séparait
+   les questions des boutons : on lui rend donc cet espace au lieu de
+   l'ajouter. Mesuré sur un 360 x 640, c'est exactement ce qui ramène le
+   débordement à zéro, sans rien retirer au Guide ni aux questions. */
+.piedBlocAvecMot { padding-top: 10px; }
+
 .pied {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding-top: 22px;
-  margin-top: auto;
 }
+
+/* Le bouton éteint. Même dessin que `:disabled`, mais posé par une
+   classe : le bouton garde `aria-disabled` et reste cliquable, pour
+   pouvoir répondre au lieu de rester muet. */
+.ctaEteint {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* Ce qui manque pour continuer. Sous les boutons, donc là où le regard
+   arrive après avoir tapé. L'orange du système D (l'énergie, l'effort) ;
+   pas de rouge, il ne s'est rien passé de grave.
+
+   ⚠️ DEUX ORANGES, ET C'EST OBLIGATOIRE. Mesuré : le `#E8620C` de la
+   marque ne fait que 3,3:1 sur le fond clair, donc il échoue le seuil
+   AA sur un texte de cette taille, et un `#E8620C` assombri pour le
+   clair tombe à 3,9:1 sur le fond sombre. Aucune valeur unique ne passe
+   des deux côtés : on assombrit en clair, on éclaircit en sombre.
+   Mesuré après correction : 5,2:1 et 8,1:1. */
+.manque {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #B54708;
+}
+
+:global([data-theme="dark"]) .manque { color: #FF9A4D; }
 
 .passer {
   padding: 10px 6px;
@@ -993,7 +1051,9 @@
   .titreLigne { margin-bottom: 4px; }
   .questions { margin-top: 8px; }
   .champs { gap: 12px; }
-  .pied { padding-top: 12px; }
+  .piedBloc { padding-top: 12px; }
+  .piedBlocAvecMot { padding-top: 4px; }
+  .manque { margin-bottom: 4px; }
 }
 
 /* ── Desktop : la même scène, avec plus d'air ────────────────────── */

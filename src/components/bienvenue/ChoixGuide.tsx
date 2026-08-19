@@ -36,12 +36,17 @@ type Fiche = {
   nom: string;
   trait: string;
   pour: string;
-  /** ⚠️ UNE SCÈNE, PAS UNE REFORMULATION. Elle ouvre « En savoir plus »
-   *  en montrant la même demande traitée par l'un et par l'autre. Les
-   *  versions précédentes redisaient le trait et le « tu préfères… » de
-   *  la carte avec d'autres adjectifs : on lisait trois fois la même
-   *  chose, donc on n'apprenait rien en ouvrant. */
-  maniere: string;
+  /** ⚠️ CE SONT SES MOTS, PAS UNE DESCRIPTION. Le Guide parle, à la
+   *  première personne, et c'est la seule ligne de la fiche où il le
+   *  fait. Les versions précédentes redisaient le trait et le « tu
+   *  préfères… » de la carte avec d'autres adjectifs : on lisait trois
+   *  fois la même chose, donc on n'apprenait rien en ouvrant. Une phrase
+   *  dite montre la différence au lieu de la nommer.
+   *
+   *  ⚠️ Elle s'écrit SANS guillemets : c'est le `<q>` de la feuille qui
+   *  les pose, avec les bonnes espaces insécables et le même dessin quel
+   *  que soit le navigateur. */
+  voix: string;
   /* Les trois lignes de détail. Elles suivent les MÊMES trois axes chez
      les deux Guides (longueur des réponses, rythme de l'échange, façon
      d'encourager), pour qu'on puisse les comparer d'un coup d'oeil. Ce
@@ -56,7 +61,7 @@ const FICHES: Fiche[] = [
     nom: "Nora",
     trait: "Calme et méthodique",
     pour: "Tu préfères comprendre avant d'agir.",
-    maniere: "Tu lui demandes une séance de dos : elle t'explique le choix des mouvements, puis te la propose.",
+    voix: "On pose les bases, je t'explique au passage.",
     detail: [
       "Des réponses un peu plus longues, avec le raisonnement derrière la consigne.",
       "Elle récapitule avant de conclure.",
@@ -68,7 +73,7 @@ const FICHES: Fiche[] = [
     nom: "Sasha",
     trait: "Direct et dynamique",
     pour: "Tu préfères avancer puis ajuster en chemin.",
-    maniere: "Tu lui demandes une séance de dos : il te la propose, et il détaille si tu creuses.",
+    voix: "On y va, je t'explique en route si tu veux.",
     detail: [
       "Des réponses courtes, la consigne d'abord.",
       "Il conclut et enchaîne sur la suite.",
@@ -252,10 +257,13 @@ export default function ChoixGuide({
         >
           <div className={s.feuille} onClick={(e) => e.stopPropagation()}>
             <span className={s.feuilleNom}>{detail.nom}</span>
-            {/* Une situation concrète ouvre le détail : c'est la seule
-                façon de montrer la différence sans la nommer une
-                troisième fois avec des adjectifs. */}
-            <p className={s.feuilleManiere}>{detail.maniere}</p>
+            {/* ⚠️ UN `<q>` ET PAS UN `<p>`. Cette ligne n'est pas l'app
+                qui décrit le Guide, c'est le Guide qui parle : la balise
+                le dit à la page comme aux lecteurs d'écran, et le CSS
+                pose les guillemets français. Sans cet habillage, la
+                phrase à la première personne se lirait comme un slogan
+                écrit par Vaiiya. */}
+            <q className={s.feuilleVoix}>{detail.voix}</q>
             <ul className={s.feuilleListe}>
               {detail.detail.map((d) => <li key={d}>{d}</li>)}
             </ul>
