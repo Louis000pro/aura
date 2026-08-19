@@ -176,6 +176,9 @@ type AssistantContextValue = {
   /** Le visage que porte le Guide à l'instant, déduit des seuls signaux
    *  structurés de la conversation. Voir `EtatGuide` dans `guides.ts`. */
   etatGuide: EtatGuide;
+  /** La feuille signale qu'un message est en cours d'écriture : le Guide
+   *  écoute. Elle seule voit le champ de saisie, d'où ce passe-plat. */
+  noterSaisie: (actif: boolean) => void;
   /** Le stock gratuit de séances gardées est plein : la carte n'offre alors que ce qui reste possible. */
   bibliothequePleine: boolean;
   /** Garde la séance proposée. `jour` la pose aussi sur le planning, en UNE
@@ -288,6 +291,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      réussites de suite doivent relancer le délai, pas se partager le premier
      minuteur. Il ne sert qu'au visage du Guide, jamais à une écriture. */
   const [reussite, setReussite] = useState(0);
+  /* La personne est en train d'écrire un message. Signal envoyé par la feuille
+     (elle seule voit le champ), et pas une devinette : c'est vrai quand le
+     brouillon n'est pas vide, faux sinon. Il ne sert qu'au visage du Guide. */
+  const [saisie, setSaisie] = useState(false);
   /* Le stock gratuit de séances gardées est plein ? La carte le dit AVANT le
      clic et ne propose alors que ce qui reste possible (s'entraîner). On ne
      limite jamais le fait de créer ni de s'entraîner, seulement le rangement. */
@@ -901,7 +908,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // NAVIGATION : le coach emmène l'utilisateur sur une page de l'app.
     if (action.intent === "open_page") {
       const route = resolveNavTarget(action.cible ?? "");
-      if (route && route !== pathname) setTimeout(() => router.push(route), 700);
+      if (route && route !== pathname) {
+        setTimeout(() => router.push(route), 700);
+        // Emmener quelqu'un au bon endroit EST une action qui aboutit : elle
+        // mérite le même visage qu'une carte validée.
+        setReussite((n) => n + 1);
+      }
       return;
     }
 
@@ -951,6 +963,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       // On n'applique QUE si l'utilisateur a vraiment parlé d'apparence.
       if (!textMentionsTheme(text)) return;
       setThemePreference(pref);
+      // Le thème a changé sous ses yeux : c'est fait, sans carte à valider.
+      setReussite((n) => n + 1);
       // Pas de message ici : le coach parle et agit dans le même tour, et
       // `phraseDeRepli` annonce déjà le changement. En ajouter un deuxième
       // ferait dire deux fois la même chose.
@@ -1651,16 +1665,33 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
      maintenant l'emporte sur ce qui vient de se passer, qui l'emporte sur
      la dernière chose dite. */
   const etatGuide: EtatGuide = useMemo(() => {
+    // 1. Il travaille : réponse en cours de flux, ou génération en cours.
     if (isStreaming || actionLoading) return "think";
+    // 2. Quelque chose vient d'aboutir. Court, quelques secondes.
     if (reussite > 0) return "encourage";
+    // 3. Il attend quelque chose de TOI. Trois formes, toutes structurées :
+    //    une question posée par le code et pas encore répondue, une carte
+    //    posée sur la table qui attend un clic, ou un brouillon en cours de
+    //    frappe. C'est ce point qui a fait sortir `listen` de sa niche : il
+    //    n'apparaissait qu'au moment où le lieu d'entraînement manquait,
+    //    donc une fois dans la vie d'un compte.
+    if (saisie) return "listen";
+    if (pendingSeance || pendingPlan || pendingRecipe || pendingMeal) return "listen";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "assistant") continue;
+      if (m.question && !m.question.repondu) return "listen";
+      break;
+    }
+    // 4. Sinon, ce qu'il faisait dans sa dernière bulle.
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
       if (m.role !== "assistant") continue;
       return m.ton ?? "explain";
     }
-    // Aucune bulle du Guide : la conversation n'a pas commencé.
+    // 5. Aucune bulle du Guide : la conversation n'a pas commencé.
     return "welcome";
-  }, [isStreaming, actionLoading, reussite, messages]);
+  }, [isStreaming, actionLoading, reussite, saisie, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, messages]);
 
   // La notice mémoire ("Je m'en souviendrai") s'efface seule
   useEffect(() => {
@@ -1670,7 +1701,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie: setSaisie, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );

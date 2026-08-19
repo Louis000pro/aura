@@ -16,19 +16,21 @@
      l'app d'avant reste intacte tant que personne n'a choisi.
    • `BusteGuide`      : le grand personnage de la feuille vide.
    • `ReflexionGuide`  : le personnage à mi-taille, pendant l'attente.
+   • `CelebrationGuide`: le personnage de la fin de séance.
 
-   ── TROIS TAILLES, TROIS FICHIERS, ZÉRO RECADRAGE CSS ──────────────
+   ── QUATRE TAILLES, QUATRE FICHIERS, ZÉRO RECADRAGE CSS ────────────
    Chaque emplacement a SON fichier, taillé par `npm run portraits` :
    `<guide>-<état>-avatar-v1.webp` (256 carré), `<guide>-buste-v1.webp`
-   (512 x 640) et `<guide>-think-reflexion-v1.webp` (320 x 400). Un même
+   (512 x 640), `<guide>-think-reflexion-v1.webp` (320 x 400) et
+   `<guide>-encourage-celebration-v1.webp` (448 x 560). Un même
    fichier étiré puis recadré au CSS pour trois usages, c'est ce qui
    avait coupé la mèche de Nora dans le questionnaire : le CSS ne sait ni
    où est la tête, ni quelle largeur elle fait. Ici les fenêtres sont
    posées sur la tête MESURÉE, et le CSS n'a qu'à remplir sa boîte.
 
    ⚠️ NE JAMAIS METTRE UN PORTRAIT DANS UNE BOÎTE QUI N'A PAS SON RATIO.
-   Les avatars sont carrés, le buste et la réflexion sont en 4:5, comme
-   leurs fichiers. Un autre ratio ferait rogner `cover`, et il rognerait
+   Les avatars sont carrés, le buste, la réflexion et la célébration sont
+   en 4:5, comme leurs fichiers. Un autre ratio ferait rogner `cover`, et il rognerait
    d'abord l'air garanti au-dessus du crâne.
 
    ⚠️ ✦ RESTE L'IDENTITÉ DE VAIIYA, pas celle d'une personne : l'orbe de
@@ -208,6 +210,21 @@ export function ReflexionGuide({ guide, hauteur }: { guide: GuideRef; hauteur: n
   // comme avant. Mieux vaut pas de personnage qu'une place vide.
   if (!guide) return null;
   return <Portrait guide={guide} fichier="think-reflexion" hauteur={hauteur} bande={16} />;
+}
+
+/** Le personnage de la FIN DE SÉANCE, et de nulle part ailleurs. C'est le
+ *  moment le plus fort de l'app : le Guide y est franchement présent.
+ *
+ *  Son fichier est cadré comme la réflexion (la tête n'occupe que 44 % de la
+ *  hauteur) et non comme un buste, pour une raison mesurée et pas esthétique :
+ *  le poing levé de la pose `encourage` élargit la bande de la tête, donc un
+ *  cadrage de buste faisait sortir la fenêtre de la toile et le script
+ *  refusait. Ce cadrage large a l'avantage de montrer le geste, qui est
+ *  justement ce qu'on vient célébrer. */
+export function CelebrationGuide({ guide, hauteur }: { guide: GuideRef; hauteur: number | string }) {
+  // Sans Guide, rien : l'écran de fin garde son médaillon teal, comme avant.
+  if (!guide) return null;
+  return <Portrait guide={guide} fichier="encourage-celebration" hauteur={hauteur} bande={22} />;
 }
 
 /** ── LE PRÉCHARGEMENT ─────────────────────────────────────────────────

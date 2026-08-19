@@ -62,6 +62,15 @@
                 pose se lit, et c'est fait pour : il ne sert qu'a l'attente,
                 le seul moment ou un personnage un peu plus grand apporte
                 quelque chose.
+   celebration. 4:5 comme le buste, mais cadre comme `reflexion` : la tete
+                n'occupe que 44 % de la hauteur, donc le POING LEVE de la
+                pose `encourage` entre dans l'image. Il ne sert qu'a la fin
+                de seance. Cadrer cette pose comme un buste ne marche pas :
+                le poing elargit la bande mesuree de la tete (480 px de
+                large contre 311 sur le master), donc la fenetre grandit,
+                donc l'air garanti au-dessus du crane depasse la reserve du
+                fichier et le script refuse. C'est le script qui a impose ce
+                cadrage, pas un gout.
    avatar     . carre, serre sur la tete. Il vit dans une pastille de 28 a
                 36 px : a cette taille un buste entier n'est qu'une tache, il
                 faut un visage.
@@ -109,18 +118,23 @@ const LIGNE_TETE = 0.056;
 const CADRAGES = {
   buste:     { l: 512, h: 640, hauteurTete: 0.52, largeurTete: 0.76, air: 0.12 },
   reflexion: { l: 320, h: 400, hauteurTete: 0.44, largeurTete: 0.62, air: 0.07 },
+  celebration: { l: 448, h: 560, hauteurTete: 0.44, largeurTete: 0.70, air: 0.07 },
   avatar:    { l: 256, h: 256, hauteurTete: 0.55, largeurTete: 0.80, air: 0.10 },
 };
 
 /** Qui recoit quoi. Un cadrage coute un fichier a telecharger : on ne genere
  *  que ce que l'ecran affiche vraiment.
- *    avatar     . les cinq etats, ils se relaient dans la meme pastille
- *    buste      . welcome seul, c'est le grand personnage de l'ecran vide
- *    reflexion  . think seul, c'est l'attente */
+ *    avatar     . les cinq etats, ils se relaient dans la meme pastille, dans
+ *                 la conversation comme dans le tunnel de seance
+ *    buste      . welcome seul, le grand personnage de l'ecran vide de chat
+ *                 et du questionnaire de /bienvenue
+ *    reflexion  . think seul, c'est l'attente
+ *    celebration. encourage seul, la fin de seance */
 const ETATS_PAR_CADRAGE = {
   avatar: ["welcome", "listen", "think", "explain", "encourage"],
   buste: ["welcome"],
   reflexion: ["think"],
+  celebration: ["encourage"],
 };
 
 async function boiteAlpha(buf) {
@@ -324,9 +338,11 @@ for (const guide of GUIDES) {
     for (const [nom, cadrage] of Object.entries(CADRAGES)) {
       if (!ETATS_PAR_CADRAGE[nom].includes(etat)) continue;
       const f = await fenetre(n.buf, n.boite, t, cadrage);
-      // `buste` garde son nom historique sans etat : /bienvenue le montre
-      // depuis le premier jour, et il n'existe que pour `welcome`.
-      const dest = nom === "buste"
+      // Le buste de `welcome` garde son nom historique, sans etat : c'est le
+      // fichier que /bienvenue montre depuis le premier jour, et le renommer
+      // casserait le questionnaire pour gagner une regularite de nommage.
+      // Tous les autres portent leur etat.
+      const dest = nom === "buste" && etat === "welcome"
         ? path.join(OUT, `${guide}-buste-v1.webp`)
         : path.join(OUT, `${guide}-${etat}-${nom}-v1.webp`);
       const p = await ecrire(f.buf, dest);

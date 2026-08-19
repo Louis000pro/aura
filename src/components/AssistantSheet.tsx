@@ -284,7 +284,7 @@ function CartePlanning() {
 }
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, noterSaisie, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
   /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
      été fait (ou que la lecture a échoué) : tout retombe alors sur ✦ et
      sur le texte commun, donc rien ne casse. */
@@ -335,11 +335,20 @@ export default function AssistantSheet() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, close]);
 
+  /* Un seul endroit change le brouillon, et il prévient le contexte au
+     passage : le Guide écoute tant qu'il y a quelque chose d'écrit. Le
+     signal part d'ici plutôt que d'un effet, parce que c'est ici qu'on
+     SAIT ce qui change (un effet devrait le redécouvrir à chaque rendu). */
+  const ecrire = (v: string) => {
+    setInput(v);
+    noterSaisie(v.trim().length > 0);
+  };
+
   const submit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     if (!input.trim() || isStreaming) return;
     sendMessage(input);
-    setInput("");
+    ecrire("");
   };
 
   const canSend = !!input.trim() && !isStreaming;
@@ -715,7 +724,7 @@ export default function AssistantSheet() {
                   <textarea
                     ref={taRef}
                     rows={1}
-                    value={input} onChange={(e) => setInput(e.target.value)}
+                    value={input} onChange={(e) => ecrire(e.target.value)}
                     onKeyDown={(e) => {
                       // Entrée = envoyer ; Maj+Entrée = nouvelle ligne (pour se relire/corriger)
                       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(e); }

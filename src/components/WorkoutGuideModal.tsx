@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { aiFetch } from "@/lib/aiFetch";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pause, Play, Share2, BookmarkCheck, ChevronDown, Check, Plus } from "lucide-react";
-import { AssistantSpark } from "@/components/AssistantMark";
-import { voix, type GuideRef } from "@/lib/guides";
+import { AssistantSpark, VisageGuide, CelebrationGuide } from "@/components/AssistantMark";
+import { voix, type CleVoix } from "@/lib/guides";
+import { useGuideActif } from "@/context/GuideContext";
 import ExerciseGuide from "@/components/ExerciseGuide";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import { createClient } from "@/lib/supabase";
@@ -26,10 +27,25 @@ import { WAVE_4_EXERCISES } from "@/lib/workoutWave4";
 import { WAVE_5_EXERCISES } from "@/lib/workoutWave5";
 import { WAVE_6_EXERCISES } from "@/lib/workoutWave6";
 
-/* Phase 0 : aucun Guide choisi. L'encouragement du repos est la phrase la
-   plus vue de toute l'app (une par récupération) : c'est par elle que les
-   voix Nora/Sasha se sépareront côté sport. Ici, texte inchangé. */
-const GUIDE: GuideRef = null;
+/* ── LE MOMENT DE REPOS, DÉDUIT DU COMPTEUR ────────────────────────────
+   Le repos revient quinze à vingt-cinq fois par séance : une phrase unique
+   répétée vingt fois cesse d'être lue au bout de trois. Le Guide en a donc
+   quatre, et laquelle il prononce se DÉDUIT de l'état du tunnel, jamais du
+   texte : premier repos de la séance, dernier exercice en cours, on change
+   d'exercice après cette pause, ou une série de plus sur le même exercice.
+
+   L'ordre des questions compte. « Dernier exercice » passe avant « on
+   change d'exercice » parce qu'il porte l'information la plus utile à ce
+   moment-là, et le premier repos passe avant tout le reste sauf le cas
+   d'une séance à un seul exercice, où « dernier » reste vrai et plus
+   parlant. */
+function cleRepos(exerciseIdx: number, setIdx: number, sets: number, total: number): CleVoix {
+  const dernierExo = exerciseIdx === total - 1;
+  const dernierSet = setIdx === sets - 1;
+  if (dernierExo) return "seance.repos.fin";
+  if (exerciseIdx === 0 && setIdx === 0) return "seance.repos.debut";
+  return dernierSet ? "seance.repos.exo" : "seance.repos.serie";
+}
 
 /* ─── Référence humaine : vidéo YouTube de démo par exercice ── */
 function ExerciseVideo({ exerciseName }: { exerciseName: string }) {
@@ -679,6 +695,7 @@ export default function WorkoutGuideModal({
   }, [exerciseList, sessionId]);
 
   const { open: openAssistant } = useAssistant();
+  const { guide } = useGuideActif();
 
   const [phase,         setPhase]         = useState<GuidePhase>("intro");
   const [exerciseIdx,   setExerciseIdx]   = useState(0);
@@ -1212,20 +1229,34 @@ export default function WorkoutGuideModal({
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                       className="relative z-[2] flex items-center justify-center gap-2 rounded-2xl py-2.5 mt-4"
                       style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)" }}>
-                      <Pause size={12} strokeWidth={2} style={{ color: TUN.lav }} />
-                      <span className="text-xs font-semibold" style={{ color: TUN.lav }}>En pause</span>
+                      {/* La pause est le seul moment de la séance où le Guide
+                          n'explique rien et ne pousse à rien : il attend. C'est
+                          le vrai emploi de `listen` côté sport. */}
+                      {guide
+                        ? <VisageGuide guide={guide} etat="listen" size={24} />
+                        : <Pause size={12} strokeWidth={2} style={{ color: TUN.lav }} />}
+                      <span className="text-xs font-semibold" style={{ color: TUN.lav }}>
+                        {guide ? voix(guide, "seance.pause") : "En pause"}
+                      </span>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Conseil du coach — porté par l'étincelle ✦.
+                {/* Conseil du geste, porté par le GUIDE et plus par la marque :
+                    une consigne s'adresse à quelqu'un, elle vient donc d'une
+                    personne. Le visage est `explain`, l'état exact de ce
+                    qu'il fait ici. Le texte, lui, ne change pas d'un Guide à
+                    l'autre : c'est une donnée d'exercice, pas une opinion.
+                    Sans Guide résolu, l'étincelle reprend sa place.
                     Les séances du planning arrivent avec tip: "" (cf. toExercise
                     dans lib/planning.ts) : sans ce garde-fou, l'étincelle promet
                     « Le geste : » puis ne dit rien. Mieux vaut pas de carte. */}
                 {cur.tip && (
                   <div className="relative z-[2] flex gap-3 items-start rounded-2xl px-3.5 py-3.5 mt-5"
                     style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
-                    <span className="flex-shrink-0 mt-0.5"><AssistantSpark px={17} /></span>
+                    <span className="flex-shrink-0 mt-0.5">
+                      {guide ? <VisageGuide guide={guide} etat="explain" size={26} /> : <AssistantSpark px={17} />}
+                    </span>
                     <p className="text-[12px] leading-relaxed" style={{ color: TUN.t2 }}><b style={{ color: TUN.t1 }}>Le geste : </b>{cur.tip}</p>
                   </div>
                 )}
@@ -1290,12 +1321,24 @@ export default function WorkoutGuideModal({
                   );
                 })()}
 
-                {/* Encouragement — étincelle ✦, une phrase */}
-                <div className="relative z-[2] flex gap-3 items-center rounded-2xl px-3.5 py-3 mt-4"
-                  style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
-                  <span className="flex-shrink-0"><AssistantSpark px={16} /></span>
-                  <p className="text-[12px]" style={{ color: TUN.t2 }}>{voix(GUIDE, "seance.repos")}</p>
-                </div>
+                {/* Le mot du repos. Petit format volontairement : l'écran de
+                    repos appartient au chrono et à « ensuite », le Guide s'y
+                    invite sans prendre la place. La phrase et le visage sont
+                    choisis par le COMPTEUR (cf. `cleRepos`) : sur le dernier
+                    exercice il encourage, partout ailleurs il explique. */}
+                {(() => {
+                  const cle = cleRepos(exerciseIdx, setIdx, cur?.sets ?? 1, exercises.length);
+                  const etat = cle === "seance.repos.fin" ? "encourage" : "explain";
+                  return (
+                    <div className="relative z-[2] flex gap-3 items-center rounded-2xl px-3.5 py-3 mt-4"
+                      style={{ background: "rgba(139,92,246,0.09)", border: "1px solid rgba(139,92,246,0.22)" }}>
+                      <span className="flex-shrink-0">
+                        {guide ? <VisageGuide guide={guide} etat={etat} size={26} /> : <AssistantSpark px={16} />}
+                      </span>
+                      <p className="text-[12px]" style={{ color: TUN.t2 }}>{voix(guide, cle)}</p>
+                    </div>
+                  );
+                })()}
               </motion.div>
             )}
 
@@ -1303,18 +1346,53 @@ export default function WorkoutGuideModal({
             {phase === "done" && (
               <motion.div key="done"
                 initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-                className="relative flex flex-col items-center px-5 pt-10 pb-4 text-center"
+                className={`relative flex flex-col items-center px-5 pb-4 text-center ${guide ? "pt-3" : "pt-10"}`}
               >
-                <motion.div
-                  initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 240, delay: 0.05 }}
-                  className="flex items-center justify-center"
-                  style={{ width: 92, height: 92, borderRadius: "50%", border: `3px solid ${TUN.teal}`, background: "rgba(43,212,160,0.1)", boxShadow: "0 0 44px rgba(43,212,160,0.35)" }}
-                >
-                  <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
-                </motion.div>
+                {/* ── LE MOMENT FORT ──
+                    C'est le seul endroit de la séance où le Guide est
+                    franchement grand : ailleurs il tient dans une pastille.
+                    Il ACCOMPAGNE la réussite, il ne la résume pas : la coche
+                    teal reste le signe que la séance est validée (teal =
+                    réussite, système D), les chiffres restent intacts juste
+                    en dessous, et lui n'ajoute qu'une phrase.
+                    Sans Guide résolu, l'écran d'avant revient à l'identique. */}
+                {guide ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.05 }}
+                    className="relative"
+                  >
+                    <CelebrationGuide guide={guide} hauteur="clamp(120px, 20vh, 168px)" />
+                    <motion.span
+                      initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 240, delay: 0.35 }}
+                      className="absolute flex items-center justify-center"
+                      style={{ right: -12, bottom: 4, width: 46, height: 46, borderRadius: "50%", border: `2.5px solid ${TUN.teal}`, background: "rgba(10,10,14,0.86)", boxShadow: "0 0 30px rgba(43,212,160,0.4)" }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                    </motion.span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -12 }} animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 240, delay: 0.05 }}
+                    className="flex items-center justify-center"
+                    style={{ width: 92, height: 92, borderRadius: "50%", border: `3px solid ${TUN.teal}`, background: "rgba(43,212,160,0.1)", boxShadow: "0 0 44px rgba(43,212,160,0.35)" }}
+                  >
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={TUN.teal} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  </motion.div>
+                )}
                 <h2 className="font-black uppercase tracking-tight mt-4" style={{ fontSize: 24, color: "#fff" }}>Séance terminée</h2>
-                <p className="text-[12.5px] mt-1.5" style={{ color: TUN.t2 }}>{title} · rien lâché</p>
+                <p className="text-[12.5px] mt-1.5" style={{ color: TUN.t2 }}>{guide ? title : `${title} · rien lâché`}</p>
+                {guide && (
+                  <motion.p
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+                    className="text-[13px] font-semibold leading-snug mt-2.5 max-w-[19rem]"
+                    style={{ color: TUN.lav }}
+                  >
+                    {voix(guide, "seance.fin")}
+                  </motion.p>
+                )}
 
                 <div className="grid grid-cols-2 gap-2.5 w-full mt-6">
                   {[

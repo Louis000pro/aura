@@ -15,10 +15,9 @@
    ── ÉTAT ACTUEL ──
    Le parcours d'entrée (`bienvenue.*`) et TOUTE la conversation
    (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`,
-   `attente.*`) sont différenciés. Restent volontairement communes : `panne.*` et
-   `seance.repos`. Les pannes, parce qu'une personnalité posée sur un
-   mécanisme cassé serait déplacée ; le repos, parce qu'il appartient au
-   lot sportif qui n'a pas encore été fait.
+   `attente.*`) et la séance (`seance.*`) sont différenciés. Restent
+   volontairement communes : les `panne.*`, parce qu'une personnalité posée
+   sur un mécanisme cassé serait déplacée.
 
    ⚠️ LA VARIANTE NE CHANGE QUE LA FORMULATION. Nora et Sasha disent la
    même chose, demandent la même chose et proposent la même chose : ce
@@ -349,11 +348,52 @@ const REPLIQUES = {
   },
 
   /* ── Pendant la séance ──
-     Une seule phrase, mais celle que l'on voit le plus souvent de toute
-     l'app : elle revient à chaque repos, quinze à vingt-cinq fois par
-     séance. C'est le premier endroit sportif où les deux voix se
-     sépareront. */
-  "seance.repos": { commun: "Souffle, la prochaine série est la bonne." },
+     Ce sont les phrases que l'on voit le plus souvent de toute l'app : le
+     repos revient quinze à vingt-cinq fois par séance. Une phrase unique
+     répétée vingt fois cesse d'être lue au bout de trois, d'où quatre
+     moments de repos plutôt qu'un.
+
+     ⚠️ LE MOMENT SE DÉDUIT DU COMPTEUR, JAMAIS DU TEXTE. `WorkoutGuideModal`
+     sait exactement où il en est (quel exercice, quelle série, combien il en
+     reste) : c'est ce compteur qui choisit la clé. Rien ici ne se devine.
+
+     ⚠️ Zéro culpabilisation, et aucun accord de genre : ces phrases
+     s'adressent à tout le monde. Pas de « tu es prêt », pas de « tu es
+     allé au bout ». */
+  "seance.repos.debut": {
+    commun: "Première pause. Respire, la suite arrive.",
+    nora:   "Première pause. Respire lentement, elle compte autant que la série.",
+    sasha:  "Première pause. Souffle un coup, on repart juste après.",
+  },
+  "seance.repos.serie": {
+    commun: "Souffle, la prochaine série est la bonne.",
+    nora:   "Relâche les épaules et respire. La prochaine série part sur de bonnes bases.",
+    sasha:  "Souffle. Prochaine série, même intention.",
+  },
+  "seance.repos.exo": {
+    commun: "On change d'exercice juste après, prends ce temps.",
+    nora:   "On change d'exercice après cette pause. Prends vraiment ce temps-là.",
+    sasha:  "Nouvel exercice après la pause. Récupère, on enchaîne.",
+  },
+  "seance.repos.fin": {
+    commun: "Dernier exercice, garde le même rythme.",
+    nora:   "C'est le dernier exercice. Garde la même qualité de mouvement jusqu'au bout.",
+    sasha:  "Dernier exercice. Même rythme, on finit propre.",
+  },
+  /* Le tunnel est en pause : le Guide attend, et c'est le seul moment de la
+     séance où il n'a rien à demander ni à expliquer. */
+  "seance.pause": {
+    commun: "En pause. Reprends quand tu veux.",
+    nora:   "En pause. Reprends quand tu le sens, rien ne presse.",
+    sasha:  "En pause. Tu reprends quand tu veux.",
+  },
+  /* La fin de séance. Le Guide félicite, il ne résume pas : les chiffres
+     sont juste en dessous et ils ne lui appartiennent pas. */
+  "seance.fin": {
+    commun: "Séance bouclée. Rien lâché.",
+    nora:   "Tu l'as menée jusqu'au bout, et ça se lit dans ces chiffres. Belle séance.",
+    sasha:  "Séance bouclée, rien lâché. Ça, c'est fait.",
+  },
 } satisfies Record<string, Replique>;
 
 /** Toutes les clés existantes. Une faute de frappe ne compile pas. */
@@ -452,10 +492,20 @@ export const PORTRAIT_GUIDE: Record<GuideId, { trait: string; pour: string }> = 
    déduit d'un signal structuré, jamais des mots du message.
 
      welcome    la feuille est vide, personne n'a encore parlé
-     listen     il vient de poser une question, c'est ton tour
+     listen     c'est ton tour : il a posé une question, une carte attend
+                ton clic, ou tu es en train d'écrire
      think      il prépare sa réponse (flux en cours, ou action en cours)
      explain    il répond, ou il annonce la carte qui s'ouvre en dessous
-     encourage  une action que tu as validée vient d'aboutir
+     encourage  une action vient d'aboutir (carte validée, thème appliqué,
+                page ouverte), et la fin d'une séance
+
+   ⚠️ `listen` a failli rester lettre morte. Sa première version ne se
+   déclenchait que sur une question posée par le code, or le code n'en
+   pose qu'une : celle du lieu d'entraînement, une fois dans la vie d'un
+   compte. Un état qui n'apparaît jamais est un état qui n'existe pas.
+   Les deux signaux ajoutés sont de la même nature que le premier, aussi
+   exacts et aussi peu devinés : une carte en attente de validation est
+   une carte en attente de TOI, et un brouillon non vide dit que tu écris.
 
    ⚠️ AUCUN DE CES ÉTATS NE SE DEVINE DANS LE TEXTE. On aurait pu chercher
    un point d'interrogation pour `listen` ou un « bravo » pour
@@ -467,7 +517,13 @@ export const PORTRAIT_GUIDE: Record<GuideId, { trait: string; pour: string }> = 
    `confirmSeance` et compagnie. On lit ces signaux, rien d'autre.
 
    Le visage vit dans `AssistantContext` (`etatGuide`), parce que c'est
-   lui qui tient tous ces signaux. L'écran ne fait que l'afficher. */
+   lui qui tient tous ces signaux. L'écran ne fait que l'afficher.
+
+   ⚠️ Le tunnel de séance (`WorkoutGuideModal`) utilise les mêmes cinq
+   états, mais il ne passe PAS par `etatGuide` : il ne tient pas une
+   conversation, il tient un compteur. Ses signaux sont ailleurs (en
+   pause, en repos, dernier exercice, séance terminée) et ils sont tout
+   aussi structurés. Voir `cleRepos` là-bas. */
 export type EtatGuide = "welcome" | "listen" | "think" | "explain" | "encourage";
 
 /** Ce que le Guide FAIT en disant une bulle donnée, écrit au moment où
