@@ -20,6 +20,14 @@ import AccueilSignature from "@/components/AccueilSignature";
 import RangsModal from "@/components/rang/RangsModal";
 import { calculerAura, etatDepuisExp, type EtatAura } from "@/lib/aura";
 import { noterRang } from "@/lib/celebrationRang";
+import { useGuideActif } from "@/context/GuideContext";
+import {
+  lireDejaVu,
+  lireSignauxAccueil,
+  momentAccueil,
+  noterDejaVu,
+  type MomentAccueil,
+} from "@/lib/momentAccueil";
 import { persistLieu } from "@/lib/planning";
 import { observeParisDay, parisDateStr, shiftDateStr } from "@/lib/dates";
 import { marquerPresence } from "@/lib/presence";
@@ -226,6 +234,48 @@ function Dashboard() {
       return () => clearTimeout(t);
     }
   }, [aura.exp, auraLoaded]);
+
+  /* ── Le mot du Guide ────────────────────────────────────────────────
+     Toute la règle vit dans `momentAccueil.ts` : ici on apporte les faits
+     et on affiche la décision. Trois garde-fous, chacun pour une raison
+     précise.
+
+     1. LE REPÈRE DE FRÉQUENCE SE LIT AVANT LES REQUÊTES. Si le Guide a
+        déjà parlé aujourd'hui, on ne lit RIEN : zéro requête sur
+        l'écran le plus ouvert de l'app, tous les jours, à partir de la
+        deuxième visite.
+     2. ON ATTEND QUE L'AURA SOIT VRAIE. Le premier rendu affiche une EXP
+        de cache : décider « plus que 12 EXP avant Or » dessus pourrait
+        annoncer un palier déjà franchi.
+     3. UNE SEULE ÉVALUATION PAR JOUR ET PAR MONTAGE (`jourEvalueRef`).
+        `aura` change plusieurs fois pendant le chargement, et sans ce
+        verrou le deuxième passage lirait le repère que le premier vient
+        d'écrire, donc le mot disparaîtrait aussitôt affiché. Le verrou
+        garde le JOUR et pas un booléen : une app laissée ouverte qui
+        traverse minuit redonne ainsi la parole au Guide, sans effet
+        supplémentaire pour la lui reprendre. */
+  const { guide, etat: etatGuide } = useGuideActif();
+  const [motGuide, setMotGuide] = useState<MomentAccueil | null>(null);
+  const jourEvalueRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || !auraLoaded || etatGuide === "chargement") return;
+    if (jourEvalueRef.current === parisDay) return;
+    jourEvalueRef.current = parisDay;
+
+    const dejaVu = lireDejaVu(user.id);
+    if (dejaVu.jour === parisDay) return;      // il a déjà parlé : rien à lire
+
+    let vivant = true;
+    (async () => {
+      const signaux = await lireSignauxAccueil(createClient(), user.id, aura, parisDay);
+      if (!vivant || !signaux) return;         // lecture ratée : il se tait
+      const moment = momentAccueil(signaux, aura, parisDay, dejaVu);
+      if (!moment) return;
+      setMotGuide(moment);
+      noterDejaVu(user.id, parisDay, moment);
+    })();
+    return () => { vivant = false; };
+  }, [user, aura, auraLoaded, etatGuide, parisDay]);
 
 
   // Ferme le menu au clic extérieur (vérifie les deux refs : bouton avatar + portal dropdown)
@@ -608,6 +658,8 @@ function Dashboard() {
           expGain={expGain}
           isPremium={!!user?.is_premium}
           isAdmin={!!user?.is_admin}
+          guide={guide}
+          moment={motGuide}
           onNavigate={(path) => router.push(path)}
           onOpenRangs={() => setShowRangs(true)}
         />

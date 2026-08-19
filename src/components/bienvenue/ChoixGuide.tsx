@@ -25,7 +25,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion, type PanInfo } from "framer-motion";
+import { animate, motion, useMotionValue, useReducedMotion, type PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PORTRAIT_GUIDE, PRENOM_GUIDE, type GuideId } from "@/lib/guides";
 import PortraitGuide from "./PortraitGuide";
@@ -58,6 +58,44 @@ type Fiche = {
      n'est meilleur, ils n'ont pas les mêmes gestes. */
   detail: string[];
 };
+
+/* ⚠️ LE GESTE ET LE RAIL PARLENT LA MÊME LANGUE. Même durée, même
+   courbe : c'est la condition pour qu'on lise UN déplacement continu et
+   pas deux mouvements superposés qui se rattrapent. La courbe est
+   recopiée sur `.rail` dans `bienvenue.module.css` ; les deux se
+   changent ensemble.
+
+   ⚠️ POURQUOI LE RETOUR À ZÉRO EST ÉCRIT ICI À LA MAIN. Avant, la couche
+   du geste portait `dragConstraints={{ left: 0, right: 0 }}` ET
+   `animate={{ x: 0 }}`. Des contraintes nulles veulent dire que le doigt
+   est TOUJOURS hors limites, donc au relâchement framer lançait sa propre
+   remise en place (un ressort) ; le changement de slide re-rendait le
+   composant, ce qui relançait par-dessus le fondu déclaratif de 380 ms ;
+   et le rail, lui, partait sur sa transition CSS. Trois mouvements vers
+   la même cible, trois durées, aucune calée sur les autres. On ne garde
+   qu'un seul retour, écrit ici, avec exactement la durée et la courbe du
+   rail. */
+const DUREE = 0.38;
+const COURBE: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
+
+/* Le frein de bord. Au-delà du dernier Guide il n'y a rien à montrer :
+   sans lui, le doigt tire une bande vide dans la fenêtre, et une zone
+   vide se lit comme un bug plutôt que comme une limite.
+
+   ⚠️ IL EST CONFIÉ À FRAMER (`dragConstraints` + `dragElastic`) ET PAS
+   ÉCRIT À LA MAIN. Une première version freinait dans `onDrag` : c'est
+   faux par construction, parce que framer appelle `onDrag` APRÈS avoir
+   déjà écrit sa propre valeur pour l'image en cours. Corriger après coup,
+   c'est corriger une image trop tard, donc exactement le tremblement
+   qu'on cherche à supprimer. Le calcul de la contrainte, lui, se fait
+   dans la même passe que le rendu.
+
+   La borne côté « il y a un Guide par là » est volontairement énorme :
+   la course utile ne dépasse jamais une largeur d'écran, et une valeur
+   en dur évite de mesurer quoi que ce soit (donc d'observer un
+   redimensionnement). La borne côté vide, elle, est exacte : zéro. */
+const COURSE_LIBRE = 9999;
+const ELASTIQUE = 0.42;
 
 const FICHES: Fiche[] = [
   {
@@ -100,6 +138,14 @@ export default function ChoixGuide({
   const pisteRef = useRef<HTMLDivElement>(null);
   const reduit = useReducedMotion();
 
+  /* L'écart du doigt vit dans une valeur de mouvement, PAS dans un état
+     React : pendant la glisse, rien ne se re-rend, la transformation est
+     écrite directement sur l'élément. Un `useState` ici referait le rendu
+     de deux portraits, de leur lumière floutée et de leurs masques à
+     chaque image du geste, ce qui est exactement la saccade qu'on
+     corrige. */
+  const glisse = useMotionValue(0);
+
   const autre = FICHES[index === 0 ? 1 : 0];
 
   /* Le clavier, pour que le carrousel ne dépende pas d'un geste tactile.
@@ -125,8 +171,17 @@ export default function ChoixGuide({
     const largeur = pisteRef.current?.clientWidth ?? 0;
     const seuil = Math.max(46, largeur * 0.18);
     const { offset, velocity } = info;
-    if (offset.x < -seuil || velocity.x < -420) setIndex((i) => Math.min(FICHES.length - 1, i + 1));
-    else if (offset.x > seuil || velocity.x > 420) setIndex((i) => Math.max(0, i - 1));
+    let cible = index;
+    if (offset.x < -seuil || velocity.x < -420) cible = Math.min(FICHES.length - 1, index + 1);
+    else if (offset.x > seuil || velocity.x > 420) cible = Math.max(0, index - 1);
+
+    setIndex(cible);
+    /* Le rail part vers sa nouvelle position au même instant (transition
+       CSS) et le geste revient à zéro sur la même courbe : les deux
+       transformations s'additionnent en un seul déplacement.
+       Un geste refusé (on n'a pas changé de Guide) revient plus vite :
+       380 ms pour ne rien faire, ça se sent comme une hésitation. */
+    animate(glisse, 0, { duration: cible === index ? 0.24 : DUREE, ease: COURBE });
   };
 
   return (
@@ -165,14 +220,22 @@ export default function ChoixGuide({
           className={s.rail}
           style={{ transform: `translate3d(${-index * 50}%, 0, 0)` }}
         >
+        {/* ⚠️ PLUS D'`animate`, ET DES CONTRAINTES QUI VEULENT DIRE QUELQUE
+            CHOSE. Les bornes ne sont plus « zéro des deux côtés » (ce qui
+            mettait le doigt hors limites en permanence) mais « libre du
+            côté où il y a un Guide, bloqué du côté du vide ». Résultat :
+            la course normale ne déclenche aucune animation de framer, et
+            c'est `finDeGlisse` seul qui décide comment la couche rentre. */}
         <motion.div
           className={s.geste}
+          style={{ x: glisse }}
           drag={reduit ? false : "x"}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={1}
+          dragConstraints={{
+            left: index < FICHES.length - 1 ? -COURSE_LIBRE : 0,
+            right: index > 0 ? COURSE_LIBRE : 0,
+          }}
+          dragElastic={ELASTIQUE}
           dragMomentum={false}
-          animate={{ x: 0 }}
-          transition={{ type: "tween", duration: 0.38, ease: [0.22, 0.61, 0.36, 1] }}
           onDragEnd={finDeGlisse}
         >
           {FICHES.map((f, i) => (

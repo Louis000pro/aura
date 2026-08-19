@@ -3,7 +3,10 @@
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import GemmeRang from "@/components/GemmeRang";
+import { VisageGuide } from "@/components/AssistantMark";
 import { EXP_CONNEXION, EXP_REPAS, EXP_SEANCE, EXP_SEANCE_STREAK, type EtatAura } from "@/lib/aura";
+import { voix, type GuideRef } from "@/lib/guides";
+import type { MomentAccueil } from "@/lib/momentAccueil";
 import { formatPrice, PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import styles from "./AccueilSignature.module.css";
 
@@ -91,6 +94,8 @@ export default function AccueilSignature({
   expGain,
   isPremium,
   isAdmin,
+  guide,
+  moment,
   onNavigate,
   onOpenRangs,
 }: {
@@ -101,6 +106,13 @@ export default function AccueilSignature({
   expGain: number | null;
   isPremium: boolean;
   isAdmin: boolean;
+  /** Nora, Sasha, ou `null` : sans Guide résolu la marque ✦ reprend la
+   *  place et la phrase reste la version commune. */
+  guide: GuideRef;
+  /** Ce que le Guide a à dire en arrivant, ou `null` quand il n'a rien à
+   *  dire, ce qui est le cas le plus fréquent. Décidé dans
+   *  `momentAccueil.ts`, jamais ici : cet écran affiche, il ne juge pas. */
+  moment: MomentAccueil | null;
   onNavigate: (path: string) => void;
   onOpenRangs: () => void;
 }) {
@@ -124,8 +136,16 @@ export default function AccueilSignature({
         <h1>
           <span className={styles.pseudo}>{pseudo}</span>
         </h1>
-        <span>Content de te revoir.</span>
       </header>
+
+      {/* ⚠️ IL N'Y A PLUS DE LIGNE D'ACCUEIL PERMANENTE. « Content de te
+          revoir. » s'écrivait sous le pseudo à CHAQUE ouverture, disait
+          toujours la même chose, et accordait au masculin quoi qu'il
+          arrive. À la place, le Guide parle quand il a une raison de
+          parler (une absence, un début, un rang à portée, un cap de
+          série) et se tait le reste du temps. Un mot rare qui tombe juste
+          vaut mieux qu'une phrase quotidienne qui ne dit rien. */}
+      {moment && <MotDuGuide guide={guide} moment={moment} reduce={!!reduce} />}
 
       {showPremiumOffer && (
         <motion.section
@@ -164,7 +184,12 @@ export default function AccueilSignature({
         </span>
         <span className={styles.rankCopy}>
           <strong>{aura.rang.nom} · Jour {streak}</strong>
-          <small>Te revoilà, ton histoire continue.</small>
+          {/* Cette ligne disait « Te revoilà, ton histoire continue. »,
+              c'est-à-dire un second bonjour, juste sous le premier. Deux
+              accueils dans le même écran, et celui-ci se retrouvait à
+              répéter mot pour mot le Guide les jours où il salue un
+              retour. Elle dit maintenant ce que le bouton ouvre. */}
+          <small>Voir les rangs et leurs récompenses.</small>
         </span>
         <span className={styles.rankExp}>
           <strong>{auraLoaded ? aura.exp : "—"} EXP</strong>
@@ -283,6 +308,39 @@ export default function AccueilSignature({
         </div>
       </section>
     </div>
+  );
+}
+
+/* ── Le mot du Guide ──────────────────────────────────────────────────
+   Un visage de 40 px et une phrase, posés sur la page. Ni carte, ni
+   cadre, ni bandeau coloré : ce n'est pas une notification, c'est
+   quelqu'un qui dit une chose en passant. La règle « ni carte, ni cadre,
+   ni pastille » du grand personnage vaut ici aussi, et l'avatar rond est
+   la seule forme admise (c'est déjà celle de la conversation).
+
+   Il ne porte AUCUN bouton. Ce que le Guide propose (une séance, un
+   repas) existe déjà juste en dessous, dans les missions du jour : lui
+   ajouter une commande dupliquerait la même action à trois centimètres
+   d'écart. */
+function MotDuGuide({
+  guide,
+  moment,
+  reduce,
+}: {
+  guide: GuideRef;
+  moment: MomentAccueil;
+  reduce: boolean;
+}) {
+  return (
+    <motion.div
+      className={styles.guideWord}
+      initial={reduce ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <VisageGuide guide={guide} etat={moment.etat} size={40} />
+      <p>{voix(guide, moment.phrase, moment.ctx)}</p>
+    </motion.div>
   );
 }
 

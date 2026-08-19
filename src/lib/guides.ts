@@ -13,9 +13,10 @@
    Guide, il rend une chaîne.
 
    ── ÉTAT ACTUEL ──
-   Le parcours d'entrée (`bienvenue.*`) et TOUTE la conversation
+   Le parcours d'entrée (`bienvenue.*`), TOUTE la conversation
    (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`,
-   `attente.*`) et la séance (`seance.*`) sont différenciés. Restent
+   `attente.*`), la séance (`seance.*`) et l'arrivée sur l'accueil
+   (`retour.*`) sont différenciés. Restent
    volontairement communes : les `panne.*`, parce qu'une personnalité posée
    sur un mécanisme cassé serait déplacée.
 
@@ -62,6 +63,12 @@ export type ContexteVoix = {
   jour?: string;
   /** Le titre d'une séance, tel qu'il est écrit. */
   titre?: string;
+  /** EXP qui manquent avant le rang suivant (`retour.palier`). */
+  manque?: number;
+  /** Le nom du rang visé (`retour.palier`). */
+  rang?: string;
+  /** Le nombre de jours de la série en cours (`retour.serie`). */
+  serie?: number;
 };
 
 type Rendu = string | ((c: ContexteVoix) => string);
@@ -76,6 +83,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      question.* les précisions qu'il demande (le CODE décide, pas le modèle)
      impasse.*  ce qu'il répond quand il ne peut pas agir
      accueil.*  la feuille de chat vide
+     retour.*   ce qu'il dit en arrivant sur l'accueil de l'app
      memoire.*  ce qu'il dit de sa propre mémoire
      attente.*  ce qu'il dit pendant qu'il travaille
      panne.*    quand la réponse ne vient pas
@@ -239,6 +247,95 @@ const REPLIQUES = {
     commun: "Demande-moi n'importe quoi, ou dis-moi où tu veux aller dans l'app.",
     nora:   "Pose-moi ta question, ou dis-moi simplement où tu veux aller dans l'app.",
     sasha:  "Demande-moi ce que tu veux, ou dis-moi où aller dans l'app.",
+  },
+
+  /* ════════════════════════════════════════════════════════════════
+     L'ARRIVÉE SUR L'ACCUEIL
+
+     ⚠️ CE N'EST PAS UN MESSAGE DE BIENVENUE, C'EST UNE RÉACTION À UN
+     MOMENT. Le Guide ne dit rien parce qu'on a ouvert l'app, il dit
+     quelque chose parce qu'il s'est passé quelque chose : une absence,
+     un début, un rang à portée, une série qui tient. La décision de
+     PARLER n'est pas ici, elle est dans `momentAccueil.ts`, et elle
+     s'appuie sur `palierDe` (rappelsProfil), c'est-à-dire exactement la
+     même lecture d'engagement que les notifications.
+
+     ⚠️ ZÉRO CULPABILISATION, ET C'EST ICI QUE C'EST LE PLUS FACILE À
+     TRAHIR. Aucune de ces phrases ne compte les jours manqués, ne parle
+     de « rattraper », de « reprendre le rythme perdu » ni de ce qui
+     « aurait pu ». On dit ce qui n'a pas bougé, jamais ce qui s'est
+     arrêté. Même règle que `REPRISE` et `VEILLEUSE` dans
+     `rappelsProfil.ts`, et pour la même raison : c'est précisément le
+     moment où une phrase de reproche fait partir quelqu'un.
+
+     ⚠️ AUCUN ACCORD DE GENRE. Ni « content », ni « prêt », ni « allé
+     au bout » : ces phrases s'adressent à tout le monde. C'est aussi ce
+     qui a fait retirer le « Content de te revoir. » d'origine de
+     l'accueil, qui accordait au masculin quoi qu'il arrive. */
+
+  /* Absence longue (le palier `endormi`, 14 jours et plus). Le ton est
+     celui de la veilleuse : rien ne s'est perdu, rien n'est à rattraper,
+     et surtout aucune promesse de nouveauté qu'on ne peut pas tenir. */
+  "retour.absence.longue": {
+    commun: "Te revoilà. Rien ne s'est perdu, et il n'y a rien à rattraper.",
+    nora:   "Te revoilà. Rien ne s'est perdu de ton côté et il n'y a rien à rattraper. On repart d'où tu veux, même tout doucement.",
+    sasha:  "Te revoilà. Rien à rattraper, rien à reprendre de zéro. On repart quand tu veux.",
+  },
+
+  /* Absence courte après une vraie pratique (le palier `decrochage`).
+     Le fait qu'il y ait DÉJÀ eu des séances change la phrase : on peut
+     s'appuyer dessus au lieu de tout réexpliquer. */
+  "retour.absence.courte": {
+    commun: "Te revoilà. Ta place n'a pas bougé.",
+    nora:   "Te revoilà. Ta place n'a pas bougé, tes séances non plus. Dix minutes suffisent pour reprendre le fil.",
+    sasha:  "Te revoilà. Ta place n'a pas bougé. Dix minutes suffisent pour reprendre ton rythme.",
+  },
+
+  /* Le palier `decouverte` : moins de deux séances au total. Le produit
+     n'a pas encore été essayé pour de vrai, donc on nomme la porte
+     d'entrée la plus basse qui existe, et rien d'autre. */
+  "retour.debut": {
+    commun: "On commence quand tu veux. La séance la plus courte fait quinze minutes, sans matériel.",
+    nora:   "On commence quand tu le sens. La plus courte fait quinze minutes, sans matériel, et je t'explique au fur et à mesure.",
+    sasha:  "On commence quand tu veux. Quinze minutes, sans matériel, et c'est parti.",
+  },
+
+  /* Un rang à portée d'une seule séance. Le chiffre vient du calcul de
+     l'aura, jamais d'une estimation : la phrase « une séance et tu y
+     es » doit être littéralement vraie (voir `EXP_UNE_SEANCE`). */
+  "retour.palier": {
+    commun: (c: ContexteVoix) => `Plus que ${c.manque ?? 0} EXP avant ${c.rang ?? ""}.`,
+    nora:   (c: ContexteVoix) => `Plus que ${c.manque ?? 0} EXP avant ${c.rang ?? ""}. Une séance suffit à passer le cap.`,
+    sasha:  (c: ContexteVoix) => `${c.rang ?? ""} est à ${c.manque ?? 0} EXP. Une séance et c'est fait.`,
+  },
+
+  /* Une série qui atteint un cap. Elle constate, elle ne met jamais en
+     garde : « attention à ne pas la perdre » serait une menace, et une
+     menace est une culpabilisation déguisée. */
+  "retour.serie": {
+    commun: (c: ContexteVoix) => `Jour ${c.serie ?? 0}. Ta série tient.`,
+    nora:   (c: ContexteVoix) => `Jour ${c.serie ?? 0}. Ta série tient, et c'est le genre de chose qui se construit sans qu'on la voie.`,
+    sasha:  (c: ContexteVoix) => `Jour ${c.serie ?? 0}. La série tient, on continue.`,
+  },
+
+  /* Le premier passage de la journée, quand rien de plus précis ne
+     s'applique. Trois formulations tournées par le numéro du jour : une
+     seule reviendrait tous les matins, et une phrase qu'on reconnaît
+     avant de l'avoir lue ne se lit plus. */
+  "retour.jour.a": {
+    commun: "Te revoilà.",
+    nora:   "Te revoilà. Je suis là si tu veux y voir clair sur ta journée.",
+    sasha:  "Te revoilà. Dis-moi ce qu'on fait aujourd'hui.",
+  },
+  "retour.jour.b": {
+    commun: "Je suis là quand tu veux.",
+    nora:   "Je suis là quand tu veux, même juste pour une question.",
+    sasha:  "Je suis là. Une question, une séance, ce que tu veux.",
+  },
+  "retour.jour.c": {
+    commun: "On fait quoi aujourd'hui ?",
+    nora:   "On regarde ta journée ensemble ?",
+    sasha:  "On fait quoi aujourd'hui ?",
   },
 
   /* ── Sa mémoire ──

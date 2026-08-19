@@ -41,6 +41,30 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* ── Le mot du Guide ──────────────────────────────────────────────────
+   Pas de fond, pas de bordure, pas de coin arrondi : la phrase se pose
+   sur la page comme le reste du texte. Lui donner une surface en ferait
+   une notification, c'est-à-dire quelque chose à traiter, alors que
+   c'est juste quelqu'un qui parle.
+
+   Il remonte de 8 px : l'écart de 16 px de `.home` est fait pour séparer
+   des blocs, et cette phrase appartient au bonjour juste au-dessus. */
+.guideWord {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: -8px;
+}
+
+.guideWord p {
+  margin: 0;
+  min-width: 0;
+  color: var(--text-soft);
+  font-size: 13.5px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
 .poster {
   position: relative;
   min-height: 178px;

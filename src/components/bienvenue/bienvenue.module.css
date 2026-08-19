@@ -131,12 +131,29 @@
 
 /* La couche du geste. Elle ne porte que l'écart du doigt et revient
    toujours à zéro : elle ne peut donc pas laisser le carrousel quelque
-   part entre deux slides. */
+   part entre deux slides.
+
+   ⚠️ `will-change: transform` N'EST PAS UNE PRÉCAUTION, C'EST LA
+   CORRECTION DE LA SACCADE. Sans elle, cette couche n'a pas son propre
+   plan de composition : à CHAQUE image du geste, le navigateur redessine
+   tout ce qu'elle contient, c'est-à-dire deux portraits en pleine
+   hauteur, leurs masques de fondu et surtout deux lumières floutées à
+   22 px sur une boîte plus grande que le personnage. Un flou est ce
+   qu'un moteur de rendu paie le plus cher, et on le repayait soixante
+   fois par seconde.
+
+   C'est aussi ce qui expliquait le symptôme exact rapporté : les boutons
+   « Voir Sasha » étaient fluides et le doigt ne l'était pas. Les boutons
+   déplacent `.rail`, qui a toujours eu son plan à lui ; le doigt
+   déplaçait cette couche-ci, qui n'en avait pas. Promue, elle est
+   dessinée UNE fois et le geste ne fait plus que déplacer une image déjà
+   prête. Ne pas retirer cette ligne. */
 .geste {
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
   cursor: grab;
+  will-change: transform;
 }
 
 .geste:active { cursor: grabbing; }
