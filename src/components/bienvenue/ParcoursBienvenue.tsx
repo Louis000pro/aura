@@ -11,11 +11,15 @@
    5. Ta nutrition
    6. C'est prêt
 
-   Deux doctrines cohabitent, et elles ne se contredisent pas :
-   le CHOIX DU GUIDE est obligatoire, le QUESTIONNAIRE ne l'est pas. On
-   ne rend pas artificiellement obligatoire ce qui ne l'est pas
-   aujourd'hui : à partir de l'étape 1, « Plus tard » enregistre ce qui
-   est déjà rempli et emmène à la fin.
+   ⚠️ TOUT LE PARCOURS SE RÉPOND (Louis, 2026-08-19). Le choix du Guide
+   était déjà obligatoire ; les cinq étapes le sont devenues. « Plus
+   tard » a été retiré, et « Continuer » ne passe plus sur une étape
+   vide (`champsManquants` dans `EtapesProfil`). Avant, on pouvait
+   traverser les cinq étapes sans rien toucher et arriver dans Vaiiya
+   avec un profil vide sans l'avoir décidé : ce n'était pas une liberté,
+   c'était un piège silencieux. La sortie existe toujours, elle se prend
+   en quittant la page ; elle n'est simplement plus proposée à chaque
+   question.
 
    ⚠️ Chaque étape franchie ÉCRIT. C'est volontaire et ça coûte un
    upsert : un rafraîchissement au milieu du parcours ne doit pas
