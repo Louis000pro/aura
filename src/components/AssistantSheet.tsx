@@ -22,7 +22,7 @@ import { useVoiceCapture } from "@/hooks/useVoiceCapture";
 import { CATEGORY_LABEL } from "@/lib/assistantActions";
 import { PLANS } from "@/lib/plans";
 import { heroImageForSeance } from "@/lib/workoutArt";
-import { VisageGuide } from "@/components/AssistantMark";
+import { BusteGuide, ReflexionGuide, VisageGuide, prechargerGuide } from "@/components/AssistantMark";
 import { useGuideActif } from "@/context/GuideContext";
 import { voix, nomGuide, roleGuide } from "@/lib/guides";
 
@@ -284,7 +284,7 @@ function CartePlanning() {
 }
 
 export default function AssistantSheet() {
-  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
+  const { isOpen, close, messages, isStreaming, sendMessage, repondreQuestion, pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal } = useAssistant();
   /* Qui parle dans cette conversation. `null` tant que le choix n'a pas
      été fait (ou que la lecture a échoué) : tout retombe alors sur ✦ et
      sur le texte commun, donc rien ne casse. */
@@ -297,6 +297,12 @@ export default function AssistantSheet() {
   const voice = useVoiceCapture({ onTranscript: (t) => sendMessage(t) });
 
   useEffect(() => { setMounted(true); }, []);
+
+  /* Les cinq visages se relaient dans la même pastille. On les demande à
+     l'ouverture de la feuille : sans ça, le premier passage à « think »
+     téléchargerait son fichier PENDANT le fondu, et la pastille se
+     viderait le temps de l'aller-retour. */
+  useEffect(() => { if (isOpen) prechargerGuide(guide); }, [isOpen, guide]);
 
   // La saisie grandit VERTICALEMENT avec le texte (on voit tout ce qu'on écrit,
   // on peut se relire et se corriger — plus de ligne unique qui défile à l'horizontale).
@@ -385,7 +391,19 @@ export default function AssistantSheet() {
               </div>
               <div className="flex items-center gap-3 px-4 pb-3 pt-1"
                 style={{ borderBottom: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                <VisageGuide guide={guide} size={36} />
+                {/* Le visage de l'en-tête est le seul qui CHANGE en place :
+                    il porte l'état vivant de la conversation. D'où le fondu
+                    croisé, court : un visage qui claque d'une image à
+                    l'autre se remarque plus que ce qu'il raconte. */}
+                <span className="relative flex-shrink-0" style={{ width: 36, height: 36 }}>
+                  <AnimatePresence initial={false}>
+                    <motion.span key={etatGuide} className="absolute inset-0"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      transition={{ duration: 0.22 }}>
+                      <VisageGuide guide={guide} etat={etatGuide} size={36} />
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
                 <div className="flex-1 min-w-0">
                   {/* Un seul mot pour désigner Nora et Sasha : « Guide ».
                       L'en-tête disait « Ton assistant », les cartes disaient
@@ -408,9 +426,23 @@ export default function AssistantSheet() {
               {messages.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col items-center justify-center gap-5 flex-1 text-center px-4">
-                  <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                  {/* ⚠️ LE GRAND PERSONNAGE NE VIT QU'ICI. Avant le premier
+                      message, la seule chose à dire est « voilà qui te
+                      parle », et une étincelle de 80 px ne le disait pas.
+                      Dès que la conversation commence, il disparaît : dans
+                      le fil, ce sont les avatars compacts, sinon le chat
+                      devient une galerie d'illustrations.
+
+                      Pas de flottement perpétuel : le personnage ne lévite
+                      pas, il arrive. La hauteur respire avec l'écran, parce
+                      que la feuille fait 88 % de la hauteur du téléphone et
+                      qu'en dessous il y a encore le salut, la phrase et
+                      quatre suggestions. */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.34, ease: [0.22, 0.61, 0.36, 1] }}
                     className="flex items-center justify-center">
-                    <VisageGuide guide={guide} size={80} />
+                    <BusteGuide guide={guide} hauteur="clamp(132px, 26vh, 216px)" />
                   </motion.div>
                   <div>
                     <p className="text-base font-semibold mb-1" style={{ color: "var(--text-0)" }}>
@@ -444,7 +476,12 @@ export default function AssistantSheet() {
                     transition={{ duration: 0.26, ease: [0.25, 0.46, 0.45, 0.94] }}
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} items-end gap-2`}>
                     {msg.role === "assistant" && (
-                      <VisageGuide guide={guide} size={28} className="mb-0.5" />
+                      /* Le visage de CETTE bulle : le ton écrit à sa création,
+                         et « think » tant qu'elle s'écrit encore. Il ne bouge
+                         plus une fois la bulle finie, donc le fil relu montre
+                         bien ce que le Guide faisait à chaque tour. */
+                      <VisageGuide guide={guide} size={28} className="mb-0.5"
+                        etat={msg.streaming ? "think" : (msg.ton ?? "explain")} />
                     )}
                     <div className="px-4 py-2.5 rounded-3xl text-[14px] font-light leading-relaxed"
                       style={{
@@ -493,12 +530,32 @@ export default function AssistantSheet() {
 
               {/* Génération en cours */}
               {actionLoading && (
+                /* ── LE SEUL AUTRE MOMENT OÙ LE GUIDE EST GRAND ──
+                   Une génération dure plusieurs secondes, et c'est la seule
+                   attente de la feuille qui se compte comme ça. Le portrait
+                   de réflexion y gagne sa place : c'est le seul cadrage où
+                   la pose se lit (on voit les bras), et le seul instant où
+                   un personnage plus grand dit quelque chose de vrai. Il
+                   part avec la carte qu'il annonçait.
+
+                   Il est POSÉ À CÔTÉ de la bulle, pas dedans : un
+                   personnage enfermé dans une pastille redeviendrait une
+                   vignette, ce que la direction du Guide refuse. */
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className="self-start max-w-[85%] flex items-center gap-2.5 px-4 py-3 rounded-3xl"
-                  style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
-                  <motion.span className="w-4 h-4 rounded-full border-2" style={{ borderColor: "var(--violet-mid)", borderTopColor: "var(--accent)" }}
-                    animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
-                  <span className="text-[13px] font-light" style={{ color: "var(--text-1)" }}>Je te prépare une séance…</span>
+                  className="self-start max-w-[92%] flex items-end gap-1.5">
+                  <ReflexionGuide guide={guide} hauteur={92} />
+                  <div className="flex items-center gap-2.5 px-4 py-3 rounded-3xl mb-1.5"
+                    style={{ background: "rgba(var(--tint-violet-rgb),0.6)", border: "1px solid rgba(var(--accent-rgb),0.12)" }}>
+                    <motion.span className="w-4 h-4 rounded-full border-2" style={{ borderColor: "var(--violet-mid)", borderTopColor: "var(--accent)" }}
+                      animate={{ rotate: 360 }} transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }} />
+                    {/* La bulle nomme ce qu'elle attend. Elle disait « une
+                        séance » aux trois actions qui font patienter, donc
+                        elle en promettait une à qui venait de raconter son
+                        déjeuner. */}
+                    <span className="text-[13px] font-light" style={{ color: "var(--text-1)" }}>
+                      {voix(guide, `attente.${actionLoading}`)}
+                    </span>
+                  </div>
                 </motion.div>
               )}
 
@@ -614,7 +671,7 @@ export default function AssistantSheet() {
 
                   {pendingMeal.confidence === "low" && (
                     <p className="px-4 pt-1.5 text-[11px] font-light leading-snug" style={{ color: "var(--text-3)" }}>
-                      Estimation approximative — tu pourras l&apos;ajuster dans Nutrition.
+                      Estimation approximative, tu pourras l&apos;ajuster dans Nutrition.
                     </p>
                   )}
 

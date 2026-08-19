@@ -1,50 +1,70 @@
 #!/usr/bin/env node
 /* ============================================================================
-   Les portraits de Nora et Sasha : normalisation et conversion.
+   Les portraits de Nora et Sasha : normalisation, cadrages, conversion.
 
-   Entree  : guides-src/portraits/{nora,sasha}-{master,chat}.png
+   Entree  : guides-src/portraits/<guide>-<planche>.png
              (les PNG originaux, jamais modifies, jamais commites)
-   Sortie  : public/guides/{nora,sasha}-{master,chat}-v1.webp
+   Sortie  : public/guides/*.webp
 
    Usage :
      npm run portraits            ecrit les WebP
      npm run portraits -- --check mesure et compare, sans rien ecrire
 
-   ── POURQUOI UNE NORMALISATION ────────────────────────────────────────────
-   Les deux illustrations sont dessinees separement, donc elles n'arrivent pas
-   cadrees pareil. Mesure sur les fichiers livres : le haut du crane de Nora
-   est a 5,6 % de la hauteur, celui de Sasha a 1,2 %. Or le questionnaire
-   recadre le HAUT du fichier pour en tirer un buste : avec 1,2 % de marge, les
-   cheveux de Sasha etaient coupes par la fenetre.
+   -- LES CINQ ETATS --------------------------------------------------------
+   Un Guide a cinq visages, un par moment de la conversation :
 
-   Deux corrections possibles, et une seule est saine. Donner a chaque Guide
+     welcome    l'ecran vide, avant le premier message   (planche `master`)
+     listen     il vient de poser une question           (planche `listen`)
+     think      il prepare sa reponse                    (planche `think`)
+     explain    il repond, il montre une carte           (planche `explain`)
+     encourage  une action vient d'aboutir               (planche `encourage`)
+
+   `welcome` reutilise le master : c'est deja la pose d'accueil, celle de
+   l'ecran de choix. Les quatre autres sont des planches a part.
+
+   -- POURQUOI UNE NORMALISATION --------------------------------------------
+   Les illustrations sont dessinees separement, donc elles n'arrivent ni
+   cadrees ni meme mises a l'echelle pareil. Mesure sur les dix planches :
+   le haut du crane va de 0,8 % a 5,6 % de la hauteur, et la tete de Nora est
+   peinte 27 % plus grande dans ses quatre nouvelles poses que dans son
+   master. Un cadrage en pourcentages fixes donnerait donc cinq zooms
+   differents pour un meme personnage, et l'avatar sauterait a chaque
+   changement d'etat, en plein milieu d'une conversation.
+
+   Deux corrections possibles, une seule est saine. Donner a chaque planche
    son propre reglage CSS ferait entrer les defauts d'un fichier dans la
-   feuille de style, et la prochaine version d'une illustration casserait le
-   cadrage en silence. On fait donc l'inverse, comme `normalize-guides.mjs` le
-   fait deja pour les sprites d'exercice : le fichier se conforme a un
-   contrat, et le CSS n'a qu'une seule regle.
+   feuille de style, et la prochaine illustration casserait le cadrage en
+   silence. On fait donc l'inverse, comme `normalize-guides.mjs` le fait deja
+   pour les sprites d'exercice : le fichier se conforme a un contrat, et le
+   CSS n'a qu'une seule regle.
 
-   ⚠️ NORMALISER N'EST PAS RETOUCHER. Le dessin n'est jamais redessine, ni
+   /!\ TOUS LES CADRAGES SE POSENT SUR LA TETE MESUREE, jamais sur la
+   silhouette. C'est la difference qui compte ici : les nouvelles poses
+   bougent les bras (une main au menton, un bras leve), donc la silhouette
+   change de largeur d'un etat a l'autre alors que la tete, elle, ne bouge
+   pas. Un cadrage cale sur la silhouette zoomerait autrement a chaque etat.
+
+   /!\ NORMALISER N'EST PAS RETOUCHER. Le dessin n'est jamais redessine, ni
    deforme, ni recolore, et son echelle n'est pas touchee sur les masters :
    on ne fait que le DEPLACER sur sa toile, en pixels entiers. Les originaux
    restent intacts dans guides-src/.
 
-   ── LES DEUX CONTRATS ─────────────────────────────────────────────────────
-   master · le haut du crane se pose sur la meme ligne pour les deux Guides
-            (LIGNE_TETE), par translation verticale seule. L'echelle du dessin
-            n'est pas touchee : c'est ce qui garde a chacun sa stature.
-   chat   · la silhouette occupe la meme part de la largeur (LARGEUR_CHAT),
-            par zoom centre. Ici il FAUT une echelle : les deux cadrages
-            carres n'ont pas ete cadres de la meme facon, et dans une pastille
-            ronde la tete de Nora arrivait un quart plus petite que celle de
-            Sasha.
-
-   ── POURQUOI ON NE REDIMENSIONNE PAS LES MASTERS ──────────────────────────
-   Le contrat visuel annoncait 1080 x 1440. Les fichiers arrivent en
-   1086 x 1448, soit exactement le meme ratio 3:4 et au-dessus du besoin reel
-   (1058 px de large au maximum, sur la scene de choix a DPR 3). Les
-   ramener a 1080 ne gagnerait rien et couterait un reechantillonnage. C'est
-   donc le contrat qui s'aligne sur les fichiers, pas l'inverse.
+   -- LES CONTRATS ----------------------------------------------------------
+   master     . le haut du crane se pose sur la meme ligne pour les deux
+                Guides (LIGNE_TETE), par translation verticale seule.
+                L'echelle du dessin n'est pas touchee : c'est ce qui garde a
+                chacun sa stature. Sert la scene de l'ecran de choix.
+   buste      . 4:5, la tete occupe une part fixe de la hauteur et jamais
+                plus d'une part fixe de la largeur. Sert le questionnaire
+                de /bienvenue ET l'ecran vide du chat.
+   reflexion  . 4:5 plus large : la tete n'occupe que 44 % de la hauteur, donc
+                on voit les EPAULES ET LES BRAS. C'est le seul cadrage ou la
+                pose se lit, et c'est fait pour : il ne sert qu'a l'attente,
+                le seul moment ou un personnage un peu plus grand apporte
+                quelque chose.
+   avatar     . carre, serre sur la tete. Il vit dans une pastille de 28 a
+                36 px : a cette taille un buste entier n'est qu'une tache, il
+                faut un visage.
    ============================================================================ */
 
 import { mkdir, readFile, writeFile, stat } from "node:fs/promises";
@@ -55,45 +75,53 @@ const SRC = path.join("guides-src", "portraits");
 const OUT = path.join("public", "guides");
 const CHECK = process.argv.includes("--check");
 
+const GUIDES = ["nora", "sasha"];
+
+/** L'etat, et la planche d'ou il sort. `welcome` reutilise le master. */
+const PLANCHE = {
+  welcome: "master",
+  listen: "listen",
+  think: "think",
+  explain: "explain",
+  encourage: "encourage",
+};
+
 /** Au-dessus, c'est du personnage. En dessous, du bord de pinceau. */
 const SEUIL_ALPHA = 8;
 
-/** Le haut du crane, en part de la hauteur du fichier. Valeur de Nora, qui
- *  laisse deja la bonne respiration au-dessus de la fenetre du questionnaire
- *  (celle-ci commence a 2 % de la hauteur). */
+/** Le haut du crane, en part de la hauteur du fichier. Valeur de Nora sur son
+ *  master, qui laisse deja la bonne respiration au-dessus de la fenetre du
+ *  questionnaire (celle-ci commence a 2 % de la hauteur).
+ *  /!\ C'est aussi la reserve dans laquelle les cadrages viennent chercher
+ *  leur air au-dessus du crane : la baisser ferait echouer `reflexion`. */
 const LIGNE_TETE = 0.056;
 
-/** La part de la largeur occupee par la silhouette dans le cadrage carre.
- *  99 % et pas 100 : il reste un cheveu de marge pour que le lissage des
- *  bords ne bute pas sur le bord du fichier. */
-const LARGEUR_CHAT = 0.99;
+/** -- LES CADRAGES ---------------------------------------------------------
+ *  `hauteurTete` : la part de la HAUTEUR de la fenetre occupee par la tete,
+ *  du haut du crane a la base du cou. C'est le reglage de zoom.
+ *  `largeurTete` : la part de la LARGEUR que la tete ne depasse jamais. C'est
+ *  cette contrainte qui a motive le pipeline : les cheveux de Nora sont
+ *  larges et son crane est peint 81 px a droite du centre de sa toile, donc
+ *  un cadrage centre sur le FICHIER lui coupait la meche droite.
+ *  `air` : ce qu'on laisse au-dessus du crane, en part de la hauteur.
+ *  /!\ `air x hauteur` doit rester sous LIGNE_TETE x hauteur du fichier,
+ *  sinon la fenetre sort par le haut et le script refuse. */
+const CADRAGES = {
+  buste:     { l: 512, h: 640, hauteurTete: 0.52, largeurTete: 0.76, air: 0.12 },
+  reflexion: { l: 320, h: 400, hauteurTete: 0.44, largeurTete: 0.62, air: 0.07 },
+  avatar:    { l: 256, h: 256, hauteurTete: 0.55, largeurTete: 0.80, air: 0.10 },
+};
 
-/** Le carre de conversation est affiche au plus a 80 px CSS, soit 240 px sur
- *  un ecran a DPR 3. 512 laisse plus du double, et pese trois fois moins que
- *  les 1254 px d'origine. */
-const COTE_CHAT = 512;
-
-/** ── LE BUSTE DU QUESTIONNAIRE ────────────────────────────────────────────
- *  La part de la HAUTEUR du buste occupee par la tete, du haut du crane a la
- *  base du cou. 52 %, mesure sur l'ancien cadrage CSS qui donnait 53 % : la
- *  stature ne change pas, seul le cadrage devient sur. */
-const PART_TETE_H = 0.52;
-
-/** La part de la LARGEUR du buste occupee par la tete. C'est cette contrainte
- *  qui a motive le fichier : les cheveux de Nora sont larges et son crane est
- *  peint 81 px a droite du centre de sa toile. Le CSS recadrait au centre du
- *  FICHIER, donc il lui coupait la meche droite. Ici la fenetre se centre sur
- *  la TETE mesuree, et 76 % laisse a la coiffure la plus large 12 % d'air de
- *  chaque cote. */
-const PART_TETE_L = 0.76;
-
-/** L'air au-dessus du crane, en part de la hauteur du buste. */
-const AIR_TETE = 0.12;
-
-/** Le buste est affiche au plus a 164 x 205 px CSS, soit 492 x 615 sur un
- *  ecran a DPR 3. Le ratio 4:5 est celui des trois tailles d'affichage. */
-const LARGEUR_BUSTE = 512;
-const HAUTEUR_BUSTE = 640;
+/** Qui recoit quoi. Un cadrage coute un fichier a telecharger : on ne genere
+ *  que ce que l'ecran affiche vraiment.
+ *    avatar     . les cinq etats, ils se relaient dans la meme pastille
+ *    buste      . welcome seul, c'est le grand personnage de l'ecran vide
+ *    reflexion  . think seul, c'est l'attente */
+const ETATS_PAR_CADRAGE = {
+  avatar: ["welcome", "listen", "think", "explain", "encourage"],
+  buste: ["welcome"],
+  reflexion: ["think"],
+};
 
 async function boiteAlpha(buf) {
   const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -129,34 +157,16 @@ async function translater(buf, dy, boite) {
     .toBuffer();
 }
 
-async function master(nom) {
-  const src = path.join(SRC, `${nom}-master.png`);
-  const buf = await readFile(src);
+/** Pose le haut du crane sur LIGNE_TETE. Rend la planche normalisee. */
+async function normaliser(fichier) {
+  const buf0 = await readFile(fichier);
+  const b0 = await boiteAlpha(buf0);
+  if (!b0) throw new Error(`${fichier} : planche entierement transparente`);
+  const vise = Math.round(LIGNE_TETE * b0.h);
+  const dy = vise - b0.top;
+  const buf = await translater(buf0, dy, b0);
   const boite = await boiteAlpha(buf);
-  const vise = Math.round(LIGNE_TETE * boite.h);
-  const dy = vise - boite.top;
-  const sortie = await translater(buf, dy, boite);
-  return { src, buf: sortie, boite, dy, vise, w: boite.w, h: boite.h };
-}
-
-async function chat(nom) {
-  const src = path.join(SRC, `${nom}-chat.png`);
-  const buf = await readFile(src);
-  const boite = await boiteAlpha(buf);
-  const large = boite.right - boite.left + 1;
-  const zoom = (LARGEUR_CHAT * boite.w) / large;
-  // Zoom centre sur la silhouette en x, et ancre en haut : la tete doit rester
-  // entiere, c'est le bas (le torse) qui peut sortir du cadre.
-  const cote = Math.min(boite.w, Math.round(boite.w / zoom));
-  const cx = (boite.left + boite.right) / 2;
-  const left = Math.max(0, Math.min(boite.w - cote, Math.round(cx - cote / 2)));
-  const top = Math.max(0, Math.min(boite.h - cote, Math.round(boite.top - 0.02 * cote)));
-  const sortie = await sharp(buf)
-    .extract({ left, top, width: cote, height: cote })
-    .resize({ width: COTE_CHAT, height: COTE_CHAT, kernel: "lanczos3" })
-    .png()
-    .toBuffer();
-  return { src, buf: sortie, boite, zoom, cote, left, top };
+  return { buf, boite, dy, craneAvant: b0.top, poidsSrc: (await stat(fichier)).size };
 }
 
 /** Mesure la tete : du haut du crane a la base du cou.
@@ -230,49 +240,40 @@ async function tete(buf, boite) {
   return { crane: boite.top, cou, gauche, droite, hauteur: cou - boite.top + 1, largeur: droite - gauche + 1 };
 }
 
-/** ── LE BUSTE ─────────────────────────────────────────────────────────────
- *  Le questionnaire montrait ce buste en recadrant le master DANS LE CSS :
- *  image dessinee a 235 % de sa fenetre et remontee de 2 %. Le cadrage etait
- *  donc centre sur le fichier, alors que les deux tetes n'y sont pas peintes
- *  au meme endroit, et il ne connaissait ni la taille ni la position d'une
- *  tete. Nora y perdait sa meche droite.
+/** -- LA FENETRE -----------------------------------------------------------
+ *  Une seule fonction pour les trois cadrages : ils ne different que par
+ *  leurs reglages. La fenetre se pose sur la tete MESUREE, avec de l'air
+ *  garanti au-dessus, et le CSS n'a plus qu'a remplir sa boite.
  *
- *  Le buste devient donc un fichier a lui, comme le carre de conversation :
- *  la fenetre se pose sur la tete MESUREE, avec de l'air garanti au-dessus,
- *  et le CSS n'a plus qu'a remplir sa boite. Une nouvelle illustration
- *  repasse par ici et se retrouve cadree pareil, sans qu'on ait a toucher a
- *  une feuille de style. */
-async function buste(nom, buf, boite) {
-  const t = await tete(buf, boite);
-
-  // Deux contraintes, on garde la plus large : la tete doit tenir une part
-  // donnee de la hauteur ET de la largeur. Sur Nora c'est la largeur qui
-  // commande (ses cheveux), sur Sasha la hauteur.
-  const parHauteur = t.hauteur / PART_TETE_H;
-  const parLargeur = (t.largeur / PART_TETE_L) * (HAUTEUR_BUSTE / LARGEUR_BUSTE);
+ *  Deux contraintes, on garde la plus large : la tete doit tenir une part
+ *  donnee de la hauteur ET de la largeur. Sur Nora c'est souvent la largeur
+ *  qui commande (ses cheveux), sur Sasha la hauteur. */
+async function fenetre(buf, boite, t, cadrage) {
+  const parHauteur = t.hauteur / cadrage.hauteurTete;
+  const parLargeur = (t.largeur / cadrage.largeurTete) * (cadrage.h / cadrage.l);
   const hauteur = Math.round(Math.max(parHauteur, parLargeur));
-  const largeur = Math.round((hauteur * LARGEUR_BUSTE) / HAUTEUR_BUSTE);
+  const largeur = Math.round((hauteur * cadrage.l) / cadrage.h);
 
   const cx = (t.gauche + t.droite) / 2;
   const left = Math.round(cx - largeur / 2);
-  const top = Math.round(t.crane - AIR_TETE * hauteur);
+  const top = Math.round(t.crane - cadrage.air * hauteur);
 
   // On refuse plutot que de rogner en silence : une illustration qui ne
   // rentre pas doit se voir a la generation, pas sur le telephone de
   // quelqu'un.
   if (left < 0 || top < 0 || left + largeur > boite.w || top + hauteur > boite.h) {
-    throw new Error(`buste hors toile (${left},${top} ${largeur}x${hauteur} sur ${boite.w}x${boite.h}) : le personnage est trop pres d'un bord`);
+    throw new Error(`fenetre hors toile (${left},${top} ${largeur}x${hauteur} sur ${boite.w}x${boite.h}) : le personnage est trop pres d'un bord`);
   }
 
   const sortie = await sharp(buf)
     .extract({ left, top, width: largeur, height: hauteur })
-    .resize({ width: LARGEUR_BUSTE, height: HAUTEUR_BUSTE, kernel: "lanczos3" })
+    .resize({ width: cadrage.l, height: cadrage.h, kernel: "lanczos3" })
     .png()
     .toBuffer();
-  return { buf: sortie, t, left, top, largeur, hauteur };
+  return { buf: sortie, left, top, largeur, hauteur };
 }
 
-/** ── LE REGLAGE, ET POURQUOI CELUI-LA ──────────────────────────────────────
+/** -- LE REGLAGE, ET POURQUOI CELUI-LA -------------------------------------
  *  `alphaQuality: 100` n'est pas un confort : mesure sur les deux fichiers,
  *  le canal alpha ressort alors identique au bit pres (ecart maximum 0). Rien
  *  ne peut donc apparaitre autour de la silhouette, ce qui etait le premier
@@ -288,48 +289,54 @@ async function buste(nom, buf, boite) {
  *  q95 plutot que q92, qui suffisait deja : 15 Ko de plus sur un fichier
  *  qu'on ne veut pas avoir a regenerer.
  *
- *  ⚠️ `smartSubsample: false` : le sous-echantillonnage de chrominance ferait
- *  baver les aplats violets sur la peau, exactement la ou ces illustrations
- *  sont le plus fragiles. */
+ *  /!\ `smartSubsample: false` : le sous-echantillonnage de chrominance
+ *  ferait baver les aplats violets sur la peau, exactement la ou ces
+ *  illustrations sont le plus fragiles. */
 const WEBP = { quality: 95, alphaQuality: 100, effort: 6, smartSubsample: false };
 
 async function ecrire(buf, dest) {
   const sortie = await sharp(buf).webp(WEBP).toBuffer();
   if (!CHECK) await writeFile(dest, sortie);
-  return { buf: sortie, reglage: "quality 95, alphaQuality 100, effort 6, smartSubsample false" };
+  return sortie.length;
 }
 
 const ko = (n) => (n / 1024).toFixed(0) + " Ko";
 
 await mkdir(OUT, { recursive: true });
+let total = 0;
 
-for (const nom of ["nora", "sasha"]) {
-  const m = await master(nom);
-  const destM = path.join(OUT, `${nom}-master-v1.webp`);
-  const rM = await ecrire(m.buf, destM);
-  const poidsSrcM = (await stat(m.src)).size;
-  console.log(`${nom} master  ${m.w} x ${m.h}  ratio ${(m.w / m.h).toFixed(4)}`);
-  console.log(`  crane   y ${m.boite.top} (${(100 * m.boite.top / m.h).toFixed(1)} %) -> y ${m.vise} (${(100 * LIGNE_TETE).toFixed(1)} %)   translation ${m.dy >= 0 ? "+" : ""}${m.dy} px`);
-  console.log(`  poids   PNG ${ko(poidsSrcM)} -> WebP ${ko(rM.buf.length)}   [${rM.reglage}]`);
+for (const guide of GUIDES) {
+  console.log(`-- ${guide} ${"-".repeat(56 - guide.length)}`);
+  for (const [etat, planche] of Object.entries(PLANCHE)) {
+    const n = await normaliser(path.join(SRC, `${guide}-${planche}.png`));
+    const t = await tete(n.buf, n.boite);
+    console.log(`${etat.padEnd(10)} planche ${planche.padEnd(10)} crane ${n.craneAvant} (${(100 * n.craneAvant / n.boite.h).toFixed(1)} %), translation ${n.dy >= 0 ? "+" : ""}${n.dy} px`);
+    console.log(`           tete ${t.hauteur} x ${t.largeur} px, cou y ${t.cou}`);
 
-  // Le buste se taille dans le master DEJA normalise : c'est le fichier que
-  // le site montre, donc les deux cadrages ne peuvent pas diverger.
-  const boiteM = await boiteAlpha(m.buf);
-  const b = await buste(nom, m.buf, boiteM);
-  const destB = path.join(OUT, `${nom}-buste-v1.webp`);
-  const rB = await ecrire(b.buf, destB);
-  console.log(`${nom} buste   fenetre ${b.largeur} x ${b.hauteur} en (${b.left}, ${b.top}) -> ${LARGEUR_BUSTE} x ${HAUTEUR_BUSTE}`);
-  console.log(`  tete    y ${b.t.crane}..${b.t.cou} (${b.t.hauteur} px), x ${b.t.gauche}..${b.t.droite} (${b.t.largeur} px)`);
-  console.log(`  cadrage tete ${(100 * b.t.hauteur / b.hauteur).toFixed(1)} % de la hauteur, ${(100 * b.t.largeur / b.largeur).toFixed(1)} % de la largeur, air ${(100 * (b.t.crane - b.top) / b.hauteur).toFixed(1)} % au-dessus`);
-  console.log(`  poids   WebP ${ko(rB.buf.length)}`);
+    // Le master n'est pas un cadrage : c'est la planche normalisee elle-meme,
+    // que la scene de l'ecran de choix montre en entier.
+    if (etat === "welcome") {
+      const p = await ecrire(n.buf, path.join(OUT, `${guide}-master-v1.webp`));
+      total += p;
+      console.log(`           master     ${n.boite.w} x ${n.boite.h}   PNG ${ko(n.poidsSrc)} -> WebP ${ko(p)}`);
+    }
 
-  const c = await chat(nom);
-  const destC = path.join(OUT, `${nom}-chat-v1.webp`);
-  const rC = await ecrire(c.buf, destC);
-  const poidsSrcC = (await stat(c.src)).size;
-  console.log(`${nom} chat    ${c.boite.w} x ${c.boite.h} -> ${COTE_CHAT} x ${COTE_CHAT}   zoom ${c.zoom.toFixed(3)}`);
-  console.log(`  poids   PNG ${ko(poidsSrcC)} -> WebP ${ko(rC.buf.length)}   [${rC.reglage}]`);
+    for (const [nom, cadrage] of Object.entries(CADRAGES)) {
+      if (!ETATS_PAR_CADRAGE[nom].includes(etat)) continue;
+      const f = await fenetre(n.buf, n.boite, t, cadrage);
+      // `buste` garde son nom historique sans etat : /bienvenue le montre
+      // depuis le premier jour, et il n'existe que pour `welcome`.
+      const dest = nom === "buste"
+        ? path.join(OUT, `${guide}-buste-v1.webp`)
+        : path.join(OUT, `${guide}-${etat}-${nom}-v1.webp`);
+      const p = await ecrire(f.buf, dest);
+      total += p;
+      console.log(`           ${nom.padEnd(10)} fenetre ${f.largeur} x ${f.hauteur} en (${f.left}, ${f.top}) -> ${cadrage.l} x ${cadrage.h}`);
+      console.log(`                      tete ${(100 * t.hauteur / f.hauteur).toFixed(0)} % de la hauteur, ${(100 * t.largeur / f.largeur).toFixed(0)} % de la largeur, air ${(100 * (t.crane - f.top) / f.hauteur).toFixed(0)} %   ${ko(p)}`);
+    }
+  }
   console.log("");
 }
 
+console.log(`total ecrit : ${ko(total)}`);
 if (CHECK) console.log("--check : rien n'a ete ecrit.");

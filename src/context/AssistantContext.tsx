@@ -14,7 +14,7 @@
    ════════════════════════════════════════════════════════════════════ */
 
 import {
-  createContext, useCallback, useContext, useEffect, useRef, useState,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
 } from "react";
 import { aiFetch, messageDeRefus } from "@/lib/aiFetch";
 import { usePathname, useRouter } from "next/navigation";
@@ -26,7 +26,7 @@ import { normalizeForDedupe, stripMemoryTags, normalizeCategory, type AiMemory }
 import { setThemePreference, type ThemePreference } from "@/hooks/useTheme";
 import { assembleSeance, seanceToRow, normalizeCategory as normalizeWorkoutCategory, normalizeDifficulty, levelToDifficulty, type ProposedSeance } from "@/lib/assistantActions";
 import { normaliserChoix, type AssistantAction, type ChatEvent, type QuestionCliquable } from "@/lib/assistantTools";
-import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type GuideRef } from "@/lib/guides";
+import { voix, voixAction, CHOIX_LIEU, CHOIX_EQUIP, type EtatGuide, type GuideRef, type TonGuide } from "@/lib/guides";
 import { useGuideActif } from "@/context/GuideContext";
 import { PLANS } from "@/lib/plans";
 import {
@@ -116,6 +116,11 @@ type PendingPlan = {
 /** Un jour proposé dans le choix « quand ? » d'une carte. */
 export type JourDispo = { ymd: string; label: string; occupe?: string | null; bloque?: boolean };
 
+/** Ce que le Guide peut être en train de préparer. Les trois actions qui
+ *  font patienter, et rien d'autre : la bulle d'attente doit nommer ce
+ *  qu'elle attend. */
+export type AttenteAction = "seance" | "recette" | "repas";
+
 export type AssistantMsg = {
   role: "user" | "assistant";
   content: string;
@@ -127,6 +132,16 @@ export type AssistantMsg = {
    *  cliquable est déjà visible sous la forme de la puce cochée, l'écrire une
    *  seconde fois en bulle utilisateur dirait deux fois la même chose. */
   masque?: boolean;
+  /** Ce que le Guide FAIT en disant cette bulle : il écoute (il vient de
+   *  poser une question) ou il explique (il répond, il annonce une carte).
+   *  C'est le visage que porte son avatar à côté du message.
+   *
+   *  ⚠️ ÉCRIT ICI, À LA CRÉATION, ET JAMAIS DEVINÉ APRÈS COUP. Chaque
+   *  endroit qui pousse une bulle sait exactement pourquoi il la pousse ;
+   *  relire le texte pour retrouver cette intention (chercher un point
+   *  d'interrogation, un mot d'encouragement) serait faux dès la première
+   *  question rhétorique du modèle. */
+  ton?: TonGuide;
 };
 
 interface UserContext {
@@ -156,7 +171,11 @@ type AssistantContextValue = {
   pendingPlan: PendingPlan | null;
   pendingRecipe: PendingRecipe | null;
   pendingMeal: PendingMeal | null;
-  actionLoading: boolean;
+  /** Ce que le Guide prépare en ce moment, ou `null`. */
+  actionLoading: AttenteAction | null;
+  /** Le visage que porte le Guide à l'instant, déduit des seuls signaux
+   *  structurés de la conversation. Voir `EtatGuide` dans `guides.ts`. */
+  etatGuide: EtatGuide;
   /** Le stock gratuit de séances gardées est plein : la carte n'offre alors que ce qui reste possible. */
   bibliothequePleine: boolean;
   /** Garde la séance proposée. `jour` la pose aussi sur le planning, en UNE
@@ -260,7 +279,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [pendingPlan, setPendingPlan] = useState<PendingPlan | null>(null);
   const [pendingRecipe, setPendingRecipe] = useState<PendingRecipe | null>(null);
   const [pendingMeal, setPendingMeal] = useState<PendingMeal | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  /* Ce que le Guide est en train de préparer, ou `null`. Ce n'est plus un
+     booléen : la bulle d'attente annonçait « une séance » aux TROIS actions
+     qui font patienter, donc elle promettait une séance à quelqu'un qui
+     venait de raconter son déjeuner. */
+  const [actionLoading, setActionLoading] = useState<AttenteAction | null>(null);
+  /* Une action validée vient d'aboutir. Compteur et pas booléen : deux
+     réussites de suite doivent relancer le délai, pas se partager le premier
+     minuteur. Il ne sert qu'au visage du Guide, jamais à une écriture. */
+  const [reussite, setReussite] = useState(0);
   /* Le stock gratuit de séances gardées est plein ? La carte le dit AVANT le
      clic et ne propose alors que ce qui reste possible (s'entraîner). On ne
      limite jamais le fait de créer ni de s'entraîner, seulement le rangement. */
@@ -580,7 +607,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // Mémorisée ici aussi : si l'utilisateur tape sa réponse au lieu de toucher
     // une puce, c'est `save_lieu` qui la reprendra.
     if (q.relance) attenteRef.current = q.relance;
-    setMessages((prev) => [...prev, { role: "assistant" as const, content: contenu, id: uid(), question: q }]);
+    setMessages((prev) => [...prev, { role: "assistant" as const, content: contenu, id: uid(), question: q, ton: "listen" as const }]);
   }, []);
 
   /* ── Action PLANNING (Phase 2) : prépare une carte de confirmation.
@@ -588,7 +615,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const preparePlanAction = useCallback(async (action: AssistantAction, text: string) => {
     if (!user?.id) return;
     // Réponse courte du coach dans le fil (chaque impasse est explicite, jamais muette).
-    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid() }]);
+    // Une impasse est une explication : le Guide dit pourquoi rien ne
+    // bouge. Ce n'est ni une question, ni une réussite.
+    const say = (content: string) => setMessages((prev) => [...prev, { role: "assistant" as const, content, id: uid(), ton: "explain" as const }]);
 
     // DÉPLACEMENT : pas de génération, on copie la séance vers le jour cible
     // et on libère (Repos) le jour source. Aucun échec silencieux : chaque
@@ -778,7 +807,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       baseDesc = existing && existing.title ? existing.title : "séance complète";
     }
 
-    setActionLoading(true);
+    setActionLoading("seance");
     setPendingPlan(null);
     try {
       const difficulty = levelToDifficulty(userContextRef.current?.level);
@@ -834,7 +863,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const detail = (e as { message?: string })?.message ?? String(e);
       say(`⚠️ Modification du planning échouée : ${detail}`);
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   }, [user?.id, buildNutritionNote, poserQuestion, verifierPlaces]);
 
@@ -931,7 +960,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     // 2a-ter) RECETTE : l'IA cuisine (un plat, un thème, ou les restes qu'on a
     // sous la main) puis propose une carte. Rien n'est loggé sans validation.
     if (action.intent === "create_recipe") {
-      setActionLoading(true);
+      setActionLoading("recette");
       setPendingRecipe(null);
       try {
         const ingredients = Array.isArray(action.ingredients)
@@ -956,11 +985,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const detail = (e as { message?: string })?.message ?? String(e);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: `⚠️ Je n'ai pas réussi à écrire la recette — ${detail}`,
+          content: `⚠️ Je n'ai pas réussi à écrire la recette : ${detail}`,
           id: uid(),
+          ton: "explain" as const,
         }]);
       } finally {
-        setActionLoading(false);
+        setActionLoading(null);
       }
       return;
     }
@@ -972,7 +1002,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (action.intent === "log_meal") {
       const food = (action.food ?? "").trim();
       if (!food) return;
-      setActionLoading(true);
+      setActionLoading("repas");
       setPendingMeal(null);
       try {
         const res = await aiFetch("/api/nutrition/estimate", {
@@ -999,11 +1029,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const detail = (e as { message?: string })?.message ?? String(e);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: `⚠️ Je n'ai pas réussi à estimer ce repas — ${detail}`,
+          content: `⚠️ Je n'ai pas réussi à estimer ce repas : ${detail}`,
           id: uid(),
+          ton: "explain" as const,
         }]);
       } finally {
-        setActionLoading(false);
+        setActionLoading(null);
       }
       return;
     }
@@ -1029,7 +1060,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setActionLoading(true);
+    setActionLoading("seance");
     setPendingSeance(null);
     try {
       const category = normalizeWorkoutCategory(action.category);
@@ -1071,9 +1102,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         role: "assistant" as const,
         content: `⚠️ Génération séance échouée (${detail})\n(copie-moi ce message stp)`,
         id: uid(),
+        ton: "explain" as const,
       }]);
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   }, [user?.id, pathname, router, preparePlanAction, buildNutritionNote, poserQuestion, verifierPlaces]);
 
@@ -1286,7 +1318,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
       setMessages((prev) => {
         const next = prev.map((m) => m.id === assistantId
-          ? { ...m, content: cleaned, streaming: false, ...(questionAttachee ? { question: questionAttachee } : {}) }
+          ? {
+              ...m,
+              content: cleaned,
+              streaming: false,
+              // Le ton se déduit de ce qu'on VIENT de décider, pas du texte :
+              // une bulle qui porte une question est une bulle qui écoute.
+              ton: (questionAttachee ? "listen" : "explain") as TonGuide,
+              ...(questionAttachee ? { question: questionAttachee } : {}),
+            }
           : m);
         persist(next);
         return next;
@@ -1304,7 +1344,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     } catch (err: unknown) {
       if ((err as { name?: string }).name === "AbortError") return;
       setMessages((prev) => prev.map((m) => m.id === assistantId
-        ? { ...m, content: voix(guideRef.current, "panne.erreur"), streaming: false } : m));
+        ? { ...m, content: voix(guideRef.current, "panne.erreur"), streaming: false, ton: "explain" as const } : m));
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
@@ -1348,7 +1388,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       if (location === "maison" && !readLieu(user.id).equip) {
         setMessages((prev) => [...prev, {
           role: "assistant" as const, content: voix(guideRef.current, "question.equip"), id: uid(),
-          question: { choix: CHOIX_EQUIP, genre: "equip" as const, relance },
+          question: { choix: CHOIX_EQUIP, genre: "equip" as const, relance }, ton: "listen" as const,
         }]);
         return;
       }
@@ -1413,6 +1453,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
     const ok = await garderSeance(s);
     if (!ok) { setMemoryNotice("Oups, impossible de garder la séance."); return; }
+    // La séance est gardée : c'est une action validée qui aboutit, le Guide
+    // le montre quelques secondes. Jamais sur l'échec, évidemment.
+    setReussite((n) => n + 1);
 
     if (!jour) {
       setPendingSeance(null);
@@ -1511,6 +1554,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         gardee = !error;
       }
       setPendingPlan(null);
+      setReussite((n) => n + 1);
       setMemoryNotice(gardee ? "Planning mis à jour, séance gardée ✓" : "Planning mis à jour ✓");
       setTimeout(() => setIsOpen(false), 900);
     } catch {
@@ -1542,6 +1586,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (error) { setMemoryNotice("Oups, impossible d'ajouter le repas."); return; }
     const nom = pendingRecipe.nom;
     setPendingRecipe(null);
+    setReussite((n) => n + 1);
     setMemoryNotice(`« ${nom} » ajouté à tes repas ✓`);
     setTimeout(() => { setIsOpen(false); router.push("/nutrition"); }, 900);
   }, [user?.id, pendingRecipe, router]);
@@ -1570,6 +1615,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (error) { setMemoryNotice("Oups, impossible d'ajouter le repas."); return; }
     const nom = pendingMeal.foodName;
     setPendingMeal(null);
+    setReussite((n) => n + 1);
     setMemoryNotice(`« ${nom} » ajouté à tes repas ✓`);
     setTimeout(() => { setIsOpen(false); router.push("/nutrition"); }, 900);
   }, [user?.id, pendingMeal, router]);
@@ -1577,6 +1623,44 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const cancelMeal = useCallback(() => setPendingMeal(null), []);
 
   useEffect(() => () => { abortRef.current?.abort(); }, []);
+
+  /* La réaction du Guide à une réussite retombe seule, sur la même durée
+     que la pastille qui l'accompagne : les deux disent la même chose, ils
+     doivent partir ensemble. */
+  useEffect(() => {
+    if (reussite === 0) return;
+    const t = setTimeout(() => setReussite(0), 3400);
+    return () => clearTimeout(t);
+  }, [reussite]);
+
+  /* ── LE VISAGE DU GUIDE ────────────────────────────────────────────────
+     Il se déduit ICI, parce que c'est ici que vivent TOUS les signaux :
+     l'écran ne fait que l'afficher, il n'a rien à décider.
+
+     ⚠️ AUCUN DE CES TESTS NE REGARDE LE TEXTE D'UN MESSAGE. Chercher un
+     point d'interrogation pour savoir si le Guide attend une réponse, ou
+     un mot d'encouragement pour savoir s'il félicite, serait faux dans les
+     deux sens : faux le jour où le modèle formule autrement, faux dès
+     qu'une phrase contient une question rhétorique. Les vrais signaux
+     existent déjà et ils sont exacts, parce que c'est nous qui les
+     écrivons : `streaming` pendant le flux, `actionLoading` pendant une
+     génération, `ton` posé sur la bulle à sa création, `reussite` posé par
+     les validations. On ne lit que ça.
+
+     L'ordre compte, du plus immédiat au plus durable : ce qui se passe
+     maintenant l'emporte sur ce qui vient de se passer, qui l'emporte sur
+     la dernière chose dite. */
+  const etatGuide: EtatGuide = useMemo(() => {
+    if (isStreaming || actionLoading) return "think";
+    if (reussite > 0) return "encourage";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "assistant") continue;
+      return m.ton ?? "explain";
+    }
+    // Aucune bulle du Guide : la conversation n'a pas commencé.
+    return "welcome";
+  }, [isStreaming, actionLoading, reussite, messages]);
 
   // La notice mémoire ("Je m'en souviendrai") s'efface seule
   useEffect(() => {
@@ -1586,7 +1670,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   }, [memoryNotice]);
 
   return (
-    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
+    <Ctx.Provider value={{ isOpen, open, close, toggle, clear, messages, isStreaming, sendMessage, repondreQuestion, pseudo: user?.pseudo, memoryNotice, pendingSeance, pendingPlan, pendingRecipe, pendingMeal, actionLoading, etatGuide, bibliothequePleine, confirmSeance, garderSeance, cancelSeance, confirmPlan, retargetPlan, cancelPlan, chargerJours, confirmRecipe, cancelRecipe, confirmMeal, cancelMeal }}>
       {children}
     </Ctx.Provider>
   );

@@ -14,8 +14,8 @@
 
    ── ÉTAT ACTUEL ──
    Le parcours d'entrée (`bienvenue.*`) et TOUTE la conversation
-   (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`) sont
-   différenciés. Restent volontairement communes : `panne.*` et
+   (`action.*`, `question.*`, `impasse.*`, `accueil.*`, `memoire.*`,
+   `attente.*`) sont différenciés. Restent volontairement communes : `panne.*` et
    `seance.repos`. Les pannes, parce qu'une personnalité posée sur un
    mécanisme cassé serait déplacée ; le repos, parce qu'il appartient au
    lot sportif qui n'a pas encore été fait.
@@ -78,6 +78,7 @@ type Replique = { commun: Rendu; nora?: Rendu; sasha?: Rendu };
      impasse.*  ce qu'il répond quand il ne peut pas agir
      accueil.*  la feuille de chat vide
      memoire.*  ce qu'il dit de sa propre mémoire
+     attente.*  ce qu'il dit pendant qu'il travaille
      panne.*    quand la réponse ne vient pas
      seance.*   pendant l'entraînement
    ------------------------------------------------------------------ */
@@ -254,6 +255,29 @@ const REPLIQUES = {
     sasha:  "Je m'en souviens 🧠",
   },
 
+  /* ── Ce qu'il dit pendant qu'il travaille ──
+     La bulle d'attente disait « Je te prépare une séance… » codé en dur
+     dans `AssistantSheet`, pour les TROIS actions qui font patienter :
+     une séance, une recette, une estimation de repas. Elle annonçait donc
+     une séance à quelqu'un qui venait de raconter son déjeuner. C'est
+     l'attente qui nomme maintenant ce qu'elle attend, et le Guide qui le
+     dit, comme tout le reste de sa parole. */
+  "attente.seance": {
+    commun: "Je te prépare une séance…",
+    nora:   "Je te prépare une séance…",
+    sasha:  "Séance en préparation…",
+  },
+  "attente.recette": {
+    commun: "Je t'écris la recette…",
+    nora:   "Je t'écris la recette…",
+    sasha:  "Recette en cours…",
+  },
+  "attente.repas": {
+    commun: "J'estime ce repas…",
+    nora:   "J'estime ce que ça représente…",
+    sasha:  "J'estime ce repas…",
+  },
+
   /* ── Quand ça ne répond pas ──
      Ni texte ni action : ça ne doit JAMAIS passer inaperçu. Une version
      précédente supprimait la bulle vide, et l'échec devenait invisible.
@@ -421,6 +445,42 @@ export const PORTRAIT_GUIDE: Record<GuideId, { trait: string; pour: string }> = 
     pour: "Tu préfères avancer puis ajuster en chemin.",
   },
 };
+
+/* ── LES CINQ VISAGES ──────────────────────────────────────────────────
+   Un Guide a cinq portraits, un par moment de la conversation. Ce ne
+   sont pas des humeurs : ce sont des ÉTATS DE LA CONVERSATION, chacun
+   déduit d'un signal structuré, jamais des mots du message.
+
+     welcome    la feuille est vide, personne n'a encore parlé
+     listen     il vient de poser une question, c'est ton tour
+     think      il prépare sa réponse (flux en cours, ou action en cours)
+     explain    il répond, ou il annonce la carte qui s'ouvre en dessous
+     encourage  une action que tu as validée vient d'aboutir
+
+   ⚠️ AUCUN DE CES ÉTATS NE SE DEVINE DANS LE TEXTE. On aurait pu chercher
+   un point d'interrogation pour `listen` ou un « bravo » pour
+   `encourage` : ce serait faux le jour où le modèle formule autrement,
+   et faux dans l'autre sens dès qu'une phrase contient une question
+   rhétorique. Les signaux existent déjà, ils sont exacts et ils sont à
+   nous : une question posée par le CODE porte son objet `question`, une
+   réponse en cours porte `streaming`, une carte validée passe par
+   `confirmSeance` et compagnie. On lit ces signaux, rien d'autre.
+
+   Le visage vit dans `AssistantContext` (`etatGuide`), parce que c'est
+   lui qui tient tous ces signaux. L'écran ne fait que l'afficher. */
+export type EtatGuide = "welcome" | "listen" | "think" | "explain" | "encourage";
+
+/** Ce que le Guide FAIT en disant une bulle donnée, écrit au moment où
+ *  la bulle est créée (là où on le sait de source sûre) et gardé avec
+ *  elle. C'est un sous-ensemble des états : `welcome` n'est pas une
+ *  bulle, et `think` n'en est pas encore une.
+ *
+ *  ⚠️ `encourage` n'est aujourd'hui le ton d'AUCUNE bulle, et c'est
+ *  normal : chez nous une validation ne répond pas par un message, elle
+ *  répond par une pastille discrète. L'encouragement est donc un état
+ *  vivant (le visage réagit quelques secondes) et pas une phrase. Le
+ *  jour où une bulle célèbre quelque chose, elle portera ce ton. */
+export type TonGuide = Extract<EtatGuide, "listen" | "explain" | "encourage">;
 
 /** Le nom affiché en tête de la conversation. Sans Guide résolu, c'est le
  *  produit qui parle, et il le dit avec sa marque. */
