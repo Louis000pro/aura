@@ -44,22 +44,28 @@ export type Rang = {
 };
 
 // Ladder VALIDÉ par Louis le 2026-07-24 : 6 rangs « métaux » Bronze → Éternel.
-// Ajouter/changer un rang = une entrée ici (image détourée dans public/rangs/
-// + un `min`). Le composant lit ce tableau, tout suit automatiquement.
+// ⭐ CE TABLEAU EST LA SOURCE UNIQUE DES VISUELS. Personne d'autre n'a le droit
+// d'écrire un chemin `/rangs/…` : la landing et le popup de nouveautés le
+// dérivaient à la main, ils avaient donc trois vérités à tenir d'accord.
+// Ajouter/changer un rang = une entrée ici (+ sa planche dans rangs-src/, puis
+// `npm run rangs`). Le composant lit ce tableau, tout suit automatiquement.
 // Cadence de référence = un utilisateur engagé gagne ≈50 EXP/jour (connexion +5,
 // 1 séance +35, 2 repas +10). Les seuils = 50 × le nombre de jours voulu :
 //   Bronze  fini jour 1 (Argent = 50)  ·  Or  ~1 sem  ·  Platine  ~2 sem
 //   Diamant ~1 mois ·  Éternel ~2,5 mois (sommet très dur, atteignable même
 //   gratuitement avant la fin d'une saison de 3 mois).
 // Les métaux qui ne tiennent pas ce rythme max mettent plus longtemps → c'est
-// voulu, l'Éternel doit rester rare. Toutes les images sont détourées, fond
-// transparent, nom versionné (casse le cache navigateur/SW).
+// voulu, l'Éternel doit rester rare.
+// ⚠️ Les six visuels définitifs (2026-08-20) sont arrivés SANS transparence et
+// à des échelles différentes : `scripts/build-rangs.mjs` les détoure et les
+// ramène tous au même canevas 320×512. Ne jamais poser ici le chemin d'une
+// planche brute, elle afficherait un carré crème en mode sombre.
 export const RANGS: Rang[] = [
   {
     id: "bronze",
     nom: "Bronze",
     min: 0,
-    image: "/rangs/bronze-v2.png",
+    image: "/rangs/rank-01-bronze.png",
     neon: ["#E8A05A", "#B0672A"],
     pierre: ["#F5C88A", "#B87333", "#5c3410"],
   },
@@ -67,7 +73,7 @@ export const RANGS: Rang[] = [
     id: "argent",
     nom: "Argent",
     min: 50, // fin du Bronze dès le 1er jour : 1 séance +35, connexion +5, repas +5, +10 de bienvenue
-    image: "/rangs/argent-v2.png",
+    image: "/rangs/rank-02-argent.png",
     neon: ["#DDE6F0", "#9AA6B8"],
     pierre: ["#F2F6FC", "#B8C2D0", "#6a7280"],
   },
@@ -75,7 +81,7 @@ export const RANGS: Rang[] = [
     id: "or",
     nom: "Or",
     min: 350, // ~1 semaine
-    image: "/rangs/or-v2.png",
+    image: "/rangs/rank-03-or.png",
     neon: ["#FFDE7A", "#E8A015"],
     pierre: ["#FFE9A8", "#E8930C", "#7a4d08"],
   },
@@ -83,7 +89,7 @@ export const RANGS: Rang[] = [
     id: "platine",
     nom: "Platine",
     min: 700, // ~2 semaines
-    image: "/rangs/platine-v2.png",
+    image: "/rangs/rank-04-platine.png",
     neon: ["#CFF3EE", "#86CDC4"],
     pierre: ["#EAF8F5", "#A8D4CE", "#5c7472"],
   },
@@ -91,7 +97,7 @@ export const RANGS: Rang[] = [
     id: "diamant",
     nom: "Diamant",
     min: 1500, // ~1 mois
-    image: "/rangs/diamant-v2.png",
+    image: "/rangs/rank-05-diamant.png",
     neon: ["#A8E0FF", "#5AA8E8"],
     pierre: ["#DBF0FF", "#8CC8F0", "#3a6a90"],
   },
@@ -99,7 +105,7 @@ export const RANGS: Rang[] = [
     id: "eternel",
     nom: "Éternel",
     min: 3750, // ~2,5 mois — le sommet, très dur, avant la fin de saison (3 mois)
-    image: "/rangs/eternel-v2.png", // gemme d'or, monture violette gothique
+    image: "/rangs/rank-06-eternel.png", // gemme d'or, monture violette gothique
     neon: ["#C9A8FF", "#8B5CF6"],
     pierre: ["#FFE9A8", "#E8A015", "#5a3a1a"],
   },

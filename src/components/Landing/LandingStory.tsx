@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { AssistantAvatar, AssistantSpark } from "@/components/AssistantMark";
 import { SEO_PAGES, LEGAL_PAGES } from "@/lib/seoPages";
+import { RANGS } from "@/lib/aura";
 /* Le type seul. Les nombres sont comptés côté serveur et descendus en props :
    voir `lib/chiffresPublics.ts`. */
 import type { ChiffresPublics } from "@/lib/chiffresPublics";
@@ -817,14 +818,13 @@ function SectionIntelligence() {
 
 /* ════════════════════════════ 5 · LA CONSTANCE ════════════════════════════ */
 
-const RANGS_LADDER = [
-  { img: "/rangs/bronze-v2.png", nom: "Bronze" },
-  { img: "/rangs/argent-v2.png", nom: "Argent" },
-  { img: "/rangs/or-v2.png", nom: "Or" },
-  { img: "/rangs/platine-v2.png", nom: "Platine" },
-  { img: "/rangs/diamant-v2.png", nom: "Diamant" },
-  { img: "/rangs/eternel-v2.png", nom: "Éternel" },
-];
+// L'échelle vient de `RANGS` (src/lib/aura.ts), jamais d'une liste recopiée :
+// les six chemins étaient écrits à la main ici, une septième gemme aurait donc
+// pu exister dans l'app sans jamais apparaître sur la landing.
+const RANGS_LADDER = RANGS;
+/** Le canevas des planches est en 320 × 512 : la hauteur mène, la largeur suit. */
+const H_GEMME = 52;
+const L_GEMME = Math.round(H_GEMME * (320 / 512));
 const MISSIONS = [
   { img: "/missions/daily/connexion-v1.webp", label: "Connexion du jour", exp: "+5" },
   { img: "/missions/daily/seance-v1.webp", label: "Première séance", exp: "+35" },
@@ -876,9 +876,11 @@ function SectionConstance() {
               <p className="text-[12px] font-semibold uppercase tracking-wide mb-4" style={{ color: "var(--text-3)" }}>Ton rang qui monte</p>
               <div className="grid grid-cols-3 gap-3 flex-1 place-items-center">
                 {RANGS_LADDER.map((r, i) => (
-                  <div key={r.nom} className="flex flex-col items-center gap-1.5">
-                    <Image src={r.img} alt="" aria-hidden width={52} height={52}
-                      style={{ opacity: i === 0 ? 1 : 0.82 - i * 0.1 }} />
+                  <div key={r.id} className="flex flex-col items-center gap-1.5">
+                    {r.image && (
+                      <Image src={r.image} alt="" aria-hidden width={L_GEMME} height={H_GEMME}
+                        style={{ opacity: i === 0 ? 1 : 0.82 - i * 0.1 }} />
+                    )}
                     <span className="text-[11px] font-semibold" style={{ color: i === 0 ? "var(--text-1)" : "var(--text-3)" }}>{r.nom}</span>
                   </div>
                 ))}

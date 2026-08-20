@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useGuidedTour } from "@/context/GuidedTourContext";
 import { dejaVue, marquerVue, EVENEMENT_OUVRIR } from "@/lib/nouveautes";
+import { RANGS } from "@/lib/aura";
 import ExerciseThumb from "@/components/seance/ExerciseThumb";
 import styles from "./PopupNouveautes.module.css";
 
@@ -37,14 +38,9 @@ const CHIFFRES: [string, string][] = [
   ["26", "mini-cours"],
 ];
 
-const RANGS_APERCU: [string, string][] = [
-  ["/rangs/bronze-v2.png", "Bronze"],
-  ["/rangs/argent-v2.png", "Argent"],
-  ["/rangs/or-v2.png", "Or"],
-  ["/rangs/platine-v2.png", "Platine"],
-  ["/rangs/diamant-v2.png", "Diamant"],
-  ["/rangs/eternel-v2.png", "Éternel"],
-];
+/* Les six gemmes viennent de `RANGS` (src/lib/aura.ts). Elles étaient recopiées
+   ici avec leurs chemins : deux listes à tenir d'accord pour une seule échelle. */
+const RANGS_APERCU = RANGS.filter((r) => r.image);
 
 /* Une page qui s'ouvre par dessus tout doit rendre le défilement à la
    page en dessous quand elle se ferme, même si elle est démontée vite. */
@@ -244,11 +240,11 @@ export default function PopupNouveautes() {
                 <Chapitre n="04" titre="Ton rang">
                   <div className={styles.visuel}>
                     <div className={styles.rangs} aria-hidden="true">
-                      {RANGS_APERCU.map(([src, nom]) => (
-                        <span key={nom}>
+                      {RANGS_APERCU.map((rang) => (
+                        <span key={rang.id}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={src} alt="" loading="lazy" decoding="async" />
-                          <b>{nom}</b>
+                          <img src={rang.image} alt="" loading="lazy" decoding="async" />
+                          <b>{rang.nom}</b>
                         </span>
                       ))}
                     </div>

@@ -5,9 +5,22 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { Rang } from "@/lib/aura";
 
 /**
+ * Le canevas des planches, écrit par `scripts/build-rangs.mjs` : 320 × 512.
+ * Les six gemmes partagent ce cadre ET la même hauteur de dessin, donc deux
+ * rangs côte à côte font exactement la même taille : c'est le script qui le
+ * garantit, pas le CSS. Changer le canevas là-bas = changer ce ratio ici.
+ */
+const RATIO_GEMME = 320 / 512;
+
+/**
  * La gemme d'un rang (l'aura). Utilise le vrai logo PNG (`rang.image`) s'il
  * existe ; sinon repli sur un rendu SVG (net en clair/sombre, aucune image).
  * La gemme FLOTTE doucement (désactivé si l'utilisateur réduit les animations).
+ *
+ * ⚠️ `size` est la HAUTEUR. Avant les visuels du 2026-08-20 les planches
+ * étaient carrées et `size` valait la largeur d'une boîte dont le dessin
+ * n'occupait que 44 % : les appelants demandaient 18 px et obtenaient 8 px de
+ * gemme. Le dessin remplit maintenant ce qu'on lui donne.
  */
 export default function GemmeRang({
   rang,
@@ -15,11 +28,12 @@ export default function GemmeRang({
   flotte = true,
 }: {
   rang: Rang;
+  /** Hauteur de la gemme, en px. */
   size?: number;
   /** Le flottement n'a pas de sens en badge inline (à côté d'un pseudo) : `false`. */
   flotte?: boolean;
 }) {
-  const h = Math.round(size * (200 / 150));
+  const w = Math.round(size * RATIO_GEMME);
   const reduce = useReducedMotion();
   const [imgOk, setImgOk] = useState(true);
 
@@ -38,10 +52,14 @@ export default function GemmeRang({
           src={rang.image}
           alt={`Rang ${rang.nom}`}
           onError={() => setImgOk(false)}
+          width={w}
+          height={size}
           style={{
-            // hauteur pilotée par `size` (la gemme réelle est élancée) ; largeur auto
-            height: h,
-            width: "auto",
+            // La hauteur est le pilote, la largeur suit le canevas commun. On pose
+            // les deux (et pas `width: auto`) pour que la place soit réservée avant
+            // que l'image n'arrive : sinon le pseudo d'à côté saute au chargement.
+            height: size,
+            width: w,
             objectFit: "contain",
             // PAS de filter:drop-shadow ici : le PNG contient déjà son néon, et sur
             // iOS Safari le drop-shadow d'un <img> se calcule sur la boîte
@@ -58,14 +76,15 @@ export default function GemmeRang({
 
 /** Repli SVG : gemme facettée + halo néon aux couleurs du rang. */
 function GemmeSVG({ rang, size }: { rang: Rang; size: number }) {
-  const h = Math.round(size * (200 / 150));
+  // Même contrat que l'image : `size` est la hauteur (le viewBox fait 150 × 200).
+  const w = Math.round(size * (150 / 200));
   const uid = `gem-${rang.id}`;
   const [n0, n1] = rang.neon;
   const [p0, p1, p2] = rang.pierre;
   return (
     <svg
-      width={size}
-      height={h}
+      width={w}
+      height={size}
       viewBox="0 0 150 200"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
