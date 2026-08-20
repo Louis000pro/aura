@@ -197,6 +197,12 @@ const REF_MIN = 20;
  *  une facette pale est invisible sur fond blanc et a echappe deux fois. */
 const PASSAGE = 1;
 
+/*  Demi-largeur de la recherche de l'axe de symetrie, en demi-pixels, autour du
+ *  centre de la boite du dessin. Les six planches tombent a moins de 8 demi-
+ *  pixels du centre ; on cherche large sans se ruiner, la boucle ne coute que
+ *  quelques millisecondes. */
+const AXE_RECHERCHE = 12;
+
 
 const check = process.argv.includes("--check");
 
@@ -336,6 +342,65 @@ async function detourer(fichier) {
     if (a < 255) { alpha[i] = a; adoucis++; }
   }
 
+  // -- Etape 4 : la symetrie. Demandee par Louis le 2026-08-20, sur le Bronze.
+  //
+  // Les six emblemes sont symetriques par construction. Le detourage, lui, ne
+  // l'est pas : sur le Bronze un defaut du contour a laisse le remplissage
+  // entrer dans la paume GAUCHE et pas dans la droite. Le fond creme servait
+  // donc de fond de coupe d'un cote et disparaissait de l'autre. De loin ce
+  // n'est pas une tache qu'on voit, c'est une asymetrie, et l'oeil ne voit
+  // plus qu'elle.
+  //
+  // La correction ne RETIRE rien : elle rend a chaque cote ce que son miroir a
+  // garde. alpha = max(alpha, alpha du miroir), donc un pixel opaque quelque
+  // part le devient de l'autre cote, jamais l'inverse. C'est le meme sens
+  // d'echec que tout le reste du script, et surtout ce n'est PAS la regle des
+  // poches, celle qui supprimait et qui a mange le sommet du cristal.
+  //
+  // L'axe ne se suppose pas au milieu du canevas : on prend celui qui met le
+  // plus de matiere d'accord avec elle-meme, cherche autour du centre de la
+  // boite du dessin. Il travaille en demi-pixels (l'axe tombe entre deux
+  // colonnes quand la largeur est paire), d'ou le `x miroir = axe - x`.
+  let symetrie = { axe: 0, rendus: 0 };
+  {
+    let bx0 = W, bx1 = -1;
+    for (let i = 0; i < N; i++) {
+      if (alpha[i] <= 8) continue;
+      const x = i % W;
+      if (x < bx0) bx0 = x;
+      if (x > bx1) bx1 = x;
+    }
+    const centre2 = bx0 + bx1;
+    let axe = centre2, desaccordMin = Infinity;
+    for (let c = centre2 - AXE_RECHERCHE; c <= centre2 + AXE_RECHERCHE; c++) {
+      let d = 0;
+      for (let y = 0; y < H; y++) {
+        for (let x = bx0; x <= bx1; x++) {
+          const xm = c - x;
+          if (xm < 0 || xm >= W) continue;
+          if ((alpha[y * W + x] > 127) !== (alpha[y * W + xm] > 127)) d++;
+        }
+      }
+      if (d < desaccordMin) { desaccordMin = d; axe = c; }
+    }
+    const copie = Uint8Array.from(alpha);
+    let rendus = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const xm = axe - x;
+        if (xm < 0 || xm >= W) continue;
+        const m = copie[y * W + xm];
+        const i = y * W + x;
+        if (m > alpha[i]) { alpha[i] = m; rendus++; }
+      }
+    }
+    symetrie = { axe: axe / 2, rendus };
+    // `dehors` a servi a construire l'anneau, il sert encore au garde-fou et au
+    // compte des pixels retires : on le remet d'accord avec l'alpha, sinon les
+    // deux mesures du bas parleraient d'une image qui n'existe plus.
+    for (let i = 0; i < N; i++) if (alpha[i] > 0) dehors[i] = 0;
+  }
+
   // -- Sortie RGBA + boite du dessin.
   const out = Buffer.alloc(N * 4);
   let x0 = W, y0 = H, x1 = -1, y1 = -1;
@@ -401,7 +466,7 @@ async function detourer(fichier) {
     W,
     H,
     boite: { x0, y0, largeur: x1 - x0 + 1, hauteur: y1 - y0 + 1 },
-    journal: { fond, retires, adoucis, plusGrandeCreme },
+    journal: { fond, retires, adoucis, plusGrandeCreme, symetrie },
   };
 }
 
@@ -467,7 +532,8 @@ async function main() {
       "    fond " + journal.fond.join(",") +
         "   retire " + journal.retires + " px" +
         "   anneau adouci " + journal.adoucis + " px" +
-        "   creme au contact du fond, plus grande zone " + journal.plusGrandeCreme + " px"
+        "   creme au contact du fond, plus grande zone " + journal.plusGrandeCreme + " px" +
+        "   symetrie axe " + journal.symetrie.axe.toFixed(1) + ", rendu " + journal.symetrie.rendus + " px"
     );
     if (!check) await writeFile(path.join(OUT, nom), sortie);
   }

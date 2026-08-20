@@ -24,6 +24,10 @@ faire, et son en-tête explique le détail :
 - **il ramène les six à la même échelle**. Dans les planches brutes la gemme
   occupe 74 % de la hauteur pour le Bronze et 96 % pour l'Éternel : affichées à
   hauteur égale, elles sauteraient de taille le long de l'échelle ;
+- **il symétrise**. Les six emblèmes sont symétriques, le détourage ne l'était
+  pas : sur le Bronze un défaut du contour laissait le remplissage entrer dans
+  une paume et pas dans l'autre. Le script rend à chaque côté ce que son miroir
+  a gardé (il ajoute, il ne retire jamais) ;
 - **il retire le vide**. La gemme n'occupait que 44 % de la largeur, donc à
   18 px dans une ligne de conversation il restait environ 8 px de dessin.
 
@@ -43,9 +47,11 @@ un filigrane doré à `252,245,224`. Aucune règle de couleur ne peut les
 distinguer, à aucun seuil.
 
 Conséquence assumée, écrite dans le script : le détourage penche du côté
-**« il peut rester du fond, il ne mange jamais de dessin »**. Il subsiste donc
-une bande crème dans la fente entre le cristal et l'aile du Bronze et de l'Or
-(environ 25 × 107 px sur 320 × 512), visible seulement à la plus grande taille.
+**« il peut rester du fond, il ne mange jamais de dessin »**. Le crème reste donc
+en fond de coupe dans les paumes du Bronze et de l'Or, des deux côtés depuis la
+passe de symétrie. Choix de Louis le 2026-08-20, en voyant le Bronze : plutôt
+que de creuser pour l'enlever, on le rend égal des deux côtés, ce qui donne le
+rendu de l'Or. Une asymétrie se voit de loin, une couleur de fond non.
 
 Pour une future planche, demander **un PNG déjà transparent**, ou à défaut un
 **fond franchement coloré** (vert ou bleu saturé) : le problème disparaît à la
