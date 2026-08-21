@@ -391,7 +391,7 @@ function LigneMission({
           height={42}
           className={styles.dailyMissionImage}
         />
-        {premium && <Cachet verrouille={!debloquee} />}
+        {premium && !debloquee && <Cadenas />}
       </span>
       <span className={styles.missionCopy}>
         <strong>
@@ -416,23 +416,23 @@ function LigneMission({
   );
 }
 
-/* Le cachet posé sur le pictogramme : verrou pour un compte gratuit,
-   étincelle pour un abonné. C'est exactement la signalétique des cartes
-   Premium du catalogue de séances, et la reprendre ici évite d'apprendre
-   deux fois la même chose à la même personne. */
-function Cachet({ verrouille }: { verrouille: boolean }) {
+/* Le cadenas posé sur le pictogramme, repris des cartes Premium du
+   catalogue de séances : le reprendre ici évite d'apprendre deux fois la
+   même chose à la même personne.
+
+   ⚠️ IL NE S'AFFICHE QUE POUR UN COMPTE QUI N'Y A PAS DROIT. Il a existé
+   une version « étincelle pour un abonné » : elle mettait une pastille
+   dorée sur les quatre missions de quelqu'un qui les a déjà, donc elle
+   lui vendait ce qu'il a payé. Un abonné ne voit plus aucune pastille,
+   et c'est le bon signal : chez lui la mission est simplement une
+   mission. */
+function Cadenas() {
   return (
     <span className={styles.cachet} aria-hidden="true">
-      {verrouille ? (
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
-          <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
-          <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
-        </svg>
-      ) : (
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
-          <path d="M12 3.5v17M3.5 12h17" />
-        </svg>
-      )}
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+        <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
+        <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
+      </svg>
     </span>
   );
 }

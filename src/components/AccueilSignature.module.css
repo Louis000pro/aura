@@ -410,22 +410,37 @@
    thème, comme le teal de « Validée » juste en dessous.
    Mesuré : #8A5A06 = 5,9:1 sur blanc · #F5B120 = 8,4:1 sur la surface
    sombre. */
+/* ⚠️ LE DÉGRADÉ EST EXACTEMENT HORIZONTAL, ET C'EST LA SEULE VALEUR QUI
+   MARCHE. Chaque ligne peint le sien dans sa propre boîte : au moindre
+   degré d'inclinaison, deux lignes voisines ne montrent pas la même
+   tranche du dégradé, et la frontière entre elles devient une coupure
+   nette. Invisible sur « Semaine régulière », seule au milieu de lignes
+   blanches ; très visible dès que quatre missions Premium s'empilent.
+   À 90deg toutes les lignes peignent la même chose, et le bloc redevient
+   un seul aplat continu. Ne pas remettre d'angle « pour faire vivant ». */
 .mission[data-premium] {
   --or: #8a5a06;
+  border-bottom-color: rgba(245, 177, 32, 0.22);
   background:
-    linear-gradient(100deg, rgba(245, 177, 32, 0.13), rgba(193, 59, 193, 0.06) 62%, transparent);
+    linear-gradient(90deg, rgba(245, 177, 32, 0.13), rgba(193, 59, 193, 0.06) 62%, transparent);
 }
 
 :global([data-theme="dark"]) .mission[data-premium] {
   --or: #f5b120;
   background:
-    linear-gradient(100deg, rgba(245, 177, 32, 0.16), rgba(193, 59, 193, 0.09) 62%, transparent);
+    linear-gradient(90deg, rgba(245, 177, 32, 0.16), rgba(193, 59, 193, 0.09) 62%, transparent);
 }
 
+/* ⚠️ `bottom: -1px` N'EST PAS UN AJUSTEMENT COSMÉTIQUE. Un élément absolu
+   se cale sur la boîte de PADDING, donc le séparateur de 1 px reste en
+   dehors : le liseré s'arrêtait juste avant, et sur quatre lignes
+   empilées ça faisait une colonne dorée encochée tous les 66 px. Il
+   déborde maintenant pile sur le séparateur, et la colonne est d'un
+   seul tenant. */
 .mission[data-premium]::before {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: -1px;
   left: 0;
   width: 3px;
   background: linear-gradient(180deg, #ffd34e, #f5b120 42%, #c13bc1);
