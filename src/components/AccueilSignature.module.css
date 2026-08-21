@@ -291,9 +291,7 @@
 .premiumPrice strong,
 .premiumPrice small,
 .missionCopy strong,
-.missionCopy small,
-.premiumMissionCopy strong,
-.premiumMissionCopy small {
+.missionCopy small {
   display: block;
 }
 
@@ -478,8 +476,8 @@
    étincelle pour un abonné : la même paire que les cartes Premium du
    catalogue de séances.
 
-   ⚠️ Il déborde du pictogramme, donc ni `.sigil` ni `.premiumSigil` ne
-   peuvent porter `overflow: hidden`. Ce n'est pas une perte : les WebP
+   ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
+   `overflow: hidden`. Ce n'est pas une perte : les WebP
    arrivent déjà avec leurs coins arrondis découpés en transparence, le
    rognage n'avait rien à faire. */
 .cachet {
@@ -494,11 +492,6 @@
   color: #3a2402;
   background: linear-gradient(135deg, #ffd34e, #f5b120);
   box-shadow: 0 2px 6px rgba(84, 52, 2, 0.34);
-}
-
-.premiumSigil svg {
-  overflow: visible;
-  stroke-width: 1.55;
 }
 
 .dailyMissionImage {
@@ -588,40 +581,24 @@
   color: var(--ok);
 }
 
-/* ── LE COFFRE ───────────────────────────────────────────────────────
-   Le vrai écart Premium n'est pas une teinte, c'est une MATIÈRE. Le
-   coffre était une carte blanche parmi des cartes blanches : à part un
-   picto de plus, rien ne le séparait des missions offertes juste
-   au-dessus. Il devient un bloc sombre bordé d'or, comme l'affiche
-   Premium de l'accueil, donc la seule surface de ce genre sur l'écran.
+/* ── LE BLOC PREMIUM ─────────────────────────────────────────────────
+   Il garde la surface de l'app, comme les autres listes : ce n'est pas
+   lui qui porte la marque, ce sont ses lignes, et elles la portent avec
+   exactement les mêmes signes que « Semaine régulière » deux blocs plus
+   haut. Un seul apprentissage, valable partout.
 
-   Il est sombre DANS LES DEUX THÈMES, et c'est le principe : en clair il
-   tranche par la profondeur, en sombre par la saturation et l'or. Un
-   coffre qui prendrait la couleur de la page ne serait plus un coffre.
-
-   Conséquence à ne pas oublier : tout ce qui vit dedans écrit en clair,
-   donc les tokens `--text-*` n'y servent plus à rien et les couleurs y
-   sont posées à la main, exactement comme dans `.posterCopy`. */
+   Il a existé une version sombre (2026-08-21, journée). Elle tranchait,
+   mais elle inventait une seconde écriture de Premium pour un seul
+   endroit de l'app, donc deux choses à comprendre au lieu d'une. On ne
+   garde d'elle que la bordure dorée, qui relie le bloc à ses lignes. */
 .premiumVault {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(245, 177, 32, 0.34);
+  border: 1px solid rgba(245, 177, 32, 0.32);
   border-radius: 20px;
-  background:
-    radial-gradient(122% 92% at 8% -6%, rgba(139, 92, 246, 0.44), transparent 60%),
-    radial-gradient(96% 84% at 104% 108%, rgba(193, 59, 193, 0.32), transparent 56%),
-    linear-gradient(158deg, #24113b, #140823 58%, #1c0d30);
-  box-shadow:
-    0 20px 40px -26px rgba(76, 30, 122, 0.9),
-    inset 0 1px rgba(255, 255, 255, 0.11);
-}
-
-:global([data-theme="dark"]) .premiumVault {
-  border-color: rgba(245, 177, 32, 0.44);
-  box-shadow:
-    0 20px 44px -24px rgba(139, 92, 246, 0.5),
-    inset 0 1px rgba(255, 255, 255, 0.13);
+  background: rgba(var(--surface-rgb), 0.9);
+  box-shadow: 0 12px 28px -22px rgba(198, 140, 20, 0.62);
 }
 
 .premiumVault[data-locked]::after {
@@ -632,15 +609,17 @@
   width: 18%;
   height: 230%;
   border-radius: 999px;
+  /* Doré, et non blanc : sur la surface claire de l'app un balayage blanc
+     ne se voyait tout simplement pas. */
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.18) 18%,
-    rgba(255, 255, 255, 0.72) 50%,
-    rgba(255, 255, 255, 0.18) 82%,
+    rgba(245, 177, 32, 0.16) 18%,
+    rgba(245, 177, 32, 0.55) 50%,
+    rgba(245, 177, 32, 0.16) 82%,
     transparent
   );
-  box-shadow: 0 0 22px rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 22px rgba(245, 177, 32, 0.3);
   content: "";
   pointer-events: none;
   transform: rotate(-24deg);
@@ -674,16 +653,22 @@
   align-items: center;
   gap: 11px;
   padding: 14px 13px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(245, 177, 32, 0.18);
 }
 
-/* Ce que le coffre ajoute en une journée, en or et en gros. C'est la
-   réponse à « pourquoi payer », et elle tient en un nombre. */
+/* Ce que le bloc ajoute en une journée, en or et en gros. C'est la
+   réponse à « pourquoi payer », et elle tient en un nombre.
+   Même encre que les lignes Premium, donc même bascule de valeur. */
 .premiumBonus {
+  --or: #8a5a06;
   flex: 0 0 auto;
-  color: #ffd34e;
+  color: var(--or);
   text-align: right;
   white-space: nowrap;
+}
+
+:global([data-theme="dark"]) .premiumBonus {
+  --or: #f5b120;
 }
 
 .premiumBonus strong {
@@ -694,10 +679,11 @@
 
 .premiumBonus small {
   margin-top: -1px;
-  color: rgba(255, 211, 78, 0.68);
+  color: var(--or);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.06em;
+  opacity: 0.74;
   text-transform: uppercase;
 }
 
@@ -706,10 +692,8 @@
   height: 39px;
   flex: 0 0 39px;
   clip-path: polygon(50% 0, 88% 17%, 100% 55%, 75% 90%, 34% 100%, 4% 72%, 8% 27%);
-  /* Éclairci depuis que le coffre est sombre : le violet de marque y
-     disparaissait dans son propre fond. */
-  background: linear-gradient(145deg, #a683ff, #d24fd2);
-  filter: drop-shadow(0 7px 12px rgba(139, 92, 246, 0.42));
+  background: linear-gradient(145deg, #8b5cf6, #c13bc1);
+  filter: drop-shadow(0 7px 10px rgba(139, 92, 246, 0.22));
 }
 
 .premiumSeal::before,
@@ -733,102 +717,20 @@
 }
 
 .premiumHeadingCopy strong {
-  color: #fff;
+  color: var(--text-0);
   font-size: 13.5px;
   font-weight: 800;
 }
 
 .premiumHeadingCopy small {
   margin-top: 2px;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--text-3);
   font-size: 10.5px;
 }
 
 .premiumList {
   display: flex;
   flex-direction: column;
-}
-
-.premiumMission {
-  position: relative;
-  display: flex;
-  width: 100%;
-  min-height: 60px;
-  align-items: center;
-  gap: 11px;
-  padding: 9px 13px;
-  border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  color: #fff;
-  background: transparent;
-  text-align: left;
-}
-
-.premiumMission:last-child {
-  border-bottom: 0;
-}
-
-.premiumMission:disabled {
-  opacity: 1;
-}
-
-/* Les pictogrammes sont des tuiles pâles : sur le fond sombre du coffre
-   ils s'allument tout seuls, sans qu'on ait à les retoucher. C'est
-   d'ailleurs pour ça que la photo de contenu n'a jamais besoin d'être
-   teintée dans cette app : c'est le chrome qui porte la couleur. */
-.premiumSigil {
-  position: relative;
-  display: grid;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  place-items: center;
-  border-radius: 13px;
-}
-
-.premiumMissionImage {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.premiumMissionCopy {
-  min-width: 0;
-  flex: 1;
-}
-
-.premiumMissionCopy strong {
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 750;
-}
-
-.premiumMissionCopy small {
-  margin-top: 1px;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 10.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* La pastille d'EXP passe à l'or dans le coffre : la monnaie y a la
-   couleur de l'endroit. Le teal de « Validée » ne bouge pas, lui, parce
-   que la réussite se dit en teal PARTOUT (système D) ; on ne fait que
-   forcer sa valeur claire, la sombre étant illisible ici. */
-.premiumMission .missionExp:not([data-earned]) {
-  border-color: rgba(245, 177, 32, 0.42);
-  color: #ffd34e;
-  background: rgba(245, 177, 32, 0.14);
-}
-
-.premiumMission .missionExp:not([data-earned]) small {
-  color: rgba(255, 211, 78, 0.7);
-}
-
-.premiumMission .missionExp[data-earned] {
-  --ok: #2bd4a0;
 }
 
 .premiumFooter {
@@ -840,27 +742,23 @@
 }
 
 .premiumFooter {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(245, 177, 32, 0.16);
 }
 
 .premiumFooter p {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--text-3);
   font-size: 10.5px;
   line-height: 1.3;
 }
 
 /* ⚠️ LE BOUTON RESTE VIOLET, et ce n'est pas négociable : dans le système
-   D le bouton d'action principal est violet partout. Sur un fond déjà
-   violet sombre il faut juste l'éclaircir et lui donner un halo, sinon il
-   se fond dans le coffre. Le passer à l'or réglerait le contraste et
-   casserait la lecture de toute l'app. */
+   D le bouton d'action principal est violet partout. L'or dit « Premium »
+   sur cet écran, il ne dit jamais « appuie ici ». */
 .premiumFooter button {
   padding: 0 13px;
   color: #fff;
-  background: linear-gradient(120deg, #9d72ff, #d24fd2);
-  box-shadow:
-    0 10px 20px -8px rgba(139, 92, 246, 0.72),
-    inset 0 1px rgba(255, 255, 255, 0.28);
+  background: linear-gradient(120deg, #8b5cf6, #c13bc1);
+  box-shadow: 0 8px 18px -9px rgba(139, 92, 246, 0.65);
 }
 
 @media (hover: hover) {
@@ -871,10 +769,6 @@
 
   .mission[data-premium]:hover {
     background-color: rgba(245, 177, 32, 0.09);
-  }
-
-  .premiumMission:not(:disabled):hover {
-    background-color: rgba(255, 255, 255, 0.06);
   }
 }
 
@@ -897,8 +791,7 @@
     max-width: 17ch;
   }
 
-  .mission,
-  .premiumMission {
+  .mission {
     gap: 9px;
     padding-inline: 10px;
   }

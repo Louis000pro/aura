@@ -210,7 +210,6 @@ export default function AccueilSignature({
                 mission={mission}
                 etat={aura.missions[mission.id]}
                 debloquee={premiumUnlocked}
-                coffre
                 onNavigate={onNavigate}
               />
             ))}
@@ -347,16 +346,20 @@ function SectionHeading({
    est lu, c'est ce qui rend impossible un écart entre le « +30 EXP »
    affiché et le crédit réel.
 
-   ⚠️ CE QUI DIT « PREMIUM » SE LIT SUR `mission.premium`, JAMAIS SUR
-   L'ENDROIT OÙ LA LIGNE EST RENDUE. C'est ce qui permet à « Semaine
-   régulière » de porter la même signalétique dorée au milieu des missions
-   gratuites de la semaine : basculer une mission d'une famille à l'autre
-   est un booléen dans le catalogue, et l'écran suit tout seul. */
+   ⚠️ UNE MISSION PREMIUM SE DESSINE PAREIL PARTOUT, et sa marque se lit sur
+   `mission.premium`, jamais sur l'endroit où la ligne est rendue. C'est ce
+   qui permet à « Semaine régulière » de porter exactement la même
+   signalétique au milieu des missions gratuites de la semaine que les
+   quatre missions du bloc Premium : basculer une mission d'une famille à
+   l'autre est un booléen dans le catalogue, et l'écran suit tout seul.
+
+   Il a existé une deuxième écriture, sombre, réservée au bloc Premium
+   (2026-08-21). Elle est SUPPRIMÉE : deux façons de dessiner la même chose,
+   c'est une chose de plus à comprendre, et la version dorée suffisait. */
 function LigneMission({
   mission,
   etat,
   debloquee,
-  coffre = false,
   onNavigate,
 }: {
   mission: Mission;
@@ -365,9 +368,6 @@ function LigneMission({
    *  même la mission Premium et sa progression : on ne cache pas ce qu'on
    *  vend, on dit juste qu'il faut Premium pour l'encaisser. */
   debloquee: boolean;
-  /** La ligne vit-elle dans le coffre sombre ? Le coffre porte déjà sa
-   *  marque : on n'y répète ni la puce dorée, ni le liseré. */
-  coffre?: boolean;
   onNavigate: (path: string) => void;
 }) {
   const premium = mission.premium;
@@ -383,20 +383,20 @@ function LigneMission({
 
   const contenu = (
     <>
-      <span className={coffre ? styles.premiumSigil : styles.sigil}>
+      <span className={styles.sigil}>
         <Image
           src={mission.image}
           alt=""
           width={42}
           height={42}
-          className={coffre ? styles.premiumMissionImage : styles.dailyMissionImage}
+          className={styles.dailyMissionImage}
         />
         {premium && <Cachet verrouille={!debloquee} />}
       </span>
-      <span className={coffre ? styles.premiumMissionCopy : styles.missionCopy}>
+      <span className={styles.missionCopy}>
         <strong>
           {mission.titre}
-          {premium && !coffre && <em className={styles.tagPremium}>Premium</em>}
+          {premium && <em className={styles.tagPremium}>Premium</em>}
         </strong>
         <small>{mission.condition}</small>
       </span>
@@ -407,11 +407,10 @@ function LigneMission({
     </>
   );
 
-  const classe = coffre ? styles.premiumMission : styles.mission;
-  const marque = premium && !coffre ? "" : undefined;
-  if (!route) return <div className={classe} data-premium={marque}>{contenu}</div>;
+  const marque = premium ? "" : undefined;
+  if (!route) return <div className={styles.mission} data-premium={marque}>{contenu}</div>;
   return (
-    <button type="button" className={classe} data-premium={marque} onClick={() => onNavigate(route)}>
+    <button type="button" className={styles.mission} data-premium={marque} onClick={() => onNavigate(route)}>
       {contenu}
     </button>
   );
