@@ -190,7 +190,7 @@ export default function AccueilSignature({
 
       <section>
         <SectionHeading title="Missions Premium" />
-        <div className={styles.premiumVault} data-locked={!premiumUnlocked ? "" : undefined}>
+        <div className={styles.premiumVault}>
           <div className={styles.premiumHeading}>
             <span className={styles.premiumSeal} aria-hidden="true" />
             <span className={styles.premiumHeadingCopy}>

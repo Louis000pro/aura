@@ -587,65 +587,19 @@
    exactement les mêmes signes que « Semaine régulière » deux blocs plus
    haut. Un seul apprentissage, valable partout.
 
-   Il a existé une version sombre (2026-08-21, journée). Elle tranchait,
-   mais elle inventait une seconde écriture de Premium pour un seul
-   endroit de l'app, donc deux choses à comprendre au lieu d'une. On ne
-   garde d'elle que la bordure dorée, qui relie le bloc à ses lignes. */
+   Deux directions ont été essayées puis ABANDONNÉES ici, ne pas les
+   refaire : une surface sombre pour le bloc (elle tranchait, mais elle
+   inventait une seconde écriture de Premium pour un seul endroit de
+   l'app), et un balayage de lumière qui traversait le bloc en boucle
+   pour les comptes gratuits. Louis n'en veut ni l'une ni l'autre : la
+   marque Premium se lit à l'arrêt, sur les lignes, sans que rien ne
+   bouge. Il ne reste de tout ça que la bordure dorée. */
 .premiumVault {
-  position: relative;
-  isolation: isolate;
   overflow: hidden;
   border: 1px solid rgba(245, 177, 32, 0.32);
   border-radius: 20px;
   background: rgba(var(--surface-rgb), 0.9);
   box-shadow: 0 12px 28px -22px rgba(198, 140, 20, 0.62);
-}
-
-.premiumVault[data-locked]::after {
-  position: absolute;
-  z-index: 3;
-  top: -65%;
-  left: -45%;
-  width: 18%;
-  height: 230%;
-  border-radius: 999px;
-  /* Doré, et non blanc : sur la surface claire de l'app un balayage blanc
-     ne se voyait tout simplement pas. */
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(245, 177, 32, 0.16) 18%,
-    rgba(245, 177, 32, 0.55) 50%,
-    rgba(245, 177, 32, 0.16) 82%,
-    transparent
-  );
-  box-shadow: 0 0 22px rgba(245, 177, 32, 0.3);
-  content: "";
-  pointer-events: none;
-  transform: rotate(-24deg);
-  animation: premiumSweep 4.8s cubic-bezier(0.52, 0, 0.28, 1) infinite;
-}
-
-@keyframes premiumSweep {
-  0%,
-  54% {
-    translate: 0 0;
-    opacity: 0;
-  }
-
-  59% {
-    opacity: 1;
-  }
-
-  86% {
-    opacity: 1;
-  }
-
-  94%,
-  100% {
-    translate: 830% 34%;
-    opacity: 0;
-  }
 }
 
 .premiumHeading {
@@ -794,12 +748,6 @@
   .mission {
     gap: 9px;
     padding-inline: 10px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .premiumVault[data-locked]::after {
-    display: none;
   }
 }
 
