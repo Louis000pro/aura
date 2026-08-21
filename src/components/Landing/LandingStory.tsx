@@ -827,7 +827,7 @@ const H_GEMME = 52;
 const L_GEMME = Math.round(H_GEMME * (320 / 512));
 const MISSIONS = [
   { img: "/missions/daily/connexion-v1.webp", label: "Connexion du jour", exp: "+5" },
-  { img: "/missions/daily/seance-v1.webp", label: "Première séance", exp: "+35" },
+  { img: "/missions/daily/seance-v1.webp", label: "Première séance", exp: "+30" },
   { img: "/missions/daily/repas-v1.webp", label: "Premier repas", exp: "+5" },
 ];
 

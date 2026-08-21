@@ -43,7 +43,6 @@ export interface Plan {
     chatPerDay: number;
     nutritionPerDay: number;
     /** Missions illimitées (les missions supplémentaires du Premium). */
-    missionsUnlimited: boolean;
     /**
      * Combien de séances à soi on GARDE (Infinity = illimité).
      * On limite le stock, jamais le fait de créer ni de s'entraîner :
@@ -67,12 +66,12 @@ export const PLANS: Record<PlanId, Plan> = {
     tagline: "Pour découvrir Vaiiya",
     aiModel: "llama-3.1-8b-instant", // modèle léger & rapide → coûts maîtrisés
     features: [
-      "Les missions de base pour gagner de l'EXP",
+      "4 missions par jour, jusqu'à 50 EXP",
       "3 séances à toi, gardées",
       "Coach IA : 5 messages/jour",
       "Analyse nutrition : 2/jour",
     ],
-    limits: { chatPerDay: 5, nutritionPerDay: 2, missionsUnlimited: false, sessionsMax: 3, ads: false, exclusiveContent: false },
+    limits: { chatPerDay: 5, nutritionPerDay: 2, sessionsMax: 3, ads: false, exclusiveContent: false },
   },
   premium: {
     id: "premium",
@@ -83,7 +82,8 @@ export const PLANS: Record<PlanId, Plan> = {
     tagline: "L'expérience Vaiiya complète",
     aiModel: "llama-3.3-70b-versatile", // modèle avancé
     features: [
-      "Missions supplémentaires en illimité",
+      "8 missions par jour, jusqu'à 120 EXP",
+      "Un palier de plus dans les défis de la semaine",
       "Tes propres séances, sans limite",
       "Coach IA avancé : illimité",
       "Analyse nutrition illimitée",
@@ -91,7 +91,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Programmes & entraînements exclusifs",
       "Badge Premium",
     ],
-    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, missionsUnlimited: true, sessionsMax: Infinity, ads: false, exclusiveContent: true },
+    limits: { chatPerDay: Infinity, nutritionPerDay: Infinity, sessionsMax: Infinity, ads: false, exclusiveContent: true },
   },
 };
 

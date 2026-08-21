@@ -42,3 +42,6 @@ seed_videos/
 
 # planches brutes des rangs (entree de `npm run rangs`)
 /rangs-src
+
+# planches brutes des pictogrammes de missions (entree de `npm run missions`)
+/missions-src

@@ -4,87 +4,26 @@ import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import GemmeRang from "@/components/GemmeRang";
 import { VisageGuide } from "@/components/AssistantMark";
-import { EXP_CONNEXION, EXP_REPAS, EXP_SEANCE, EXP_SEANCE_STREAK, type EtatAura } from "@/lib/aura";
+import {
+  MISSIONS_JOUR,
+  MISSIONS_PREMIUM,
+  MISSIONS_SEMAINE,
+  PLAFOND_JOUR_GRATUIT,
+  PLAFOND_JOUR_PREMIUM,
+  type EtatAura,
+  type Mission,
+  type ProgressionMission,
+} from "@/lib/aura";
 import { voix, type GuideRef } from "@/lib/guides";
 import type { MomentAccueil } from "@/lib/momentAccueil";
 import { formatPrice, PLANS, VENTE_OUVERTE } from "@/lib/plans";
 import styles from "./AccueilSignature.module.css";
 
-type MissionKind =
-  | "connexion"
-  | "seance"
-  | "repas"
-  | "double"
-  | "matin"
-  | "intense"
-  | "nutrition"
-  | "parfaite";
-
-type DailyMissionKind = Extract<MissionKind, "connexion" | "seance" | "repas">;
-type PremiumMissionKind = Exclude<MissionKind, DailyMissionKind>;
-
-type PremiumMission = {
-  kind: PremiumMissionKind;
-  titre: string;
-  sous: string;
-  exp: number;
-  image: string;
-  period: "jour" | "semaine";
-  path?: string;
-};
-
-const DAILY_MISSION_IMAGES: Record<DailyMissionKind, string> = {
-  connexion: "/missions/daily/connexion-v1.webp",
-  seance: "/missions/daily/seance-v1.webp",
-  repas: "/missions/daily/repas-v1.webp",
-};
-
-const MISSIONS_PREMIUM: PremiumMission[] = [
-  {
-    kind: "double",
-    titre: "Double séance",
-    sous: "Deux séances de 5 min minimum aujourd’hui",
-    exp: 60,
-    image: "/missions/premium/double-seance-v1.webp",
-    period: "jour",
-    path: "/progression",
-  },
-  {
-    kind: "matin",
-    titre: "Lève-tôt",
-    sous: "Une séance de 5 min minimum avant 9 h",
-    exp: 40,
-    image: "/missions/premium/leve-tot-v1.webp",
-    period: "jour",
-    path: "/progression",
-  },
-  {
-    kind: "intense",
-    titre: "Semaine intense",
-    sous: "Cinq séances de 5 min minimum cette semaine",
-    exp: 50,
-    image: "/missions/premium/semaine-intense-v1.webp",
-    period: "semaine",
-    path: "/progression",
-  },
-  {
-    kind: "nutrition",
-    titre: "Journée nutrition complète",
-    sous: "Petit-déjeuner, déjeuner et dîner notés",
-    exp: 15,
-    image: "/missions/premium/nutrition-complete-v1.webp",
-    period: "jour",
-    path: "/nutrition",
-  },
-  {
-    kind: "parfaite",
-    titre: "Semaine parfaite",
-    sous: "Sept jours de connexion dans la semaine",
-    exp: 35,
-    image: "/missions/premium/semaine-parfaite-v1.webp",
-    period: "semaine",
-  },
-];
+/* ⚠️ AUCUNE MISSION N'EST DÉCRITE DANS CE FICHIER. Son nom, sa condition et
+   son EXP viennent tous de `MISSIONS` (src/lib/aura.ts), qui est aussi ce que
+   la base crédite. Recopier un nombre ici, c'est promettre à l'écran ce que le
+   serveur ne donnera pas : l'ancienne version le faisait pour les cinq
+   missions Premium, et deux d'entre elles avaient déjà divergé. */
 
 export default function AccueilSignature({
   greeting,
@@ -119,15 +58,15 @@ export default function AccueilSignature({
   const reduce = useReducedMotion();
   const premiumUnlocked = isPremium || isAdmin;
   const showPremiumOffer = !isPremium;
-  const connexionOk = aura.missions.today.connexion.complete;
-  const seanceOk = aura.missions.today.seance.complete;
-  const repasOk = aura.missions.today.repas.complete;
-  const streak = Math.max(1, aura.detail.streak);
   const prix = formatPrice(PLANS.premium.priceCents);
-  const expDuJour =
-    (connexionOk ? EXP_CONNEXION : 0) +
-    (seanceOk ? EXP_SEANCE + EXP_SEANCE_STREAK : 0) +
-    (repasOk ? EXP_REPAS : 0);
+
+  /* Ce qui a réellement été crédité aujourd'hui, et le maximum atteignable.
+     On affiche les deux : « 35 / 50 EXP » se comprend d'un coup d'œil, un
+     total seul ne dit pas où il s'arrête. */
+  const expDuJour = [...MISSIONS_JOUR, ...MISSIONS_PREMIUM]
+    .filter((m) => aura.missions[m.id].earned)
+    .reduce((total, m) => total + m.exp, 0);
+  const plafondDuJour = premiumUnlocked ? PLAFOND_JOUR_PREMIUM : PLAFOND_JOUR_GRATUIT;
 
   return (
     <div className={styles.home}>
@@ -178,17 +117,16 @@ export default function AccueilSignature({
         </motion.section>
       )}
 
+      <BlocSerie serie={aura.serie} jourValide={aura.jourValide} charge={auraLoaded} />
+
       <button type="button" className={styles.rankStrip} onClick={onOpenRangs}>
         <span className={styles.rankGem}>
           <GemmeRang rang={aura.rang} size={34} />
         </span>
         <span className={styles.rankCopy}>
-          <strong>{aura.rang.nom} · Jour {streak}</strong>
-          {/* Cette ligne disait « Te revoilà, ton histoire continue. »,
-              c'est-à-dire un second bonjour, juste sous le premier. Deux
-              accueils dans le même écran, et celui-ci se retrouvait à
-              répéter mot pour mot le Guide les jours où il salue un
-              retour. Elle dit maintenant ce que le bouton ouvre. */}
+          {/* La série a son propre bloc juste au-dessus : la redire ici
+              ferait deux compteurs pour une seule idée. */}
+          <strong>{aura.rang.nom}</strong>
           <small>Voir les rangs et leurs récompenses.</small>
         </span>
         <span className={styles.rankExp}>
@@ -211,34 +149,38 @@ export default function AccueilSignature({
       <section>
         <SectionHeading
           title="Missions du jour"
-          subtitle="Trois gestes simples, quand tu veux."
-          aside={`${expDuJour} EXP gagnés`}
+          subtitle="Tu sais ce que ça rapporte avant de le faire."
+          aside={`${expDuJour} / ${plafondDuJour} EXP`}
         />
         <div className={styles.missionStack}>
-          <MissionRow
-            kind="connexion"
-            titre="Connexion du jour"
-            sous="Présence validée"
-            exp={EXP_CONNEXION}
-            done={connexionOk}
-          />
-          <MissionRow
-            kind="seance"
-            titre={seanceOk ? "Séance terminée" : "Terminer une séance"}
-            sous={seanceOk ? "Ton rang vient d’avancer" : `Choisis celle qui te ressemble · bonus série +${EXP_SEANCE_STREAK}`}
-            exp={EXP_SEANCE}
-            done={seanceOk}
-            onClick={() => onNavigate("/progression")}
-          />
-          <MissionRow
-            kind="repas"
-            titre={repasOk ? "Repas noté" : "Noter un repas"}
-            sous={repasOk ? "Ton rang vient d’avancer" : "Quelques secondes suffisent"}
-            exp={EXP_REPAS}
-            done={repasOk}
-            tone="energy"
-            onClick={() => onNavigate("/nutrition")}
-          />
+          {MISSIONS_JOUR.map((mission) => (
+            <LigneMission
+              key={mission.id}
+              mission={mission}
+              etat={aura.missions[mission.id]}
+              debloquee
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <SectionHeading
+          title="Cette semaine"
+          subtitle="Des jours validés, jamais un nombre de séances."
+          aside={`${aura.detail.joursActifsSemaine} / 7 jours`}
+        />
+        <div className={styles.missionStack}>
+          {MISSIONS_SEMAINE.map((mission) => (
+            <LigneMission
+              key={mission.id}
+              mission={mission}
+              etat={aura.missions[mission.id]}
+              debloquee={!mission.premium || premiumUnlocked}
+              onNavigate={onNavigate}
+            />
+          ))}
         </div>
       </section>
 
@@ -254,50 +196,23 @@ export default function AccueilSignature({
           </div>
 
           <div className={styles.premiumList}>
-            {MISSIONS_PREMIUM.map((mission) => {
-              const target = premiumUnlocked ? mission.path : "/premium";
-              const state = aura.missions.premiumMissions[mission.kind];
-              return (
-                <button
-                  key={mission.titre}
-                  type="button"
-                  className={styles.premiumMission}
-                  onClick={target ? () => onNavigate(target) : undefined}
-                  disabled={!target}
-                >
-                  <span className={styles.premiumSigil}>
-                    <Image
-                      src={mission.image}
-                      alt=""
-                      width={42}
-                      height={42}
-                      className={styles.premiumMissionImage}
-                    />
-                  </span>
-                  <span className={styles.premiumMissionCopy}>
-                    <strong>{mission.titre}</strong>
-                    <small>{mission.sous}</small>
-                  </span>
-                  <span className={styles.premiumMissionExp} data-earned={state.earned ? "" : undefined}>
-                    <strong>+{mission.exp} EXP</strong>
-                    <small>
-                      {state.earned
-                        ? "Validée"
-                        : state.progress > 0
-                          ? `${state.progress}/${state.target}`
-                          : mission.period}
-                    </small>
-                  </span>
-                </button>
-              );
-            })}
+            {MISSIONS_PREMIUM.map((mission) => (
+              <LigneMission
+                key={mission.id}
+                mission={mission}
+                etat={aura.missions[mission.id]}
+                debloquee={premiumUnlocked}
+                variante="premium"
+                onNavigate={onNavigate}
+              />
+            ))}
           </div>
 
           <div className={styles.premiumFooter}>
             <p>
               {premiumUnlocked
                 ? "Missions Premium actives sur ton compte."
-                : "Missions, programmes et assistant illimités."}
+                : `Quatre missions du jour en plus, et un palier de plus dans la semaine : jusqu'à ${PLAFOND_JOUR_PREMIUM} EXP par jour.`}
             </p>
             {!premiumUnlocked && (
               <button type="button" onClick={() => onNavigate("/premium")}>
@@ -308,6 +223,56 @@ export default function AccueilSignature({
         </div>
       </section>
     </div>
+  );
+}
+
+/* ── La série ─────────────────────────────────────────────────────────
+   Elle répond à UNE question : « est-ce que je suis revenu faire quelque
+   chose aujourd'hui ? ». Pas de pourcentage, pas de tableau, pas
+   d'historique : un nombre, et ce qu'il reste à faire pour le garder.
+
+   ⚠️ SE CONNECTER NE LA VALIDE PAS. C'est la règle la plus importante du
+   système, et c'est pour ça que la phrase dit « une action », jamais
+   « reviens demain ». Une série qui monte en ouvrant l'app ne mesure
+   rien, et tout le monde finit par le sentir. */
+function BlocSerie({
+  serie,
+  jourValide,
+  charge,
+}: {
+  serie: number;
+  jourValide: boolean;
+  charge: boolean;
+}) {
+  /* Tant que la base n'a pas répondu, on n'affiche pas de série : un « 0 »
+     provisoire chez quelqu'un qui en est à 30 jours serait le pire des
+     messages possibles. */
+  if (!charge) return null;
+
+  const aUneSerie = serie > 0;
+  return (
+    <section className={styles.streak} data-done={jourValide ? "" : undefined}>
+      <span className={styles.streakFlame} aria-hidden="true">🔥</span>
+      <span className={styles.streakCopy}>
+        <strong>
+          {aUneSerie ? `${serie} jour${serie > 1 ? "s" : ""}` : "Aujourd’hui"}
+        </strong>
+        <small>
+          {jourValide
+            ? "Journée validée."
+            : aUneSerie
+              ? "Fais une action pour continuer ta série."
+              : "Une séance ou un repas lance ta série."}
+        </small>
+      </span>
+      {jourValide && (
+        <span className={styles.streakCheck} aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        </span>
+      )}
+    </section>
   );
 }
 
@@ -364,51 +329,69 @@ function SectionHeading({
   );
 }
 
-function MissionRow({
-  kind,
-  titre,
-  sous,
-  exp,
-  done = false,
-  tone = "action",
-  onClick,
+/* ── Une mission ──────────────────────────────────────────────────────
+   Une seule ligne pour les trois familles (jour, semaine, Premium) :
+   elles disent exactement la même chose, il n'y avait aucune raison de
+   les écrire deux fois.
+
+   Elle montre les quatre informations exigées par le produit : le NOM, la
+   CONDITION, la RÉCOMPENSE en EXP, et l'ÉTAT. Rien n'est calculé ici, tout
+   est lu, c'est ce qui rend impossible un écart entre le « +30 EXP »
+   affiché et le crédit réel. */
+function LigneMission({
+  mission,
+  etat,
+  debloquee,
+  variante = "standard",
+  onNavigate,
 }: {
-  kind: DailyMissionKind;
-  titre: string;
-  sous: string;
-  exp: number;
-  done?: boolean;
-  tone?: "action" | "energy";
-  onClick?: () => void;
+  mission: Mission;
+  etat: ProgressionMission;
+  /** Le compte a-t-il droit à cette mission ? Un compte gratuit voit quand
+   *  même la mission Premium et sa progression : on ne cache pas ce qu'on
+   *  vend, on dit juste qu'il faut Premium pour l'encaisser. */
+  debloquee: boolean;
+  variante?: "standard" | "premium";
+  onNavigate: (path: string) => void;
 }) {
-  const content = (
+  const premium = variante === "premium";
+  const route = debloquee ? mission.route : "/premium";
+
+  const etatTexte = etat.earned
+    ? "Validée"
+    : !debloquee && etat.complete
+      ? "Premium"
+      : etat.target > 1
+        ? `${etat.progress}/${etat.target}`
+        : "À faire";
+
+  const contenu = (
     <>
-      <span className={styles.sigil} data-tone={done ? "success" : tone}>
+      <span className={premium ? styles.premiumSigil : styles.sigil}>
         <Image
-          src={DAILY_MISSION_IMAGES[kind]}
+          src={mission.image}
           alt=""
           width={42}
           height={42}
-          className={styles.dailyMissionImage}
+          className={premium ? styles.premiumMissionImage : styles.dailyMissionImage}
         />
       </span>
-      <span className={styles.missionCopy}>
-        <strong>{titre}</strong>
-        <small>{sous}</small>
+      <span className={premium ? styles.premiumMissionCopy : styles.missionCopy}>
+        <strong>{mission.titre}</strong>
+        <small>{mission.condition}</small>
       </span>
-      <span className={styles.missionExp} data-tone={done ? "success" : tone}>
-        {done ? "Validée" : `+${exp} EXP`}
+      <span className={styles.missionExp} data-earned={etat.earned ? "" : undefined}>
+        <strong>+{mission.exp} EXP</strong>
+        <small>{etatTexte}</small>
       </span>
     </>
   );
 
-  if (!onClick) {
-    return <div className={styles.mission}>{content}</div>;
-  }
-
+  const classe = premium ? styles.premiumMission : styles.mission;
+  if (!route) return <div className={classe}>{contenu}</div>;
   return (
-    <button type="button" className={styles.mission} onClick={onClick}>
-      {content}
+    <button type="button" className={classe} onClick={() => onNavigate(route)}>
+      {contenu}
     </button>
   );
 }

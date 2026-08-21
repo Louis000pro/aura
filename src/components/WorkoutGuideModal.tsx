@@ -714,6 +714,10 @@ export default function WorkoutGuideModal({
   const [introOpen,     setIntroOpen]     = useState<number | null>(null); // exo déplié dans la liste "Au programme"
   const [shareStatus,   setShareStatus]   = useState<"idle" | "saving" | "done" | "error">("idle");
   const [sessionSaved,  setSessionSaved]  = useState(false);
+  /* La série APRÈS cette séance, lue en base une fois l'enregistrement fait.
+     `null` tant qu'on ne la connaît pas : on ne montre jamais un compteur
+     provisoire qui se corrigerait sous les yeux. */
+  const [serieDuJour, setSerieDuJour] = useState<number | null>(null);
   const [garde,         setGarde]         = useState<"idle" | "gardee" | "refusee">("idle");
 
   const { user } = useAuth();
@@ -755,8 +759,15 @@ export default function WorkoutGuideModal({
       }
       // La séance qui fait passer un rang doit se fêter ICI, pas à la prochaine
       // ouverture de l'accueil. Silencieux si le rang n'a pas bougé.
+      /* La séance vient de valider la journée : c'est le bon moment pour
+         montrer la série, pas la prochaine ouverture de l'accueil. Même
+         lecture pour le passage de rang, silencieux si rien n'a bougé. */
       void calculerAura(supabase, user.id)
-        .then((etat) => noterRang(user.id, etat.rang))
+        .then((etat) => {
+          if (!etat) return;
+          noterRang(user.id, etat.rang);
+          if (etat.jourValide) setSerieDuJour(etat.serie);
+        })
         .catch(() => {});
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1393,6 +1404,32 @@ export default function WorkoutGuideModal({
                     {voix(guide, "seance.fin")}
                   </motion.p>
                 )}
+
+                {/* ── LA SÉRIE, AU MOMENT OÙ ELLE SE GAGNE ──
+                    C'est ici qu'elle veut dire quelque chose : la journée
+                    vient d'être validée par cette séance. Deux lignes, pas
+                    un tableau (règle produit : la série se lit, elle ne se
+                    calcule pas). Orange, parce que chez nous 🔥 = énergie. */}
+                <AnimatePresence>
+                  {serieDuJour !== null && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl mt-4"
+                      style={{ background: "rgba(245,177,32,0.10)", border: "1px solid rgba(245,177,32,0.28)" }}
+                    >
+                      <span style={{ fontSize: 17 }} aria-hidden="true">🔥</span>
+                      <span className="text-left">
+                        <strong className="block text-[12.5px] font-bold" style={{ color: "#FFD34E" }}>
+                          Journée validée
+                        </strong>
+                        <small className="block text-[11px]" style={{ color: TUN.t2 }}>
+                          Série de {serieDuJour} jour{serieDuJour > 1 ? "s" : ""}
+                        </small>
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="grid grid-cols-2 gap-2.5 w-full mt-6">
                   {[

@@ -29,7 +29,7 @@
    qui rend chaque règle relisible et vérifiable sans base de données.
    ════════════════════════════════════════════════════════════════════ */
 
-import { RANGS } from "@/lib/aura";
+import { EXP_SEANCE, RANGS } from "@/lib/aura";
 
 /* ── Les paliers ──────────────────────────────────────────────────── */
 
@@ -159,16 +159,18 @@ function prochainRang(exp: number | null): { manque: number; nom: string } | nul
 }
 
 /**
- * Une séance terminée rapporte 35 EXP (30 + le bonus de série). En dessous
- * de ce seuil, la phrase « une séance et tu y es » est littéralement vraie,
- * donc on ne la dit jamais à quelqu'un pour qui elle serait fausse.
+ * Une séance terminée rapporte EXP_SEANCE. En dessous de ce seuil, la phrase
+ * « une séance et tu y es » est littéralement vraie, donc on ne la dit jamais
+ * à quelqu'un pour qui elle serait fausse.
  *
  * ⚠️ Exporté depuis le 2026-08-19 : `momentAccueil.ts` pose exactement la
  * même question (« le rang suivant est-il à une séance ? ») sur l'accueil.
  * Deux copies de ce nombre, c'est le push et l'écran qui se contredisent
- * le jour où le barème d'une séance bouge.
+ * le jour où le barème d'une séance bouge, d'où l'import plutôt qu'un 30
+ * réécrit ici (le bonus de série a disparu le 2026-08-21, ce nombre valait
+ * 35 jusque-là).
  */
-export const EXP_UNE_SEANCE = 35;
+export const EXP_UNE_SEANCE = EXP_SEANCE;
 
 /**
  * Du plus spécifique au plus général. Le premier modèle qui s'applique et

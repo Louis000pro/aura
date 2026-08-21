@@ -29,7 +29,7 @@ import {
   type MomentAccueil,
 } from "@/lib/momentAccueil";
 import { persistLieu } from "@/lib/planning";
-import { observeParisDay, parisDateStr, shiftDateStr } from "@/lib/dates";
+import { observeParisDay, parisDateStr } from "@/lib/dates";
 import { marquerPresence } from "@/lib/presence";
 
 /* ─── Compute & save Aura score dynamically ─── */
@@ -77,27 +77,22 @@ async function computeAndSaveScore(userId: string, supabase: ReturnType<typeof c
   const calories = todayNutrition.reduce((sum: number, n: { calories: number }) => sum + (n.calories || 0), 0);
   const burned = todaySessions.reduce((sum: number, s: { calories_burned?: number }) => sum + (s.calories_burned || 0), 0);
 
-  // ── Série de connexion : +1 par jour consécutif où l'on ouvre le site, reset si un jour est sauté ──
-  const yesterday = shiftDateStr(today, -1);
-  const { data: streakRows } = await supabase.from("daily_stats")
-    .select("date, streak").eq("user_id", userId).in("date", [yesterday, today]);
-  const todayRow = streakRows?.find((r: { date: string; streak: number }) => r.date === today);
-  const yRow = streakRows?.find((r: { date: string; streak: number }) => r.date === yesterday);
-  let streak: number;
-  if (todayRow && (todayRow.streak ?? 0) > 0) {
-    streak = todayRow.streak; // déjà compté aujourd'hui → on ne ré-incrémente pas
-  } else {
-    streak = (yRow && (yRow.streak ?? 0) > 0) ? yRow.streak + 1 : 1; // hier présent → +1, sinon repart à 1
-  }
+  /* ⚠️ CE CALCUL NE TOUCHE PLUS À LA SÉRIE (2026-08-21). Il l'incrémentait
+     ici ET dans `marquerPresence`, deux écritures concurrentes de la même
+     colonne, et il la faisait monter sur une simple ouverture de l'app.
+     La série est désormais DÉRIVÉE des journées validées, en base
+     (`serie_aura`) : on ne fait que lire la valeur qu'elle a posée. */
+  const { data: ligneJour } = await supabase.from("daily_stats")
+    .select("streak").eq("user_id", userId).eq("date", today).maybeSingle();
+  const streak = (ligneJour?.streak as number | undefined) ?? 0;
 
-  // Upsert dans daily_stats
+  // Upsert dans daily_stats, sans `streak`, qui appartient au serveur.
   await supabase.from("daily_stats").upsert({
     user_id: userId,
     date: today,
     score,
     calories,
     burned,
-    streak,
   }, { onConflict: "user_id,date" });
 
   return { score, calories, burned, steps: 0, sleepHours: 0, streak };
@@ -207,8 +202,14 @@ function Dashboard() {
       } catch { /* ignore */ }
     }
 
+    /* `calculerAura` peut rendre `null` : la RPC manque (migration pas
+       encore collée), le réseau a lâché, la session a expiré. Dans ce cas
+       on ne touche à RIEN, surtout pas pour afficher un zéro qui
+       ressemblerait à une perte d'EXP. L'écran garde le dernier chiffre
+       connu, ou son tiret. */
     calculerAura(supabase, user.id)
       .then((etat) => {
+        if (!etat) return;
         if (firstRun) prevExpRef.current = etat.exp; // le premier chargement ne s'anime jamais
         setAura(etat);
         setAuraLoaded(true);
@@ -216,7 +217,7 @@ function Dashboard() {
         // Passage de rang : on note le rang FRAIS (jamais celui du cache d'affichage).
         noterRang(user.id, etat.rang);
       })
-      .catch(() => setAuraLoaded(true));
+      .catch(() => { /* silencieux : on garde l'affichage précédent */ });
   }, [user, statsTick, parisDay]);
 
   // Animation quand l'EXP augmente : un « +N EXP » s'envole au-dessus du compteur

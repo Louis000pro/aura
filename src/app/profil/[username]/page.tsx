@@ -184,7 +184,9 @@ export default function PublicProfilePage() {
         void chargerRang(data.id)
           .then((rangPublic) => {
             if (rangPublic) setAura(etatDepuisExp(rangPublic.exp));
-            else if (user?.id === data.id) void calculerAura(supabase, data.id).then(setAura);
+            else if (user?.id === data.id) {
+              void calculerAura(supabase, data.id).then((etat) => { if (etat) setAura(etat); });
+            }
           })
           .catch(() => {});
         void chargerBadges(data.id).then((slugs) => setBadgeSlugs(new Set(slugs))).catch(() => {});

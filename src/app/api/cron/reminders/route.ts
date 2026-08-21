@@ -26,6 +26,7 @@ import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase-admin";
 import { parisDateStr, parisHour, shiftDateStr } from "@/lib/dates";
 import { preferencesDeLot, PAR_DEFAUT } from "@/lib/notificationPrefs";
+import { EXP_BIENVENUE } from "@/lib/aura";
 import {
   palierDe,
   rappelPour,
@@ -233,11 +234,11 @@ async function portraits(
     p.seancePrevue = String(j.title || type);
   }
 
-  // 10 EXP de bienvenue, comme la RPC `etat_missions_aura`.
+  // Le socle de bienvenue, comme la RPC `etat_missions_aura`.
   if (!expRes.error) {
     for (const id of ids) {
       const p = carte.get(id);
-      if (p) p.exp = 10;
+      if (p) p.exp = EXP_BIENVENUE;
     }
     for (const c of expRes.data ?? []) {
       const p = carte.get(c.user_id as string);

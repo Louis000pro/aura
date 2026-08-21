@@ -176,6 +176,80 @@
   box-shadow: 0 8px 18px rgba(7, 2, 12, 0.22);
 }
 
+/* ── LA SÉRIE ────────────────────────────────────────────────────────
+   Elle est passée d'une demi-ligne dans la bande de rang (« Bronze · Jour
+   3 ») à un bloc à elle : c'est désormais la première chose que le produit
+   veut faire lire, et une information collée à une autre ne se lit jamais.
+
+   Orange, parce que 🔥 = énergie dans le système D. Elle passe au teal une
+   fois la journée validée : teal = réussite, la même couleur que la coche
+   de fin de séance et que les missions cochées. */
+.streak {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(232, 98, 12, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(255, 211, 78, 0.11), rgba(255, 122, 26, 0.07));
+}
+
+.streak[data-done] {
+  --ok: #0f7a5c;
+  border-color: rgba(43, 212, 160, 0.26);
+  background: linear-gradient(120deg, rgba(43, 212, 160, 0.13), rgba(43, 212, 160, 0.05));
+}
+
+:global([data-theme="dark"]) .streak[data-done] {
+  --ok: #2bd4a0;
+}
+
+.streakFlame {
+  flex: 0 0 auto;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.streakCopy {
+  min-width: 0;
+  flex: 1;
+}
+
+.streakCopy strong {
+  display: block;
+  color: var(--text-0);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.streakCopy small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+
+/* La coche pleine : la couleur porte le sens, donc elle suit la même
+   bascule que l'encre. Le blanc de la coche reste lisible sur les deux
+   valeurs (4,4:1 sur #0F7A5C, et le vert clair du mode sombre est un
+   aplat, pas du texte). */
+.streakCheck {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--ok, #0f7a5c);
+}
+
+:global([data-theme="dark"]) .streakCheck {
+  color: #06231a;
+}
+
 .rankStrip {
   position: relative;
   display: flex;
@@ -362,20 +436,64 @@
   white-space: nowrap;
 }
 
+/* La récompense et l'état, ensemble, sur toutes les missions.
+   Deux lignes exigées par le produit : ce que ça rapporte, et où on en est.
+   Une seule pastille pour les trois familles. La version précédente en avait
+   deux, dont une dorée réservée au Premium, et la même information s'y lisait
+   de deux façons différentes dans le même écran. */
 .missionExp {
+  display: flex;
   flex: 0 0 auto;
+  min-width: 64px;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 4px 8px;
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
+  border-radius: 999px;
   color: var(--accent);
-  font-size: 11px;
-  font-weight: 800;
+  background: rgba(var(--accent-rgb), 0.07);
   white-space: nowrap;
 }
 
-.missionExp[data-tone="energy"] {
-  color: #e8620c;
+.missionExp strong {
+  display: block;
+  color: inherit;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: -0.015em;
 }
 
-.missionExp[data-tone="success"] {
-  color: #159c79;
+.missionExp small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-3);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ⚠️ LE TEAL DE « VALIDÉE » CHANGE DE VALEUR SELON LE THÈME, et c'est
+   volontaire. Le rôle reste le même (teal = réussite, système D), mais une
+   seule valeur ne peut pas passer des deux côtés : #159c79 tombe à 3,5:1 sur
+   le blanc du mode clair, et #2BD4A0 à 1,9:1. On garde donc la teinte de fond
+   commune et on ne bascule que l'encre. Même procédé que `admin.module.css`,
+   qui a rencontré exactement ce problème.
+   Mesuré : #0F7A5C = 5,3:1 sur blanc · #2BD4A0 = 9,9:1 sur la surface sombre. */
+.missionExp[data-earned] {
+  --ok: #0f7a5c;
+  border-color: rgba(43, 212, 160, 0.26);
+  color: var(--ok);
+  background: rgba(43, 212, 160, 0.09);
+}
+
+:global([data-theme="dark"]) .missionExp[data-earned] {
+  --ok: #2bd4a0;
+}
+
+.missionExp[data-earned] small {
+  color: var(--ok);
 }
 
 .premiumVault {
@@ -542,43 +660,6 @@
   font-size: 10.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.premiumMissionExp {
-  display: flex;
-  flex: 0 0 auto;
-  min-width: 62px;
-  flex-direction: column;
-  align-items: flex-end;
-  padding: 4px 7px;
-  border: 1px solid rgba(216, 153, 16, 0.18);
-  border-radius: 999px;
-  color: #b87800;
-  background: linear-gradient(135deg, rgba(255, 211, 78, 0.16), rgba(245, 177, 32, 0.07));
-  box-shadow: 0 5px 14px -11px rgba(184, 120, 0, 0.75);
-  font-size: 11.5px;
-  font-weight: 900;
-  letter-spacing: -0.015em;
-  white-space: nowrap;
-}
-
-.premiumMissionExp strong {
-  color: inherit;
-  font: inherit;
-}
-
-.premiumMissionExp small {
-  margin-top: 1px;
-  color: #9a7118;
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.premiumMissionExp[data-earned] small {
-  color: #159c79;
 }
 
 .premiumFooter {

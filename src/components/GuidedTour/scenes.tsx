@@ -550,7 +550,9 @@ export function SceneRang() {
           color: OR_CLAIR,
         }}
       >
-        40 / 50 EXP
+        {/* Le seuil vient de `RANGS` : écrit à la main, il annonçait encore
+            50 EXP six semaines après le recalibrage des rangs. */}
+        40 / {RANGS[1].min} EXP
       </p>
 
       <Cadre className="mt-4" padding={12}>

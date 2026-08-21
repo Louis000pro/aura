@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exigerAdmin } from "@/lib/adminGuard";
 import { parisDateStr, shiftDateStr } from "@/lib/dates";
 import { LIMITES, type CategorieIA } from "@/lib/aiQuotas";
+import { EXP_BIENVENUE } from "@/lib/aura";
 
 /* ─── Ce qu'on lit en base ─── */
 type LigneProfil = {
@@ -120,8 +121,12 @@ export async function GET(req: NextRequest) {
   const repasDe = new Map<string, number>();
   for (const r of repas) repasDe.set(r.user_id, (repasDe.get(r.user_id) ?? 0) + 1);
 
+  /* Même formule que `etat_missions_aura` et `rangs_aura` : le socle de
+     bienvenue plus le registre. Sans le +10, cet écran affichait 10 EXP de
+     moins que le profil de la même personne. */
   const expDe = new Map<string, number>();
-  for (const c of credits) expDe.set(c.user_id, (expDe.get(c.user_id) ?? 0) + Number(c.points ?? 0));
+  for (const p of profils) expDe.set(p.id, EXP_BIENVENUE);
+  for (const c of credits) expDe.set(c.user_id, (expDe.get(c.user_id) ?? EXP_BIENVENUE) + Number(c.points ?? 0));
 
   /* ── Compteurs IA du jour. Deux formes de clé :
         `chat:2026-08-11`         → un compte, un jour, une catégorie

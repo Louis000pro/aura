@@ -907,6 +907,9 @@ export default function ProfilPage() {
 
     void calculerAura(supabase, uid)
       .then((etat) => {
+        // `null` = la base n'a pas répondu. On ne montre alors aucun rang
+        // plutôt qu'un Bronze par défaut, qui serait faux pour la plupart.
+        if (!etat) return;
         setAura(etat);
         noterRang(uid, etat.rang); // passage de rang : la célébration part du layout
       })
@@ -1227,7 +1230,10 @@ export default function ProfilPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.06 }}
           whileTap={{ scale: 0.985 }}
-          onClick={() => setShowRangs(true)}
+          /* Tant que l'aura n'est pas lue, la carte montre un squelette : on
+             n'ouvre pas la galerie dessus, elle annoncerait « Bronze · 0 EXP »
+             comme rang courant à quelqu'un qui est peut-être Diamant. */
+          onClick={() => { if (aura) setShowRangs(true); }}
           className="w-full flex items-center gap-4 mb-3 px-4 py-3.5 rounded-3xl overflow-hidden cursor-pointer text-left"
           style={{
             background: "rgba(var(--surface-rgb),0.8)",
