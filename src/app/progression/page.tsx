@@ -1256,8 +1256,15 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
    L'ancienne paire violet → or de cet écran en inventait une deuxième, et
    le violet est déjà pris : dans le système D, il veut dire « action ».
    Si l'un des deux change un jour, les deux changent ensemble. */
-const PREMIUM_LISERE = "linear-gradient(180deg,#FFD34E,#F5B120 42%,#C13BC1)";
 const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
+/* Le trait doré qui tient la carte, exactement celui du bloc de l'accueil.
+   ⚠️ C'EST UNE VRAIE BORDURE, PLUS UN CADRE EN DÉGRADÉ. La carte était
+   dessinée par un fond dégradé de 1 px de padding : entre le rayon extérieur
+   (20) et celui de la photo (17), l'or ressortait en coins épais sous le
+   bandeau, et l'anneau plein saturé faisait une surbrillance autour de
+   chaque carte. Une bordure + `overflow: hidden` donne un filet régulier
+   partout, et les enfants n'ont plus à porter de rayon du tout. */
+const PREMIUM_TRAIT = "1px solid rgba(245,177,32,0.34)";
 /* Le lavis des lignes Premium de l'accueil. ⚠️ Exactement horizontal :
    incliné, deux cartes voisines montrent deux tranches différentes du
    dégradé et la rangée se coupe en morceaux. */
@@ -1320,10 +1327,10 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative ${isPremium ? "rounded-[20px] overflow-hidden p-px" : ""}`}
+      className={`relative ${isPremium ? "rounded-[20px] overflow-hidden" : ""}`}
       style={isPremium ? {
-        background: PREMIUM_LISERE,
-        boxShadow: "0 12px 28px -14px rgba(198,140,20,0.62)",
+        border: PREMIUM_TRAIT,
+        boxShadow: "0 12px 28px -16px rgba(198,140,20,0.5)",
       } : undefined}
     >
       {/* Le bandeau dit le MOT, ce qu'aucune couleur ne fait seule, et il le
@@ -1353,7 +1360,7 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={() => premiumLocked ? onPremium(session) : onStart(session)}
-        className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "rounded-[17px]" : "rounded-[18px]"}`}
+        className={`w-full overflow-hidden relative cursor-pointer border-none p-0 block ${isPremium ? "" : "rounded-[18px]"}`}
         style={{ aspectRatio: "3 / 4", boxShadow: "0 10px 26px rgba(0,0,0,0.2)" }}
         aria-label={premiumLocked
           ? `${session.title} — réservé à Premium`
