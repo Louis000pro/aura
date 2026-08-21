@@ -186,6 +186,14 @@ export type Mission = {
    *  ferait promettre à l'écran ce que la base continue de donner à tout le
    *  monde, ou l'inverse. */
   premium: boolean;
+  /** L'unité de ce qu'il reste à faire, au singulier puis au pluriel.
+   *
+   *  Absente quand la mission se fait en une fois : sous un titre qui dit
+   *  déjà « Terminer une séance », écrire « encore 1 séance » n'apprend
+   *  rien, et c'est précisément le défaut de l'ancien « À FAIRE » qu'on
+   *  répare. Un champ absent veut donc dire « ne rien écrire », pas
+   *  « unité oubliée ». */
+  unite?: [string, string];
   /** Le pictogramme. `public/missions/<famille>/<nom>-v1.webp`. */
   image: string;
   /** Où aller pour la faire, ou `null` s'il n'y a rien à ouvrir. */
@@ -229,6 +237,7 @@ export const MISSIONS: Mission[] = [
     id: "journee",
     titre: "Journée complète",
     condition: "Connexion, séance et repas dans la même journée.",
+    unite: ["étape", "étapes"] as [string, string],
     exp: EXP_JOURNEE,
     periode: "jour",
     premium: false,
@@ -239,6 +248,7 @@ export const MISSIONS: Mission[] = [
     id: "double",
     titre: "Double séance",
     condition: "Deux séances de 5 min minimum aujourd'hui.",
+    unite: ["séance", "séances"] as [string, string],
     exp: EXP_DOUBLE,
     periode: "jour",
     premium: true,
@@ -259,6 +269,7 @@ export const MISSIONS: Mission[] = [
     id: "nutrition",
     titre: "Nutrition complète",
     condition: "Petit-déjeuner, déjeuner et dîner notés.",
+    unite: ["repas", "repas"] as [string, string],
     exp: EXP_NUTRITION,
     periode: "jour",
     premium: true,
@@ -273,6 +284,7 @@ export const MISSIONS: Mission[] = [
     // seule définition de « faire quelque chose » dans tout le produit, et
     // c'est ce qui rend le système explicable en une phrase.
     condition: "Une séance et un repas dans la même journée.",
+    unite: ["étape", "étapes"] as [string, string],
     exp: EXP_OBJECTIF,
     periode: "jour",
     premium: true,
@@ -283,6 +295,7 @@ export const MISSIONS: Mission[] = [
     id: "semaineActive",
     titre: "Semaine active",
     condition: "3 jours validés cette semaine.",
+    unite: ["jour", "jours"] as [string, string],
     exp: EXP_SEMAINE_ACTIVE,
     periode: "semaine",
     premium: false,
@@ -293,6 +306,7 @@ export const MISSIONS: Mission[] = [
     id: "semaineReguliere",
     titre: "Semaine régulière",
     condition: "5 jours validés cette semaine.",
+    unite: ["jour", "jours"] as [string, string],
     exp: EXP_SEMAINE_REGULIERE,
     periode: "semaine",
     premium: true,
@@ -303,6 +317,7 @@ export const MISSIONS: Mission[] = [
     id: "semaineParfaite",
     titre: "Semaine parfaite",
     condition: "7 jours validés cette semaine.",
+    unite: ["jour", "jours"] as [string, string],
     exp: EXP_SEMAINE_PARFAITE,
     periode: "semaine",
     premium: false,
@@ -435,6 +450,25 @@ export type ProgressionMission = {
 };
 
 export type EtatMissionsAura = Record<MissionId, ProgressionMission>;
+
+/** Ce qu'il reste à faire, dans l'unité de la mission : « encore 2 jours ».
+ *
+ *  Rend `null` quand il n'y a rien d'utile à dire, c'est-à-dire quand la
+ *  mission se fait en une fois (pas d'`unite`) ou qu'elle est déjà remplie.
+ *  C'est le remplaçant de l'ancien « À FAIRE », qui occupait la même place
+ *  en n'apprenant rien : toute mission non validée est à faire.
+ *
+ *  ⚠️ Le calcul vit ici, avec le catalogue, et pas dans l'écran : le jour
+ *  où une cible change en base, c'est `etat.target` qui bouge et la phrase
+ *  suit toute seule. */
+export function resteMission(mission: Mission, etat: ProgressionMission): string | null {
+  if (!mission.unite) return null;
+  const reste = etat.target - etat.progress;
+  if (reste <= 0) return null;
+  const [un, plusieurs] = mission.unite;
+  return `encore ${reste} ${reste > 1 ? plusieurs : un}`;
+}
+
 
 export type EtatAura = {
   exp: number;

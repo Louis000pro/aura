@@ -10,6 +10,7 @@ import {
   MISSIONS_SEMAINE,
   PLAFOND_JOUR_GRATUIT,
   PLAFOND_JOUR_PREMIUM,
+  resteMission,
   type EtatAura,
   type Mission,
   type ProgressionMission,
@@ -373,13 +374,18 @@ function LigneMission({
   const premium = mission.premium;
   const route = debloquee ? mission.route : "/premium";
 
+  /* ⚠️ LA CONDITION RESTE SOUS LE TITRE, elle ne se fait remplacer par
+     rien. « Ouvrir Vaiiya. Ne valide pas ta journée. » porte la règle la
+     plus importante du système : c'est la seule phrase de l'app qui dit
+     que venir ne suffit pas. Ce qu'il reste à faire prend donc la place
+     de l'ancien « À FAIRE », qui n'apprenait rien. */
+  /* Rien sous le sceau quand la mission est gagnée : le tampon teal et sa
+     coche le disent déjà, et « Validée » écrit à côté ferait doublon. */
   const etatTexte = etat.earned
-    ? "Validée"
+    ? null
     : !debloquee && etat.complete
       ? "Premium"
-      : etat.target > 1
-        ? `${etat.progress}/${etat.target}`
-        : "À faire";
+      : resteMission(mission, etat);
 
   const contenu = (
     <>
@@ -400,9 +406,23 @@ function LigneMission({
         </strong>
         <small>{mission.condition}</small>
       </span>
-      <span className={styles.missionExp} data-earned={etat.earned ? "" : undefined}>
-        <strong>+{mission.exp} EXP</strong>
-        <small>{etatTexte}</small>
+      <span className={styles.gain}>
+        <span className={styles.sceau} data-earned={etat.earned ? "" : undefined}>
+          {etat.earned && (
+            <>
+              {/* La coche porte le sens à l'œil, le mot le porte à l'oreille :
+                  sans lui, une synthèse vocale lirait « plus 5 EXP » sur une
+                  mission déjà encaissée comme sur une mission à faire. */}
+              <span className={styles.horsEcran}>Validée, </span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+            </>
+          )}
+          <strong>+{mission.exp}</strong>
+          <em>EXP</em>
+        </span>
+        {etatTexte && <small>{etatTexte}</small>}
       </span>
     </>
   );

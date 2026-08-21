@@ -2,6 +2,21 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  /* ⚠️ L'EXP A SON ENCRE, ET CE N'EST PAS `--accent`.
+     Le violet de l'app, #A78BFA, donne 2,6:1 sur le blanc du mode clair,
+     sous le minimum de 3:1 pour du gros texte : en 21 px et en 900, le
+     chiffre paraissait éteint avant même d'être lu, ce qui est exactement
+     le défaut qu'on répare. Même teinte, encre plus dense, 5,8:1.
+     Le violet de l'app ne bouge nulle part ailleurs.
+     Mesuré : #6D4BD6 = 5,8:1 sur blanc · #C3AEFF = 9,4:1 sur le fond sombre. */
+  --exp-encre: #6d4bd6;
+  --exp-trait: rgba(109, 75, 214, 0.4);
+}
+
+:global([data-theme="dark"]) .home {
+  --exp-encre: #c3aeff;
+  --exp-trait: rgba(195, 174, 255, 0.42);
 }
 
 .greeting {
@@ -447,15 +462,17 @@
   content: "";
 }
 
-.mission[data-premium] .missionExp:not([data-earned]) {
-  border-color: rgba(245, 177, 32, 0.36);
+/* Sur une ligne Premium, le contour et l'encre passent à l'or, comme le
+   reste de la ligne. Le tampon teal, lui, ne bouge pas : la réussite se
+   dit en teal partout, y compris chez un abonné. */
+.mission[data-premium] .sceau:not([data-earned]) {
+  border-color: rgba(245, 177, 32, 0.55);
   color: var(--or);
-  background: rgba(245, 177, 32, 0.13);
 }
 
-.mission[data-premium] .missionExp:not([data-earned]) small {
+.mission[data-premium] .gain > small {
   color: var(--or);
-  opacity: 0.72;
+  opacity: 0.78;
 }
 
 /* La puce dorée collée au titre. Elle dit le mot, ce que ni une couleur
@@ -536,64 +553,88 @@
   white-space: nowrap;
 }
 
-/* La récompense et l'état, ensemble, sur toutes les missions.
-   Deux lignes exigées par le produit : ce que ça rapporte, et où on en est.
-   Une seule pastille pour les trois familles. La version précédente en avait
-   deux, dont une dorée réservée au Premium, et la même information s'y lisait
-   de deux façons différentes dans le même écran. */
-.missionExp {
+/* ── LE SCEAU ────────────────────────────────────────────────────────
+   La récompense au bout d'une ligne. Deux états, et le contraste entre
+   les deux est tout l'intérêt : un CONTOUR tant que ce n'est pas fait,
+   un APLAT teal plein avec sa coche une fois gagné. « Validée » cesse
+   d'être une pastille éteinte et devient un tampon.
+
+   Ce qu'on répare, précisément : l'ancienne pastille tassait la
+   récompense et l'avancement dans 64 px, avec un fond pâle sous un texte
+   pâle, ce qui est la recette d'un bouton désactivé. Ici le chiffre a la
+   pastille pour lui seul, et ce qu'il reste à faire vit dessous.
+
+   Le teal reste la seule couleur pleine de la ligne : c'est la réussite
+   du système D, la même que la coche de fin de séance. Il n'entre pas en
+   conflit avec le violet, qui reste l'action. */
+.gain {
   display: flex;
   flex: 0 0 auto;
-  min-width: 64px;
   flex-direction: column;
   align-items: flex-end;
-  padding: 4px 8px;
-  border: 1px solid rgba(var(--accent-rgb), 0.16);
-  border-radius: 999px;
-  color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.07);
+  gap: 3px;
   white-space: nowrap;
 }
 
-.missionExp strong {
-  display: block;
-  color: inherit;
-  font-size: 11.5px;
-  font-weight: 900;
-  letter-spacing: -0.015em;
-}
-
-.missionExp small {
-  display: block;
-  margin-top: 1px;
+/* Ce qu'il reste à faire, à la place exacte de l'ancien « À FAIRE ».
+   Le mot ne disait rien (toute mission non validée est à faire) ; le
+   compte, lui, dit à quelle distance on est. */
+.gain > small {
   color: var(--text-3);
-  font-size: 8.5px;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sceau {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 1.5px solid var(--exp-trait);
+  border-radius: 999px;
+  color: var(--exp-encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.sceau strong {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.sceau em {
+  font-size: 9px;
+  font-style: normal;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-/* ⚠️ LE TEAL DE « VALIDÉE » CHANGE DE VALEUR SELON LE THÈME, et c'est
-   volontaire. Le rôle reste le même (teal = réussite, système D), mais une
-   seule valeur ne peut pas passer des deux côtés : #159c79 tombe à 3,5:1 sur
-   le blanc du mode clair, et #2BD4A0 à 1,9:1. On garde donc la teinte de fond
-   commune et on ne bascule que l'encre. Même procédé que `admin.module.css`,
-   qui a rencontré exactement ce problème.
-   Mesuré : #0F7A5C = 5,3:1 sur blanc · #2BD4A0 = 9,9:1 sur la surface sombre. */
-.missionExp[data-earned] {
-  --ok: #0f7a5c;
-  border-color: rgba(43, 212, 160, 0.26);
-  color: var(--ok);
-  background: rgba(43, 212, 160, 0.09);
+/* L'aplat plein, identique dans les deux thèmes : un teal saturé tient
+   sur le blanc comme sur le noir, et c'est justement ce qui en fait un
+   tampon plutôt qu'une teinte de surface. L'encre sombre posée dessus
+   donne 8,9:1.
+   ⚠️ Pas de `--exp-ok` ici : ce jeton est l'ENCRE du teal, celle qui
+   bascule pour rester lisible sur la surface. Le tampon, lui, apporte
+   son propre fond, donc il n'a rien à basculer. */
+.sceau[data-earned] {
+  border-color: transparent;
+  color: #05271d;
+  background: linear-gradient(135deg, #35e0ae, #17b487);
+  box-shadow: 0 6px 14px -8px rgba(23, 180, 135, 0.9);
 }
 
-:global([data-theme="dark"]) .missionExp[data-earned] {
-  --ok: #2bd4a0;
-}
-
-.missionExp[data-earned] small {
-  color: var(--ok);
+/* Lu par les synthèses vocales, jamais affiché. */
+.horsEcran {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ── LE BLOC PREMIUM ─────────────────────────────────────────────────
