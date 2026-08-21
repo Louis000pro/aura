@@ -68,6 +68,10 @@ export default function AccueilSignature({
     .reduce((total, m) => total + m.exp, 0);
   const plafondDuJour = premiumUnlocked ? PLAFOND_JOUR_PREMIUM : PLAFOND_JOUR_GRATUIT;
 
+  /* Ce que le coffre ajoute en une journée. Calculé, jamais écrit : le jour où
+     une mission Premium change de valeur, ce chiffre suit tout seul. */
+  const expPremiumJour = MISSIONS_PREMIUM.reduce((total, m) => total + m.exp, 0);
+
   return (
     <div className={styles.home}>
       <header className={styles.greeting}>
@@ -193,6 +197,10 @@ export default function AccueilSignature({
               <strong>Un autre terrain de jeu</strong>
               <small>Des missions supplémentaires, jamais obligatoires.</small>
             </span>
+            <span className={styles.premiumBonus}>
+              <strong>+{expPremiumJour}</strong>
+              <small>EXP / jour</small>
+            </span>
           </div>
 
           <div className={styles.premiumList}>
@@ -202,7 +210,7 @@ export default function AccueilSignature({
                 mission={mission}
                 etat={aura.missions[mission.id]}
                 debloquee={premiumUnlocked}
-                variante="premium"
+                coffre
                 onNavigate={onNavigate}
               />
             ))}
@@ -337,12 +345,18 @@ function SectionHeading({
    Elle montre les quatre informations exigées par le produit : le NOM, la
    CONDITION, la RÉCOMPENSE en EXP, et l'ÉTAT. Rien n'est calculé ici, tout
    est lu, c'est ce qui rend impossible un écart entre le « +30 EXP »
-   affiché et le crédit réel. */
+   affiché et le crédit réel.
+
+   ⚠️ CE QUI DIT « PREMIUM » SE LIT SUR `mission.premium`, JAMAIS SUR
+   L'ENDROIT OÙ LA LIGNE EST RENDUE. C'est ce qui permet à « Semaine
+   régulière » de porter la même signalétique dorée au milieu des missions
+   gratuites de la semaine : basculer une mission d'une famille à l'autre
+   est un booléen dans le catalogue, et l'écran suit tout seul. */
 function LigneMission({
   mission,
   etat,
   debloquee,
-  variante = "standard",
+  coffre = false,
   onNavigate,
 }: {
   mission: Mission;
@@ -351,10 +365,12 @@ function LigneMission({
    *  même la mission Premium et sa progression : on ne cache pas ce qu'on
    *  vend, on dit juste qu'il faut Premium pour l'encaisser. */
   debloquee: boolean;
-  variante?: "standard" | "premium";
+  /** La ligne vit-elle dans le coffre sombre ? Le coffre porte déjà sa
+   *  marque : on n'y répète ni la puce dorée, ni le liseré. */
+  coffre?: boolean;
   onNavigate: (path: string) => void;
 }) {
-  const premium = variante === "premium";
+  const premium = mission.premium;
   const route = debloquee ? mission.route : "/premium";
 
   const etatTexte = etat.earned
@@ -367,17 +383,21 @@ function LigneMission({
 
   const contenu = (
     <>
-      <span className={premium ? styles.premiumSigil : styles.sigil}>
+      <span className={coffre ? styles.premiumSigil : styles.sigil}>
         <Image
           src={mission.image}
           alt=""
           width={42}
           height={42}
-          className={premium ? styles.premiumMissionImage : styles.dailyMissionImage}
+          className={coffre ? styles.premiumMissionImage : styles.dailyMissionImage}
         />
+        {premium && <Cachet verrouille={!debloquee} />}
       </span>
-      <span className={premium ? styles.premiumMissionCopy : styles.missionCopy}>
-        <strong>{mission.titre}</strong>
+      <span className={coffre ? styles.premiumMissionCopy : styles.missionCopy}>
+        <strong>
+          {mission.titre}
+          {premium && !coffre && <em className={styles.tagPremium}>Premium</em>}
+        </strong>
         <small>{mission.condition}</small>
       </span>
       <span className={styles.missionExp} data-earned={etat.earned ? "" : undefined}>
@@ -387,12 +407,34 @@ function LigneMission({
     </>
   );
 
-  const classe = premium ? styles.premiumMission : styles.mission;
-  if (!route) return <div className={classe}>{contenu}</div>;
+  const classe = coffre ? styles.premiumMission : styles.mission;
+  const marque = premium && !coffre ? "" : undefined;
+  if (!route) return <div className={classe} data-premium={marque}>{contenu}</div>;
   return (
-    <button type="button" className={classe} onClick={() => onNavigate(route)}>
+    <button type="button" className={classe} data-premium={marque} onClick={() => onNavigate(route)}>
       {contenu}
     </button>
+  );
+}
+
+/* Le cachet posé sur le pictogramme : verrou pour un compte gratuit,
+   étincelle pour un abonné. C'est exactement la signalétique des cartes
+   Premium du catalogue de séances, et la reprendre ici évite d'apprendre
+   deux fois la même chose à la même personne. */
+function Cachet({ verrouille }: { verrouille: boolean }) {
+  return (
+    <span className={styles.cachet} aria-hidden="true">
+      {verrouille ? (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+          <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
+          <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
+        </svg>
+      ) : (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
+          <path d="M12 3.5v17M3.5 12h17" />
+        </svg>
+      )}
+    </span>
   );
 }
 

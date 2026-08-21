@@ -286,6 +286,8 @@
 .rankExp small,
 .premiumHeadingCopy strong,
 .premiumHeadingCopy small,
+.premiumBonus strong,
+.premiumBonus small,
 .premiumPrice strong,
 .premiumPrice small,
 .missionCopy strong,
@@ -377,6 +379,7 @@
 }
 
 .mission {
+  position: relative;
   display: flex;
   width: 100%;
   min-height: 66px;
@@ -394,14 +397,103 @@
   border-bottom: 0;
 }
 
+/* ── UNE MISSION PREMIUM POSÉE AU MILIEU DES GRATUITES ────────────────
+   « Semaine régulière » vit dans la liste de la semaine, entre deux
+   missions offertes. Elle ne peut donc pas compter sur un bloc à part
+   pour se signaler : elle porte sa marque sur elle-même, et ces trois
+   signes doivent se lire ENSEMBLE, en une fraction de seconde.
+
+   1. un liseré doré à gauche, qui découpe la ligne dans la liste ;
+   2. un lavis or → magenta, la même paire que la marque Premium ;
+   3. la puce « Premium » collée au titre, plus le cachet sur l'icône.
+
+   ⚠️ L'or est une ENCRE ici, pas seulement un décor : #F5B120 tombe à
+   1,9:1 sur le blanc du mode clair. On bascule donc la valeur selon le
+   thème, comme le teal de « Validée » juste en dessous.
+   Mesuré : #8A5A06 = 5,9:1 sur blanc · #F5B120 = 8,4:1 sur la surface
+   sombre. */
+.mission[data-premium] {
+  --or: #8a5a06;
+  background:
+    linear-gradient(100deg, rgba(245, 177, 32, 0.13), rgba(193, 59, 193, 0.06) 62%, transparent);
+}
+
+:global([data-theme="dark"]) .mission[data-premium] {
+  --or: #f5b120;
+  background:
+    linear-gradient(100deg, rgba(245, 177, 32, 0.16), rgba(193, 59, 193, 0.09) 62%, transparent);
+}
+
+.mission[data-premium]::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #ffd34e, #f5b120 42%, #c13bc1);
+  content: "";
+}
+
+.mission[data-premium] .missionExp:not([data-earned]) {
+  border-color: rgba(245, 177, 32, 0.36);
+  color: var(--or);
+  background: rgba(245, 177, 32, 0.13);
+}
+
+.mission[data-premium] .missionExp:not([data-earned]) small {
+  color: var(--or);
+  opacity: 0.72;
+}
+
+/* La puce dorée collée au titre. Elle dit le mot, ce que ni une couleur
+   ni une icône ne peuvent faire seules : quelqu'un qui ne connaît pas
+   encore le code visuel de l'app doit comprendre du premier coup. */
+.tagPremium {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #3a2402;
+  background: linear-gradient(120deg, #ffd34e, #f5b120);
+  font-size: 8.5px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
 .sigil {
+  position: relative;
   display: grid;
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
   place-items: center;
-  overflow: hidden;
   border-radius: 14px;
+}
+
+/* Le cachet posé sur le coin du pictogramme. Verrou pour un gratuit,
+   étincelle pour un abonné : la même paire que les cartes Premium du
+   catalogue de séances.
+
+   ⚠️ Il déborde du pictogramme, donc ni `.sigil` ni `.premiumSigil` ne
+   peuvent porter `overflow: hidden`. Ce n'est pas une perte : les WebP
+   arrivent déjà avec leurs coins arrondis découpés en transparence, le
+   rognage n'avait rien à faire. */
+.cachet {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  color: #3a2402;
+  background: linear-gradient(135deg, #ffd34e, #f5b120);
+  box-shadow: 0 2px 6px rgba(84, 52, 2, 0.34);
 }
 
 .premiumSigil svg {
@@ -496,16 +588,40 @@
   color: var(--ok);
 }
 
+/* ── LE COFFRE ───────────────────────────────────────────────────────
+   Le vrai écart Premium n'est pas une teinte, c'est une MATIÈRE. Le
+   coffre était une carte blanche parmi des cartes blanches : à part un
+   picto de plus, rien ne le séparait des missions offertes juste
+   au-dessus. Il devient un bloc sombre bordé d'or, comme l'affiche
+   Premium de l'accueil, donc la seule surface de ce genre sur l'écran.
+
+   Il est sombre DANS LES DEUX THÈMES, et c'est le principe : en clair il
+   tranche par la profondeur, en sombre par la saturation et l'or. Un
+   coffre qui prendrait la couleur de la page ne serait plus un coffre.
+
+   Conséquence à ne pas oublier : tout ce qui vit dedans écrit en clair,
+   donc les tokens `--text-*` n'y servent plus à rien et les couleurs y
+   sont posées à la main, exactement comme dans `.posterCopy`. */
 .premiumVault {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border: 1px solid rgba(245, 177, 32, 0.34);
   border-radius: 20px;
   background:
-    radial-gradient(circle at 100% 0%, rgba(var(--accent-rgb), 0.13), transparent 31%),
-    rgba(var(--surface-rgb), 0.91);
-  box-shadow: 0 14px 30px -24px rgba(var(--accent-rgb), 0.62);
+    radial-gradient(122% 92% at 8% -6%, rgba(139, 92, 246, 0.44), transparent 60%),
+    radial-gradient(96% 84% at 104% 108%, rgba(193, 59, 193, 0.32), transparent 56%),
+    linear-gradient(158deg, #24113b, #140823 58%, #1c0d30);
+  box-shadow:
+    0 20px 40px -26px rgba(76, 30, 122, 0.9),
+    inset 0 1px rgba(255, 255, 255, 0.11);
+}
+
+:global([data-theme="dark"]) .premiumVault {
+  border-color: rgba(245, 177, 32, 0.44);
+  box-shadow:
+    0 20px 44px -24px rgba(139, 92, 246, 0.5),
+    inset 0 1px rgba(255, 255, 255, 0.13);
 }
 
 .premiumVault[data-locked]::after {
@@ -558,7 +674,31 @@
   align-items: center;
   gap: 11px;
   padding: 14px 13px 12px;
-  border-bottom: 1px solid rgba(var(--accent-rgb), 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ce que le coffre ajoute en une journée, en or et en gros. C'est la
+   réponse à « pourquoi payer », et elle tient en un nombre. */
+.premiumBonus {
+  flex: 0 0 auto;
+  color: #ffd34e;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.premiumBonus strong {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.premiumBonus small {
+  margin-top: -1px;
+  color: rgba(255, 211, 78, 0.68);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .premiumSeal {
@@ -566,8 +706,10 @@
   height: 39px;
   flex: 0 0 39px;
   clip-path: polygon(50% 0, 88% 17%, 100% 55%, 75% 90%, 34% 100%, 4% 72%, 8% 27%);
-  background: linear-gradient(145deg, #8b5cf6, #c13bc1);
-  filter: drop-shadow(0 7px 10px rgba(139, 92, 246, 0.22));
+  /* Éclairci depuis que le coffre est sombre : le violet de marque y
+     disparaissait dans son propre fond. */
+  background: linear-gradient(145deg, #a683ff, #d24fd2);
+  filter: drop-shadow(0 7px 12px rgba(139, 92, 246, 0.42));
 }
 
 .premiumSeal::before,
@@ -591,14 +733,14 @@
 }
 
 .premiumHeadingCopy strong {
-  color: var(--text-0);
+  color: #fff;
   font-size: 13.5px;
   font-weight: 800;
 }
 
 .premiumHeadingCopy small {
   margin-top: 2px;
-  color: var(--text-3);
+  color: rgba(255, 255, 255, 0.62);
   font-size: 10.5px;
 }
 
@@ -608,30 +750,39 @@
 }
 
 .premiumMission {
+  position: relative;
   display: flex;
   width: 100%;
-  min-height: 57px;
+  min-height: 60px;
   align-items: center;
   gap: 11px;
   padding: 9px 13px;
   border: 0;
-  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
-  color: var(--text-1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: #fff;
   background: transparent;
   text-align: left;
+}
+
+.premiumMission:last-child {
+  border-bottom: 0;
 }
 
 .premiumMission:disabled {
   opacity: 1;
 }
 
+/* Les pictogrammes sont des tuiles pâles : sur le fond sombre du coffre
+   ils s'allument tout seuls, sans qu'on ait à les retoucher. C'est
+   d'ailleurs pour ça que la photo de contenu n'a jamais besoin d'être
+   teintée dans cette app : c'est le chrome qui porte la couleur. */
 .premiumSigil {
+  position: relative;
   display: grid;
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
   place-items: center;
-  overflow: hidden;
   border-radius: 13px;
 }
 
@@ -648,7 +799,7 @@
 }
 
 .premiumMissionCopy strong {
-  color: var(--text-0);
+  color: #fff;
   font-size: 12.5px;
   font-weight: 750;
 }
@@ -656,10 +807,28 @@
 .premiumMissionCopy small {
   margin-top: 1px;
   overflow: hidden;
-  color: var(--text-3);
+  color: rgba(255, 255, 255, 0.56);
   font-size: 10.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* La pastille d'EXP passe à l'or dans le coffre : la monnaie y a la
+   couleur de l'endroit. Le teal de « Validée » ne bouge pas, lui, parce
+   que la réussite se dit en teal PARTOUT (système D) ; on ne fait que
+   forcer sa valeur claire, la sombre étant illisible ici. */
+.premiumMission .missionExp:not([data-earned]) {
+  border-color: rgba(245, 177, 32, 0.42);
+  color: #ffd34e;
+  background: rgba(245, 177, 32, 0.14);
+}
+
+.premiumMission .missionExp:not([data-earned]) small {
+  color: rgba(255, 211, 78, 0.7);
+}
+
+.premiumMission .missionExp[data-earned] {
+  --ok: #2bd4a0;
 }
 
 .premiumFooter {
@@ -670,24 +839,42 @@
   padding: 12px 13px;
 }
 
+.premiumFooter {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .premiumFooter p {
-  color: var(--text-3);
+  color: rgba(255, 255, 255, 0.58);
   font-size: 10.5px;
   line-height: 1.3;
 }
 
+/* ⚠️ LE BOUTON RESTE VIOLET, et ce n'est pas négociable : dans le système
+   D le bouton d'action principal est violet partout. Sur un fond déjà
+   violet sombre il faut juste l'éclaircir et lui donner un halo, sinon il
+   se fond dans le coffre. Le passer à l'or réglerait le contraste et
+   casserait la lecture de toute l'app. */
 .premiumFooter button {
   padding: 0 13px;
   color: #fff;
-  background: linear-gradient(120deg, #8b5cf6, #c13bc1);
-  box-shadow: 0 8px 18px -9px rgba(139, 92, 246, 0.65);
+  background: linear-gradient(120deg, #9d72ff, #d24fd2);
+  box-shadow:
+    0 10px 20px -8px rgba(139, 92, 246, 0.72),
+    inset 0 1px rgba(255, 255, 255, 0.28);
 }
 
 @media (hover: hover) {
   .rankStrip:hover,
-  .mission:hover,
-  .premiumMission:not(:disabled):hover {
+  .mission:not([data-premium]):hover {
     background-color: rgba(var(--accent-rgb), 0.055);
+  }
+
+  .mission[data-premium]:hover {
+    background-color: rgba(245, 177, 32, 0.09);
+  }
+
+  .premiumMission:not(:disabled):hover {
+    background-color: rgba(255, 255, 255, 0.06);
   }
 }
 

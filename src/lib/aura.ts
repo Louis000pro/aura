@@ -177,7 +177,14 @@ export type Mission = {
   /** Ce que ça rapporte. Un nombre fixe, jamais un calcul. */
   exp: number;
   periode: "jour" | "semaine";
-  /** Réservée aux abonnés. Un compte gratuit la voit et voit sa progression. */
+  /** Réservée aux abonnés. Un compte gratuit la voit et voit sa progression.
+   *
+   *  ⚠️ FAIRE BASCULER UNE MISSION SE FAIT À DEUX ENDROITS, jamais un seul :
+   *  ici (ce qui l'affiche en doré, avec sa puce « Premium » et son cachet
+   *  verrouillé) ET dans le dernier argument de `crediter_mission_aura` côté
+   *  SQL (ce qui décide qui l'encaisse vraiment). Ne changer que celui-ci
+   *  ferait promettre à l'écran ce que la base continue de donner à tout le
+   *  monde, ou l'inverse. */
   premium: boolean;
   /** Le pictogramme. `public/missions/<famille>/<nom>-v1.webp`. */
   image: string;
