@@ -397,7 +397,7 @@ function LigneMission({
           height={42}
           className={styles.dailyMissionImage}
         />
-        {premium && !debloquee && <Cadenas />}
+        {premium && !debloquee && <PlusPremium />}
       </span>
       <span className={styles.missionCopy}>
         <strong>
@@ -436,22 +436,29 @@ function LigneMission({
   );
 }
 
-/* Le cadenas posé sur le pictogramme, repris des cartes Premium du
-   catalogue de séances : le reprendre ici évite d'apprendre deux fois la
-   même chose à la même personne.
+/* Le « + » doré posé sur le coin du pictogramme, pour un compte qui n'a
+   pas encore Premium.
 
-   ⚠️ IL NE S'AFFICHE QUE POUR UN COMPTE QUI N'Y A PAS DROIT. Il a existé
-   une version « étincelle pour un abonné » : elle mettait une pastille
-   dorée sur les quatre missions de quelqu'un qui les a déjà, donc elle
-   lui vendait ce qu'il a payé. Un abonné ne voit plus aucune pastille,
-   et c'est le bon signal : chez lui la mission est simplement une
-   mission. */
-function Cadenas() {
+   ⚠️ IL NE S'AFFICHE QUE POUR QUI N'Y A PAS DROIT. Il a existé une version
+   qui le posait sur les missions d'un abonné : elle lui vendait ce qu'il a
+   déjà payé. Chez un abonné, une mission Premium est simplement une
+   mission, et elle ne porte aucune pastille.
+
+   ⚠️ ET C'EST UN « + », PAS UN CADENAS (choix de Louis, 2026-08-22). Les
+   deux disent la même chose et se posent au même endroit, mais pas dans le
+   même sens : un cadenas dit ce qu'on ne peut pas faire, un « + » dit ce
+   qu'il y a à prendre. Sur une ligne qui existe justement pour donner
+   envie de s'abonner, c'est l'invitation qu'on veut, pas le mur. Ne pas
+   remettre le verrou.
+
+   ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
+   `overflow: hidden`. Ce n'est pas une perte : les WebP arrivent déjà avec
+   leurs coins arrondis découpés en transparence. */
+function PlusPremium() {
   return (
     <span className={styles.cachet} aria-hidden="true">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
-        <rect x="4" y="10.5" width="16" height="11" rx="2.6" fill="currentColor" stroke="none" />
-        <path d="M8.2 10.5V7.6a3.8 3.8 0 0 1 7.6 0v2.9" />
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
+        <path d="M12 3.5v17M3.5 12h17" />
       </svg>
     </span>
   );

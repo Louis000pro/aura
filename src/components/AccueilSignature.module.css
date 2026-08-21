@@ -504,9 +504,9 @@
   border-radius: 14px;
 }
 
-/* Le cachet posé sur le coin du pictogramme. Verrou pour un gratuit,
-   étincelle pour un abonné : la même paire que les cartes Premium du
-   catalogue de séances.
+/* Le cachet posé sur le coin du pictogramme : un « + » doré, et seulement
+   pour un compte qui n'a pas encore Premium. Le raisonnement est dans
+   `PlusPremium` (AccueilSignature.tsx).
 
    ⚠️ Il déborde du pictogramme, donc `.sigil` ne peut pas porter
    `overflow: hidden`. Ce n'est pas une perte : les WebP
