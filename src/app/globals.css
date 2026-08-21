@@ -40,6 +40,10 @@
   --accent: #A78BFA;        --accent-rgb: 167, 139, 250;   /* violet */
   --gold:   #D4A843;        --gold-rgb:   212, 168, 67;    /* or beige */
   --gold-soft: #FBF1DA;     /* aplat doré pâle (carte « Série ») */
+  /* ⚠️ L'or DÉCORATIF ne peut pas servir d'encre : #D4A843 tombe à 2,2:1 sur
+     le blanc, #F5B120 à 1,9:1. Quand l'or doit être LU (un mot, un chiffre),
+     c'est ce jeton, qui bascule avec le thème. Mesuré : 5,9:1 sur blanc. */
+  --or-encre: #8A5A06;
   /* Surfaces translucides (base RGB) */
   --surface-rgb:      255, 255, 255;   /* verre blanc            */
   --tint-violet-rgb:  240, 235, 255;   /* #F0EBFF — voile violet */
@@ -74,6 +78,7 @@
   --accent: #C3AEFF;        --accent-rgb: 195, 174, 255;   /* violet adouci */
   --gold:   #E6C56E;        --gold-rgb:   230, 197, 110;
   --gold-soft: #3A2D12;     /* aplat doré profond & chaud (carte « Série ») */
+  --or-encre: #F5B120;      /* 8,4:1 sur la surface sombre */
   --surface-rgb:     22, 18, 30;       /* carte sombre sur fond noir (distincte, discrète) */
   --tint-violet-rgb: 40, 33, 60;
   --tint-cream-rgb:  40, 33, 55;

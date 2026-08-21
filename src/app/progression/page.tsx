@@ -1248,6 +1248,56 @@ function dedupeRowArt(list: MergedSession[]): Map<string, string> {
   return out;
 }
 
+/* ── LES DEUX DÉGRADÉS DE PREMIUM ─────────────────────────────────────
+   Ce sont EXACTEMENT ceux des missions de l'accueil (`.mission[data-premium]`
+   et `.tagPremium` dans AccueilSignature.module.css), recopiés ici parce
+   que cet écran s'écrit en styles en ligne. Il n'y a donc qu'une seule
+   façon de dessiner Premium dans toute l'app : or clair → or → magenta.
+   L'ancienne paire violet → or de cet écran en inventait une deuxième, et
+   le violet est déjà pris : dans le système D, il veut dire « action ».
+   Si l'un des deux change un jour, les deux changent ensemble. */
+const PREMIUM_LISERE = "linear-gradient(180deg,#FFD34E,#F5B120 42%,#C13BC1)";
+const PREMIUM_PUCE = "linear-gradient(120deg,#FFD34E,#F5B120)";
+/* Le lavis des lignes Premium de l'accueil. ⚠️ Exactement horizontal :
+   incliné, deux cartes voisines montrent deux tranches différentes du
+   dégradé et la rangée se coupe en morceaux. */
+const PREMIUM_LAVIS = "linear-gradient(90deg,rgba(245,177,32,0.17),rgba(193,59,193,0.09) 62%,transparent)";
+/* L'étincelle de la marque, telle qu'elle est dessinée sur l'affiche
+   Premium de l'accueil (`.brandSpark`) : violet → or, deux barres. */
+const PREMIUM_SPARK = "linear-gradient(135deg,#8B5CF6,#F5B120)";
+
+function EtincellePremium({ taille = 11 }: { taille?: number }) {
+  const barre = Math.max(2, Math.round(taille * 0.23));
+  return (
+    <span aria-hidden className="relative inline-block flex-shrink-0" style={{ width: taille, height: taille }}>
+      <span className="absolute inset-0 m-auto rounded-full" style={{ width: barre, height: taille, background: PREMIUM_SPARK }} />
+      <span className="absolute inset-0 m-auto rounded-full" style={{ width: taille, height: barre, background: PREMIUM_SPARK }} />
+    </span>
+  );
+}
+
+/* Le « + » doré, posé là où vit le ⋯ des autres cartes, et seulement sur
+   une séance qu'on n'a pas encore. C'est le même cachet que sur les
+   missions de l'accueil (`PlusPremium` dans AccueilSignature.tsx), pour la
+   même raison : un cadenas dit ce qu'on ne peut pas faire, un « + » dit ce
+   qu'il y a à prendre. Sur une carte dont le métier est de donner envie de
+   s'abonner, on veut l'invitation, pas le mur.
+
+   Il ne se touche pas : la carte entière ouvre déjà l'aperçu Premium, et
+   deux boutons superposés au même endroit ne donneraient pas deux
+   destinations, juste une cible à moitié fiable. */
+function PlusPremium() {
+  return (
+    <span aria-hidden
+      className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center pointer-events-none"
+      style={{ background: PREMIUM_PUCE, color: "#3A2402", boxShadow: "0 3px 10px rgba(84,52,2,0.42)" }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round">
+        <path d="M12 3.5v17M3.5 12h17" />
+      </svg>
+    </span>
+  );
+}
+
 function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, imgOverride }: {
   session: MergedSession;
   onStart: (s: MergedSession) => void;
@@ -1272,17 +1322,28 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
       animate={{ opacity: 1, y: 0 }}
       className={`relative ${isPremium ? "rounded-[20px] overflow-hidden p-px" : ""}`}
       style={isPremium ? {
-        background: "linear-gradient(145deg,var(--accent),var(--gold))",
-        boxShadow: "0 12px 30px rgba(var(--accent-rgb),0.22)",
+        background: PREMIUM_LISERE,
+        boxShadow: "0 12px 28px -14px rgba(198,140,20,0.62)",
       } : undefined}
     >
+      {/* Le bandeau dit le MOT, ce qu'aucune couleur ne fait seule, et il le
+          dit exactement comme l'accueil : l'étincelle de la marque, puis
+          « Premium » en or, sur le lavis pâle des lignes Premium. Pas un
+          aplat : sur une rangée entière, un bandeau jaune plein hurle et
+          écrase la photo, alors que le lavis laisse la photo respirer et se
+          lit quand même du premier coup.
+          L'ancienne version était violet → or avec du texte blanc : une
+          seconde écriture de Premium (le violet dit « action » ailleurs), et
+          du blanc sur #FFD34E, qui ne se lit pas. Le signe « incluse dans ton
+          offre » a disparu avec elle : chez un abonné, une séance Premium est
+          simplement une séance, on ne lui revend pas ce qu'il paie déjà. */}
       {isPremium && (
-        <div className="h-7 px-2.5 flex items-center justify-between text-white"
-          style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
-          <span className="text-[9px] font-black uppercase tracking-[0.15em]">Premium</span>
-          {premiumLocked
-            ? <Lock size={11} strokeWidth={2.4} aria-label="Verrouillée" />
-            : <Sparkles size={11} strokeWidth={2.4} aria-label="Incluse dans ton offre" />}
+        <div className="h-7 px-2.5 flex items-center gap-[6px]"
+          style={{ background: `${PREMIUM_LAVIS},rgb(var(--surface-rgb))` }}>
+          <EtincellePremium />
+          <span className="text-[9px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--or-encre)" }}>
+            Premium
+          </span>
         </div>
       )}
       {/* La tuile = un seul geste : lancer. Photo NATURELLE plein cadre.
@@ -1336,7 +1397,9 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
             les deux <p>), au lieu d'un repeint système illisible. */}
         <div className="absolute inset-x-0 bottom-0 pl-2.5 pb-3 pt-12 flex flex-col items-start text-left"
           style={{
-            paddingRight: session.perso ? 34 : 10,
+            // On dégage le coin quand une pastille l'occupe : le ⋯ des séances
+            // à soi, le « + » d'une séance qu'on n'a pas encore.
+            paddingRight: session.perso || premiumLocked ? 34 : 10,
             background: "linear-gradient(to top, rgba(6,5,10,0.9) 32%, rgba(6,5,10,0.4) 66%, transparent)",
             forcedColorAdjust: "none",
           }}>
@@ -1376,6 +1439,11 @@ function SessionTile({ session, onStart, onManage, onPremium, canAccessPremium, 
           <MoreHorizontal size={14} strokeWidth={2.2} style={{ color: "rgba(255,255,255,0.88)" }} />
         </motion.button>
       )}
+
+      {/* Le coin que le ⋯ laisse vide sur une séance verrouillée. Il ne
+          restait rien à cet endroit, alors qu'il pouvait dire ce qu'il y a
+          à gagner. */}
+      {premiumLocked && <PlusPremium />}
     </motion.div>
   );
 }
@@ -1423,10 +1491,10 @@ function PremiumPreviewSheet({ session, premiumCount, onClose, onUpgrade }: {
         }}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="h-8 px-4 flex items-center justify-center gap-1.5 text-white"
-          style={{ background: "linear-gradient(110deg,var(--accent),var(--gold))" }}>
-          <Sparkles size={12} strokeWidth={2.3} aria-hidden />
-          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]">
+        <div className="h-8 px-4 flex items-center justify-center gap-2"
+          style={{ background: `${PREMIUM_LAVIS},rgb(var(--surface-rgb))`, borderBottom: "1px solid rgba(245,177,32,0.2)" }}>
+          <EtincellePremium taille={12} />
+          <span className="text-[9.5px] font-black uppercase tracking-[0.17em]" style={{ color: "var(--or-encre)" }}>
             {advice ? "Aperçu du cours Premium" : "Aperçu Premium"}
           </span>
         </div>
@@ -1954,58 +2022,80 @@ function SessionRow({ label, count, children }: {
   );
 }
 
-function PremiumSessionRow({ count, children, title = "Continue avec Premium", description = "Des séances plus ciblées pour aller plus loin, à ton rythme." }: {
+/* Le bloc Premium du catalogue, aligné sur celui de l'accueil
+   (`.premiumVault`) : il garde la SURFACE de l'app comme les autres
+   rangées, et ne porte que sa bordure dorée. Ce n'est pas le bloc qui dit
+   Premium, ce sont les cartes, avec exactement les mêmes signes que
+   partout ailleurs. Le lavis violet → or qu'il portait avant faisait
+   l'inverse : il criait au niveau du cadre et laissait les cartes muettes.
+
+   Le compte a changé de place et d'encre : il était un « 9 » gris collé au
+   titre, il devient le chiffre en or qu'on lit à droite. C'est la réponse à
+   « pourquoi payer », et elle tient en un nombre, comme le « +70 EXP » des
+   missions. */
+function PremiumSessionRow({ count, children, title = "Continue avec Premium", unite = "séance", description = "Des séances plus ciblées pour aller plus loin, à ton rythme." }: {
   count: number;
   children: React.ReactNode;
   title?: string;
+  unite?: string;
   description?: string;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const nudge = (dir: 1 | -1) =>
     scroller.current?.scrollBy({ left: dir * (ROW_CARD_W + 12) * 2, behavior: "smooth" });
+  // « cours » ne prend pas de s de plus : la règle, pas une exception.
+  const mot = count > 1 && !/[sxz]$/.test(unite) ? `${unite}s` : unite;
 
   return (
     <section className="mb-7 rounded-[24px] overflow-hidden"
       style={{
-        background: "linear-gradient(145deg,rgba(var(--accent-rgb),0.13),rgba(245,177,32,0.08),rgb(var(--surface-rgb)))",
-        border: "1px solid rgba(var(--accent-rgb),0.2)",
-        boxShadow: "0 14px 34px rgba(var(--accent-rgb),0.1)",
+        background: "rgba(var(--surface-rgb),0.9)",
+        border: "1px solid rgba(245,177,32,0.32)",
+        boxShadow: "0 14px 30px -22px rgba(198,140,20,0.62)",
       }}>
-      <div className="px-4 pt-4 pb-3 flex items-start gap-3">
-        <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
-          style={{ background: "linear-gradient(135deg,var(--accent),var(--gold))", boxShadow: "0 6px 16px rgba(var(--accent-rgb),0.25)" }}>
-          <Sparkles size={15} strokeWidth={2.2} aria-hidden />
+      <div className="px-4 pt-4 pb-3.5 flex items-center gap-3"
+        style={{ borderBottom: "1px solid rgba(245,177,32,0.18)" }}>
+        {/* L'étincelle de la marque, dessinée comme sur l'accueil : le sceau
+            violet → magenta. L'or de ce bloc dit « Premium », il ne dit
+            jamais « appuie ici », donc il ne touche pas au sceau. */}
+        <span aria-hidden className="relative flex-shrink-0"
+          style={{
+            width: 38, height: 38,
+            clipPath: "polygon(50% 0, 88% 17%, 100% 55%, 75% 90%, 34% 100%, 4% 72%, 8% 27%)",
+            background: "linear-gradient(145deg,#8B5CF6,#C13BC1)",
+            filter: "drop-shadow(0 7px 10px rgba(139,92,246,0.22))",
+          }}>
+          <span className="absolute inset-0 m-auto rounded-full" style={{ width: 3, height: 15, background: "#fff" }} />
+          <span className="absolute inset-0 m-auto rounded-full" style={{ width: 15, height: 3, background: "#fff" }} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="text-[15px] font-black leading-tight"
-              style={{
-                background: "linear-gradient(110deg,var(--accent),var(--gold))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}>
-              {title}
-            </p>
-            <span className="text-[9.5px] font-black" style={{ color: "var(--text-3)" }}>{count}</span>
-          </div>
+          <p className="text-[14px] font-extrabold leading-tight" style={{ color: "var(--text-0)" }}>
+            {title}
+          </p>
           <p className="text-[10.5px] leading-relaxed mt-1" style={{ color: "var(--text-3)" }}>
             {description}
+          </p>
+        </div>
+        <div className="flex-shrink-0 text-right" style={{ color: "var(--or-encre)" }}>
+          <p className="text-[19px] font-black leading-none tracking-[-0.02em]">{count}</p>
+          <p className="text-[9px] font-extrabold uppercase tracking-[0.06em] mt-1" style={{ opacity: 0.74 }}>
+            {mot}
           </p>
         </div>
         <div className="hidden md:flex items-center gap-1">
           <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(-1)}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(var(--surface-rgb),0.68)" }} aria-label="Précédent">
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Précédent">
             <ChevronLeft size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
           </motion.button>
           <motion.button whileTap={{ scale: 0.86 }} onClick={() => nudge(1)}
             className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(var(--surface-rgb),0.68)" }} aria-label="Suivant">
+            style={{ background: "rgba(var(--tint-violet-rgb),0.7)" }} aria-label="Suivant">
             <ChevronRight size={13} strokeWidth={2.4} style={{ color: "var(--text-2)" }} />
           </motion.button>
         </div>
       </div>
-      <div ref={scroller} className="flex gap-3 overflow-x-auto px-4 pb-4"
+      <div ref={scroller} className="flex gap-3 overflow-x-auto px-4 pt-4 pb-4"
         style={{ scrollbarWidth: "none", scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }}>
         {children}
       </div>
@@ -2343,6 +2433,7 @@ function ChooseSheet({ sessions, week, loading, canAccessPremium, maxSeances, ca
               <PremiumSessionRow
                 count={vaiiyaPremium.length}
                 title={cat.id === "conseils" ? "Approfondis avec Premium" : undefined}
+                unite={cat.id === "conseils" ? "cours" : undefined}
                 description={cat.id === "conseils"
                   ? "Des sujets plus pointus pour comprendre tes plateaux, ta récupération et ta programmation."
                   : undefined}
